@@ -1921,14 +1921,13 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
 # data: input data. Rows are loci, columns are individuals.
 # ecs: number of extra columns at the header of the input (metadata, ect)
 # output: output format:
-#   1) per pop allele count format for Bayescan, ect. 
-#   2) genepop format
-#   3) structure format
-#   4) 2 character numeric format
-#   5) migrate-n hapmap format
-#   6) NN format (from numeric)
-#   7) simple numeric distance format (NA, 1, 2, 3)
-#   8) allele presence absensence format
+#   1) per pop allele count format for Bayescan, ect. (v)
+#   2) genepop format (v)
+#   3) structure format (v)
+#   4) 2 character numeric format (v)
+#   5) migrate-n hapmap format (v)
+#   6) NN format (from numeric) (v)
+#   7) allele presence absensence format
 # input_form: Input format
 #   "NN": Default, alleles as single characters (as in AT or CG),
 #   "0000": numeric. Will step to NN first before converting.
@@ -1940,9 +1939,10 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
 # pop: For format 1 and 5. 
 #      Number of samples in each pop as a list (as in list(c("POP1", "POP2"), c(48,50)))).
 #      Samples must be in the order given in input data frame.
-# n_samp: number of randomly selected snps, ect to take. For option 3.
+# n_samp: number of randomly selected snps, ect to take. Can also take a numeric vector containing SNP indices to keep. For option 3.
 # l_names: Vector of locus names. For option 8.
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
+#note: (v) under format options means that I've already vectorized it.
 format_snps <- function(data, ecs, output = 1, input_form = "NN", 
                         miss = "N", pop = 1, n_samp = NA, l_names = NULL,
                         interp_miss = T){
@@ -1964,8 +1964,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   }
   else if(output == 2){
     cat("Output 2 selected, converting to genepop format.\n")
-    if(input_form != "0000" & input_form != "NN"){
-      stop("Only 0000 and NN formats accepted for now.")
+    if(input_form != "0000" & input_form != "NN" & input_form != "snp_tab"){
+      stop("Only 0000, NN, and snp_tab formats accepted for now.")
     }
   }
   else if(output == 3){
@@ -1982,8 +1982,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   }
   else if(output == 4){
     cat("Output 4 selected, converting to numeric 2 character format.\n")
-    if(input_form != "NN"){
-      stop("Only NN format accepted for now.")
+    if(input_form != "NN" & input_form != "snp_tab"){
+      stop("Only NN and snp_tab formats accepted for now.")
     }
   }
   else if(output == 5){
@@ -2005,14 +2005,9 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       stop("Only 0000 and snp_tab formats accepted.")
     }
   }
+
   else if(output == 7){
-    cat("Output 7 selected, converting to simple numeric distance format.\n")
-    if(input_form != "NN" & input_form != "0000"){
-      stop("Only 0000 and NN formats accepted.")
-    }
-  }
-  else if(output == 8){
-    cat("Output 8 selected, converting to allele presence/absense format.\n")
+    cat("Output 7 selected, converting to allele presence/absense format.\n")
   }
   else{
     stop("Please specify output format.")
@@ -2149,34 +2144,45 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     return(list(gs = tmat, as = amat))
   }
   
-  
-  if(input_form == "0000" & output != 8){
-    NNf <- function(x){
-      x <- gsub("01", "A", x)
-      x <- gsub("02", "C", x)
-      x <- gsub("03", "G", x)
-      x <- gsub("04", "T", x)
-      x <- gsub(miss, "N", x)
-      return(x)
-    }
-    
-    
+  #convert 0000 to NN unless output is 7 or 2. Return after if output is 6. (v)
+  if(input_form == "0000" & output != 7 & output != 2){
+
     #Do conversion
     cat("Converting genotypes to NN form intermediary...")
-    data[,(ecs+1):ncol(data)] <- as.data.frame(lapply(data[,(ecs+1):ncol(data)], NNf), stringsAsFactors = FALSE) #run NNf function via lapply on data
-    #print(lapply(data[,(ecs+1):ncol(data)], genep))
-    cat("\n", "Moving on to conversion...", "\n")
+
+    #vectorize and replace
+    xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
+    xv1 <- substr(xv, 1, 2)
+    xv2 <- substr(xv, 3, 4)
+    xv1[xv1 == "01"] <- "A"
+    xv1[xv1 == "02"] <- "C"
+    xv1[xv1 == "03"] <- "G"
+    xv1[xv1 == "04"] <- "T"
+    xv1[xv1 == miss] <- "N"
+    xv2[xv2 == "01"] <- "A"
+    xv2[xv2 == "02"] <- "C"
+    xv2[xv2 == "03"] <- "G"
+    xv2[xv2 == "04"] <- "T"
+    xv2[xv2 == miss] <- "N"
+    xv <- paste0(xv1, xv2)
+    
+    #rebind to matrix and remake data.
+    xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+    data <- cbind(data[,1:ecs], as.data.frame(xv))
+    
+    cat("\nMoving on to conversion...", "\n")
     miss <- "N" #reset miss to the correct entry
     if(output == 6){
       return(data) #all done if just converting to NN
     }
   }
+  
   else if (input_form == "NN"){
     cat("Ensure that all data columns are character vectors!\n")
   }
   
-  #convert snp_tab to NN
-  if(output == 6){
+  #convert snp_tab to NN (v)
+  if(input_form == "snp_tab"){
     header <- data[,1:ecs]
     xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
     nsamp <- ncol(data) - ecs
@@ -2190,12 +2196,17 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     xv <- as.data.frame(matrix(xv, nrow(header), nsamp, byrow = T), stringsAsFactors = F)
     colnames(xv) <- snames
     out <- cbind(header, xv)
-    return(out)
+    if(output == 6){
+      return(out)
+    }
+    else{
+      data <- out
+    }
   }
   
   
   ##convert to allele count or migrate-n format, migrate-n should ALWAYS have multiple pops (why else would you
-  ##use it?)
+  ##use it?) (v)
   if(output == 1 | output == 5){
     if(output == 5){cat("WARNING: Data does not have header or pop spacer rows.\n")}
     w_df <- data[,1:ecs] #intiallize w_df if doing option 1
@@ -2250,8 +2261,6 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       
       #create allele count table for each pop, fill their section of data
       
-      
-      #work point
       #build allele tables for each locus
       pop_as <- list()
       pals <- matrix(FALSE, nrow(data), 4)
@@ -2275,8 +2284,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       cat("Tabulating and writing results...\n")
       pals <- ifelse(pals != 0, TRUE, FALSE)
       if(any(rowSums(pals) != 2)){
-        browser()
-        stop("More or less than two alleles detected at some loci.\n")
+        stop("More or less than two alleles detected at some loci! Check/filter input data.\n")
       }
       #Convert into vector which says which elements to keep.
       palsv <- as.vector(t(pals))
@@ -2304,49 +2312,73 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         w_df <- w_df[,c(1, (ecs + 1):ncol(w_df))] #remove extra columns except the first and pop columns
       }
     }
+    return(w_df)
   }
   
   
   
-  
-  
-  ##convert to genepop or numeric format
+  ##convert to genepop or numeric format (v)
   if (output == 2 | output == 4){
-    ##Make a function to change snp data to genepop format.
-    genep <- function(x){
-      x <- gsub("A", "01", x)
-      x <- gsub("C", "02", x)
-      x <- gsub("G", "03", x)
-      x <- gsub("T", "04", x)
-      x <- gsub(miss, "00", x)
-      return(x)
+    cat("WARNING: For output option 3, output does not have population seperators or header information.", "\n", "Converting genotypes...")
+    
+    if(input_form == "0000"){
+      if(output == 2){
+        w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
+        #print(names(w_df))
+        row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
+        return(w_df)
+      }
+      else{
+        stop("Please select different input and output formats.")
+      }
     }
     
-    #Do conversion
-    cat("WARNING: For output option 3, output does not have population seperators or header information.", "\n", "Converting genotypes...")
-    data[,(ecs+1):ncol(data)] <- as.data.frame(lapply(data[,(ecs+1):ncol(data)], genep), stringsAsFactors = FALSE) #run genep function via lapply on data
-    #print(lapply(data[,(ecs+1):ncol(data)], genep))
+    #vectorize and replace
+    xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
+    xv1 <- substr(xv, 1, 1)
+    xv2 <- substr(xv, 2, 2)
+    xv1[xv1 == "A"] <- "01"
+    xv1[xv1 == "C"] <- "02"
+    xv1[xv1 == "G"] <- "03"
+    xv1[xv1 == "T"] <- "04"
+    xv1[xv1 == miss] <- "00"
+    xv2[xv2 == "A"] <- "01"
+    xv2[xv2 == "C"] <- "02"
+    xv2[xv2 == "G"] <- "03"
+    xv2[xv2 == "T"] <- "04"
+    xv2[xv2 == miss] <- "00"
+    xv <- paste0(xv1, xv2)
+    
+    xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+    data <- cbind(data[,1:ecs], as.data.frame(xv))
+    
     cat("\n", "Cleaning up...", "\n")
     if(output == 2){ #convert to genepop
       w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
       #print(names(w_df))
       row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
+      return(w_df)
     }
     else {#prepare numeric output, otherwise same format
-      w_df <- data
+      return(data)
     }
   }
   
   
-  
-  
-  
-  ##convert to structure format
+  ##convert to structure format (v)
   if (output == 3){
     
     #subset if requested
     if(!is.na(n_samp)){
-      data <- data[sample(nrow(data), n_samp, T),]
+      cat("Subsetting ")
+      if(length(n_samp) > 1){
+        cat("designated SNPs.\n")
+        data <- data[,n_samp]
+      }
+      else{
+        cat(n_samp, " random SNPs.\n")
+        data <- data[sample(nrow(data), n_samp, T),]
+      }
     }
     
     #plop actual data into two vectors, one for each allele.
@@ -2387,55 +2419,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     return(out)
   }
   
-  if(output == 7){ #convert to simple numeric 
-    #function to replace a row
-    simnum <- function(x){
-      x <- as.character(x)
-      as <- sort(unique(x))
-      as <- as[as != "NN"]
-      as <- as.character(as)
-      c <- 1
-      ai <- numeric(length(as))
-      for(i in 1:length(as)){
-        if(substr(as[i],1,1) == substr(as[i],2,2)){
-          ai[i] <- c
-          c <- c + 2
-        }
-        else{
-          ai[i] <- 2
-        }
-      }
-      if(any(ai > 3)){browser()}
-      for(i in 1:length(x)){
-        if(x[i] == "NN"){
-          x[i] <- NA
-        }
-        else{
-          x[i] <- ai[which(as == x[i])]
-        }
-      }
-      x <- as.numeric(x)
-      return(x)
-    }
-    
-    #replace rows
-    w_df <- matrix(NA, nrow(data), ncol(data))
-    for(i in 1:nrow(data)){
-      if(i %% 1000 == 0){cat("snp number: ", i, "\n")}
-      x <- data[i,(ecs+1):ncol(data)]
-      x <- simnum(x)
-      w_df[i,(ecs+1):ncol(data)] <- x
-    }
-    w_df <- as.data.frame(w_df)
-    colnames(w_df) <- colnames(data)
-    w_df[,1:ecs] <- data[,1:ecs]
-    w_df <- as.data.frame(w_df)
-  }
-  
-  
-  
   #presence/absence format
-  if(output == 8){
+  if(output == 7){
     x <- data[,(ecs+1):ncol(data)] #get just data
     if((is.null(l_names)) | length(l_names) != nrow(data) | !(is.vector(l_names))){
       stop("Locus names required for output format 8. Please give a vector of names (l_names) equal to number of loci.")
@@ -2492,10 +2477,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     w_df <- as.data.frame(omat[,-1]) #remove int column, convert to data frame.
     w_df <- cbind(samp = colnames(x), w_df) #add sample names.
     if(!interp_miss){cat("Finished. Warning: Missing data counts are also stored!\n")}
+    return(w_df)
   }
-  
-  #output w_df
-  return(w_df)
 }
 
 #Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
