@@ -1,0 +1,278 @@
+---
+title: "snpR_functions"
+author: "William Hemstrom"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{snpR_functions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Bootstrapping Functions
+
+## resample_long
+
+This function creates a distribution of bootstrapped smoothed values for a desired statistic, as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags.
+
+For each bootstrap, it draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
+
+This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data.
+
+###Arguments:  
+1. x: Input SNP data.
+
+2. boots: Number of bootstraps to run.
+
+3. sigma: Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
+
+4. nk_weight: If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
+
+5. fws: If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions.
+
+6. n_snps: If true, draws all random numbers up front. A column containing the number of snps in each selected window must be provided, titled "n_snps", in either x or fws. This allows for faster processing. Otherwise, random numbers will be drawn after this value is determined for each bootstrap.
+
+7. report: Progress report interval, in bootstraps.
+
+Description of x:
+    
+    Requires columns titled columns titled "group", "position," one titled to match the "stat" argument, containing the linkage group or chromosome info, positions on those linkage groups, and the raw, unsmoothed statistic to calculate a bootstrap for for each SNP, respectively.
+    If nk_weight is set, a column titled "nk" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk". If n_snps is set but fws is not,  another titled "n_snps" is also necissary containing the number of snps observed on that window.
+
+Description of fws:
+    
+    Provides information on the fixed windows from which to bootstrap. It must contain columns titled "group", "position", and can include a column titled "n_snps", which contain the info described for x, but for each window.
+
+Outputs a vector of smoothed values.
+
+
+
+## resample_long_par
+
+Runs resample_long in parallel. See resample_long for recycled arguments. Uses the SNOW parallel framework.
+
+
+###Arguments:
+* num_cores: The number of processing cores to use.
+
+Does not use the n_snps argument, since random draws are drawn inside each loop to minimize read/write lag.
+
+
+
+## p_calc_boots
+
+Calculates p-values for smoothed values of a statistic based upon a bootstrapped null distribution of that statistic, such as those produced by resample_long using an emperical continuous distribution function.
+
+###Arguments:
+1. x: Numeric vector of smoothed values for which to calculate p-values.
+2. dist: Bootstrapped distribution of smoothed values.
+3. alt: Which alternative hypothesis should be used? Options: 
+    * "less": probability that a bootstrapped value is as small or smaller than observed.
+    * "greater": probability that a bootstrapped value is as large or larger than observed.
+    * "two-sided": probability that a bootstrapped value is as or more extreme than observed.
+
+Returns a vector of p-values.
+
+
+
+# Gene Ontology Functions:
+
+
+## gene_ave_stat
+
+Takes an input file of genes with start/end position noted and interpolates back the average
+statitstic of choice for that gene.
+
+###Arguments:
+1. gene_data: Input gene positions and IDs.
+2. stat_data: Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.
+3. stat: Name of the statistic to interpolate.
+
+Description of gene_data:
+    
+    Requires columns titled "group", "start", "end", and "probeID", containing gene linkage group/chromosome, start and end positions, and name, respectively.
+
+Description of stat_data:
+    
+    Requires columns titled "group", "position", and one matching the stat argument, containing the linkage group/chromosome, position, and the value of the observed statistic at that position. Typically produced via windowed gaussian smoothing (from smoothed_ave).
+
+
+
+# Plotting Functions:
+
+
+## LD_pairwise_headmap
+
+Prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by LD_full_pairwise. Should also work on pairwise FST data. Darker values are higher.
+
+###Arguments:
+1. x: Data, format like that given by LD_full_pairwise rsq and Dprime outputs. However, first column can contain snp names rather than first column of data.
+2. r: Region of the chromosome to subset and plot. Given in kb in the format numeric vector c(lower, upper).
+3. l.text: Legend title.
+4. colors: Colors to use, character vector format c("lower", "upper").
+5. title: Plot title
+6. t.sizes: Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)
+
+Since the output is a ggplot object, it is completely customizable in the same manner as other ggplot objects. Variables set in arguments can be overwritten in this way as well.
+
+This function was partially authored by Nick Sard.
+
+
+
+# Smoothing functions:
+
+
+## gaussian_weight
+
+Function to get the gaussian weight of a statistic given its position relative to the center and scaling factor sigma. Used internally, probably shouldn't be called.
+
+###Arguments:
+1. p: Position of value to smooth.
+2. c: Position of center of window.
+3. s: Sigma, scaling factor.
+
+## smoothed_ave
+
+Calculates gaussian smoothed average values for a given statistic and the genomic position at which it was observed. Oblivious to group/chromosome and population, so should probably be typically wrapped in run_g or run_gp. Can weight each statistic by an additional factor (typically sample size, "nk", per SNP).
+
+Smoothed values are calculated for sliding windows which can have either arbitrary centers (fixed_windows) or centers defined by each observed SNP.
+
+###Arguments:
+1. x: Input SNP data frame.
+2. parameter: Name of the statistic to smooth.
+3. sigma: Smoothing statistic/window size, in kb.
+4. nk_weight: Should statistic contribution to window mean be additionally scaled by column "nk"?
+5. fixed_window: Should a window with a fixed slide distance be used? If so, provide window slide length in kb.
+
+Description of x:
+    
+    Requires columns titled columns titled "position" and one titled to match the "parameter" argument, containing positions in bp and statistic to be smoothed for each SNP.
+    If nk_weight is set, a column titled "nk" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk".
+
+
+
+# Pop genetics stat functions:
+
+
+## Calc_pi
+
+Calculates pi (genetic diversity/average number of pairwise differences) according to Hohenlohe et al. (2010) from SNP data. Returns a vector of pi values for each SNP as sorted in input.
+
+###Arguments:
+1. x: Input SNP data, in allele count format as given by format_snps output option 1.
+
+Description of x:
+    
+    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
+
+
+
+## calc_weighted_stat
+
+Calculates a weighted average statistic and standard errors for a variable via the bootstrapping method described by Gatz and Smith (1995), The standard error of a weighted mean concentration—I. Bootstrapping vs other methods.
+
+###Arguments:
+1. x: Input statistic data.
+2. stat: Name of the statistic for which to calculate a weighted mean and se.
+3. boots: Number of bootstraps to perform to calcluate se. 30 is usually sufficient.
+
+Description of x:
+    
+    Must contain colums containing the statistic of interest (such as pi from calc_pi), population ID, and the weights (such as the number of alleles sequenced, or the n_total column from in the allele count format) for each SNP. These columns must be named to match the stat argument, "pop", and "n_total".
+
+
+
+## estimate_selection
+
+Estimates the selection coefficient *S* across one generation given intial and final allele frequencies, using an equation adapted from Gillespie (2010) Population genetics: a concise guide, equation 3.2. 
+
+###Arguments:
+1. p_before: Intial frequency of allele *p*.
+2. p_after: Frequency of allele *p* after one generation.
+
+
+
+## Tajimas_D
+
+Calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
+
+###Arguments:
+1. x: Input data, in allele count format as given by format_snps output option 1.
+2. ws: The size of each window, in kb.
+3. step: Lenght to slide between each window, in kb.
+4. report: When reporting progress, how many windows should be calculated between each report?
+
+Description of x:
+  
+    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one.
+    
+
+
+## HWE
+
+Function to test for deviation from HWE for each SNP via either permutation or the exact test given by Wigginton et al 2005.
+
+###Arguments
+1. x: Input data, in either NN or 0000 format, as given by format_snps output options 4 or 6.
+2. ecs: The number of extra columns at the start of the input data.frame containing metadata.
+3. miss: Characters which code for missing *genotypes* ("NN" or "0000", for example).
+4. test: Which test to use? "exact" for the exact test, "permutation" for permutation test.
+5. n.reps: Number of reps to use for permutation test.
+
+Description of x:
+
+   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Note that this *ignores populations*, split data into distinct populations before running.
+
+
+
+## calc_pairwise_Fst
+
+Calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
+
+###Arguments:
+1. x: Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi estimates.
+2. ecs: Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
+3. do.nk: Should pairwise nk (allele sample sizes) also be calculated?
+4. skip.FST: Should FST calcs be skipped (only set to TRUE if do.nk is as well).
+
+Description of x:
+  
+    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi for each SNP, as given by calc_pi.
+
+Smoothing note:
+
+   To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").
+
+
+
+## calc_pairwise_nk
+
+Wrapper function which calls calc_pairwise_Fst to just return the total number of alleles sequenced between each pair of populations at each SNP. Used for smoothing pairwise FST, for example.
+
+###Arguments:
+1. x: Input data frame, in allele count format as given by format_snps option 1.
+2. ecs: Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
+
+Description of x:
+  
+    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP.
+
+
+
+## calc_Ho 
+
+Caculates observed heterozygosity at each SNP.
+
+###Arguments:
+1. x: Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.
+2. ecs: Number of extra metadata columns at the start of x.
+3. m.dat: Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
+4. pop: List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If null, assumes one population.
+
+Description of x:
+
+   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. If the data contains individuals from multiple populatoins, they must be in the same order as given to the pop agrument.
+
+
+## check_private
+

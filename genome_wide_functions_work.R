@@ -2,7 +2,7 @@ library(plyr)
 library(reshape2)
 
 #function to calc pi from data. should be in format with num alleles in col 6, total count of alleles
-#in col 5, and subsequent alleles counts in rows 6+ (allele count/bayescan format, as given by format_snps option one with pops). 
+#in col 5, and subsequent alleles counts in rows 6+ (allele count/bayescan format, as given by format_snps option one with pops).
 #If any allele
 calc_pi <- function(data){
   data[,5] <- as.numeric(data[,5])
@@ -13,7 +13,7 @@ calc_pi <- function(data){
   if(!all(num != 2)){
     warning("Some loci do not have two alleles in some populations.\n")
   }
-  
+
   n1 <- data[,7]
   n2 <- data[,8]
   nt <- data [,5]
@@ -24,8 +24,8 @@ calc_pi <- function(data){
   #print(n2)
   p <- 1 - (binom_n1 + binom_n2)/binom_nt
   #print(pi)
-  
-  
+
+
   return(p)
 }
 
@@ -47,8 +47,8 @@ calc_weighted_stat <- function(x, stat, boots = 30){
     y <- x[x$pop == pops[i],]
     y <- y[!is.na(y[,stat]),]
     out[i,2] <- get_wm(y)
-    
-    
+
+
     #se, via bootstrap.
     n <- nrow(y)
     bvals <- numeric(boots)
@@ -73,7 +73,7 @@ gaussian_weight <- function(p, c, s) {
 
 #function to generate sliding averages based on gaussian weights of points around each point,
 #cut off at 3sigma where weight becomes very low. Sigma should be given in kbp, although input should be
-# in bp, in the second column of each row. 
+# in bp, in the second column of each row.
 smoothed_ave <- function(data, parameter, sigma, nk_weight = NULL, fixed_window = NULL) {
   sig <- 1000*sigma
   new_col <- paste0("smoothed", "_", parameter)
@@ -96,17 +96,17 @@ smoothed_ave <- function(data, parameter, sigma, nk_weight = NULL, fixed_window 
         gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]*(ws[,nk_weight] - 1)
         gws <- gaussian_weight(ws$position,c,sig)*(ws[,nk_weight] - 1)
       }
-      else{  
+      else{
         gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]
-        gws <- gaussian_weight(ws$position,c,sig) 
+        gws <- gaussian_weight(ws$position,c,sig)
       }
-      
+
       #print(sum(gws))
       out[i,new_col] <- (sum(gwp)/sum(gws))
       out[i,"n_snps"] <- nrow(ws)
     }
     return(out)
-  }  
+  }
   else{
     #cat("Using fixed window, slide =", fixed_window, "kb.\n")
     out_const <- data.frame()
@@ -125,13 +125,13 @@ smoothed_ave <- function(data, parameter, sigma, nk_weight = NULL, fixed_window 
       end <- c + 3*sig
       ws <- data[data$position <= end & data$position >= start,]
       ws <- ws[!is.na(ws[,parameter]),] #remove na values
-      
+
       if(nrow(ws) != 0){
         if(!is.null(nk_weight)){
           gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]*(ws[,nk_weight] - 1)
           gws <- gaussian_weight(ws$position,c,sig)*(ws[,nk_weight] - 1)
         }
-        else{  
+        else{
           gwp <-  gaussian_weight(ws$position,c,sig)*ws[,parameter]
           gws <-  gaussian_weight(ws$position,c,sig)
         }
@@ -172,7 +172,7 @@ smooth_w_groups<- function(data, parameter, sigma, nk_weight = FALSE, fixed_wind
       w_df <- rbind(w_df, w_out)
     }
   }
- return(w_df) 
+ return(w_df)
 }
 
 #function to use smoth_ave on a file with multiple groups and populations that all need to be seperately
@@ -181,7 +181,7 @@ smooth_w_groups_and_pops <- function(data, parameter, sigma, nk_weight = FALSE, 
   par <- as.character(parameter)
   w_df<- data.frame()
   pops <- unique(data$pop)
-  groups <- unique(data$group) 
+  groups <- unique(data$group)
   for (i in 1:length(groups)){
     w_data <- subset(data, group == groups[i])
     print(groups[i])
@@ -217,12 +217,12 @@ window_average_snps <- function(data, sigma) {
   }
   remove(i)
   return(data)
-} 
+}
 
 #Runs the window_average_snps with multiple groups of samples, denoted in the column "group"
 window_w_groups<- function(data, sigma){
   w_df<- data.frame()
-  groups <- unique(data$group) 
+  groups <- unique(data$group)
   for (i in 1:length(groups)){
     w_data <- subset(data, group == groups[i])
     print(groups[i])
@@ -236,7 +236,7 @@ window_w_groups<- function(data, sigma){
 window_w_groups_and_pops <- function(data, sigma){
   w_df<- data.frame()
   pops <- unique(data$pop)
-  groups <- unique(data$group) 
+  groups <- unique(data$group)
   for (i in 1:length(groups)){
     w_data <- subset(data, group == groups[i])
     print(groups[i])
@@ -256,7 +256,8 @@ window_w_groups_and_pops <- function(data, sigma){
 #Positive values indicate that stat is greater in pop 1, negative values indicate that stat is greater in pop 2.
 #Expects row names group (linkage group), pop (population), stat (statistic, supplied as argument).
 #position(position of snp), and snps (name of snp)
-Calc_stat_dif<- function(data, stat){
+#old, not really necissary.
+#Calc_stat_dif<- function(data, stat){
   i <- 1
   j <- 1
   pops <- unique(data$pop)
@@ -280,11 +281,11 @@ Calc_stat_dif<- function(data, stat){
 }
 
 
-#Calculates average LD (both D'and r^2) between a snp and all snps in a 6*sigma window. 
+#Calculates average LD (both D'and r^2) between a snp and all snps in a 6*sigma window.
 #num_extra is number of extra data containing columns at the end. DO NOT COUNT ave_rsq and
 #ave_Dprime on a re-run! Note, will give an error about taking the mean of an non-numeric or
 #logical vector if a snp has no other snps within its 6sigma window. Often happens at the ends
-#of contigs. 
+#of contigs.
 LD_ave <- function(data, sigma, num_start, num_extra){
   sig <- 1000*sigma
   i <- 1
@@ -311,7 +312,7 @@ LD_ave <- function(data, sigma, num_start, num_extra){
       out_rsq[i,1] <- key1
     }
     c <- data[i,"position"]
-    
+
     As <- character(2*length(g_list))
     h <- 1
     ch <- 1
@@ -470,7 +471,7 @@ LD_ave <- function(data, sigma, num_start, num_extra){
 #Calls the LD_ave function for a data file with multiple linkage groups, noted in the "group" column.
 LD_w_groups<- function(data, sigma, num_extra){
   w_df<- data.frame()
-  groups <- unique(data$group) 
+  groups <- unique(data$group)
   for (i in 1:length(groups)){
     w_data <- subset(data, group == groups[i])
     #print(ncol(w_data))
@@ -706,14 +707,14 @@ estimate_selection <- function(p_before, p_after){
 
 #Genotype individuals for genomic inversion spanning multiple SNPs as single psuedo SNP. Requires a list of
 #SNPs on the inversion, with a column named "snp" that identifies snps, as well as reference data
-#from which the major and minor alleles (fixed differences between the inversion and the 
+#from which the major and minor alleles (fixed differences between the inversion and the
 #ancestral genome) will be called. These can be the same file, and can also be the same as the data to be
 #genotyped, but at least the minor reference must contain at least one instance of an individual with
 #rarer genotype (either a copy of the inversion or ancestral genome). Out = 1 returns the inversion (or rare
 #ancestral) genotype for each individual as a psuedo SNP, out = 2 calls each snp genotype for each individual as
 #either Maj or Minor (anc or inv), out = 3 returns a list of counts of each MinMaj genotype across all SNPs for each individual.
 #Header and Footer col counts refer to the number of extra columns at either the start or end of the data,
-#including the required SNP names. The calling cuttoff is the percent (in decimals) of SNPs which must be 
+#including the required SNP names. The calling cuttoff is the percent (in decimals) of SNPs which must be
 #in agreement for the inversion to be genotyped. Min nonzeroes denotes the number of ungenotyped snps allowed
 #for the genotype of the inversion to be called (note that if the SNPs provided in the SNP list are truely
 #fixed and there is no genotyping error, one SNP is all that is neccisary. Multiple are likely more accurate,
@@ -737,7 +738,7 @@ genotype_inversion <- function(data, SNP_list, Min_ref, Maj_ref, header_col_coun
   #print(ind_state)
   colnames(ind_state) <- colnames(div_snps)
   #print(names(div_snps))
-  
+
   #Create list of major and minor alleles from the list of fixed snps and two (or one) sets of reference samples.
   FixInvMin <- apply(Min_ref[,(header_col_count + 1):length(Min_ref)],1,function(y)
     names(which.min(table(subset(c(substr(y, 1,2), substr(y,3,4)), c(substr(y, 1,2), substr(y,3,4))[] != "00")))))
@@ -749,7 +750,7 @@ genotype_inversion <- function(data, SNP_list, Min_ref, Maj_ref, header_col_coun
   remove(FixInvMin)
   remove(FixInvMaj)
   #print(InvMinMaj)
-  
+
   #Call each genotype according to Major/Minor allele identities (01 and 02, respectively), write to ind_state.
   for(i in i:nrow(div_snps)){
     #print(div_snps[i,1:header_col_count])
@@ -783,13 +784,13 @@ genotype_inversion <- function(data, SNP_list, Min_ref, Maj_ref, header_col_coun
         }
       }
       ind_state[i,j] <- state
-    } 
+    }
   }
   if(out == 2){
     return(ind_state)
     stop
   }
-  
+
   #Call individual genotype for whole inversion
   if (out == 1){
     inv_state <- data.frame(individual = numeric(0), genotype = numeric(0), percent_snp_cons = numeric(0))
@@ -888,7 +889,7 @@ genotype_inversion <- function(data, SNP_list, Min_ref, Maj_ref, header_col_coun
 #        four is Waterson's theta, and five is D. Note that both thetas are reported as a
 #        frequency (so the number per base). Full number per window is ws*theta.
 Tajimas_D <- function(x, ws, step, report = 20){
-  
+
   #windowing
   out <- data.frame() #initialize output
   tps <- sort(x[,2]) #get the snp positions, sort
@@ -900,14 +901,14 @@ Tajimas_D <- function(x, ws, step, report = 20){
     start <- c - ws #change window start
     end <- c + ws #change window end
     if(i %% report == 0){cat("Window Postion:", c, "out of", lsp, "\n")}
-    
+
     #take all the snps in the window, calculate T's theta, W's theta, and T's D
     wsnps <- x[x[,2] <= end & x[,2] >= start,] #get only the snps in the window
     wsnps <- wsnps[wsnps[,"ni1"] > 0 & wsnps[,"ni2"] > 0,] #remove any snps that are fixed in this pop/group/whatever
     if(nrow(wsnps) == 0){ #if no snps in window
       c <- c + step*1000 #step along
       next #go to the next window
-    } 
+    }
     b1s <- choose(wsnps[,"ni1"],2) #binomial for first allele
     b2s <- choose(wsnps[,"ni2"],2) #binomial for second allele
     bts <- choose(wsnps[,"n_total"],2) #binomial for all alleles
@@ -921,7 +922,7 @@ Tajimas_D <- function(x, ws, step, report = 20){
     ws.thetaf <- ws.theta/ws #ws.theta fraction
 
     #get T's D by part. See original paper, Tajima 1989.
-    
+
     a2 <- sum(1/(seq(1:(K-1))^2))
     b1 <- (K+1)/(3*(K-1))
     b2 <- (2*(K^2 + K + 3))/(9*K*(K-1))
@@ -930,9 +931,9 @@ Tajimas_D <- function(x, ws, step, report = 20){
     e1 <- c1/a1
     e2 <- c2/(a1^2 + a2)
     D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
-    
+
     #output result for this window, step to the next window
-    
+
     out[i,"group"] <- x[1,3]
     if("pop" %in% colnames(x)){
       out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
@@ -953,7 +954,7 @@ Tajimas_D <- function(x, ws, step, report = 20){
 run_gp <- function(x, FUN, ...){
   w_df<- data.frame()
   pops <- unique(x[,4])
-  groups <- unique(x[,3]) 
+  groups <- unique(x[,3])
   for (i in 1:length(groups)){
     w_data <- x[x[,3] == groups[i],]
     print(groups[i])
@@ -989,10 +990,10 @@ run_gp <- function(x, FUN, ...){
 #                     permutation: permutation chi.square test.
 #        n.reps: number of permutations to get p.values. Needed if test = "permutation".
 HWE <- function(x, num_start, miss, test = "exact", n.reps = 20000){
-  
-  
+
+
   if(test == "exact"){
-    #edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of 
+    #edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
     #Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
     #code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
     SNPHWE <- function(x){
@@ -1007,63 +1008,63 @@ HWE <- function(x, num_start, miss, test = "exact", n.reps = 20000){
 
       # number of rare allele copies
       rare  <- obs_homr * 2 + obs_hets
-      
+
       # Initialize probability array
       probs <- rep(0, 1 + rare)
-      
+
       # Find midpoint of the distribution
       mid <- floor(rare * ( 2 * N - rare) / (2 * N))
       if ( (mid %% 2) != (rare %% 2) ) mid <- mid + 1
-      
+
       probs[mid + 1] <- 1.0
       mysum <- 1.0
-      
-      # Calculate probablities from midpoint down 
+
+      # Calculate probablities from midpoint down
       curr_hets <- mid
       curr_homr <- (rare - mid) / 2
       curr_homc <- N - curr_hets - curr_homr
-      
+
       while ( curr_hets >=  2)
       {
         #equation 2
         probs[curr_hets - 1]  <- probs[curr_hets + 1] * curr_hets * (curr_hets - 1.0) / (4.0 * (curr_homr + 1.0)  * (curr_homc + 1.0))
         mysum <- mysum + probs[curr_hets - 1]
-        
+
         # 2 fewer heterozygotes -> add 1 rare homozygote, 1 common homozygote
         curr_hets <- curr_hets - 2
         curr_homr <- curr_homr + 1
         curr_homc <- curr_homc + 1
-      }    
-      
+      }
+
       # Calculate probabilities from midpoint up
       curr_hets <- mid
       curr_homr <- (rare - mid) / 2
       curr_homc <- N - curr_hets - curr_homr
-      
+
       while ( curr_hets <= rare - 2)
       {
         probs[curr_hets + 3] <- probs[curr_hets + 1] * 4.0 * curr_homr * curr_homc / ((curr_hets + 2.0) * (curr_hets + 1.0))
         mysum <- mysum + probs[curr_hets + 3]
-        
+
         # add 2 heterozygotes -> subtract 1 rare homozygtote, 1 common homozygote
         curr_hets <- curr_hets + 2
         curr_homr <- curr_homr - 1
         curr_homc <- curr_homc - 1
-      }    
-      
+      }
+
       # P-value calculation
       target <- probs[obs_hets + 1]
-      
+
       #plo <- min(1.0, sum(probs[1:obs_hets + 1]) / mysum)
-      
+
       #phi <- min(1.0, sum(probs[obs_hets + 1: rare + 1]) / mysum)
-      
-      # This assignment is the last statement in the fuction to ensure 
+
+      # This assignment is the last statement in the fuction to ensure
       # that it is used as the return value
       p <- min(1.0, sum(probs[probs <= target])/ mysum)
     }
   }
-  
+
   #figure out snp format
   if(nchar(as.character(x[1,(num_start)])) == 2){
     snp_form <- 2
@@ -1074,7 +1075,7 @@ HWE <- function(x, num_start, miss, test = "exact", n.reps = 20000){
   else{
     stop("Genotypes must be in either 2 (NN) or 4 (0000) format.")
   }
-  
+
   #functions to get allele and genotype frequencies minus missing data.
   g_row <- function(row){
     t <- table(unlist(row))
@@ -1110,25 +1111,25 @@ HWE <- function(x, num_start, miss, test = "exact", n.reps = 20000){
     t <- c(hom.fs, t[3]) #rebind the table
     return(t)
   }
-  
+
   #allele frequencies from g_row output converted to frequencies
   cat("Getting genotype counts...\n")
   drs <- x[,(num_start:ncol(x))] #get just the data
   gfs <- t(apply(drs,1,g_row)) #get genotypes
-  
+
   if(test == "permutation"){
     p.vals <- numeric(nrow(gfs))
     gfs.f <- gfs/rowSums(gfs)
     cat("Doing permutation tests.\nGetting allele frequencies...\n")
     afs <- cbind(gfs.f[,1] + (gfs.f[,3]/2), gfs.f[,2] + (gfs.f[,3]/2)) #allele frequencies from genotype frequencies
-  
+
     #get the expected genotype counts
     gfs.e <- matrix(NA, nrow = nrow(gfs), ncol = 3)
     gfs.e[,1] <- rowSums(gfs)*(afs[,1]^2) #expected minor homozygote
     gfs.e[,2] <- rowSums(gfs)*(afs[,2]^2) #expected major homozygote
     gfs.e[,3] <- rowSums(gfs)*(2*afs[,1]*afs[,2]) #expected heterozygote
     gfs.test <- cbind(gfs, gfs.e)
-    
+
     #print(gfs.test)
     #print(afs)
     #do chi-squared tests
@@ -1174,7 +1175,7 @@ calc_pairwise_Fst <- function(data, do.nk = FALSE, skip.FST = FALSE){
   data <- arrange(data, group, position, pop)
   pops <- sort(unique(data[,"pop"]))
   out <- as.data.frame(matrix(NA, ncol = 3+(length(pops)*(length(pops) - 1)/2), nrow = nrow(data)/length(pops)))
-  
+
   #print(out)
   #initialize pop comparison columns.
   comps <- c()
@@ -1193,9 +1194,9 @@ calc_pairwise_Fst <- function(data, do.nk = FALSE, skip.FST = FALSE){
     nout <- out
     colnames(nout)[4:ncol(nout)] <- paste0("nk_", comps)
   }
-  
+
   #print(out)
-  
+
   #loop through each comparison and caculate pairwise FST at each site
   c.col <- 4 #set starting column for pasting data
   for (i in 1:(length(pops) - 1)){ #i is the first pop
@@ -1208,7 +1209,7 @@ calc_pairwise_Fst <- function(data, do.nk = FALSE, skip.FST = FALSE){
         #n.alj <- ifelse(jdat[,7] != 0, 1, 0) + ifelse(jdat[,8] != 0, 1, 0) #get number of alleles in pop 2
         #com.top <- (choose(n.ali, 2) * idat[,9]) + (choose(n.alj, 2) * jdat[,9]) #get the numerator
         com.top <- (choose(idat[,5], 2) * idat[,9]) + (choose(jdat[,5], 2) * jdat[,9])
-        
+
         t.ni1 <- idat[,7] + jdat[,7] #get the total number of allele one
         t.ni2 <- idat[,8] + jdat[,8] #get the total number of allele two
         ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
@@ -1255,7 +1256,7 @@ calc_pairwise_nk <- function(data){
 #              list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops,
 #              second vector is the count of each pop. Input data MUST be in the same order as this list.
 calc_Ho <- function(data, num_start = 4, m.dat = "0000", pop = NULL){
-  
+
   #set possible heterozygotes
   if(nchar(data[1,num_start]) == 4 & nchar(m.dat) == 4){
     hl <- c(m.dat, "0101", "0202", "0303", "0404")
@@ -1266,7 +1267,7 @@ calc_Ho <- function(data, num_start = 4, m.dat = "0000", pop = NULL){
   else{
     stop("Data and missing signifier must be in either one (NN) or two character (0000) per allele format.")
   }
-  
+
   #initalize output
   if(!is.list(pop)){
     pop = list("pi", ncol(data) - num_start + 1)
@@ -1276,16 +1277,16 @@ calc_Ho <- function(data, num_start = 4, m.dat = "0000", pop = NULL){
   out <- matrix(NA, nrow(data), length(pns))
   out <- cbind(data[,1:(num_start - 1)], out)
   colnames(out) <- c(colnames(data)[1:(num_start - 1)], pns) #set output column names
-  
-  
+
+
   #do each pop, need to loop here.
-  
+
   c.col <- num_start
   for (j in 1:length(pns)){
     wdat <- data[,c.col:(c.col+psz[j] - 1)]
     #with this data, figure out heterozygosity
-    het.c <- rowSums(ifelse(wdat == hl[1] | wdat == hl[2] 
-                            | wdat == hl[3] | wdat == hl[4] 
+    het.c <- rowSums(ifelse(wdat == hl[1] | wdat == hl[2]
+                            | wdat == hl[3] | wdat == hl[4]
                             | wdat == hl[5], 0, 1))
     ho <- het.c/rowSums(ifelse(wdat == m.dat, 0, 1))
     out[,num_start + j - 1] <- ho
@@ -1295,7 +1296,7 @@ calc_Ho <- function(data, num_start = 4, m.dat = "0000", pop = NULL){
 }
 
 
-#Prepares a heatmap from pariwse LD data. 
+#Prepares a heatmap from pariwse LD data.
 #Inputs:  x: Data, format like that given by LD_full_pairwise rsq and Dprime outputs.
 #            However, first column can contain snp names rather than first column of data. Otherwise,
 #            Data will be reformated in this way.
@@ -1305,25 +1306,25 @@ calc_Ho <- function(data, num_start = 4, m.dat = "0000", pop = NULL){
 #         colors: Colors to use, character vector format c("lower", "upper").
 #         title: Plot title
 #         t.sizes: Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)
-LD_pairwise_heatmap <- function(x, r = NULL, 
-                                l.text = "rsq", colors = c("white", "black"), 
-                                title = "Pairwise LD", t.sizes = c(16, 13, 10, 12, 10), 
+LD_pairwise_heatmap <- function(x, r = NULL,
+                                l.text = "rsq", colors = c("white", "black"),
+                                title = "Pairwise LD", t.sizes = c(16, 13, 10, 12, 10),
                                 background = "white"){
-  
+
   #Created in part by Nick Sard
-  ### loading packages 
+  ### loading packages
   require(ggplot2)
   require(reshape2)
 
   #remove columns and rows with no data
   x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
-  
+
   #if first column doesn't contain positions, take the row names and set as first column.
   if(any(is.na(x[,1]))){
     x <- cbind(V1 = row.names(x), x)
   }
-  
-  
+
+
   #melting the df so its computer reable and fixing the names of the columns
   heatmap_x <- melt(x, id.vars = "V1")
   names(heatmap_x) <- c("SNPa", "SNPb", "value")
@@ -1335,15 +1336,15 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
   #removing NA values, since no Dups.  Note, also grabbing only section of interest
   heatmap_x <- heatmap_x[!is.na(heatmap_x$value),]
-  
+
   #remove any other NAs
   heatmap_x <- heatmap_x[!is.na(heatmap_x$SNPa) & !is.na(heatmap_x$SNPb),]
-  
+
   #get site names
   ms <- unique(c(colnames(x), x[,1]))
   ms <- c(x[1,1], colnames(x)[-1])
   ms <- as.numeric(as.character(ms))
-  
+
   #subset down to the desired r if requested
   if(!is.null(r)){
     r <- r*1000000
@@ -1351,22 +1352,22 @@ LD_pairwise_heatmap <- function(x, r = NULL,
                            heatmap_x$SNPb >= r[1] & heatmap_x$SNPb <= r[2],]
     ms <- ms[ms >= r[1] & ms <= r[2]]
   }
-  
+
   #finish messing with site names
   ms <- ms/1000000
   ms <- as.factor(ms)
   ms <- sort(ms)
-  
+
   #set site positions to mb, convert to factor
   heatmap_x$SNPa <- heatmap_x$SNPa/1000000
   heatmap_x$SNPb <- heatmap_x$SNPb/1000000
   heatmap_x$SNPa <- as.factor(heatmap_x$SNPa)
   heatmap_x$SNPb <- as.factor(heatmap_x$SNPb)
-  
+
   #reordering based on factors
   heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels= ms,ordered=T)
   heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
-  
+
   #the plot
   out <- ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
     geom_tile(color = "white")+
@@ -1374,9 +1375,9 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     theme_bw()+
     labs(x = "",y="", fill=l.text)+
     theme(legend.title= element_text(size = t.sizes[2]),
-          axis.text = element_text(size = t.sizes[5]), 
+          axis.text = element_text(size = t.sizes[5]),
           panel.grid.major = element_line(color = background),
-          plot.title = element_text(size = t.sizes[1], hjust = 0.5), 
+          plot.title = element_text(size = t.sizes[1], hjust = 0.5),
           axis.title = element_text(size = t.sizes[4]),
           legend.text = element_text(size = t.sizes[3]),
           panel.background = element_rect(fill = background, colour = background)) +
@@ -1393,11 +1394,11 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #           and allele 2 counts.
 check_private <- function(x){
   l <- unique(x$pop) #gets unique pops, requires column named pop
-  
+
   a1m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a1 storage
   a2m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a2 storage
   nloc <- nrow(x)/length(l)
-  
+
   #loop through pops load a1s and a2s
   count <- 1
   for(i in 1:length(l)){
@@ -1405,18 +1406,18 @@ check_private <- function(x){
     a2m[,i] <- x$ni2[count:(count + nloc - 1)]
     count <- count + nloc
   }
-  
+
   #convert to presence absence
   a1m <- ifelse(a1m != 0, 1, 0)
   a2m <- ifelse(a2m != 0, 1, 0)
-  
+
   #convert to private/not private
   a1m <- ifelse(rowSums(a1m) == 1 & a1m == 1, 1, 0)
   a2m <- ifelse(rowSums(a2m) == 1 & a2m == 1, 1, 0)
-  
+
   #combine a1 and a2
   pa <- a1m + a2m
-  
+
   #return data
   colnames(pa) <- paste0("pa_", l)
   return(as.data.frame(pa))
@@ -1441,22 +1442,22 @@ check_private <- function(x){
 #resample_long_par does the same process in parallel (albiet with a different random sampling approach).
 #Due to read/write limitations, this often slower.
 resample_long <- function(data, statistic, boots, sigma, nk_weight = FALSE, fws = NULL, n_snps = T, report = 10000){
-  
+
   #report a few things, intialize others
   sig <- 1000*sigma #correct sigma
   num_snps <- nrow(data)
   #print(count_dist)
   smoothed_dist <- numeric(boots)
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n")
-  
-  
+
+
   #draw random centriods, their positions, lgs of those centroids, and number of snps in window if provided
   if(is.null(fws)){
     csnps <- sample(1:nrow(data), boots, replace = T) #get random centroids
     cs <- data$position[csnps] #get centroid positions
     grps <- data$group[csnps] #get centroid groups
     if(n_snps){ #if n_snps is specified, draw all of the random snps to fill in around centroids on windows now.
-      nrands <- sample(1:nrow(data),sum(data$n_snps[csnps]), replace = T) 
+      nrands <- sample(1:nrow(data),sum(data$n_snps[csnps]), replace = T)
       nrprog <- 1
     }
   }
@@ -1469,19 +1470,19 @@ resample_long <- function(data, statistic, boots, sigma, nk_weight = FALSE, fws 
       nrprog <- 1
     }
   }
-  
+
   #do bootstraps
   for (j in 1:boots){
     if(j %% report == 0){cat("Bootstrap number: ", j, "\n")}
-    
+
     #figure out positions to use. Must be on the same group as the centriod and within 3*sigma
-    tpos <- data$position[data$position >= cs[j] - 3*sig & 
-                 data$position <= cs[j] + 3*sig & 
+    tpos <- data$position[data$position >= cs[j] - 3*sig &
+                 data$position <= cs[j] + 3*sig &
                  data$group == grps[j]]
-    
+
     #if random snps haven't already been drawn...
     if(!n_snps){
-      #draw random snps to fill those positions from ALL snps, with replacement  
+      #draw random snps to fill those positions from ALL snps, with replacement
       rdraws <- sample(1:nrow(data), length(tpos), replace = T)
     }
     else{
@@ -1489,15 +1490,15 @@ resample_long <- function(data, statistic, boots, sigma, nk_weight = FALSE, fws 
       rdraws <- nrands[nrprog:(nrprog + length(tpos) - 1)]
       nrprog <- nrprog + length(tpos)
     }
-    
-    
+
+
     #get random stats and nks
     rs <- data[rdraws, statistic] #sample stats for the randomly selected snps
     if (nk_weight == TRUE){
       rnk <- data$nk[rdraws] #sample nks for the randomly selected snps
     }
-    
-    
+
+
     #calculate smoothed statistics from the random stats and their positions.
     if(nk_weight == FALSE){
       gwp <- gaussian_weight(tpos,cs[j],sig)*rs
@@ -1536,10 +1537,10 @@ resample_long_par <- function(data, num_cores, statistic, boots, sigma, nk_weigh
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n", "\nNumber of Cores:", num_cores, "\n")
   #draw random centriods, their positions, lgs of those centroids
   cat("WARNING: This may run slower than non-parallel since random numbers can't be drawn up-front due to read/write limitations.\n")
-  
+
   cl <- makeCluster(num_cores)
   registerDoParallel(cl)
-  
+
   output <- foreach(j = 1:boots, .export = 'gaussian_weight', .inorder = FALSE, .combine = "c") %dopar% {
     #get random window/centroid snp
     if(is.null(fws)){
@@ -1552,22 +1553,22 @@ resample_long_par <- function(data, num_cores, statistic, boots, sigma, nk_weigh
       cs <- fws$position[samp]
       grps <- fws$group[samp]
     }
-    
+
     #figure out positions to use
-    tpos <- data$position[data$position >= cs - 3*sig & 
-                            data$position <= cs + 3*sig & 
+    tpos <- data$position[data$position >= cs - 3*sig &
+                            data$position <= cs + 3*sig &
                             data$group == grps]
-    
-    
-    #draw random snps to fill those positions, with replacement  
+
+
+    #draw random snps to fill those positions, with replacement
     rdraws <- sample(1:nrow(data), length(tpos), replace = T)
-    
+
     #get random stats and nks
     rs <- data[rdraws, statistic] #sample random stats from the data
     if (nk_weight == TRUE){
       rnk <- data$nk[rdraws] #sample random nks from the data
     }
-  
+
     #print(sample)
     if(nk_weight == FALSE){
       gwp <- gaussian_weight(tpos,cs,sig)*rs
@@ -1593,13 +1594,13 @@ p_calc_boots <- function(x, dist, alt = "two-sided"){
   if(!alt %in% c("less", "greater", "two-sided")){
     stop("Alt must be one of character strings: less, greater, or two-sided.\n")
   }
-  
+
   #create a cumulative distibution function of the distribution
   edist <- ecdf(dist)
-  
+
   #get the proportion of the bootstrapped distribution less than or equal to the observed point.
   xp <- edist(x)
-  
+
   #get p-values
   if(alt == "two-sided"){
     #Take abs(.5 - xp), which is the proportion of the distribution between the point and the distribution mean.
@@ -1613,7 +1614,7 @@ p_calc_boots <- function(x, dist, alt = "two-sided"){
     xp <- 1 - xp
   }
   #if alt is "less", no conversion needed. already gives the proportion less than observed.
-  
+
   return(xp)
 }
 
@@ -1634,27 +1635,27 @@ p_calc_boots <- function(x, dist, alt = "two-sided"){
 filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop = FALSE,
                         hf_hets = FALSE, min_ind = FALSE, mDat = "NN"){
   require(matrixStats)
-  
+
   ##############################################################################################
   ###set up, get values used later, clean up data a bit, set any functions used lower
   cat("Initializing...\n")
-  
+
   #seperate out the genotypes alone
   x <- data[,(ecs+1):ncol(data)]
-  
+
   #get headers
   headers <- data[,1:ecs]
   remove(data)
-  
+
   #get a single vector of genotypes
   xv <- as.vector(t(x))
-  
+
   #determine snp format
   snp_form <- nchar(xv[1])
-  
+
   #get number of samples
   nsamp <- ncol(x)
-  
+
   #create tables of genotype counts for each locus.
   #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
   #needs the number of samples from global function environment
@@ -1663,47 +1664,47 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
     out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
     return(out)
   }
-  
+
   #get all possible genotypes
   gs <- unique(xv)
-  
+
   #which gs are heterozygous?
   hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-  
+
   #which genotype is the missing data?
   mpos <- which(gs == mDat)
-  
+
   #what are the possible alleles at all loci?
   as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
   as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-  
+
   #############################################################################################3
   ###get a table of genotype and allele counts at each locus.
   cat("Creating genotype table...\n")
-  
+
   #for each element of gs, get the tables of genotype counts and add them to a matrix
   gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
   colnames(gmat) <- gs #set the matrix names
-  
+
   #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
   for(i in 1:length(gs)){
     tab <- count_genos(gs[i], xv)
     gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
   }
-  
+
   if(length(mpos) > 0){
     tmat <- gmat[,-c(mpos)] #gmat without missing data
   }
   else{
     tmat <- gmat
   }
-  
+
   #get matrix of allele counts
   #initialize
   cat("Getting allele table...\n")
   amat <- matrix(0, nrow(gmat), length(as))
   colnames(amat) <- as
-  
+
   #fill in
   for(i in 1:length(as)){
     b <- grep(as[i], colnames(tmat))
@@ -1728,11 +1729,11 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
     }
   }
 
-  
+
   ##############################################################################################
   ###do filters
   keep <- logical(nrow(x)) #vector to track status
-  
+
   #===============================================
   ##non-biallelic loci
   if(bi_al){
@@ -1757,7 +1758,7 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
       keep <- keep + bi
     }
   }
-  
+
   #===============================================
   ##non-poly
   if(non_poly){
@@ -1770,7 +1771,7 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
     np <- !as.logical(np) #convert to logical (if at least one is true, this will be false and we should keep the snp)
     keep <- keep + np
   }
-  
+
   #===============================================
   ##min inds
   if(min_ind){
@@ -1779,8 +1780,8 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
     mi <- !mi >= min_ind #if false, enough samples, so keep.
     keep <- keep + mi
   }
-  
-  
+
+
   #===============================================
   ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
   if(maf){
@@ -1798,7 +1799,7 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
       for(i in 1:length(pop[[1]])){
         cat(pop[[1]][i], "\n")
         #re-establish matrices with each pop
-        
+
         #set the input data
         if(i == 1){
           popx <- x[,1:pop[[2]][i]]
@@ -1806,48 +1807,48 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
         else{
           popx <- x[,(sum(pop[[2]][1:(i-1)]) + 1):(sum(pop[[2]][1:i]))]
         }
-        
+
         #get a single vector of genotypes
         popxv <- as.vector(t(popx))
-        
+
         #get number of samples
         nsamp <- ncol(popx)
-        
+
         #get all possible genotypes
         popgs <- unique(popxv)
-        
+
         #which gs are heterozygous?
         pophs <- substr(popgs,1,snp_form/2) != substr(popgs, (snp_form/2 + 1), snp_form*2)
-        
+
         #which genotype is the missing data?
         popmpos <- which(popgs == mDat)
-        
+
         #what are the possible alleles at all loci?
         popas <- unique(c(substr(popgs,1,snp_form/2), substr(popgs, (snp_form/2 + 1), snp_form*2)))
         popas <- popas[popas != substr(mDat, 1, snp_form/2)] #that aren't N?
-        
+
         #for each element of gs, get the tables of genotype counts and add them to a matrix
         popgmat <- matrix(0, nrow(popx), length(popgs)) #initialize matrix
         colnames(popgmat) <- popgs #set the matrix names
-        
+
         #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
         for(j in 1:length(popgs)){
           poptab <- count_genos(popgs[j], popxv)
           popgmat[as.numeric(names(poptab)),j] <- as.numeric(poptab)
         }
-        
+
         if(length(popmpos) > 0){
           poptmat <- popgmat[,-c(popmpos)] #gmat without missing data
         }
         else{
           poptmat <- popgmat
         }
-        
+
         #get matrix of allele counts
         #initialize
         popamat <- matrix(0, nrow(popgmat), length(popas))
         colnames(popamat) <- popas
-        
+
         #fill in
         for(j in 1:length(popas)){
           b <- grep(popas[j], colnames(poptmat))
@@ -1871,7 +1872,7 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
             }
           }
         }
-        
+
         #-------------------
         #established new set for this, now do maf as above.
         popmafs <- 1 - rowMaxs( popamat)/rowSums( popamat)
@@ -1880,10 +1881,10 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
         pmafs <- pmafs + popmafs #add this logical to the vector containing the sum of all such vectors
       }
       pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
-      keep <- keep + pmafs    
+      keep <- keep + pmafs
     }
   }
-  
+
   #===============================================
   ##hf_hets. Should only run if bi_al = TRUE.
   if(hf_hets){
@@ -1902,7 +1903,7 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
     hf <- hf >= hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
     keep <- keep + hf
   }
-  
+
   ##############################################################################################
   ###apply results
   cat("Applying results...\n")
@@ -1931,22 +1932,22 @@ filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, 
 # input_form: Input format
 #   "NN": Default, alleles as single characters (as in AT or CG),
 #   "0000": numeric. Will step to NN first before converting.
-#   "msat_n": microsat, in two or three character format. 
-#           If in two character format, use "msat_2". If in three, use "msat_3" 
+#   "msat_n": microsat, in two or three character format.
+#           If in two character format, use "msat_2". If in three, use "msat_3"
 #           Currently only supported for conversion to 8; 2, 3, and 4 forthcoming.
 #   "snp_tab": Converts to NN first.
 # miss: missing data format (per allele), typically "N", or "00"
-# pop: For format 1 and 5. 
+# pop: For format 1 and 5.
 #      Number of samples in each pop as a list (as in list(c("POP1", "POP2"), c(48,50)))).
 #      Samples must be in the order given in input data frame.
 # n_samp: number of randomly selected snps, ect to take. Can also take a numeric vector containing SNP indices to keep. For option 3.
 # l_names: Vector of locus names. For option 8.
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
 #note: (v) under format options means that I've already vectorized it.
-format_snps <- function(data, ecs, output = 1, input_form = "NN", 
+format_snps <- function(data, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA, l_names = NULL,
                         interp_miss = T){
-  
+
   require(dplyr)
   #do checks, print info
   if(output == 1){
@@ -2012,7 +2013,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   else{
     stop("Please specify output format.")
   }
-  
+
   if(input_form == "NN"){
     cat("Input format: NN\n")
     if(nchar(miss) != 1){
@@ -2061,8 +2062,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   else{
     stop("Unsupported input format.")
   }
-  
-  
+
+
   #####################################################
   #function to create table of allele and genotype counts from all data. From filter_snps
   #input is a long vector of the data xv,
@@ -2078,24 +2079,24 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
       return(out)
     }
-    
+
     #get all possible genotypes
     gs <- unique(xv)
-    
+
     #which gs are heterozygous?
     hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-    
+
     #which genotype is the missing data?
     mpos <- which(gs == mDat)
-    
+
     #what are the possible alleles at all loci?
     as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
     as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-    
+
     #############################################################################################3
     ###get a table of genotype and allele counts at each locus.
     cat("Creating genotype table...\n")
-    
+
     #for each element of gs, get the tables of genotype counts and add them to a matrix
     gmat <- matrix(0, nrow(data), length(gs)) #initialize matrix
     colnames(gmat) <- gs #set the matrix names
@@ -2104,20 +2105,20 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       tab <- count_genos(gs[i], xv)
       gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
     }
-    
+
     if(length(mpos) > 0){
       tmat <- gmat[,-c(mpos)] #gmat without missing data
     }
     else{
       tmat <- gmat
     }
-    
+
     #get matrix of allele counts
     #initialize
     cat("Getting allele table...\n")
     amat <- matrix(0, nrow(gmat), length(as))
     colnames(amat) <- as
-    
+
     #fill in
     for(i in 1:length(as)){
       b <- grep(as[i], colnames(tmat))
@@ -2143,7 +2144,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     }
     return(list(gs = tmat, as = amat))
   }
-  
+
   #convert 0000 to NN unless output is 7 or 2. Return after if output is 6. (v)
   if(input_form == "0000" & output != 7 & output != 2){
 
@@ -2165,22 +2166,22 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     xv2[xv2 == "04"] <- "T"
     xv2[xv2 == miss] <- "N"
     xv <- paste0(xv1, xv2)
-    
+
     #rebind to matrix and remake data.
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
     data <- cbind(data[,1:ecs], as.data.frame(xv))
-    
+
     cat("\nMoving on to conversion...", "\n")
     miss <- "N" #reset miss to the correct entry
     if(output == 6){
       return(data) #all done if just converting to NN
     }
   }
-  
+
   else if (input_form == "NN"){
     cat("Ensure that all data columns are character vectors!\n")
   }
-  
+
   #convert snp_tab to NN (v)
   if(input_form == "snp_tab"){
     header <- data[,1:ecs]
@@ -2203,14 +2204,14 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       data <- out
     }
   }
-  
-  
+
+
   ##convert to allele count or migrate-n format, migrate-n should ALWAYS have multiple pops (why else would you
   ##use it?) (v)
   if(output == 1 | output == 5){
     if(output == 5){cat("WARNING: Data does not have header or pop spacer rows.\n")}
     w_df <- data[,1:ecs] #intiallize w_df if doing option 1
-    
+
     ##Make a function to sum each row
     sum_row <- function(row){
       l <- c(substr(row,1,1), substr(row,2,2))
@@ -2219,7 +2220,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     }
     if (is.list(pop) == FALSE){
       if(output == 5){stop("Cannot convert to migrate-n format with only one pop.\n")}
-      
+
       #prepare a genotype table
       xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
       tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs)
@@ -2238,7 +2239,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       require(plyr)
       pop_count <- length(unlist(pop[1]))
       pop_sizes <- unlist(pop[2])
-      if(sum(unlist(pop[2])) != (ncol(data) - ecs)){#checks to make sure that the pop sizes add up to agree 
+      if(sum(unlist(pop[2])) != (ncol(data) - ecs)){#checks to make sure that the pop sizes add up to agree
         #with data
         cat("Supplied population numbers do not equal the number of supplied loci columns. Exiting.")
         stop()
@@ -2256,11 +2257,11 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         w_df <- rbind(w_df, wb_df) #bind this copy to w_df
       }
       remove(wa_df, wb_df) #remove temp df
-      
+
       ##loop through and count alleles for every row, splitting by pop
-      
+
       #create allele count table for each pop, fill their section of data
-      
+
       #build allele tables for each locus
       pop_as <- list()
       pals <- matrix(FALSE, nrow(data), 4)
@@ -2277,9 +2278,9 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         #figure out which alleles are present at each locus to write these.
         pals <- pals + ifelse(pop_as[[i]] != 0, TRUE, FALSE)
         current <- current + pop_sizes[i]
-        
+
       }
-      
+
       #now write the correct counts
       cat("Tabulating and writing results...\n")
       pals <- ifelse(pals != 0, TRUE, FALSE)
@@ -2288,12 +2289,12 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       }
       #Convert into vector which says which elements to keep.
       palsv <- as.vector(t(pals))
-      
+
       w_df$n_total <- NA
       w_df$n_alleles <- NA
       w_df$ni1 <- NA
       w_df$ni2 <- NA
-      
+
       #loop through and print data
       for(i in 1:pop_count){
         #compare palsv to allele tables to keep correct alleles.
@@ -2305,8 +2306,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
         w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
       }
-      
-     
+
+
       row.names(w_df) <- 1:nrow(w_df) #fix row names
       if(output == 5){ #if doing output style 5...
         w_df <- w_df[,c(1, (ecs + 1):ncol(w_df))] #remove extra columns except the first and pop columns
@@ -2314,13 +2315,13 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     }
     return(w_df)
   }
-  
-  
-  
+
+
+
   ##convert to genepop or numeric format (v)
   if (output == 2 | output == 4){
     cat("WARNING: For output option 3, output does not have population seperators or header information.", "\n", "Converting genotypes...")
-    
+
     if(input_form == "0000"){
       if(output == 2){
         w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
@@ -2332,7 +2333,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         stop("Please select different input and output formats.")
       }
     }
-    
+
     #vectorize and replace
     xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
     xv1 <- substr(xv, 1, 1)
@@ -2348,10 +2349,10 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     xv2[xv2 == "T"] <- "04"
     xv2[xv2 == miss] <- "00"
     xv <- paste0(xv1, xv2)
-    
+
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
     data <- cbind(data[,1:ecs], as.data.frame(xv))
-    
+
     cat("\n", "Cleaning up...", "\n")
     if(output == 2){ #convert to genepop
       w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
@@ -2363,11 +2364,11 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       return(data)
     }
   }
-  
-  
+
+
   ##convert to structure format (v)
   if (output == 3){
-    
+
     #subset if requested
     if(!is.na(n_samp)){
       cat("Subsetting ")
@@ -2380,13 +2381,13 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         data <- data[sample(nrow(data), n_samp, T),]
       }
     }
-    
+
     #plop actual data into two vectors, one for each allele.
     xv <- as.vector(t(t(data[,(ecs + 1):ncol(data)])))
     xv1 <- substr(xv, 1, 1)
     xv2 <- substr(xv, 2, 2)
     remove(xv)
-    
+
     #convert to numeric
     xv1[xv1 == "A"] <- 1
     xv1[xv1 == "C"] <- 2
@@ -2398,27 +2399,28 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     xv2[xv2 == "G"] <- 3
     xv2[xv2 == "T"] <- 4
     xv2[xv2 == miss] <- 0
-    
+
     #bind back into matrices
     xv1 <- matrix(xv1, ncol(data) - ecs, nrow(data), T)
     xv2 <- matrix(xv2, ncol(data) - ecs, nrow(data), T)
-    
+
     #create output matrix
     outm <- matrix(NA, 2*(ncol(data) - ecs), nrow(data))
-    
+
     #fill
     outm[seq(1,nrow(outm),2),] <- xv1
     outm[seq(2,nrow(outm),2),] <- xv2
-    
+
     #add sample names
     snames <- character(nrow(outm))
     snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
     snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
     out <- cbind(ind = snames, as.data.frame(outm))
-    
+
+    warning("Remove header line before inputing data into structure!")
     return(out)
   }
-  
+
   #presence/absence format
   if(output == 7){
     x <- data[,(ecs+1):ncol(data)] #get just data
@@ -2434,13 +2436,13 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     else if (input_form == "msat_3"){
       asize <- 3
     }
-    
+
     #write a function to quickly get allele list per locus
     acount <- function(x){
       a <- unique(c(substr(x, 1, asize), substr(x, (asize + 1), (2*asize))))
       return(sort(a))
     }
-    
+
     #function to get average allele frequencies if needed.
     afreqs <- function(x){
       tab <- table(c(substr(x, 1, asize), substr(x, (asize + 1), (2*asize))))
@@ -2449,7 +2451,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       tab <- tab[sort(names(tab))]
       return(tab)
     }
-    
+
     #loop through each row, figure out number of alleles, create and fill matrix with presence/absence, bind matrix to existing.
     omat <- matrix(NA, ncol(x), 1)
     for (i in 1:nrow(x)){
@@ -2461,7 +2463,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       a2s <- substr(x[i,], asize + 1, 2*asize) #get second allele in each ind.
       a1s <- match(a1s, alist) #get column indexes to add a presence to
       a2s <- match(a2s, alist) #same
-      for(j in 1:nrow(wmat)){ #for each individual, add alleles to the appropriate bins 
+      for(j in 1:nrow(wmat)){ #for each individual, add alleles to the appropriate bins
         wmat[j, a1s[j]] <- wmat[j, a1s[j]] + 1
         wmat[j, a2s[j]] <- wmat[j, a2s[j]] + 1
       }
@@ -2471,7 +2473,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
         wmat <- wmat[,-grepl(paste0("_", miss), colnames(wmat))] #remove the missing data column
         wmat[ms,] <- matrix(afs, length(ms), ncol(wmat), byrow = T) #add the interpolated allele frequencies.
       }
-      
+
       omat <- cbind(omat, wmat) #bind to the output
     }
     w_df <- as.data.frame(omat[,-1]) #remove int column, convert to data frame.
@@ -2492,18 +2494,18 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
   require("dplyr")
   require("reshape2")
   require("matrixStats")
-  
+
   #get data and headers
   headers <- x[,1:ecs]
   x <- x[,(ecs + 1):ncol(x)]
   x <- as.matrix(x)
-  
+
   #get missing genotype
   dmDat <- paste0(mDat, mDat)
-  
+
   #data format
   sform <- nchar(x[1,1])/2
-  
+
   #get unique alleles present at each locus (note: this made a much quicker a tab... should implement this elsewhere...)
   p1 <- substr(as.matrix(x), 1, sform)
   p2 <- substr(as.matrix(x), sform + 1, sform*2)
@@ -2512,11 +2514,11 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
   #amat <- amat[,colnames(amat) != mDat]
   as <- sort(unique(pc$value))
   as <- as.character(as[as != mDat])
-  
-  
+
+
   #need to loop through each loci and compare to everything else. Probably can't really vectorize the outer loop.
   #goal: make a haplotype table, where each row is a comparison and each column is a haplotype count
-  #to count haplotypes: Double heterozgote (AC CG) = mark neither. 
+  #to count haplotypes: Double heterozgote (AC CG) = mark neither.
   #                     Double homozygote (AA CC): mark two of the combination (A with C)
   #                     homo/het (AA CG): mark one of each combination (A with C and A with G)
   #
@@ -2540,13 +2542,13 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     else{
       gcv <- matrix(gcv, nrow(y), length(x), byrow = T)
     }
-    
-    
+
+
     #2)
     #turn this into a genotype count table
     mgcv <- melt(gcv)
     ghapmat <- with(mgcv, table(Var1, value))
-    
+
     #3) clean the table
     ##grab column names
     gl <- colnames(ghapmat)
@@ -2555,17 +2557,17 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
               grep(paste0(dmDat, "$"), gl), #missing second locus
               which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
                     substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
-    
+
     ##remove any double heterozygotes
     ghapmat <- ghapmat[,-rgcs]
-    
+
     #add a filler row for the last pairwise comparison to make life easier.
     if(!is.matrix(y)){
       if(length(ghapmat) > 1){ #stop it from doing this if there is data for only one haplotype.
         ghapmat <- rbind(ghapmat, rep(c(10,0), 100)[1:length(ghapmat)])
       }
     }
-    
+
     #if nothing remains, return nothing
     if(length(ghapmat) == 0){
       return(NA)
@@ -2578,7 +2580,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
         return(c(D = 0))
       }
     }
-    
+
     #4) get hap table. Use the rules above to do this. Possible conditions, where alleles at locus 1 = 1a1b and locus 2 = 2a2b
     if(!is.vector(colnames(ghapmat))){browser()}
     ghapmat <- ghapmat[,order(colnames(ghapmat))] #put in order, just in case
@@ -2593,8 +2595,8 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     hnames <- sort(hnames)
     hapmat <- matrix(0, nrow(ghapmat), length(hnames))#initialize. all possible haplotypes
     colnames(hapmat) <- hnames
-    
-    
+
+
     ##figure out which are homozygotes and heterozygotes at either locus in the pairwise comparison.
     dhom <- substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
             substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4) #columns with double homozygotes
@@ -2603,7 +2605,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     het_l1 <- ghapmat[,het_l1]
     het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
     het_l2 <- ghapmat[,het_l2]
-    
+
     #fix wierd cases where one of these isn't a matrix because only one haplotype falls into the category.
     if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
       if(!is.matrix(dhom)){
@@ -2620,7 +2622,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
         colnames(het_l2) <- colnames(ghapmat)[substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4)]
       }
     }
-    
+
     #count up the haplotypes.
     #function to correct haplotype input matrix:
     GtoH <- function(x, n){
@@ -2644,7 +2646,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     n2 <- GtoH(het_l1, n2)
     hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
     hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
-    
+
     ##heterozyogote locus 2
     n1 <- paste0(substr(colnames(het_l2), 1, sform),
                  substr(colnames(het_l2),(sform*2)+1,sform*3))
@@ -2654,8 +2656,8 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     n2 <- GtoH(het_l2, n2)
     hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
     hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
-    
-  
+
+
     #5)condense this hap table into the 1a2a, 1a2b, 1b2a, 1b2b format.
     # figure out how where haplotypes are missing. Note, do the case of two or three
     #missin haplotypes at the end.
@@ -2664,7 +2666,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     l1 <- substr(colnames(pmat), 1, sform)
     l2 <- substr(colnames(pmat), sform + 1, sform*2)
     mc <- 4 - rowSums(pmat)
-    
+
     #function to see if haplotype is missing. x is the row index, m is a vector of the number missing haplotypes at each locus.
     cmhap <- function(x){
       out <- ifelse(rowSums(pmat[,l1 == l1[x]]) == 0 | rowSums(pmat[,l1 == l1[x]]) == 2, F,
@@ -2675,17 +2677,17 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     for(i in 1:ncol(pmat)){
       mmat[,i] <- cmhap(i)
     }
-    
+
     #set the missing values in hapmat to NA, then replace those with zeros where there
     #are missing haplotypes.
     hapmat[hapmat == 0] <- NA
     hapmat[mmat == TRUE] <- 0
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     #put in fillers when there are more than one haplotype is missing.
     pmat <- ifelse(is.na(hapmat), F, T)
     missing <- 4 - rowSums(pmat)
@@ -2693,7 +2695,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     m3 <- ifelse(missing >= 3, 0, NA)
     m4 <- ifelse(missing == 4, 0, NA)
     mc <- cbind(m2,m2,m3,m4)
-    
+
     #figure out which D, r values to give if two are missing...
     if(any(missing == 2)){
       m2mat <- hapmat[missing == 2,]
@@ -2717,12 +2719,12 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
                           substr(m2matv[1], sform + 1, sform*2) != substr(m2matv[2], sform + 1, sform*2),
                         1,0)
       }
-      
+
     }
     else{
       m2mat <- "none"
     }
-    
+
     hapmat <- cbind(hapmat, mc)
     hapmat <- as.vector(t(hapmat))
     hapmat <- na.omit(hapmat)
@@ -2730,13 +2732,13 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     #  browser()
     #}
     hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
-    
+
     #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
     #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
     return(list(hapmat = hapmat, missing = missing, m2 = m2mat))
   }
-  
-  
+
+
   #initialize output.
   if(prox_table){
     prox <- data.frame(p1 = numeric(1), p2 = numeric(1), rsq = numeric(1), Dprime = numeric(1), pval = numeric(1))
@@ -2751,14 +2753,14 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
   if(!matrix_out & !prox_table){
     stop("Please specify output format.\n")
   }
-  
+
   #run length prediction variables for progress reporting
   compfun <- function(x){
     return(((x-1)*x)/2)
   }
   totcomp <- compfun(nrow(x))
   cpercent <- 0
-  
+
   #loop through and get haplotypes, calc LD for each locus.
   for(i in 1:(nrow(x) - 1)){
     cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
@@ -2767,7 +2769,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
       cpercent <- cprog
     }
     haps <- tabulate_haplotypes(x[i,], x[(i+1):nrow(x),])
-    
+
     #if we had only one haplotype or no haplotypes:
     if(is.na(haps[1])){
       if(prox_table){
@@ -2801,13 +2803,13 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
       }
       next()
     }
-    
-    
+
+
     missing <- haps$missing
     m2 <- haps$m2
     haps <- haps$hapmat
     #A1B1 is col 1, A1B2 is col 2, A2B1 is col 3, A2B2 is col 4.
-    
+
     #calc stats where >1 haps aren't missing
     A1B1f <- haps[,1]/rowSums(haps)
     A1B2f <- haps[,2]/rowSums(haps)
@@ -2823,7 +2825,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
                    ifelse(D < 0, D/rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
                    0))
     rsq <- (D^2)/(A1f*A2f*B1f*B2f)
-    
+
     #fix for when more missing haps.
     Dprime[missing == 3] <- 0
     Dprime[missing == 4] <- NA
@@ -2832,18 +2834,18 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
       Dprime[missing == 2] <- m2
       rsq[missing == 2] <- ifelse(m2 == 1, 1, NA)
     }
-    
+
     #get pvals
     chisqu <- rsq*(4)
     pval <- 1 - pchisq(chisqu, 1)
-    
+
     #remove dummy filler if this was the final comparison.
     if(i == (nrow(x) - 1)){
       Dprime <- Dprime[-2]
       rsq <- rsq[-2]
       pval <- pval[-2]
     }
-    
+
     #write output.
     if(prox_table){
       prox <- rbind(prox,
@@ -2932,13 +2934,13 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   require(reshape2)
   cl <- makeSOCKcluster(num_cores)
   registerDoSNOW(cl)
-  
-  
+
+
   groups <- unique(x$group)
   ntasks <- length(groups)
   progress <- function(n) cat(sprintf("Group %d out of",n), length(groups), "is complete.\n")
   opts <- list(progress=progress)
-  
+
   output <- foreach(i = 1:length(groups), .export = 'LD_full_pairwise', .packages = c("dplyr", "reshape2", "matrixStats"), .inorder = TRUE,
                     .options.snow = opts) %dopar% {
                       w_data <- x[x$group == groups[i],]
@@ -2965,7 +2967,7 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
       names(m) <- groups
     }
   }
-  
+
   #clear cluster and return stuff
   stopCluster(cl)
   registerDoSEQ()
