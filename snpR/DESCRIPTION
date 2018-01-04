@@ -13,14 +13,15 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
+    dplyr,
+    matrixStats,
+    ggplot2,
+    plyr,
+    reshape2
+Suggests:
     doParallel,
     doSNOW,
-    dplyr,
-    ggplot2,
-    matrixStats,
-    plyr,
-    reshape2,
+    knitr,
+    rmarkdown,
     zoo
-Suggests: knitr,
-    rmarkdown
 VignetteBuilder: knitr

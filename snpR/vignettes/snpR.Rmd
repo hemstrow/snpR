@@ -276,3 +276,98 @@ Description of x:
 
 ## check_private
 
+Checks for the presence of private alleles at any loci across multiple populations.
+
+###Arguments
+1. x: Input data, in the format given by format_snps output option 1. Must contain a column with pop info.
+
+Description of x:
+  
+    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop! Runs with output from format_snps output option 1.
+  
+
+##LD_full_pairwise
+
+Calculates LD between each pair of SNPs. Produces matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. If called as is, assumes one linkage group/chromosome and one population! Matrix outputs are properly formated for LD_pairwise_heatmap. Returns matrices and prox table as sequential elements in a named list.
+
+###Arguments
+1. x: Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+2. ecs: Number of extra metadata columns at the start of x.
+3. prox_table: If TRUE, a proximity table is produced.
+4. matrix_out: If TRUE, pairwise LD matrices are produced.
+5. mDat: Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+
+Description of x:
+
+   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this *ignores populations and linkage group/chromosome*, split data into distinct populations and linkage groups or use Full_LD_w_groups before running.
+
+
+##Full_LD_w_groups
+
+Runs LD_full_pairwise after splitting the data into linkage groups/chromosomes. The prox table is concatenated across LGs/chrs.
+
+###Arguments:
+1. x: Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+2. ecs: Number of extra metadata columns at the start of x.
+3. prox_table: If TRUE, a proximity table is produced.
+4. matrix_out: If TRUE, pairwise LD matrices are produced.
+5. mDat: Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+6. report: Reports progress every report linkage groups/chromosomes.
+
+Description of x:
+
+    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Requires that the column containing linkage group/chromosome ID be named "group". Note that this *ignores populations*, split data into distinct populations before running.
+
+
+##Full_LD_g_par
+
+Runs Full_LD_w_groups in parallel. Requires the doParallel and doSNOW packages.
+
+###Arguments
+1. x: Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+2. ecs: Number of extra metadata columns at the start of x.
+3. num_cores: The number of computing cores to be used.
+4. prox_table: If TRUE, a proximity table is produced.
+5. matrix_out: If TRUE, pairwise LD matrices are produced.
+6. mDat: Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+
+Description of x:
+
+    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Requires that the column containing linkage group/chromosome ID be named "group". Note that this *ignores populations*, split data into distinct populations before running.
+
+
+# Utility Functions:
+
+##filter_snps
+
+Filters SNP genotype data to remove SNPs which fail several checks.
+
+###Possible Filters:
+    nonpoly, non-polymorphic SNPs: removes SNPs that are not polymorphic (not true SNPs).
+    bi_al, non-biallelic SNPs: removes SNPs that have more than two observed alleles.
+    maf, minor allele frequency: removes SNPs where the minor allele frequency is too low. Can look for mafs below provided either globally or search each population individually.
+    hf_hets, high observed heterozygosity: removes SNPs where the observed heterozygosity is too high.
+    min_ind, minimum individuals: removes SNPs that were genotyped in too few individuals.
+
+###Arugments:
+1. x: Input data, in numeric or character format as given by format_snps output options 4 or 6.
+2. ecs: Number of extra metadata columns at the start of x.
+3. non_poly: Non-poly filter used if TRUE.
+4. bi_al: bi_al filter used if TRUE.
+5. maf: If not FALSE, the minor allele frequency below which SNPs will be removed.
+6. pop: If not FALSE, rejects only SNPs where maf is below the provided maf in *all populations*. Pop info is given as a list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.
+7. hf_hets: If not FALSE, the observed heterozygote frequency above which SNPs will be removed.
+8. min_ind: If not FALSE, the minimum number of sequenced individuals below which SNPs will be removed.
+9. mDat: Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
+
+Description of x:
+
+    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6.
+
+
+##format_snps
+
+Converts SNP data into a range of different output formats.
+
+###Output options:
+1. Per-pop allele count format.

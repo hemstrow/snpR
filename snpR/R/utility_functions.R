@@ -8,19 +8,60 @@
 # hf_hets: filters out data with a heterozygote frequency above the given value, list return is hfhf
 # min_ind: filters out snps genotyped at less than the given number of individuals, list return is mif
 #This version is vectorized, and is much faster!
-filter_snps <- function(data, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop = FALSE,
+filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop = FALSE,
                         hf_hets = FALSE, min_ind = FALSE, mDat = "NN"){
+
+  #############################################################################################
+  #do sanity checks
+
+  if(!maf){
+    if(!is.numeric(maf)){
+      stop("maf must be a numeric value.")
+    }
+    if(length(maf) != 1){
+      stop("maf must be a numeric vector of length 1.")
+    }
+  }
+
+  if(!hf_hets){
+    if(!is.numeric(hf_hets)){
+      stop("hf_hets must be a numeric value.")
+    }
+    if(length(hf_hets) != 1){
+      stop("hf_hets must be a numeric vector of length 1.")
+    }
+  }
+
+  if(!min_ind){
+    if(!is.numeric(min_ind)){
+      stop("min_ind must be a numeric value.")
+    }
+    if(length(min_ind) != 1){
+      stop("min_ind must be a numeric vector of length 1.")
+    }
+  }
+
+  if(!pop){
+    if(!is.numeric(pop[[2]])){
+      stop("pop[[2]] must be a numeric vector.")
+    }
+    if(sum(pop[[2]]) != (ncol(x) - ecs)){
+      stop("sum of pop[[2]] must be equal to number of individuals in x (check ecs as well).")
+    }
+    if(length(pop[[1]]) != length(pop[[2]])){
+      stop("Number of provided pop names and pop sizes not equal.")
+    }
+  }
 
   ##############################################################################################
   ###set up, get values used later, clean up data a bit, set any functions used lower
   cat("Initializing...\n")
 
-  #seperate out the genotypes alone
-  x <- data[,(ecs+1):ncol(data)]
-
   #get headers
-  headers <- data[,1:ecs]
-  remove(data)
+  headers <- x[,1:ecs]
+
+  #seperate out the genotypes alone
+  x <- x[,(ecs+1):ncol(x)]
 
   #get a single vector of genotypes
   xv <- as.vector(t(x))
