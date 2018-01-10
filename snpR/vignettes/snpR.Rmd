@@ -370,4 +370,84 @@ Description of x:
 Converts SNP data into a range of different output formats.
 
 ###Output options:
-1. Per-pop allele count format.
+
+Required output columns are noted by /element/, optional output columns are noted by [element]. Multiple elements of similar content are noted by i:n, in standard R format.
+
+1. Allele count format: allele counts tabulated for all samples or within populations.
+
+    /metadata_1/metadata_2/[metadata_2:ecs][pop_ID]/n_total/n_alleles/ni1/ni2/
+    
+
+2. genepop format: genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.
+
+    /genotypes_SNP_1:n/. 
+    
+
+3. structure format, two lines per individual: allele calls stored as single character numeric (e.g. "1", "2"). Allele calls per individual stored on two subsequent lines: 
+
+    /ind_ID/allele_1_locus_1:n/
+    /ind_ID/allele_2_locus_1:n/
+
+
+4. Numeric genotype tab format: genotypes stored as four numeric characters (e.g. "0101", "0204").
+
+    /metadata_1/metadata_2/[metadata_2:ecs]/genotype_locus_1:n/
+    
+
+5. Migrate-n hapmap: Allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.
+
+    /snp_ID/pop_ID/n_total/n_alleles/ni1/ni2/
+    
+
+6. Character genotype tab format: genotypes stored as actual base calls (e.g. "AA", "CT")
+
+    /metadata_1/metadata_2/[metadata_2:ecs]/genotype_locus_1:n/
+    
+
+7. Allele presence/absence format: presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.
+
+    /sample_ID/locus_1_allele_1:n/locus_2_allele_1:n/.../
+    
+    
+###Input format options:
+
+All input formats require at least two metadata columns.
+
+1. "NN":  SNP genotypes stored as actual base calls (e.g. "AA", "CT").
+2. "0000": SNP genotypes stored as four numeric characters (e.g. "0101", "0204").
+3. "msat_2": Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").
+4. "msat_3": Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").
+5. "snp_tab": SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").
+
+Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
+
+###Arguments:
+1. x: Input data, in any of the above formats. Rows are loci, individuals are columns.
+2. ecs: Number of extra metadata columns at the start of x.
+3. output: Integer 1-7. Which of the above output formats should be used?
+4. input_form: Which of the above input formats should be used (e.g. "NN", "msat_2")?
+5. miss: Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+6. pop: List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If NA, assumes one population. For output options 1 and 5.
+7. n_samp: For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
+8. l_names: For output option 7. Optional vector of locus names.
+9. interp_miss: For output option 7. Should missing data be interpolated? Needed for PCA, ect.
+
+
+##run_g
+
+Runs any function after splitting the data up by a column in the input data named "group". Pastes the result back together.
+
+###Arguments:
+1. x: Input data, in form required by FUN.
+2. FUN: The function to run.
+3. ...: Any other arguments to pass to FUN.
+
+
+##run_gp:
+
+Runs any function after splitting the data up by columns named "group" and "pop".
+
+###Arguments:
+1. x: Input data, in form required by FUN.
+2. FUN: The function to run.
+3. ...: Any other arguments to pass to FUN.

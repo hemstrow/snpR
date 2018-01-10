@@ -3,8 +3,8 @@
 #Returns a VECTOR of pi values.
 calc_pi <- function(x){
   nt <- as.numeric(x[,"n_total"])
-  ni1 <- as.numeric(x[,"ni1"])
-  ni2 <- as.numeric(x[,"ni2"])
+  n1 <- as.numeric(x[,"ni1"])
+  n2 <- as.numeric(x[,"ni2"])
   if(!all(as.numeric(x[,"n_alleles"]) != 2)){
     warning("Some loci do not have two alleles in some populations.\n")
   }

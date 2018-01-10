@@ -331,11 +331,9 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
 
 
 
-
-
 #Converts snp/microsat data into different formats. Current supported formats are:
 #Arguments:
-# data: input data. Rows are loci, columns are individuals.
+# x: input data. Rows are loci, columns are individuals.
 # ecs: number of extra columns at the header of the input (metadata, ect)
 # output: output format:
 #   1) per pop allele count format for Bayescan, ect. (v)
@@ -350,7 +348,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
 #   "0000": numeric. Will step to NN first before converting.
 #   "msat_n": microsat, in two or three character format.
 #           If in two character format, use "msat_2". If in three, use "msat_3"
-#           Currently only supported for conversion to 8; 2, 3, and 4 forthcoming.
+#           Currently only supported for conversion to 7; 2, 3, and 4 forthcoming.
 #   "snp_tab": Converts to NN first.
 # miss: missing data format (per allele), typically "N", or "00"
 # pop: For format 1 and 5.
@@ -360,10 +358,19 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
 # l_names: Vector of locus names. For option 8.
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
 #note: (v) under format options means that I've already vectorized it.
-format_snps <- function(data, ecs, output = 1, input_form = "NN",
+format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA, l_names = NULL,
                         interp_miss = T){
 
+  #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
+  data <- x
+  rm(x)
+
+  if(ecs < 2){
+    stop("Cannot have less than 2 metadata (ecs) columns.")
+  }
+
+  #####################################################################
   #do checks, print info
   if(output == 1){
     cat("Output 1 selected, converting to per pop allele count format.\n")
@@ -479,7 +486,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   }
 
 
-  #####################################################
+  #####################################################################
   #function to create table of allele and genotype counts from all data. From filter_snps
   #input is a long vector of the data xv,
   #snp_form, the length of each genotype.
@@ -508,7 +515,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
     as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
 
-    #############################################################################################3
+    ##############################################################################################
     ###get a table of genotype and allele counts at each locus.
     cat("Creating genotype table...\n")
 
@@ -560,6 +567,9 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     return(list(gs = tmat, as = amat))
   }
 
+  #####################################################################
+  #conversions
+
   #convert 0000 to NN unless output is 7 or 2. Return after if output is 6. (v)
   if(input_form == "0000" & output != 7 & output != 2){
 
@@ -584,7 +594,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
 
     #rebind to matrix and remake data.
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
-    data <- cbind(data[,1:ecs], as.data.frame(xv))
+    data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
 
     cat("\nMoving on to conversion...", "\n")
     miss <- "N" #reset miss to the correct entry
@@ -640,7 +650,12 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
       xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
       tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs)
       w_df$n_total <- rowSums(tabs$as)
-      if(any(w_df$n_total != 2)){stop("More or less than two alleles detected at some loci.\n")}
+      counts <- rowSums(ifelse(tabs$as == 0, 0, 1))
+      if(any(counts != 2)){
+        vio <- which(w_df$n_total != 2)
+        warning("More or less than two alleles detected at some loci.\nReturning list of violating loci...")
+        return(vio)
+        }
       w_df$n_alleles <- rowSums(tabs$as != 0)
       #fill in ni1 and ni2.
       w_df$ni1 <- tabs$as[,"A"]
@@ -738,7 +753,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
 
     if(input_form == "0000"){
       if(output == 2){
-        w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
+        w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
         #print(names(w_df))
         row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
         return(w_df)
@@ -765,11 +780,11 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     xv <- paste0(xv1, xv2)
 
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
-    data <- cbind(data[,1:ecs], as.data.frame(xv))
+    data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
 
     cat("\n", "Cleaning up...", "\n")
     if(output == 2){ #convert to genepop
-      w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)])) #remove extra columns and transpose data
+      w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
       #print(names(w_df))
       row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
       return(w_df)
@@ -829,7 +844,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
     snames <- character(nrow(outm))
     snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
     snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
-    out <- cbind(ind = snames, as.data.frame(outm))
+    out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
 
     warning("Remove header line before inputing data into structure!")
     return(out)
@@ -839,7 +854,8 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
   if(output == 7){
     x <- data[,(ecs+1):ncol(data)] #get just data
     if((is.null(l_names)) | length(l_names) != nrow(data) | !(is.vector(l_names))){
-      stop("Locus names required for output format 8. Please give a vector of names (l_names) equal to number of loci.")
+      warning("Locus names required for output format 8. Using first metadata column by default.")
+      l_names <- data[,1]
     }
     if(input_form == "NN"){
       asize <- 1
@@ -890,7 +906,7 @@ format_snps <- function(data, ecs, output = 1, input_form = "NN",
 
       omat <- cbind(omat, wmat) #bind to the output
     }
-    w_df <- as.data.frame(omat[,-1]) #remove int column, convert to data frame.
+    w_df <- as.data.frame(omat[,-1], stringsAsFactors = F) #remove int column, convert to data frame.
     w_df <- cbind(samp = colnames(x), w_df) #add sample names.
     if(!interp_miss){cat("Finished. Warning: Missing data counts are also stored!\n")}
     return(w_df)
@@ -911,7 +927,7 @@ run_gp <- function(x, FUN, ...){
       x_data <- FUN(w_data[w_data[,"pop"] == pops[j],], ...)
       if(length(x_data) == 0){next}
       if(is.data.frame(x_data)){
-        x_data <- cbind(pop = pops[j], x_data)
+        x_data <- cbind(pop = pops[j], x_data, stringsAsFactors = F)
         w_df <- rbind(w_df, x_data)
       }
       else{
@@ -929,24 +945,24 @@ run_gp <- function(x, FUN, ...){
   return(w_df)
 }
 
-#function to run any command after spliting the data by group. Group must be in a column named "pop".
+#function to run any command after spliting the data by group. Group must be in a column named "group".
 #The first argument of the function to run must be the data provided to that function.
 run_g <- function(x, FUN, ...){
   w_df<- data.frame()
   groups <- unique(x[,"group"])
   for (i in 1:length(groups)){
     w_data <- x[x[,"group"] == groups[i],]
+    w_data <- FUN(w_data, ...)
     print(groups[i])
-    x_data <- FUN(w_data[w_data[,"pop"] == pops[j],], ...)
-    if(length(x_data) == 0){next}
-    if(is.data.frame(x_data)){
-      w_df <- rbind(w_df, x_data)
+    if(length(w_data) == 0){next}
+    if(is.data.frame(w_data)){
+      w_df <- rbind(w_df, w_data)
     }
     else{
       if(is.data.frame(w_df)){
         w_df <- numeric(0)
       }
-      w_df <- c(w_df, x_data)
+      w_df <- c(w_df, w_data)
     }
   }
   if(!is.data.frame(w_df)){

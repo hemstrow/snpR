@@ -1,5 +1,5 @@
 #Returns the average number of snps per window of size 6 sigma (in kb).
-window_average_snps <- function(data, sigma) {
+win_ave_SNPs <- function(data, sigma) {
   sig <- 1000*sigma
   for (i in 1:nrow(data)) {
     c <- data[i,"position"]

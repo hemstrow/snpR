@@ -14,6 +14,23 @@
 #While vectorized where possible, this is still a long process when boots is large.
 #resample_long_par does the same process in parallel (albiet with a different random sampling approach).
 #Due to read/write limitations, this often slower.
+
+#' Bootstrapped smoothed values.
+#'
+#' \code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic, as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags. To run in parallel across multiple linkage groups/chromosomes, use  \code{\link{resample_long_par}}.
+#'
+#' @param x Input SNP data.
+#' @param boots Number of bootstraps to run.
+#' @param sigma Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
+#' @param nk_weight If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
+#' @param fws If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions.
+#' @param n_snps If true, draws all random numbers up front. A column containing the number of snps in each selected window must be provided, titled "n_snps", in either x or fws. This allows for faster processing. Otherwise, random numbers will be drawn after this value is determined for each bootstrap.
+#' @param report Progress report interval, in bootstraps.
+#' @return A numeric vector containing bootstrapped smoothed values.
+#'
+#' @examples
+#' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
+#'
 resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, fws = NULL, n_snps = T, report = 10000){
 
   #report a few things, intialize others
