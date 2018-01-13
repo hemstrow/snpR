@@ -17,9 +17,16 @@
 
 #' Bootstrapped smoothed values.
 #'
-#' \code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic, as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags. To run in parallel across multiple linkage groups/chromosomes, use  \code{\link{resample_long_par}}.
+#' \code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic.
 #'
-#' @param x Input SNP data.
+#'Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags. To run in parallel across multiple linkage groups/chromosomes, use \code{\link{resample_long_par}}.
+#'
+#'For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
+#'
+#'This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data.
+#'
+#' @param x Input data containing \emph{unsmoothed} statistic of interest and SNP position.
+#' @param statistic A character string designating the \emph{unsmoothed} statistic to smooth.
 #' @param boots Number of bootstraps to run.
 #' @param sigma Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
 #' @param nk_weight If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
@@ -117,6 +124,23 @@ resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, f
 #              has columns titled "group" and "position", and potentially "n_snps".
 #This version runs in parallel and uses a slightly different approach. To avoid read/write lag,
 #this version does all random draws locally within each loop.
+
+#' Runs \code{\link{resample_long}} in parallel across linkage groups/chromosomes.
+#'
+#' \code{resample_long_par} runs \code{\link{resample_long}} in parallel across multiple linkage groups. To avoid read/write lag,this version does all random draws locally within each loop. Uses the doParallel and doSNOW packages.
+#'
+#' @param x Input data containing \emph{unsmoothed} statistic of interest and SNP position.
+#' @param num_cores The number of processing cores/nodes/threads.
+#' @param statistic A character string designating the \emph{unsmoothed} statistic to smooth.
+#' @param boots Number of bootstraps to run.
+#' @param sigma Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
+#' @param nk_weight If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
+#' @param fws If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions.
+#' @return A numeric vector containing bootstrapped smoothed values.
+#'
+#' @examples
+#' resample_long_par(randPI[randPI$pop == "A" & randPI$group == "chr1",], 3, "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",])
+#'
 resample_long_par <- function(x, num_cores, statistic, boots, sigma = 150, nk_weight = FALSE, fws = NULL){
   sig <- 1000*sigma
   num_snps <- nrow(x)
@@ -178,6 +202,27 @@ resample_long_par <- function(x, num_cores, statistic, boots, sigma = 150, nk_we
 #inputs:  x: vector of observed statistics
 #         dist: vector of statistics bootstrapped from same stat.
 #         alt: Alternative hypothesis for p-value. Can be less, greater, or two-sided (default).
+
+
+#' Caculate p-values from bootstrapped distributions.
+#'
+#' \code{p_calc_boots} finds p-values for observed \emph{smoothed} statistics from bootstrapped distributions, such as that produced by \code{\link{resample_long}}.
+#'
+#' Calculates p-values for smoothed values of a statistic based upon a bootstrapped null distribution of that statistic, such as those produced by resample_long using an emperical continuous distribution function.
+#'
+#' @param x Numeric vector of smoothed values for which to calculate p-values.
+#' @param dist: Numeric vector of bootstrapped smoothed values.
+#' @param alt: Character string. Which alternative hypothesis should be used? Options: #' \itemize{
+#'    \item "less": probability that a bootstrapped value is as small or smaller than observed.
+#'    \item "greater": probability that a bootstrapped value is as large or larger than observed.
+#'    \item "two-sided": probability that a bootstrapped value is as or more extreme than observed.
+#' }
+#' @return A numeric vector containing p-values for each input smoothed value.
+#'
+#' @examples
+#' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS)
+#' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS, alt = "less")
+#'
 p_calc_boots <- function(x, dist, alt = "two-sided"){
   if(!alt %in% c("less", "greater", "two-sided")){
     stop("Alt must be one of character strings: less, greater, or two-sided.\n")

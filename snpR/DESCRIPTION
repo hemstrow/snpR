@@ -14,13 +14,13 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     dplyr,
+    doParallel,
+    doSNOW,
     matrixStats,
     ggplot2,
     plyr,
     reshape2
 Suggests:
-    doParallel,
-    doSNOW,
     knitr,
     rmarkdown,
     zoo

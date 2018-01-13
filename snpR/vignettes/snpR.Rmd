@@ -80,8 +80,7 @@ Returns a vector of p-values.
 
 ## gene_ave_stat
 
-Takes an input file of genes with start/end position noted and interpolates back the average
-statitstic of choice for that gene.
+Takes an input file of genes with start/end position noted and interpolates back the average statitstic of choice for that gene.
 
 ###Arguments:
 1. gene_data: Input gene positions and IDs.

@@ -1,6 +1,23 @@
 #Takes an input file of genes with start/end position noted and maps back the average
 #statitstic of choice for that gene from another provided data set with positions. Requires the "zoo"
 #package
+
+#' Interpolates stats at genes.
+#'
+#' \code{gene_ave_stat} takes an input file of genes with start/end position noted and interpolates back the average statitstic of choice for that gene. Requires the "zoo" package.
+#'
+#'Description of gene_data:
+#'    Requires columns titled "group", "start", "end", and "probeID", containing gene linkage group/chromosome, start and end positions, and name, respectively.
+#'
+#'Description of stat_data:
+#'    Requires columns titled "group", "position", and one matching the stat argument, containing the linkage group/chromosome, position, and the value of the observed statistic at that position. Typically produced via windowed gaussian smoothing (from smoothed_ave).
+#'
+#' @param gene_data Input gene positions and IDs.
+#' @param stat_data Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.
+#' @param stat Name of the statistic to interpolate.
+#' @examples
+#' gene_ave_stat(stickleGO, randSMOOTHed[randSMOOTHed$pop == "A",], "smoothed_pi")
+#'
 gene_ave_stat <- function(gene_data, stat_data, stat){
   out_df <- data.frame()
   w_df <- cbind.data.frame(stat_data[,"position"], stat_data[,stat])

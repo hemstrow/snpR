@@ -928,6 +928,9 @@ run_gp <- function(x, FUN, ...){
       if(length(x_data) == 0){next}
       if(is.data.frame(x_data)){
         x_data <- cbind(pop = pops[j], x_data, stringsAsFactors = F)
+        if(!any(colnames(x_data) == "group")){
+          x_data <- cbind(group = rep(groups[i], nrow(x_data)), x_data)
+        }
         w_df <- rbind(w_df, x_data)
       }
       else{
@@ -941,6 +944,10 @@ run_gp <- function(x, FUN, ...){
   if(!is.data.frame(w_df)){
     warning("Output is vector: if merging with meta info, check that info data frame is sorted identically:
             Group, Pop, then snp by snp!")
+  }
+  if(sum(colnames(w_df) == "pop") > 1){
+    excols <- which(colnames(w_df) == "pop")[-1]
+    w_df <- w_df[,-excols]
   }
   return(w_df)
 }
@@ -956,6 +963,9 @@ run_g <- function(x, FUN, ...){
     print(groups[i])
     if(length(w_data) == 0){next}
     if(is.data.frame(w_data)){
+      if(!any(colnames(w_data) == "group")){
+        w_data <- cbind(group = rep(groups[i], nrow(w_data)), w_data)
+      }
       w_df <- rbind(w_df, w_data)
     }
     else{

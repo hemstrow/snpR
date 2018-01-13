@@ -1,6 +1,26 @@
 #function to calc pi from data. should be in format with num alleles, total count of alleles,
 #and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
 #Returns a VECTOR of pi values.
+
+#'Calculate PI from SNP data.
+#'
+#'\code{calc_pi} Calculates pi (genetic diversity/average number of pairwise differences) according to Hohenlohe et al. (2010) from SNP data. Returns a vector of pi values for each SNP as sorted in input.
+#'
+#'Description of x:
+#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
+#'
+#' @param x Input SNP data, in allele count format as given by format_snps output option
+#'
+#' @return A vector of PI values, in the same order as the input SNPs.
+#'
+#' @examples
+#' #get pop info, convert character data into the appropriate format, calculate pi, and add metadata.
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' pi <- calc_pi(ac)
+#' pi <- cbind(ac[,1:4], pi)
+#'
 calc_pi <- function(x){
   nt <- as.numeric(x[,"n_total"])
   n1 <- as.numeric(x[,"ni1"])
@@ -22,12 +42,37 @@ calc_pi <- function(x){
 #calculates a pop weighted stat. Needs columns named "n_total" and one with a name matching
 #the "stat" argument, which should be a character string. "boots" argument is the number of bootstraps
 #to do do get standard errors
+
+#'Weighted stat averages/SEs.
+#'
+#'\code{calc_weighted_stat} calculates a weighted average statistic and standard errors for a variable via the bootstrapping method described by Gatz and Smith (1995), The standard error of a weighted mean concentration—I. Bootstrapping vs other methods.
+#'
+#'Description of x:
+#'    Must contain colums containing the statistic of interest (such as pi from calc_pi), population ID, and the weights (such as the number of alleles sequenced, or the n_total column from in the allele count format) for each SNP. These columns must be named to match the stat argument, "pop", and either "n_total" or "nk", respectively.
+#'
+#' @param x Input statistic data.
+#' @param stat Name of the statistic for which to calculate a weighted mean and se.
+#' @param boots Number of bootstraps to perform to calcluate se. 30 is usually sufficient.
+#'
+#' @return A data frame with columns for the population ID, weighted mean, and weighted average.
+#'
+#' @examples
+#' calc_weighted_stat(randPI, "pi")
+#'
 calc_weighted_stat <- function(x, stat, boots = 30){
   pops <- unique(x$pop)
   out <- matrix(0, length(pops), 3)
   out[,1] <- pops
   get_wm <- function(y){
-    w <- y$n_total
+    if(any(colnames(y) == "n_total")){
+      w <- y$n_total
+    }
+    else if(any(colnames(y) == "nk")){
+      w <- y$nk
+    }
+    else{
+      stop("No weighting column found. Weighting column must be named either nk or n_total.")
+    }
     return(sum(w*y[,stat])/sum(w))
   }
   cat("working on pop:\n")
@@ -57,6 +102,19 @@ calc_weighted_stat <- function(x, stat, boots = 30){
 }
 
 #estimate S in one generation
+
+#'Selection coefficients.
+#'
+#'Estimates the selection coefficient \emph{S} across one generation given intial and final allele frequencies, using an equation adapted from Gillespie (2010) Population genetics: a concise guide, equation 3.2.
+#'
+#' @param p_before Intial frequency of allele \emph{p}.
+#' @param p_after Frequency of allele \emph{p} after one generation.
+#'
+#' @return A numeric value, the estimate of \emph{s}.
+#'
+#' @examples
+#' estimate_selection(.01, .011)
+#'
 estimate_selection <- function(p_before, p_after){
   top <- 1-(p_before/p_after)
   q <- 1 - p_before
@@ -73,6 +131,28 @@ estimate_selection <- function(p_before, p_after){
 #output: A data frame where column one is group, two is position, three is Tajima's theta,
 #        four is Waterson's theta, and five is D. Note that both thetas are reported as a
 #        frequency (so the number per base). Full number per window is ws*theta.
+
+#'Tajima's D from SNP data.
+#'
+#'Calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
+#'
+#'Description of x:
+#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one.
+#'
+#' @param x Input data, in allele count format as given by format_snps output option 1.
+#' @param ws The size of each window, in kb.
+#' @param step Lenght to slide between each window, in kb.
+#' @param report When reporting progress, how many windows should be calculated between each report?
+#'
+#' @return Data frame containing metadata, Waterson's Theta, Tajima's Theta, and Tajima's D for each window.
+#'
+#' @examples
+#' #convert example data into the correct format and run splitting by groups and pops.
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' run_gp(ac, Tajimas_D, 200, 50)
+#'
 Tajimas_D <- function(x, ws, step, report = 20){
 
   #windowing
@@ -142,7 +222,27 @@ Tajimas_D <- function(x, ws, step, report = 20){
 #            options: exact: Exact test, from Wigginton et al 2005.
 #                     permutation: permutation chi.square test.
 #        n.reps: number of permutations to get p.values. Needed if test = "permutation".
-HWE <- function(x, ecs, miss, test = "exact", n.reps = 20000){
+
+#'Hardy-Weinburg Equilibrium from SNP data.
+#'
+#'Function to test for deviation from HWE for each SNP via either permutation or the exact test given by Wigginton et al 2005.
+#'
+#'Part of this code is edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000. code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Note that this *ignores populations*, split data into distinct populations before running.
+#'
+#' @param x Input data, in either NN or 0000 format, as given by format_snps output options 4 or 6.
+#' @param ecs The number of extra columns at the start of the input data.frame containing metadata.
+#' @param miss Characters which code for missing *genotypes* ("NN" or "0000", for example).
+#' @param test Which test to use? "exact" for the exact test, "permutation" for permutation test.
+#' @param n.reps Number of reps to use for permutation test.
+#'
+#' @return A numeric vector containing p-values, which are the probability that a SNP in HWE would be as or more diverged from the expected equilibrium genotype frequencies. In the same order as input.
+#'
+#' @examples
+#' HWE(stickSNPs, 3)
+HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 
 
   if(test == "exact"){

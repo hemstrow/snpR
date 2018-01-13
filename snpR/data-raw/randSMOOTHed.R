@@ -11,7 +11,7 @@ pos <- data.frame(position = rep(pos, 4),
 
 #sort these:
 pos <- dplyr::arrange(pos, pop, group, position)
-pos$nk <- rnorm(100, 20)
+pos$nk <- floor(rnorm(100, 40, 5))
 pos$nk[pos$nk <= 0] <- 1
 
 
@@ -47,11 +47,14 @@ pos$pi[pos$pi < 0] <- 0
 
 randSMOOTHed <- run_gp(pos, smoothed_ave, parameter = "pi", sigma = 200, nk_weight = TRUE, fixed_window = 50)
 
-
+##########################################################################
+#generate null distribution
+randPIBOOTS <- resample_long(randPI[randPI$pop == "A",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A",], TRUE, 10)
 
 ##########################################################################
-#save randPI and randSMOOTHed
+#save randPI, randSMOOTHed, and randPIBOOTs
 randPI <- pos
 
 devtools::use_data(randPI, overwrite = T)
 devtools::use_data(randSMOOTHed, overwrite = T)
+devtools::use_data(randPIBOOTS, overwrite = T)
