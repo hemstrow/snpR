@@ -704,15 +704,22 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         xv <- as.vector(t(x))
         pop_as[[i]] <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i])$as
         pop_as[[i]] <- pop_as[[i]][, order(colnames(pop_as[[i]]))]
+
+        #if somehow not all four possible alleles found in ALL DATA for this pop (small?), fill in table
+        if(!"A" %in% colnames(pop_as[[i]])){pop_as[[i]] <- cbind(A = numeric(nrow(pop_as)), pop_as[[i]])}
+        if(!"C" %in% colnames(pop_as[[i]])){pop_as[[i]] <- cbind(pop_as[[i]][,1], C = numeric(nrow(pop_as[[i]])), pop_as[[i]][,-1])}
+        if(!"G" %in% colnames(pop_as[[i]])){pop_as[[i]] <- cbind(pop_as[[i]][,1:2], G = numeric(nrow(pop_as[[i]])), pop_as[[i]][,-c(1,2)])}
+        if(!"T" %in% colnames(pop_as[[i]])){pop_as[[i]] <- cbind(pop_as[[i]][,1:3], T = numeric(nrow(pop_as[[i]])))}
+
         #figure out which alleles are present at each locus to write these.
-        pals <- pals + ifelse(pop_as[[i]] != 0, TRUE, FALSE)
+        pals <- pals + (pop_as[[i]] != 0)
         current <- current + pop_sizes[i]
 
       }
 
       #now write the correct counts
       cat("Tabulating and writing results...\n")
-      pals <- ifelse(pals != 0, TRUE, FALSE)
+      pals <- pals != 0
       if(any(rowSums(pals) != 2)){
         stop("More or less than two alleles detected at some loci! Check/filter input data.\n")
       }
@@ -754,7 +761,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(input_form == "0000"){
       if(output == 2){
         w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
-        #print(names(w_df))
         row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
         return(w_df)
       }
@@ -780,12 +786,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     xv <- paste0(xv1, xv2)
 
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+    inds <- colnames(data)
     data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
+    colnames(data) <- inds
 
     cat("\n", "Cleaning up...", "\n")
     if(output == 2){ #convert to genepop
       w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
-      #print(names(w_df))
       row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
       return(w_df)
     }

@@ -409,21 +409,25 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #Calculates pairwise fst for each pair of populations according to hohenlohe (2010). Input format is
 #snp, position, group, pop, total allele count (total), number of alleles (num), ni1, ni2, and pi (diversity, from calc_pi).
 #Automatically sorts data by group, position, and population.
-calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE){
+calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = "WC"){
   if(!do.nk & skip.FST){
     stop("Must specify either pairwise FST, nk, or both")
   }
-  if(!all(x$n_alleles == 2)){
-    vio <- which(x$n_alleles != 2)
-    cat("Some loci do not have two alleles. Violating loci:\n")
+  if(any(x$n_alleles > 2)){
+    vio <- which(x$n_alleles > 2)
+    cat("Some loci have more than two alleles. Violating loci:\n")
     print(vio)
     stop()
   }
   i <- 1
-  colnames(x) <- c("snp", "position", "group", "pop", "ntot", "num", "ni1", "ni2", "pi")
-  x[,"pop"] <- as.character(x[,"pop"])
-  x[,"group"] <- as.character(x[,"group"])
-  x <- arrange(x, group, position, pop)
+  if(all(c("group", "pop", "position") %in% colnames(x))){
+    x[,"pop"] <- as.character(x[,"pop"])
+    x[,"group"] <- as.character(x[,"group"])
+    x <- arrange(x, group, position, pop)
+  }
+  else{
+    warning("Data MUST be sorted by linkage group/chromosome, then position, then population! If columns named group, position, and pop exist, this will be done automatically.")
+  }
   pops <- sort(unique(x[,"pop"]))
   out <- as.data.frame(matrix(NA, ncol = ecs+(length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
@@ -439,7 +443,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE){
     i <- i + 1
   }
   i <- 1
-  colnames(out) <- c("snp", "position", "group", comps)
+  colnames(out) <- c(colnames(x)[1:ecs], comps)
   out[,1:ecs] <- x[x$pop == pops[1],1:ecs] #add snp, position, group to output
   if(do.nk){ #prepare nk output if requested
     nout <- out
@@ -447,31 +451,84 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE){
   }
 
   #print(out)
-
   #loop through each comparison and caculate pairwise FST at each site
-  c.col <- 4 #set starting column for pasting data
+  c.col <- ecs + 1 #set starting column for pasting data
   for (i in 1:(length(pops) - 1)){ #i is the first pop
     idat <- x[x$pop == pops[i],] #get data for first pop
     j = i + 1 #intialize j as the next pop
     for (j in j:length(pops)){#j is pop being compared
       if(!skip.FST){
         jdat <- x[x$pop == pops[j],] #get data for second pop
-        #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
-        #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
-        #com.top <- (choose(n.ali, 2) * idat$pi) + (choose(n.alj, 2) * jdat$pi) #get the numerator
-        com.top <- (choose(idat$n_total, 2) * idat$pi) + (choose(jdat$n_total, 2) * jdat$pi)
+        if(method == "WC" | method == "Wier"){
 
-        t.ni1 <- idat$ni1 + jdat$ni1 #get the total number of allele one
-        t.ni2 <- idat$ni2 + jdat$ni2 #get the total number of allele two
-        ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
-        pbot <- choose((t.ni1 + t.ni2), 2) #get the pooled pi denominator
-        ppi <- 1 - ptop/pbot #get pooled pi
-        #com.bot <- ppi * (choose(n.ali,2) + choose(n.alj,2)) #get the denominator
-        com.bot <- ppi * (choose(idat$n_total,2) + choose(jdat$n_total,2)) #get the denominator
-        Fst <- 1 - com.top/com.bot #get fst
-        if(any(abs(Fst) >= 1, na.rm = T)){browser()}
-        #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
-        out[,c.col] <- Fst #write fst
+          if(!"Ho" %in% colnames(x)){
+            stop("Provide observed heterozygotsities in column named Ho for WC or Wier.")
+          }
+
+          #allele frequencies in both i and jdat.
+          ps1 <- idat$ni1/idat$n_total
+          ps2 <- jdat$ni1/jdat$n_total
+
+          #other stats
+          r <- 2 #number of comps
+          nbar <- (idat$n_total + jdat$n_total)/2 #average sample size
+          comb_ntots <- cbind(idat$n_total, jdat$n_total)
+          CV <- rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
+          nc <- nbar*(1-(CV^2)/r)
+          pbar <- ((idat$n_total*ps1) + (jdat$n_total*ps2))/(r*nbar) #average sample allele frequency
+          ssq <- (((idat$n_total)*(ps1-pbar)^2) + ((jdat$n_total)*(ps2-pbar)^2))/((r-1)*nbar) #sample varaince of allele frequencies
+          hbar <- ((idat$n_total*idat$Ho) + (jdat$n_total*jdat$Ho))/(r*nbar) #average heterozygote frequencies
+
+          #equation parts used in both
+          inner1 <- pbar*(1-pbar)
+          inner2 <- ((r-1)/r)*ssq
+          inner3 <- .25*hbar
+
+          if(method == "WC"){
+            inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
+            a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
+            b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
+            c <- .5*hbar
+            Fst <- a/(a+b+c)
+            out[,c.col] <- Fst #write fst
+          }
+          else{
+            S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
+            S2i1 <- ((r*(nbar - nc))/nbar)*inner1
+            S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
+            S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
+            S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
+            Fst <- S1/S2
+            out[,c.col] <- Fst #write fst
+          }
+
+        }
+
+        else if(method == "Hohenlohe"){
+          if(!"pi" %in% colnames(x)){
+            stop("Please provide observed pi values in column named pi for Hohenlohe.")
+          }
+
+          #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
+          #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
+          #com.top <- (choose(n.ali, 2) * idat$pi) + (choose(n.alj, 2) * jdat$pi) #get the numerator
+          com.top <- (choose(idat$n_total, 2) * idat$pi) + (choose(jdat$n_total, 2) * jdat$pi)
+
+          t.ni1 <- idat$ni1 + jdat$ni1 #get the total number of allele one
+          t.ni2 <- idat$ni2 + jdat$ni2 #get the total number of allele two
+          ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
+          pbot <- choose((t.ni1 + t.ni2), 2) #get the pooled pi denominator
+          ppi <- 1 - ptop/pbot #get pooled pi
+          #com.bot <- ppi * (choose(n.ali,2) + choose(n.alj,2)) #get the denominator
+          com.bot <- ppi * (choose(idat$n_total,2) + choose(jdat$n_total,2)) #get the denominator
+          Fst <- 1 - com.top/com.bot #get fst
+          if(any(abs(Fst) > 1, na.rm = T)){cat("Fst > 1 at", which(Fst > 1), ". That's not good.");stop()}
+          #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
+          out[,c.col] <- Fst #write fst
+        }
+        else{
+          stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tWier: Wier (1990).\n\tHohenlohe: Hohenlohe et al. (2010).")
+        }
       }
       if(do.nk){
         nout[,c.col] <- idat$n_total + jdat$n_total

@@ -25,7 +25,7 @@ LD_pairwise_heatmap(x, r = NULL, l.text = "rsq", colors = c("white",
 A pairwise LD heatmap as a ggplot object.
 }
 \description{
-\code{LD_pairwise_heatmap} prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by \code{\link{LD_full_pairwise}}. Should also work on pairwise FST data. Darker values are higher.
+\code{LD_pairwise_heatmap} prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by \code{\link{LD_full_pairwise}}. Should also work on pairwise FST data. Darker values are higher. Special thanks to Nicholas Sard for part of this code!
 }
 \details{
 Since the output is a ggplot object, options can be added or changed by adding "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options are also built into this function as agruments, but can be overwritten freely.
@@ -35,6 +35,7 @@ Output from \code{\link{LD_full_pairwise}} runs directly or after saving and re-
 \examples{
 #base plot
 LD_pairwise_heatmap(stickLD, title = "ASP group IX Pairwise LD")
+
 #Change colors with agruments, add lines at SNP 10 using ggplot functions.
 LD_pairwise_heatmap(stickLD, colors = c("green", "red"), title = "ASP group IX Pairwise LD") + geom_vline(xintercept = 10, color = "blue") + geom_hline(yintercept = 10, color = "blue")
 
