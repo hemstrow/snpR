@@ -134,7 +134,7 @@ estimate_selection <- function(p_before, p_after){
 
 #'Tajima's D from SNP data.
 #'
-#'Calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
+#'\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
 #'
 #'Description of x:
 #'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one.
@@ -409,6 +409,36 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #Calculates pairwise fst for each pair of populations according to hohenlohe (2010). Input format is
 #snp, position, group, pop, total allele count (total), number of alleles (num), ni1, ni2, and pi (diversity, from calc_pi).
 #Automatically sorts data by group, position, and population.
+
+#'Pairwise FST from SNP data.
+#'
+#'\code{calc_pairwise_Fst} calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Wier and Cockerham 1984, Wier 1990, or Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
+#'
+#'Description of x:
+#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi (for Hohenlohe) or Ho (for WC or Wier) for each SNP, as given by calc_pi or calc_Ho, respectively.
+#'
+#'Smoothing note:
+#'    To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").#'
+#'
+#'Method Options:
+#'    "WC": Wier and Cockerham 1984.
+#'    "Wier": Wier 1990.
+#'    "Hohenlohe": Hohenlohe 2010.
+#'
+#' @param x Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.
+#' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
+#' @param do.nk Should pairwise nk (allele sample sizes) also be calculated?
+#' @param skip.FST Should FST calcs be skipped (only set to TRUE if do.nk is as well).
+#' @param method Which FST estimator should be used?
+#' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned.
+#' @examples
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' Ho <- calc_Ho(stickSNPs, 3, pop = l)
+#' m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
+#' ac$Ho <- m_Ho$value
+#' calc_pairwise_Fst(ac, 3, do.nk = T)
 calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = "WC"){
   if(!do.nk & skip.FST){
     stop("Must specify either pairwise FST, nk, or both")
@@ -457,8 +487,8 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
     idat <- x[x$pop == pops[i],] #get data for first pop
     j = i + 1 #intialize j as the next pop
     for (j in j:length(pops)){#j is pop being compared
+      jdat <- x[x$pop == pops[j],] #get data for second pop
       if(!skip.FST){
-        jdat <- x[x$pop == pops[j],] #get data for second pop
         if(method == "WC" | method == "Wier"){
 
           if(!"Ho" %in% colnames(x)){
@@ -550,6 +580,21 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
 }
 
 #wrapper for just doing pairwise.nk
+
+#'Pairwise nk from SNP data.
+#'
+#'\code{calc_pairwise_nk} calculates number of alleles observed in each parwise combination of populations. Wrapper function for \code{\link{calc_pairwise_Fst}}
+#'
+#' Description of x:
+#'     Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP.
+#'
+#' @param x Input data frame, in allele count format as given by format_snps option 1.
+#' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
+#'
+#' @return A data.frame containing the number of alleles secquenced in each pair of populations.
+#'
+#' @examples
+#' calc_pairwise_nk(ac, 3)
 calc_pairwise_nk <- function(x, ecs){
   out <- calc_pairwise_Fst(x, ecs, do.nk = TRUE, skip.FST = TRUE)
   return(out)
@@ -563,6 +608,29 @@ calc_pairwise_nk <- function(x, ecs){
 #         pop: List with population information for individuals. Format is as produced by:
 #              list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops,
 #              second vector is the count of each pop. Input data MUST be in the same order as this list.
+
+#'Observed heterozygosity from SNP data.
+#'
+#'\code{calc_Ho} calculates observed heterozygosity at each SNP, potentially in many populations.
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. If the data contains individuals from multiple populatoins, they must be in the same order as given to the pop agrument.
+#'
+#' @param x Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.
+#' @param ecs Number of extra metadata columns at the start of x.
+#' @param m.dat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
+#' @param pop List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If null, assumes one population.
+#' @return Data frame containing metadata, and Ho for each population in named columns.
+#'
+#' @examples
+#' #no seperate pops:
+#' calc_Ho(stickSNPs, 3)
+#'
+#' #seperate pops
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' calc_Ho(stickSNPs, 3, pop = l)
+#'
 calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 
   #set possible heterozygotes
@@ -607,8 +675,35 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 #inputs: x: data, in allele count format such as that given by format_snps option 1. Expects
 #           columns named "pop", "ni1", and "ni2", which contain pop designations, allele one counts,
 #           and allele 2 counts.
+
+#'Private Alleles from SNP data.
+#'
+#'\code{check_private} checks for the presence of private alleles at any loci across multiple populations.
+#'
+#'Description of x:
+#'    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop, and sorted first by pop! For example, sorted by pop, group, position then position. Runs with output from format_snps output option 1.
+#'
+#' @param x Input data, in the format given by format_snps output option 1. Must contain a column with pop info named "pop".
+#'
+#' @return Data frame with no metadata but sorted identically to input noting if each (row) locus is private in each (column) population, coded as 1 if private, 0 if not.
+#'
+#' @examples
+#' #add a private allele for demonstration purposes.
+#' pall <- data.frame(snp = rep(10000, 6), position = rep(1, 6), group = rep("Dup", 6), pop = c("ASP", "CLF", "PAL", "OPL", "SMR", "UPD"), n_total = rep(100, 6), n_alleles = rep (2, 6), ni1 = c(rep(0, 5), 20), ni2 = c(rep(100, 5), 80))
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' ac <- rbind(ac, pall)
+#' ac <- arrange(ac, pop, position, group)
+#' check_private(ac)
+#'
 check_private <- function(x){
   l <- unique(x$pop) #gets unique pops, requires column named pop
+
+  if(all(c("group", "position", "pop") %in% colnames(x))){
+    x <- arrange(x, pop, group, position)
+  }
+  else{warning("Data must be sorted by pop, then identicallly by other meta data, such as by group and position. If columns named pop, group, and position are given in x, this will be done automatically.")}
 
   a1m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a1 storage
   a2m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a2 storage

@@ -907,7 +907,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       if(interp_miss){ #interpolate missing genotypes if requested
         afs <- afreqs(x[i,]) #get overall allele frequencies
         ms <- which(wmat[,grepl(paste0("_", miss), colnames(wmat))] > 0) #figure out which had missing data
-        wmat <- wmat[,-grepl(paste0("_", miss), colnames(wmat))] #remove the missing data column
+        wmat <- wmat[,-which(grepl(paste0("_", miss), colnames(wmat)))] #remove the missing data column
         wmat[ms,] <- matrix(afs, length(ms), ncol(wmat), byrow = T) #add the interpolated allele frequencies.
       }
 

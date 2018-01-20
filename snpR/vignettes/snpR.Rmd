@@ -226,17 +226,22 @@ Description of x:
 
 ## calc_pairwise_Fst
 
-Calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
+Calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Wier and Cockerham 1984, Wier 1990, or Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
 
 ###Arguments:
-1. x: Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi estimates.
+1. x: Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.
 2. ecs: Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
 3. do.nk: Should pairwise nk (allele sample sizes) also be calculated?
 4. skip.FST: Should FST calcs be skipped (only set to TRUE if do.nk is as well).
+5. method: Which FST estimator should be used? 
+    Options: 
+    "WC": Wier and Cockerham 1984.
+    "Wier": Wier 1990.
+    "Hohenlohe": Hohenlohe 2010.
 
 Description of x:
   
-    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi for each SNP, as given by calc_pi.
+    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi (for Hohenlohe) or Ho (for WC or Wier) for each SNP, as given by calc_pi or calc_Ho, respectively.
 
 Smoothing note:
 
@@ -282,7 +287,7 @@ Checks for the presence of private alleles at any loci across multiple populatio
 
 Description of x:
   
-    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop! Runs with output from format_snps output option 1.
+    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop, and sorted first by pop! For example, sorted by pop, group, position then position. Runs with output from format_snps output option 1.
   
 
 ##LD_full_pairwise
