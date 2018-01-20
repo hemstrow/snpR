@@ -739,6 +739,28 @@ check_private <- function(x){
 #        prox_table: Should a proximity table be output?
 #        matrix_out: Should LD matrices be created?
 #        mDat: What is the missing data character? Expects marker for a single allele. ("N" or "01")
+
+#'Pairwise LD from SNP data.
+#'
+#'\code{LD_full_pairwise} calculates LD between each pair of SNPs. If called as is, assumes one linkage group/chromosome and one population!
+#'
+#'Matrix outputs are properly formated for LD_pairwise_heatmap.
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations and linkage group/chromosome}, split data into distinct populations and linkage groups or use Full_LD_w_groups before running.
+#'
+#' @param x Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+#' @param ecs Number of extra metadata columns at the start of x.
+#' @param prox_table If TRUE, a proximity table is produced.
+#' @param matrix_out If TRUE, pairwise LD matrices are produced.
+#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.
+#'
+#' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
+#'
+#' @examples
+#' #returns prox table and LD matrices.
+#' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
+#'
 LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N") {
   #new LD pairwise function. Loops through each loci, but vectorized for each comparison within that loci
 
@@ -1125,6 +1147,29 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 
 #Calls the LD_full_pairwise function for a file with multiple linkage groups. Returns a nested list of
 #Dprime and rsq matrices. Requires the linkage group titled be named "group". Returns a concatenated prox_table.
+
+#'Pairwise LD from SNP data, split by group.
+#'
+#'\code{Full_LD_w_groups} calls \code{\link{LD_full_pairwise}} after spliting the data by a column named "group". Knits the results together, unlike if run with \code{\link{run_g}}.
+#'
+#'Matrix outputs are properly formated for LD_pairwise_heatmap. See notes for \code{\link{LD_full_pairwise}}.
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Requires that the column containing linkage group/chromosome ID be named "group". Note that this *ignores populations*, split data into distinct populations before running.
+#'
+#' @param x Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+#' @param ecs Number of extra metadata columns at the start of x.
+#' @param prox_table If TRUE, a proximity table is produced.
+#' @param matrix_out If TRUE, pairwise LD matrices are produced.
+#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+#' @param report Reports progress every report linkage groups/chromosomes.
+#'
+#' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.
+#'
+#' @examples
+#' #returns prox table and LD matrices.
+#' Full_LD_w_groups(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3)
+#'
 Full_LD_w_groups <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N", report = 1){
   if (prox_table == FALSE & matrix_out == FALSE){
     stop("Please specify output format.")
@@ -1168,7 +1213,29 @@ Full_LD_w_groups <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 #as LD_full_pairwise, save for num_cores (which is the number of cores to run on).
 #If all outputs are desired, Returns a list where the first length(groups) elements are lists containing matrices for rsq and Dprime for
 #the corresponding group. The last element is a prox table.
-#currently giving an error, need to check it out in more detail.
+
+#'Pairwise LD from SNP data, split by group.
+#'
+#'\code{Full_LD_w_g_par} calls \code{\link{LD_full_pairwise}} after spliting the data by a column named "group". Knits the results together, unlike if run with \code{\link{run_g}}. Uses the doParallel and doSNOW package to parallelize across groups.
+#'
+#'Matrix outputs are properly formated for LD_pairwise_heatmap. See notes for \code{\link{LD_full_pairwise}}.
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Requires that the column containing linkage group/chromosome ID be named "group". Note that this *ignores populations*, split data into distinct populations before running.
+#'
+#' @param x Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+#' @param ecs Number of extra metadata columns at the start of x.
+#' @param num_cores Number of processing cores to allocate.
+#' @param prox_table If TRUE, a proximity table is produced.
+#' @param matrix_out If TRUE, pairwise LD matrices are produced.
+#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+#'
+#' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.
+#'
+#' @examples
+#' #returns prox table and LD matrices.
+#' Full_LD_g_par(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3, 3)
+#'
 Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE, mDat = "N"){
   if (prox_table == FALSE & matrix_out == FALSE){
     stop("Please specify output format.")

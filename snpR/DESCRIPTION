@@ -16,6 +16,7 @@ Imports:
     dplyr,
     doParallel,
     doSNOW,
+    foreach,
     matrixStats,
     ggplot2,
     plyr,
