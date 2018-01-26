@@ -916,17 +916,27 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       xv2 <- as.vector(t(t(xv2)))
       xmiss <- ifelse(xv2 == paste0(miss, miss), 1, 0)
 
-      tsamp <- 1
-      tloc <- 1
-      fcol <- 1
+      #fill in missing data with NAs.
       cat("Filling in missing data with NAs, this may take a bit...")
-      for(i in 1:length(xmiss)){
-        if(tloc > nloci){tloc <- 1; fcol <- 1; tsamp <- tsamp + 1}
-        if(xmiss[i]){
-          amat[tsamp, fcol:(fcol + acounts[tloc] - 1)] <- NA
+
+      xmc <- which(xmiss == 1)
+      missrow <- floor(xmc/nloci)+1  #get the row/ind we are on. Could also do by parsing the column name
+      missloci <- xmc%%nloci #loci we are on
+      missrow[which(missloci == 0)] <- missrow[which(missloci == 0)] - 1 #fix the plus one after floor when working with the last loci.
+      missloci[which(missloci == 0)] <- nloci #fix any last loci with missing data.
+
+
+      for(i in 1:length(xmc)){
+        tloc <- missloci[i]
+        if(tloc != 1){
+          start <- sum(acounts[1:(tloc-1)]) + 1
         }
-        fcol <- fcol + acounts[tloc]
-        tloc <- tloc + 1
+        else{
+          start <- 1
+        }
+        stop <- start + acounts[tloc] - 1
+        if(any(amat[missrow[i], start:stop] != 0)){browser()}
+        amat[missrow[i], start:stop] <- NA
       }
       return(amat)
     }
