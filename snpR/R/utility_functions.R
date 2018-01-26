@@ -7,14 +7,15 @@
 # maf: filter out snps with a minor allele frequency below that given, list return is maff
 # hf_hets: filters out data with a heterozygote frequency above the given value, list return is hfhf
 # min_ind: filters out snps genotyped at less than the given number of individuals, list return is mif
+# min_loci: Numeric value [0-1]: filters out INDIVIDUALS genotyped at less than this percentage of remaining loci.
 #This version is vectorized, and is much faster!
 filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop = FALSE,
-                        hf_hets = FALSE, min_ind = FALSE, mDat = "NN"){
+                        hf_hets = FALSE, min_ind = FALSE, min_loci = FALSE, mDat = "NN"){
 
   #############################################################################################
   #do sanity checks
 
-  if(!maf){
+  if(maf){
     if(!is.numeric(maf)){
       stop("maf must be a numeric value.")
     }
@@ -23,7 +24,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     }
   }
 
-  if(!hf_hets){
+  if(hf_hets){
     if(!is.numeric(hf_hets)){
       stop("hf_hets must be a numeric value.")
     }
@@ -32,7 +33,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     }
   }
 
-  if(!min_ind){
+  if(min_ind){
     if(!is.numeric(min_ind)){
       stop("min_ind must be a numeric value.")
     }
@@ -41,7 +42,13 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     }
   }
 
-  if(!pop){
+  if(min_loci){
+    if(!is.numeric(min_loci) | (min_loci <= 0 | min_loci >= 1) | length(min_loci) != 1){
+      stop("min_loci must be a numeric value between but not equal to 0 and 1.")
+    }
+  }
+
+  if(pop){
     if(!is.numeric(pop[[2]])){
       stop("pop[[2]] must be a numeric vector.")
     }
@@ -320,11 +327,28 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     keep <- keep + hf
   }
 
+
+  browser()
+
+
   ##############################################################################################
-  ###apply results
-  cat("Applying results...\n")
+  ###apply results + min_loci filtering.
+  cat("Applying loci reject results...\n")
   keep <- !as.logical(keep)
   x <- x[keep,]
+
+  #================================================
+  ##min_loci
+  cat("Filtering out individuals sequenced in few kept loci...\n")
+  if(min_loci){
+    mcounts <- colSums(ifelse(x == mDat, 1, 0))
+    rejects <- which(mcounts/nrow(x) > min_loci)
+    if(length(rejects) > 0){
+      x <- x[,-rejects]
+    }
+  }
+
+  #return the results.
   x <- cbind(headers[keep,], x)
   return(x)
 }
