@@ -433,8 +433,7 @@ Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, a
 5. miss: Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
 6. pop: List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If NA, assumes one population. For output options 1 and 5.
 7. n_samp: For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
-8. l_names: For output option 7. Optional vector of locus names.
-9. interp_miss: For output option 7. Should missing data be interpolated? Needed for PCA, ect.
+8. interp_miss: For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 
 
 ##run_g

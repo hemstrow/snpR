@@ -359,7 +359,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
 #note: (v) under format options means that I've already vectorized it.
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
-                        miss = "N", pop = 1, n_samp = NA, l_names = NULL,
+                        miss = "N", pop = 1, n_samp = NA,
                         interp_miss = T){
 
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
@@ -492,7 +492,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #snp_form, the length of each genotype.
   #mDat, the missing data format
   #nsap, the number of samples
-  tabulate_genotypes <- function(xv, snp_form, mDat, nsamp){
+  #nloci, the number of loci
+  tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci){
     #create tables of genotype counts for each locus.
     #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
     #needs the number of samples from global function environment
@@ -520,7 +521,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     cat("Creating genotype table...\n")
 
     #for each element of gs, get the tables of genotype counts and add them to a matrix
-    gmat <- matrix(0, nrow(data), length(gs)) #initialize matrix
+    gmat <- matrix(0, nloci, length(gs)) #initialize matrix
     colnames(gmat) <- gs #set the matrix names
     #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
     for(i in 1:length(gs)){
@@ -648,7 +649,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
       #prepare a genotype table
       xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
-      tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs)
+      tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data))
       w_df$n_total <- rowSums(tabs$as)
       counts <- rowSums(ifelse(tabs$as == 0, 0, 1))
       if(any(counts != 2)){
@@ -702,7 +703,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         ne <- current + pop_sizes[i] - 1
         x <- data[,current:ne]
         xv <- as.vector(t(x))
-        pop_as[[i]] <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i])$as
+        pop_as[[i]] <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i], nrow(data))$as
         pop_as[[i]] <- pop_as[[i]][, order(colnames(pop_as[[i]]))]
 
         #if somehow not all four possible alleles found in ALL DATA for this pop (small?), fill in table
@@ -860,10 +861,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #presence/absence format
   if(output == 7){
     x <- data[,(ecs+1):ncol(data)] #get just data
-    if((is.null(l_names)) | length(l_names) != nrow(data) | !(is.vector(l_names))){
-      warning("Locus names required for output format 8. Using first metadata column by default.")
-      l_names <- data[,1]
-    }
     if(input_form == "NN"){
       asize <- 1
     }
@@ -874,49 +871,76 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       asize <- 3
     }
 
-    #write a function to quickly get allele list per locus
-    acount <- function(x){
-      a <- unique(c(substr(x, 1, asize), substr(x, (asize + 1), (2*asize))))
-      return(sort(a))
-    }
+    xv <- as.vector(t(x))
 
-    #function to get average allele frequencies if needed.
-    afreqs <- function(x){
-      tab <- table(c(substr(x, 1, asize), substr(x, (asize + 1), (2*asize))))
-      tab <- tab[names(tab) != miss]
-      tab <- tab/sum(tab)
-      tab <- tab[sort(names(tab))]
-      return(tab)
-    }
+    #function to produce vectorized presence absence (as much as possible, not vectorized for NAs)
+    pa_alleles <- function(xv, snp_form, mDat, nsamp, nloci){
+      #get all possible genotypes
+      gs <- unique(xv)
 
-    #loop through each row, figure out number of alleles, create and fill matrix with presence/absence, bind matrix to existing.
-    omat <- matrix(NA, ncol(x), 1)
-    for (i in 1:nrow(x)){
-      if(i %% 1000 == 0){cat("snp number: ", i, "\n")}
-      alist <- acount(x[i,])
-      wmat <- matrix(0, ncol(x), length(alist)) #output matrix. Individuals in rows, alleles in columns.
-      colnames(wmat) <- paste0(l_names[i], "_", alist)
-      a1s <- substr(x[i,], 1, asize) #get first allele in each ind
-      a2s <- substr(x[i,], asize + 1, 2*asize) #get second allele in each ind.
-      a1s <- match(a1s, alist) #get column indexes to add a presence to
-      a2s <- match(a2s, alist) #same
-      for(j in 1:nrow(wmat)){ #for each individual, add alleles to the appropriate bins
-        wmat[j, a1s[j]] <- wmat[j, a1s[j]] + 1
-        wmat[j, a2s[j]] <- wmat[j, a2s[j]] + 1
-      }
-      if(interp_miss){ #interpolate missing genotypes if requested
-        afs <- afreqs(x[i,]) #get overall allele frequencies
-        ms <- which(wmat[,grepl(paste0("_", miss), colnames(wmat))] > 0) #figure out which had missing data
-        wmat <- wmat[,-which(grepl(paste0("_", miss), colnames(wmat)))] #remove the missing data column
-        wmat[ms,] <- matrix(afs, length(ms), ncol(wmat), byrow = T) #add the interpolated allele frequencies.
+      #which genotype is the missing data?
+      mpos <- which(gs == mDat)
+
+      #what are the possible alleles at all loci?
+      as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
+      as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+
+      #make the table
+      cat("Creating presence/absence table...\n")
+
+      #convert genotype vector to allele vector
+      xva1 <- substr(xv, 1, snp_form/2)
+      xva2 <- substr(xv, (snp_form/2+1),snp_form)
+
+      #initialize
+      amat <- matrix(0, nsamp, length(as)*nloci)
+      colnames(amat) <- paste0(sort(rep(1:nloci,length(as))),as) #initialize all of the columns, with locus number followed by allele. Will remove anything empty after assignment.
+
+      #fill in
+      for(i in 1:length(as)){
+        pr1 <- grep(as[i], xva1)#unique rows which have the allele in either position one or position two.
+        pr2 <- grep(as[i], xva2)
+        amat[,grep(as[i],colnames(amat))][pr1] <- amat[,grep(as[i],colnames(amat))][pr1] + 1 #set the allele as present in the correct rows. This works because we look only at the G amat columns first, then put set only the individual IDs with a G to one. I think.
+        amat[,grep(as[i],colnames(amat))][pr2] <- amat[,grep(as[i],colnames(amat))][pr2] + 1
       }
 
-      omat <- cbind(omat, wmat) #bind to the output
+      #remove alleles not seen at loci.
+      amat <- amat[,which(colSums(amat) != 0)]
+
+      ###########
+      #replace missing data with NAs. Looping because it's complicated as shit to try and vectorize.
+      #get allele counts per loci:
+      acounts <- table(as.numeric(gsub("[A-z]+", "", colnames(amat))))
+      acounts <- acounts[names(acounts)]
+      xv2 <- matrix(xv, nloci, nsamp, T)
+      xv2 <- as.vector(t(t(xv2)))
+      xmiss <- ifelse(xv2 == paste0(miss, miss), 1, 0)
+
+      tsamp <- 1
+      tloc <- 1
+      fcol <- 1
+      cat("Filling in missing data with NAs, this may take a bit...")
+      for(i in 1:length(xmiss)){
+        if(tloc > nloci){tloc <- 1; fcol <- 1; tsamp <- tsamp + 1}
+        if(xmiss[i]){
+          amat[tsamp, fcol:(fcol + acounts[tloc] - 1)] <- NA
+        }
+        fcol <- fcol + acounts[tloc]
+        tloc <- tloc + 1
+      }
+      return(amat)
     }
-    w_df <- as.data.frame(omat[,-1], stringsAsFactors = F) #remove int column, convert to data frame.
-    w_df <- cbind(samp = colnames(x), w_df) #add sample names.
-    if(!interp_miss){cat("Finished. Warning: Missing data counts are also stored!\n")}
-    return(w_df)
+
+    amat <- pa_alleles(xv, asize*2, miss, ncol(x), nrow(x))
+
+    if(interp_miss){
+      #average number observed in columns
+      afs <- colMeans(amat, TRUE)
+      amat[which(is.na(amat))] <- afs[floor(which(is.na(amat))/nrow(amat)) + 1]
+    }
+    else{cat("Finished. Warning: Missing data counts are also stored!\n")}
+    amat <- cbind(samp = colnames(data)[(ecs+1):ncol(data)], as.data.frame(amat, stringsAsFactors = F))
+    return(amat)
   }
 }
 
