@@ -70,88 +70,90 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
   #seperate out the genotypes alone
   x <- x[,(ecs+1):ncol(x)]
 
-  #get a single vector of genotypes
-  xv <- as.vector(t(x))
+  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
 
-  #determine snp format
-  snp_form <- nchar(xv[1])
+    #get a single vector of genotypes
+    xv <- as.vector(t(x))
 
-  #get number of samples
-  nsamp <- ncol(x)
+    #determine snp format
+    snp_form <- nchar(xv[1])
 
-  #create tables of genotype counts for each locus.
-  #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
-  #needs the number of samples from global function environment
-  count_genos <- function(pattern, x){
-    XXs <- grep(pattern, x) #figure out which entries match pattern
-    out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
-    return(out)
-  }
+    #get number of samples
+    nsamp <- ncol(x)
 
-  #get all possible genotypes
-  gs <- unique(xv)
+    #create tables of genotype counts for each locus.
+    #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
+    #needs the number of samples from global function environment
+    count_genos <- function(pattern, x){
+      XXs <- grep(pattern, x) #figure out which entries match pattern
+      out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
+      return(out)
+    }
 
-  #which gs are heterozygous?
-  hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
+    #get all possible genotypes
+    gs <- unique(xv)
 
-  #which genotype is the missing data?
-  mpos <- which(gs == mDat)
+    #which gs are heterozygous?
+    hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
 
-  #what are the possible alleles at all loci?
-  as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-  as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+    #which genotype is the missing data?
+    mpos <- which(gs == mDat)
 
-  #############################################################################################3
-  ###get a table of genotype and allele counts at each locus.
-  cat("Creating genotype table...\n")
+    #what are the possible alleles at all loci?
+    as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
+    as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
 
-  #for each element of gs, get the tables of genotype counts and add them to a matrix
-  gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
-  colnames(gmat) <- gs #set the matrix names
+    #############################################################################################3
+    ###get a table of genotype and allele counts at each locus.
+    cat("Creating genotype table...\n")
 
-  #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-  for(i in 1:length(gs)){
-    tab <- count_genos(gs[i], xv)
-    gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
-  }
+    #for each element of gs, get the tables of genotype counts and add them to a matrix
+    gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
+    colnames(gmat) <- gs #set the matrix names
 
-  if(length(mpos) > 0){
-    tmat <- gmat[,-c(mpos)] #gmat without missing data
-  }
-  else{
-    tmat <- gmat
-  }
+    #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
+    for(i in 1:length(gs)){
+      tab <- count_genos(gs[i], xv)
+      gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
+    }
 
-  #get matrix of allele counts
-  #initialize
-  cat("Getting allele table...\n")
-  amat <- matrix(0, nrow(gmat), length(as))
-  colnames(amat) <- as
-
-  #fill in
-  for(i in 1:length(as)){
-    b <- grep(as[i], colnames(tmat))
-    hom <- which(colnames(tmat) == paste0(as[i], as[i]))
-    if(length(hom) == 0){
-      het <- b
-      amat[,i] <- rowSums(tmat[,het])
+    if(length(mpos) > 0){
+      tmat <- gmat[,-c(mpos)] #gmat without missing data
     }
     else{
-      het <- b[b != hom]
-      if(length(het) > 0){
-        if(is.matrix(tmat[,het])){
-          amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
-        }
-        else{
-          amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
-        }
+      tmat <- gmat
+    }
+
+    #get matrix of allele counts
+    #initialize
+    cat("Getting allele table...\n")
+    amat <- matrix(0, nrow(gmat), length(as))
+    colnames(amat) <- as
+
+    #fill in
+    for(i in 1:length(as)){
+      b <- grep(as[i], colnames(tmat))
+      hom <- which(colnames(tmat) == paste0(as[i], as[i]))
+      if(length(hom) == 0){
+        het <- b
+        amat[,i] <- rowSums(tmat[,het])
       }
       else{
-        amat[,i] <- (tmat[,hom] * 2)
+        het <- b[b != hom]
+        if(length(het) > 0){
+          if(is.matrix(tmat[,het])){
+            amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
+          }
+          else{
+            amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
+          }
+        }
+        else{
+          amat[,i] <- (tmat[,hom] * 2)
+        }
       }
     }
   }
-
 
   ##############################################################################################
   ###do filters
@@ -328,19 +330,18 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
   }
 
 
-  browser()
-
-
   ##############################################################################################
   ###apply results + min_loci filtering.
-  cat("Applying loci reject results...\n")
-  keep <- !as.logical(keep)
-  x <- x[keep,]
+  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
+    cat("Applying loci reject results...\n")
+    keep <- !as.logical(keep)
+    x <- x[keep,]
+  }
 
   #================================================
   ##min_loci
-  cat("Filtering out individuals sequenced in few kept loci...\n")
   if(min_loci){
+    cat("Filtering out individuals sequenced in few kept loci...\n")
     mcounts <- colSums(ifelse(x == mDat, 1, 0))
     rejects <- which(mcounts/nrow(x) > min_loci)
     if(length(rejects) > 0){
@@ -349,7 +350,12 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
   }
 
   #return the results.
-  x <- cbind(headers[keep,], x)
+  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
+    x <- cbind(headers[keep,], x)
+  }
+  else{
+    x <- cbind(headers, x)
+  }
   return(x)
 }
 
