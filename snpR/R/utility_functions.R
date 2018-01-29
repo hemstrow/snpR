@@ -385,12 +385,12 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
 #      Number of samples in each pop as a list (as in list(c("POP1", "POP2"), c(48,50)))).
 #      Samples must be in the order given in input data frame.
 # n_samp: number of randomly selected snps, ect to take. Can also take a numeric vector containing SNP indices to keep. For option 3.
-# l_names: Vector of locus names. For option 8.
+# l_names: Vector of locus names. For option 7.
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
 #note: (v) under format options means that I've already vectorized it.
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
-                        interp_miss = T){
+                        interp_miss = T, lnames = NULL){
 
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
   data <- x
@@ -901,6 +901,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       asize <- 3
     }
 
+    if(is.null(lnames)){
+      lnames <- 1:nrow(x)
+    }
+    else{
+      lnames <- gsub("_", "", lnames)
+    }
+
     xv <- as.vector(t(x))
 
     #function to produce vectorized presence absence (as much as possible, not vectorized for NAs)
@@ -913,7 +920,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
       #what are the possible alleles at all loci?
       as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-      as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+      as <- sort(as[as != substr(mDat, 1, snp_form/2)]) #that aren't N?
 
       #make the table
       cat("Creating presence/absence table...\n")
@@ -924,14 +931,14 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
       #initialize
       amat <- matrix(0, nsamp, length(as)*nloci)
-      colnames(amat) <- paste0(sort(rep(1:nloci,length(as))),as) #initialize all of the columns, with locus number followed by allele. Will remove anything empty after assignment.
+      colnames(amat) <- paste0(sort(rep(lnames,length(as))), "_", as) #initialize all of the columns, with locus number followed by allele. Will remove anything empty after assignment.
 
       #fill in
       for(i in 1:length(as)){
         pr1 <- grep(as[i], xva1)#unique rows which have the allele in either position one or position two.
         pr2 <- grep(as[i], xva2)
-        amat[,grep(as[i],colnames(amat))][pr1] <- amat[,grep(as[i],colnames(amat))][pr1] + 1 #set the allele as present in the correct rows. This works because we look only at the G amat columns first, then put set only the individual IDs with a G to one. I think.
-        amat[,grep(as[i],colnames(amat))][pr2] <- amat[,grep(as[i],colnames(amat))][pr2] + 1
+        amat[,grep(paste0("_", as[i]),colnames(amat))][pr1] <- amat[,grep(paste0("_", as[i]),colnames(amat))][pr1] + 1 #set the allele as present in the correct rows. This works because we look only at the G amat columns first, then put set only the individual IDs with a G to one. I think.
+        amat[,grep(paste0("_", as[i]),colnames(amat))][pr2] <- amat[,grep(paste0("_", as[i]),colnames(amat))][pr2] + 1
       }
 
       #remove alleles not seen at loci.
@@ -939,34 +946,38 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
       ###########
       #replace missing data with NAs. Looping because it's complicated as shit to try and vectorize.
-      #get allele counts per loci:
-      acounts <- table(as.numeric(gsub("[A-z]+", "", colnames(amat))))
-      acounts <- acounts[names(acounts)]
-      xv2 <- matrix(xv, nloci, nsamp, T)
-      xv2 <- as.vector(t(t(xv2)))
-      xmiss <- ifelse(xv2 == paste0(miss, miss), 1, 0)
 
       #fill in missing data with NAs.
-      cat("Filling in missing data with NAs, this may take a bit...")
+      cat("Filling in missing data with NAs.\n")
 
-      xmc <- which(xmiss == 1)
-      missrow <- floor(xmc/nloci)+1  #get the row/ind we are on. Could also do by parsing the column name
-      missloci <- xmc%%nloci #loci we are on
-      missrow[which(missloci == 0)] <- missrow[which(missloci == 0)] - 1 #fix the plus one after floor when working with the last loci.
-      missloci[which(missloci == 0)] <- nloci #fix any last loci with missing data.
+      #easy to vectorize if SNP data
+      if(input_form == "NN" | input_form == "0000"){
+        xmc <- which(xv == paste0(miss, miss)) #which samples had missing data?
+        adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
+        adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample
+        xmc <- xmc + (nsamp*adj) #adjust xmc for extra columns.
+        temp <- amat
+        amat[xmc] <- NA #make the first allele NA
+        amat[xmc + nsamp] <- NA #make the second allele (another column over) NA.
+      }
 
+      #otherwise need to loop through loci and fill
+      else{
+        #get allele counts per loci:
+        labs <- gsub("_\\w+", "", colnames(amat))
+        ll <- unique(labs)
+        acounts <- rbind(label = ll, count = sapply(ll, function(x)sum(labs==x)))
+        acounts <- as.numeric(acounts[2,])
 
-      for(i in 1:length(xmc)){
-        tloc <- missloci[i]
-        if(tloc != 1){
-          start <- sum(acounts[1:(tloc-1)]) + 1
+        #intialize stuff, do first loci, then do the rest of the loci.
+        spos <- 1 #starting column for loci
+        epos <- acounts[1] #ending column for loci
+        amat[, spos:epos][rowSums(amat[, spos:epos]) == 0,] <- NA
+        for (i in 2:nloci){
+          spos <- sum(acounts[1:(i - 1)]) + 1
+          epos <- spos + acounts[i] - 1
+          amat[, spos:epos][rowSums(amat[, spos:epos]) == 0,] <- NA
         }
-        else{
-          start <- 1
-        }
-        stop <- start + acounts[tloc] - 1
-        if(any(amat[missrow[i], start:stop] != 0)){browser()}
-        amat[missrow[i], start:stop] <- NA
       }
       return(amat)
     }
