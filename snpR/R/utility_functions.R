@@ -48,7 +48,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     }
   }
 
-  if(pop){
+  if(is.list(pop)){
     if(!is.numeric(pop[[2]])){
       stop("pop[[2]] must be a numeric vector.")
     }
@@ -944,26 +944,27 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #remove alleles not seen at loci.
       amat <- amat[,which(colSums(amat) != 0)]
 
-      ###########
-      #replace missing data with NAs. Looping because it's complicated as shit to try and vectorize.
-
-      #fill in missing data with NAs.
+      #get allele counts per loci:
       cat("Filling in missing data with NAs.\n")
 
+      ###########
+      #fill in missing data with NAs.
       #easy to vectorize if SNP data
       if(input_form == "NN" | input_form == "0000"){
         xmc <- which(xv == paste0(miss, miss)) #which samples had missing data?
         adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
         adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample
         xmc <- xmc + (nsamp*adj) #adjust xmc for extra columns.
-        temp <- amat
+        if(any(amat[xmc] != 0) | any(amat[xmc + nsamp] != 0)){
+          stop("Missing data values were not properly identified for replacement with NAs. This usually happens when SNP data is not completely bi-allelic. Try filtering out non-biallelic and non-polymorphic SNPs using filter_snps.\n")
+        }
         amat[xmc] <- NA #make the first allele NA
         amat[xmc + nsamp] <- NA #make the second allele (another column over) NA.
       }
 
       #otherwise need to loop through loci and fill
       else{
-        #get allele counts per loci:
+        #get allele counts per locus
         labs <- gsub("_\\w+", "", colnames(amat))
         ll <- unique(labs)
         acounts <- rbind(label = ll, count = sapply(ll, function(x)sum(labs==x)))
@@ -986,6 +987,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
     if(interp_miss){
       #average number observed in columns
+      cat("Interpolating missing data...\n")
       afs <- colMeans(amat, TRUE)
       amat[which(is.na(amat))] <- afs[floor(which(is.na(amat))/nrow(amat)) + 1]
     }
