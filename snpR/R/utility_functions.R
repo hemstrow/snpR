@@ -10,7 +10,7 @@
 # min_loci: Numeric value [0-1]: filters out INDIVIDUALS genotyped at less than this percentage of remaining loci.
 #This version is vectorized, and is much faster!
 filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop = FALSE,
-                        hf_hets = FALSE, min_ind = FALSE, min_loci = FALSE, mDat = "NN"){
+                        hf_hets = FALSE, min_ind = FALSE, min_loci = FALSE, re_run = "partial", mDat = "NN"){
 
   #############################################################################################
   #do sanity checks
@@ -60,6 +60,12 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
     }
   }
 
+  if(re_run != FALSE){
+    if(re_run != "partial" & re_run != "full"){
+      cat("re_run must be set to partial or full if not FALSE.\n")
+    }
+  }
+
   ##############################################################################################
   ###set up, get values used later, clean up data a bit, set any functions used lower
   cat("Initializing...\n")
@@ -70,8 +76,8 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
   #seperate out the genotypes alone
   x <- x[,(ecs+1):ncol(x)]
 
-  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
-
+  #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
+  filt_by_loci <- function(){
     #get a single vector of genotypes
     xv <- as.vector(t(x))
 
@@ -153,209 +159,255 @@ filter_snps <- function(x, ecs, non_poly = FALSE, bi_al = TRUE, maf = FALSE, pop
         }
       }
     }
-  }
 
-  ##############################################################################################
-  ###do filters
-  keep <- logical(nrow(x)) #vector to track status
 
-  #===============================================
-  ##non-biallelic loci
-  if(bi_al){
-    cat("Filtering non-biallelic loci...\n")
-    bimat <- ifelse(amat, TRUE, FALSE)
-    bi <- ifelse(rowSums(bimat) > 2, T, F) #if true, should keep the allele
-    #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
-    if((maf | hf_hets) &  sum(bi) != 0){
-      x <- x[bi,]
-      xv <-   xv <- as.vector(t(x))
-      gs <- unique(xv)
-      hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-      mpos <- which(gs == mDat)
-      as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-      as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-      gmat <- gmat[bi,]
-      tmat <- tmat[bi,]
-      amat <- amat[bi,]
-      headers <- headers[bi,]
+    ##############################################################################################
+    ###do filters
+    keep <- logical(nrow(x)) #vector to track status
+
+    #===============================================
+    ##non-biallelic loci
+    if(bi_al){
+      cat("Filtering non-biallelic loci...\n")
+      bimat <- ifelse(amat, TRUE, FALSE)
+      bi <- ifelse(rowSums(bimat) > 2, T, F) #if true, should keep the allele
+      #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
+      if((maf | hf_hets) &  sum(bi) != 0){
+        x <- x[bi,]
+        xv <-   xv <- as.vector(t(x))
+        gs <- unique(xv)
+        hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
+        mpos <- which(gs == mDat)
+        as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
+        as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+        gmat <- gmat[bi,]
+        tmat <- tmat[bi,]
+        amat <- amat[bi,]
+        headers <- headers[bi,]
+      }
+      else{
+        keep <- keep + bi
+      }
     }
-    else{
-      keep <- keep + bi
+
+    #===============================================
+    ##non-poly
+    if(non_poly){
+      cat("Filtering non-polymorphic loci...\n")
+      npmat <- ifelse(tmat == 0, F, T) #convert to logical
+      gcounts <- rowSums(npmat) #how many genotypes observed?
+      hgcounts <- as.logical(rowSums(npmat[,hs[-mpos]])) #are hets observed?
+      gcounts <- ifelse(gcounts == 1, F, T) #are there more than one genotype observed?
+      np <- gcounts + hgcounts #figure out if either or both of the above are true
+      np <- !as.logical(np) #convert to logical (if at least one is true, this will be false and we should keep the snp)
+      keep <- keep + np
     }
-  }
 
-  #===============================================
-  ##non-poly
-  if(non_poly){
-    cat("Filtering non-polymorphic loci...\n")
-    npmat <- ifelse(tmat == 0, F, T) #convert to logical
-    gcounts <- rowSums(npmat) #how many genotypes observed?
-    hgcounts <- as.logical(rowSums(npmat[,hs[-mpos]])) #are hets observed?
-    gcounts <- ifelse(gcounts == 1, F, T) #are there more than one genotype observed?
-    np <- gcounts + hgcounts #figure out if either or both of the above are true
-    np <- !as.logical(np) #convert to logical (if at least one is true, this will be false and we should keep the snp)
-    keep <- keep + np
-  }
-
-  #===============================================
-  ##min inds
-  if(min_ind){
-    cat("Filtering loci sequenced in few individuals...\n")
-    mi <- ncol(x) - gmat[,colnames(gmat) == mDat]
-    mi <- !mi >= min_ind #if false, enough samples, so keep.
-    keep <- keep + mi
-  }
-
-
-  #===============================================
-  ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
-  if(maf){
-    #if not filtering with multiple pops
-    if(!is.list(pop)){
-      cat("Filtering low minor allele frequencies, no pops...\n")
-      mafs <- 1 - rowMaxs(amat)/rowSums(amat)
-      mafs <- mafs < maf #less than required, set to true and reject.
-      mafs[is.na(mafs)] <- TRUE
-      keep <- keep + mafs
+    #===============================================
+    ##min inds
+    if(min_ind){
+      cat("Filtering loci sequenced in few individuals...\n")
+      mi <- ncol(x) - gmat[,colnames(gmat) == mDat]
+      mi <- !mi >= min_ind #if false, enough samples, so keep.
+      keep <- keep + mi
     }
-    else{
-      cat("Filtering low minor allele frequencies, pop:\n")
-      pmafs <- logical(nrow(x))
-      for(i in 1:length(pop[[1]])){
-        cat(pop[[1]][i], "\n")
-        #re-establish matrices with each pop
 
-        #set the input data
-        if(i == 1){
-          popx <- x[,1:pop[[2]][i]]
-        }
-        else{
-          popx <- x[,(sum(pop[[2]][1:(i-1)]) + 1):(sum(pop[[2]][1:i]))]
-        }
 
-        #get a single vector of genotypes
-        popxv <- as.vector(t(popx))
+    #===============================================
+    ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
+    if(maf){
+      #if not filtering with multiple pops
+      if(!is.list(pop)){
+        cat("Filtering low minor allele frequencies, no pops...\n")
+        mafs <- 1 - rowMaxs(amat)/rowSums(amat)
+        mafs <- mafs < maf #less than required, set to true and reject.
+        mafs[is.na(mafs)] <- TRUE
+        keep <- keep + mafs
+      }
+      else{
+        cat("Filtering low minor allele frequencies, pop:\n")
+        pmafs <- logical(nrow(x))
+        for(i in 1:length(pop[[1]])){
+          cat(pop[[1]][i], "\n")
+          #re-establish matrices with each pop
 
-        #get number of samples
-        nsamp <- ncol(popx)
-
-        #get all possible genotypes
-        popgs <- unique(popxv)
-
-        #which gs are heterozygous?
-        pophs <- substr(popgs,1,snp_form/2) != substr(popgs, (snp_form/2 + 1), snp_form*2)
-
-        #which genotype is the missing data?
-        popmpos <- which(popgs == mDat)
-
-        #what are the possible alleles at all loci?
-        popas <- unique(c(substr(popgs,1,snp_form/2), substr(popgs, (snp_form/2 + 1), snp_form*2)))
-        popas <- popas[popas != substr(mDat, 1, snp_form/2)] #that aren't N?
-
-        #for each element of gs, get the tables of genotype counts and add them to a matrix
-        popgmat <- matrix(0, nrow(popx), length(popgs)) #initialize matrix
-        colnames(popgmat) <- popgs #set the matrix names
-
-        #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-        for(j in 1:length(popgs)){
-          poptab <- count_genos(popgs[j], popxv)
-          popgmat[as.numeric(names(poptab)),j] <- as.numeric(poptab)
-        }
-
-        if(length(popmpos) > 0){
-          poptmat <- popgmat[,-c(popmpos)] #gmat without missing data
-        }
-        else{
-          poptmat <- popgmat
-        }
-
-        #get matrix of allele counts
-        #initialize
-        popamat <- matrix(0, nrow(popgmat), length(popas))
-        colnames(popamat) <- popas
-
-        #fill in
-        for(j in 1:length(popas)){
-          b <- grep(popas[j], colnames(poptmat))
-          hom <- which(colnames(poptmat) == paste0(popas[j], popas[j]))
-          if(length(hom) == 0){
-            het <- b
-            popamat[,j] <- rowSums(poptmat[,het])
+          #set the input data
+          if(i == 1){
+            popx <- x[,1:pop[[2]][i]]
           }
           else{
-            het <- b[b != hom]
-            if(length(het) > 0){
-              if(is.matrix(poptmat[,het])){
-                popamat[,j] <- (poptmat[,hom] * 2) + rowSums(poptmat[,het])
-              }
-              else{
-                popamat[,j] <- (poptmat[,hom] * 2) + poptmat[,het]
-              }
+            popx <- x[,(sum(pop[[2]][1:(i-1)]) + 1):(sum(pop[[2]][1:i]))]
+          }
+
+          #get a single vector of genotypes
+          popxv <- as.vector(t(popx))
+
+          #get number of samples
+          nsamp <- ncol(popx)
+
+          #get all possible genotypes
+          popgs <- unique(popxv)
+
+          #which gs are heterozygous?
+          pophs <- substr(popgs,1,snp_form/2) != substr(popgs, (snp_form/2 + 1), snp_form*2)
+
+          #which genotype is the missing data?
+          popmpos <- which(popgs == mDat)
+
+          #what are the possible alleles at all loci?
+          popas <- unique(c(substr(popgs,1,snp_form/2), substr(popgs, (snp_form/2 + 1), snp_form*2)))
+          popas <- popas[popas != substr(mDat, 1, snp_form/2)] #that aren't N?
+
+          #for each element of gs, get the tables of genotype counts and add them to a matrix
+          popgmat <- matrix(0, nrow(popx), length(popgs)) #initialize matrix
+          colnames(popgmat) <- popgs #set the matrix names
+
+          #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
+          for(j in 1:length(popgs)){
+            poptab <- count_genos(popgs[j], popxv)
+            popgmat[as.numeric(names(poptab)),j] <- as.numeric(poptab)
+          }
+
+          if(length(popmpos) > 0){
+            poptmat <- popgmat[,-c(popmpos)] #gmat without missing data
+          }
+          else{
+            poptmat <- popgmat
+          }
+
+          #get matrix of allele counts
+          #initialize
+          popamat <- matrix(0, nrow(popgmat), length(popas))
+          colnames(popamat) <- popas
+
+          #fill in
+          for(j in 1:length(popas)){
+            b <- grep(popas[j], colnames(poptmat))
+            hom <- which(colnames(poptmat) == paste0(popas[j], popas[j]))
+            if(length(hom) == 0){
+              het <- b
+              popamat[,j] <- rowSums(poptmat[,het])
             }
             else{
-              popamat[,j] <- (poptmat[,hom] * 2)
+              het <- b[b != hom]
+              if(length(het) > 0){
+                if(is.matrix(poptmat[,het])){
+                  popamat[,j] <- (poptmat[,hom] * 2) + rowSums(poptmat[,het])
+                }
+                else{
+                  popamat[,j] <- (poptmat[,hom] * 2) + poptmat[,het]
+                }
+              }
+              else{
+                popamat[,j] <- (poptmat[,hom] * 2)
+              }
             }
           }
+
+          #-------------------
+          #established new set for this, now do maf as above.
+          popmafs <- 1 - rowMaxs( popamat)/rowSums( popamat)
+          popmafs <-  popmafs >= maf #if greater than requested, passes check for this pop
+          popmafs[is.na(popmafs)] <- FALSE #call false, no information to go on here
+          pmafs <- pmafs + popmafs #add this logical to the vector containing the sum of all such vectors
         }
+        pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
+        #add in the overall mafs, since differential fixation will be removed by this!
+        mafs <- 1 - rowMaxs(amat)/rowSums(amat)
+        mafs <- mafs < maf #less than required, set to true and reject.
+        mafs[is.na(mafs)] <- TRUE
+        omafs <- (mafs + pmafs) == 2 #only keep those that failed both within pop and overal maf filters.
 
-        #-------------------
-        #established new set for this, now do maf as above.
-        popmafs <- 1 - rowMaxs( popamat)/rowSums( popamat)
-        popmafs <-  popmafs >= maf #if greater than requested, passes check for this pop
-        popmafs[is.na(popmafs)] <- FALSE #call false, no information to go on here
-        pmafs <- pmafs + popmafs #add this logical to the vector containing the sum of all such vectors
+        keep <- keep + omafs
       }
-      pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
-      keep <- keep + pmafs
     }
-  }
 
-  #===============================================
-  ##hf_hets. Should only run if bi_al = TRUE.
-  if(hf_hets){
-    cat("Filtering high frequency heterozygote loci...\n")
-    #get heterozygote counts
-    if(sum(hs[-mpos]) > 1){
-      hetsum <- rowSums(tmat[,hs[-mpos]])
+    #===============================================
+    ##hf_hets. Should only run if bi_al = TRUE.
+    if(hf_hets){
+      cat("Filtering high frequency heterozygote loci...\n")
+      #get heterozygote counts
+      if(sum(hs[-mpos]) > 1){
+        hetsum <- rowSums(tmat[,hs[-mpos]])
+      }
+      else if (sum(hs[-mpos]) == 0){
+        hetsum <- numeric(nrow(x))
+      }
+      else{
+        hetsum <- tmat[,hs[-mpos]]
+      }
+      hf <- hetsum/rowSums(tmat)
+      hf <- hf >= hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
+      keep <- keep + hf
     }
-    else if (sum(hs[-mpos]) == 0){
-      hetsum <- numeric(nrow(x))
-    }
-    else{
-      hetsum <- tmat[,hs[-mpos]]
-    }
-    hf <- hetsum/rowSums(tmat)
-    hf <- hf >= hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
-    keep <- keep + hf
-  }
 
-
-  ##############################################################################################
-  ###apply results + min_loci filtering.
-  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
-    cat("Applying loci reject results...\n")
     keep <- !as.logical(keep)
     x <- x[keep,]
+
+    return(list(x = x, headers = headers[keep,]))
   }
 
-  #================================================
-  ##min_loci
-  if(min_loci){
+  #funciton to filter by individuals.
+  min_loci_filt <- function(){
     cat("Filtering out individuals sequenced in few kept loci...\n")
     mcounts <- colSums(ifelse(x == mDat, 1, 0))
     rejects <- which(mcounts/nrow(x) > min_loci)
     if(length(rejects) > 0){
       x <- x[,-rejects]
     }
+    return(list(x = x, rejects = rejects))
   }
 
-  #return the results.
-  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind))){
-    x <- cbind(headers[keep,], x)
+  ##############################################################################################
+  ###call the functions as requested.
+
+  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+    cat("Filtering loci. Starting loci:", nrow(x), "\n")
+    out <- filt_by_loci()
+    x <- out$x
+    headers <- out$headers
+    cat("\tEnding loci:", nrow(x), "\n")
   }
-  else{
-    x <- cbind(headers, x)
+
+  if(min_loci){
+    cat("Filtering individuals. Starting individuals:", ncol(x), "\n")
+    out <- min_loci_filt()
+    x <- out$x
+    cat("\tEnding individuals:", ncol(x), "\n")
+    if(re_run != FALSE){
+      cat("Re-filtering loci...\n")
+
+      if(re_run == "partial"){
+        maf <- FALSE
+        hf_hets <- FALSE
+        min_ind <- FALSE
+      }
+      if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+        rejects <- out$rejects
+        if(is.list(pop)){ #remake pop if necissary after accounting for the removed samples
+          s <- 1
+          pop_temp <- pop
+          for(i in 1:length(pop[[1]])){
+            pop_temp[[2]][i] <- pop[[2]][i] - sum(rejects >= s & rejects < s + pop[[2]][i])
+            s <- s + pop[[2]][i]
+          }
+          pop <- pop_temp
+          empties <- which(pop[[2]] == 0)
+          pop <- list(pop[[1]][-empties], pop[[2]][-empties])
+        }
+        out <- filt_by_loci() #re-filter loci to make sure that we don't have any surprise non-polys ect.
+        x <- out$x
+        headers <- out$headers
+        cat("\tFinal loci count:", nrow(x), "\n")
+      }
+      else{
+        cat("\tNo variables to re-fitler.\n")
+      }
+    }
   }
+
+  #return results
+  x <- cbind(headers, x)
   return(x)
 }
 
