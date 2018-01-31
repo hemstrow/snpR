@@ -259,7 +259,6 @@ filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, 
           popas <- popas[popas != substr(mDat, 1, snp_form/2)] #that aren't N?
 
           #for each element of gs, get the tables of genotype counts and add them to a matrix
-          if(length(nrow(popx)) == 0 | length(popgs) == 0){browser()}
           popgmat <- matrix(0, nrow(popx), length(popgs)) #initialize matrix
           colnames(popgmat) <- popgs #set the matrix names
 
