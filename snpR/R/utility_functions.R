@@ -1044,7 +1044,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       amat[which(is.na(amat))] <- afs[floor(which(is.na(amat))/nrow(amat)) + 1]
     }
     else{cat("Finished. Warning: Missing data counts are also stored!\n")}
-    amat <- cbind(samp = colnames(data)[(ecs+1):ncol(data)], as.data.frame(amat, stringsAsFactors = F))
+    amat <- cbind(samp = as.character(colnames(data)[(ecs+1):ncol(data)]), as.data.frame(amat, stringsAsFactors = F))
     return(amat)
   }
 }
