@@ -16,7 +16,7 @@ Full_LD_w_groups(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
 
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
-\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.}
+\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
 
 \item{report}{Reports progress every report linkage groups/chromosomes.}
 }

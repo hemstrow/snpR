@@ -18,7 +18,7 @@ Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
 
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
-\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns..}
+\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
 }
 \value{
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.

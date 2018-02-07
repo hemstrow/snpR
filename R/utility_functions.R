@@ -3,14 +3,65 @@
 # data: input data frame
 #
 #FILTERS:
-# non_poly: filter out snps with only one homozygous genotype observed, list return is npf
+#non_poly: filter out snps with only one homozygous genotype observed, list return is npf
 # maf: filter out snps with a minor allele frequency below that given, list return is maff
 # hf_hets: filters out data with a heterozygote frequency above the given value, list return is hfhf
 # min_ind: filters out snps genotyped at less than the given number of individuals, list return is mif
 # min_loci: Numeric value [0-1]: filters out INDIVIDUALS genotyped at less than this percentage of remaining loci.
 #This version is vectorized, and is much faster!
-filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", bi_al = TRUE, pop = FALSE, mDat = "NN"){
+
+
+#'Filter SNP data.
+#'
+#'\code{filter_snps} filters SNP data to remove loci which violate any of several assumptions and/or individuals which are sequenced at too few SNP loci.
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6.
+#'
+#'Possible filters:
+#'\itemize{
+#'    \item{maf, minor allele frequency: }{removes SNPs where the minor allele frequency is too low. Can look for mafs below #'provided either globally or search each population individually.}
+#'    \item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed heterozygosity is too high.}
+#'    \item{min_ind, minimum individuals: }{removes SNPs that were genotyped in too few individuals.}
+#'    \item{min_loci, minimum loci: }{removes individuals sequenced at too few loci.}
+#'    \item{non_poly, non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true SNPs).}
+#'    \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than two observed alleles.}
+#'}
+#'
+#'Note that filtering out poorly sequenced individuals creates a possible conflict with the loci filters, since after individuals are removed, some loci may no longer pass filters. For example, if a portion of individuals in one population all carry the only instances of a rare minor allele that still passes the maf threshold, removing those individuals may cause the loci to no longer be polymorphic in the sample.
+#'
+#'To counter this, the "re_run" argument can be used to pass the data through a second filtering step after individuals are removed. By default, the "partial" re-run option is used, which re-runs only the non-polymorphic filter (if it was originally set), since these may cause downstream analysis errors. The "full" option re-runs all set filters. Note that re-running any of these filters may cause individuals to fail the individual filter after loci removal, and so subsequent tertiary re-running of the individual filters, followed by the loci filters, and so on, could be justified. This function stops after the second loci re-filtering, since that step is likely to be the most important to prevent downstream analytical errors.
+#'
+#'Via the "pop" argument, this function can filter by minor allele frequencies in either \emph{all} samples or \emph{in each population and the entire sample}. The latter should be used in instances where populaiton sizes are very different or there are \emph{many} populations, and thus common alleles of interest in one population might be otherwise filtered out. With very small populations, however, this may leave noise in the sample! In most cases, filtering the entire sample is sufficient.
+#'
+#' @param x data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.
+#' @param ecs Integer. Number of metadata columns at the start of x.
+#' @param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency
+#' @param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum acceptable heterozygote frequency.
+#' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced.
+#' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.
+#' @param re_run FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?
+#' @param pop FALSE or list, default FALSE. A list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.
+#' @param non_poly boolean, default FALSE. Should non-polymorphic loci be removed?
+#' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
+#' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
+#'
+#' @return A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.
+#'
+#' @examples
+#' #Strict filtering for missing individuals and unsequenced loci with partial re-run:
+#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75)
+#'
+#' #Strict maf filtering with pops.
+#' ##prep pop info
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ##filter
+#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
+#'
+filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
+                        min_loci = FALSE, re_run = "partial", pop = FALSE,
+                        non_poly = TRUE, bi_al = TRUE, mDat = "NN"){
 
   #############################################################################################
   #do sanity checks
@@ -114,6 +165,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, 
     cat("Creating genotype table...\n")
 
     #for each element of gs, get the tables of genotype counts and add them to a matrix
+    browser()
     gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
     colnames(gmat) <- gs #set the matrix names
 
@@ -381,6 +433,7 @@ filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, 
         maf <- FALSE
         hf_hets <- FALSE
         min_ind <- FALSE
+        bi_al <- FALSE
       }
       if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
         rejects <- out$rejects
@@ -393,7 +446,9 @@ filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, 
           }
           pop <- pop_temp
           empties <- which(pop[[2]] == 0)
-          pop <- list(pop[[1]][-empties], pop[[2]][-empties])
+          if(length(empties) > 0){
+            pop <- list(pop[[1]][-empties], pop[[2]][-empties])
+          }
         }
         out <- filt_by_loci() #re-filter loci to make sure that we don't have any surprise non-polys ect.
         x <- out$x
@@ -440,6 +495,85 @@ filter_snps <- function(x, ecs, non_poly = FALSE, maf = FALSE, hf_hets = FALSE, 
 # l_names: Vector of locus names. For option 7.
 # interp_miss: Should missing data be interpolated? T or F. For option 8.
 #note: (v) under format options means that I've already vectorized it.
+
+
+
+#'Re-format genomic data.
+#'
+#'\code{format_snps} reformats SNP data into a range of different possible formats for use in snpR functions and elsewhere. Supports microsatellite data for conversion to a few formats as well.
+#'
+#'
+#'Format options:
+#'\enumerate{
+#'    \item Allele count format: allele counts tabulated for all samples or within populations.
+#'    \item genepop format: genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.
+#'    \item structure format: two lines per individual: allele calls stored as single character numeric (e.g. "1", "2"). Allele calls per individual stored on two subsequent lines.
+#'    \item Numeric genotype tab format: genotypes stored as four numeric characters (e.g. "0101", "0204").
+#'    \item Migrate-n hapmap: allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.
+#'    \item Character genotype tab format: genotypes stored as actual base calls (e.g. "AA", "CT").
+#'    \item Allele presence/absence format: presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.
+#'}
+#'
+#'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named o1-7 for output options 1 to 7, respectively.
+#'
+#'Input formats: For now, all input formats require at least two metadata columns.
+#'\itemize{
+#'    \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA", "CT").}
+#'    \item{0000: }{SNP genotypes stored as four numeric characters (e.g. "0101", "0204").}
+#'    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
+#'    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
+#'    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
+#'}
+#'
+#'Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
+#'
+#'
+#' @param x data.frame. Input data, in any of the above listed input formats.
+#' @param ecs Integer. Number of extra metadata columns at the start of x.
+#' @param output Integer 1-7. Which of the above output formats should be used?
+#' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
+#' @param miss Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").
+#' @param pop List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5.
+#' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
+#' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
+#' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
+#'
+#' @return A data.frame in the specified format.
+#'
+#' @examples
+#' #output option 1 with pops:
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' format_snps(stickSNPs, 3, 1, pop = l)
+#'
+#' #option 2:
+#' format_snps(stickSNPs, 3, 2)
+#'
+#' #option 3, subsetting out 100 random alleles:
+#' format_snps(stickSNPs, 3, 3, n_samp = 100)
+#'
+#' #option 3, subseting out the first 100 alleles:
+#' format_snps(stickSNPs, 3, 3, n_samp = 1:100)
+#'
+#' #option 4:
+#' format_snps(stickSNPs, 3, 4)
+#'
+#' #option 5:
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' format_snps(stickSNPs, 3, 5, pop = l)
+#'
+#' #option 6:
+#' num <- format_snps(stickSNPs, 3, 4)
+#' format_snps(num, 3, 6, input_form = "0000", miss = "00")
+#'
+#' #option 7, SNP data:
+#' format_snps(stickSNPs, 3, 7)
+#'
+#' #option 7, 3 character microsat data (2 character is very similar):
+#' format_snps(sthMSATS[seq(1, 13, by = 4),], 3, 7, input_form = "msat_3", miss = "000")
+#'
+#'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
                         interp_miss = T, lnames = NULL){
@@ -478,11 +612,24 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(input_form != "0000" & input_form != "NN"){
       stop("Only 0000 and NN formats accepted for now.")
     }
-    if(!is.integer(n_samp)){
-      cat("Number of sub-samples to take:", "n_samp", "\n")
+    if(length(n_samp) > 1){
+      if(is.integer(n_samp)){
+        cat("Number of designated sub-samples to take:", length(n_samp), "\n")
+      }
+      else{
+        stop("Number of sub-samples to take must be a positive integer vector.\n")
+      }
+    }
+    else if (is.numeric(n_samp)){
+      if(floor(n_samp) == n_samp & n_samp > 0){
+        cat("Number of designated sub-samples to take:", n_samp, "\n")
+      }
+      else{
+        stop("Number of sub-samples to take must be a positive integer vector.\n")
+      }
     }
     else if (!is.na(n_samp)){
-      stop("Number of sub-samples to take must be an integer.\n")
+      stop("Number of sub-samples to take must be a positive integer vector.\n")
     }
   }
   else if(output == 4){
@@ -889,7 +1036,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   if (output == 3){
 
     #subset if requested
-    if(!is.na(n_samp)){
+    if(all(!is.na(n_samp))){
       cat("Subsetting ")
       if(length(n_samp) > 1){
         cat("designated SNPs.\n")
@@ -1113,7 +1260,7 @@ run_g <- function(x, FUN, ...){
   }
   if(!is.data.frame(w_df)){
     warning("Output is vector: if merging with meta info, check that info data frame is sorted identically:
-            Group, Pop, then snp by snp!")
+            group then snp by snp!\n")
   }
   return(w_df)
 }

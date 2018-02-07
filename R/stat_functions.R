@@ -503,7 +503,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
           r <- 2 #number of comps
           nbar <- (idat$n_total + jdat$n_total)/2 #average sample size
           comb_ntots <- cbind(idat$n_total, jdat$n_total)
-          CV <- rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
+          CV <- matrixStats::rowSds(comb_ntots)/matrixStats::rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
           pbar <- ((idat$n_total*ps1) + (jdat$n_total*ps2))/(r*nbar) #average sample allele frequency
           ssq <- (((idat$n_total)*(ps1-pbar)^2) + ((jdat$n_total)*(ps2-pbar)^2))/((r-1)*nbar) #sample varaince of allele frequencies

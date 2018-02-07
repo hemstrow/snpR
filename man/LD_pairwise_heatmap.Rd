@@ -31,6 +31,8 @@ A pairwise LD heatmap as a ggplot object.
 Since the output is a ggplot object, options can be added or changed by adding "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options are also built into this function as agruments, but can be overwritten freely.
 
 Output from \code{\link{LD_full_pairwise}} runs directly or after saving and re-import without issue. Position data for the rows can be saved either as rownames or as the first column.
+
+This function was partially written by Nicholas Sard.
 }
 \examples{
 #base plot
