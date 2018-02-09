@@ -212,10 +212,16 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     v1u <- length(unique(v1))
     v2u <- length(unique(v2))
 
-    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25) 
+    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
     if(v1u >= 8 | v2u >= 8){long <- TRUE}
   }
+
+  loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
+  loadings <- round(loadings * 100, 2)
+
+  out <- out + xlab(paste0("PC1 (", loadings[1], "%)")) + ylab(paste0("PC2 (", loadings[2], "%)"))
+
 
   #use the color blind friendly palette if possible!
   if(!long){
