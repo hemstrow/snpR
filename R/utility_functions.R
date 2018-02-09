@@ -165,7 +165,6 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     cat("Creating genotype table...\n")
 
     #for each element of gs, get the tables of genotype counts and add them to a matrix
-    browser()
     gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
     colnames(gmat) <- gs #set the matrix names
 

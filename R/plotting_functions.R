@@ -130,8 +130,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #' @return A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
 #' @examples
-#' counts <- colSums(ifelse(stickSNPS[, 4:ncol(stickSNPs)] == "NN", FALSE, TRUE))
-#' PCAfromPA(stickPA, 2, 2000, counts)
+#' PCAfromPA(stickPA, 2)
 PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts = FALSE){
   library(ggplot2)
 
@@ -202,7 +201,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     v1 <- pca[,which(colnames(pca) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + geom_point(aes(color = v1)) #add the factor
+    out <- out + geom_point(aes(color = v1))#add the factor
 
     if(v1u >= 8){long <- TRUE} #are there too many categories to color with the cbb palette?
   }
@@ -213,7 +212,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     v1u <- length(unique(v1))
     v2u <- length(unique(v2))
 
-    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25) 
 
     if(v1u >= 8 | v2u >= 8){long <- TRUE}
   }
@@ -258,8 +257,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 #' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
 #' @examples
-#' counts <- colSums(ifelse(stickSNPS[, 4:ncol(stickSNPs)] == "NN", FALSE, TRUE))
-#' PCAfromPA(stickPA, 2, 2000, counts)
+#' PCAfromPA(stickPA, 2, c.dup = TRUE)
 tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
                        perplex = FALSE, gravity = 0, iter = 5000,
                        c.dup = FALSE, mc = FALSE, counts = FALSE, ...){
