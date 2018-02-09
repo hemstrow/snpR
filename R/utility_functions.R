@@ -1187,7 +1187,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #average number observed in columns
       cat("Interpolating missing data...\n")
       afs <- colMeans(amat, TRUE)
-      amat[which(is.na(amat))] <- afs[floor(which(is.na(amat))/nrow(amat)) + 1]
+      temp <- which(is.na(amat))/nrow(amat)
+      fill_element <- floor(temp) + 1 #get the column for each missing data point
+      fill_element[which(temp %% 1 == 0)] <- fill_element[which(temp %% 1 == 0)] - 1 #correct for anything in the last row
+      amat[which(is.na(amat))] <- afs[fill_element] #fill with the appropriate allele frequency.
     }
     else{cat("Finished. Warning: Missing data counts are also stored!\n")}
     amat <- cbind(samp = as.character(colnames(data)[(ecs+1):ncol(data)]), as.data.frame(amat, stringsAsFactors = F))
