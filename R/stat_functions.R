@@ -453,7 +453,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
   if(all(c("group", "pop", "position") %in% colnames(x))){
     x[,"pop"] <- as.character(x[,"pop"])
     x[,"group"] <- as.character(x[,"group"])
-    x <- arrange(x, group, position, pop)
+    x <- dplyr::arrange(x, group, position, pop)
   }
   else{
     warning("Data MUST be sorted by linkage group/chromosome, then position, then population! If columns named group, position, and pop exist, this will be done automatically.")
@@ -477,7 +477,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
   out[,1:ecs] <- x[x$pop == pops[1],1:ecs] #add snp, position, group to output
   if(do.nk){ #prepare nk output if requested
     nout <- out
-    colnames(nout)[4:ncol(nout)] <- paste0("nk_", comps)
+    colnames(nout)[(ecs+1):ncol(nout)] <- paste0("nk_", comps)
   }
 
   #print(out)
@@ -503,7 +503,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
           r <- 2 #number of comps
           nbar <- (idat$n_total + jdat$n_total)/2 #average sample size
           comb_ntots <- cbind(idat$n_total, jdat$n_total)
-          CV <- matrixStats::rowSds(comb_ntots)/matrixStats::rowMeans(comb_ntots) # coefficient of variation in sample size
+          CV <- matrixStats::rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
           pbar <- ((idat$n_total*ps1) + (jdat$n_total*ps2))/(r*nbar) #average sample allele frequency
           ssq <- (((idat$n_total)*(ps1-pbar)^2) + ((jdat$n_total)*(ps2-pbar)^2))/((r-1)*nbar) #sample varaince of allele frequencies
@@ -694,14 +694,14 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 #' l <- list(c(names(pops)), as.numeric(pops))
 #' ac <- format_snps(stickSNPs, 3, pop = l)
 #' ac <- rbind(ac, pall)
-#' ac <- arrange(ac, pop, position, group)
+#' ac <- dplyr::arrange(ac, pop, position, group)
 #' check_private(ac)
 #'
 check_private <- function(x){
   l <- unique(x$pop) #gets unique pops, requires column named pop
 
   if(all(c("group", "position", "pop") %in% colnames(x))){
-    x <- arrange(x, pop, group, position)
+    x <- dplyr::arrange(x, pop, group, position)
   }
   else{warning("Data must be sorted by pop, then identicallly by other meta data, such as by group and position. If columns named pop, group, and position are given in x, this will be done automatically.")}
 
@@ -1141,7 +1141,17 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     }
     prox <- prox[,c(6:ncol(prox), 1:5)]
   }
-  return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
+  if(prox_table){
+    if(matrix_out){
+      return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
+    }
+    else{
+      return(prox = prox)
+    }
+  }
+  else{
+    return(list(Dprime = Dpmat, rsq = rmat, pval = pvmat))
+  }
 }
 
 
