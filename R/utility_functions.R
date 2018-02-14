@@ -536,6 +536,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
+#' @param outfile character vector, default FALSE. If provided, the path to the output file to write to.
 #'
 #' @return A data.frame in the specified format.
 #'
@@ -575,7 +576,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
-                        interp_miss = T, lnames = NULL){
+                        interp_miss = T, lnames = NULL, outfile = FALSE){
 
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
   data <- x
@@ -714,6 +715,31 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
 
+  if(outfile != FALSE){
+    if(is.character(outfile) & length(outfile) == 1){
+      cat("Printing results to:", outfile, "\n")
+      if(file.exists(outfile)){
+        #ask for confirmation before proceeding, since shit will be overwritten.
+        cat("Outfile already exits. ")
+        resp <- "empty"
+        while(resp != "y" & resp != "n"){
+          cat("Overwrite? (y or n)\n")
+          resp <- readLines(n = 1)
+        }
+        if(resp == "n"){
+          stop("Please provide acceptable path to file for output.\n")
+        }
+        else{
+          cat("\tProceeding with conversion...\n")
+        }
+      }
+    }
+    else{
+      stop("Outfile must be a character vector of length 1.\n")
+    }
+  }
+
+
   #####################################################################
   #function to create table of allele and genotype counts from all data. From filter_snps
   #input is a long vector of the data xv,
@@ -828,7 +854,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     cat("\nMoving on to conversion...", "\n")
     miss <- "N" #reset miss to the correct entry
     if(output == 6){
-      return(data) #all done if just converting to NN
+      rdata <- data #all done if just converting to NN
     }
   }
 
@@ -852,7 +878,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     colnames(xv) <- snames
     out <- cbind(header, xv)
     if(output == 6){
-      return(out)
+      rdata <- out
     }
     else{
       data <- out
@@ -978,20 +1004,20 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         w_df <- w_df[,c(1, (ecs + 1):ncol(w_df))] #remove extra columns except the first and pop columns
       }
     }
-    return(w_df)
+    rdata <- w_df
   }
 
 
 
   ##convert to genepop or numeric format (v)
   if (output == 2 | output == 4){
-    cat("WARNING: For output option 3, output does not have population seperators or header information.", "\n", "Converting genotypes...")
+    cat("WARNING: For output option 3, data.frame output does not have population seperators or header information. Outfile, if requested and pop list provided, will.", "\n", "Converting genotypes...")
 
     if(input_form == "0000"){
       if(output == 2){
         w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
         row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
-        return(w_df)
+        rdata <- w_df
       }
       else{
         stop("Please select different input and output formats.")
@@ -1023,10 +1049,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(output == 2){ #convert to genepop
       w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
       row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
-      return(w_df)
+      rdata <- w_df
     }
     else {#prepare numeric output, otherwise same format
-      return(data)
+      rdata <- data
     }
   }
 
@@ -1083,7 +1109,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
 
     warning("Remove header line before inputing data into structure!")
-    return(out)
+    rdata <- out
   }
 
   #presence/absence format
@@ -1194,8 +1220,45 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     else{cat("Finished. Warning: Missing data counts are also stored!\n")}
     amat <- cbind(samp = as.character(colnames(data)[(ecs+1):ncol(data)]), as.data.frame(amat, stringsAsFactors = F))
-    return(amat)
+    rdata <- amat
   }
+
+  ############################################################################
+  #return the final product, printing an outfile if requested.
+  if(outfile != FALSE){
+    cat("Writing output file...\n")
+    if(output == 2){
+      cat("\tPreparing genepop file...\n")
+      #get list of snps
+      llist <- paste0("SNP", "_", 1:ncol(rdata), ",")
+      llist[length(llist)] <- paste0("SNP_", ncol(rdata))
+
+      #write output
+      cat(paste0(unlist(strsplit(outfile, split =  "\\."))[1], "_genepop\n"), file = outfile)
+      cat(llist, "\nPOP\n", file = outfile, append = T)
+
+      #write the tables, splitting by pop if requested:
+      if(is.list(pop)){
+        cat("\tWriting genepop file seperated by populations...\t")
+        j <- 1
+        for (i in 1:(length(pop[[1]]) - 1)){
+          cat(pop[[1]][i], "\t")
+          write.table(rdata[j:(j+pop[[2]][i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+          cat("POP\n", file = outfile, append = T)
+          j <- j + pop[[2]][i]
+        }
+        write.table(rdata[j:nrow(rdata),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+        cat(pop[[1]][length(pop[[1]])], "\t Done.\n")
+      }
+      else{
+        write.table(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+      }
+    }
+    else{
+      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t")
+    }
+  }
+  return(rdata)
 }
 
 #function to run any command after spliting the data by group and by population. Group and population must be in columns named "group" and "pop", respectively.

@@ -5,7 +5,7 @@
 \title{Re-format genomic data.}
 \usage{
 format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
-  n_samp = NA, interp_miss = T, lnames = NULL)
+  n_samp = NA, interp_miss = T, lnames = NULL, outfile = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in any of the above listed input formats.}
@@ -25,6 +25,8 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
 \item{interp_miss}{boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.}
 
 \item{lnames}{character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).}
+
+\item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
 }
 \value{
 A data.frame in the specified format.

@@ -94,21 +94,21 @@ LD_pairwise_heatmap <- function(x, r = NULL,
   heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
 
   #the plot
-  out <- ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
-    geom_tile(color = "white")+
-    scale_fill_gradient(low = colors[1], high = colors[2]) +
-    theme_bw()+
-    labs(x = "",y="", fill=l.text)+
-    theme(legend.title= element_text(size = t.sizes[2]),
+  out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
+    ggplot2::geom_tile(color = "white")+
+    ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
+    ggplot2::theme_bw()+
+    ggplot2::labs(x = "",y="", fill=l.text)+
+    ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
           axis.text = element_text(size = t.sizes[5]),
           panel.grid.major = element_line(color = background),
           plot.title = element_text(size = t.sizes[1], hjust = 0.5),
           axis.title = element_text(size = t.sizes[4]),
           legend.text = element_text(size = t.sizes[3]),
           panel.background = element_rect(fill = background, colour = background)) +
-    scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
-    scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
-    ggtitle(title) + ylab("Position (Mb)") + xlab("Position (Mb)")
+    ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
+    ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
+    ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
   return(out)
 }
 
@@ -132,7 +132,6 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #' @examples
 #' PCAfromPA(stickPA, 2)
 PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts = FALSE){
-  library(ggplot2)
 
   #grab metadata and data
   meta <- x[,1:ecs]
@@ -192,7 +191,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
-  out <- ggplot(pca, aes(PC1, PC2)) + theme_bw() #initialize plot
+  out <- ggplot2::ggplot(pca, aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
   long <- FALSE #are any of the sets of categories really long?
 
 
@@ -201,7 +200,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     v1 <- pca[,which(colnames(pca) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + geom_point(aes(color = v1))#add the factor
+    out <- out + ggplot2::geom_point(aes(color = v1))#add the factor
 
     if(v1u >= 8){long <- TRUE} #are there too many categories to color with the cbb palette?
   }
@@ -212,7 +211,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     v1u <- length(unique(v1))
     v2u <- length(unique(v2))
 
-    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
     if(v1u >= 8 | v2u >= 8){long <- TRUE}
   }
@@ -220,14 +219,14 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
   loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
   loadings <- round(loadings * 100, 2)
 
-  out <- out + xlab(paste0("PC1 (", loadings[1], "%)")) + ylab(paste0("PC2 (", loadings[2], "%)"))
+  out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ylab(paste0("PC2 (", loadings[2], "%)"))
 
 
   #use the color blind friendly palette if possible!
   if(!long){
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                     "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    out <- out + scale_color_manual(values = cbbPalette)
+    out <- out + ggplot2::scale_color_manual(values = cbbPalette)
   }
 
   return(list(raw = pca_r, plot = out))
@@ -238,7 +237,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
 #'tSNE from genetic data.
 #'
-#'\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Returns more data than \code{\link{tsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
+#'\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
 #'
 #'See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
 #'
@@ -340,8 +339,8 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
-  out <- ggplot(tsne_plot, aes(V1, V2)) + theme_bw() +
-    theme(axis.ticks = element_blank(),
+  out <- ggplot2::ggplot(tsne_plot, aes(V1, V2)) + ggplot2::theme_bw() +
+    ggplot2::theme(axis.ticks = element_blank(),
           axis.title = element_blank(),
           axis.text = element_blank(),
           panel.grid = element_blank()) #initialize plot
@@ -354,7 +353,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     v1 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + geom_point(aes(color = v1)) #add the factor
+    out <- out + ggplot2::geom_point(aes(color = v1)) #add the factor
 
     if(v1u >= 8){long <- TRUE} #are there too many categories to color with the cbb palette?
   }
@@ -365,7 +364,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     v1u <- length(unique(v1))
     v2u <- length(unique(v2))
 
-    out <- out + geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
     if(v1u >= 8 | v2u >= 8){long <- TRUE}
   }
@@ -374,7 +373,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
   if(!long){
     cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                     "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    out <- out + scale_color_manual(values = cbbPalette)
+    out <- out + ggplot2::scale_color_manual(values = cbbPalette)
   }
 
   return(list(tSNE = tsne.out, plot = out))

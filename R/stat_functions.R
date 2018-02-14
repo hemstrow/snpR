@@ -421,17 +421,23 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #'    To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").#'
 #'
 #'Method Options:
-#'    "WC": Wier and Cockerham 1984.
-#'    "Wier": Wier 1990.
-#'    "Hohenlohe": Hohenlohe 2010.
+#'\itemize{
+#'    \item{"WC": }{Wier and Cockerham 1984.}
+#'    \item{"Wier": }{Wier 1990.}
+#'    \item{"Genepop": }{As used in genepop, Rousset 2008.}
+#'    \item{"Hohenlohe": }{Hohenlohe 2010.}
+#'}
 #'
 #' @param x Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.
 #' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
 #' @param do.nk Should pairwise nk (allele sample sizes) also be calculated?
 #' @param skip.FST Should FST calcs be skipped (only set to TRUE if do.nk is as well).
 #' @param method Which FST estimator should be used?
-#' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned.
+#' @param pnames Character vector, default NULL. Vector of population names to use for method "Genepop"
+#'
+#' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
 #' @examples
+#' #Wier and Cockerham
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' l <- list(c(names(pops)), as.numeric(pops))
 #' ac <- format_snps(stickSNPs, 3, pop = l)
@@ -439,25 +445,142 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #' m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
 #' ac$Ho <- m_Ho$value
 #' calc_pairwise_Fst(ac, 3, do.nk = T)
-calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = "WC"){
+#'
+#' #genepop
+#' ##prepare pop list for both formatting and FST.
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' ##write the genepop file.
+#' format_snps(stickSNPs, 3, 2, outfile = "stickGENEP.txt", pop = l)
+#' ##calculate FST:
+#' FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
+
+calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, method = "WC", pnames = NULL){
   if(!do.nk & skip.FST){
     stop("Must specify either pairwise FST, nk, or both")
   }
-  if(any(x$n_alleles > 2)){
-    vio <- which(x$n_alleles > 2)
-    cat("Some loci have more than two alleles. Violating loci:\n")
-    print(vio)
-    stop()
+  if(method != "Genepop"){
+    if(any(x$n_alleles > 2)){
+      vio <- which(x$n_alleles > 2)
+      cat("Some loci have more than two alleles. Violating loci:\n")
+      print(vio)
+      stop()
+    }
+    i <- 1
+    if(all(c("group", "pop", "position") %in% colnames(x))){
+      x[,"pop"] <- as.character(x[,"pop"])
+      x[,"group"] <- as.character(x[,"group"])
+      x <- dplyr::arrange(x, group, position, pop)
+    }
+    else{
+      warning("Data MUST be sorted by linkage group/chromosome, then position, then population! If columns named group, position, and pop exist, this will be done automatically.")
+    }
   }
-  i <- 1
-  if(all(c("group", "pop", "position") %in% colnames(x))){
-    x[,"pop"] <- as.character(x[,"pop"])
-    x[,"group"] <- as.character(x[,"group"])
-    x <- dplyr::arrange(x, group, position, pop)
+  ###############################################################################
+  #do genepop if requested
+  if(method == "Genepop"){
+    #sanity checks
+    if(!is.character(x) | length(x) != 1){
+      stop("For genepop, x is the path to the genepop file. Format_snps output option 2 can provide this.\n")
+    }
+    if(!file.exists(x)){
+      stop("For genepop, x is the path to the genepop file. Format_snps output option 2 can provide this.\n")
+    }
+    if(is.null(pnames)){
+      cat("No pop names provided, pulling from file.\n")
+    }
+    else if(!is.character(pnames)){
+      stop("pnames must be a character vector.\n")
+    }
+
+    if(do.nk){
+      stop("Set method to something other than Genepop for do.nk.\n")
+    }
+    if(skip.FST){
+      stop("Nothing to do. Stopping.\n")
+    }
+
+    #run genepop
+    cat("Genepop results:\n\t")
+    genepop::Fst(x, pairs = TRUE)
+
+    ############
+    #read in the genepop output and parse the bugger.
+    cat("Parsing genepop output...\n")
+
+    #read the file in
+    x <- paste0(x, ".ST2") #data file
+    x <- readLines(x)
+
+    #get the number of pops and the number of loci.
+    np <- grep("Number of populations detected", x)
+    np <- as.numeric(unlist(strsplit(x[np], " : "))[2])
+    nl <- grep("Number of loci detected", x)
+    nl <- as.numeric(unlist(strsplit(x[nl], " : "))[2])
+
+    #check that the correct number of pop names were provided or grab new ones if they weren't.
+    ##get pop data
+    px <- grep("Indices for populations:", x)
+    px <- x[(px+2):(px+1+np)]
+    px <- unlist(strsplit(px, " +"))
+    px <- px[seq(2, length(px), 2)]
+
+    if(is.null(pnames)){
+      cat("Pulling pop names from x...\n")
+      pnames <- px
+    }
+    else if (length(pnames) != np){
+      warning("Vector of provided pop names is not equal in length to the number of populations in x!\n")
+      cat("Substituting pop names form x...\n")
+      pnames <- px
+    }
+
+
+    #get the indices containing locus headers
+    locs <- grep("  Locus:", x)
+    locs <- c(locs, grep("Estimates for all loci", x))
+
+    #get indices not containing data to parse and remove them.
+    empts <- c(1:(locs[1]-2), locs, locs + 1, locs + 2, locs - 1, (length(x)-2):length(x))
+    vals <- x[-empts]
+
+    #initialize output.
+    fmat <- matrix(NA, nrow = nl + 1, ncol = ((np-1)*np)/2)
+    colnames(fmat) <- 1:ncol(fmat)
+
+    #fill the matrix with a loop. Not a bad loop, since it only loops through each pop.
+    prog <- 1 #column fill progress tracker
+    for(i in 2:np){
+      #grab the values
+      tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
+      tvals <- gsub(paste0("^", i, " +"), "", tvals) #get just the values
+      tvals <- unlist(strsplit(tvals, " +")) #spit and unlist the values
+      tvals <- suppressWarnings(as.numeric(tvals)) #get them as numeric, NAs are fine, they should be NAs.
+
+      #put them in a matrix to get their comparison ID.
+      tmat <- matrix(tvals, nl + 1, i - 1, TRUE) #fill these values into a matrix
+      colnames(tmat) <- paste0(pnames[1:(i-1)], "_", pnames[i]) #name the comparison in each column
+      fmat[,prog:(prog + ncol(tmat) - 1)] <- tmat #save to the final output
+      colnames(fmat)[prog:(prog + ncol(tmat) - 1)] <- colnames(tmat) #save the column names
+      prog <- prog + ncol(tmat) #increment column progress.
+    }
+
+    fmat <- fmat[,order(colnames(fmat))] #re-organize output by column name
+
+    #grab out the overall Fst
+    overall <- fmat[nrow(fmat),]
+
+    #grab the per-locus estimates
+    fmat <- fmat[-nrow(fmat),]
+    out <- list(loci = as.data.frame(fmat, stringsAsFactors = F), overall = overall)
+
+    #return, we're done.
+    cat("Finished.\n")
+    return(out)
   }
-  else{
-    warning("Data MUST be sorted by linkage group/chromosome, then position, then population! If columns named group, position, and pop exist, this will be done automatically.")
-  }
+
+  ###############################################################################
+  #otherwise do in house Fst calcs
   pops <- sort(unique(x[,"pop"]))
   out <- as.data.frame(matrix(NA, ncol = ecs+(length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
@@ -556,6 +679,7 @@ calc_pairwise_Fst <- function(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = 
           #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
           out[,c.col] <- Fst #write fst
         }
+
         else{
           stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tWier: Wier (1990).\n\tHohenlohe: Hohenlohe et al. (2010).")
         }
@@ -754,6 +878,7 @@ check_private <- function(x){
 #' @param prox_table If TRUE, a proximity table is produced.
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
 #' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.
+#' @param sr boolean, default FALSE. Should progress reports be surpessed?
 #'
 #' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
 #'
@@ -761,7 +886,8 @@ check_private <- function(x){
 #' #returns prox table and LD matrices.
 #' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
 #'
-LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N") {
+LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N", sr = FALSE) {
+  library(dplyr)
   #new LD pairwise function. Loops through each loci, but vectorized for each comparison within that loci
 
   #get data and headers
@@ -1031,10 +1157,12 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 
   #loop through and get haplotypes, calc LD for each locus.
   for(i in 1:(nrow(x) - 1)){
-    cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
-    if(cprog >= 0.05 + cpercent){
-      cat("Progress:", paste0(round(cprog*100), "%."), "\n")
-      cpercent <- cprog
+    if(!sr){
+      cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
+      if(cprog >= 0.05 + cpercent){
+        cat("Progress:", paste0(round(cprog*100), "%."), "\n")
+        cpercent <- cprog
+      }
     }
     haps <- tabulate_haplotypes(x[i,], x[(i+1):nrow(x),])
 
@@ -1089,7 +1217,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     B2f <- 1 - B1f
     D <- A1B1f - A1f*B1f
     D2 <- A2B1f - A2f*B1f
-    Dprime <- ifelse(D > 0, D/rowMins(cbind(A1f*B2f, A2f*B1f)),
+    Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
                      ifelse(D < 0, D/rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
                             0))
     rsq <- (D^2)/(A1f*A2f*B1f*B2f)
@@ -1173,6 +1301,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
 #' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
 #' @param report Reports progress every report linkage groups/chromosomes.
+#' @param sr boolean, default TRUE. Should within group progress reports be surpressed?
 #'
 #' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.
 #'
@@ -1180,7 +1309,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 #' #returns prox table and LD matrices.
 #' Full_LD_w_groups(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3)
 #'
-Full_LD_w_groups <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N", report = 1){
+Full_LD_w_groups <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N", report = 1, sr = TRUE){
   if (prox_table == FALSE & matrix_out == FALSE){
     stop("Please specify output format.")
   }
@@ -1193,7 +1322,7 @@ Full_LD_w_groups <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
       next()
     }
     if(i %% report == 0){cat("Group #:", i, "of", length(groups), "Name:", groups[i], "\n")}
-    w_data <- LD_full_pairwise(x = w_data, ecs = ecs, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out)
+    w_data <- LD_full_pairwise(x = w_data, ecs = ecs, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out, sr = sr)
     if(prox_table == TRUE){
       if(matrix_out == TRUE){
         prox_out <- rbind(prox_out, w_data$prox)
@@ -1250,8 +1379,8 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   if (prox_table == FALSE & matrix_out == FALSE){
     stop("Please specify output format.")
   }
-  cl <- makeSOCKcluster(num_cores)
-  registerDoSNOW(cl)
+  cl <- snow::makeSOCKcluster(num_cores)
+  doSNOW::registerDoSNOW(cl)
 
 
   groups <- unique(x$group)
@@ -1259,19 +1388,19 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   progress <- function(n) cat(sprintf("Group %d out of",n), length(groups), "is complete.\n")
   opts <- list(progress=progress)
 
-  output <- foreach(i = 1:length(groups), .export = 'LD_full_pairwise', .packages = c("dplyr", "reshape2", "matrixStats"), .inorder = TRUE,
+  output <- foreach::foreach(i = 1:length(groups), .export = 'LD_full_pairwise', .packages = c("dplyr", "reshape2", "matrixStats"), .inorder = TRUE,
                     .options.snow = opts) %dopar% {
                       w_data <- x[x$group == groups[i],]
                       cat("Initializing :", groups[i], ".\n")
-                      if(nrow(w_data) == 0 | nrow(w_data) == 1){
-                        next()
+                      if(nrow(w_data) > 1){
+                        w_data <- LD_full_pairwise(w_data, ecs = ecs, prox_table = prox_table, matrix_out = matrix_out, mDat = mDat)
                       }
-                      w_data <- LD_full_pairwise(w_data, ecs = ecs, prox_table = prox_table, matrix_out = matrix_out, mDat = mDat)
                     }
   #loop through output and put in easier to manage form
-  if(prox_table){p <- c()}
+  if(prox_table){p <- data.frame()}
   if(matrix_out){m <- vector("list", length(groups))}
   for(i in 1:length(groups)){
+    if(is.null(output[[i]])){next()}
     if(prox_table){
       if(matrix_out){
         p <- rbind(p, output[[i]]$prox)
@@ -1287,8 +1416,8 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   }
 
   #clear cluster and return stuff
-  stopCluster(cl)
-  registerDoSEQ()
+  parallel::stopCluster(cl)
+  foreach::registerDoSEQ()
   if(prox_table){
     if(matrix_out){
       m[[i+1]] <- p

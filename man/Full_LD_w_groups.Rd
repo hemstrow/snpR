@@ -5,7 +5,7 @@
 \title{Pairwise LD from SNP data, split by group.}
 \usage{
 Full_LD_w_groups(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
-  report = 1)
+  report = 1, sr = TRUE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
@@ -19,6 +19,8 @@ Full_LD_w_groups(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
 \item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
 
 \item{report}{Reports progress every report linkage groups/chromosomes.}
+
+\item{sr}{boolean, default TRUE. Should within group progress reports be surpressed?}
 }
 \value{
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.

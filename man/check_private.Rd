@@ -26,7 +26,7 @@ pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 l <- list(c(names(pops)), as.numeric(pops))
 ac <- format_snps(stickSNPs, 3, pop = l)
 ac <- rbind(ac, pall)
-ac <- arrange(ac, pop, position, group)
+ac <- dplyr::arrange(ac, pop, position, group)
 check_private(ac)
 
 }

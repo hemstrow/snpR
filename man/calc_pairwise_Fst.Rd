@@ -4,7 +4,8 @@
 \alias{calc_pairwise_Fst}
 \title{Pairwise FST from SNP data.}
 \usage{
-calc_pairwise_Fst(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = "WC")
+calc_pairwise_Fst(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE,
+  method = "WC", pnames = NULL)
 }
 \arguments{
 \item{x}{Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.}
@@ -16,6 +17,8 @@ calc_pairwise_Fst(x, ecs, do.nk = FALSE, skip.FST = FALSE, method = "WC")
 \item{skip.FST}{Should FST calcs be skipped (only set to TRUE if do.nk is as well).}
 
 \item{method}{Which FST estimator should be used?}
+
+\item{pnames}{Character vector, default NULL. Vector of population names to use for method "Genepop"}
 }
 \value{
 If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned.
@@ -31,11 +34,15 @@ Smoothing note:
    To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").#'
 
 Method Options:
-   "WC": Wier and Cockerham 1984.
-   "Wier": Wier 1990.
-   "Hohenlohe": Hohenlohe 2010.
+\itemize{
+   \item{"WC": }{Wier and Cockerham 1984.}
+   \item{"Wier": }{Wier 1990.}
+   \item{"Genepop": }{As used in genepop, Rousset 2008.}
+   \item{"Hohenlohe": }{Hohenlohe 2010.}
+}
 }
 \examples{
+#Wier and Cockerham
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 l <- list(c(names(pops)), as.numeric(pops))
 ac <- format_snps(stickSNPs, 3, pop = l)
@@ -43,4 +50,13 @@ Ho <- calc_Ho(stickSNPs, 3, pop = l)
 m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
 ac$Ho <- m_Ho$value
 calc_pairwise_Fst(ac, 3, do.nk = T)
+
+#genepop
+##prepare pop list for both formatting and FST.
+pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+l <- list(c(names(pops)), as.numeric(pops))
+##write the genepop file.
+format_snps(stickSNPs, 3, 2, outfile = "stickGENEP.txt", pop = l)
+##calculate FST:
+FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
 }

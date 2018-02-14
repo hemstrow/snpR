@@ -4,7 +4,8 @@
 \alias{LD_full_pairwise}
 \title{Pairwise LD from SNP data.}
 \usage{
-LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N")
+LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
+  sr = FALSE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
@@ -16,6 +17,8 @@ LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N")
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
 \item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.}
+
+\item{sr}{boolean, default FALSE. Should progress reports be surpessed?}
 }
 \value{
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.

@@ -48,6 +48,5 @@ Description of x:
 This function results from collaboration with Matt Thorstensen.
 }
 \examples{
-counts <- colSums(ifelse(stickSNPS[, 4:ncol(stickSNPs)] == "NN", FALSE, TRUE))
-PCAfromPA(stickPA, 2, 2000, counts)
+PCAfromPA(stickPA, 2, c.dup = TRUE)
 }

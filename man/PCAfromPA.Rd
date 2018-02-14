@@ -31,6 +31,5 @@ Description of x:
    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
 }
 \examples{
-counts <- colSums(ifelse(stickSNPS[, 4:ncol(stickSNPs)] == "NN", FALSE, TRUE))
-PCAfromPA(stickPA, 2, 2000, counts)
+PCAfromPA(stickPA, 2)
 }

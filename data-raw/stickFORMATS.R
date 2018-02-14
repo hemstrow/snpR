@@ -8,7 +8,7 @@
  f2 <- format_snps(stickSNPs, 3, 2)
 
  #option 3, subsetting out 100 random alleles:
- f3 <- format_snps(stickSNPs, 3, 3, n_samp = 100)
+ f3 <- format_snps(stickSNPs, 3, 3, n_samp = 1:100)
 
  #option 4:
  f4 <- format_snps(stickSNPs, 3, 4)

@@ -22,6 +22,7 @@ Imports:
     plyr,
     reshape2
 Suggests:
+    genepop,
     knitr,
     mmtsne,
     rmarkdown,
