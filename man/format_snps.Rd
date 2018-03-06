@@ -18,7 +18,7 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
 
 \item{miss}{Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").}
 
-\item{pop}{List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5.}
+\item{pop}{List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5 or 2 if outfile requested.}
 
 \item{n_samp}{Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
 

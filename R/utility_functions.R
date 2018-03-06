@@ -532,7 +532,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @param output Integer 1-7. Which of the above output formats should be used?
 #' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
 #' @param miss Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").
-#' @param pop List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5.
+#' @param pop List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5 or 2 if outfile requested.
 #' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
@@ -1013,46 +1013,46 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   if (output == 2 | output == 4){
     cat("WARNING: For output option 3, data.frame output does not have population seperators or header information. Outfile, if requested and pop list provided, will.", "\n", "Converting genotypes...")
 
-    if(input_form == "0000"){
-      if(output == 2){
-        w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
-        row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
-        rdata <- w_df
-      }
-      else{
-        stop("Please select different input and output formats.")
-      }
-    }
-
-    #vectorize and replace
-    xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
-    xv1 <- substr(xv, 1, 1)
-    xv2 <- substr(xv, 2, 2)
-    xv1[xv1 == "A"] <- "01"
-    xv1[xv1 == "C"] <- "02"
-    xv1[xv1 == "G"] <- "03"
-    xv1[xv1 == "T"] <- "04"
-    xv1[xv1 == miss] <- "00"
-    xv2[xv2 == "A"] <- "01"
-    xv2[xv2 == "C"] <- "02"
-    xv2[xv2 == "G"] <- "03"
-    xv2[xv2 == "T"] <- "04"
-    xv2[xv2 == miss] <- "00"
-    xv <- paste0(xv1, xv2)
-
-    xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
-    inds <- colnames(data)
-    data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
-    colnames(data) <- inds
-
-    cat("\n", "Cleaning up...", "\n")
-    if(output == 2){ #convert to genepop
+    if(input_form == "0000" & output == 2){
       w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
       row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
       rdata <- w_df
     }
-    else {#prepare numeric output, otherwise same format
-      rdata <- data
+    else if (input_form == "0000" & output == 4){
+      stop("Same input form given as output selected.")
+    }
+
+    else{
+      #vectorize and replace
+      xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
+      xv1 <- substr(xv, 1, 1)
+      xv2 <- substr(xv, 2, 2)
+      xv1[xv1 == "A"] <- "01"
+      xv1[xv1 == "C"] <- "02"
+      xv1[xv1 == "G"] <- "03"
+      xv1[xv1 == "T"] <- "04"
+      xv1[xv1 == miss] <- "00"
+      xv2[xv2 == "A"] <- "01"
+      xv2[xv2 == "C"] <- "02"
+      xv2[xv2 == "G"] <- "03"
+      xv2[xv2 == "T"] <- "04"
+      xv2[xv2 == miss] <- "00"
+      xv <- paste0(xv1, xv2)
+
+      xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+      inds <- colnames(data)
+      data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
+      colnames(data) <- inds
+
+      cat("\n", "Cleaning up...", "\n")
+      if(output == 2){ #convert to genepop
+        w_df <- as.data.frame(t(data[,(ecs + 1):ncol(data)]), stringsAsFactors = F) #remove extra columns and transpose data
+        row.names(w_df) <- paste0(row.names(w_df), " ,") #adding space and comma to row names, as required.
+        rdata <- w_df
+      }
+      else {#prepare numeric output, otherwise same format
+        rdata <- data
+      }
     }
   }
 
@@ -1240,7 +1240,25 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #write the tables, splitting by pop if requested:
       if(is.list(pop)){
         cat("\tWriting genepop file seperated by populations...\t")
+        #need to sort by pops. Fist loop does this:
         j <- 1
+        rdata$pop <- NA
+        for (i in 1:(length(pop[[1]]) - 1)){
+          rdata[j:(j+pop[[2]][i] - 1),]$pop <- pop[[1]][i]
+          j <- j + pop[[2]][i]
+        }
+        rdata[j:nrow(rdata),]$pop <- pop[[1]][length(pop[[1]])]
+
+        #sort and remove pop column
+        rdata$rnames <- rownames(rdata)
+        rdata <- dplyr::arrange(rdata, pop)
+        rownames(rdata) <- rdata$rnames
+        rdata <- rdata[,-which(colnames(rdata) %in% c("pop", "rnames"))]
+
+        #second loop prints results.
+        j <- 1
+        pop[[2]] <- pop[[2]][order(pop[[1]])]
+        pop[[1]] <- sort(pop[[1]])
         for (i in 1:(length(pop[[1]]) - 1)){
           cat(pop[[1]][i], "\t")
           write.table(rdata[j:(j+pop[[2]][i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
@@ -1275,9 +1293,10 @@ run_gp <- function(x, FUN, ...){
       x_data <- FUN(w_data[w_data[,"pop"] == pops[j],], ...)
       if(length(x_data) == 0){next}
       if(is.data.frame(x_data)){
+        if(!any(colnames(x_data) == "pop"))
         x_data <- cbind(pop = pops[j], x_data, stringsAsFactors = F)
         if(!any(colnames(x_data) == "group")){
-          x_data <- cbind(group = rep(groups[i], nrow(x_data)), x_data)
+          x_data <- cbind(group = groups[i], x_data, stringsAsFactors = F)
         }
         w_df <- rbind(w_df, x_data)
       }
@@ -1312,7 +1331,7 @@ run_g <- function(x, FUN, ...){
     if(length(w_data) == 0){next}
     if(is.data.frame(w_data)){
       if(!any(colnames(w_data) == "group")){
-        w_data <- cbind(group = rep(groups[i], nrow(w_data)), w_data)
+        w_data <- cbind(group = groups[i], w_data, stringsAsFactors = F)
       }
       w_df <- rbind(w_df, w_data)
     }

@@ -192,8 +192,9 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
   out <- ggplot2::ggplot(pca, aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
-  long <- FALSE #are any of the sets of categories really long?
 
+  cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                  "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
   #add variables.
   if(length(do.plot) == 1){
@@ -202,7 +203,12 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
     out <- out + ggplot2::geom_point(aes(color = v1))#add the factor
 
-    if(v1u >= 8){long <- TRUE} #are there too many categories to color with the cbb palette?
+    if(v1u <= 8){#are there too many categories to color with the cbb palette?
+      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+    }
+    else{
+      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+    }
   }
 
   if(length(do.plot) == 2){
@@ -213,21 +219,20 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
     out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
-    if(v1u >= 8 | v2u >= 8){long <- TRUE}
+    if(v1u <= 8 & v2u <= 8){#are there too many categories to color with the cbb palette?
+      out <- out+ ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+      out <- out+ ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+    }
+    else{
+      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+      out <- out + ggplot2::scale_fill_discrete(name = do.plot[2])
+    }
   }
 
   loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
   loadings <- round(loadings * 100, 2)
 
   out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ylab(paste0("PC2 (", loadings[2], "%)"))
-
-
-  #use the color blind friendly palette if possible!
-  if(!long){
-    cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
-                    "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    out <- out + ggplot2::scale_color_manual(values = cbbPalette)
-  }
 
   return(list(raw = pca_r, plot = out))
 }
@@ -337,6 +342,9 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
   #plot the result
   cat("Preparing plot...\n")
 
+  cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                  "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+  
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
   out <- ggplot2::ggplot(tsne_plot, aes(V1, V2)) + ggplot2::theme_bw() +
@@ -355,7 +363,12 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
     out <- out + ggplot2::geom_point(aes(color = v1)) #add the factor
 
-    if(v1u >= 8){long <- TRUE} #are there too many categories to color with the cbb palette?
+    if(v1u <= 8){#are there too many categories to color with the cbb palette?
+      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+    }
+    else{
+      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+    }
   }
 
   if(length(do.plot) == 2){
@@ -366,14 +379,14 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
     out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
-    if(v1u >= 8 | v2u >= 8){long <- TRUE}
-  }
-
-  #use the color blind friendly palette if possible!
-  if(!long){
-    cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
-                    "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-    out <- out + ggplot2::scale_color_manual(values = cbbPalette)
+    if(v1u <= 8 & v2u <= 8){#are there too many categories to color with the cbb palette?
+      out <- out+ ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+      out <- out+ ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+    }
+    else{
+      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+      out <- out + ggplot2::scale_fill_discrete(name = do.plot[2])
+    }
   }
 
   return(list(tSNE = tsne.out, plot = out))

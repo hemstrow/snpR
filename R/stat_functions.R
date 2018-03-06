@@ -199,7 +199,7 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
     #output result for this window, step to the next window
 
-    out[i,"group"] <- x[1,3]
+    out[i,"group"] <- x[1,"group"]
     if("pop" %in% colnames(x)){
       out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
     }
@@ -534,6 +534,12 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
       cat("Substituting pop names form x...\n")
       pnames <- px
     }
+    else{
+      if(all(pnames != sort(pnames))){
+        warning("Pop names have been sorted, ensure input genepop file also has alphabetically sorted pop names.")
+      }
+      pnames <- sort(pnames)
+    }
 
 
     #get the indices containing locus headers
@@ -567,13 +573,19 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
 
     fmat <- fmat[,order(colnames(fmat))] #re-organize output by column name
 
-    #grab out the overall Fst
-    overall <- fmat[nrow(fmat),]
+    if(np != 2){
+      #grab out the overall Fst
+      overall <- fmat[nrow(fmat),]
 
-    #grab the per-locus estimates
-    fmat <- fmat[-nrow(fmat),]
-    out <- list(loci = as.data.frame(fmat, stringsAsFactors = F), overall = overall)
-
+      #grab the per-locus estimates
+      fmat <- fmat[-nrow(fmat),]
+      out <- list(loci = as.data.frame(fmat, stringsAsFactors = F), overall = overall)
+    }
+    else{
+      overall <- fmat[length(fmat)]
+      fmat <- fmat[-length(fmat)]
+      out <- list(loci = fmat, overall = overall)
+    }
     #return, we're done.
     cat("Finished.\n")
     return(out)
@@ -1218,7 +1230,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
     D <- A1B1f - A1f*B1f
     D2 <- A2B1f - A2f*B1f
     Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
-                     ifelse(D < 0, D/rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
+                     ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
                             0))
     rsq <- (D^2)/(A1f*A2f*B1f*B2f)
 
@@ -1261,6 +1273,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
   }
   if(prox_table){
     prox <- prox[-1,]
+    prox$proximity <- abs(prox$p1 - prox$p2)
     if(any(colnames(headers) == "group")){
       prox$group <- headers[1,"group"]
     }

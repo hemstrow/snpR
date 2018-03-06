@@ -52,7 +52,10 @@ gaussian_weight <- function(p, c, s) {
 smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL) {
   sig <- 1000*sigma
   new_col <- paste0("smoothed", "_", parameter)
-  if(!nk_weight){
+  if(nk_weight){
+    if(any(colnames(x) == "n_total")){
+      colnames(x)[which(colnames(x) == "n_total")] <- "nk"
+    }
     x[,"nk"] <- as.numeric(x[,"nk"])
   }
   x$position <- as.numeric(x$position)

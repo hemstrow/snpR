@@ -23,9 +23,9 @@
 #'
 #'For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
 #'
-#'This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data.
+#'This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over multiple linkage groups/chromosomes.
 #'
-#' @param x Input data containing \emph{unsmoothed} statistic of interest and SNP position.
+#' @param x Input data containing \emph{unsmoothed} statistic of interest and SNP position. Note that this data must contain a column titled "group" containing the linkage group/chromosome/scaffold for each observed value, since positions are drawn from the same group only.
 #' @param statistic A character string designating the \emph{unsmoothed} statistic to smooth.
 #' @param boots Number of bootstraps to run.
 #' @param sigma Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
@@ -105,7 +105,7 @@ resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, f
       gwp <- gaussian_weight(tpos,cs[j],sig)*rs*(rnk - 1)
       gws <- gaussian_weight(tpos,cs[j],sig)*(rnk - 1)
     }
-    if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){browser()}
+    if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){stop("Got a NA value for a bootstrapped smoothed window. This usually happens if the nk_weight is TRUE but no column titled nk is provided.")}
     smoothed_dist[j] <- (sum(gwp, na.rm = T)/sum(gws, na.rm = T)) #save the random stat
   }
   return(smoothed_dist)

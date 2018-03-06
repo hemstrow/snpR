@@ -37,7 +37,7 @@ tSNEfromPA(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 }
 \description{
-\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Returns more data than \code{\link{tsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
+\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
 }
 \details{
 See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
