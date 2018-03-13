@@ -53,7 +53,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
 
     #melting the df so its computer reable and fixing the names of the columns
-    heatmap_x <- melt(x, id.vars = "V1")
+    heatmap_x <- reshape2::melt(x, id.vars = "V1")
     names(heatmap_x) <- c("SNPa", "SNPb", "value")
 
     #getting rid of all the zeros from snps being compared to themselves
@@ -94,6 +94,8 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     #reordering based on factors
     heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels= ms,ordered=T)
     heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
+
+    return(heatmap_x)
   }
 
 
@@ -115,6 +117,8 @@ LD_pairwise_heatmap <- function(x, r = NULL,
       ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
       ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
       ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+
+    out <- list(plot = out, dat = heatmap_x)
   }
 
   else{
@@ -129,24 +133,26 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     heatmap_x$SNPb <- as.factor(as.numeric(as.character(heatmap_x$SNPb)))
 
     #plot, with facets
-    out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
+    out <- ggplot2::ggplot(heatmap_x, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
       ggplot2::geom_tile(color = "white")+
-      ggplot2::facet_wrap(~var)
+      ggplot2::facet_wrap(~var) +
       ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
       ggplot2::theme_bw()+
       ggplot2::labs(x = "",y="", fill=l.text)+
-      ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
-                     axis.text = element_text(size = t.sizes[5]),
-                     panel.grid.major = element_line(color = background),
-                     strip.background = element_blank(),
-                     strip.text = element_text(hjust = 0.01, size = t.sizes[1]),
-                     axis.title = element_text(size = t.sizes[4]),
-                     legend.text = element_text(size = t.sizes[3]),
-                     panel.background = element_rect(fill = background, colour = background)) +
+      ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
+                     axis.text = ggplot2::element_text(size = t.sizes[5]),
+                     panel.grid.major = ggplot2::element_line(color = background),
+                     strip.background = ggplot2::element_blank(),
+                     strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
+                     axis.title = ggplot2::element_text(size = t.sizes[4]),
+                     legend.text = ggplot2::element_text(size = t.sizes[3]),
+                     panel.background = ggplot2::element_rect(fill = background, colour = background)) +
       ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
       ggplot2::scale_y_discrete(breaks = rev(levels(heatmap_x$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
                                 limits = rev(levels(heatmap_x$SNPb))) +
       ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+
+    out <- list(plot = out, dat = heatmap_x)
   }
   return(out)
 }
