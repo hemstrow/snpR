@@ -99,7 +99,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
   }
 
 
-  if(!is.list(x)){
+  if(is.data.frame(x)){
     #the plot
     heatmap_x <- prep_hm_dat(x, r)
     out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
