@@ -44,6 +44,7 @@ Format options:
    \item Migrate-n hapmap: allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.
    \item Character genotype tab format: genotypes stored as actual base calls (e.g. "AA", "CT").
    \item Allele presence/absence format: presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.
+   \item RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.
 }
 
 Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named o1-7 for output options 1 to 7, respectively.
@@ -91,6 +92,12 @@ format_snps(stickSNPs, 3, 7)
 
 #option 7, 3 character microsat data (2 character is very similar):
 format_snps(sthMSATS[seq(1, 13, by = 4),], 3, 7, input_form = "msat_3", miss = "000")
+
+#option 8, RAFM, taking only 100 random snps.
+pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+l <- list(c(names(pops)), as.numeric(pops))
+format_snps(stickSNPs, 3, 8, pop = l, n_samp = 100)
+
 
 
 }

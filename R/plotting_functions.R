@@ -19,13 +19,13 @@
 #'
 #'This function was partially written by Nicholas Sard.
 #'
-#' @param x Data, format like that given by LD_full_pairwise rsq and Dprime outputs. However, first column can contain snp names rather than first column of data.
+#' @param x Data, format like that given by LD_full_pairwise rsq and Dprime outputs. Column names must be snp positions, as must either the first column or row names. Alternatively, a named list of the several such objects to plot and their titles can be provided.
 #' @param r Region of the chromosome to subset and plot. Given in kb in the format numeric vector c(lower, upper).
 #' @param l.text Legend title.
 #' @param colors Colors to use in tiles, character vector format c("lower", "upper").
 #' @param title Plot title.
 #' @param t.sizes Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)
-#' @return A pairwise LD heatmap as a ggplot object.
+#' @return A pairwise LD heatmap as a ggplot object. If multiple objects were provided to plot, these will be included as objects.
 #'
 #' @examples
 #' #base plot
@@ -41,74 +41,113 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
   #Created in part by Nick Sard
 
-  #remove columns and rows with no data
-  x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
+  #function to prepare data.
+  prep_hm_dat <- function(x, r = NULL){
+    #remove columns and rows with no data
+    x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
 
-  #if first column doesn't contain positions, take the row names and set as first column.
-  if(any(is.na(x[,1]))){
-    x <- cbind(V1 = row.names(x), x)
+    #if first column doesn't contain positions, take the row names and set as first column.
+    if(any(is.na(x[,1]))){
+      x <- cbind(V1 = row.names(x), x)
+    }
+
+
+    #melting the df so its computer reable and fixing the names of the columns
+    heatmap_x <- melt(x, id.vars = "V1")
+    names(heatmap_x) <- c("SNPa", "SNPb", "value")
+
+    #getting rid of all the zeros from snps being compared to themselves
+    heatmap_x$SNPa <- as.numeric(as.character(heatmap_x$SNPa))
+    heatmap_x$SNPb <- as.numeric(as.character(heatmap_x$SNPb))
+    heatmap_x <- heatmap_x[!(heatmap_x$SNPa == heatmap_x$SNPb),]
+
+    #removing NA values, since no Dups.  Note, also grabbing only section of interest
+    heatmap_x <- heatmap_x[!is.na(heatmap_x$value),]
+
+    #remove any other NAs
+    heatmap_x <- heatmap_x[!is.na(heatmap_x$SNPa) & !is.na(heatmap_x$SNPb),]
+
+    #get site names
+    ms <- unique(c(colnames(x), x[,1]))
+    ms <- unique(c(ms[ms != "V1"], x[1,1], colnames(x)[-1]))
+    ms <- as.numeric(as.character(ms))
+
+    #subset down to the desired r if requested
+    if(!is.null(r)){
+      r <- r*1000000
+      heatmap_x <- heatmap_x[heatmap_x$SNPa >= r[1] & heatmap_x$SNPa <= r[2] &
+                               heatmap_x$SNPb >= r[1] & heatmap_x$SNPb <= r[2],]
+      ms <- ms[ms >= r[1] & ms <= r[2]]
+    }
+
+    #finish messing with site names
+    ms <- ms/1000000
+    ms <- as.factor(ms)
+    ms <- sort(ms)
+
+    #set site positions to mb, convert to factor
+    heatmap_x$SNPa <- heatmap_x$SNPa/1000000
+    heatmap_x$SNPb <- heatmap_x$SNPb/1000000
+    heatmap_x$SNPa <- as.factor(heatmap_x$SNPa)
+    heatmap_x$SNPb <- as.factor(heatmap_x$SNPb)
+
+    #reordering based on factors
+    heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels= ms,ordered=T)
+    heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
   }
 
 
-  #melting the df so its computer reable and fixing the names of the columns
-  heatmap_x <- melt(x, id.vars = "V1")
-  names(heatmap_x) <- c("SNPa", "SNPb", "value")
-
-  #getting rid of all the zeros from snps being compared to themselves
-  heatmap_x$SNPa <- as.numeric(as.character(heatmap_x$SNPa))
-  heatmap_x$SNPb <- as.numeric(as.character(heatmap_x$SNPb))
-  heatmap_x <- heatmap_x[!(heatmap_x$SNPa == heatmap_x$SNPb),]
-
-  #removing NA values, since no Dups.  Note, also grabbing only section of interest
-  heatmap_x <- heatmap_x[!is.na(heatmap_x$value),]
-
-  #remove any other NAs
-  heatmap_x <- heatmap_x[!is.na(heatmap_x$SNPa) & !is.na(heatmap_x$SNPb),]
-
-  #get site names
-  ms <- unique(c(colnames(x), x[,1]))
-  ms <- unique(c(ms[ms != "V1"], x[1,1], colnames(x)[-1]))
-  ms <- as.numeric(as.character(ms))
-
-  #subset down to the desired r if requested
-  if(!is.null(r)){
-    r <- r*1000000
-    heatmap_x <- heatmap_x[heatmap_x$SNPa >= r[1] & heatmap_x$SNPa <= r[2] &
-                             heatmap_x$SNPb >= r[1] & heatmap_x$SNPb <= r[2],]
-    ms <- ms[ms >= r[1] & ms <= r[2]]
+  if(!is.list(x)){
+    #the plot
+    heatmap_x <- prep_hm_dat(x, r)
+    out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
+      ggplot2::geom_tile(color = "white")+
+      ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
+      ggplot2::theme_bw()+
+      ggplot2::labs(x = "",y="", fill=l.text)+
+      ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
+            axis.text = element_text(size = t.sizes[5]),
+            panel.grid.major = element_line(color = background),
+            plot.title = element_text(size = t.sizes[1], hjust = 0.5),
+            axis.title = element_text(size = t.sizes[4]),
+            legend.text = element_text(size = t.sizes[3]),
+            panel.background = element_rect(fill = background, colour = background)) +
+      ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
+      ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
+      ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
   }
 
-  #finish messing with site names
-  ms <- ms/1000000
-  ms <- as.factor(ms)
-  ms <- sort(ms)
+  else{
+    #multple plots
+    heatmap_x <- cbind(prep_hm_dat(x[[1]], r), var = names(x)[1])
+    for(i in 2:length(x)){
+      heatmap_x <- rbind(heatmap_x, cbind(prep_hm_dat(x[[i]], r), var = names(x)[i]))
+    }
 
-  #set site positions to mb, convert to factor
-  heatmap_x$SNPa <- heatmap_x$SNPa/1000000
-  heatmap_x$SNPb <- heatmap_x$SNPb/1000000
-  heatmap_x$SNPa <- as.factor(heatmap_x$SNPa)
-  heatmap_x$SNPb <- as.factor(heatmap_x$SNPb)
+    #refactor
+    heatmap_x$SNPa <- as.factor(as.numeric(as.character(heatmap_x$SNPa)))
+    heatmap_x$SNPb <- as.factor(as.numeric(as.character(heatmap_x$SNPb)))
 
-  #reordering based on factors
-  heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels= ms,ordered=T)
-  heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
-
-  #the plot
-  out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
-    ggplot2::geom_tile(color = "white")+
-    ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
-    ggplot2::theme_bw()+
-    ggplot2::labs(x = "",y="", fill=l.text)+
-    ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
-          axis.text = element_text(size = t.sizes[5]),
-          panel.grid.major = element_line(color = background),
-          plot.title = element_text(size = t.sizes[1], hjust = 0.5),
-          axis.title = element_text(size = t.sizes[4]),
-          legend.text = element_text(size = t.sizes[3]),
-          panel.background = element_rect(fill = background, colour = background)) +
-    ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
-    ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
-    ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+    #plot, with facets
+    out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
+      ggplot2::geom_tile(color = "white")+
+      ggplot2::facet_wrap(~var)
+      ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
+      ggplot2::theme_bw()+
+      ggplot2::labs(x = "",y="", fill=l.text)+
+      ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
+                     axis.text = element_text(size = t.sizes[5]),
+                     panel.grid.major = element_line(color = background),
+                     strip.background = element_blank(),
+                     strip.text = element_text(hjust = 0.01, size = t.sizes[1]),
+                     axis.title = element_text(size = t.sizes[4]),
+                     legend.text = element_text(size = t.sizes[3]),
+                     panel.background = element_rect(fill = background, colour = background)) +
+      ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
+      ggplot2::scale_y_discrete(breaks = rev(levels(heatmap_x$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
+                                limits = rev(levels(heatmap_x$SNPb))) +
+      ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+  }
   return(out)
 }
 
@@ -344,7 +383,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
   cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-  
+
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
   out <- ggplot2::ggplot(tsne_plot, aes(V1, V2)) + ggplot2::theme_bw() +

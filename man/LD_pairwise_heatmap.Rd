@@ -9,7 +9,7 @@ LD_pairwise_heatmap(x, r = NULL, l.text = "rsq", colors = c("white",
   background = "white")
 }
 \arguments{
-\item{x}{Data, format like that given by LD_full_pairwise rsq and Dprime outputs. However, first column can contain snp names rather than first column of data.}
+\item{x}{Data, format like that given by LD_full_pairwise rsq and Dprime outputs. Column names must be snp positions, as must either the first column or row names. Alternatively, a named list of the several such objects to plot and their titles can be provided.}
 
 \item{r}{Region of the chromosome to subset and plot. Given in kb in the format numeric vector c(lower, upper).}
 
@@ -22,7 +22,7 @@ LD_pairwise_heatmap(x, r = NULL, l.text = "rsq", colors = c("white",
 \item{t.sizes}{Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)}
 }
 \value{
-A pairwise LD heatmap as a ggplot object.
+A pairwise LD heatmap as a ggplot object. If multiple objects were provided to plot, these will be included as objects.
 }
 \description{
 \code{LD_pairwise_heatmap} prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by \code{\link{LD_full_pairwise}}. Should also work on pairwise FST data. Darker values are higher. Special thanks to Nicholas Sard for part of this code!

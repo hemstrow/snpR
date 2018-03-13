@@ -511,6 +511,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'    \item Migrate-n hapmap: allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.
 #'    \item Character genotype tab format: genotypes stored as actual base calls (e.g. "AA", "CT").
 #'    \item Allele presence/absence format: presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.
+#'    \item RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.
 #'}
 #'
 #'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named o1-7 for output options 1 to 7, respectively.
@@ -572,6 +573,12 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 #' #option 7, 3 character microsat data (2 character is very similar):
 #' format_snps(sthMSATS[seq(1, 13, by = 4),], 3, 7, input_form = "msat_3", miss = "000")
+#'
+#' #option 8, RAFM, taking only 100 random snps.
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' l <- list(c(names(pops)), as.numeric(pops))
+#' format_snps(stickSNPs, 3, 8, pop = l, n_samp = 100)
+#'
 #'
 #'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
@@ -661,6 +668,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   else if(output == 7){
     cat("Output 7 selected, converting to allele presence/absense format.\n")
   }
+
+  else if(output == 8){
+    cat("Output 8 selected, converting to RAFM format.\n")
+  }
+
   else{
     stop("Please specify output format.")
   }
@@ -1057,8 +1069,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
 
-  ##convert to structure format (v)
-  if (output == 3){
+  ##convert to structure or RAFM format (v)
+  if (output == 3 | output == 8){
 
     #subset if requested
     if(all(!is.na(n_samp))){
@@ -1095,20 +1107,52 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     xv1 <- matrix(xv1, ncol(data) - ecs, nrow(data), T)
     xv2 <- matrix(xv2, ncol(data) - ecs, nrow(data), T)
 
-    #create output matrix
-    outm <- matrix(NA, 2*(ncol(data) - ecs), nrow(data))
+    #create output matrix and bind the data to it, structure format
+    if(output == 3){
+      outm <- matrix(NA, 2*(ncol(data) - ecs), nrow(data))
 
-    #fill
-    outm[seq(1,nrow(outm),2),] <- xv1
-    outm[seq(2,nrow(outm),2),] <- xv2
+      #fill
+      outm[seq(1,nrow(outm),2),] <- xv1
+      outm[seq(2,nrow(outm),2),] <- xv2
 
-    #add sample names
-    snames <- character(nrow(outm))
-    snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
-    snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
-    out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
+      #add sample names
+      snames <- character(nrow(outm))
+      snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
+      snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
+      out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
 
-    warning("Remove header line before inputing data into structure!")
+      warning("Remove header line before inputing data into structure!")
+
+    }
+
+    #create output matrix and bind to it, RAFM format.
+    else{
+      outm <- matrix(NA, ncol(data) - ecs, nrow(data)*2)
+
+      #fill
+      outm[,seq(1,ncol(outm),2)] <- xv1
+      outm[,seq(2,ncol(outm),2)] <- xv2
+
+      #replance missings with NA
+      outm[outm == 0] <- NA
+
+      #add column names
+      colnames(outm) <- paste0("locus", sort(rep(1:nrow(data),2)), rep(c(".1", ".2"), ncol(outm)/2))
+
+      #add subpop numbers, if given
+      if(is.list(pop)){
+        pl <- numeric(sum(pop[[2]]))
+        pl[1:pop[[2]][1]] <- 1
+        tracker <- pop[[2]][1] + 1
+        for(i in 2:length(pop[[2]])){
+          pl[tracker:(sum(pop[[2]][1:i]))] <- i
+          tracker <- sum(pop[[2]][1:i]) + 1
+        }
+        out <- cbind(subpop = pl, as.data.frame(outm, stringsAsFactors = F))
+      }
+    }
+
+
     rdata <- out
   }
 

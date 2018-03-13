@@ -8,7 +8,7 @@ resample_long(x, statistic, boots, sigma = 150, nk_weight = FALSE,
   fws = NULL, n_snps = T, report = 10000)
 }
 \arguments{
-\item{x}{Input data containing \emph{unsmoothed} statistic of interest and SNP position.}
+\item{x}{Input data containing \emph{unsmoothed} statistic of interest and SNP position. Note that this data must contain a column titled "group" containing the linkage group/chromosome/scaffold for each observed value, since positions are drawn from the same group only.}
 
 \item{statistic}{A character string designating the \emph{unsmoothed} statistic to smooth.}
 
@@ -35,7 +35,7 @@ Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population ge
 
 For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
 
-This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data.
+This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over multiple linkage groups/chromosomes.
 }
 \examples{
 resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
