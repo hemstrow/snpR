@@ -861,7 +861,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
     #rebind to matrix and remake data.
     xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+    cnames <- colnames(data)
     data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
+    colnames(data) <- cnames
 
     cat("\nMoving on to conversion...", "\n")
     miss <- "N" #reset miss to the correct entry
@@ -1316,6 +1318,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(output == 3){
       if(is.list(pop)){
         #add pop info if provided
+        pop[[2]] <- pop[[2]]*2
         pl <- numeric(sum(pop[[2]]))
         pl[1:pop[[2]][1]] <- 1
         tracker <- pop[[2]][1] + 1
@@ -1324,6 +1327,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
           tracker <- sum(pop[[2]][1:i]) + 1
         }
         rdata <- cbind(rdata[,1], pop = pl, rdata[,2:ncol(rdata)])
+        colnames(rdata)[1] <- "ind"
       }
       write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
