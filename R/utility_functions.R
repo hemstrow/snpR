@@ -1120,9 +1120,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
       snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
       out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
-
-      warning("Remove header line before inputing data into structure!")
-
     }
 
     #create output matrix and bind to it, RAFM format.
@@ -1316,8 +1313,22 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         write.table(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
     }
+    if(output == 3){
+      if(is.list(pop)){
+        #add pop info if provided
+        pl <- numeric(sum(pop[[2]]))
+        pl[1:pop[[2]][1]] <- 1
+        tracker <- pop[[2]][1] + 1
+        for(i in 2:length(pop[[2]])){
+          pl[tracker:(sum(pop[[2]][1:i]))] <- i
+          tracker <- sum(pop[[2]][1:i]) + 1
+        }
+        rdata <- cbind(rdata[,1], pop = pl, rdata[,2:ncol(rdata)])
+      }
+      write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
+    }
     else{
-      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t")
+      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
   }
   return(rdata)

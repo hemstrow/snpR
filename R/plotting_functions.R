@@ -36,7 +36,7 @@
 #'
 LD_pairwise_heatmap <- function(x, r = NULL,
                                 l.text = "rsq", colors = c("white", "black"),
-                                title = "Pairwise LD", t.sizes = c(16, 13, 10, 12, 10),
+                                title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                 background = "white"){
 
   #Created in part by Nick Sard
@@ -52,7 +52,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     }
 
 
-    #melting the df so its computer reable and fixing the names of the columns
+    #melting the df and fixing the names of the columns
     heatmap_x <- reshape2::melt(x, id.vars = "V1")
     names(heatmap_x) <- c("SNPa", "SNPb", "value")
 
@@ -67,10 +67,14 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     #remove any other NAs
     heatmap_x <- heatmap_x[!is.na(heatmap_x$SNPa) & !is.na(heatmap_x$SNPb),]
 
+    #make sure that for all comparisons, SNPa is less than SNPb.
+    vio <- which(heatmap_x$SNPa > heatmap_x$SNPb)
+    viofix <- cbind(SNPa = heatmap_x[vio,]$SNPb, SNPb = heatmap_x[vio,]$SNPa, value = heatmap_x[vio,]$value)
+    heatmap_x <- rbind(heatmap_x[-vio,], viofix)
+
     #get site names
-    ms <- unique(c(colnames(x), x[,1]))
-    ms <- unique(c(ms[ms != "V1"], x[1,1], colnames(x)[-1]))
-    ms <- as.numeric(as.character(ms))
+    ms <- unique(c(heatmap_x$SNPa, heatmap_x$SNPb))
+    ms <- sort(as.numeric(as.character(ms)))
 
     #subset down to the desired r if requested
     if(!is.null(r)){
@@ -82,8 +86,8 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
     #finish messing with site names
     ms <- ms/1000000
-    ms <- as.factor(ms)
     ms <- sort(ms)
+    ms <- as.factor(ms)
 
     #set site positions to mb, convert to factor
     heatmap_x$SNPa <- heatmap_x$SNPa/1000000
@@ -92,8 +96,8 @@ LD_pairwise_heatmap <- function(x, r = NULL,
     heatmap_x$SNPb <- as.factor(heatmap_x$SNPb)
 
     #reordering based on factors
-    heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels= ms,ordered=T)
-    heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms),ordered=T)
+    heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels=ms, ordered = T)
+    heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms), ordered = T)
 
     return(heatmap_x)
   }
@@ -102,22 +106,25 @@ LD_pairwise_heatmap <- function(x, r = NULL,
   if(is.data.frame(x)){
     #the plot
     heatmap_x <- prep_hm_dat(x, r)
-    out <- ggplot2::ggplot(heatmap_x, aes(x = SNPa, y=SNPb, fill=value))+
+    out <- ggplot2::ggplot(heatmap_x, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
       ggplot2::geom_tile(color = "white")+
       ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
       ggplot2::theme_bw()+
       ggplot2::labs(x = "",y="", fill=l.text)+
-      ggplot2::theme(legend.title= element_text(size = t.sizes[2]),
-            axis.text = element_text(size = t.sizes[5]),
-            panel.grid.major = element_line(color = background),
-            plot.title = element_text(size = t.sizes[1], hjust = 0.5),
-            axis.title = element_text(size = t.sizes[4]),
-            legend.text = element_text(size = t.sizes[3]),
-            panel.background = element_rect(fill = background, colour = background)) +
+      ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
+            axis.text = ggplot2::element_text(size = t.sizes[5]),
+            panel.grid.major = ggplot2::element_line(color = background),
+            plot.title = ggplot2::element_text(size = t.sizes[1], hjust = 0.5),
+            axis.title = ggplot2::element_text(size = t.sizes[4]),
+            legend.text = ggplot2::element_text(size = t.sizes[3]),
+            panel.background = ggplot2::element_rect(fill = background, colour = background)) +
       ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
       ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
-      ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+      ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
 
+    if(!is.null(title)){
+      out <- out + ggplot2::ggtitle(title)
+    }
     out <- list(plot = out, dat = heatmap_x)
   }
 
@@ -150,7 +157,11 @@ LD_pairwise_heatmap <- function(x, r = NULL,
       ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
       ggplot2::scale_y_discrete(breaks = rev(levels(heatmap_x$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
                                 limits = rev(levels(heatmap_x$SNPb))) +
-      ggplot2::ggtitle(title) + ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+      ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+
+    if(!is.null(title)){
+      out <- out + ggplot2::ggtitle(title)
+    }
 
     out <- list(plot = out, dat = heatmap_x)
   }
