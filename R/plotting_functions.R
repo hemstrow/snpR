@@ -69,8 +69,10 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
     #make sure that for all comparisons, SNPa is less than SNPb.
     vio <- which(heatmap_x$SNPa > heatmap_x$SNPb)
-    viofix <- cbind(SNPa = heatmap_x[vio,]$SNPb, SNPb = heatmap_x[vio,]$SNPa, value = heatmap_x[vio,]$value)
-    heatmap_x <- rbind(heatmap_x[-vio,], viofix)
+    if(length(vio) > 0){
+      viofix <- cbind(SNPa = heatmap_x[vio,]$SNPb, SNPb = heatmap_x[vio,]$SNPa, value = heatmap_x[vio,]$value)
+      heatmap_x <- rbind(heatmap_x[-vio,], viofix)
+    }
 
     #get site names
     ms <- unique(c(heatmap_x$SNPa, heatmap_x$SNPb))
