@@ -157,8 +157,8 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
   #windowing
   out <- data.frame() #initialize output
-  tps <- sort(x$position) #get the snp positions, sort
-  lsp <- tps[length(tps)] #get the position of the last snp to use as endpoint
+  tps <- sort(x$position) #get the site positions, sort
+  lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
   c <- 0 #set starting position
   i <- 1 #set starting iteration for writing output
   ws <- 1000*ws
@@ -168,8 +168,8 @@ Tajimas_D <- function(x, ws, step, report = 20){
     if(i %% report == 0){cat("Window Postion:", c, "out of", lsp, "\n")}
 
     #take all the snps in the window, calculate T's theta, W's theta, and T's D
-    wsnps <- x[x$position <= end & x$position >= start,] #get only the snps in the window
-    wsnps <- wsnps[wsnps[,"ni1"] > 0 & wsnps[,"ni2"] > 0,] #remove any snps that are fixed in this pop/group/whatever
+    wsnps <- x[x$position <= end & x$position >= start,] #get only the sites in the window
+    wsnps <- wsnps[!(wsnps[,"ni1"] == 0 & wsnps[,"ni2"] == 0),] #remove any sites that are not sequenced in this pop/group/whatever
     if(nrow(wsnps) == 0){ #if no snps in window
       c <- c + step*1000 #step along
       next #go to the next window
@@ -178,13 +178,13 @@ Tajimas_D <- function(x, ws, step, report = 20){
     b2s <- choose(wsnps[,"ni2"],2) #binomial for second allele
     bts <- choose(wsnps[,"n_total"],2) #binomial for all alleles
     ts.theta <- sum(1-((b1s+b2s)/bts)) #average number of pairwise differences (pi) per snp. Equivalent to sum((ndif/ncomp)) for all snps
-    ts.thetaf <- ts.theta/ws #pi for the whole region, which includes all of the non-polymorphic sites. Reason why this shouldn't be run with a maf filter, probably.
-    n_seg <- nrow(wsnps) #number of segregating sites
+    #ts.thetaf <- ts.theta/nrow(wsnps) #pi for the whole region, which includes all of the non-polymorphic sites. Reason why this shouldn't be run with a maf filter, probably.
+    n_seg <- nrow(wsnps[wsnps$ni1 != 0 & wsnps$ni2 != 0,]) #number of segregating sites
     K <- round(mean(wsnps[,"n_total"])) #average sample size for ws.theta, as in hohenlohe 2010. Alternative would make this into a function, then use lapply on the vector of K values
     #if(is.nan(K) == TRUE){browser()}
     a1 <- sum(1/seq(1:(K-1))) #get a1
     ws.theta <- n_seg/a1 #get ws.theta
-    ws.thetaf <- ws.theta/ws #ws.theta fraction
+    #ws.thetaf <- ws.theta/nrow(wsnps) #ws.theta fraction
 
     #get T's D by part. See original paper, Tajima 1989.
 
@@ -204,8 +204,8 @@ Tajimas_D <- function(x, ws, step, report = 20){
       out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
     }
     out[i,"position"] <- c
-    out[i,"ws.theta"] <- ws.thetaf
-    out[i,"ts.theta"] <- ts.thetaf
+    out[i,"ws.theta"] <- ws.theta
+    out[i,"ts.theta"] <- ts.theta
     out[i,"D"] <- D
     c <- c + step*1000
     i <- i + 1
@@ -782,7 +782,7 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 
   #initalize output
   if(!is.list(pop)){
-    pop = list("pi", ncol(x) - (ecs + 1) + 1)
+    pop = list("ho", ncol(x) - (ecs + 1) + 1)
   }
   pns <- pop[[1]]
   psz <- pop[[2]]

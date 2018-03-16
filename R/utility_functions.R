@@ -921,10 +921,17 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       w_df$n_total <- rowSums(tabs$as)
       counts <- rowSums(ifelse(tabs$as == 0, 0, 1))
       if(any(counts != 2)){
-        vio <- which(w_df$n_total != 2)
-        warning("More or less than two alleles detected at some loci.\nReturning list of violating loci...")
-        return(vio)
+        if(any(counts > 2)){
+          vio <- which(w_df$n_total > 2)
+          warning("More than two alleles detected at some loci.\n List of violating loci...")
+          return(vio)
         }
+        else{
+          vio <- which(w_df$n_total != 2)
+          warning("Some loci are not bi-allelic, see printed list.")
+          print(vio)
+        }
+      }
       w_df$n_alleles <- rowSums(tabs$as != 0)
       #fill in ni1 and ni2.
       w_df$ni1 <- tabs$as[,"A"]
@@ -933,6 +940,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       w_df$ni2 <- tabs$as[,"T"]
       w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "C"]
       w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "G"]
+
+      #fix anything that's not bi-allelic
+      w_df$ni1[w_df$n_alleles == 1 & w_df$ni1 == 0] <- w_df$ni2[w_df$n_alleles == 1 & w_df$ni1 == 0]
+      w_df$ni2[w_df$n_alleles == 1] <- 0
     }
     else{
       pop_count <- length(unlist(pop[1]))
@@ -990,28 +1001,65 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       cat("Tabulating and writing results...\n")
       pals <- pals != 0
       if(any(rowSums(pals) != 2)){
-        stop("More or less than two alleles detected at some loci! Check/filter input data.\n")
+        if(any(rowSums(pals) > 2)){
+          stop("Some loci have more than three alleles. Check/Filter data!")
+        }
+        else{
+          warning("Some loci have less than two alleles.\n")
+        }
       }
+
+      #vector which says which are fixed
+      fixed <- rowSums(pals) == 1
+
+
       #Convert into vector which says which elements to keep.
-      palsv <- as.vector(t(pals))
+      if(any(fixed)){
+        palsv <- as.vector(t(pals[fixed == FALSE,]))
+      }
+      else{
+        palsv <- as.vector(t(pals))
+      }
 
       w_df$n_total <- NA
       w_df$n_alleles <- NA
       w_df$ni1 <- NA
       w_df$ni2 <- NA
 
+
       #loop through and print data
       for(i in 1:pop_count){
-        #compare palsv to allele tables to keep correct alleles.
-        av <- as.vector(t(pop_as[[i]]))
-        av <- av[palsv]
-        av <- matrix(av, nrow(data), 2, byrow = T)
-        w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
-        w_df[w_df$pop == pop[[1]][i],]$n_alleles <- rowSums(ifelse(av != 0, TRUE, FALSE))
-        w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
-        w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
-      }
+        #have to do this slightly differently if there are any non-polymorphic bases
+        if(any(fixed) > 0){
+          #do the fixed ones first
+          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_total <- rowSums(pop_as[[i]][fixed,])
+          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_alleles <- 1
+          w_df[w_df$pop == pop[[1]][i] & fixed,]$ni1 <- rowSums(pop_as[[i]][fixed,])
+          w_df[w_df$pop == pop[[1]][i] & fixed,]$ni2 <- 0
 
+          #do the others
+          if(any(!fixed)){
+            av <- as.vector(t(pop_as[[i]][!fixed,]))
+            av <- av[palsv]
+            av <- matrix(av, nrow(data[!fixed,]), 2, byrow = T)
+            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_total <- rowSums(av)
+            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_alleles <- rowSums(ifelse(av != 0, TRUE, FALSE))
+            w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni1 <- av[,1]
+            w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni2 <- av[,2]
+          }
+        }
+
+        else{
+          #compare palsv to allele tables to keep correct alleles.
+          av <- as.vector(t(pop_as[[i]]))
+          av <- av[palsv]
+          av <- matrix(av, nrow(data), 2, byrow = T)
+          w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
+          w_df[w_df$pop == pop[[1]][i],]$n_alleles <- rowSums(ifelse(av != 0, TRUE, FALSE))
+          w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
+          w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
+        }
+      }
 
       row.names(w_df) <- 1:nrow(w_df) #fix row names
       if(output == 5){ #if doing output style 5...
