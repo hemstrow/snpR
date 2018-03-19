@@ -1319,6 +1319,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   if(outfile != FALSE){
     cat("Writing output file...\n")
     if(output == 2){
+      browser()
       cat("\tPreparing genepop file...\n")
       #get list of snps
       llist <- paste0("SNP", "_", 1:ncol(rdata), ",")
