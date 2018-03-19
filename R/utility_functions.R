@@ -1363,7 +1363,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         write.table(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
     }
-    if(output == 3){
+    else if(output == 3){
       if(is.list(pop)){
         #add pop info if provided
         pop[[2]] <- pop[[2]]*2
