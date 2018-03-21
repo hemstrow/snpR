@@ -405,7 +405,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
-  out <- ggplot2::ggplot(tsne_plot, aes(V1, V2)) + ggplot2::theme_bw() +
+  out <- ggplot2::ggplot(tsne_plot, ggplot2::aes(V1, V2)) + ggplot2::theme_bw() +
     ggplot2::theme(axis.ticks = element_blank(),
           axis.title = element_blank(),
           axis.text = element_blank(),
@@ -419,7 +419,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     v1 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + ggplot2::geom_point(aes(color = v1)) #add the factor
+    out <- out + ggplot2::geom_point(ggplot2::aes(color = v1)) #add the factor
 
     if(v1u <= 8){#are there too many categories to color with the cbb palette?
       out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
@@ -435,7 +435,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     v1u <- length(unique(v1))
     v2u <- length(unique(v2))
 
-    out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
 
     if(v1u <= 8 & v2u <= 8){#are there too many categories to color with the cbb palette?
       out <- out+ ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])

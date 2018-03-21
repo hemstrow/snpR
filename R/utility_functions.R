@@ -914,7 +914,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     if (is.list(pop) == FALSE){
       if(output == 5){stop("Cannot convert to migrate-n format with only one pop.\n")}
-
       #prepare a genotype table
       xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
       tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data))
@@ -922,12 +921,12 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       counts <- rowSums(ifelse(tabs$as == 0, 0, 1))
       if(any(counts != 2)){
         if(any(counts > 2)){
-          vio <- which(w_df$n_total > 2)
+          vio <- which(counts > 2)
           warning("More than two alleles detected at some loci.\n List of violating loci...")
           return(vio)
         }
         else{
-          vio <- which(w_df$n_total != 2)
+          vio <- which(counts != 2)
           warning("Some loci are not bi-allelic, see printed list.")
           print(vio)
         }
@@ -1033,7 +1032,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         if(any(fixed) > 0){
           #do the fixed ones first
           w_df[w_df$pop == pop[[1]][i] & fixed,]$n_total <- rowSums(pop_as[[i]][fixed,])
-          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_alleles <- 1
+          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_alleles <- 1 #in this case it is fixed in all pops
           w_df[w_df$pop == pop[[1]][i] & fixed,]$ni1 <- rowSums(pop_as[[i]][fixed,])
           w_df[w_df$pop == pop[[1]][i] & fixed,]$ni2 <- 0
 
@@ -1043,7 +1042,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
             av <- av[palsv]
             av <- matrix(av, nrow(data[!fixed,]), 2, byrow = T)
             w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_total <- rowSums(av)
-            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_alleles <- rowSums(ifelse(av != 0, TRUE, FALSE))
+            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_alleles <- 2 #not fixed in at least one pop!
             w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni1 <- av[,1]
             w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni2 <- av[,2]
           }
@@ -1055,7 +1054,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
           av <- av[palsv]
           av <- matrix(av, nrow(data), 2, byrow = T)
           w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
-          w_df[w_df$pop == pop[[1]][i],]$n_alleles <- rowSums(ifelse(av != 0, TRUE, FALSE))
+          w_df[w_df$pop == pop[[1]][i],]$n_alleles <- 2 #not fixed in at least one pop!
           w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
           w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
         }
@@ -1379,6 +1378,28 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         colnames(rdata)[1] <- "ind"
       }
       write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
+    }
+    else if(output == 1){
+      #write the raw output
+      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
+      #write a bayescan object if pop list was provided.
+      if(is.list(pop)){
+        outfile <- paste0(outfile, ".bayes")
+        #write the header
+        cat("[loci]=", nrow(data), "\n\n[populations]=", length(pop[[1]]), "\n\n", file = outfile, sep = "")
+
+        #write the data for each population.
+        for(i in 1:length(pop[[1]])){
+          cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
+          wdat <- cbind(snp = 1:nrow(rdata),
+                        rdata[rdata$pop == pop[[1]][i], which(colnames(rdata) %in% c("n_total", "n_alleles"))],
+                        alleles = paste0(rdata[rdata$pop == pop[[1]][i],]$ni1, " ", rdata[rdata$pop == pop[[1]][i],]$ni2, " "))
+          write.table(wdat,
+                      outfile, col.names = F, row.names = F, quote = F, sep = "\t",
+                      append = T) #write the data for this population.
+          cat("\n", file = outfile, append = T) #add a line break
+        }
+      }
     }
     else{
       write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
