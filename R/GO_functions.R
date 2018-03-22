@@ -12,74 +12,50 @@
 #'Description of stat_data:
 #'    Requires columns titled "group", "position", and one matching the stat argument, containing the linkage group/chromosome, position, and the value of the observed statistic at that position. Typically produced via windowed gaussian smoothing (from smoothed_ave).
 #'
-#' @param gene_data Input gene positions and IDs.
-#' @param stat_data Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.
+#'Uses spline interpolation from the "zoo" package.
+#'
+#' @param x Input gene data, with columns named "start", "end" and "probeID".
+#' @param y Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.
 #' @param stat Name of the statistic to interpolate.
 #' @examples
 #' gene_ave_stat(stickleGO, randSMOOTHed[randSMOOTHed$pop == "A",], "smoothed_pi")
 #'
-gene_ave_stat <- function(gene_data, stat_data, stat){
-  out_df <- data.frame()
-  w_df <- cbind.data.frame(stat_data[,"position"], stat_data[,stat])
-  colnames(w_df) <- c("position", stat)
-  #print(w_df)
-  mids <- c()
-  count <- 1
-  i <- 1
-  count2 <- 1
-  store_df <- data.frame()
-  cat("Reading and storing data from input files...\n")
-  for (i in i:nrow(gene_data)){
-    if(i %% 100 == 0){cat("Reading gene number: ", i, "\n")}
-    m <- mean(gene_data[i, "start"], gene_data[i,"end"])
-    if(m %in% w_df$position == TRUE){
-      out_df[count,"probeID"] <- gene_data[i,"probeID"]
-      out_df[count,stat] <- w_df[match(m, w_df[,"position"]),stat]
-      out_df[count,"position"] <- m
-      out_df[count,"group"] <- gene_data[i,"group"]
-      count <- count + 1
-    }
-    else{
-      mids <- c(mids, m)
-      store_df[count2,"probeID"] <- gene_data[i,"probeID"]
-      store_df[count2,"mid"] <- m
-      store_df[count2,"group"] <- gene_data[i,"group"]
-      count2 <- count2 + 1
-    }
+gene_ave_stat <- function(x, y, stat){
+
+  gdat <- x
+  sdat <- y
+
+  if(nrow(y) == 0){
+    warning("No stat data provided.\n")
+    return()
   }
-  #print(store_df)
-  cat("Done.\n")
-  new_stats <- cbind(position = mids, stat = "NA")
-  colnames(new_stats) <- c("position", stat)
-  w_df <- rbind(w_df, new_stats)
-  #print(w_df)
-  #print(str(w_df))
-  w_df[,stat] <- as.numeric(w_df[,stat])
-  w_df[,"position"] <- as.numeric(w_df[,"position"])
-  w_df <- w_df[order(w_df$"position"),]
-  #print(w_df)
-  #print(str(w_df))
-  cat("Interpolating", stat, "for gene midpoints...\n")
-  zw_df <- zoo(w_df)
-  index(zw_df) <- zw_df[,"position"]
-  zw_df <- na.approx(zw_df)
-  index(zw_df) <- 1:nrow(w_df)
-  #print(zw_df)
-  w_df <- as.data.frame(zw_df)
-  colnames(w_df) <- c("position", stat)
-  cat("Done.\nPrinting to output...\n")
-  i <- 1
-  #print(head(w_df))
-  for(i in i:length(mids)){
-    if(i %% 100 == 0){cat("Printing gene number: ", i, "\n")}
-    #print(w_df[match(mids[i], w_df[,"position"]),stat])
-    out_df[count,"probeID"] <- store_df[match(mids[i], store_df[,"mid"]),"probeID"]
-    out_df[count, stat] <- w_df[match(mids[i], w_df[,"position"]),stat]
-    out_df[count, "position"] <- mids[i]
-    out_df[count, "group"] <- store_df[match(mids[i], store_df[,"mid"]),"group"]
-    count <- count + 1
-  }
-  return(out_df)
+
+  #prepare data
+  gdat$mid <- rowMeans(gdat[,c(2:3)])
+  gdat$probeID <- as.character(gdat$probeID)
+  cdf <- data.frame(mid = c(gdat$mid, sdat$position),
+                    stat = c(rep(NA, nrow(gdat)), sdat[,stat]),
+                    probeID = c(gdat$probeID, rep("snp", nrow(sdat))))
+
+  #use zoo to interplate
+  cdf <- dplyr::arrange(cdf, mid)
+  cdf <- zoo::zoo(cdf)
+  zoo::index(cdf) <- cdf$mid
+  cdf$stat <- zoo::na.spline(cdf$stat)
+
+  #clean up
+  cdf <- as.data.frame(cdf, stringsAsFactors = F)
+  cdf <- cdf[cdf$probeID != "snp",]
+  cdf$stat <- as.numeric(cdf$stat)
+  cdf$probeID <- as.character(cdf$probeID)
+  cdf$mid <- as.numeric(as.character(cdf$mid))
+
+  #remerge
+  gdat <- merge(gdat, cdf, by = c("probeID", "mid"))
+  gdat <- gdat[,colnames(gdat) != "mid"]
+  colnames(gdat)[which(colnames(gdat) == "stat")] <- stat
+
+  return(gdat)
 }
 
 

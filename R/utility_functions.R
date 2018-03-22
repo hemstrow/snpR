@@ -1391,7 +1391,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         #write the data for each population.
         for(i in 1:length(pop[[1]])){
           cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
-          wdat <- cbind(snp = 1:nrow(rdata),
+          wdat <- cbind(snp = 1:nrow(rdata[rdata$pop == pop[[1]][i],]),
                         rdata[rdata$pop == pop[[1]][i], which(colnames(rdata) %in% c("n_total", "n_alleles"))],
                         alleles = paste0(rdata[rdata$pop == pop[[1]][i],]$ni1, " ", rdata[rdata$pop == pop[[1]][i],]$ni2, " "))
           write.table(wdat,
@@ -1412,6 +1412,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 #The first argument of the function to run must be the data provided to that function.
 run_gp <- function(x, FUN, ...){
   w_df<- data.frame()
+  x$pop <- as.character(x$pop)
+  x$group <- as.character(x$group)
   pops <- unique(x[,"pop"])
   groups <- unique(x[,"group"])
   for (i in 1:length(groups)){
@@ -1450,12 +1452,19 @@ run_gp <- function(x, FUN, ...){
 
 #function to run any command after spliting the data by group. Group must be in a column named "group".
 #The first argument of the function to run must be the data provided to that function.
-run_g <- function(x, FUN, ...){
+run_g <- function(x, FUN, ..., y = NULL){
   w_df<- data.frame()
+  x$group <- as.character(x$group)
   groups <- unique(x[,"group"])
   for (i in 1:length(groups)){
     w_data <- x[x[,"group"] == groups[i],]
-    w_data <- FUN(w_data, ...)
+    if(!is.null(y)){
+      y_dat <- y[y[,"group"] == groups[i],]
+      w_data <- FUN(w_data, y = y_dat, ...)
+    }
+    else{
+      w_data <- FUN(w_data, ...)
+    }
     print(groups[i])
     if(length(w_data) == 0){next}
     if(is.data.frame(w_data)){
