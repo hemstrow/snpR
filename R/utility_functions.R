@@ -1126,7 +1126,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       cat("Subsetting ")
       if(length(n_samp) > 1){
         cat("designated SNPs.\n")
-        data <- data[,n_samp]
+        data <- data[n_samp,]
       }
       else{
         cat(n_samp, " random SNPs.\n")
