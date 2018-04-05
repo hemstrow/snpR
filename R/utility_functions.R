@@ -1351,15 +1351,15 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         pop[[1]] <- sort(pop[[1]])
         for (i in 1:(length(pop[[1]]) - 1)){
           cat(pop[[1]][i], "\t")
-          write.table(rdata[j:(j+pop[[2]][i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+          data.table::fwrite(rdata[j:(j+pop[[2]][i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
           cat("POP\n", file = outfile, append = T)
           j <- j + pop[[2]][i]
         }
-        write.table(rdata[j:nrow(rdata),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+        data.table::fwrite(rdata[j:nrow(rdata),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
         cat(pop[[1]][length(pop[[1]])], "\t Done.\n")
       }
       else{
-        write.table(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+        data.table::fwrite(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
     }
     else if(output == 3){
@@ -1376,11 +1376,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         rdata <- cbind(rdata[,1], pop = pl, rdata[,2:ncol(rdata)])
         colnames(rdata)[1] <- "ind"
       }
-      write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(rdata, outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
     }
     else if(output == 1){
       #write the raw output
-      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
+      data.table:fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
       #write a bayescan object if pop list was provided.
       if(is.list(pop)){
         outfile <- paste0(outfile, ".bayes")
@@ -1393,7 +1393,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
           wdat <- cbind(snp = 1:nrow(rdata[rdata$pop == pop[[1]][i],]),
                         rdata[rdata$pop == pop[[1]][i], which(colnames(rdata) %in% c("n_total", "n_alleles"))],
                         alleles = paste0(rdata[rdata$pop == pop[[1]][i],]$ni1, " ", rdata[rdata$pop == pop[[1]][i],]$ni2, " "))
-          write.table(wdat,
+          data.table::fwrite(wdat,
                       outfile, col.names = F, row.names = F, quote = F, sep = "\t",
                       append = T) #write the data for this population.
           cat("\n", file = outfile, append = T) #add a line break
@@ -1401,7 +1401,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       }
     }
     else{
-      write.table(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
+      data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
   }
   return(rdata)
