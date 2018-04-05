@@ -503,18 +503,19 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 #'
 #'Format options:
-#'\enumerate{
-#'    \item Allele count format: allele counts tabulated for all samples or within populations.
-#'    \item genepop format: genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.
-#'    \item structure format: two lines per individual: allele calls stored as single character numeric (e.g. "1", "2"). Allele calls per individual stored on two subsequent lines.
-#'    \item Numeric genotype tab format: genotypes stored as four numeric characters (e.g. "0101", "0204").
-#'    \item Migrate-n hapmap: allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.
-#'    \item Character genotype tab format: genotypes stored as actual base calls (e.g. "AA", "CT").
-#'    \item Allele presence/absence format: presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.
-#'    \item RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.
+#'\itemize{
+#'    \item{ac: }{allele count format, allele counts tabulated for all samples or within populations.}
+#'    \item{genepop: }{genepop format, genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.}
+#'    \item{structure: }{STRUCTURE format, two lines per individual: allele calls stored as single character numeric (e.g. "1", "2"). Allele calls per individual stored on two subsequent lines.}
+#'    \item{numeric: }{numeric genotype tab format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
+#'    \item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.}
+#'    \item{character: }{character genotype tab format, genotypes stored as actual base calls (e.g. "AA", "CT").}
+#'    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
+#'    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
+#'    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
 #'}
 #'
-#'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named o1-7 for output options 1 to 7, respectively.
+#'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
 #'
 #'Input formats: For now, all input formats require at least two metadata columns.
 #'\itemize{
@@ -530,7 +531,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 #' @param x data.frame. Input data, in any of the above listed input formats.
 #' @param ecs Integer. Number of extra metadata columns at the start of x.
-#' @param output Integer 1-7. Which of the above output formats should be used?
+#' @param output Character. Which of the output format should be used?
 #' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
 #' @param miss Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").
 #' @param pop List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5 or 2 if outfile requested.
@@ -542,42 +543,45 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @return A data.frame in the specified format.
 #'
 #' @examples
-#' #output option 1 with pops:
+#' #allele count with pops:
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, 1, pop = l)
+#' format_snps(stickSNPs, 3, "ac", pop = l)
 #'
-#' #option 2:
-#' format_snps(stickSNPs, 3, 2)
+#' #genepop:
+#' format_snps(stickSNPs, 3, "genepop")
 #'
-#' #option 3, subsetting out 100 random alleles:
-#' format_snps(stickSNPs, 3, 3, n_samp = 100)
+#' #STRUCTURE, subsetting out 100 random alleles:
+#' format_snps(stickSNPs, 3, "structure", n_samp = 100)
 #'
-#' #option 3, subseting out the first 100 alleles:
-#' format_snps(stickSNPs, 3, 3, n_samp = 1:100)
+#' #STRUCTURE, subseting out the first 100 alleles:
+#' format_snps(stickSNPs, 3, "structure", n_samp = 1:100)
 #'
-#' #option 4:
-#' format_snps(stickSNPs, 3, 4)
+#' #fastSTRUCTURE
+#' format_snps(stickSNPs, 3, "faststructure")
 #'
-#' #option 5:
+#' #numeric:
+#' format_snps(stickSNPs, 3, "numeric")
+#'
+#' #hapmap for migrate-n:
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, 5, pop = l)
+#' format_snps(stickSNPs, 3, "hapmap", pop = l)
 #'
-#' #option 6:
+#' #character:
 #' num <- format_snps(stickSNPs, 3, 4)
-#' format_snps(num, 3, 6, input_form = "0000", miss = "00")
+#' format_snps(num, 3, "character", input_form = "0000", miss = "00")
 #'
-#' #option 7, SNP data:
-#' format_snps(stickSNPs, 3, 7)
+#' #presence/absence, SNP data:
+#' format_snps(stickSNPs, 3, "pa")
 #'
-#' #option 7, 3 character microsat data (2 character is very similar):
-#' format_snps(sthMSATS[seq(1, 13, by = 4),], 3, 7, input_form = "msat_3", miss = "000")
+#' #presence/absence, 3 character microsat data (2 character is very similar):
+#' format_snps(sthMSATS[seq(1, 13, by = 4),], 3, "pa", input_form = "msat_3", miss = "000")
 #'
-#' #option 8, RAFM, taking only 100 random snps.
+#' #RAFM, taking only 100 random snps.
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, 8, pop = l, n_samp = 100)
+#' format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
 #'
 #'
 #'
@@ -589,6 +593,20 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   data <- x
   rm(x)
 
+
+  #possible outputs, recode to numbers so that I don't have to rewrite the whole damn thing. Still allowing numbers for reverse compatiblity.
+  if(!is.numeric(output)){
+    pos_outs <- c("ac", "genepop", "structure", "numeric", "hapmap", "character", "pa",
+                  "rafm", "faststructure")
+    if(!(output %in% pos_outs)){
+      stop("Unaccepted output format specified. Check documentation. Remember, no capitalization!")
+    }
+
+    #reformat output to a number corresponding to format.
+    output <- which(pos_outs == output)
+  }
+
+
   if(ecs < 2){
     stop("Cannot have less than 2 metadata (ecs) columns.")
   }
@@ -596,7 +614,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #####################################################################
   #do checks, print info
   if(output == 1){
-    cat("Output 1 selected, converting to per pop allele count format.\n")
+    cat("Converting to per pop allele count format.\n")
     if(input_form != "0000" & input_form != "NN"){
       stop("Only 0000 and NN formats accepted.")
     }
@@ -609,13 +627,14 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
   else if(output == 2){
-    cat("Output 2 selected, converting to genepop format.\n")
+    cat("Converting to genepop format.\n")
     if(input_form != "0000" & input_form != "NN" & input_form != "snp_tab"){
       stop("Only 0000, NN, and snp_tab formats accepted for now.")
     }
   }
-  else if(output == 3){
-    cat("Output 3 selected, converting to STRUCTURE format.\n")
+  else if(output == 3 | output == 9){
+    if(output == 3){cat("Converting to STRUCTURE format.\n")}
+    else{cat("Converting to fastSTRUCTURE format.\n")}
     if(input_form != "0000" & input_form != "NN"){
       stop("Only 0000 and NN formats accepted for now.")
     }
@@ -640,13 +659,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
   else if(output == 4){
-    cat("Output 4 selected, converting to numeric 2 character format.\n")
+    cat("Converting to numeric 2 character format.\n")
     if(input_form != "NN" & input_form != "snp_tab"){
       stop("Only NN and snp_tab formats accepted for now.")
     }
   }
   else if(output == 5){
-    cat("Output 5 selected, converting to migrate-N hapmap format.\n")
+    cat("Converting to migrate-N hapmap format.\n")
     if(input_form != "NN" & input_form != "0000"){
       stop("Only 0000 and NN formats accepted.")
     }
@@ -659,18 +678,21 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
   else if(output == 6){
-    cat("Output 6 selected, converting to NN format.\n")
+    cat("Converting to NN format.\n")
     if(input_form != "0000" & input_form != "snp_tab"){
       stop("Only 0000 and snp_tab formats accepted.")
     }
   }
 
   else if(output == 7){
-    cat("Output 7 selected, converting to allele presence/absense format.\n")
+    cat("Converting to allele presence/absense format.\n")
   }
 
   else if(output == 8){
-    cat("Output 8 selected, converting to RAFM format.\n")
+    if(input_form != "0000" & input_form != "snp_tab" & input_form != "NN"){
+      stop("Only SNP data accepted for RAFM format.")
+    }
+    cat("Converting to RAFM format.\n")
   }
 
   else{
@@ -1118,8 +1140,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
 
-  ##convert to structure or RAFM format (v)
-  if (output == 3 | output == 8){
+  ##convert to structure, fastStructure or RAFM format (v)
+  if (output == 3 | output == 8 | output == 9){
 
     #subset if requested
     if(all(!is.na(n_samp))){
@@ -1157,7 +1179,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     xv2 <- matrix(xv2, ncol(data) - ecs, nrow(data), T)
 
     #create output matrix and bind the data to it, structure format
-    if(output == 3){
+    if(output == 3 | output == 9){
       outm <- matrix(NA, 2*(ncol(data) - ecs), nrow(data))
 
       #fill
@@ -1168,7 +1190,38 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       snames <- character(nrow(outm))
       snames[seq(1,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
       snames[seq(2,nrow(outm),2)] <- colnames(data[,(ecs+1):ncol(data)])
-      out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
+      if(output == 3){ #bind sample names in and return for structure
+        out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
+      }
+      else{ #add a bunch of filler columns (4 if pop info is provided, 5 if it isn't) for faststructure
+        if(length(pop) > 1 & is.list(pop) == TRUE){
+          out <- cbind(ind = snames,
+                       matrix("filler", nrow(outm), 4),
+                       as.data.frame(outm, stringsAsFactors = F))
+          colnames(out)[2:5] <- paste0("filler", 1:4)
+        }
+        else{
+          out <- cbind(ind = snames,
+                       matrix("filler", nrow(outm), 5),
+                       as.data.frame(outm, stringsAsFactors = F))
+          colnames(out)[2:6] <- paste0("filler", 1:5)
+        }
+      }
+
+      #add pop info if possible
+      if(is.list(pop)){
+        #add pop info if provided
+        pop[[2]] <- pop[[2]]*2
+        pl <- numeric(sum(pop[[2]]))
+        pl[1:pop[[2]][1]] <- 1
+        tracker <- pop[[2]][1] + 1
+        for(i in 2:length(pop[[2]])){
+          pl[tracker:(sum(pop[[2]][1:i]))] <- i
+          tracker <- sum(pop[[2]][1:i]) + 1
+        }
+        out <- cbind(out[,1], pop = pl, out[,2:ncol(out)])
+        colnames(out)[1] <- "ind"
+      }
     }
 
     #create output matrix and bind to it, RAFM format.
@@ -1317,6 +1370,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #return the final product, printing an outfile if requested.
   if(outfile != FALSE){
     cat("Writing output file...\n")
+    #for genepop
     if(output == 2){
       cat("\tPreparing genepop file...\n")
       #get list of snps
@@ -1361,22 +1415,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       else{
         data.table::fwrite(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
-    }
-    else if(output == 3){
-      if(is.list(pop)){
-        #add pop info if provided
-        pop[[2]] <- pop[[2]]*2
-        pl <- numeric(sum(pop[[2]]))
-        pl[1:pop[[2]][1]] <- 1
-        tracker <- pop[[2]][1] + 1
-        for(i in 2:length(pop[[2]])){
-          pl[tracker:(sum(pop[[2]][1:i]))] <- i
-          tracker <- sum(pop[[2]][1:i]) + 1
-        }
-        rdata <- cbind(rdata[,1], pop = pl, rdata[,2:ncol(rdata)])
-        colnames(rdata)[1] <- "ind"
-      }
-      data.table::fwrite(rdata, outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
     }
     else if(output == 1){
       #write the raw output

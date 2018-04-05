@@ -5,7 +5,7 @@
 \title{Create a heatmap from pairwise linkage data.}
 \usage{
 LD_pairwise_heatmap(x, r = NULL, l.text = "rsq", colors = c("white",
-  "black"), title = "Pairwise LD", t.sizes = c(16, 13, 10, 12, 10),
+  "black"), title = NULL, t.sizes = c(16, 13, 10, 12, 10),
   background = "white")
 }
 \arguments{

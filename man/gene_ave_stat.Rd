@@ -4,12 +4,12 @@
 \alias{gene_ave_stat}
 \title{Interpolates stats at genes.}
 \usage{
-gene_ave_stat(gene_data, stat_data, stat)
+gene_ave_stat(x, y, stat)
 }
 \arguments{
-\item{gene_data}{Input gene positions and IDs.}
+\item{x}{Input gene data, with columns named "start", "end" and "probeID".}
 
-\item{stat_data}{Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.}
+\item{y}{Input stat data, typically from smoothed windows or (not recommended) raw statistics from SNPs.}
 
 \item{stat}{Name of the statistic to interpolate.}
 }
@@ -22,6 +22,8 @@ Description of gene_data:
 
 Description of stat_data:
    Requires columns titled "group", "position", and one matching the stat argument, containing the linkage group/chromosome, position, and the value of the observed statistic at that position. Typically produced via windowed gaussian smoothing (from smoothed_ave).
+
+Uses spline interpolation from the "zoo" package.
 }
 \examples{
 gene_ave_stat(stickleGO, randSMOOTHed[randSMOOTHed$pop == "A",], "smoothed_pi")

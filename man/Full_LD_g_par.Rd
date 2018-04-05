@@ -24,7 +24,7 @@ Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.
 }
 \description{
-\code{Full_LD_w_g_par} calls \code{\link{LD_full_pairwise}} after spliting the data by a column named "group". Knits the results together, unlike if run with \code{\link{run_g}}. Uses the doParallel and doSNOW package to parallelize across groups.
+\code{Full_LD_g_par} calls \code{\link{LD_full_pairwise}} after spliting the data by a column named "group". Knits the results together, unlike if run with \code{\link{run_g}}. Uses the doParallel and doSNOW package to parallelize across groups.
 }
 \details{
 Matrix outputs are properly formated for LD_pairwise_heatmap. See notes for \code{\link{LD_full_pairwise}}.
