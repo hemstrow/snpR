@@ -1448,345 +1448,373 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
 }
 
 
-# get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, bootstrap = NULL, ws = NULL,
-#                       step = NULL, pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = FALSE, hf_hets = FALSE,
-#                       bi_al = FALSE, non_poly = FALSE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
-#                       filt_re = "partial", Fst_method = "Genepop", LD_level = c("g", "p"), LD_chr = "all",
-#                       LD_g_par = NULL, tsd_level = c("g", "p"), smooth_level = c("g", "p")){
-#
-#   #####################################################
-#   #subfunctions
-#   #smooth calling subfunction
-#   smooth_at_level <- function(x, smooth_level, ws, step, nk, parm, pop = NULL){
-#     if("p" %in% smooth_level){
-#       if("g" %in% smooth_level){
-#         out <- run_gp(x, smoothed_ave, parameter = parm, sigma = ws, fixed_window = step, nk_weight = nk)
-#       }
-#
-#       else{
-#         out <- smoothed_ave(x[x$pop = pop[[1]][1],], parm, ws, nk, step)
-#         for(i in 2:unique(x$pop)){
-#           out <- rbind(out, smoothed_ave(x[x$pop = pop[[1]][i],], parm, ws, nk, step))
-#         }
-#       }
-#
-#     }
-#     else if ("g" %in% smooth_level){
-#       out <- run_g(x, smoothed_ave, parameter = parm, sigma = ws, nk_weight = nk, fixed_window = step)
-#     }
-#     else{
-#       out <- smoothed_ave(x, parm, ws, nk, step)
-#     }
-#     return(out)
-#   }
-#
-#
-#
-#   ####################################################
-#   #figure out which stats we are getting
-#
-#   #vector of possible stats to request:
-#   pstats <- c("pi", "ho", "fst", "pa", "ld", "tsd")
-#
-#   #if the default (basic), set the stats.
-#   if(stats == "basic"){
-#     stats <- c("pi", "ho", "fst", "pa")
-#   }
-#
-#   #otherwise, check that the options given are acceptable.
-#   else{
-#     stats <- tolower(stats) #incase they used caps
-#     fstats <- which(!(stats %in% pstats)) #any undefined stats?
-#     if(length(fstats) > 0){
-#       stop(cat("Incorrect stats defined:", stats[fstats], ". Acceptable stats:", pstats, "\n"))
-#     }
-#     #otherwise good to go.
-#   }
-#
-#   #how about smoothing?
-#   if(is.character(smooth)){
-#     pstats <- pstats[-length(pstats)]
-#     smooth <- tolower(smooth)
-#     fsmooth <- which(!(smooth %in% stats) | smooth == "tsd") #any unaccepted stats?
-#     if(length(fstats) > 0){
-#       stop(cat("Smoothing requested on incorrect variables:", smooth[fsmooth], ". Acceptable stats:", stats[-which(stats == "tsd")], "\n"))
-#     }
-#   }
-#
-#
-#   ###################################################
-#   #initialize output list
-#   out <- list()
-#
-#   ###################################################
-#   #format to NN, fix ecs with filler data if it is too low
-#   if(ecs < 2){
-#     nfill <- 2 - ecs
-#     fm <- matrix(paste0("filler", 1:nrow(x)), nrow(x), nfill)
-#     fm <- as.data.frame(fm, stringsAsFactors = F)
-#     colnames(nfill) <- paste0("filler", 1:nfill)
-#     x <- cbind(fm, x)
-#     remove(fm)
-#     ecs <- 2
-#   }
-#   else{
-#     nfill <- FALSE
-#   }
-#
-#   if(input != "NN"){
-#     x <- format_snps(x, ecs = ecs, output = 6, input_form = input, miss = mDat)
-#     if(nfill > 0){
-#       out$ch.form.x <- x[,-c(1:nfill)]
-#     }
-#     else{
-#       out$ch.form.x <- x
-#     }
-#   }
-#
-#   ###################################################
-#   #filter the data as requested
-#   if(filter){
-#     if(pop_maf == TRUE){
-#       x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, pop, non_poly, bi_al, mDat)
-#     }
-#     else{
-#       x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, FALSE, non_poly, bi_al, mDat)
-#     }
-#   }
-#
-#   #add to return
-#   if(nfill > 0){
-#     out$x.flt <- x[,-c(1:nfill)]
-#   }
-#   else{
-#     out$x.flt <- x
-#   }
-#   ###################################################
-#   #do each stat as requested and save output
-#
-#   #get ac format if any of the requested stats need it
-#   if(any(c("pi", "pa", "tsd") %in% stats) | (Fst_method != "Genepop" & "fst" %in% stats) |
-#      ("fst" %in% stats & nk) | (nk & ("p" %in% smooth_level) & smooth != FALSE)){
-#     x_ac <- format_snps(x, ecs, 1, pop = pop)
-#   }
-#
-#   #pi
-#   if("pi" %in% stats | (Fst_method == "Hohenlohe" & "fst" %in% stats)){
-#     pi <- calc_pi(x_ac)
-#     out$pi <- pi
-#   }
-#
-#
-#   #ho
-#   if("ho" %in% stats | (Fst_method %in% c("WC", "Wier") & "fst" %in% stats)){
-#     if(pop = 1){
-#       ho <- calc_Ho(x, ecs)
-#       out$ho <- ho
-#     }
-#     else{
-#       ho <- calc_Ho(x, ecs, pop = pop)
-#       if(nfill > 0){
-#         out$ho <- ho[,-c(1:nfill)]
-#       }
-#       else{
-#         out$ho <- ho
-#       }
-#     }
-#
-#     if(nfill > 0){
-#       out$ho <- ho[,-c(1:nfill)]
-#     }
-#     else{
-#       out$ho <- ho
-#     }
-#   }
-#
-#   #Fst
-#   if("fst" %in% stats){
-#     if(Fst_method == "Genepop"){
-#
-#       #make the genepop input
-#       if(file.exists("gp_fst.txt")){
-#         file.remove("gp_fst.txt")
-#       }
-#       gp <- format_snps(x, ecs, 2, pop = pop, outfile = "gp_fst.txt")
-#       remove(gp)
-#
-#       #run Fst
-#       fst <- calc_pairwise_Fst("gp_fst.txt", method = "Genepop", pnames = pop[[1]])
-#       if(nk){
-#         fst$nk <- calc_pairwise_nk(x_ac, ecs)
-#       }
-#       out$fst.gp <- fst
-#     }
-#
-#     else if(Fst_method %in% c("WC" | "Wier")){
-#       #get data ready
-#       ho <- reshape2::melt(ho, id.vars = colnames(x_ac)[1:ecs])
-#       x_ac$ho <- ho$value
-#
-#       #run
-#       fst <- calc_pairwise_Fst(x_ac, ecs, nk, method = Fst_method)
-#       if(Fst_method == "WC"){
-#         out$fst.wc <- fst
-#       }
-#       else{
-#         out$fst.w <- fst
-#       }
-#     }
-#     else{ #hohenlohe
-#       X_ac$pi <- pi
-#       fst <- calc_pairwise_Fst(x_ac, ecs, method = Fst_method)
-#       out$fst.h <- fst
-#     }
-#   }
-#
-#   #private alleles
-#   if("pa" %in% stats){
-#     pa <- check_private(x_ac)
-#     out$pa <- pa
-#   }
-#
-#   #LD, this one might be slow...
-#   if("ld" %in% stats){
-#
-#     #are we running only certain groups/chr?
-#     if(LD_chr != "all"){
-#       xLD <- x[which(x$group %in% LD_chr),]
-#     }
-#     else{
-#       xLD <- x
-#     }
-#
-#
-#     #what level are we running this at?
-#     #are we splitting by pops?
-#     if("p" %in% LD_level){
-#
-#       #initialize pop output list
-#       pLD <- vector("list", length = length(pop))
-#       names(pLD) <- pop[[1]]
-#
-#       #initialize column tracker
-#       tracker <- ecs + 1
-#
-#
-#       for(i in 1:length(pop)){
-#
-#         #are we splitting by group/chr?
-#         if("g" %in% LD_level){
-#
-#           #are we parallelizing?
-#           if(is.numeric(LD_g_par)){
-#             pLD[[i]] <- Full_LD_g_par(
-#               cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-#               ecs, LD_g_par)
-#             tracker <- tracker + pop[[2]][i]
-#           }
-#
-#           else{
-#             pLD[[i]] <- Full_LD_w_groups(
-#               cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-#               ecs)
-#             tracker <- tracker + pop[[2]][i]
-#           }
-#         }
-#
-#         else{
-#           pLD[[i]] <- LD_full_pairwise(cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-#                                        ecs)
-#           tracker <- tracker + pop[[2]][i]
-#         }
-#       }
-#     }
-#
-#
-#     #we aren't splitting by pops?
-#     else{
-#       #are we still splitting by groups?
-#       if("g" %in% LD_level){
-#
-#         #are we parallelizing?
-#         if(is.numeric(LD_g_par)){
-#           pLD <- Full_LD_g_par(LDx, ecs, LD_g_par)
-#         }
-#
-#         else{
-#           pLD <- Full_LD_w_groups(LDx, ecs)
-#         }
-#       }
-#       else{
-#         pLD <- LD_full_pairwise(LDx, ecs)
-#       }
-#     }
-#
-#     out$LD <- pLD
-#
-#   }
-#
-#   #tsd
-#   if("tsd" %in% stats){
-#
-#     #are we splitting tsd by pop?
-#     if("p" %in% tsd_level){
-#
-#       #are we also splitting by group?
-#       if("g" %in% tsd_level){
-#         tsd <- run_gp(x_ac, Tajimas_D, ws = ws, step = step)
-#       }
-#
-#       tsd <- Tajimas_D(x_ac[x_ac$pop == pop[[1]][1],], ws, step)
-#
-#       else{
-#         for(i in 2:length(pop[[1]])){
-#           tsd <- rbind(tsd, Tajimas_D(x_ac[x_ac$pop == pop[[1]][i],], ws, step))
-#         }
-#       }
-#
-#     }
-#
-#     #splitting by just group
-#     else if("g" %in% tsd_level){
-#       tsd <- run_g(x_ac, Tajimas_D, ws = ws, step = step)
-#     }
-#
-#
-#     #not splitting?
-#     else{
-#       tsd <- Tajimas_D(x_ac, ws, step)
-#     }
-#
-#     out$tsd <- tsd
-#   }
-#
-#   #################################################################
-#   #smooth requested.
-#
-#   #get nk if requested
-#   if(nk){
-#     #if a pop list is given but no pop smoothing is requested, have to find nk...
-#     if(!("p" %in% smooth_level) & is.list(pop)){
-#       x_ac2 <- format_snps(x, ecs, 1)
-#       nk_vals <- x_ac2$n_total
-#       remove(x_ac2)
-#     }
-#     else{
-#       nk_vals <- x_ac$n_total
-#     }
-#   }
-#
-#
-#   #working here.
-#
-#   #pi
-#   if("pi" %in% smooth){
-#     pi <- cbind(x[,1:ecs], pi = pi, nk = nk_vals)
-#     out$pi.smooth <- smooth_at_level(pi, smooth_level, ws, step, nk, "pi", pop)
-#   }
-#
-#   #ho
-#   if("ho" %in% smooth){
-#     ho <- cbind(x[,1:ecs])
-#   }
-#
-# }
+get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, bootstrap = NULL, ws = NULL,
+                      step = NULL, pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05, hf_hets = 0.55,
+                      bi_al = TRUE, non_poly = TRUE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
+                      filt_re = "partial", Fst_method = "Genepop", LD_level = c("g", "p"), LD_chr = "all",
+                      LD_g_par = NULL, tsd_level = c("g", "p"), smooth_level = c("g", "p")){
+
+  x <- dplyr::arrange(x, group, position)
+
+  #####################################################
+  #subfunctions
+  #smooth calling subfunction
+  smooth_at_level <- function(x, smooth_level, ws, step, nk = FALSE, parm, pop = NULL){
+    if(nk == TRUE){
+      cnames <- colnames(x)
+      x <- cbind(x[,1:ecs], nk = nk_vals, x[,(ecs+1):ncol(x)])
+      colnames(x) <- c(colnames(x)[1:(ecs+1)], cnames[-c(1:ecs)])
+    }
+    if("p" %in% smooth_level){
+      if("g" %in% smooth_level){
+        out <- run_gp(x, smoothed_ave, parameter = parm, sigma = ws, fixed_window = step, nk_weight = nk)
+      }
+
+      else{
+        out <- smoothed_ave(x[x$pop == pop[[1]][1],], parm, ws, nk, step)
+        for(i in 2:unique(x$pop)){
+          out <- rbind(out, smoothed_ave(x[x$pop == pop[[1]][i],], parm, ws, nk, step))
+        }
+      }
+
+    }
+    else if ("g" %in% smooth_level){
+      out <- run_g(x, smoothed_ave, parameter = parm, sigma = ws, nk_weight = nk, fixed_window = step)
+    }
+    else{
+      out <- smoothed_ave(x, parm, ws, nk, step)
+    }
+    return(out)
+  }
+
+
+
+  ####################################################
+  #figure out which stats we are getting
+
+  #vector of possible stats to request:
+  pstats <- c("pi", "ho", "fst", "pa", "ld", "tsd")
+
+  #if the default (basic), set the stats.
+  if(stats == "basic"){
+    stats <- c("pi", "ho", "fst", "pa")
+  }
+
+  #otherwise, check that the options given are acceptable.
+  else{
+    stats <- tolower(stats) #incase they used caps
+    fstats <- which(!(stats %in% pstats)) #any undefined stats?
+    if(length(fstats) > 0){
+      stop(cat("Incorrect stats defined:", stats[fstats], ". Acceptable stats:", pstats, "\n"))
+    }
+    #otherwise good to go.
+  }
+
+  #how about smoothing?
+  if(is.character(smooth)){
+    pstats <- pstats[-length(pstats)]
+    smooth <- tolower(smooth)
+    fsmooth <- which(!(smooth %in% stats) | smooth == "tsd") #any unaccepted stats?
+    if(length(fstats) > 0){
+      stop(cat("Smoothing requested on incorrect variables:", smooth[fsmooth], ". Acceptable stats:", stats[-which(stats == "tsd")], "\n"))
+    }
+  }
+
+
+  ###################################################
+  #initialize output list
+  out <- list()
+
+  ###################################################
+  #format to NN, fix ecs with filler data if it is too low
+  if(ecs < 2){
+    nfill <- 2 - ecs
+    fm <- matrix(paste0("filler", 1:nrow(x)), nrow(x), nfill)
+    fm <- as.data.frame(fm, stringsAsFactors = F)
+    colnames(nfill) <- paste0("filler", 1:nfill)
+    x <- cbind(fm, x)
+    remove(fm)
+    ecs <- 2
+  }
+  else{
+    nfill <- FALSE
+  }
+
+  if(input != "NN"){
+    x <- format_snps(x, ecs = ecs, output = 6, input_form = input, miss = mDat)
+    if(nfill > 0){
+      out$ch.form.x <- x[,-c(1:nfill)]
+    }
+    else{
+      out$ch.form.x <- x
+    }
+  }
+
+  ###################################################
+  #filter the data as requested
+  if(filter){
+    if(pop_maf == TRUE){
+      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, pop, non_poly, bi_al, mDat)
+    }
+    else{
+      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, FALSE, non_poly, bi_al, mDat)
+    }
+  }
+
+  #add to return
+  if(nfill > 0){
+    out$x.flt <- x[,-c(1:nfill)]
+  }
+  else{
+    out$x.flt <- x
+  }
+  ###################################################
+  #do each stat as requested and save output
+
+  #get ac format if any of the requested stats need it
+  if(any(c("pi", "pa", "tsd") %in% stats) | (Fst_method != "Genepop" & "fst" %in% stats) |
+     ("fst" %in% stats & nk) | (nk & ("p" %in% smooth_level) & smooth != FALSE)){
+    x_ac <- format_snps(x, ecs, 1, pop = pop)
+    if(is.list(pop) & length(pop) > 1){
+      x_ac <- dplyr::arrange(x_ac, pop, group, position)
+    }
+    else{
+      x_ac <- dplyr::arrange(x_ac, group, position)
+    }
+  }
+
+  #get nk if requested
+  if(nk){
+    #if a pop list is given but no pop smoothing is requested, have to find nk...
+    if(!("p" %in% smooth_level) & is.list(pop)){
+      x_ac2 <- format_snps(x, ecs, 1)
+      nk_vals <- x_ac2$n_total
+      remove(x_ac2)
+    }
+    else{
+      nk_vals <- x_ac$n_total
+    }
+  }
+
+
+
+  #pi
+  if("pi" %in% stats | (Fst_method == "Hohenlohe" & "fst" %in% stats)){
+    pi <- calc_pi(x_ac)
+    out$pi <- pi
+    if("pi" %in% smooth){
+      pi <- cbind(x_ac, pi = pi)
+      out$pi.smooth <- smooth_at_level(pi, smooth_level, ws, step, nk, "pi", pop)
+    }
+  }
+
+
+  #ho
+  if("ho" %in% stats | (Fst_method %in% c("WC", "Wier") & "fst" %in% stats)){
+    if(pop == 1){
+      ho <- calc_Ho(x, ecs)
+      out$ho <- ho
+    }
+    else{
+      ho <- calc_Ho(x, ecs, pop = pop)
+      if(nfill > 0){
+        out$ho <- ho[,-c(1:nfill)]
+      }
+      else{
+        out$ho <- ho
+      }
+    }
+
+    if(nfill > 0){
+      out$ho <- ho[,-c(1:nfill)]
+    }
+    else{
+      out$ho <- ho
+    }
+
+    if("ho" %in% smooth){
+      ho <- cbind(x[,1:ecs], ho = ho)
+      out$ho.smooth <- smooth_at_level(ho, smooth_level, ws, step, nk, "ho", pop)
+    }
+  }
+
+  #Fst
+  if("fst" %in% stats){
+    if(Fst_method == "Genepop"){
+
+      #make the genepop input
+      if(file.exists("gp_fst.txt")){
+        file.remove("gp_fst.txt")
+      }
+      gp <- format_snps(x, ecs, 2, pop = pop, outfile = "gp_fst.txt")
+      remove(gp)
+
+      #run Fst
+      fst <- calc_pairwise_Fst("gp_fst.txt", method = "Genepop", pnames = pop[[1]])
+      out$fst.gp <- fst
+    }
+    else if(Fst_method %in% c("WC" | "Wier")){
+      #get data ready
+      ho <- reshape2::melt(ho, id.vars = colnames(x_ac)[1:ecs])
+      ho$variable <- as.character(ho$variable)
+      x_ac$ho <- ho$value
+
+      #run
+      fst <- calc_pairwise_Fst(x_ac, ecs, nk, method = Fst_method)
+      if(Fst_method == "WC"){
+        out$fst.wc <- fst
+      }
+      else{
+        out$fst.w <- fst
+      }
+    }
+    else{ #hohenlohe
+      X_ac$pi <- pi
+      fst <- calc_pairwise_Fst(x_ac, ecs, method = Fst_method)
+      out$fst.h <- fst
+    }
+
+
+    if("fst" %in% smooth){
+      if(nk){
+        pnk <- calc_pairwise_nk(x_ac, ecs)
+      }
+      fst <- reshape2::melt(fst, id.vars = colnames(x)[1:ecs])
+      pnk <- reshape2::melt(pnk, id.vars = colnames(x)[1:ecs])
+      tnk <- nk_values
+      nk_values <- pnk
+      out$fst.smooth <- smooth_at_level(ho, smooth_level, ws, step, nk, "ho", pop)
+      nk_values <- tnk
+      remove(pnk)
+    }
+  }
+
+  #private alleles
+  if("pa" %in% stats){
+    pa <- check_private(x_ac)
+    out$pa <- pa
+
+    if("ho" %in% smooth){
+      ho <- cbind(x[,1:ecs], pa = pa)
+      out$ho.smooth <- smooth_at_level(pa, smooth_level, ws, step, nk, "pa", pop)
+    }
+  }
+
+  #tsd
+  if("tsd" %in% stats){
+    warning("Tajima's D should be run on a full dataset, without filtering SNPs and containing non-segregating genotypes.")
+
+    #are we splitting tsd by pop?
+    if("p" %in% tsd_level){
+
+      #are we also splitting by group?
+      if("g" %in% tsd_level){
+        tsd <- run_gp(x_ac, Tajimas_D, ws = ws, step = step)
+      }
+
+      else{
+        tsd <- Tajimas_D(x_ac[x_ac$pop == pop[[1]][1],], ws, step)
+        for(i in 2:length(pop[[1]])){
+          tsd <- rbind(tsd, Tajimas_D(x_ac[x_ac$pop == pop[[1]][i],], ws, step))
+        }
+      }
+
+    }
+
+    #splitting by just group
+    else if("g" %in% tsd_level){
+      tsd <- run_g(x_ac, Tajimas_D, ws = ws, step = step)
+    }
+
+
+    #not splitting?
+    else{
+      tsd <- Tajimas_D(x_ac, ws, step)
+    }
+
+    out$tsd <- tsd
+  }
+
+
+  #LD, this one might be slow...
+  if("ld" %in% stats){
+
+    #are we running only certain groups/chr?
+    if(LD_chr != "all"){
+      xLD <- x[which(x$group %in% LD_chr),]
+    }
+    else{
+      xLD <- x
+    }
+
+
+    #what level are we running this at?
+    #are we splitting by pops?
+    if("p" %in% LD_level){
+
+      #initialize pop output list
+      pLD <- vector("list", length = length(pop))
+      names(pLD) <- pop[[1]]
+
+      #initialize column tracker
+      tracker <- ecs + 1
+
+
+      for(i in 1:length(pop)){
+
+        #are we splitting by group/chr?
+        if("g" %in% LD_level){
+
+          #are we parallelizing?
+          if(is.numeric(LD_g_par)){
+            pLD[[i]] <- Full_LD_g_par(
+              cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
+              ecs, LD_g_par)
+            tracker <- tracker + pop[[2]][i]
+          }
+
+          else{
+            pLD[[i]] <- Full_LD_w_groups(
+              cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
+              ecs)
+            tracker <- tracker + pop[[2]][i]
+          }
+        }
+
+        else{
+          pLD[[i]] <- LD_full_pairwise(cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
+                                       ecs)
+          tracker <- tracker + pop[[2]][i]
+        }
+      }
+    }
+
+
+    #we aren't splitting by pops?
+    else{
+      #are we still splitting by groups?
+      if("g" %in% LD_level){
+
+        #are we parallelizing?
+        if(is.numeric(LD_g_par)){
+          pLD <- Full_LD_g_par(LDx, ecs, LD_g_par)
+        }
+
+        else{
+          pLD <- Full_LD_w_groups(LDx, ecs)
+        }
+      }
+      else{
+        pLD <- LD_full_pairwise(LDx, ecs)
+      }
+    }
+
+    out$LD <- pLD
+
+  }
+
+  ###########################################
+  #return the object
+  return(out)
+
+}

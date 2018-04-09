@@ -21,13 +21,7 @@ smoothed_ave(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL)
 If fixed_window == FALSE, returns the input data frame with an additional column containing smoothed average. Otherwise, returns a new data frame containing the position info for each window and smoothed value of the statistic at that window. Both outputs will also contain a column with the number of SNPs in each window.
 }
 \description{
-\code{smoothed_average} Calculates gaussian smoothed average values for a given statistic and the genomic position at which it was observed.
-}
-\details{
-Oblivious to group/chromosome and population, so should probably be typically wrapped in run_g or run_gp. Can weight each statistic by an additional factor (typically sample size, "nk", per SNP). Smoothed values are calculated for sliding windows which can have either arbitrary centers (fixed_windows) or centers defined by each observed SNP.
-
-Description of x:
-   Requires columns titled columns titled "position" and one titled to match the "parameter" argument, containing positions in bp and statistic to be smoothed for each SNP. If nk_weight is set, a column titled "nk" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk".
+Wrapper for \code{\link{s_ave_multi}} called with no levels to split by.
 }
 \examples{
 #fixed slide window:

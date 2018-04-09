@@ -24,12 +24,7 @@ gaussian_weight <- function(p, c, s) {
 
 #'Gaussian smooth statistics.
 #'
-#'\code{smoothed_average} Calculates gaussian smoothed average values for a given statistic and the genomic position at which it was observed.
-#'
-#'Oblivious to group/chromosome and population, so should probably be typically wrapped in run_g or run_gp. Can weight each statistic by an additional factor (typically sample size, "nk", per SNP). Smoothed values are calculated for sliding windows which can have either arbitrary centers (fixed_windows) or centers defined by each observed SNP.
-#'
-#'Description of x:
-#'    Requires columns titled columns titled "position" and one titled to match the "parameter" argument, containing positions in bp and statistic to be smoothed for each SNP. If nk_weight is set, a column titled "nk" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk".
+#'Wrapper for \code{\link{s_ave_multi}} called with no levels to split by.
 #'
 #' @param x Input SNP data frame.
 #' @param parameter Name of the statistic to smooth.
@@ -50,81 +45,195 @@ gaussian_weight <- function(p, c, s) {
 #' run_gp(randPI, smoothed_ave, parameter = "pi", sigma = 200, nk_weight = TRUE, fixed_window = 50)
 #'
 smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL) {
+  out <- s_ave_multi(x, parameter, sigma, fixed_window, nk_weight, levs = NA)
+}
+
+
+
+#'Gaussian smooth multiple statistics
+#'
+#'\code{sm_ave_multi} Calculates gaussian smoothed average values for statistics and the genomic position at which it was observed, splitting by any requested variables.
+#'
+#'Description of x:
+#'    Requires columns titled columns titled "position", columns titled to match those in the "parms" argument, and those to match the "levs" argument if set. These contain positions in bp, the statistic to be smoothed for each SNP, and any variables to split the smoothing by (such as chromosome and population). If nk is TRUE, a column titled "nk" or "n_total" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk".
+#'
+#' @param x Input SNP data frame.
+#' @param parms Character vector. Names of the statistics to smooth.
+#' @param sigma Numeric value. Smoothing statistic/window size, in kb.
+#' @param ws Numeric value or NULL, default NULL. Window slide length. If NULL, uses every SNP as a window center.
+#' @param nk Boolean, default TRUE. Should statistic contribution to window mean be additionally scaled by column "nk"?
+#' @param levs Character vector or NA, default c('group', 'pop')). Names of the columns to split the data by for smoothing.
+#'
+#' @return If fixed_window == FALSE, returns the input data frame with an additional column containing smoothed average. Otherwise, returns a new data frame containing the position info for each window and smoothed value of the statistic at that window. Both outputs will also contain a column with the number of SNPs in each window.
+#'
+#' @examples
+#' #data prep:
+#' t2 <- calc_pi(stickFORMATs$ac)
+#' t2 <- cbind(stickFORMATs$ac, pi = t2)
+#' t3 <- calc_Ho(stickFORMATs$character, 3, pop = l)
+#' t3 <- reshape2::melt(t3, id.vars = c("snp", "position", "group"))
+#' t2$ho <- t3$value
+#'
+#'
+#'
+#' #fixed slide window, splitting by pop and group, the defualt:
+#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE)
+#'
+#' #splitting by only pop.
+#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, "pop")
+#'
+#' #no splitting
+#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
+#'
+s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group", "pop")) {
   sig <- 1000*sigma
-  new_col <- paste0("smoothed", "_", parameter)
-  if(nk_weight){
+  cat("Smoothing Parameters:\n\tsigma = ", sig, "\n\tWindow slide = ", ws*1000, "\n\t")
+
+  #================sanity checks=============
+  #nk
+  if(!all(is.logical(nk) & length(nk) == 1)){
+    stop("nk must be TRUE or FALSE.")
+  }
+  if(nk){
+    if(!any(colnames(x) == "n_total" | colnames(x) == "nk")){
+      stop("If nk = TRUE, columns named 'nk' or 'n_total' must be in x.")
+    }
     if(any(colnames(x) == "n_total")){
       colnames(x)[which(colnames(x) == "n_total")] <- "nk"
     }
     x[,"nk"] <- as.numeric(x[,"nk"])
-  }
-  x$position <- as.numeric(x$position)
-  if (is.null(fixed_window)){
-    out <- data.frame(position = x$position, fill = numeric(nrow(x)), n_snps = numeric(nrow(x)))
-    colnames(out)[2] <- new_col
-    for (i in 1:nrow(x)) {
-      if(i %% 1000 == 0){cat("snp ", i, "\n")}
-      c <- x[i,"position"]
-      start <- c - 3*sig
-      end <- c + 3*sig
-      #cat("c:", c, "sig:", sig, "\n")
-      ws <- x[x$position <= end & x$position >= start,]
-      ws <- ws[!is.na(ws[,parameter]),] #remove na values
-
-      if(!is.null(nk_weight)){
-        gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]*(ws[,"nk"] - 1)
-        gws <- gaussian_weight(ws$position,c,sig)*(ws[,"nk"] - 1)
-      }
-      else{
-        gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]
-        gws <- gaussian_weight(ws$position,c,sig)
-      }
-
-      #print(sum(gws))
-      out[i,new_col] <- (sum(gwp)/sum(gws))
-      out[i,"n_snps"] <- nrow(ws)
-    }
-    return(out)
+    cat("nk weighting = TRUE\n\t")
   }
   else{
-    #cat("Using fixed window, slide =", fixed_window, "kb.\n")
-    out_const <- data.frame()
-    num_snps <- nrow(x)
-    these_snps <- sort(x$position)
-    last_snp_pos <- these_snps[length(these_snps)]
-    first_snp_pos <- these_snps[1]
-    size <- last_snp_pos - first_snp_pos
-    c <- 0
-    i <- 1
-    u <- 1
-    while (c <= size){
-      if(u %% 50 == 0){cat("Window Postion:", c, "out of", size, "\n")}
-      #cat(c, start, end, "\n")
-      start <- c - 3*sig
-      end <- c + 3*sig
-      ws <- x[x$position <= end & x$position >= start,]
-      ws <- ws[!is.na(ws[,parameter]),] #remove na values
-
-      if(nrow(ws) != 0){
-        if(!nk_weight){
-          gwp <- gaussian_weight(ws$position,c,sig)*ws[,parameter]*(ws[,"nk"] - 1)
-          gws <- gaussian_weight(ws$position,c,sig)*(ws[,"nk"] - 1)
-        }
-        else{
-          gwp <-  gaussian_weight(ws$position,c,sig)*ws[,parameter]
-          gws <-  gaussian_weight(ws$position,c,sig)
-        }
-        #print(gwp)
-        #print(gws)
-        out_const[i,"position"] <- c
-        out_const[i,new_col] <- (sum(gwp)/sum(gws))
-        out_const[i,"n_snps"] <- nrow(ws)
-      }
-      c <- c + fixed_window*1000
-      i <- i + 1
-      u <- u + 1
-    }
-    return(out_const)
+    cat("nk weighting = FALSE\n\t")
   }
-}
+  x$position <- as.numeric(x$position)
 
+
+  #parms
+  if(!all(parms %in% colnames(x))){
+    stop("All entries in parms must be present in x. Column names in x must match entries in parms exactly.")
+  }
+  cat("Paramters:\n\t")
+  for(i in 1:length(parms)){
+    cat("\t",parms[i], "\n\t")
+  }
+
+  #sigma and ws
+  if(!all(is.numeric(sigma), is.numeric(ws), length(sigma) == 1, length(ws) == 1)){
+    stop("Sigma and ws must be numeric vectors of length 1.")
+  }
+  if(sigma >= 500 | ws >= 500){
+    warning("Sigma and ws are the number of bases in megabases!")
+  }
+  else if(sig <= 100){
+    warning("Provided sigma is very small:", sig, "bp!")
+  }
+
+
+  #levs
+  if(!all(levs %in% colnames(x)) & !all(is.na(levs))){
+    stop("All entries in levs must be present in x. Column names in x must match entries in levs exactly.")
+  }
+  else if(length(levs) > 1 & any(is.na(levs)) | is.numeric(levs) | length(levs) > 1 & any(is.null(levs))){
+    stop("All entries in levs must be characters! Use NA to subset by no levels.")
+  }
+  cat("Smoothing levels:")
+  for(i in 1:length(levs)){
+    cat("\t",levs[i], "\n\t")
+  }
+
+  #================subfunction========
+  #funciton to do a sliding window analysis on a data set. Vectorized!:
+  sw  <- function(x, scols, ws, sig, nk){
+    #get window centers, starts, and stops:
+    ##possible positions
+    pos <- x$position
+    pos <- as.numeric(pos)
+
+    #window starts, stops, and ends
+    if(!is.null(ws)){
+      cs <- seq(0, max(pos), by = ws)
+    }
+    else{
+      cs <- pos
+    }
+    ends <- cs + sig*3
+    starts <- cs - sig*3
+
+    #matrix where the rows are the snps and columns are window centers. Are the snps in the windows?
+    lmat <- outer(pos, starts, function(pos, starts) pos >= starts)
+    lmat <- lmat + outer(pos, ends, function(pos, ends) pos <= ends)
+    colnames(lmat) <- cs
+    rownames(lmat) <- pos
+    lmat <- ifelse(lmat == 2, TRUE, FALSE)
+
+    #get number of snps per window for later...
+    n_snps <- colSums(lmat)
+
+    #Multiply this using the gaussian weight function to get the contribution of each snp in each window.
+    gmat <- outer(pos, cs, gaussian_weight, s = sig)
+    gmat <- gmat*lmat
+
+    #remove any windows with no SNPs
+    gmat <- gmat[,n_snps != 0] #doing it this way allows for windows with SNPs but a stat value of 0.
+    n_snps <- n_snps[n_snps != 0]
+
+    #multiply by value of the statistics and nk if requested
+    if(nk){
+      win_vals <- t(gmat) %*% (as.matrix(x[,scols])*(x$nk - 1))
+      win_scales <- t(gmat) %*% (x$nk - 1)
+    }
+    else{
+      win_vals <- t(gmat) %*% as.matrix(x[,scols])
+      win_scales <- rowSums(t(gmat))
+    }
+
+    #get the weighted value of the window
+    win_stats <- as.vector(t(t(win_vals)))/as.vector(t(win_scales))
+    win_stats <- matrix(win_stats, nrow(win_vals), ncol(win_vals))
+    colnames(win_stats) <- colnames(win_vals)
+
+    #prepare metadata
+    if(!any(is.na(levs))){
+      levs <- sort(levs)
+      meta <- as.character(x[1,levs])
+      meta <- rep(meta, length = nrow(win_vals)*length(meta))
+      meta <- matrix(meta, nrow = nrow(win_vals), byrow = TRUE)
+      colnames(meta) <- levs
+      meta <- as.data.frame(meta, stringsAsFactors = F)
+      ret <- cbind(meta, position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+    }
+    else{
+      ret <- cbind(position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+    }
+
+
+    #return
+    return(ret)
+  }
+
+  #================smooth at proper level========
+  #which cols hold the stats of interest?
+  scols <- which(colnames(x) %in% parms)
+
+  if(!is.null(ws)){ws <- ws*1000}
+
+  cat("Smoothing...")
+
+  if(!any(is.na(levs))){
+    out <- plyr::ddply(
+      .data = x,
+      .variables = levs,
+      .fun = sw,
+      .progress = "text",
+      scols = scols, ws = ws, sig = sig, nk = nk
+    )
+  }
+  else{
+    out <- sw(x, scols, ws, sig, nk)
+  }
+
+  cat("Done!\n")
+  return(out)
+}
