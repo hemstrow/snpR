@@ -1447,47 +1447,55 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   }
 }
 
-
-get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, bootstrap = NULL, ws = NULL,
-                      step = NULL, pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05, hf_hets = 0.55,
+#'SNP data analysis with snpR
+#'
+#'\code{snpR.stats} calls many snpR functions based on the provided arguments to do the majority of the basic statistical process required for SNP analysis.
+#'
+#'
+#'
+#'Description of x:
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". If population info is given, it must be contained in a column named "pop".
+#'
+#' @param x Data frame. Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+#' @param ecs Numeric value. Number of extra metadata columns at the start of x.
+#' @param stats Character vector, default "basic" (see description). Which stats should be calculated?
+#' @param filter Logical, default FALSE. Should the SNP data be filtered?
+#' @param smooth Character vector or FALSE, default FALSE. Should variables be smoothed? If so, which?
+#' @param bootstrap Character vector or FALSE, default FALSE. Should bootstraps of smoothed windows be conducted? If so, which values?
+#' @param graphs Character vector or FALSE, default FALSE. Which variables should be plotted? Plots \emph{smoothed} values of most statistics save population structure, LD, and Tajima's D. As such, requires the statistics to be set via the "smooth" argument.
+#' @param sigma Numeric, default NULL. Smoothing statistic/window size, in kb.
+#' @param ws Numeric, default NULL.  How far should the window slide when smoothing? If null, a window is produced centered at every SNP.
+#' @param pop Table of length > 1, default NULL. Table containing the number of samples in each population. Samples should be sorted by population and ordered identically in data.
+#' @param nk Logical, default TRUE. Should contributions to smoothed windows be weighted by the number of called alleles at each site?
+#' @param input Character string, default "NN". How are genotypes noted? Supports "NN" and "0000". See \code{\link{format_snps}}.
+#' @param mDat Character string, default "N". How are missing \emph{alleles} coded in x (typically "N" or "00")?
+#' @param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency during filtering.
+#' @param hf_hets FALSE or numeric between 0 and 1, default 0.55 Maximum acceptable heterozygote frequency during filtering.
+#' @param bi_al Logical, default TRUE. Should non-biallelic SNPs be removed during filtering?
+#' @param non_poly Logical, default TRUE. Should non-polymorphic loci be removed during filtering?
+#' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced during filtering.
+#' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at to be kept during filtering.
+#' @param pop_maf Logical, default FALSE. For filtering, should loci be kept if they are above the minor allele frequency cuttoff in \emph{any} population?
+#' @param filt_re FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered? See \code{\link{filter_snps}}.
+#' @param Fst_method Character vector, default "genepop". Which FST estimator should be used? See documentation for options.
+#' @param LD_level Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for LD calculations.
+#' @param LD_chr Character vector, default "all". Names of linkage groups/chromsomes for which pairwise LD values should be calculated at all SNPs. Identifiers must be contained in a column named either "group" or "chr".
+#' @param LD_g_par Numeric value, default NULL. If provided, how many processing cores should be used for parallel LD computing across multiple linkage groups/chromsomes?
+#' @param tsd_level Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for Tajima's D calculations.
+#' @param smooth_levs Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for smoothing.
+#' @param p.alt Character string, default "two-sided". If bootstraps are done, which alternative hypothesis should be used? See documentation for options.
+#'
+#' @return A named list of objects corresponding to requested statistics/graphs/ect.
+#'
+#' @examples
+#'
+snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, bootstrap = FALSE, graphs = FALSE, sigma = NULL, ws = NULL,
+                      pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05, hf_hets = 0.55,
                       bi_al = TRUE, non_poly = TRUE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
-                      filt_re = "partial", Fst_method = "Genepop", LD_level = c("g", "p"), LD_chr = "all",
-                      LD_g_par = NULL, tsd_level = c("g", "p"), smooth_level = c("g", "p")){
+                      filt_re = "partial", Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
+                      LD_g_par = NULL, tsd_level = c("group", "pop"), smooth_levs = c("group", "pop"), p.alt = "two-sided"){
 
   x <- dplyr::arrange(x, group, position)
-
-  #####################################################
-  #subfunctions
-  #smooth calling subfunction
-  smooth_at_level <- function(x, smooth_level, ws, step, nk = FALSE, parm, pop = NULL){
-    if(nk == TRUE){
-      cnames <- colnames(x)
-      x <- cbind(x[,1:ecs], nk = nk_vals, x[,(ecs+1):ncol(x)])
-      colnames(x) <- c(colnames(x)[1:(ecs+1)], cnames[-c(1:ecs)])
-    }
-    if("p" %in% smooth_level){
-      if("g" %in% smooth_level){
-        out <- run_gp(x, smoothed_ave, parameter = parm, sigma = ws, fixed_window = step, nk_weight = nk)
-      }
-
-      else{
-        out <- smoothed_ave(x[x$pop == pop[[1]][1],], parm, ws, nk, step)
-        for(i in 2:unique(x$pop)){
-          out <- rbind(out, smoothed_ave(x[x$pop == pop[[1]][i],], parm, ws, nk, step))
-        }
-      }
-
-    }
-    else if ("g" %in% smooth_level){
-      out <- run_g(x, smoothed_ave, parameter = parm, sigma = ws, nk_weight = nk, fixed_window = step)
-    }
-    else{
-      out <- smoothed_ave(x, parm, ws, nk, step)
-    }
-    return(out)
-  }
-
-
 
   ####################################################
   #figure out which stats we are getting
@@ -1515,11 +1523,23 @@ get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, b
     pstats <- pstats[-length(pstats)]
     smooth <- tolower(smooth)
     fsmooth <- which(!(smooth %in% stats) | smooth == "tsd") #any unaccepted stats?
-    if(length(fstats) > 0){
+    if(length(fsmooth) > 0){
       stop(cat("Smoothing requested on incorrect variables:", smooth[fsmooth], ". Acceptable stats:", stats[-which(stats == "tsd")], "\n"))
     }
   }
 
+  #pop info, needs more work
+  if(is.table(pop)){
+    if(length(pop) > 1){
+      pop <- list(names(pop), as.numeric(pop))
+    }
+    else{
+      stop("Provided pop table must have more than one population!")
+    }
+  }
+  else if(!is.null(pop)){
+    stop("Pop info should be provided as a table, with entries in the same order as samples in x (typically alphabetical)!")
+  }
 
   ###################################################
   #initialize output list
@@ -1571,76 +1591,51 @@ get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, b
   ###################################################
   #do each stat as requested and save output
 
-  #get ac format if any of the requested stats need it
-  if(any(c("pi", "pa", "tsd") %in% stats) | (Fst_method != "Genepop" & "fst" %in% stats) |
-     ("fst" %in% stats & nk) | (nk & ("p" %in% smooth_level) & smooth != FALSE)){
-    x_ac <- format_snps(x, ecs, 1, pop = pop)
-    if(is.list(pop) & length(pop) > 1){
-      x_ac <- dplyr::arrange(x_ac, pop, group, position)
-    }
-    else{
-      x_ac <- dplyr::arrange(x_ac, group, position)
-    }
+  #get ac format, used in most analysis and for nk
+  sink(tempfile())
+  x_ac <- format_snps(x, ecs, 1, pop = pop)
+  sink()
+  if(is.list(pop) & length(pop) > 1){
+    x_ac <- dplyr::arrange(x_ac, pop, group, position)
+  }
+  else{
+    x_ac <- dplyr::arrange(x_ac, group, position)
   }
 
-  #get nk if requested
-  if(nk){
-    #if a pop list is given but no pop smoothing is requested, have to find nk...
-    if(!("p" %in% smooth_level) & is.list(pop)){
-      x_ac2 <- format_snps(x, ecs, 1)
-      nk_vals <- x_ac2$n_total
-      remove(x_ac2)
-    }
-    else{
-      nk_vals <- x_ac$n_total
-    }
+  #initialize output stat dataframe, also used for smoothing.
+  sm.stats <- stats[!(stats %in% c("fst", "tsd", "ld"))] #stats that work for this output only.
+  sm.smooth <- smooth[smooth != "fst"]
+  sm.in <- matrix(NA, nrow = nrow(x_ac), ncol = ecs + length(sm.stats) + 1)
+  sm.in <- as.data.frame(sm.in)
+  sm.in[,1:ecs] <- x_ac[,1:ecs]
+  colnames(sm.in) <- c(colnames(x_ac)[1:ecs], sort(sm.smooth), "nk")
+  sm.in$nk <- x_ac$n_total
+  #add a pop column if info provided...
+  if(length(pop) > 1){
+    sm.in$pop <- x_ac$pop
   }
-
-
 
   #pi
-  if("pi" %in% stats | (Fst_method == "Hohenlohe" & "fst" %in% stats)){
+  if("pi" %in% stats | ("Hoh" %in% Fst_method & "fst" %in% stats)){
     pi <- calc_pi(x_ac)
-    out$pi <- pi
-    if("pi" %in% smooth){
-      pi <- cbind(x_ac, pi = pi)
-      out$pi.smooth <- smooth_at_level(pi, smooth_level, ws, step, nk, "pi", pop)
-    }
+    sm.in$pi <- pi
   }
 
-
   #ho
-  if("ho" %in% stats | (Fst_method %in% c("WC", "Wier") & "fst" %in% stats)){
-    if(pop == 1){
+  if("ho" %in% stats | (("WC" %in% Fst_method | "Wier" %in% Fst_method) & "fst" %in% stats)){
+    if(!is.null(pop)){
       ho <- calc_Ho(x, ecs)
-      out$ho <- ho
     }
     else{
       ho <- calc_Ho(x, ecs, pop = pop)
-      if(nfill > 0){
-        out$ho <- ho[,-c(1:nfill)]
-      }
-      else{
-        out$ho <- ho
-      }
     }
-
-    if(nfill > 0){
-      out$ho <- ho[,-c(1:nfill)]
-    }
-    else{
-      out$ho <- ho
-    }
-
-    if("ho" %in% smooth){
-      ho <- cbind(x[,1:ecs], ho = ho)
-      out$ho.smooth <- smooth_at_level(ho, smooth_level, ws, step, nk, "ho", pop)
-    }
+    sm.in$ho <- ho$ho
   }
 
   #Fst
   if("fst" %in% stats){
-    if(Fst_method == "Genepop"){
+    fst.list <- character(0)
+    if("genepop" %in% Fst_method){
 
       #make the genepop input
       if(file.exists("gp_fst.txt")){
@@ -1651,27 +1646,65 @@ get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, b
 
       #run Fst
       fst <- calc_pairwise_Fst("gp_fst.txt", method = "Genepop", pnames = pop[[1]])
-      out$fst.gp <- fst
+      if(nfill != FALSE){
+        fst$loci <- cbind(x[,(nfill+1):ecs], fst$loci)
+        out$fst$gp$snps <- fst$loci
+      }
+      else{
+        fst$loci <- cbind(x[,1:ecs], fst$loci)
+        out$fst$gp$loci <- fst$loci
+      }
+      out$fst$gp$overall <- fst$overall
+      fst <- fst$loci
+
+      fst.list <- "genepop"
+
+      fst <- reshape2::melt(fst, id.vars = colnames(x)[1:ecs])
+      colnames(fst)[colnames(fst) == "value"] <- "fst.genepop"
     }
-    else if(Fst_method %in% c("WC" | "Wier")){
+    if("WC" %in% Fst_method | "Wier" %in% Fst_method){
       #get data ready
       ho <- reshape2::melt(ho, id.vars = colnames(x_ac)[1:ecs])
       ho$variable <- as.character(ho$variable)
-      x_ac$ho <- ho$value
+      x_ac$Ho <- ho$value
 
-      #run
-      fst <- calc_pairwise_Fst(x_ac, ecs, nk, method = Fst_method)
-      if(Fst_method == "WC"){
-        out$fst.wc <- fst
+      if("Wier" %in% Fst_method){
+        fst.Wier <- calc_pairwise_Fst(x_ac, ecs, method = "Wier")
+        out$fst$Wier <- fst.Wier
+        fst.list <- c(fst.list, "Wier")
+        fst.Wier <- reshape2::melt(fst.Wier, id.vars = colnames(x)[1:ecs])
+        if(exists("fst")){
+          fst <- cbind(fst, fst.Wier = fst.Wier$value)
+        }
+        else{
+          fst <- fst.Wier
+        }
       }
-      else{
-        out$fst.w <- fst
+      if("WC" %in% Fst_method){
+        fst.WC <- calc_pairwise_Fst(x_ac, ecs, method = "WC")
+        out$fst$WC <- fst.WC
+        fst.list <- c(fst.list, "WC")
+        fst.WC <- reshape2::melt(fst.WC, id.vars = colnames(x)[1:ecs])
+        if(exists("fst")){
+          fst <- cbind(fst, fst.WC = fst.WC$value)
+        }
+        else{
+          fst <- fst.WC
+        }
       }
     }
-    else{ #hohenlohe
-      X_ac$pi <- pi
-      fst <- calc_pairwise_Fst(x_ac, ecs, method = Fst_method)
-      out$fst.h <- fst
+    if("Hoh" %in% Fst_method){ #hohenlohe
+      x_ac$pi <- pi
+      fst.Hoh <- calc_pairwise_Fst(x_ac, ecs, method = "Hohenlohe")
+      out$fst$Hoh <- fst.Hoh
+      fst.list <-c(fst.list, "Hoh")
+      fst.Hoh <- reshape2::melt(fst.Hoh, id.vars = colnames(x)[1:ecs])
+      if(exists("fst")){
+        fst <- cbind(fst, fst.Hoh = fst.Hoh$value)
+      }
+      else{
+        fst <- fst.Hoh
+      }
     }
 
 
@@ -1679,25 +1712,21 @@ get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, b
       if(nk){
         pnk <- calc_pairwise_nk(x_ac, ecs)
       }
-      fst <- reshape2::melt(fst, id.vars = colnames(x)[1:ecs])
       pnk <- reshape2::melt(pnk, id.vars = colnames(x)[1:ecs])
-      tnk <- nk_values
-      nk_values <- pnk
-      out$fst.smooth <- smooth_at_level(ho, smooth_level, ws, step, nk, "ho", pop)
-      nk_values <- tnk
-      remove(pnk)
+      fst$nk <- pnk$value
+      colnames(fst)[which(colnames(fst) == "variable")] <- "pop"
+      out$fst$smooth <- s_ave_multi(fst, paste0("fst.", Fst_method), sigma, ws, nk, smooth_levs)
     }
   }
 
   #private alleles
   if("pa" %in% stats){
     pa <- check_private(x_ac)
-    out$pa <- pa
-
-    if("ho" %in% smooth){
-      ho <- cbind(x[,1:ecs], pa = pa)
-      out$ho.smooth <- smooth_at_level(pa, smooth_level, ws, step, nk, "pa", pop)
-    }
+    pa <- cbind(x[,1:ecs], pa)
+    pa <- reshape2::melt(pa, id.vars = colnames(x_ac[,1:ecs]))
+    colnames(pa)[colnames(pa) == "variable"] <- "pop"
+    colnames(pa)[colnames(pa) == "value"] <- "pa"
+    sm.in$pa <- pa$pa
   }
 
   #tsd
@@ -1811,6 +1840,16 @@ get_stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, b
 
     out$LD <- pLD
 
+  }
+
+  out$stats <- sm.in
+
+  ###########################################
+  #smooth any other requested stats
+
+  if(is.character(smooth)){
+    sm.out <- s_ave_multi(sm.in, sm.smooth, sigma, ws, nk, smooth_levs)
+    out$stats_smoothed <- sm.out
   }
 
   ###########################################

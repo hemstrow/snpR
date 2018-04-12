@@ -45,6 +45,8 @@
 #' @param non_poly boolean, default FALSE. Should non-polymorphic loci be removed?
 #' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
 #' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
+#' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
+#' @param out.tab. FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
 #'
 #' @return A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.
 #'
@@ -61,7 +63,7 @@
 #'
 filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", pop = FALSE,
-                        non_poly = TRUE, bi_al = TRUE, mDat = "NN"){
+                        non_poly = TRUE, bi_al = TRUE, mDat = "NN", in.tab = FALSE, out.tab = FALSE){
 
   #############################################################################################
   #do sanity checks
@@ -278,6 +280,14 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       else{
         cat("Filtering low minor allele frequencies, pop:\n")
         pmafs <- logical(nrow(x))
+
+        #if matrices are requested as output, prepare somewhere to save these.
+        if(out.tab){
+          pop.amat.save <- vector(mode = "list", length = length(pop[[1]]))
+          names(pop.amat.save) <- pop[[1]]
+        }
+
+        #do the filtering
         for(i in 1:length(pop[[1]])){
           cat(pop[[1]][i], "\n")
           #re-establish matrices with each pop
@@ -361,6 +371,11 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
           popmafs <-  popmafs >= maf #if greater than requested, passes check for this pop
           popmafs[is.na(popmafs)] <- FALSE #call false, no information to go on here
           pmafs <- pmafs + popmafs #add this logical to the vector containing the sum of all such vectors
+
+          #save the output pop tables if requested!
+          if(out.tab){
+            pop.amat.save[[i]]<- list(gmat = popgmat, amat = popamat)
+          }
         }
         pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
         #add in the overall mafs, since differential fixation will be removed by this!
@@ -394,6 +409,17 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 
     keep <- !as.logical(keep)
     x <- x[keep,]
+
+    browser()
+
+    #return the genotype and allele tables if requested
+    # if(out.tab){
+    #   #if pops were run
+    #   if(exists("pop.amat.save")){
+    #     for(i in 1:)
+    #   }
+    # }
+
 
     return(list(x = x, headers = headers[keep,]))
   }
@@ -513,6 +539,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
 #'    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
 #'    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
+#'    \item{dadi: }dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.
 #'}
 #'
 #'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
@@ -539,6 +566,8 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
 #' @param outfile character vector, default FALSE. If provided, the path to the output file to write to.
+#' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
+#' @param out.tab. FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
 #'
 #' @return A data.frame in the specified format.
 #'
@@ -587,7 +616,8 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
-                        interp_miss = T, lnames = NULL, outfile = FALSE){
+                        interp_miss = T, lnames = NULL, outfile = FALSE,
+                        in.tab = FALSE, out.tab = FALSE){
 
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
   data <- x
@@ -597,7 +627,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #possible outputs, recode to numbers so that I don't have to rewrite the whole damn thing. Still allowing numbers for reverse compatiblity.
   if(!is.numeric(output)){
     pos_outs <- c("ac", "genepop", "structure", "numeric", "hapmap", "character", "pa",
-                  "rafm", "faststructure")
+                  "rafm", "faststructure", "dadi")
     if(!(output %in% pos_outs)){
       stop("Unaccepted output format specified. Check documentation. Remember, no capitalization!")
     }
@@ -693,6 +723,16 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       stop("Only SNP data accepted for RAFM format.")
     }
     cat("Converting to RAFM format.\n")
+  }
+
+  else if(output == 10){
+    if(input_form != "0000" & input_form != "snp_tab" & input_form != "NN"){
+      stop("Only SNP data accepted for dadi format.")
+    }
+    if(!("ref" %in% colnames(data)) | !("anc" %in% colnames(data))){
+      stop("Reference and ancestor/outgroup flanking bases required in columns named 'ref' and 'anc', respecitvely")
+    }
+    cat("Converting to dadi format...\n")
   }
 
   else{
@@ -922,25 +962,20 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
 
-  ##convert to allele count or migrate-n format, migrate-n should ALWAYS have multiple pops (why else would you
+  ##convert to allele count, migrate-n, or dadi format. Migrate-n should ALWAYS have multiple pops (why else would you
   ##use it?) (v)
-  if(output == 1 | output == 5){
+  if(output == 1 | output == 5 | output == 10){
     if(output == 5){cat("WARNING: Data does not have header or pop spacer rows.\n")}
-    w_df <- data[,1:ecs] #intiallize w_df if doing option 1
 
-    ##Make a function to sum each row
-    sum_row <- function(row){
-      l <- c(substr(row,1,1), substr(row,2,2))
-      t <- table(l)
-      return(t) #returns a table with counts of the two alleles and then an N
-    }
+    #no pop info
     if (is.list(pop) == FALSE){
       if(output == 5){stop("Cannot convert to migrate-n format with only one pop.\n")}
       #prepare a genotype table
       xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
       tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data))
-      w_df$n_total <- rowSums(tabs$as)
-      counts <- rowSums(ifelse(tabs$as == 0, 0, 1))
+      counts <- matrixStats::rowSums2(ifelse(tabs$as == 0, 0, 1))
+
+      #check for bad loci
       if(any(counts != 2)){
         if(any(counts > 2)){
           vio <- which(counts > 2)
@@ -950,21 +985,106 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         else{
           vio <- which(counts != 2)
           warning("Some loci are not bi-allelic, see printed list.")
+          if(output == 10){stop()}
           print(vio)
         }
       }
-      w_df$n_alleles <- rowSums(tabs$as != 0)
-      #fill in ni1 and ni2.
-      w_df$ni1 <- tabs$as[,"A"]
-      w_df$ni1[w_df$ni1 == 0] <- tabs$as[which(w_df$ni1== 0), "G"]
-      w_df$ni1[w_df$ni1 == 0] <- tabs$as[which(w_df$ni1== 0), "C"]
-      w_df$ni2 <- tabs$as[,"T"]
-      w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "C"]
-      w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "G"]
 
-      #fix anything that's not bi-allelic
-      w_df$ni1[w_df$n_alleles == 1 & w_df$ni1 == 0] <- w_df$ni2[w_df$n_alleles == 1 & w_df$ni1 == 0]
-      w_df$ni2[w_df$n_alleles == 1] <- 0
+      #ac output
+      if(output == 1 | output == 5){
+        w_df <- data[,1:ecs] #intiallize w_df if doing option 1
+        #fill in the table
+        w_df$n_total <- rowSums(tabs$as)
+        w_df$n_alleles <- rowSums(tabs$as != 0)
+        #fill in ni1 and ni2.
+        w_df$ni1 <- tabs$as[,"A"]
+        w_df$ni1[w_df$ni1 == 0] <- tabs$as[which(w_df$ni1== 0), "G"]
+        w_df$ni1[w_df$ni1 == 0] <- tabs$as[which(w_df$ni1== 0), "C"]
+        w_df$ni2 <- tabs$as[,"T"]
+        w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "C"]
+        w_df$ni2[w_df$ni2 == 0] <- tabs$as[which(w_df$ni2== 0), "G"]
+
+        #fix anything that's not bi-allelic
+        w_df$ni1[w_df$n_alleles == 1 & w_df$ni1 == 0] <- w_df$ni2[w_df$n_alleles == 1 & w_df$ni1 == 0]
+        w_df$ni2[w_df$n_alleles == 1] <- 0
+      }
+
+
+      #dadi output
+      else{
+        tabs$as <- tabs$as[,order(colnames(tabs$as))] #order the colums
+        tabs$as <- cbind(tabs$as, isort = 1:nrow(tabs$as))
+        #any entries with a maf of 0.5? If so, need to fix those rows later!
+        maf.f <- tabs$as
+        maf.f[maf.f == 0] <- NA
+        vars <- matrixStats::rowVars(maf.f[,1:4], na.rm = TRUE) #if variance is zero, maf is 0.5
+        fix.i <- which(vars == 0)
+        if(length(fix.i) > 0){
+          bmafs <- tabs$as[fix.i,]
+          tabs$as <- tabs$as[-fix.i,] #remove them for now!
+
+          #figure out min/maj allele for these...
+          if(is.matrix(bmafs)){
+            mas <- which(bmafs[,1:4] != 0)
+          }
+          else{
+            mas <- which(bmafs[1:4] != 0)
+          }
+          mas <- mas %% 4
+          mas <- gsub("1", "A", mas) #replace with correct alleles
+          mas <- gsub("2", "C", mas)
+          mas <- gsub("3", "G", mas)
+          mas <- gsub("0", "T", mas)
+        }
+
+        #figure out the major alleles
+        maxes.r <- matrixStats::rowMaxs(tabs$as[,1:4]) #get the max in each row
+        maxes <- rep(maxes.r, each = 4) #make a vector of these, with each element repeated four times
+        max.i <- which(maxes == t(tabs$as[,1:4])) #figure out which indices match the as table.
+        max.i <- max.i %% 4 #figure out which column this was in (0 means col 4)
+        max.i <- gsub("1", "A", max.i) #replace with correct alleles
+        max.i <- gsub("2", "C", max.i)
+        max.i <- gsub("3", "G", max.i)
+        max.i <- gsub("0", "T", max.i)
+
+        #figure out the minor alleles
+        min.i <- which(t(tabs$as[,1:4]) != maxes & t(tabs$as[,1:4]) != 0) #if they aren't the major, but aren't zero...
+        min.i <- min.i %% 4 #figure out which column this was in (0 means col 4)
+        min.i <- gsub("1", "A", min.i) #replace with correct alleles
+        min.i <- gsub("2", "C", min.i)
+        min.i <- gsub("3", "G", min.i)
+        min.i <- gsub("0", "T", min.i)
+
+
+        #add back in the maf calls
+        if(length(fix.i) > 0){
+          #fix major and minor allele calls
+          ##make a data frame of the min.i, max.i and isort for everything
+          repl_dat <- cbind(max.i, min.i, tabs$as[,5])
+          repl_dat <- rbind(repl_dat, cbind(matrix(mas, ncol = 2, byrow = T), fix.i))
+          repl_dat <- repl_dat[order(as.numeric(repl_dat[,3])),]
+          max.i <- repl_dat[,1]
+          min.i <- repl_dat[,2]
+
+          #add them back in
+          tabs$as <- rbind(tabs$as, bmafs)
+          tabs$as <- tabs$as[order(tabs$as[,5]),]
+          tabs$as <- tabs$as[,-5]
+        }
+
+        meta <- data[,1:ecs]
+
+        #save stuff in the correct order
+        maxes <- matrixStats::rowMaxs(tabs$as)
+        w_df <- cbind(ref = data$ref,
+                      anc = data$anc,
+                      Allele1 = max.i,
+                      pop = maxes,
+                      Allele2 = min.i,
+                      pop = matrixStats::rowSums2(tabs$as) - maxes,
+                      meta[,!(colnames(meta) %in% c("ref", "anc"))]
+        )
+      }
     }
     else{
       pop_count <- length(unlist(pop[1]))
@@ -974,21 +1094,29 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         cat("Supplied population numbers do not equal the number of supplied loci columns. Exiting.")
         stop()
       }
-      #initialize w_df for multiple pops
-      #print(unlist(pop[1]))
-      j <- 2
-      w_df$pop <- unlist(pop[1])[1] #create pop column and set first pop name
-      wa_df <- w_df #set first temp w_df
-      for (j in j:pop_count){ #loop through each pop name
-        wb_df <- wa_df #create temp df copy of wa_df
-        #print(j)
-        #print(unlist(pop[1])[j])
-        wb_df$pop <- unlist(pop[1])[j]#change pop to current name
-        w_df <- rbind(w_df, wb_df) #bind this copy to w_df
-      }
-      remove(wa_df, wb_df) #remove temp df
 
-      ##loop through and count alleles for every row, splitting by pop
+      #initialize w_df for multiple pops ifac or migrate-n
+      if(output == 1 | output == 5){
+        j <- 2
+        w_df$pop <- unlist(pop[1])[1] #create pop column and set first pop name
+        wa_df <- w_df #set first temp w_df
+        for (j in j:pop_count){ #loop through each pop name
+          wb_df <- wa_df #create temp df copy of wa_df
+          #print(j)
+          #print(unlist(pop[1])[j])
+          wb_df$pop <- unlist(pop[1])[j]#change pop to current name
+          w_df <- rbind(w_df, wb_df) #bind this copy to w_df
+        }
+        remove(wa_df, wb_df) #remove temp df
+
+        #initialize columns
+        w_df$n_total <- NA
+        w_df$n_alleles <- NA
+        w_df$ni1 <- NA
+        w_df$ni2 <- NA
+      }
+
+
 
       #create allele count table for each pop, fill their section of data
 
@@ -1033,6 +1161,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #vector which says which are fixed
       fixed <- rowSums(pals) == 1
 
+      #if any SNPs are fixed in all pops and doing dadi, kill the job
+      if(any(fixed) & output == 10){
+        stop(cat("Fixed snps detected:", which(fixed), "stopping."))
+      }
 
       #Convert into vector which says which elements to keep.
       if(any(fixed)){
@@ -1042,10 +1174,104 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         palsv <- as.vector(t(pals))
       }
 
-      w_df$n_total <- NA
-      w_df$n_alleles <- NA
-      w_df$ni1 <- NA
-      w_df$ni2 <- NA
+
+      #if doing dadi, figure out major and minor before proceeding as before:
+      if(output == 10){
+
+        #in this case, we need to sum all of the pop matrices...
+        tabs <- pop_as[[1]]
+        for(i in 2:length(pop_as)){
+          tabs <- tabs + pop_as[[i]]
+        }
+
+        #then proceed as before.
+        tabs <- tabs[,order(colnames(tabs))] #order the colums
+        tabs <- cbind(tabs, isort = 1:nrow(tabs))
+        #any entries with a maf of 0.5? If so, need to fix those rows later!
+        maf.f <- tabs
+        maf.f[maf.f == 0] <- NA
+        vars <- matrixStats::rowVars(maf.f[,1:4], na.rm = TRUE) #if variance is zero, maf is 0.5
+        fix.i <- which(vars == 0)
+        if(length(fix.i) > 0){
+          bmafs <- tabs[fix.i,]
+          tabs <- tabs[-fix.i,] #remove them for now!
+
+          #figure out min/maj allele for these...
+          if(is.matrix(bmafs)){
+            mas <- which(bmafs[,1:4] != 0)
+          }
+          else{
+            mas <- which(bmafs[1:4] != 0)
+          }
+          mas.index <- mas #save for later
+          mas <- mas %% 4
+          mas <- gsub("1", "A", mas) #replace with correct alleles
+          mas <- gsub("2", "C", mas)
+          mas <- gsub("3", "G", mas)
+          mas <- gsub("0", "T", mas)
+        }
+
+        #figure out the major alleles
+        maxes.r <- matrixStats::rowMaxs(tabs[,1:4]) #get the max in each row
+        maxes <- rep(maxes.r, each = 4) #make a vector of these, with each element repeated four times
+        max.i <- which(maxes == t(tabs[,1:4])) #figure out which indices match the as table.
+        max.index <- max.i #save for later
+        max.i <- max.i %% 4 #figure out which column this was in (0 means col 4)
+        max.i <- gsub("1", "A", max.i) #replace with correct alleles
+        max.i <- gsub("2", "C", max.i)
+        max.i <- gsub("3", "G", max.i)
+        max.i <- gsub("0", "T", max.i)
+
+        #figure out the minor alleles
+        min.i <- which(t(tabs[,1:4]) != maxes & t(tabs[,1:4]) != 0) #if they aren't the major, but aren't zero...
+        min.index <- min.i #save for later
+        min.i <- min.i %% 4 #figure out which column this was in (0 means col 4)
+        min.i <- gsub("1", "A", min.i) #replace with correct alleles
+        min.i <- gsub("2", "C", min.i)
+        min.i <- gsub("3", "G", min.i)
+        min.i <- gsub("0", "T", min.i)
+
+        #add back in the maf calls
+        if(length(fix.i) > 0){
+          #fix major and minor allele calls
+          ##make a data frame of the min.i, max.i and isort for everything
+          repl_dat <- cbind(max.i, min.i, tabs[,5])
+          repl_dat <- rbind(repl_dat, cbind(matrix(mas, ncol = 2, byrow = T), fix.i))
+          repl_dat <- repl_dat[order(as.numeric(repl_dat[,3])),]
+          max.i <- repl_dat[,1]
+          min.i <- repl_dat[,2]
+
+          #save indices for max and min counts for later!
+          mas.index.mat <- matrix(mas.index + length(tabs[,-5]), ncol = 2, byrow = T) #the indices of the "major" and "minor" alleles, if they are tacked on to the end of the TRANSPOSED tabs matrix.
+          mas.maj <- mas.index.mat[,1]
+          mas.min <- mas.index.mat[,2]
+          max.index.out <- c(max.index, mas.maj)
+          min.index.out <- c(min.index, mas.min)
+
+
+          #add the data back in and resort.
+          tabs <- rbind(tabs, bmafs)
+          tabs <- tabs[order(tabs[,5]),]
+          tabs <- tabs[,-5]
+        }
+        else{
+          max.index.out <- max.index.out
+          min.index.out <- min.index
+        }
+
+        #also initialize output
+        w_df <- matrix(NA, ncol = (ecs + 2 + length(pop[[1]])*2), nrow = nrow(data))
+        w_df[,1] <- as.character(data$ref)
+        w_df[,2] <- as.character(data$anc)
+        w_df[,3] <- max.i
+        w_df[,(4+length(pop[[1]]))] <- min.i
+        meta <- data[,1:ecs]
+        meta <- meta[,!(colnames(meta) %in% c("ref", "anc"))]
+        w_df <- as.data.frame(w_df, stringsAsFactors = F)
+        w_df[,(ncol(w_df) - ecs + 3):ncol(w_df)] <- meta
+        colnames(w_df) <- c("ref", "anc", "Allele1", pop[[1]], "Allele2", pop[[1]], colnames(meta))
+      }
+
 
 
       #loop through and print data
@@ -1071,14 +1297,39 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         }
 
         else{
-          #compare palsv to allele tables to keep correct alleles.
-          av <- as.vector(t(pop_as[[i]]))
-          av <- av[palsv]
-          av <- matrix(av, nrow(data), 2, byrow = T)
-          w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
-          w_df[w_df$pop == pop[[1]][i],]$n_alleles <- 2 #not fixed in at least one pop!
-          w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
-          w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
+          if(output == 1 | output == 5){
+            #compare palsv to allele tables to keep correct alleles.
+            av <- as.vector(t(pop_as[[i]]))
+            av <- av[palsv]
+            av <- matrix(av, nrow(data), 2, byrow = T)
+            w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
+            w_df[w_df$pop == pop[[1]][i],]$n_alleles <- 2 #not fixed in at least one pop!
+            w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
+            w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
+          }
+
+          #dadi
+          else{
+            #if we have values to fix
+            if(length(fix.i) > 0){
+              #figure out which values to take for min and maj allele calls
+              t.tab <- pop_as[[i]] #get this table
+              t.tab <- cbind(t.tab, index = 1:nrow(t.tab)) #add an index variable
+              t.maf <- t.tab[fix.i,] #subset the ones to fix
+              t.tab <- t.tab[-fix.i,] #remove them
+              t.tab <- rbind(t.tab, t.maf) #bind the ones to fix to the bottom
+              t.counts <- cbind(t(t.tab[,-5])[max.index.out], t(t.tab[,-5])[min.index.out]) #get out major and minor counts
+              t.counts <- t.counts[order(t.tab[,5]),] #re-order them
+            }
+            #otherwise easier
+            else{
+              t.counts <- cbind(t(pop_as[[i]])[max.index.out], t(pop_as[[1]])[min.index.out]) #get out major and minor counts
+            }
+
+            #add data.
+            w_df[,3 + i] <- t.counts[,1]
+            w_df[,4 + length(pop[[1]]) + i] <- t.counts[,2]
+          }
         }
       }
 
@@ -1250,10 +1501,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         out <- cbind(subpop = pl, as.data.frame(outm, stringsAsFactors = F))
       }
     }
-
-
     rdata <- out
   }
+
 
   #presence/absence format
   if(output == 7){

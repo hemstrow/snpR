@@ -213,7 +213,7 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
     return(ret)
   }
 
-  #================smooth at proper level========
+  #================smooth at proper levels========
   #which cols hold the stats of interest?
   scols <- which(colnames(x) %in% parms)
 
@@ -221,6 +221,7 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
 
   cat("Smoothing...")
 
+  #do the smoothing, could add a parallel option
   if(!any(is.na(levs))){
     out <- plyr::ddply(
       .data = x,
