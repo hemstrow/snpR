@@ -1098,6 +1098,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #initialize w_df for multiple pops ifac or migrate-n
       if(output == 1 | output == 5){
         j <- 2
+        w_df <- data[,1:ecs]
         w_df$pop <- unlist(pop[1])[1] #create pop column and set first pop name
         wa_df <- w_df #set first temp w_df
         for (j in j:pop_count){ #loop through each pop name
