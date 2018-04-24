@@ -6,7 +6,7 @@
 \usage{
 filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   min_loci = FALSE, re_run = "partial", pop = FALSE, non_poly = TRUE,
-  bi_al = TRUE, mDat = "NN")
+  bi_al = TRUE, mDat = "NN", in.tab = FALSE, out.tab = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.}
@@ -30,6 +30,10 @@ filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 \item{bi_al}{boolean, default TRUE. Should non-biallelic SNPs be removed?}
 
 \item{mDat}{character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".}
+
+\item{in.tab.}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
+
+\item{out.tab.}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.

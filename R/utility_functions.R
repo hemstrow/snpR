@@ -1,15 +1,96 @@
-#Filters the data according to a set of filters. Vectorized to handle large datasets.
-#Arguments:
-# data: input data frame
-#
-#FILTERS:
-#non_poly: filter out snps with only one homozygous genotype observed, list return is npf
-# maf: filter out snps with a minor allele frequency below that given, list return is maff
-# hf_hets: filters out data with a heterozygote frequency above the given value, list return is hfhf
-# min_ind: filters out snps genotyped at less than the given number of individuals, list return is mif
-# min_loci: Numeric value [0-1]: filters out INDIVIDUALS genotyped at less than this percentage of remaining loci.
-#This version is vectorized, and is much faster!
+#' Tabulate allele and genotype counts at each locus.
+#'
+#' \code{tabulate_genotypes} creates matricies containing counts of observed alleles and genotypes at each locus.
+#'
+#' This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
+#'
+#' @param xv Character vector containing genotype calls, ordered by locus and then individual, as produced by as.vector(t(data))
+#' @param snp_form Integer. How many characters are there per genotype?
+#' @param mDat Character string. How are missing \emph{genotypes} noted?
+#' @param nsamp Integer. How many individuals does the data have?
+#' @param nloci Integer. How many loci does the data have?
+#' @param verbose Logical. Should the function report progress?
+#'
+#' @return A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm is the genotype matrix with missing genotypes.
+#'
+#' @examples
+#' xv <- as.vector(t(stickSNPs[,c(4:ncol(stickSNPs))]))
+#' tabulate_genotypes(xv, 2, "NN", ncol(stickSNPs) - 3, nrow(stickSNPs))
+#'
+tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
+  #create tables of genotype counts for each locus.
+  #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
+  #needs the number of samples from global function environment
+  count_genos <- function(pattern, x){
+    XXs <- grep(pattern, x) #figure out which entries match pattern
+    out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
+    return(out)
+  }
 
+  #get all possible genotypes
+  gs <- unique(xv)
+
+  #which gs are heterozygous?
+  hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
+
+  #which genotype is the missing data?
+  mpos <- which(gs == mDat)
+
+  #what are the possible alleles at all loci?
+  as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
+  as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+
+  ##############################################################################################
+  ###get a table of genotype and allele counts at each locus.
+  if(verbose){cat("Creating genotype table...\n")}
+
+  #for each element of gs, get the tables of genotype counts and add them to a matrix
+  gmat <- matrix(0, nloci, length(gs)) #initialize matrix
+  colnames(gmat) <- gs #set the matrix names
+  #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
+  for(i in 1:length(gs)){
+    tab <- count_genos(gs[i], xv)
+    gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
+  }
+
+  if(length(mpos) > 0){
+    tmat <- gmat[,-c(mpos)] #gmat without missing data
+  }
+  else{
+    tmat <- gmat
+  }
+
+  #get matrix of allele counts
+  #initialize
+  if(verbose){cat("Getting allele table...\n")}
+  amat <- matrix(0, nrow(gmat), length(as))
+  colnames(amat) <- as
+
+  #fill in
+  for(i in 1:length(as)){
+    b <- grep(as[i], colnames(tmat))
+    hom <- which(colnames(tmat) == paste0(as[i], as[i]))
+    if(length(hom) == 0){
+      het <- b
+      amat[,i] <- rowSums(tmat[,het])
+    }
+    else{
+      het <- b[b != hom]
+      if(length(het) > 0){
+        if(is.matrix(tmat[,het])){
+          amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
+        }
+        else{
+          amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
+        }
+      }
+      else{
+        amat[,i] <- (tmat[,hom] * 2)
+      }
+    }
+  }
+  return(list(gs = tmat, as = amat, wm = gmat))
+}
 
 #'Filter SNP data.
 #'
@@ -147,78 +228,16 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       #get number of samples
       nsamp <- ncol(x)
 
-      #create tables of genotype counts for each locus.
-      #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
-      #needs the number of samples from global function environment
-      count_genos <- function(pattern, x){
-        XXs <- grep(pattern, x) #figure out which entries match pattern
-        out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
-        return(out)
-      }
+      #get the genotype/allele tables
+      gto <- tabulate_genotypes(xv, snp_form, mDat, ncol(x), nrow(x), verbose = T)
 
-      #get all possible genotypes
-      gs <- unique(xv)
-
-      #which gs are heterozygous?
+      #pull info out of gto with the correct names for the rest of the process.
+      amat <- gto$as
+      tmat <- gto$gs
+      gmat <- gto$wm
+      gs <- colnames(gmat)
+      mpos <- which(colnames(gmat) == mDat)
       hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-
-      #which genotype is the missing data?
-      mpos <- which(gs == mDat)
-
-      #what are the possible alleles at all loci?
-      as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-      as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-
-      #############################################################################################3
-      ###get a table of genotype and allele counts at each locus.
-      cat("Creating genotype table...\n")
-
-      #for each element of gs, get the tables of genotype counts and add them to a matrix
-      gmat <- matrix(0, nrow(x), length(gs)) #initialize matrix
-      colnames(gmat) <- gs #set the matrix names
-
-      #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-      for(i in 1:length(gs)){
-        tab <- count_genos(gs[i], xv)
-        gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
-      }
-
-      if(length(mpos) > 0){
-        tmat <- gmat[,-c(mpos)] #gmat without missing data
-      }
-      else{
-        tmat <- gmat
-      }
-
-      #get matrix of allele counts
-      #initialize
-      cat("Getting allele table...\n")
-      amat <- matrix(0, nrow(gmat), length(as))
-      colnames(amat) <- as
-
-      #fill in
-      for(i in 1:length(as)){
-        b <- grep(as[i], colnames(tmat))
-        hom <- which(colnames(tmat) == paste0(as[i], as[i]))
-        if(length(hom) == 0){
-          het <- b
-          amat[,i] <- rowSums(tmat[,het])
-        }
-        else{
-          het <- b[b != hom]
-          if(length(het) > 0){
-            if(is.matrix(tmat[,het])){
-              amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
-            }
-            else{
-              amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
-            }
-          }
-          else{
-            amat[,i] <- (tmat[,hom] * 2)
-          }
-        }
-      }
     }
 
     #otherwise, prepare input matrix
@@ -335,64 +354,13 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
             #get number of samples
             nsamp <- ncol(popx)
 
-            #get all possible genotypes
-            popgs <- unique(popxv)
+            #get matrices
+            gto <- tabulate_genotypes(popxv, nchar(popxv[1]), mDat, nsamp, nrow(popx))
 
-            #which gs are heterozygous?
-            pophs <- substr(popgs,1,snp_form/2) != substr(popgs, (snp_form/2 + 1), snp_form*2)
-
-            #which genotype is the missing data?
-            popmpos <- which(popgs == mDat)
-
-            #what are the possible alleles at all loci?
-            popas <- unique(c(substr(popgs,1,snp_form/2), substr(popgs, (snp_form/2 + 1), snp_form*2)))
-            popas <- popas[popas != substr(mDat, 1, snp_form/2)] #that aren't N?
-
-            #for each element of gs, get the tables of genotype counts and add them to a matrix
-            popgmat <- matrix(0, nrow(popx), length(popgs)) #initialize matrix
-            colnames(popgmat) <- popgs #set the matrix names
-
-            #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-            for(j in 1:length(popgs)){
-              poptab <- count_genos(popgs[j], popxv)
-              popgmat[as.numeric(names(poptab)),j] <- as.numeric(poptab)
-            }
-
-            if(length(popmpos) > 0){
-              poptmat <- popgmat[,-c(popmpos)] #gmat without missing data
-            }
-            else{
-              poptmat <- popgmat
-            }
-
-            #get matrix of allele counts
-            #initialize
-            popamat <- matrix(0, nrow(popgmat), length(popas))
-            colnames(popamat) <- popas
-
-            #fill in
-            for(j in 1:length(popas)){
-              b <- grep(popas[j], colnames(poptmat))
-              hom <- which(colnames(poptmat) == paste0(popas[j], popas[j]))
-              if(length(hom) == 0){
-                het <- b
-                popamat[,j] <- rowSums(poptmat[,het])
-              }
-              else{
-                het <- b[b != hom]
-                if(length(het) > 0){
-                  if(is.matrix(poptmat[,het])){
-                    popamat[,j] <- (poptmat[,hom] * 2) + rowSums(poptmat[,het])
-                  }
-                  else{
-                    popamat[,j] <- (poptmat[,hom] * 2) + poptmat[,het]
-                  }
-                }
-                else{
-                  popamat[,j] <- (poptmat[,hom] * 2)
-                }
-              }
-            }
+            #correct names
+            popamat <- gto$as
+            popgmat <- gto$wm
+            poptmat <- gto$gs
           }
 
           #otherwise extract info
@@ -520,7 +488,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       cat("No individuals removed.\n")
     }
     else{
-      out_if <- out
+      out <- out_if
       x <- out$x
       cat("\tEnding individuals:", ncol(x), "\n")
       if(re_run != FALSE){
@@ -566,38 +534,6 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   }
   return(x)
 }
-
-
-
-#Converts snp/microsat data into different formats. Current supported formats are:
-#Arguments:
-# x: input data. Rows are loci, columns are individuals.
-# ecs: number of extra columns at the header of the input (metadata, ect)
-# output: output format:
-#   1) per pop allele count format for Bayescan, ect. (v)
-#   2) genepop format (v)
-#   3) structure format (v)
-#   4) 2 character numeric format (v)
-#   5) migrate-n hapmap format (v)
-#   6) NN format (from numeric) (v)
-#   7) allele presence absensence format
-# input_form: Input format
-#   "NN": Default, alleles as single characters (as in AT or CG),
-#   "0000": numeric. Will step to NN first before converting.
-#   "msat_n": microsat, in two or three character format.
-#           If in two character format, use "msat_2". If in three, use "msat_3"
-#           Currently only supported for conversion to 7; 2, 3, and 4 forthcoming.
-#   "snp_tab": Converts to NN first.
-# miss: missing data format (per allele), typically "N", or "00"
-# pop: For format 1 and 5.
-#      Number of samples in each pop as a list (as in list(c("POP1", "POP2"), c(48,50)))).
-#      Samples must be in the order given in input data frame.
-# n_samp: number of randomly selected snps, ect to take. Can also take a numeric vector containing SNP indices to keep. For option 3.
-# l_names: Vector of locus names. For option 7.
-# interp_miss: Should missing data be interpolated? T or F. For option 8.
-#note: (v) under format options means that I've already vectorized it.
-
-
 
 #'Re-format genomic data.
 #'
@@ -889,88 +825,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
 
-
-  #####################################################################
-  #function to create table of allele and genotype counts from all data. From filter_snps
-  #input is a long vector of the data xv,
-  #snp_form, the length of each genotype.
-  #mDat, the missing data format
-  #nsap, the number of samples
-  #nloci, the number of loci
-  tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci){
-    #create tables of genotype counts for each locus.
-    #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
-    #needs the number of samples from global function environment
-    count_genos <- function(pattern, x){
-      XXs <- grep(pattern, x) #figure out which entries match pattern
-      out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
-      return(out)
-    }
-
-    #get all possible genotypes
-    gs <- unique(xv)
-
-    #which gs are heterozygous?
-    hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-
-    #which genotype is the missing data?
-    mpos <- which(gs == mDat)
-
-    #what are the possible alleles at all loci?
-    as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-    as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-
-    ##############################################################################################
-    ###get a table of genotype and allele counts at each locus.
-    cat("Creating genotype table...\n")
-
-    #for each element of gs, get the tables of genotype counts and add them to a matrix
-    gmat <- matrix(0, nloci, length(gs)) #initialize matrix
-    colnames(gmat) <- gs #set the matrix names
-    #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-    for(i in 1:length(gs)){
-      tab <- count_genos(gs[i], xv)
-      gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
-    }
-
-    if(length(mpos) > 0){
-      tmat <- gmat[,-c(mpos)] #gmat without missing data
-    }
-    else{
-      tmat <- gmat
-    }
-
-    #get matrix of allele counts
-    #initialize
-    cat("Getting allele table...\n")
-    amat <- matrix(0, nrow(gmat), length(as))
-    colnames(amat) <- as
-
-    #fill in
-    for(i in 1:length(as)){
-      b <- grep(as[i], colnames(tmat))
-      hom <- which(colnames(tmat) == paste0(as[i], as[i]))
-      if(length(hom) == 0){
-        het <- b
-        amat[,i] <- rowSums(tmat[,het])
-      }
-      else{
-        het <- b[b != hom]
-        if(length(het) > 0){
-          if(is.matrix(tmat[,het])){
-            amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
-          }
-          else{
-            amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
-          }
-        }
-        else{
-          amat[,i] <- (tmat[,hom] * 2)
-        }
-      }
-    }
-    return(list(gs = tmat, as = amat))
-  }
 
   #####################################################################
   #conversions

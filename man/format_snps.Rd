@@ -5,7 +5,8 @@
 \title{Re-format genomic data.}
 \usage{
 format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
-  n_samp = NA, interp_miss = T, lnames = NULL, outfile = FALSE)
+  n_samp = NA, interp_miss = T, lnames = NULL, outfile = FALSE,
+  in.tab = FALSE, out.tab = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in any of the above listed input formats.}
@@ -27,6 +28,10 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
 \item{lnames}{character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).}
 
 \item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
+
+\item{in.tab.}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
+
+\item{out.tab.}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 }
 \value{
 A data.frame in the specified format.
@@ -46,6 +51,7 @@ Format options:
    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
+   \item{dadi: }dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.
 }
 
 Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
