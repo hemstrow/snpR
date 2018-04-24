@@ -218,7 +218,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
     #========================generate a and gmats if not provided==========
-    if(is.list(in.tab) == FALSE){
+    if(!("emats" %in% names(in.tab))){
       #get a single vector of genotypes
       xv <- as.vector(t(x))
 
@@ -367,6 +367,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
           else{
             popamat <- in.tab$pop.emats[[i]]$amat
             popgmat <- in.tab$pop.emats[[i]]$gmat
+            poptmat <- in.tab$pop.emats[[i]]$tmat
           }
 
           #established new set for this, now do maf as above.
@@ -377,7 +378,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 
           #save the output pop tables if requested!
           if(out.tab){
-            pop.amat.save[[i]]<- list(gmat = popgmat, amat = popamat)
+            pop.amat.save[[i]]<- list(gmat = popgmat, amat = popamat, tmat = poptmat)
           }
         }
         pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
@@ -426,11 +427,12 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
           for(i in 1:length(pop.amat.save)){
             pop.amat.save[[i]]$gmat <- pop.amat.save[[i]]$gmat[keep,]
             pop.amat.save[[i]]$amat <- pop.amat.save[[i]]$amat[keep,]
+            pop.amat.save[[i]]$tmat <- pop.amat.save[[i]]$tmat[keep,]
           }
-          return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat), pop.emats = pop.amat.save))
+          return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat, tmat = tmat), pop.emats = pop.amat.save))
         }
       }
-      return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat)))
+      return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat, tmat = tmat)))
     }
 
     #otherwise just return the data.
@@ -825,6 +827,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
 
+  #if an in tab is provided or an out.tab is requested but the output format isn't 1, 5, or 10, stop.
+  if((!(is.list(in.tab)) | out.tab == T) & !(output %in% c(1,5,10))){
+    stop("Input and output allele/genotype tables are not supported in formats other than ac, hapmap, or dadi.")
+  }
+
 
   #####################################################################
   #conversions
@@ -897,12 +904,47 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   if(output == 1 | output == 5 | output == 10){
     if(output == 5){cat("WARNING: Data does not have header or pop spacer rows.\n")}
 
+    #if requested, prepare output allele/genotype matrices.
+    if(out.tab == TRUE){
+      if(!is.list(pop)){
+        save.tab <- list(emats = vector(mode = "list", length = 3))
+        names(save.tab$emats) <- c("amat", "gmat", "tmat")
+        if("pop.emats" %in% names(in.tab)){
+          save.tab$pop.emats <- in.tab$pop.emats
+        }
+      }
+      else{
+        save.tab <- list(pop.emats = vector(mode = "list", length = length(pop[[1]])))
+        names(save.tab$pop.emats) <- pop[[1]]
+        if("emats" %in% names(in.tab)){
+          save.tab$emats <- in.tab$emats
+        }
+      }
+    }
+
     #no pop info
     if (is.list(pop) == FALSE){
       if(output == 5){stop("Cannot convert to migrate-n format with only one pop.\n")}
+
       #prepare a genotype table
-      xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
-      tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data))
+      ##if tables are provided, pull out and store the correct elements
+      if(is.list(in.tab)){
+        xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
+        tabs <- list(as = in.tab$emats$amat, gs = in.tab$emats$tmat, wm = in.tab$emats$gmat)
+      }
+      ##otherwise make a new table.
+      else{
+        tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data), verbose = T)
+      }
+
+      #save results if requested
+      if(out.tab == TRUE){
+        save.tab$emats$amat <- tabs$as
+        save.tab$emats$gmat <- tabs$wm
+        save.tab$emats$tmat <- tabs$gs
+      }
+
+      #get the number of observed alleles per loci
       counts <- matrixStats::rowSums2(ifelse(tabs$as == 0, 0, 1))
 
       #check for bad loci
@@ -1016,6 +1058,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         )
       }
     }
+    #if populations are specified...
     else{
       pop_count <- length(unlist(pop[1]))
       pop_sizes <- unlist(pop[2])
@@ -1056,14 +1099,39 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       pals <- matrix(FALSE, nrow(data), 4)
       colnames(pals) <- c("A", "C", "G", "T")
       current <- ecs + 1
+      cat("Generating or grabbing population allele count matrices, current pop:\n")
       for(i in 1:pop_count){
+        cat("\t", pop[[1]][i], "\n")
+
         #get the data for this population
-        cat("Generating population allele count matrices, current pop:", pop[[1]][i], "\n")
+
         ne <- current + pop_sizes[i] - 1
         x <- data[,current:ne]
-        xv <- as.vector(t(x))
-        pop_as[[i]] <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i], nrow(data))$as
+        ##if input tables for populations were provided,pull the info out
+        if("pop.emats" %in% names(in.tab)){
+          which_pop <- which(names(in.tab$pop.emats) == pop[[1]][i])
+          temp_tab <- in.tab$pop.emats[[which_pop]]
+          pop_as[[i]] <- temp_tab$amat
+        }
+        ##otherwise get the info
+        else{
+          xv <- as.vector(t(x))
+          temp_tab <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i], nrow(data))
+          pop_as[[i]] <- temp_tab$as
+        }
+        ##re-order
         pop_as[[i]] <- pop_as[[i]][, order(colnames(pop_as[[i]]))]
+
+
+        #save table if requested
+        if(out.tab == TRUE){
+          which_pop <- which(names(save.tab$pop.emats) == pop[[1]][i])
+          save.tab$pop.emats[[which_pop]]$amat <- pop_as[[i]]
+          save.tab$pop.emats[[which_pop]]$tmat <- temp_tab$gs
+          save.tab$pop.emats[[which_pop]]$gmat <- temp_tab$wm
+          names(save.tab$pop.emats)[i] <- pop[[1]][i]
+        }
+
 
         #if somehow not all four possible alleles found in ALL DATA for this pop (small?), fill in table
         if(!"A" %in% colnames(pop_as[[i]])){pop_as[[i]] <- cbind(A = numeric(nrow(pop_as)), pop_as[[i]])}
@@ -1623,7 +1691,17 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
   }
-  return(rdata)
+
+
+
+
+  #return results
+  if(exists("save.tab")){
+    return(c(list(x = rdata), save.tab))
+  }
+  else{
+    return(rdata)
+  }
 }
 
 #function to run any command after spliting the data by group and by population. Group and population must be in columns named "group" and "pop", respectively.
