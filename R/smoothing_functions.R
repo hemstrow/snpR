@@ -146,6 +146,14 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
   #================subfunction========
   #funciton to do a sliding window analysis on a data set. Vectorized!:
   sw  <- function(x, scols, ws, sig, nk){
+    if(nrow(x) <= 1){
+      ret <- rbind(rep(NA, length = 2 + length(parms)))
+      ret <- as.data.frame(ret)
+      colnames(ret)[1] <- "position"
+      colnames(ret)[ncol(ret)] <- "n_snps"
+      colnames(ret)[2:(ncol(ret) - 1)] <- paste0("V", 1:(ncol(ret) - 2))
+      return(ret)
+    }
     #get window centers, starts, and stops:
     ##possible positions
     pos <- x$position
@@ -179,13 +187,27 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
     gmat <- gmat[,n_snps != 0] #doing it this way allows for windows with SNPs but a stat value of 0.
     n_snps <- n_snps[n_snps != 0]
 
+    #fix any NA values
+    vals <- as.matrix(x[,scols])
+    NAs <- which(is.na(vals))
+    if(length(NAs) > 0){
+      vals[NAs] <- 0 #fix the NAs
+    }
+
     #multiply by value of the statistics and nk if requested
     if(nk){
-      win_vals <- t(gmat) %*% (as.matrix(x[,scols])*(x$nk - 1))
-      win_scales <- t(gmat) %*% (x$nk - 1)
+      #set up nks. Have to do it this way because of the possibility of NAs.
+      nkv <- matrix(rep(x$nk, ncol(vals)), ncol = ncol(vals))
+      nkv <- nkv - 1
+      if(length(NAs) > 0){
+        nkv[NAs] <- 0 #make sure that these snps don't contribute to the weight!
+      }
+      #run
+      win_vals <- t(gmat) %*% (vals*(x$nk - 1))
+      win_scales <- t(gmat) %*% nkv
     }
     else{
-      win_vals <- t(gmat) %*% as.matrix(x[,scols])
+      win_vals <- t(gmat) %*% vals
       win_scales <- rowSums(t(gmat))
     }
 
@@ -196,18 +218,27 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
 
     #prepare metadata
     if(!any(is.na(levs))){
-      levs <- sort(levs)
-      meta <- as.character(x[1,levs])
-      meta <- rep(meta, length = nrow(win_vals)*length(meta))
-      meta <- matrix(meta, nrow = nrow(win_vals), byrow = TRUE)
-      colnames(meta) <- levs
-      meta <- as.data.frame(meta, stringsAsFactors = F)
-      ret <- cbind(meta, position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+      if(nrow(win_stats) == 1){
+        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
+      }
+      else{
+        levs <- sort(levs)
+        meta <- as.character(x[1,levs])
+        meta <- rep(meta, length = nrow(win_vals)*length(meta))
+        meta <- matrix(meta, nrow = nrow(win_vals), byrow = TRUE)
+        colnames(meta) <- levs
+        meta <- as.data.frame(meta, stringsAsFactors = F)
+        ret <- cbind(meta, position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+      }
     }
     else{
-      ret <- cbind(position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+      if(nrow(win_stats) == 1){
+        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
+      }
+      else{
+        ret <- cbind(position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
+      }
     }
-
 
     #return
     return(ret)
@@ -233,6 +264,23 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
   }
   else{
     out <- sw(x, scols, ws, sig, nk)
+  }
+
+  #remove any empty facets.
+  nas <- ifelse(is.na(out), 1, 0)
+  nas <- rowSums(nas)
+  nas <- which(nas > 0)
+  if(length(nas) > 0){
+    out <- out[-nas,]
+  }
+
+  #put the correct names on the smoothed variables
+  if(length((ncol(out) - length(parms)):(ncol(out) - 1)) == 0){browser()}
+  colnames(out)[(ncol(out) - length(parms)):(ncol(out) - 1)] <- paste0("smoothed_", parms)
+
+  #shouldn't ever happen save when this is called with run_gp for backwards compatibility, but may as well include it.
+  if(nrow(out) == 0){
+    out[1,] <- rep(NA, ncol(out))
   }
 
   cat("Done!\n")

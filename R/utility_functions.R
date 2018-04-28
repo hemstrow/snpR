@@ -828,7 +828,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
   #if an in tab is provided or an out.tab is requested but the output format isn't 1, 5, or 10, stop.
-  if((!(is.list(in.tab)) | out.tab == T) & !(output %in% c(1,5,10))){
+  if((is.list(in.tab) | out.tab == T) & !(output %in% c(1,5,10))){
     stop("Input and output allele/genotype tables are not supported in formats other than ac, hapmap, or dadi.")
   }
 
@@ -1443,7 +1443,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       if(output == 3){ #bind sample names in and return for structure
         out <- cbind(ind = snames, as.data.frame(outm, stringsAsFactors = F))
       }
-      else{ #add a bunch of filler columns (4 if pop info is provided, 5 if it isn't) for faststructure
+      else{ #add a bunch of filler columns (4 if pop info is provided, 5 if it isn't) for faststructure and change missing data to -9
+        outm[outm == 0] <- -9
         if(length(pop) > 1 & is.list(pop) == TRUE){
           out <- cbind(ind = snames,
                        matrix("filler", nrow(outm), 4),
@@ -1686,6 +1687,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
           cat("\n", file = outfile, append = T) #add a line break
         }
       }
+    }
+    else if(output == 3 | output == 9){
+      data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
