@@ -212,9 +212,7 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
     }
 
     #get the weighted value of the window
-    win_stats <- as.vector(t(t(win_vals)))/as.vector(t(win_scales))
-    win_stats <- matrix(win_stats, nrow(win_vals), ncol(win_vals))
-    colnames(win_stats) <- colnames(win_vals)
+    win_stats <- win_vals/win_scales
 
     #prepare metadata
     if(!any(is.na(levs))){

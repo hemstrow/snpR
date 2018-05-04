@@ -1461,7 +1461,7 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
 #' @param stats Character vector, default "basic" (see description). Which stats should be calculated?
 #' @param filter Logical, default FALSE. Should the SNP data be filtered?
 #' @param smooth Character vector or FALSE, default FALSE. Should variables be smoothed? If so, which?
-#' @param bootstrap Character vector or FALSE, default FALSE. Should bootstraps of smoothed windows be conducted? If so, which values?
+#' @param bootstrap Character vector or FALSE, default FALSE. Should bootstraps of smoothed windows be conducted? If so, which variables?
 #' @param graphs Character vector or FALSE, default FALSE. Which variables should be plotted? Plots \emph{smoothed} values of most statistics save population structure, LD, and Tajima's D. As such, requires the statistics to be set via the "smooth" argument.
 #' @param sigma Numeric, default NULL. Smoothing statistic/window size, in kb.
 #' @param ws Numeric, default NULL.  How far should the window slide when smoothing? If null, a window is produced centered at every SNP.
@@ -1480,10 +1480,14 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
 #' @param Fst_method Character vector, default "genepop". Which FST estimator should be used? See documentation for options.
 #' @param LD_level Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for LD calculations.
 #' @param LD_chr Character vector, default "all". Names of linkage groups/chromsomes for which pairwise LD values should be calculated at all SNPs. Identifiers must be contained in a column named either "group" or "chr".
-#' @param LD_g_par Numeric value, default NULL. If provided, how many processing cores should be used for parallel LD computing across multiple linkage groups/chromsomes?
+#' @param LD_g_par Logical, default NULL. Shoud LD be done in parallel across multiple linkage groups/chromsomes?
 #' @param tsd_level Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for Tajima's D calculations.
 #' @param smooth_levs Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for smoothing.
+#' @param boot_levs Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for bootstraps.
 #' @param p.alt Character string, default "two-sided". If bootstraps are done, which alternative hypothesis should be used? See documentation for options.
+#' @param bootstap_par Logical, default FALSE. If bootstraps are done, should they be done in parallel?
+#' @param num_boots Numeric, default NULL. If bootstraps are done, how many should be performed per stat?
+#' @param par_cores Numeric, default FALSE. If parallel processing is requested, how many cores should be used?
 #'
 #' @return A named list of objects corresponding to requested statistics/graphs/ect.
 #'
@@ -1493,9 +1497,13 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
                       pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05, hf_hets = 0.55,
                       bi_al = TRUE, non_poly = TRUE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
                       filt_re = "partial", Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
-                      LD_g_par = NULL, tsd_level = c("group", "pop"), smooth_levs = c("group", "pop"), p.alt = "two-sided"){
+                      LD_g_par = FALSE, tsd_level = c("group", "pop"),
+                      smooth_levs = c("group", "pop"), boot_levs = c("pop"),
+                      p.alt = "two-sided",
+                      bootstrap_par = FALSE, num_boots = NULL, par_cores = FALSE){
 
   x <- dplyr::arrange(x, group, position)
+  stab <- FALSE #set that there is no saved out.tab currently
 
   ####################################################
   #figure out which stats we are getting
@@ -1574,11 +1582,14 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   #filter the data as requested
   if(filter){
     if(pop_maf == TRUE){
-      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, pop, non_poly, bi_al, mDat)
+      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, pop, non_poly, bi_al, mDat, out.tab = TRUE)
     }
     else{
-      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, FALSE, non_poly, bi_al, mDat)
+      x <- filter_snps(x, ecs, maf, hf_hets, min_ind, min_loci, filt_re, FALSE, non_poly, bi_al, mDat, out.tab = TRUE)
     }
+    #pull out the out.tab
+    stab <- x[-(names(x) == "x")]
+    x <- x$x
   }
 
   #add to return
@@ -1593,7 +1604,7 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
 
   #get ac format, used in most analysis and for nk
   sink(tempfile())
-  x_ac <- format_snps(x, ecs, 1, pop = pop)
+  x_ac <- format_snps(x, ecs, 1, pop = pop, in.tab = stab)
   sink()
   if(is.list(pop) & length(pop) > 1){
     x_ac <- dplyr::arrange(x_ac, pop, group, position)
@@ -1648,11 +1659,11 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       fst <- calc_pairwise_Fst("gp_fst.txt", method = "Genepop", pnames = pop[[1]])
       if(nfill != FALSE){
         fst$loci <- cbind(x[,(nfill+1):ecs], fst$loci)
-        out$fst$gp$snps <- fst$loci
+        out$fst$genepop$snps <- fst$loci
       }
       else{
         fst$loci <- cbind(x[,1:ecs], fst$loci)
-        out$fst$gp$loci <- fst$loci
+        out$fst$genepop$loci <- fst$loci
       }
       out$fst$gp$overall <- fst$overall
       fst <- fst$loci
@@ -1715,7 +1726,9 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       pnk <- reshape2::melt(pnk, id.vars = colnames(x)[1:ecs])
       fst$nk <- pnk$value
       colnames(fst)[which(colnames(fst) == "variable")] <- "pop"
-      out$fst$smooth <- s_ave_multi(fst, paste0("fst.", Fst_method), sigma, ws, nk, smooth_levs)
+      out$fst$smooth <- s_ave_multi(fst,
+                                    colnames(fst)[which(grepl("fst", colnames(fst)))],
+                                    sigma, ws, nk, smooth_levs)
     }
   }
 
@@ -1795,10 +1808,10 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
         if("g" %in% LD_level){
 
           #are we parallelizing?
-          if(is.numeric(LD_g_par)){
+          if(LD_g_par == TRUE){
             pLD[[i]] <- Full_LD_g_par(
               cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-              ecs, LD_g_par)
+              ecs, par_cores)
             tracker <- tracker + pop[[2]][i]
           }
 
@@ -1825,8 +1838,8 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       if("g" %in% LD_level){
 
         #are we parallelizing?
-        if(is.numeric(LD_g_par)){
-          pLD <- Full_LD_g_par(LDx, ecs, LD_g_par)
+        if(LD_g_par == TRUE){
+          pLD <- Full_LD_g_par(LDx, ecs, par_cores)
         }
 
         else{
@@ -1848,9 +1861,88 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   #smooth any other requested stats
 
   if(is.character(smooth)){
-    sm.out <- s_ave_multi(sm.in, sm.smooth, sigma, ws, nk, smooth_levs)
+    sm.out <- s_ave_multi(sm.in, colnames(sm.in)[(ecs+1):(ecs + length(sm.smooth))], sigma, ws, nk, smooth_levs)
     out$stats_smoothed <- sm.out
   }
+
+  ###########################################
+  #bootstrap any requested stats
+  browser()
+  #if we are bootstrapping...
+  if(bootstrap != FALSE){
+
+    #If all fst. methods were requested, need to seperate these out.
+    if(any(grepl("fst.all", bootstrap))){
+      bootstrap <- c(bootstrap[-which(grepl("fst", bootstrap))], "fst.Hoh", "fst.genepop", "fst.WC", "Fst.Wier")
+    }
+
+    #set up an output list
+    bout <- vector(mode = "list", length(bootstrap))
+    names(bout) <- bootstrap
+
+    #do the bootstraps.
+
+    #if not parallel
+    if(bootstrap_par == FALSE){
+      for(i in 1:length(bootstrap)){
+
+        #if an fst stat:
+        if(grepl("fst", bootstrap[i])){
+
+          #grab the correct data
+          if(bootstrap[i] == "fst.genepop"){
+            tx <- out$fst$genepop$loci
+          }
+          else{
+            tx <- out$fst[[which(grepl(substr(bootstrap[i], 5, nchar(bootstrap[i])), names(out$fst)))]]
+          }
+
+          #melt it to split pops
+          tx <- reshape2::melt(tx, id.vars = colnames(tx)[1:ecs])
+          colnames(tx)[-c(1:ecs)] <- c("comp", bootstrap[i])
+
+          #get fws
+          if(!is.null(ws)){
+            tfws <- split(data.table::data.table(out$fst$smooth), by = boot_levs, sorted = TRUE)
+          }
+          else{
+            tfws <- NULL
+          }
+
+
+          bout[i] <- plyr::ddply(.data = tx,
+                                 .variables = c(boot_levs, "comp"),
+                                 .fun = resample_long,
+                                 statistic = bootstrap[i],
+                                 boots = num_boots,
+                                 sigma = sigma,
+                                 nk_weight = nk,
+                                 fws = tfws,
+                                 n_snps = ifelse(is.null(ws), F, T),
+                                 report = ceiling(num_boots/10),
+                                 .progress == "text")
+        }
+        #otherwise...
+        else{
+          bout[i] <- plyr::ddply(.data = out$stats,
+                                 .variables = boot_levs,
+                                 .fun = resample_long,
+                                 statistic = bootstrap[i],
+                                 boots = num_boots,
+                                 sigma = sigma,
+                                 nk_weight = nk,
+                                 fws = ifelse(is.null(ws), NULL, out$stats_smoothed),
+                                 n_snps = ifelse(is.null(ws), F, T),
+                                 report = ceiling(num_boots/10),
+                                 .progress == "text")
+        }
+
+      }
+    }
+
+
+  }
+
 
   ###########################################
   #return the object

@@ -929,11 +929,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       #prepare a genotype table
       ##if tables are provided, pull out and store the correct elements
       if(is.list(in.tab)){
-        xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
         tabs <- list(as = in.tab$emats$amat, gs = in.tab$emats$tmat, wm = in.tab$emats$gmat)
       }
       ##otherwise make a new table.
       else{
+        xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
         tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data), verbose = T)
       }
 
