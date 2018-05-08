@@ -10,8 +10,10 @@ snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
   hf_hets = 0.55, bi_al = TRUE, non_poly = TRUE, min_ind = FALSE,
   min_loci = FALSE, pop_maf = FALSE, filt_re = "partial",
   Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
-  LD_g_par = NULL, tsd_level = c("group", "pop"), smooth_levs = c("group",
-  "pop"), p.alt = "two-sided")
+  LD_g_par = FALSE, tsd_level = c("group", "pop"),
+  smooth_levs = c("group", "pop"), boot_levs = c("pop"),
+  p.alt = "two-sided", bootstrap_par = FALSE, num_boots = NULL,
+  par_cores = FALSE)
 }
 \arguments{
 \item{x}{Data frame. Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
@@ -24,7 +26,7 @@ snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
 
 \item{smooth}{Character vector or FALSE, default FALSE. Should variables be smoothed? If so, which?}
 
-\item{bootstrap}{Character vector or FALSE, default FALSE. Should bootstraps of smoothed windows be conducted? If so, which values?}
+\item{bootstrap}{Character vector or FALSE, default FALSE. Should bootstraps of smoothed windows be conducted? If so, which variables?}
 
 \item{graphs}{Character vector or FALSE, default FALSE. Which variables should be plotted? Plots \emph{smoothed} values of most statistics save population structure, LD, and Tajima's D. As such, requires the statistics to be set via the "smooth" argument.}
 
@@ -62,13 +64,21 @@ snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
 
 \item{LD_chr}{Character vector, default "all". Names of linkage groups/chromsomes for which pairwise LD values should be calculated at all SNPs. Identifiers must be contained in a column named either "group" or "chr".}
 
-\item{LD_g_par}{Numeric value, default NULL. If provided, how many processing cores should be used for parallel LD computing across multiple linkage groups/chromsomes?}
+\item{LD_g_par}{Logical, default NULL. Shoud LD be done in parallel across multiple linkage groups/chromsomes?}
 
 \item{tsd_level}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for Tajima's D calculations.}
 
 \item{smooth_levs}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for smoothing.}
 
+\item{boot_levs}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for bootstraps.}
+
 \item{p.alt}{Character string, default "two-sided". If bootstraps are done, which alternative hypothesis should be used? See documentation for options.}
+
+\item{num_boots}{Numeric, default NULL. If bootstraps are done, how many should be performed per stat?}
+
+\item{par_cores}{Numeric, default FALSE. If parallel processing is requested, how many cores should be used?}
+
+\item{bootstap_par}{Logical, default FALSE. If bootstraps are done, should they be done in parallel?}
 }
 \value{
 A named list of objects corresponding to requested statistics/graphs/ect.

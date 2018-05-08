@@ -5,7 +5,7 @@
 \title{Bootstrapped smoothed values.}
 \usage{
 resample_long(x, statistic, boots, sigma = 150, nk_weight = FALSE,
-  fws = NULL, n_snps = T, report = 10000)
+  fws = NULL, n_snps = T, report = 10000, level = "group")
 }
 \arguments{
 \item{x}{Input data containing \emph{unsmoothed} statistic of interest and SNP position. Note that this data must contain a column titled "group" containing the linkage group/chromosome/scaffold for each observed value, since positions are drawn from the same group only.}
@@ -23,6 +23,8 @@ resample_long(x, statistic, boots, sigma = 150, nk_weight = FALSE,
 \item{n_snps}{If true, draws all random numbers up front. A column containing the number of snps in each selected window must be provided, titled "n_snps", in either x or fws. This allows for faster processing. Otherwise, random numbers will be drawn after this value is determined for each bootstrap.}
 
 \item{report}{Progress report interval, in bootstraps.}
+
+\item{level}{Character or NULL, default "group." What level to bootstrap across?}
 }
 \value{
 A numeric vector containing bootstrapped smoothed values.
@@ -31,11 +33,11 @@ A numeric vector containing bootstrapped smoothed values.
 \code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic.
 }
 \details{
-Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags. To run in parallel across multiple linkage groups/chromosomes, use \code{\link{resample_long_par}}.
+Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags.
 
 For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
 
-This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over multiple linkage groups/chromosomes.
+This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over one level, such as linkage group or chromosome.
 }
 \examples{
 resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)

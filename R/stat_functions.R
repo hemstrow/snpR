@@ -916,7 +916,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
   #get unique alleles present at each locus (note: this made a much quicker a tab... should implement this elsewhere...)
   p1 <- substr(as.matrix(x), 1, sform)
   p2 <- substr(as.matrix(x), sform + 1, sform*2)
-  pc <- melt(cbind(p1,p2))
+  pc <- reshape2::melt(cbind(p1,p2))
   #amat <- with(pc, table(Var1, value))
   #amat <- amat[,colnames(amat) != mDat]
   as <- sort(unique(pc$value))
@@ -952,7 +952,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat 
 
     #2)
     #turn this into a genotype count table
-    mgcv <- melt(gcv)
+    mgcv <- reshape2::melt(gcv)
     ghapmat <- with(mgcv, table(Var1, value))
 
     #3) clean the table

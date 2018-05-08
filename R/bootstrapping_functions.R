@@ -2,126 +2,108 @@
 #'
 #' \code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic.
 #'
-#'Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags. To run in parallel across multiple linkage groups/chromosomes, use \code{\link{resample_long_par}}.
+#'Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags.
 #'
 #'For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
 #'
-#'This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over multiple linkage groups/chromosomes.
+#'This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over one level, such as linkage group or chromosome.
 #'
-#' @param x Data.frame. Input data containing \emph{unsmoothed} parameter of interest and SNP position.
-#' @param parm Character string. The name of the \emph{unsmoothed} paramter to smooth. Must match a column name in x.
-#' @param boots Numeric. Number of bootstraps to run.
-#' @param sigma Numeric. Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
-#' @param nk_weight Logical, default TRUE. If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
-#' @param fws Data.frame, default NULL. If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions, such as that given by s_ave_multi. Must contain a column named "position".
-#' @param levels Character, default "group". Additional levels by which to segregate SNPs to windows other than position. When constructing windows, SNPs in x that will be used for their position in bootstrapped windows must also be in the same levels as the window center. Must match colnumn names in both x and fws (if provided).
+#' @param x Input data containing \emph{unsmoothed} statistic of interest and SNP position. Note that this data must contain a column titled "group" containing the linkage group/chromosome/scaffold for each observed value, since positions are drawn from the same group only.
+#' @param statistic A character string designating the \emph{unsmoothed} statistic to smooth.
+#' @param boots Number of bootstraps to run.
+#' @param sigma Size variable in kb for gaussian smoothing. Full window size is 6*sigma.
+#' @param nk_weight If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.
+#' @param fws If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions.
+#' @param n_snps If true, draws all random numbers up front. A column containing the number of snps in each selected window must be provided, titled "n_snps", in either x or fws. This allows for faster processing. Otherwise, random numbers will be drawn after this value is determined for each bootstrap.
+#' @param report Progress report interval, in bootstraps.
+#' @param level Character or NULL, default "group." What level to bootstrap across?
 #' @return A numeric vector containing bootstrapped smoothed values.
 #'
 #' @examples
-#' #with provided windows
-#' temp <- cbind(stickSTATs, stickFORMATs$ac$n_total)
-#' colnames(temp)[8] <- "nk"
-#' sm <- s_ave_multi(temp, "pi", 200, 150)
-#' resample_long(temp[temp$pop == "ASP",], "pi", 100, 200, T, fws = sm[sm$pop == "ASP",])
+#' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
 #'
-#' #without provided windows, centered on each SNP instead.
-#' temp <- cbind(stickSTATs, stickFORMATs$ac$n_total)
-#' colnames(temp)[8] <- "nk"
-#' resample_long(temp[temp$pop == "ASP",], "pi", 100, 200, T)
-#'
-resample_long <- function(x, parm, boots, sigma, nk_weight = TRUE, fws = NULL, levels = "group"){
-
+resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, fws = NULL, n_snps = T, report = 10000, level = "group"){
+  browser()
   #report a few things, intialize others
   sig <- 1000*sigma #correct sigma
   num_snps <- nrow(x)
   #print(count_dist)
+  smoothed_dist <- numeric(boots)
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n")
-  scol <- which(colnames(x) == parm)
 
 
-  #draw random window centers
+
+  #draw random centriods, their positions, lgs of those centroids, and number of snps in window if provided
   if(is.null(fws)){
     csnps <- sample(1:nrow(x), boots, replace = T) #get random centroids
     cs <- x$position[csnps] #get centroid positions
-    # if(n_snps){ #if n_snps is specified, draw all of the random snps to fill in around centroids on windows now.
-    #   nrands <- sample(1:nrow(x),sum(x$n_snps[csnps]), replace = T)
-    #   nrprog <- 1
-    # }
+    if(!is.null(level)){
+      grps <- x[csnps, level] #get centroid groups
+    }
+    if(n_snps){ #if n_snps is specified, draw all of the random snps to fill in around centroids on windows now.
+      nrands <- sample(1:nrow(x),sum(x$n_snps[csnps]), replace = T)
+      nrprog <- 1
+    }
   }
   else{ #same deal, but for fixed slide windows from provided window information
     cwin <- sample(1:nrow(fws), boots, replace = T)
     cs <- fws$position[cwin]
-    # if(n_snps){
-    #   nrands <- sample(1:nrow(x),sum(fws$n_snps[cwin]), replace = T)
-    #   nrprog <- 1
-    # }
-  }
-
-  #make a matrix noting if each snp is in each random window. Code is similar to that in s_ave_multi.
-  ends <- cs + sig*3
-  starts <- cs - sig*3
-  pos <- x$position
-  pos <- as.numeric(pos)
-
-  #matrix where the rows are the snps and columns are window centers. Are the snps in the windows?
-  lmat <- outer(pos, starts, function(pos, starts) pos >= starts) #are the snp pos greater than the start?
-  lmat <- lmat*outer(pos, ends, function(pos, ends) pos <= ends) #are the snp pos less than the end?
-  if(!is.null(levels)){
-    for(i in 1:length(levels)){ #are the snps in the same data level?
-      tlev <- levels[i] #this level
-      lcol <- which(colnames(x) == tlev) #level index containing info on this column
-      slev <- x[,lcol] #vector of that level
-      #vector of window levels, from fws or not
-      if(is.null(fws)){
-        wlev <- x[csnps, lcol]
-      }
-      else{
-        lcol <- which(colnames(fws) == tlev)
-        wlev <- fws[cwin, lcol]
-      }
-      lmat <- lmat*outer(slev, wlev, function(slev, wlev) slev == wlev) #check for equality
+    if(!is.null(level)){
+      grps <- fws[cwin, level]
+    }
+    if(n_snps){
+      nrands <- sample(1:nrow(x),sum(fws$n_snps[cwin]), replace = T)
+      nrprog <- 1
     }
   }
 
-  #get smoothed windows, as before.
-  gmat <- outer(pos, cs, gaussian_weight, s = sig)
-  gmat <- gmat*lmat
+  #do bootstraps
+  for (j in 1:boots){
+    if(j %% report == 0){cat("Bootstrap number: ", j, "\n")}
 
-  #remove any snps that aren't in a window
-  gmat <- gmat[-(which(rowSums(gmat) == 0)),]
-
-  #assign stat values to SNPs and fix any NA values
-  vals <- sample(x[,scol], size = nrow(gmat), replace = T)
-  NAs <- which(is.na(vals)) #which are NA?
-  if(length(NAs) > 0){
-    vals[NAs] <- 0 #fix the NAs
-  }
-
-  #multiply by value of the statistics and nk if requested
-  if(nk_weight){
-    #get random nk values
-    nkv <- sample(x$nk, nrow(gmat), replace = T)
-
-    #set up nks. Have to do it this way because of the possibility of NAs.
-    nkv <- nkv - 1
-    if(length(NAs) > 0){
-      nkv[NAs] <- 0 #make sure that these snps don't contribute to the weight!
+    #figure out positions to use. Must be on the same group as the centriod and within 3*sigma
+    if(!is.null(level)){
+      tpos <- x$position[x$position >= cs[j] - 3*sig &
+                         x$position <= cs[j] + 3*sig &
+                         x[,level] == grps[j]]
     }
-    #run
-    win_vals <- t(gmat) %*% (vals*nkv)
-    win_scales <- t(gmat) %*% nkv
-  }
-  else{
-    win_vals <- t(gmat) %*% vals
-    win_scales <- rowSums(t(gmat))
-  }
+    else{
+      tpos <- x$position[x$position >= cs[j] - 3*sig &
+                         x$position <= cs[j] + 3*sig]
+    }
+    #if random snps haven't already been drawn...
+    if(!n_snps){
+      #draw random snps to fill those positions from ALL snps, with replacement
+      rdraws <- sample(1:nrow(x), length(tpos), replace = T)
+    }
+    else{
+      #pull the correct randomly chosen snps from the vector of random snps.
+      rdraws <- nrands[nrprog:(nrprog + length(tpos) - 1)]
+      nrprog <- nrprog + length(tpos)
+    }
 
-  #get the weighted value of the window
-  win_stats <- win_vals/win_scales
 
-  return(as.vector(win_stats))
+    #get random stats and nks
+    rs <- x[rdraws, statistic] #sample stats for the randomly selected snps
+    if (nk_weight == TRUE){
+      rnk <- x$nk[rdraws] #sample nks for the randomly selected snps
+    }
+
+
+    #calculate smoothed statistics from the random stats and their positions.
+    if(nk_weight == FALSE){
+      gwp <- gaussian_weight(tpos,cs[j],sig)*rs
+      gws <- gaussian_weight(tpos,cs[j],sig)
+    }
+    else{
+      gwp <- gaussian_weight(tpos,cs[j],sig)*rs*(rnk - 1)
+      gws <- gaussian_weight(tpos,cs[j],sig)*(rnk - 1)
+    }
+    if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){stop("Got a NA value for a bootstrapped smoothed window. This usually happens if the nk_weight is TRUE but no column titled nk is provided.")}
+    smoothed_dist[j] <- (sum(gwp, na.rm = T)/sum(gws, na.rm = T)) #save the random stat
+  }
+  return(smoothed_dist)
 }
-
 
 #calculates a p-value for a stat based on a null distribution caluclated via bootstraps of that stat.
 #inputs:  x: vector of observed statistics
