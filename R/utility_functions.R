@@ -123,7 +123,7 @@ tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
 #' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.
 #' @param re_run FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?
 #' @param pop FALSE or list, default FALSE. A list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.
-#' @param non_poly boolean, default FALSE. Should non-polymorphic loci be removed?
+#' @param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
 #' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
 #' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
 #' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.

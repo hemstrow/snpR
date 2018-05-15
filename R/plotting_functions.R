@@ -41,6 +41,10 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
   #Created in part by Nick Sard
 
+  if(is.matrix(x)){
+    x <- as.data.frame(x, stringsAsFactors = F)
+  }
+
   #function to prepare data.
   prep_hm_dat <- function(x, r = NULL){
     #remove columns and rows with no data
@@ -132,7 +136,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 
   else{
     #multple plots
-    heatmap_x <- cbind(prep_hm_dat(x[[1]], r), var = names(x)[1])
+    heatmap_x <- cbind(prep_hm_dat(as.data.frame(x[[1]], stringsAsFactors = F), r), var = names(x)[1])
     for(i in 2:length(x)){
       heatmap_x <- rbind(heatmap_x, cbind(prep_hm_dat(x[[i]], r), var = names(x)[i]))
     }
