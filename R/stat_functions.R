@@ -2118,7 +2118,6 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
 #' @param smooth_levs Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for smoothing.
 #' @param boot_levs Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for bootstraps.
 #' @param p.alt Character string, default "two-sided". If bootstraps are done, which alternative hypothesis should be used? See documentation for options.
-#' @param bootstap_par Logical, default FALSE. If bootstraps are done, should they be done in parallel?
 #' @param num_boots Numeric, default NULL. If bootstraps are done, how many should be performed per stat?
 #' @param par_cores Numeric, default FALSE. If parallel processing is requested, how many cores should be used?
 #'
@@ -2131,9 +2130,8 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
                       bi_al = TRUE, non_poly = TRUE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
                       filt_re = "partial", Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
                       LD_g_par = FALSE, tsd_level = c("group", "pop"),
-                      smooth_levs = c("group", "pop"), boot_levs = c("pop"),
-                      p.alt = "two-sided",
-                      bootstrap_par = FALSE, num_boots = NULL, par_cores = FALSE){
+                      smooth_levs = c("group", "pop"), internal_boot_level = "group", boot_split_levels = "pop",
+                      p.alt = "two-sided", num_boots = NULL, par_cores = FALSE){
 
   x <- dplyr::arrange(x, group, position)
   stab <- FALSE #set that there is no saved out.tab currently
@@ -2182,6 +2180,11 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
     stop("Pop info should be provided as a table, with entries in the same order as samples in x (typically alphabetical)!")
   }
 
+
+  if(Fst_method == "all"){
+    Fst_method <- c("genepop", "Wier", "WC", "Hoh")
+  }
+
   ###################################################
   #initialize output list
   out <- list()
@@ -2223,15 +2226,17 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
     #pull out the out.tab
     stab <- x[-(names(x) == "x")]
     x <- x$x
+
+    #add to return
+    if(nfill > 0){
+      out$x.flt <- x[,-c(1:nfill)]
+    }
+    else{
+      out$x.flt <- x
+    }
   }
 
-  #add to return
-  if(nfill > 0){
-    out$x.flt <- x[,-c(1:nfill)]
-  }
-  else{
-    out$x.flt <- x
-  }
+
   ###################################################
   #do each stat as requested and save output
 
@@ -2247,9 +2252,8 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   }
 
   #initialize output stat dataframe, also used for smoothing.
-  sm.stats <- stats[!(stats %in% c("fst", "tsd", "ld"))] #stats that work for this output only.
   sm.smooth <- smooth[smooth != "fst"]
-  sm.in <- matrix(NA, nrow = nrow(x_ac), ncol = ecs + length(sm.stats) + 1)
+  sm.in <- matrix(NA, nrow = nrow(x_ac), ncol = ecs + length(sm.smooth) + 1)
   sm.in <- as.data.frame(sm.in)
   sm.in[,1:ecs] <- x_ac[,1:ecs]
   colnames(sm.in) <- c(colnames(x_ac)[1:ecs], sort(sm.smooth), "nk")
@@ -2298,7 +2302,7 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
         fst$loci <- cbind(x[,1:ecs], fst$loci)
         out$fst$genepop$loci <- fst$loci
       }
-      out$fst$gp$overall <- fst$overall
+      out$fst$genepop$overall <- fst$overall
       fst <- fst$loci
 
       fst.list <- "genepop"
@@ -2422,10 +2426,9 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       xLD <- x
     }
 
-
     #what level are we running this at?
     #are we splitting by pops?
-    if("p" %in% LD_level){
+    if("pop" %in% LD_level){
 
       #initialize pop output list
       pLD <- vector("list", length = length(pop))
@@ -2434,58 +2437,19 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       #initialize column tracker
       tracker <- ecs + 1
 
-
       for(i in 1:length(pop)){
-
-        #are we splitting by group/chr?
-        if("g" %in% LD_level){
-
-          #are we parallelizing?
-          if(LD_g_par == TRUE){
-            pLD[[i]] <- Full_LD_g_par(
-              cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-              ecs, par_cores)
-            tracker <- tracker + pop[[2]][i]
-          }
-
-          else{
-            pLD[[i]] <- Full_LD_w_groups(
-              cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-              ecs)
-            tracker <- tracker + pop[[2]][i]
-          }
-        }
-
-        else{
-          pLD[[i]] <- LD_full_pairwise(cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
-                                       ecs)
-          tracker <- tracker + pop[[2]][i]
-        }
+        pLD[[i]] <- LD_full_pairwise(x = cbind(LDx[,1:ecs], LDx[, tracker:(tracker + pop[[2]][i] - 1)]),
+          ecs, levels = LD_level[-which(LD_level == "pop")], par = par_cores)
+        tracker <- tracker + pop[[2]][i]
       }
     }
 
 
     #we aren't splitting by pops?
     else{
-      #are we still splitting by groups?
-      if("g" %in% LD_level){
-
-        #are we parallelizing?
-        if(LD_g_par == TRUE){
-          pLD <- Full_LD_g_par(LDx, ecs, par_cores)
-        }
-
-        else{
-          pLD <- Full_LD_w_groups(LDx, ecs)
-        }
-      }
-      else{
-        pLD <- LD_full_pairwise(LDx, ecs)
-      }
+      pLD <- LD_full_pairwise(LDx, ecs, par = par_cores, levels = LD_level)
     }
-
     out$LD <- pLD
-
   }
 
   out$stats <- sm.in
@@ -2493,6 +2457,7 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   ###########################################
   #smooth any other requested stats
 
+  browser()
   if(is.character(smooth)){
     sm.out <- s_ave_multi(sm.in, colnames(sm.in)[(ecs+1):(ecs + length(sm.smooth))], sigma, ws, nk, smooth_levs)
     out$stats_smoothed <- sm.out
@@ -2509,30 +2474,50 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
       bootstrap <- c(bootstrap[-which(grepl("fst", bootstrap))], "fst.Hoh", "fst.genepop", "fst.WC", "Fst.Wier")
     }
 
-    #set up an output list
-    bout <- vector(mode = "list", length(bootstrap))
-    names(bout) <- bootstrap
-
-    #do the bootstraps.
-
-    #if not parallel
-    if(bootstrap_par == FALSE){
+    #make a matrix detailing which runs to do exactly:
+    if(boot_split_levels == FALSE){
+      boot_matrix <- matrix(bootstrap, ncol = 1)
+    }
+    else{
+      boot_matrix <- matrix(NA, ncol = 1 + length(boot_split_levels))
       for(i in 1:length(bootstrap)){
-
-        #if an fst stat:
         if(grepl("fst", bootstrap[i])){
+          ul <- matrix(as.character(unique(fst[,colnames(fst) %in% boot_split_levels])), ncol = length(boot_split_levels))
+          boot_matrix <- rbind(boot_matrix, cbind(bootstrap[i], ul))
+        }
+        else{
+          ul <- matrix(as.character(unique(out$stats[,colnames(out$stats) %in% boot_split_levels])), ncol = length(boot_split_levels))
+          boot_matrix <- rbind(boot_matrix, cbind(bootstrap[i], ul))
+        }
+      }
+      boot_matrix <- boot_matrix[-1,]
+    }
+
+    #prepare things for parallel run if requested:
+    if(par_cores != FALSE){
+      cl <- snow::makeSOCKcluster(par_cores)
+      doSNOW::registerDoSNOW(cl)
+
+      ntasks <- nrow(boot_matrix)
+      progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
+      opts <- list(progress=progress)
+    }
+
+    #function to grab correct input data:
+    gbdat <- function(tstat){
+        if(grepl("fst", tstat)){
 
           #grab the correct data
-          if(bootstrap[i] == "fst.genepop"){
+          if(tstat == "fst.genepop"){
             tx <- out$fst$genepop$loci
           }
           else{
-            tx <- out$fst[[which(grepl(substr(bootstrap[i], 5, nchar(bootstrap[i])), names(out$fst)))]]
+            tx <- out$fst[[which(grepl(substr(tstat, 5, nchar(tstat)), names(out$fst)))]]
           }
 
           #melt it to split pops
           tx <- reshape2::melt(tx, id.vars = colnames(tx)[1:ecs])
-          colnames(tx)[-c(1:ecs)] <- c("comp", bootstrap[i])
+          colnames(tx)[-c(1:ecs)] <- c("comp", tstat)
 
           #get fws
           if(!is.null(ws)){
@@ -2542,37 +2527,52 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
             tfws <- NULL
           }
 
-
-          bout[i] <- plyr::ddply(.data = tx,
-                                 .variables = c(boot_levs, "comp"),
-                                 .fun = resample_long,
-                                 statistic = bootstrap[i],
-                                 boots = num_boots,
-                                 sigma = sigma,
-                                 nk_weight = nk,
-                                 fws = tfws,
-                                 n_snps = ifelse(is.null(ws), F, T),
-                                 report = ceiling(num_boots/10),
-                                 .progress == "text")
+          return(list(dat = tx, fws = tfws))
         }
-        #otherwise...
         else{
-          bout[i] <- plyr::ddply(.data = out$stats,
-                                 .variables = boot_levs,
-                                 .fun = resample_long,
-                                 statistic = bootstrap[i],
-                                 boots = num_boots,
-                                 sigma = sigma,
-                                 nk_weight = nk,
-                                 fws = ifelse(is.null(ws), NULL, out$stats_smoothed),
-                                 n_snps = ifelse(is.null(ws), F, T),
-                                 report = ceiling(num_boots/10),
-                                 .progress == "text")
+          tdat <- out$stats
+          tfws <- ifelse(is.null(ws), NULL, out$stats_smoothed)
+          return(list(dat = tdat, fws = fws))
+        }
+    }
+
+    #call if parallel:
+    if(par_cores != FALSE){
+      foreach::foreach(q = 1:ntasks, .inorder = TRUE,
+                       .options.snow = opts) %dopar% {
+
+                         tdat <- gbdat(tstat = boot_matrix[i,1])
+                         tfws <- tdat$fws
+                         tdat <- tdat$dat
+
+                         if(ncol(boot_matrix) > 1){
+                           #get only the correct data
+                           tdat <- tdat[which(apply(tdat, 1, function(x) identical(x[which(colnames(x) %in% boot_split_levels),], boot_matrix[i,-1]))),]
+                           tfws <- tfws[which(apply(tfws, 1, function(x) identical(x[which(colnames(x) %in% boot_split_levels),], boot_matrix[i,-1]))),]
+                         }
+
+                         b_output <- resample_long(tdat, boot_matrix[i,1], num_boots, sigma, nk, fws, TRUE, level = internal_boot_level)
+                       }
+    }
+    else{
+      b_output <- vector("list", length = nrow(boot_matrix))
+      for(i in 1:nrow(boot_matrix)){
+
+        tdat <- gbdat(tstat = boot_matrix[i,1])
+        tfws <- tdat$fws
+        tdat <- tdat$dat
+
+        if(ncol(boot_matrix) > 1){
+          #get only the correct data
+          tdat <- tdat[which(apply(tdat, 1, function(x) identical(x[which(colnames(x) %in% boot_split_levels),], boot_matrix[i,-1]))),]
+          tfws <- tfws[which(apply(tfws, 1, function(x) identical(x[which(colnames(x) %in% boot_split_levels),], boot_matrix[i,-1]))),]
         }
 
+        b_output[[i]] <- resample_long(tdat, boot_matrix[i,1], num_boots, sigma, nk, fws, TRUE, level = internal_boot_level)
       }
     }
 
+    #process output:
 
   }
 
