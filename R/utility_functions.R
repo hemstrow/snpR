@@ -582,6 +582,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
 #' @param outfile character vector, default FALSE. If provided, the path to the output file to write to.
+#' @param ped data.frame, default NULL. If provided, the six column header for plink .ped files.
 #' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
 #' @param out.tab. FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
 #'
@@ -632,9 +633,15 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
+#' #PLINK! format with provided ped
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
+#' format_snps(stickSNPs, 3, "plink", outfile = "plink_out", ped = ped)
+#' #from command line, then run plink_out.sh to generate plink_out.bed.
+#'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
                         interp_miss = T, lnames = NULL, outfile = FALSE,
+                        ped = NULL,
                         in.tab = FALSE, out.tab = FALSE){
 
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
@@ -752,6 +759,14 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   else if(output == 11){
     if(!all(c("position", "group", "snp") %in% colnames(data))){
       stop("Columns named position, group, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in x!")
+    }
+    if(!is.null(ped)){
+      if(!is.data.frame(ped)){
+        stop("ped must be a six column data frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
+      }
+      if(ncol(ped) != 6 | nrow(ped) != (ncol(data)-ecs)){
+        stop("ped must be a six column data frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
+      }
     }
 
     cat("Converting to PLINK! binary format.")
@@ -916,8 +931,12 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
   #convert "0_geno" format to NN
-  if(input_form == "0_geno" & output != 11){
+  if(input_form == "0_geno"){
     header <- data[,1:ecs]
+    # save for plink if that's the destination format!
+    if(output == 11){
+      pl_0g_dat <- data[,(ecs + 1):ncol(data)]
+    }
     xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
     xv[xv == 0] <- "AA"
     xv[xv == 1] <- "AC"
@@ -1664,23 +1683,24 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     rm(data)
 
     #======================make a vector containing the bits for each genotype============
-    # convert to vector
-    xv <- as.vector(t(x))
-
-    # add a few filler genotype calls to fill in the empty bits later on.
-    x.dup <- ncol(x) %% 4
-    if(x.dup  != 0){
-      x.dup <- 4 - x.dup
-    }
-    x.dup <- matrix("FF", nrow(x), x.dup)
-    x.dup <- cbind(x, x.dup)
-    xv.dup <- as.vector(t(x.dup))
-
-    # define the vector that we're going to fill with bits for each genotype
-    xvt <- character(length(xv.dup))
-
     # much easier with 0_geno!
     if(input_form == "0_geno"){
+
+      # convert to vector
+      xv <- as.vector(t(pl_0g_dat))
+
+      # add a few filler genotype calls to fill in the empty bits later on.
+      x.dup <- ncol(pl_0g_dat) %% 4
+      if(x.dup  != 0){
+        x.dup <- 4 - x.dup
+      }
+      x.dup <- matrix("FF", nrow(pl_0g_dat), x.dup)
+      x.dup <- cbind(pl_0g_dat, x.dup)
+      xv.dup <- as.vector(t(x.dup))
+
+      # define the vector that we're going to fill with bits for each genotype
+      xvt <- character(length(xv.dup))
+
       xvt[xv.dup == "0"] <- "00"
       xvt[xv.dup == "1"] <- "01"
       xvt[xv.dup == "2"] <- "11"
@@ -1693,6 +1713,21 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
     # harder for the NN format
     else{
+      # convert to vector
+      xv <- as.vector(t(x))
+
+      # add a few filler genotype calls to fill in the empty bits later on.
+      x.dup <- ncol(x) %% 4
+      if(x.dup  != 0){
+        x.dup <- 4 - x.dup
+      }
+      x.dup <- matrix("FF", nrow(x), x.dup)
+      x.dup <- cbind(x, x.dup)
+      xv.dup <- as.vector(t(x.dup))
+
+      # define the vector that we're going to fill with bits for each genotype
+      xvt <- character(length(xv.dup))
+
       #pull out tab if provided
       if(is.list(in.tab)){
         tabs <- list(as = in.tab$emats$amat, gs = in.tab$emats$tmat, wm = in.tab$emats$gmat)
@@ -1767,15 +1802,35 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
                   xvt[seq(1, length(xvt), 4)])
 
     # add magic number and SNP-major identifier
-    xvt <- c("01101100", "00011011", "00000001", xvt)
+    bed <- c("01101100", "00011011", "00000001", xvt)
 
-    # save xvt as object to return
-    rdata <- xvt
 
-    #===============make a map file=================
+    #===============make a ped file=================
+    # make an empty set of ped header columns if not provided
+    if(is.null(ped)){
+      ped <- data.frame(fam = rep("NA", ncol(x)),
+                             ind = colnames(x),
+                             PatID = rep("NA", ncol(x)),
+                             MatID = rep("NA", ncol(x)),
+                             Sex = rep("NA", ncol(x)),
+                             Phenotype = rep("NA", ncol(x)))
+    }
+
+    # save .fam
+    fam <- ped
+
+    # change missing data value and add a space between alleles.
+    x.np <- as.vector(t(x))
+    x.np[x.np == paste0(miss, miss)] <- "00"
+    x.np <- gsub("(.)(.)", "\\1 \\2", x.np)
+
+    # rebind
+    ped <- cbind(ped, matrix(x.np, nrow(ped), nrow(x)), stringsAsFactors = F)
+
+    #===============make an extended map file=================
     # with morgans
     if(any(colnames(header) %in% c("cM", "cm", "morgans"))){
-      mapfile <- data.frame(chr = header$group,
+      bim <- data.frame(chr = header$group,
                             rs = header$snp,
                             cM = header[,which(colnames(header) %in% c("cM", "cm", "morgans"))],
                             bp = header$position,
@@ -1784,7 +1839,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     # without morgans
     else{
-      mapfile <- data.frame(chr = header$group,
+      bim <- data.frame(chr = header$group,
                             rs = header$snp,
                             bp = header$position,
                             a1 = a.names[,1],
@@ -1792,7 +1847,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
 
     # recode chr
-    mapfile$chr <- as.numeric(as.factor(mapfile$chr))
+    bim$chr <- as.numeric(as.factor(bim$chr))
+
+    # grab normal map file
+    map <- bim[,-c(ncol(bim)-1, ncol(bim))]
+
+    # name output
+    rdata <- list(ped = ped, bed = bed, map = map, bim = bim)
   }
 
   ############################################################################
@@ -1871,7 +1932,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
     else if(output == 11){
-      t2 <- as.logical(as.numeric(unlist(strsplit(rdata, "")))) # merge the data and convert it to a logical.
+      t2 <- as.logical(as.numeric(unlist(strsplit(bed, "")))) # merge the data and convert it to a logical.
       t2 <- BMS::bin2hex(t2) # convet to hex codes
       t2 <- unlist(strsplit(t2,"")) # unlist
       t2 <- paste0("\\\\x",
@@ -1881,7 +1942,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       writeLines(paste0("#!/bin/bash\n\n",
         "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
       warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
-      data.table::fwrite(mapfile, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(bim, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)

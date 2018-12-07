@@ -6,7 +6,7 @@
 \usage{
 format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
   pop = 1, n_samp = NA, interp_miss = T, lnames = NULL,
-  outfile = FALSE, in.tab = FALSE, out.tab = FALSE)
+  outfile = FALSE, ped = NULL, in.tab = FALSE, out.tab = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in any of the above listed input formats.}
@@ -28,6 +28,8 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
 \item{lnames}{character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).}
 
 \item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
+
+\item{ped}{data.frame, default NULL. If provided, the six column header for plink .ped files.}
 
 \item{in.tab.}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 
@@ -112,6 +114,11 @@ format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
 
 #PLINK! format
 format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
+#from command line, then run plink_out.sh to generate plink_out.bed.
+
+#PLINK! format with provided ped
+ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
+format_snps(stickSNPs, 3, "plink", outfile = "plink_out", ped = ped)
 #from command line, then run plink_out.sh to generate plink_out.bed.
 
 }
