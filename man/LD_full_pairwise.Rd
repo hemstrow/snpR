@@ -4,8 +4,10 @@
 \alias{LD_full_pairwise}
 \title{Pairwise LD from SNP data.}
 \usage{
-LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
-  sr = FALSE)
+LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE,
+  mDat = "N", sr = FALSE, input = "SNP", chr.length = NULL,
+  levels = FALSE, par = FALSE, ss = FALSE, level_report = 1,
+  maf = FALSE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}

@@ -553,7 +553,8 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
 #'    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
 #'    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
-#'    \item{dadi: }dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.
+#'    \item{dadi: }{dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
+#'    \item{plink: }{PLINK! binary input format, requires columns named "group", "snp", and "position", and may contain a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file.}
 #'}
 #'
 #'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
@@ -565,6 +566,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
 #'    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
 #'    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
+#'    \item{0_geno: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
 #'}
 #'
 #'Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
@@ -626,7 +628,9 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' l <- list(c(names(pops)), as.numeric(pops))
 #' format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
 #'
-#'
+#' #PLINK! format
+#' format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
+#' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
                         miss = "N", pop = 1, n_samp = NA,
@@ -641,7 +645,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #possible outputs, recode to numbers so that I don't have to rewrite the whole damn thing. Still allowing numbers for reverse compatiblity.
   if(!is.numeric(output)){
     pos_outs <- c("ac", "genepop", "structure", "numeric", "hapmap", "character", "pa",
-                  "rafm", "faststructure", "dadi")
+                  "rafm", "faststructure", "dadi", "plink")
     if(!(output %in% pos_outs)){
       stop("Unaccepted output format specified. Check documentation. Remember, no capitalization!")
     }
@@ -727,18 +731,15 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       stop("Only 0000 and snp_tab formats accepted.")
     }
   }
-
   else if(output == 7){
     cat("Converting to allele presence/absense format.\n")
   }
-
   else if(output == 8){
     if(input_form != "0000" & input_form != "snp_tab" & input_form != "NN"){
       stop("Only SNP data accepted for RAFM format.")
     }
     cat("Converting to RAFM format.\n")
   }
-
   else if(output == 10){
     if(input_form != "0000" & input_form != "snp_tab" & input_form != "NN"){
       stop("Only SNP data accepted for dadi format.")
@@ -747,6 +748,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       stop("Reference and ancestor/outgroup flanking bases required in columns named 'ref' and 'anc', respecitvely")
     }
     cat("Converting to dadi format...\n")
+  }
+  else if(output == 11){
+    if(!all(c("position", "group", "snp") %in% colnames(data))){
+      stop("Columns named position, group, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in x!")
+    }
+
+    cat("Converting to PLINK! binary format.")
   }
 
   else{
@@ -790,9 +798,18 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
   }
   else if(input_form == "snp_tab"){
-    cat("Input format, snp_tab.\n")
+    cat("Input format: snp_tab.\n")
     if(nchar(miss) != 1){
       stop("Missing data format must be one character.\n")
+    }
+    else{
+      cat("Missing data format: ", miss, "\n")
+    }
+  }
+  else if(input_form == "0_geno"){
+    cat("Imput format: 0_geno\n")
+    if(miss %in% c(0:2)){
+      stop("Missing data format must be other than 0, 1, or 2.\n")
     }
     else{
       cat("Missing data format: ", miss, "\n")
@@ -895,6 +912,27 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     else{
       data <- out
+    }
+  }
+
+  #convert "0_geno" format to NN
+  if(input_form == "0_geno" & output != 11){
+    header <- data[,1:ecs]
+    xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
+    xv[xv == 0] <- "AA"
+    xv[xv == 1] <- "AC"
+    xv[xv == 2] <- "CC"
+    xv[xv == miss] <- "NN"
+
+    xv <- matrix(xv, nrow(data), (ncol(data) - ecs), T)
+    cnames <- colnames(data)
+    data <- cbind(data[,1:ecs], as.data.frame(xv, stringsAsFactors = F))
+    colnames(data) <- cnames
+
+    cat("\nMoving on to conversion...", "\n")
+    miss <- "N" #reset miss to the correct entry
+    if(output == 6){
+      rdata <- data #all done if just converting to NN
     }
   }
 
@@ -1616,6 +1654,147 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     rdata <- amat
   }
 
+
+  #PLINK format
+  if(output == 11){
+    #============convert the genotypes into a binary string==========
+    # pull out genotypes, save headers
+    x <- data[,(ecs+1):ncol(data)]
+    header <- data[,1:ecs]
+    rm(data)
+
+    #======================make a vector containing the bits for each genotype============
+    # convert to vector
+    xv <- as.vector(t(x))
+
+    # add a few filler genotype calls to fill in the empty bits later on.
+    x.dup <- ncol(x) %% 4
+    if(x.dup  != 0){
+      x.dup <- 4 - x.dup
+    }
+    x.dup <- matrix("FF", nrow(x), x.dup)
+    x.dup <- cbind(x, x.dup)
+    xv.dup <- as.vector(t(x.dup))
+
+    # define the vector that we're going to fill with bits for each genotype
+    xvt <- character(length(xv.dup))
+
+    # much easier with 0_geno!
+    if(input_form == "0_geno"){
+      xvt[xv.dup == "0"] <- "00"
+      xvt[xv.dup == "1"] <- "01"
+      xvt[xv.dup == "2"] <- "11"
+      xvt[xv.dup == miss] <- "10"
+      xvt[xv.dup == "FF"] <- "00"
+
+      # get allele names for map file down the line
+      a.names <- matrix(c(0,1), nrow(header), 2, T)
+    }
+
+    # harder for the NN format
+    else{
+      #pull out tab if provided
+      if(is.list(in.tab)){
+        tabs <- list(as = in.tab$emats$amat, gs = in.tab$emats$tmat, wm = in.tab$emats$gmat)
+        as <- tabs$as
+      }
+      #otherwise make a new table.
+      else{
+        tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(x), nrow(x), verbose = T)
+        as <- tabs$as
+      }
+
+      #save results if requested
+      if(out.tab == TRUE){
+        save.tab$emats$amat <- tabs$as
+        save.tab$emats$gmat <- tabs$wm
+        save.tab$emats$tmat <- tabs$gs
+      }
+
+      # if there are any alleles without any data, warn and remove
+      if(any(rowSums(as) == 0)){
+        missing.dat <- which(rowSums(as) == 0)
+        warning(paste0("Removed ", length(missing.dat), "SNPs with no called genotypes.!\n"),
+                "Removed SNPs:\n", missing.dat)
+        x <- x[-missing.dat,]
+        as <- as[-missing.dat,]
+        xv <- as.vector(t(x))
+      }
+
+      # get the unique alleles for each loci, fixing for loci with one allele.
+      unique.as <- cbind(as, N1 = rep(0, nrow(as))) # put in dummies for rows with missing haplotypes
+      unique.as <- ifelse(unique.as != 0, TRUE, FALSE) # convert to logical
+      if(any(rowSums(unique.as) != 2)){
+        unique.as[rowSums(unique.as) != 2, 5] <- TRUE # add one missing allele note
+      }
+      unique.as <- which(t(unique.as)) %% ncol(unique.as) # get the column for each TRUE
+      unique.as[unique.as == 0] <- 5 # fix for sixth column
+      unique.as <- c(colnames(as), "M")[unique.as] # add column names.
+
+      # match to observed genotypes
+      ## these lines generate a vector equal in length to xv that has the correct genotype options per loci for all three genotypes.
+      v00 <- paste0(unique.as[seq(1, length(unique.as), 2)],
+                    unique.as[seq(1, length(unique.as), 2)])
+      v00 <- rep(v00, each = ncol(x.dup))
+      v11 <- paste0(unique.as[seq(2, length(unique.as), 2)],
+                    unique.as[seq(2, length(unique.as), 2)])
+      v11 <- rep(v11, each = ncol(x.dup))
+      v01a <- paste0(unique.as[seq(1, length(unique.as), 2)],
+                     unique.as[seq(2, length(unique.as), 2)])
+      v01a <- rep(v01a, each = ncol(x.dup))
+      v01b <- paste0(unique.as[seq(2, length(unique.as), 2)],
+                     unique.as[seq(1, length(unique.as), 2)])
+      v01b <- rep(v01b, each = ncol(x.dup))
+
+      ## these lines create xvt, which has the correct binary doublets.
+      xvt[xv.dup == v00] <- "00"
+      xvt[xv.dup == v11] <- "11"
+      xvt[xv.dup == v01a] <- "01"
+      xvt[xv.dup == v01b] <- "01"
+      xvt[xv.dup == "NN"] <- "10"
+      xvt[xv.dup == "FF"] <- "00"
+
+      # get allele names for map file down the line
+      a.names <- matrix(unique.as, nrow(header), 2, T)
+    }
+
+    #=====================add magic numbers and reorder vector==============
+
+    # order correctly for plink (weird reversed bytes)
+    xvt <- paste0(xvt[seq(4, length(xvt), 4)],
+                  xvt[seq(3, length(xvt), 4)],
+                  xvt[seq(2, length(xvt), 4)],
+                  xvt[seq(1, length(xvt), 4)])
+
+    # add magic number and SNP-major identifier
+    xvt <- c("01101100", "00011011", "00000001", xvt)
+
+    # save xvt as object to return
+    rdata <- xvt
+
+    #===============make a map file=================
+    # with morgans
+    if(any(colnames(header) %in% c("cM", "cm", "morgans"))){
+      mapfile <- data.frame(chr = header$group,
+                            rs = header$snp,
+                            cM = header[,which(colnames(header) %in% c("cM", "cm", "morgans"))],
+                            bp = header$position,
+                            a1 = a.names[,1],
+                            a2 = a.names[,2])
+    }
+    # without morgans
+    else{
+      mapfile <- data.frame(chr = header$group,
+                            rs = header$snp,
+                            bp = header$position,
+                            a1 = a.names[,1],
+                            a2 = a.names[,2])
+    }
+
+    # recode chr
+    mapfile$chr <- as.numeric(as.factor(mapfile$chr))
+  }
+
   ############################################################################
   #return the final product, printing an outfile if requested.
   if(outfile != FALSE){
@@ -1691,13 +1870,23 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     else if(output == 3 | output == 9){
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
+    else if(output == 11){
+      t2 <- as.logical(as.numeric(unlist(strsplit(rdata, "")))) # merge the data and convert it to a logical.
+      t2 <- BMS::bin2hex(t2) # convet to hex codes
+      t2 <- unlist(strsplit(t2,"")) # unlist
+      t2 <- paste0("\\\\x",
+                   t2[seq(1,length(t2),2)],
+                   t2[seq(2,length(t2),2)],
+                   collapse = "")
+      writeLines(paste0("#!/bin/bash\n\n",
+        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
+      warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
+      data.table::fwrite(mapfile, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
+    }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
   }
-
-
-
 
   #return results
   if(exists("save.tab")){

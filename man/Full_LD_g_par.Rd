@@ -5,7 +5,7 @@
 \title{Pairwise LD from SNP data, split by group.}
 \usage{
 Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
-  mDat = "N")
+  mDat = "N", chr.length = NULL, input = "SNP", ss = FALSE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
@@ -19,12 +19,16 @@ Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
 \item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
+
+\item{chr.length}{Numeric value, default NULL. If input is ms, what are the chromosome lengths used to produce the data? Only for scaling the positions of the segregating sites, not used in any calculations.}
+
+\item{input}{Character string, default SNP. What format is the input data in?}
 }
 \value{
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list. Prox table is concatenated across all groups, matrices are named first by group, second by LD measure.
 }
 \description{
-\code{Full_LD_g_par} calls \code{\link{LD_full_pairwise}} after spliting the data by a column named "group". Knits the results together, unlike if run with \code{\link{run_g}}. Uses the doParallel and doSNOW package to parallelize across groups.
+\code{Full_LD_g_par} is a wrapper for \code{\link{LD_full_pairwise}} that splits the data by a column named "group" using the parallel option. Included for backwards compatibility.
 }
 \details{
 Matrix outputs are properly formated for LD_pairwise_heatmap. See notes for \code{\link{LD_full_pairwise}}.

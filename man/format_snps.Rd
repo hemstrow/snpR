@@ -4,9 +4,9 @@
 \alias{format_snps}
 \title{Re-format genomic data.}
 \usage{
-format_snps(x, ecs, output = 1, input_form = "NN", miss = "N", pop = 1,
-  n_samp = NA, interp_miss = T, lnames = NULL, outfile = FALSE,
-  in.tab = FALSE, out.tab = FALSE)
+format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
+  pop = 1, n_samp = NA, interp_miss = T, lnames = NULL,
+  outfile = FALSE, in.tab = FALSE, out.tab = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in any of the above listed input formats.}
@@ -51,7 +51,8 @@ Format options:
    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
-   \item{dadi: }dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.
+   \item{dadi: }{dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
+   \item{plink: }{PLINK! binary input format, requires columns named "group", "snp", and "position", and may contain a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file.}
 }
 
 Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
@@ -63,6 +64,7 @@ Input formats: For now, all input formats require at least two metadata columns.
    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
+   \item{0_geno: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
 }
 
 Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
@@ -108,6 +110,8 @@ pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 l <- list(c(names(pops)), as.numeric(pops))
 format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
 
-
+#PLINK! format
+format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
+#from command line, then run plink_out.sh to generate plink_out.bed.
 
 }

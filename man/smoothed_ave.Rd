@@ -4,7 +4,8 @@
 \alias{smoothed_ave}
 \title{Gaussian smooth statistics.}
 \usage{
-smoothed_ave(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL)
+smoothed_ave(x, parameter, sigma, nk_weight = FALSE,
+  fixed_window = NULL)
 }
 \arguments{
 \item{x}{Input SNP data frame.}

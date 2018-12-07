@@ -9,10 +9,10 @@ snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
   pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05,
   hf_hets = 0.55, bi_al = TRUE, non_poly = TRUE, min_ind = FALSE,
   min_loci = FALSE, pop_maf = FALSE, filt_re = "partial",
-  Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
-  LD_g_par = FALSE, tsd_level = c("group", "pop"),
-  smooth_levs = c("group", "pop"), boot_levs = c("pop"),
-  p.alt = "two-sided", bootstrap_par = FALSE, num_boots = NULL,
+  Fst_method = "genepop", LD_level = c("group", "pop"),
+  LD_chr = "all", LD_g_par = FALSE, tsd_level = c("group", "pop"),
+  smooth_levs = c("group", "pop"), internal_boot_level = "group",
+  boot_split_levels = "pop", p.alt = "two-sided", num_boots = NULL,
   par_cores = FALSE)
 }
 \arguments{
@@ -70,15 +70,13 @@ snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
 
 \item{smooth_levs}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for smoothing.}
 
-\item{boot_levs}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for bootstraps.}
-
 \item{p.alt}{Character string, default "two-sided". If bootstraps are done, which alternative hypothesis should be used? See documentation for options.}
 
 \item{num_boots}{Numeric, default NULL. If bootstraps are done, how many should be performed per stat?}
 
 \item{par_cores}{Numeric, default FALSE. If parallel processing is requested, how many cores should be used?}
 
-\item{bootstap_par}{Logical, default FALSE. If bootstraps are done, should they be done in parallel?}
+\item{boot_levs}{Character vector or FALSE, default c("group", "pop"). Names of metadata columns by which to split the data for bootstraps.}
 }
 \value{
 A named list of objects corresponding to requested statistics/graphs/ect.

@@ -2080,6 +2080,7 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
   return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr = FALSE, input, chr.length, levels = "group", par = num_cores, ss = ss))
 }
 
+
 #'SNP data analysis with snpR
 #'
 #'\code{snpR.stats} calls many snpR functions based on the provided arguments to do the majority of the basic statistical process required for SNP analysis.

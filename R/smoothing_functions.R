@@ -120,14 +120,27 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
   }
 
   #sigma and ws
-  if(!all(is.numeric(sigma), is.numeric(ws), length(sigma) == 1, length(ws) == 1)){
-    stop("Sigma and ws must be numeric vectors of length 1.")
+  if(!is.null(ws)){
+    if(!all(is.numeric(sigma), is.numeric(ws), length(sigma) == 1, length(ws) == 1)){
+      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
+    }
+    if(sigma >= 500 | ws >= 500){
+      warning("sigma and ws are the number of bases in megabases!")
+    }
+    else if(sig <= 100){
+      warning("Provided sigma is very small:", sig, "bp!")
+    }
   }
-  if(sigma >= 500 | ws >= 500){
-    warning("Sigma and ws are the number of bases in megabases!")
-  }
-  else if(sig <= 100){
-    warning("Provided sigma is very small:", sig, "bp!")
+  else{
+    if(!all(is.numeric(sigma), length(sigma) == 1)){
+      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
+    }
+    if(sigma >= 500){
+      warning("sigmais the number of bases in megabases!")
+    }
+    else if(sig <= 100){
+      warning("Provided sigma is very small:", sig, "bp!")
+    }
   }
 
 

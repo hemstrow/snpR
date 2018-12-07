@@ -25,6 +25,7 @@ Imports:
     plyr,
     reshape2
 Suggests:
+    BMS,
     genepop,
     knitr,
     mmtsne,
@@ -32,4 +33,4 @@ Suggests:
     Rtsne,
     zoo
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1

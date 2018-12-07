@@ -4,8 +4,9 @@
 \alias{Full_LD_w_groups}
 \title{Pairwise LD from SNP data, split by group.}
 \usage{
-Full_LD_w_groups(x, ecs, prox_table = TRUE, matrix_out = TRUE, mDat = "N",
-  report = 1, sr = TRUE)
+Full_LD_w_groups(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
+  report = 1, sr = TRUE, chr.length = NULL, input = "SNP",
+  ss = FALSE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}

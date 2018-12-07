@@ -5,8 +5,9 @@
 \title{Filter SNP data.}
 \usage{
 filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-  min_loci = FALSE, re_run = "partial", pop = FALSE, non_poly = TRUE,
-  bi_al = TRUE, mDat = "NN", in.tab = FALSE, out.tab = FALSE)
+  min_loci = FALSE, re_run = "partial", pop = FALSE,
+  non_poly = TRUE, bi_al = TRUE, mDat = "NN", in.tab = FALSE,
+  out.tab = FALSE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.}
@@ -25,7 +26,7 @@ filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 
 \item{pop}{FALSE or list, default FALSE. A list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.}
 
-\item{non_poly}{boolean, default FALSE. Should non-polymorphic loci be removed?}
+\item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be removed?}
 
 \item{bi_al}{boolean, default TRUE. Should non-biallelic SNPs be removed?}
 
