@@ -31,9 +31,9 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
 
 \item{ped}{data.frame, default NULL. If provided, the six column header for plink .ped files.}
 
-\item{in.tab.}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
+\item{in.tab}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 
-\item{out.tab.}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
+\item{out.tab}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 }
 \value{
 A data.frame in the specified format.

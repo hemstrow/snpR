@@ -882,14 +882,21 @@ check_private <- function(x){
 #'Matrix outputs are properly formated for LD_pairwise_heatmap.
 #'
 #'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations and linkage group/chromosome}, split data into distinct populations and linkage groups or use Full_LD_w_groups before running.
+#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations}, split data into distinct populations before running.
 #'
-#' @param x Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.
+#' @param x Input data, usually in either numeric or character formats for SNP data, as given by format_snps output options "numeric" or "character". ms filepath or phased haplotypes (such as from an imported ms output) also accepted.
 #' @param ecs Number of extra metadata columns at the start of x.
 #' @param prox_table If TRUE, a proximity table is produced.
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
 #' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.
 #' @param sr boolean, default FALSE. Should progress reports be surpessed?
+#' @param input Character, default "SNP". Input data type. Options: "SNP", as given by format_snps output options "numeric" or "character". "ms": filepath to ms formatted data. "haplotype": imported ms data, where each column is a fully phased gene copy/chromosome.
+#' @param chr.length Numeric, default NULL. Length of chromosomes, for ms inputs.
+#' @param levels Levels to split the data by for LD calculations, such as chromosome or linkage group. Must match in input column name.
+#' @param par Numeric or FALSE, default FALSE. Number of cores to parallelize the analysis by.
+#' @param ss Numeric or FALSE, default FALSE. Number or proportion of SNPs to subsample for LD analysis.
+#' @param level_report Numeric, default 1. Progress through levels is reported every level_report levels.
+#' @param maf Numeric or FALSE, default FALSE. Minor allele frequency filter cuttoff, only for ms or haplotype data.
 #'
 #' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
 #'
@@ -1538,6 +1545,9 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
       return(list(hapmat = hapmat, missing = missing, m2 = m2mat))
     }
     LD_func <- function(x, meta, prox_table = TRUE, matrix_out = TRUE, mDat = "N", sr = FALSE, chr.length = NULL, stop.row = nrow(x) - 1){
+      #double check that the position variable is numeric!
+      if(!is.numeric(meta$position)){meta$position <- as.numeric(meta$position)}
+
       dmDat <- paste0(mDat, mDat) #missing genotype
       #data format
       sform <- nchar(x[1,1])/2
@@ -1987,16 +1997,17 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
     doSNOW::registerDoSNOW()
 
     #make the output sensible
-    ##prox table
     for(i in 1:length(output)){
+      ##prox table
       if(prox_table){
         if(!matrix_out){
           w_list$prox <- rbind(w_list$prox, output[[i]])
         }
         else{
-          w_list$prox <- rbind(w_list$prox, output[[i]][1])
+          w_list$prox <- rbind(w_list$prox, output[[i]][1]$prox)
         }
       }
+      ##matrices
       if(matrix_out){
         if(!prox_table){
           w_list[[i]] <- output[[i]]
@@ -2042,7 +2053,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
 #' Full_LD_w_groups(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3)
 #'
 Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "N", report = 1, sr = TRUE, chr.length = NULL, input = "SNP", ss = FALSE){
-  return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr, chr.length, levels = "group", ss = ss, level_report = report))
+  return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr, chr.length, levels = "group", ss = ss, level_report = report, input = input))
 }
 
 
@@ -2077,7 +2088,7 @@ Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
 #' Full_LD_g_par(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3, 3)
 #'
 Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE, mDat = "N", chr.length = NULL, input = "SNP", ss = FALSE){
-  return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr = FALSE, input, chr.length, levels = "group", par = num_cores, ss = ss))
+  return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr = FALSE, input, chr.length, levels = "group", par = num_cores, ss = ss, input = input))
 }
 
 

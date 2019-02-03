@@ -10,7 +10,7 @@ LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE,
   maf = FALSE)
 }
 \arguments{
-\item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
+\item{x}{Input data, usually in either numeric or character formats for SNP data, as given by format_snps output options "numeric" or "character". ms filepath or phased haplotypes (such as from an imported ms output) also accepted.}
 
 \item{ecs}{Number of extra metadata columns at the start of x.}
 
@@ -21,6 +21,20 @@ LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE,
 \item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.}
 
 \item{sr}{boolean, default FALSE. Should progress reports be surpessed?}
+
+\item{input}{Character, default "SNP". Input data type. Options: "SNP", as given by format_snps output options "numeric" or "character". "ms": filepath to ms formatted data. "haplotype": imported ms data, where each column is a fully phased gene copy/chromosome.}
+
+\item{chr.length}{Numeric, default NULL. Length of chromosomes, for ms inputs.}
+
+\item{levels}{Levels to split the data by for LD calculations, such as chromosome or linkage group. Must match in input column name.}
+
+\item{par}{Numeric or FALSE, default FALSE. Number of cores to parallelize the analysis by.}
+
+\item{ss}{Numeric or FALSE, default FALSE. Number or proportion of SNPs to subsample for LD analysis.}
+
+\item{level_report}{Numeric, default 1. Progress through levels is reported every level_report levels.}
+
+\item{maf}{Numeric or FALSE, default FALSE. Minor allele frequency filter cuttoff, only for ms or haplotype data.}
 }
 \value{
 Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
@@ -32,7 +46,7 @@ Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. C
 Matrix outputs are properly formated for LD_pairwise_heatmap.
 
 Description of x:
-   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations and linkage group/chromosome}, split data into distinct populations and linkage groups or use Full_LD_w_groups before running.
+   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations}, split data into distinct populations before running.
 }
 \examples{
 #returns prox table and LD matrices.
