@@ -183,11 +183,11 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #'    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
 #'
 #' @param x Input presence/absence data, as described in details.
-#' @param ecs The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
+#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
 #' @param do.plot FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
 #' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
-#' @param counts Numeric vector containing the number of loci sequenced per individual.
+#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
 #'
 #' @return A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
@@ -347,16 +347,16 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 #'This function results from collaboration with Matt Thorstensen.
 #'
 #' @param x Input presence/absence data, as described in details.
-#' @param ecs The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
+#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
 #' @param do.plot FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
-#' @param dims integer, output dimensionality
-#' @param initial_dims integer, the number of dimensions retained in the initial PCA step.
+#' @param dims Integer, output dimensionality, default 2.
+#' @param initial_dims Integer, default 50. The number of dimensions retained in the initial PCA step.
 #' @param perplex Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#' @param gravity Theta parameter from \code{\link[Rtsne]{Rtsne}}.
-#' @param iter Integer. Number of tSNE iterations to perform.
+#' @param gravity Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
+#' @param iter Integer, default 5000. Number of tSNE iterations to perform.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
 #' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
-#' @param counts Numeric vector containing the number of loci sequenced per individual.
+#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
 #'
 #' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.

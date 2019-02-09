@@ -10,15 +10,15 @@ PCAfromPA(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE,
 \arguments{
 \item{x}{Input presence/absence data, as described in details.}
 
-\item{ecs}{The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
+\item{ecs}{Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
 
 \item{do.plot}{FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.}
 
 \item{c.dup}{boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!}
 
-\item{mc}{If the data is filtered of poorly sequenced individuals, how many loci must the individuals have to be kept?}
+\item{mc}{Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?}
 
-\item{counts}{Numeric vector containing the number of loci sequenced per individual.}
+\item{counts}{Numeric vector, default FALSE, containing the number of loci sequenced per individual.}
 }
 \value{
 A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.

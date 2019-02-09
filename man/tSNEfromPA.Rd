@@ -11,25 +11,25 @@ tSNEfromPA(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 \arguments{
 \item{x}{Input presence/absence data, as described in details.}
 
-\item{ecs}{The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
+\item{ecs}{Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
 
 \item{do.plot}{FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.}
 
-\item{dims}{integer, output dimensionality}
+\item{dims}{Integer, output dimensionality, default 2.}
 
-\item{initial_dims}{integer, the number of dimensions retained in the initial PCA step.}
+\item{initial_dims}{Integer, default 50. The number of dimensions retained in the initial PCA step.}
 
 \item{perplex}{Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 
-\item{gravity}{Theta parameter from \code{\link[Rtsne]{Rtsne}}.}
+\item{gravity}{Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.}
 
-\item{iter}{Integer. Number of tSNE iterations to perform.}
+\item{iter}{Integer, default 5000. Number of tSNE iterations to perform.}
 
 \item{c.dup}{boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!}
 
-\item{mc}{If the data is filtered of poorly sequenced individuals, how many loci must the individuals have to be kept?}
+\item{mc}{Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?}
 
-\item{counts}{Numeric vector containing the number of loci sequenced per individual.}
+\item{counts}{Numeric vector, default FALSE, containing the number of loci sequenced per individual.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.}
 }
@@ -48,5 +48,5 @@ Description of x:
 This function results from collaboration with Matt Thorstensen.
 }
 \examples{
-PCAfromPA(stickPA, 2, c.dup = TRUE)
+tSNEfromPA(stickPA, 2, c.dup = TRUE)
 }
