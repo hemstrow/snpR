@@ -186,7 +186,7 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #' @param ecs The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
 #' @param do.plot FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
-#' @param mc If the data is filtered of poorly sequenced individuals, how many loci must the individuals have to be kept?
+#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
 #' @param counts Numeric vector containing the number of loci sequenced per individual.
 #'
 #' @return A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
@@ -199,10 +199,26 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
   meta <- x[,1:ecs]
   x <- x[,(ecs+1):ncol(x)]
 
+
   ##############################
   #sanity checks...
-  if((mc != FALSE & !counts != FALSE) | (!mc != FALSE & counts != FALSE)){
+  if((mc != FALSE & !length(counts) > 1) | (mc == FALSE & length(counts) > 1)){
     stop("Counts and mc must either both be defined or neither must be.")
+  }
+
+  if(mc != FALSE & length(counts) > 1){
+    if(!is.numeric(mc) | !is.numeric(counts)){
+      stop("Counts and mc must both be numeric vectors.\n")
+    }
+    if(length(mc) > 1){
+      stop("mc must a single numeric value equal to the desired cuttoff number of sequenced loci.\n")
+    }
+    if(mc > (ncol(x) - ecs)/2){
+      stop("mc must be less than the total number of sequenced loci.\n")
+    }
+    if(length(counts) != nrow(x)){
+      stop("counts must be equal in length to the number of samples in x.")
+    }
   }
 
   if(is.character(do.plot)){
@@ -219,7 +235,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
   ############################################
   #filter if requested
-  if(mc != FALSE & counts != FALSE){
+  if(is.numeric(mc) & is.numeric(counts)){
     keeps <- which(counts >= mc)
     x <- x[keeps,]
     meta <- meta[keeps,]
@@ -253,48 +269,65 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
   #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
-  out <- ggplot2::ggplot(pca, aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
+  out <- ggplot2::ggplot(pca, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
 
   cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
+
   #add variables.
-  if(length(do.plot) == 1){
+  if(do.plot[1] != FALSE){
+
     v1 <- pca[,which(colnames(pca) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + ggplot2::geom_point(aes(color = v1))#add the factor
+    # add geoms to plot
+    if(length(do.plot) == 1){
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+    }
+    else{
+      # if two plotting variables, prepare the second and add it as well.
+      v2 <- pca[,which(colnames(pca) == do.plot[2])]
+      v2u <- length(unique(v2))
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    }
 
+
+    # change the color scales for the variables
+    ## for the first variable
     if(v1u <= 8){#are there too many categories to color with the cbb palette?
       out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
     }
     else{
-      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+      # if the data is likely continuous:
+      if(is.numeric(v1)){
+        warning("Plotting ", do.plot[1], " as a continuous variable.\n")
+        out <- out + ggplot2::scale_color_viridis_c(name = do.plot[1])
+      }
+      out <- out + ggplot2::scale_color_viridis_d(name = do.plot[1])
     }
-  }
 
-  if(length(do.plot) == 2){
-    v1 <- pca[,which(colnames(pca) == do.plot[1])]
-    v2 <- pca[,which(colnames(pca) == do.plot[2])]
-    v1u <- length(unique(v1))
-    v2u <- length(unique(v2))
-
-    out <- out + ggplot2::geom_point(aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
-
-    if(v1u <= 8 & v2u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out+ ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
-      out <- out+ ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
-    }
-    else{
-      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
-      out <- out + ggplot2::scale_fill_discrete(name = do.plot[2])
+    ## for the second variable if defined
+    if(length(do.plot) == 2){
+      if(v2u <= 8){#are there too many categories to color with the cbb palette?
+        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+      }
+      else{
+        if(is.numeric(v2)){
+          warning("Plotting ", do.plot[2], " as a continuous variable.\n")
+          out <- out + ggplot2::scale_fill_viridis_c(name = do.plot[2])
+        }
+        else{
+          out <- out + ggplot2::scale_fill_viridis_d(name = do.plot[2])
+        }
+      }
     }
   }
 
   loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
   loadings <- round(loadings * 100, 2)
 
-  out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ylab(paste0("PC2 (", loadings[2], "%)"))
+  out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
 
   return(list(raw = pca_r, plot = out))
 }
@@ -322,14 +355,14 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 #' @param gravity Theta parameter from \code{\link[Rtsne]{Rtsne}}.
 #' @param iter Integer. Number of tSNE iterations to perform.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
-#' @param mc If the data is filtered of poorly sequenced individuals, how many loci must the individuals have to be kept?
+#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
 #' @param counts Numeric vector containing the number of loci sequenced per individual.
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
 #'
 #' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
 #' @examples
-#' PCAfromPA(stickPA, 2, c.dup = TRUE)
+#' tSNEfromPA(stickPA, 2, c.dup = TRUE)
 tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
                        perplex = FALSE, gravity = 0, iter = 5000,
                        c.dup = FALSE, mc = FALSE, counts = FALSE, ...){
@@ -341,8 +374,23 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
   ##############################
   #sanity checks...
-  if((mc != FALSE & !counts != FALSE) | (!mc != FALSE & counts != FALSE)){
+  if((mc != FALSE & !length(counts) > 1) | (mc == FALSE & length(counts) > 1)){
     stop("Counts and mc must either both be defined or neither must be.")
+  }
+
+  if(mc != FALSE & length(counts) > 1){
+    if(!is.numeric(mc) | !is.numeric(counts)){
+      stop("Counts and mc must both be numeric vectors.\n")
+    }
+    if(length(mc) > 1){
+      stop("mc must a single numeric value equal to the desired cuttoff number of sequenced loci.\n")
+    }
+    if(mc > (ncol(x) - ecs)/2){
+      stop("mc must be less than the total number of sequenced loci.\n")
+    }
+    if(length(counts) != nrow(x)){
+      stop("counts must be equal in length to the number of samples in x.")
+    }
   }
 
   if(c.dup == FALSE){
@@ -363,7 +411,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 
   ##############################
   #filter if requested
-  if(mc & counts){
+  if(is.numeric(mc) & is.numeric(counts)){
     keeps <- which(counts >= mc)
     x <- x[keeps,]
     meta <- meta[keeps,]
@@ -393,7 +441,6 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
   tsne.out <- Rtsne::Rtsne(x, dims, initial_dims, perplex,
                            gravity, iter, check_duplicates = FALSE,
                            verbose=TRUE, ...)
-  #saved_tsne2 <- tsne.out
   tsne_plot <- cbind(meta, as.data.frame(tsne.out$Y))
 
   if(!is.character(do.plot)){
@@ -415,39 +462,52 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
           axis.text = element_blank(),
           panel.grid = element_blank()) #initialize plot
 
-
-  long <- FALSE #are any of the sets of categories really long?
-
   #add variables.
-  if(length(do.plot) == 1){
+  if(do.plot[1] != FALSE){
+
     v1 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
-    out <- out + ggplot2::geom_point(ggplot2::aes(color = v1)) #add the factor
+    # add geoms to plot
+    if(length(do.plot) == 1){
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+    }
+    else{
+      # if two plotting variables, prepare the second and add it as well.
+      v2 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[2])]
+      v2u <- length(unique(v2))
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    }
 
+
+    # change the color scales for the variables
+    ## for the first variable
     if(v1u <= 8){#are there too many categories to color with the cbb palette?
       out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
     }
     else{
-      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
+      # if the data is likely continuous:
+      if(is.numeric(v1)){
+        warning("Plotting ", do.plot[1], " as a continuous variable.\n")
+        out <- out + ggplot2::scale_color_viridis_c(name = do.plot[1])
+      }
+      out <- out + ggplot2::scale_color_viridis_d(name = do.plot[1])
     }
-  }
 
-  if(length(do.plot) == 2){
-    v1 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[1])]
-    v2 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[2])]
-    v1u <- length(unique(v1))
-    v2u <- length(unique(v2))
-
-    out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
-
-    if(v1u <= 8 & v2u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out+ ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
-      out <- out+ ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
-    }
-    else{
-      out <- out + ggplot2::scale_color_discrete(name = do.plot[1])
-      out <- out + ggplot2::scale_fill_discrete(name = do.plot[2])
+    ## for the second variable if defined
+    if(length(do.plot) == 2){
+      if(v2u <= 8){#are there too many categories to color with the cbb palette?
+        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+      }
+      else{
+        if(is.numeric(v2)){
+          warning("Plotting ", do.plot[2], " as a continuous variable.\n")
+          out <- out + ggplot2::scale_fill_viridis_c(name = do.plot[2])
+        }
+        else{
+          out <- out + ggplot2::scale_fill_viridis_d(name = do.plot[2])
+        }
+      }
     }
   }
 
