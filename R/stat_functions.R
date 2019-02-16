@@ -9,7 +9,8 @@
 #'Description of x:
 #'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
 #'
-#' @param x Input SNP data, in allele count format as given by format_snps output option
+#' @param x Input SNP data, in allele count format as given by format_snps output option.
+#' @param ecs Numeric, number of metadata columns at the start of x to keep for output.
 #'
 #' @return A vector of PI values, in the same order as the input SNPs.
 #'
@@ -21,11 +22,13 @@
 #' pi <- calc_pi(ac)
 #' pi <- cbind(ac[,1:4], pi)
 #'
-calc_pi <- function(x){
+calc_pi <- function(x, ecs){
+  meta <- x[,1:ecs]
+  x <- x[,-c(1:ecs)]
   nt <- as.numeric(x[,"n_total"])
   n1 <- as.numeric(x[,"ni1"])
   n2 <- as.numeric(x[,"ni2"])
-  if(!all(as.numeric(x[,"n_alleles"]) != 2)){
+  if(any(as.numeric(x[,"n_alleles"]) != 2)){
     warning("Some loci do not have two alleles in some populations.\n")
   }
   binom_n1 <- choose(n1,2)
@@ -35,7 +38,7 @@ calc_pi <- function(x){
   #print(n2)
   p <- 1 - (binom_n1 + binom_n2)/binom_nt
   #print(pi)
-  return(p)
+  return(cbind(meta, pi = p))
 }
 
 
@@ -149,8 +152,7 @@ estimate_selection <- function(p_before, p_after){
 #' @examples
 #' #convert example data into the correct format and run splitting by groups and pops.
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' ac <- format_snps(stickSNPs, 3, pop = pops)
 #' run_gp(ac, Tajimas_D, 200, 50)
 #'
 Tajimas_D <- function(x, ws, step, report = 20){
@@ -242,7 +244,7 @@ Tajimas_D <- function(x, ws, step, report = 20){
 #'
 #' @examples
 #' HWE(stickSNPs, 3)
-HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
+HWE <- function(x, ecs, mDat = "NN", test = "exact", n.reps = 20000){
 
 
   if(test == "exact"){
@@ -329,24 +331,24 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
     stop("Genotypes must be in either 2 (NN) or 4 (0000) format.")
   }
 
-  #functions to get allele and genotype frequencies minus missing data.
+  #functions to get allele and genotype frequencies minus mDating data.
   g_row <- function(row){
     t <- table(unlist(row))
-    t <- t[names(t) != miss]
-    #fill table if missing genotypes
+    t <- t[names(t) != mDat]
+    #fill table if mDating genotypes
     if(length(t) == 2){
       as <- unique(c(substr(names(t),1,snp_form/2), substr(names(t),(snp_form/2) + 1, snp_form)))
       if(!(paste0(as[1], as[1]) %in% names(t))){
-        missing.geno <- paste0(as[1], as[1])
+        mDating.geno <- paste0(as[1], as[1])
       }
       else if (!(paste0(as[2], as[2]) %in% names(t))){
-        missing.geno <- paste0(as[2], as[2])
+        mDating.geno <- paste0(as[2], as[2])
       }
       else if(!(paste0(as[1], as[2]) %in% names(t)) & !(paste0(as[2], as[1]) %in% names(t))){
-        missing.geno <- paste0(as[1], as[2])
+        mDating.geno <- paste0(as[1], as[2])
       }
       t <- c(t, 0)
-      t <- setNames(t, c(names(t)[1:2], missing.geno))
+      t <- setNames(t, c(names(t)[1:2], mDating.geno))
     }
     else if (length(t) == 1){
       t <- c(t,0,0)
@@ -427,23 +429,30 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #'    \item{"Hohenlohe": }{Hohenlohe 2010.}
 #'}
 #'
-#' @param x Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.
+#' @param x Input data frame, in allele count format as given by format_snps option "ac", with an additional column containing pi or Ho estimates.
 #' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
 #' @param do.nk Should pairwise nk (allele sample sizes) also be calculated?
 #' @param skip.FST Should FST calcs be skipped (only set to TRUE if do.nk is as well).
 #' @param method Which FST estimator should be used?
 #' @param pnames Character vector, default NULL. Vector of population names to use for method "Genepop"
+#' @param char.dat Data.frame, defualt NULL. Input data in character format, as given by format_snps option "character". Only needed if no Ho column provided to Wier or WC methods.
+#' @param m.dat Character, default "NN". Missing *genotype* identifier in char.dat, used if no Ho column provided to Wier or WC methods.
+#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table. Only needed if WC or Wier used but no "Ho" column provided.
+#' @param c.d.ecs Numeric, default NULL. Number of extra metadata columns at the start of char.dat. Only needed if WC or Wier method chosen but no Ho column provided.
 #'
 #' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
 #' @examples
 #' #Wier and Cockerham
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
 #' ac <- format_snps(stickSNPs, 3, pop = l)
 #' Ho <- calc_Ho(stickSNPs, 3, pop = l)
 #' m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
 #' ac$Ho <- m_Ho$value
 #' calc_pairwise_Fst(ac, 3, do.nk = T)
+#'
+#' #Wier and Cockerham without binding the Ho column manually:
+#' calc_pairwise_Fst(ac, 3, do.nk = T, char.dat = stickSNPs, pop = pops, c.d.ecs = 3)
+#'
 #'
 #' #genepop
 #' ##prepare pop list for both formatting and FST.
@@ -454,7 +463,12 @@ HWE <- function(x, ecs, miss = "NN", test = "exact", n.reps = 20000){
 #' ##calculate FST:
 #' FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
 
-calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, method = "WC", pnames = NULL){
+calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, method = "WC", pnames = NULL, char.dat = NULL, mDat = "NN", pop = FALSE, c.d.ecs = NULL){
+
+
+  #########################################################
+  #sanity checks
+
   if(!do.nk & skip.FST){
     stop("Must specify either pairwise FST, nk, or both")
   }
@@ -475,6 +489,17 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
       warning("Data MUST be sorted by linkage group/chromosome, then position, then population! If columns named group, position, and pop exist, this will be done automatically.")
     }
   }
+
+  if(method == "WC" | method == "Wier"){
+    # if Ho not provided, need to calculate it and merge it into the dataset.
+    if(!"Ho" %in% colnames(x)){
+      if(is.null(c.d.ecs) | pop[1] == FALSE| is.null(char.dat)){
+        stop("If Ho is not provided as a column in x, the pop info and number of extra columns at the start of x must be provided.\n")
+      }
+    }
+  }
+
+
   ###############################################################################
   #do genepop if requested
   if(method == "Genepop"){
@@ -595,6 +620,20 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
   pops <- sort(unique(x[,"pop"]))
   out <- as.data.frame(matrix(NA, ncol = ecs+(length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
+  if(method == "WC" | method == "Wier"){
+    # if Ho not provided, need to calculate it and merge it into the dataset.
+    if(!"Ho" %in% colnames(x)){
+      ho <- calc_Ho(char.dat, ecs = c.d.ecs, mDat = mDat, pop = pop)
+      ho <- reshape2::melt(ho, id.vars = colnames(x)[1:ecs])
+      colnames(ho)[(ecs + 1):ncol(ho)] <- c("pop", "Ho")
+      x <- merge(x, ho, by.x = c(colnames(x)[1:ecs], "pop"), by.y = colnames(ho)[-ncol(ho)], sort = F)
+    }
+  }
+  if(method == "Hohenlohe"){
+    ac$pi <- calc_pi(ac) # add a pi column.
+  }
+
+
   #print(out)
   #initialize pop comparison columns.
   comps <- c()
@@ -624,10 +663,6 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
       jdat <- x[x$pop == pops[j],] #get data for second pop
       if(!skip.FST){
         if(method == "WC" | method == "Wier"){
-
-          if(!"Ho" %in% colnames(x)){
-            stop("Provide observed heterozygotsities in column named Ho for WC or Wier.")
-          }
 
           #allele frequencies in both i and jdat.
           ps1 <- idat$ni1/idat$n_total
@@ -669,9 +704,6 @@ calc_pairwise_Fst <- function(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE, me
         }
 
         else if(method == "Hohenlohe"){
-          if(!"pi" %in% colnames(x)){
-            stop("Please provide observed pi values in column named pi for Hohenlohe.")
-          }
 
           #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
           #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
@@ -754,7 +786,7 @@ calc_pairwise_nk <- function(x, ecs){
 #' @param x Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.
 #' @param ecs Number of extra metadata columns at the start of x.
 #' @param m.dat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
-#' @param pop List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If null, assumes one population.
+#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
 #' @return Data frame containing metadata, and Ho for each population in named columns.
 #'
 #' @examples
@@ -763,28 +795,27 @@ calc_pairwise_nk <- function(x, ecs){
 #'
 #' #seperate pops
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' calc_Ho(stickSNPs, 3, pop = l)
+#' calc_Ho(stickSNPs, 3, pop = pops)
 #'
-calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
+calc_Ho <- function(x, ecs, mDat = "NN", pop = NULL){
 
   #set possible heterozygotes
-  if(nchar(x[1,(ecs + 1)]) == 4 & nchar(m.dat) == 4){
-    hl <- c(m.dat, "0101", "0202", "0303", "0404")
+  if(nchar(x[1,(ecs + 1)]) == 4 & nchar(mDat) == 4){
+    hl <- c(mDat, "0101", "0202", "0303", "0404")
   }
-  else if (nchar(x[1,(ecs + 1)]) == 2 & nchar(m.dat) == 2){
-    hl <- c(m.dat, "AA", "TT", "CC", "GG")
+  else if (nchar(x[1,(ecs + 1)]) == 2 & nchar(mDat) == 2){
+    hl <- c(mDat, "AA", "TT", "CC", "GG")
   }
   else{
     stop("Data and missing signifier must be in either one (NN) or two character (0000) per allele format.")
   }
 
   #initalize output
-  if(!is.list(pop)){
-    pop = list("ho", ncol(x) - (ecs + 1) + 1)
+  if(!is.table(pop)){
+    pop <- table(rep("ho", ncol(x) - (ecs + 1) + 1))
   }
-  pns <- pop[[1]]
-  psz <- pop[[2]]
+  pns <- names(pop)
+  psz <- as.numeric(pop)
   out <- matrix(NA, nrow(x), length(pns))
   out <- cbind(x[,1:((ecs + 1) - 1)], out)
   colnames(out) <- c(colnames(x)[1:((ecs + 1) - 1)], pns) #set output column names
@@ -799,7 +830,7 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
     het.c <- rowSums(ifelse(wdat == hl[1] | wdat == hl[2]
                             | wdat == hl[3] | wdat == hl[4]
                             | wdat == hl[5], 0, 1))
-    ho <- het.c/rowSums(ifelse(wdat == m.dat, 0, 1))
+    ho <- het.c/rowSums(ifelse(wdat == mDat, 0, 1))
     out[,(ecs + 1) + j - 1] <- ho
     c.col <- c.col + psz[j]
   }
@@ -818,7 +849,8 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 #'Description of x:
 #'    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop, and sorted first by pop! For example, sorted by pop, group, position then position. Runs with output from format_snps output option 1.
 #'
-#' @param x Input data, in the format given by format_snps output option 1. Must contain a column with pop info named "pop".
+#' @param x Input data, in the format given by format_snps output option "ac". Must contain a column with pop info named "pop".
+#' @param ecs Numeric, number of metadata columns at the start of x to maintain for output.
 #'
 #' @return Data frame with no metadata but sorted identically to input noting if each (row) locus is private in each (column) population, coded as 1 if private, 0 if not.
 #'
@@ -826,13 +858,15 @@ calc_Ho <- function(x, ecs, m.dat = "NN", pop = NULL){
 #' #add a private allele for demonstration purposes.
 #' pall <- data.frame(snp = rep(10000, 6), position = rep(1, 6), group = rep("Dup", 6), pop = c("ASP", "CLF", "PAL", "OPL", "SMR", "UPD"), n_total = rep(100, 6), n_alleles = rep (2, 6), ni1 = c(rep(0, 5), 20), ni2 = c(rep(100, 5), 80))
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' ac <- format_snps(stickSNPs, 3, pop = l)
+#' ac <- format_snps(stickSNPs, 3, pop = pops)
 #' ac <- rbind(ac, pall)
 #' ac <- dplyr::arrange(ac, pop, position, group)
 #' check_private(ac)
 #'
-check_private <- function(x){
+check_private <- function(x, ecs){
+  meta <- x[,1:ecs]
+  x <- x[,-c(1:ecs)]
+
   l <- unique(x$pop) #gets unique pops, requires column named pop
 
   if(all(c("group", "position", "pop") %in% colnames(x))){
@@ -864,8 +898,8 @@ check_private <- function(x){
   pa <- a1m + a2m
 
   #return data
-  colnames(pa) <- paste0("pa_", l)
-  return(as.data.frame(pa))
+  colnames(pa) <- paste0(l)
+  return(cbind(meta, as.data.frame(pa)))
 }
 
 #Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
@@ -888,7 +922,7 @@ check_private <- function(x){
 #' @param ecs Number of extra metadata columns at the start of x.
 #' @param prox_table If TRUE, a proximity table is produced.
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
-#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.
+#' @param mDat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
 #' @param sr boolean, default FALSE. Should progress reports be surpessed?
 #' @param input Character, default "SNP". Input data type. Options: "SNP", as given by format_snps output options "numeric" or "character". "ms": filepath to ms formatted data. "haplotype": imported ms data, where each column is a fully phased gene copy/chromosome.
 #' @param chr.length Numeric, default NULL. Length of chromosomes, for ms inputs.
@@ -905,8 +939,11 @@ check_private <- function(x){
 #' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
 #'
 LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
-                             mDat = "N", sr = FALSE, input = "SNP", chr.length = NULL,
+                             mDat = "NN", sr = FALSE, input = "SNP", chr.length = NULL,
                              levels = FALSE, par = FALSE, ss = FALSE, level_report = 1, maf = FALSE){
+
+  # correct missing data format, since I later standardized.
+  mDat <- substr(mDat, 1, nchar(mDat)/2)
 
   #=====================sanity checks=============
   #sanity checks:
@@ -2042,7 +2079,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
 #' @param ecs Number of extra metadata columns at the start of x.
 #' @param prox_table If TRUE, a proximity table is produced.
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
-#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+#' @param mDat Character variable matching the coding for missing *genotypes* in x (typically "N" or "00").
 #' @param report Reports progress every report linkage groups/chromosomes.
 #' @param sr boolean, default TRUE. Should within group progress reports be surpressed?
 #'
@@ -2052,7 +2089,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
 #' #returns prox table and LD matrices.
 #' Full_LD_w_groups(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3)
 #'
-Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "N", report = 1, sr = TRUE, chr.length = NULL, input = "SNP", ss = FALSE){
+Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "NN", report = 1, sr = TRUE, chr.length = NULL, input = "SNP", ss = FALSE){
   return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr, chr.length, levels = "group", ss = ss, level_report = report, input = input))
 }
 
@@ -2077,7 +2114,7 @@ Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
 #' @param num_cores Number of processing cores to allocate.
 #' @param prox_table If TRUE, a proximity table is produced.
 #' @param matrix_out If TRUE, pairwise LD matrices are produced.
-#' @param mDat Character variable matching the coding for missing *alleles* in x (typically "N" or "00").
+#' @param mDat Character variable matching the coding for missing *genotypes* in x (typically "N" or "00").
 #' @param chr.length Numeric value, default NULL. If input is ms, what are the chromosome lengths used to produce the data? Only for scaling the positions of the segregating sites, not used in any calculations.
 #' @param input Character string, default SNP. What format is the input data in?
 #'
@@ -2087,7 +2124,7 @@ Full_LD_w_groups <- function(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
 #' #returns prox table and LD matrices.
 #' Full_LD_g_par(stickSNPs[stickSNPs$group == "groupI" | stickSNPs$group == "groupII",1:53], ecs = 3, 3)
 #'
-Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE, mDat = "N", chr.length = NULL, input = "SNP", ss = FALSE){
+Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE, mDat = "NN", chr.length = NULL, input = "SNP", ss = FALSE){
   return(LD_full_pairwise(x, ecs, prox_table, matrix_out, mDat, sr = FALSE, input, chr.length, levels = "group", par = num_cores, ss = ss, input = input))
 }
 
@@ -2138,7 +2175,7 @@ Full_LD_g_par <- function(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRU
 #' @examples
 #'
 snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, bootstrap = FALSE, graphs = FALSE, sigma = NULL, ws = NULL,
-                      pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05, hf_hets = 0.55,
+                      pop = NULL, nk = TRUE, input = "NN", mDat = "NN", maf = 0.05, hf_hets = 0.55,
                       bi_al = TRUE, non_poly = TRUE, min_ind = FALSE, min_loci = FALSE, pop_maf = FALSE,
                       filt_re = "partial", Fst_method = "genepop", LD_level = c("group", "pop"), LD_chr = "all",
                       LD_g_par = FALSE, tsd_level = c("group", "pop"),
@@ -2217,7 +2254,7 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   }
 
   if(input != "NN"){
-    x <- format_snps(x, ecs = ecs, output = 6, input_form = input, miss = mDat)
+    x <- format_snps(x, ecs = ecs, output = 6, input_form = input, mDat = mDat)
     if(nfill > 0){
       out$ch.form.x <- x[,-c(1:nfill)]
     }
