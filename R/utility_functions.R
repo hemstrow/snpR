@@ -122,7 +122,7 @@ tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
 #' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced.
 #' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.
 #' @param re_run FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?
-#' @param pop FALSE or list, default FALSE. A list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.
+#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
 #' @param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
 #' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
 #' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
@@ -137,8 +137,7 @@ tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
 #'
 #' #Strict maf filtering with pops.
 #' ##prep pop info
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
+#' l <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' ##filter
 #' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
 #'
@@ -182,15 +181,9 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     }
   }
 
-  if(is.list(pop)){
-    if(!is.numeric(pop[[2]])){
-      stop("pop[[2]] must be a numeric vector.")
-    }
-    if(sum(pop[[2]]) != (ncol(x) - ecs)){
-      stop("sum of pop[[2]] must be equal to number of individuals in x (check ecs as well).")
-    }
-    if(length(pop[[1]]) != length(pop[[2]])){
-      stop("Number of provided pop names and pop sizes not equal.")
+  if(is.table(pop)){
+    if(sum(pop) != (ncol(x) - ecs)){
+      stop("sum of pop must be equal to number of individuals in x (check ecs as well).")
     }
   }
 
@@ -307,7 +300,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
     if(maf){
       #if not filtering with multiple pops
-      if(!is.list(pop)){
+      if(!is.table(pop)){
         cat("Filtering low minor allele frequencies, no pops...\n")
         mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
         mafs <- mafs < maf #less than required, set to true and reject.
@@ -321,8 +314,8 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         #if matrices are requested as output, prepare somewhere to save these.
         if(out.tab == TRUE){
           if(!("pop.emats" %in% names(in.tab))){
-            pop.amat.save <- vector(mode = "list", length = length(pop[[1]]))
-            names(pop.amat.save) <- pop[[1]]
+            pop.amat.save <- vector(mode = "list", length = length(pop))
+            names(pop.amat.save) <- names(pop)
           }
 
           #if we are given input tables, copy these over.
@@ -332,20 +325,20 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         }
 
         #do the filtering
-        for(i in 1:length(pop[[1]])){
+        for(i in 1:length(pop)){
 
           #generate allele count tables if not provided.
           if(!("pop.emats" %in% names(in.tab))){
 
-            cat(pop[[1]][i], "\n")
+            cat(names(pop)[i], "\n")
             #re-establish matrices with each pop
 
             #set the input data
             if(i == 1){
-              popx <- x[,1:pop[[2]][i]]
+              popx <- x[,1:pop[i]]
             }
             else{
-              popx <- x[,(sum(pop[[2]][1:(i-1)]) + 1):(sum(pop[[2]][1:i]))]
+              popx <- x[,(sum(pop[1:(i-1)]) + 1):(sum(pop[1:i]))]
             }
 
             #get a single vector of genotypes
@@ -504,17 +497,17 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
           rejects <- out$rejects
-          if(is.list(pop)){ #remake pop if necissary after accounting for the removed samples
+          if(is.table(pop)){ #remake pop if necissary after accounting for the removed samples
             s <- 1
             pop_temp <- pop
-            for(i in 1:length(pop[[1]])){
-              pop_temp[[2]][i] <- pop[[2]][i] - sum(rejects >= s & rejects < s + pop[[2]][i])
-              s <- s + pop[[2]][i]
+            for(i in 1:length(pop)){
+              pop_temp[i] <- pop[i] - sum(rejects >= s & rejects < s + pop[i])
+              s <- s + pop[i]
             }
             pop <- pop_temp
-            empties <- which(pop[[2]] == 0)
+            empties <- which(pop == 0)
             if(length(empties) > 0){
-              pop <- list(pop[[1]][-empties], pop[[2]][-empties])
+              pop <- pop[-empties]
             }
           }
           out <- filt_by_loci() #re-filter loci to make sure that we don't have any surprise non-polys ect.
@@ -576,8 +569,9 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @param ecs Integer. Number of extra metadata columns at the start of x.
 #' @param output Character. Which of the output format should be used?
 #' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
-#' @param miss Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").
-#' @param pop List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5 or 2 if outfile requested.
+#' @param mDat Character, default "NN". The coding for missing \emph{genotypes} in x (typically "NN" or "0000").
+#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
+#' @param FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
 #' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
@@ -591,8 +585,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' @examples
 #' #allele count with pops:
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, "ac", pop = l)
+#' format_snps(stickSNPs, 3, "ac", pop = pops)
 #'
 #' #genepop:
 #' format_snps(stickSNPs, 3, "genepop")
@@ -611,8 +604,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 #' #hapmap for migrate-n:
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, "hapmap", pop = l)
+#' format_snps(stickSNPs, 3, "hapmap", pop = pops)
 #'
 #' #character:
 #' num <- format_snps(stickSNPs, 3, 4)
@@ -626,8 +618,11 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'
 #' #RAFM, taking only 100 random snps.
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
+#' format_snps(stickSNPs, 3, "rafm", pop = pops, n_samp = 100)
+#'
+#' #dadi
+#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+#' format_snps(cbind(ref = "ATA", anc = "ACT", stickSNPs), 5, "dadi", pop = pops)
 #'
 #' #PLINK! format
 #' format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
@@ -639,7 +634,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
 format_snps <- function(x, ecs, output = 1, input_form = "NN",
-                        miss = "N", pop = 1, n_samp = NA,
+                        mDat = "NN", pop = 1, n_samp = NA,
                         interp_miss = T, lnames = NULL, outfile = FALSE,
                         ped = NULL,
                         in.tab = FALSE, out.tab = FALSE){
@@ -647,6 +642,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #redefine x as "data", since this was originally written a while ago and already contains a variable called "x"
   data <- x
   rm(x)
+  #redefine mDat as miss, since this was written prior to standardization
+  miss <- substr(mDat, 1, nchar(mDat)/2)
 
 
   #possible outputs, recode to numbers so that I don't have to rewrite the whole damn thing. Still allowing numbers for reverse compatiblity.
@@ -673,10 +670,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(input_form != "0000" & input_form != "NN"){
       stop("Only 0000 and NN formats accepted.")
     }
-    if(is.list(pop)){
+    if(is.table(pop)){
       cat("Pops:")
-      for (i in 1:length(unlist(pop[1]))){
-        cat("\n\t", unlist(pop[1])[i], ", size: ", unlist(pop[2])[i])
+      for (i in 1:length(pop)){
+        cat("\n\t", names(pop)[i], ", size: ", as.numeric(pop[i]))
       }
       cat("\n")
     }
@@ -724,10 +721,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     if(input_form != "NN" & input_form != "0000"){
       stop("Only 0000 and NN formats accepted.")
     }
-    if(is.list(pop)){
+    if(is.table(pop)){
       cat("Pops:")
-      for (i in 1:length(unlist(pop[1]))){
-        cat("\n\t", unlist(pop[1])[i], ", size: ", unlist(pop[2])[i])
+      for (i in 1:length(pop)){
+        cat("\n\t", names(pop)[i], ", size: ", as.numeric(pop[i]))
       }
       cat("\n")
     }
@@ -963,7 +960,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
     #if requested, prepare output allele/genotype matrices.
     if(out.tab == TRUE){
-      if(!is.list(pop)){
+      if(!is.table(pop)){
         save.tab <- list(emats = vector(mode = "list", length = 3))
         names(save.tab$emats) <- c("amat", "gmat", "tmat")
         if("pop.emats" %in% names(in.tab)){
@@ -971,8 +968,8 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         }
       }
       else{
-        save.tab <- list(pop.emats = vector(mode = "list", length = length(pop[[1]])))
-        names(save.tab$pop.emats) <- pop[[1]]
+        save.tab <- list(pop.emats = vector(mode = "list", length = length(pop)))
+        names(save.tab$pop.emats) <- names(pop)
         if("emats" %in% names(in.tab)){
           save.tab$emats <- in.tab$emats
         }
@@ -980,7 +977,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
 
     #no pop info
-    if (is.list(pop) == FALSE){
+    if (is.table(pop) == FALSE){
       if(output == 5){stop("Cannot convert to migrate-n format with only one pop.\n")}
 
       #prepare a genotype table
@@ -1117,9 +1114,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     #if populations are specified...
     else{
-      pop_count <- length(unlist(pop[1]))
-      pop_sizes <- unlist(pop[2])
-      if(sum(unlist(pop[2])) != (ncol(data) - ecs)){#checks to make sure that the pop sizes add up to agree
+      pop_count <- length(pop)
+      pop_sizes <- pop
+      if(sum(pop) != (ncol(data) - ecs)){#checks to make sure that the pop sizes add up to agree
         #with data
         cat("Supplied population numbers do not equal the number of supplied loci columns. Exiting.")
         stop()
@@ -1129,13 +1126,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       if(output == 1 | output == 5){
         j <- 2
         w_df <- data[,1:ecs]
-        w_df$pop <- unlist(pop[1])[1] #create pop column and set first pop name
+        w_df$pop <- names(pop)[1] #create pop column and set first pop name
         wa_df <- w_df #set first temp w_df
         for (j in j:pop_count){ #loop through each pop name
           wb_df <- wa_df #create temp df copy of wa_df
-          #print(j)
-          #print(unlist(pop[1])[j])
-          wb_df$pop <- unlist(pop[1])[j]#change pop to current name
+          wb_df$pop <- names(pop)[j]#change pop to current name
           w_df <- rbind(w_df, wb_df) #bind this copy to w_df
         }
         remove(wa_df, wb_df) #remove temp df
@@ -1158,7 +1153,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       current <- ecs + 1
       cat("Generating or grabbing population allele count matrices, current pop:\n")
       for(i in 1:pop_count){
-        cat("\t", pop[[1]][i], "\n")
+        cat("\t", names(pop)[i], "\n")
 
         #get the data for this population
 
@@ -1166,7 +1161,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         x <- data[,current:ne]
         ##if input tables for populations were provided,pull the info out
         if("pop.emats" %in% names(in.tab)){
-          which_pop <- which(names(in.tab$pop.emats) == pop[[1]][i])
+          which_pop <- which(names(in.tab$pop.emats) == names(pop)[i])
           temp_tab <- in.tab$pop.emats[[which_pop]]
           pop_as[[i]] <- temp_tab$amat
         }
@@ -1182,11 +1177,11 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
         #save table if requested
         if(out.tab == TRUE){
-          which_pop <- which(names(save.tab$pop.emats) == pop[[1]][i])
+          which_pop <- which(names(save.tab$pop.emats) == names(pop)[i])
           save.tab$pop.emats[[which_pop]]$amat <- pop_as[[i]]
           save.tab$pop.emats[[which_pop]]$tmat <- temp_tab$gs
           save.tab$pop.emats[[which_pop]]$gmat <- temp_tab$wm
-          names(save.tab$pop.emats)[i] <- pop[[1]][i]
+          names(save.tab$pop.emats)[i] <- names(pop)[i]
         }
 
 
@@ -1316,16 +1311,16 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         }
 
         #also initialize output
-        w_df <- matrix(NA, ncol = (ecs + 2 + length(pop[[1]])*2), nrow = nrow(data))
+        w_df <- matrix(NA, ncol = (ecs + 2 + length(pop)*2), nrow = nrow(data))
         w_df[,1] <- as.character(data$ref)
         w_df[,2] <- as.character(data$anc)
         w_df[,3] <- max.i
-        w_df[,(4+length(pop[[1]]))] <- min.i
+        w_df[,(4+length(pop))] <- min.i
         meta <- data[,1:ecs]
         meta <- meta[,!(colnames(meta) %in% c("ref", "anc"))]
         w_df <- as.data.frame(w_df, stringsAsFactors = F)
         w_df[,(ncol(w_df) - ecs + 3):ncol(w_df)] <- meta
-        colnames(w_df) <- c("ref", "anc", "Allele1", pop[[1]], "Allele2", pop[[1]], colnames(meta))
+        colnames(w_df) <- c("ref", "anc", "Allele1", names(pop), "Allele2", names(pop), colnames(meta))
       }
 
 
@@ -1335,20 +1330,20 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         #have to do this slightly differently if there are any non-polymorphic bases
         if(any(fixed) > 0){
           #do the fixed ones first
-          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_total <- rowSums(pop_as[[i]][fixed,])
-          w_df[w_df$pop == pop[[1]][i] & fixed,]$n_alleles <- 1 #in this case it is fixed in all pops
-          w_df[w_df$pop == pop[[1]][i] & fixed,]$ni1 <- rowSums(pop_as[[i]][fixed,])
-          w_df[w_df$pop == pop[[1]][i] & fixed,]$ni2 <- 0
+          w_df[w_df$pop == names(pop)[i] & fixed,]$n_total <- rowSums(pop_as[[i]][fixed,])
+          w_df[w_df$pop == names(pop)[i] & fixed,]$n_alleles <- 1 #in this case it is fixed in all pops
+          w_df[w_df$pop == names(pop)[i] & fixed,]$ni1 <- rowSums(pop_as[[i]][fixed,])
+          w_df[w_df$pop == names(pop)[i] & fixed,]$ni2 <- 0
 
           #do the others
           if(any(!fixed)){
             av <- as.vector(t(pop_as[[i]][!fixed,]))
             av <- av[palsv]
             av <- matrix(av, nrow(data[!fixed,]), 2, byrow = T)
-            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_total <- rowSums(av)
-            w_df[w_df$pop == pop[[1]][i] & !fixed,]$n_alleles <- 2 #not fixed in at least one pop!
-            w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni1 <- av[,1]
-            w_df[w_df$pop == pop[[1]][i] & !fixed,]$ni2 <- av[,2]
+            w_df[w_df$pop == names(pop)[i] & !fixed,]$n_total <- rowSums(av)
+            w_df[w_df$pop == names(pop)[i] & !fixed,]$n_alleles <- 2 #not fixed in at least one pop!
+            w_df[w_df$pop == names(pop)[i] & !fixed,]$ni1 <- av[,1]
+            w_df[w_df$pop == names(pop)[i] & !fixed,]$ni2 <- av[,2]
           }
         }
 
@@ -1358,10 +1353,10 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
             av <- as.vector(t(pop_as[[i]]))
             av <- av[palsv]
             av <- matrix(av, nrow(data), 2, byrow = T)
-            w_df[w_df$pop == pop[[1]][i],]$n_total <- rowSums(av)
-            w_df[w_df$pop == pop[[1]][i],]$n_alleles <- 2 #not fixed in at least one pop!
-            w_df[w_df$pop == pop[[1]][i],]$ni1 <- av[,1]
-            w_df[w_df$pop == pop[[1]][i],]$ni2 <- av[,2]
+            w_df[w_df$pop == names(pop)[i],]$n_total <- rowSums(av)
+            w_df[w_df$pop == names(pop)[i],]$n_alleles <- 2 #not fixed in at least one pop!
+            w_df[w_df$pop == names(pop)[i],]$ni1 <- av[,1]
+            w_df[w_df$pop == names(pop)[i],]$ni2 <- av[,2]
           }
 
           #dadi
@@ -1384,7 +1379,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
             #add data.
             w_df[,3 + i] <- t.counts[,1]
-            w_df[,4 + length(pop[[1]]) + i] <- t.counts[,2]
+            w_df[,4 + length(pop) + i] <- t.counts[,2]
           }
         }
       }
@@ -1502,7 +1497,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       }
       else{ #add a bunch of filler columns (4 if pop info is provided, 5 if it isn't) for faststructure and change missing data to -9
         outm[outm == 0] <- -9
-        if(length(pop) > 1 & is.list(pop) == TRUE){
+        if(length(pop) > 1 & is.table(pop) == TRUE){
           out <- cbind(ind = snames,
                        matrix("filler", nrow(outm), 4),
                        as.data.frame(outm, stringsAsFactors = F))
@@ -1517,15 +1512,15 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       }
 
       #add pop info if possible
-      if(is.list(pop)){
+      if(is.table(pop)){
         #add pop info if provided
-        pop[[2]] <- pop[[2]]*2
-        pl <- numeric(sum(pop[[2]]))
-        pl[1:pop[[2]][1]] <- 1
-        tracker <- pop[[2]][1] + 1
-        for(i in 2:length(pop[[2]])){
-          pl[tracker:(sum(pop[[2]][1:i]))] <- i
-          tracker <- sum(pop[[2]][1:i]) + 1
+        pop <- pop*2
+        pl <- numeric(sum(pop))
+        pl[1:pop[1]] <- 1
+        tracker <- pop[1] + 1
+        for(i in 2:length(pop)){
+          pl[tracker:(sum(pop[1:i]))] <- i
+          tracker <- sum(pop[1:i]) + 1
         }
         out <- cbind(out[,1], pop = pl, out[,2:ncol(out)])
         colnames(out)[1] <- "ind"
@@ -1547,13 +1542,13 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       colnames(outm) <- paste0("locus", sort(rep(1:nrow(data),2)), rep(c(".1", ".2"), ncol(outm)/2))
 
       #add subpop numbers, if given
-      if(is.list(pop)){
-        pl <- numeric(sum(pop[[2]]))
-        pl[1:pop[[2]][1]] <- 1
-        tracker <- pop[[2]][1] + 1
-        for(i in 2:length(pop[[2]])){
-          pl[tracker:(sum(pop[[2]][1:i]))] <- i
-          tracker <- sum(pop[[2]][1:i]) + 1
+      if(is.table(pop)){
+        pl <- numeric(sum(pop))
+        pl[1:pop[1]] <- 1
+        tracker <- pop[1] + 1
+        for(i in 2:length(pop)){
+          pl[tracker:(sum(pop[1:i]))] <- i
+          tracker <- sum(pop[1:i]) + 1
         }
         out <- cbind(subpop = pl, as.data.frame(outm, stringsAsFactors = F))
       }
@@ -1872,16 +1867,16 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       cat(llist, "\nPOP\n", file = outfile, append = T)
 
       #write the tables, splitting by pop if requested:
-      if(is.list(pop)){
+      if(is.table(pop)){
         cat("\tWriting genepop file seperated by populations...\t")
         #need to sort by pops. Fist loop does this:
         j <- 1
         rdata$pop <- NA
-        for (i in 1:(length(pop[[1]]) - 1)){
-          rdata[j:(j+pop[[2]][i] - 1),]$pop <- pop[[1]][i]
-          j <- j + pop[[2]][i]
+        for (i in 1:(length(pop) - 1)){
+          rdata[j:(j+pop[i] - 1),]$pop <- names(pop)[i]
+          j <- j + pop[i]
         }
-        rdata[j:nrow(rdata),]$pop <- pop[[1]][length(pop[[1]])]
+        rdata[j:nrow(rdata),]$pop <- names(pop)[length(pop)]
 
         #sort and remove pop column
         rdata$rnames <- rownames(rdata)
@@ -1891,16 +1886,15 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
         #second loop prints results.
         j <- 1
-        pop[[2]] <- pop[[2]][order(pop[[1]])]
-        pop[[1]] <- sort(pop[[1]])
-        for (i in 1:(length(pop[[1]]) - 1)){
-          cat(pop[[1]][i], "\t")
-          data.table::fwrite(rdata[j:(j+pop[[2]][i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
+        pop <- pop[order(names(pop))]
+        for (i in 1:(length(pop) - 1)){
+          cat(names(pop)[i], "\t")
+          data.table::fwrite(rdata[j:(j+pop[i] - 1),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
           cat("POP\n", file = outfile, append = T)
-          j <- j + pop[[2]][i]
+          j <- j + pop[i]
         }
         data.table::fwrite(rdata[j:nrow(rdata),], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
-        cat(pop[[1]][length(pop[[1]])], "\t Done.\n")
+        cat(names(pop)[length(pop)], "\t Done.\n")
       }
       else{
         data.table::fwrite(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
@@ -1908,19 +1902,19 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
     else if(output == 1){
       #write the raw output
-      data.table:fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
+      data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
       #write a bayescan object if pop list was provided.
-      if(is.list(pop)){
+      if(is.table(pop)){
         outfile <- paste0(outfile, ".bayes")
         #write the header
-        cat("[loci]=", nrow(data), "\n\n[populations]=", length(pop[[1]]), "\n\n", file = outfile, sep = "")
+        cat("[loci]=", nrow(data), "\n\n[populations]=", length(pop), "\n\n", file = outfile, sep = "")
 
         #write the data for each population.
-        for(i in 1:length(pop[[1]])){
+        for(i in 1:length(pop)){
           cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
-          wdat <- cbind(snp = 1:nrow(rdata[rdata$pop == pop[[1]][i],]),
-                        rdata[rdata$pop == pop[[1]][i], which(colnames(rdata) %in% c("n_total", "n_alleles"))],
-                        alleles = paste0(rdata[rdata$pop == pop[[1]][i],]$ni1, " ", rdata[rdata$pop == pop[[1]][i],]$ni2, " "))
+          wdat <- cbind(snp = 1:nrow(rdata[rdata$pop == names(pop)[i],]),
+                        rdata[rdata$pop == names(pop)[i], which(colnames(rdata) %in% c("n_total", "n_alleles"))],
+                        alleles = paste0(rdata[rdata$pop ==names(pop)[i],]$ni1, " ", rdata[rdata$pop == names(pop)[i],]$ni2, " "))
           data.table::fwrite(wdat,
                       outfile, col.names = F, row.names = F, quote = F, sep = "\t",
                       append = T) #write the data for this population.
