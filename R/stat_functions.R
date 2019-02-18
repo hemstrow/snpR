@@ -864,9 +864,6 @@ calc_Ho <- function(x, ecs, mDat = "NN", pop = NULL){
 #' check_private(ac)
 #'
 check_private <- function(x, ecs){
-  meta <- x[,1:ecs]
-  x <- x[,-c(1:ecs)]
-
   l <- unique(x$pop) #gets unique pops, requires column named pop
 
   if(all(c("group", "position", "pop") %in% colnames(x))){
@@ -899,7 +896,7 @@ check_private <- function(x, ecs){
 
   #return data
   colnames(pa) <- paste0(l)
-  return(cbind(meta, as.data.frame(pa)))
+  return(cbind(x[,1:ecs], as.data.frame(pa)))
 }
 
 #Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
