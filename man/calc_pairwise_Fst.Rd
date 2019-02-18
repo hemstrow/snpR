@@ -5,10 +5,11 @@
 \title{Pairwise FST from SNP data.}
 \usage{
 calc_pairwise_Fst(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE,
-  method = "WC", pnames = NULL)
+  method = "WC", pnames = NULL, char.dat = NULL, mDat = "NN",
+  pop = FALSE, c.d.ecs = NULL)
 }
 \arguments{
-\item{x}{Input data frame, in allele count format as given by format_snps option 1 with an additional column containing pi or Ho estimates.}
+\item{x}{Input data frame, in allele count format as given by format_snps option "ac", with an additional column containing pi or Ho estimates.}
 
 \item{ecs}{Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.}
 
@@ -19,6 +20,14 @@ calc_pairwise_Fst(x, ecs = NULL, do.nk = FALSE, skip.FST = FALSE,
 \item{method}{Which FST estimator should be used?}
 
 \item{pnames}{Character vector, default NULL. Vector of population names to use for method "Genepop"}
+
+\item{char.dat}{Data.frame, defualt NULL. Input data in character format, as given by format_snps option "character". Only needed if no Ho column provided to Wier or WC methods.}
+
+\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table. Only needed if WC or Wier used but no "Ho" column provided.}
+
+\item{c.d.ecs}{Numeric, default NULL. Number of extra metadata columns at the start of char.dat. Only needed if WC or Wier method chosen but no Ho column provided.}
+
+\item{m.dat}{Character, default "NN". Missing *genotype* identifier in char.dat, used if no Ho column provided to Wier or WC methods.}
 }
 \value{
 If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
@@ -44,12 +53,15 @@ Method Options:
 \examples{
 #Wier and Cockerham
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
 ac <- format_snps(stickSNPs, 3, pop = l)
 Ho <- calc_Ho(stickSNPs, 3, pop = l)
 m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
 ac$Ho <- m_Ho$value
 calc_pairwise_Fst(ac, 3, do.nk = T)
+
+#Wier and Cockerham without binding the Ho column manually:
+calc_pairwise_Fst(ac, 3, do.nk = T, char.dat = stickSNPs, pop = pops, c.d.ecs = 3)
+
 
 #genepop
 ##prepare pop list for both formatting and FST.

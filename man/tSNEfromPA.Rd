@@ -4,24 +4,24 @@
 \alias{tSNEfromPA}
 \title{tSNE from genetic data.}
 \usage{
-tSNEfromPA(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
-  perplex = FALSE, gravity = 0, iter = 5000, c.dup = FALSE,
-  mc = FALSE, counts = FALSE, ...)
+tSNEfromPA(x, ecs, plot.vars = "pop", dims = 2, initial_dims = 50,
+  perplexity = FALSE, theta = 0, iter = 5000, c.dup = FALSE,
+  mc = FALSE, counts = FALSE, do.plot = TRUE, ...)
 }
 \arguments{
 \item{x}{Input presence/absence data, as described in details.}
 
 \item{ecs}{Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
 
-\item{do.plot}{FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.}
+\item{plot.vars}{FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.}
 
 \item{dims}{Integer, output dimensionality, default 2.}
 
 \item{initial_dims}{Integer, default 50. The number of dimensions retained in the initial PCA step.}
 
-\item{perplex}{Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
+\item{perplexity}{Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 
-\item{gravity}{Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.}
+\item{theta}{Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.}
 
 \item{iter}{Integer, default 5000. Number of tSNE iterations to perform.}
 
@@ -30,6 +30,8 @@ tSNEfromPA(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
 \item{mc}{Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?}
 
 \item{counts}{Numeric vector, default FALSE, containing the number of loci sequenced per individual.}
+
+\item{do.plot}{boolean, default TRUE. Should a plot be produced?}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.}
 }

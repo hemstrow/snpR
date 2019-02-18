@@ -6,7 +6,7 @@
 \usage{
 snpR.stats(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE,
   bootstrap = FALSE, graphs = FALSE, sigma = NULL, ws = NULL,
-  pop = NULL, nk = TRUE, input = "NN", mDat = "N", maf = 0.05,
+  pop = NULL, nk = TRUE, input = "NN", mDat = "NN", maf = 0.05,
   hf_hets = 0.55, bi_al = TRUE, non_poly = TRUE, min_ind = FALSE,
   min_loci = FALSE, pop_maf = FALSE, filt_re = "partial",
   Fst_method = "genepop", LD_level = c("group", "pop"),
