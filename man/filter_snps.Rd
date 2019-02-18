@@ -24,7 +24,7 @@ filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 
 \item{re_run}{FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?}
 
-\item{pop}{FALSE or list, default FALSE. A list with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list.}
+\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
 \item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be removed?}
 
@@ -68,8 +68,7 @@ filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75)
 
 #Strict maf filtering with pops.
 ##prep pop info
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
+l <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 ##filter
 filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
 

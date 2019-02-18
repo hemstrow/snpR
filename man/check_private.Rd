@@ -4,10 +4,12 @@
 \alias{check_private}
 \title{Private Alleles from SNP data.}
 \usage{
-check_private(x)
+check_private(x, ecs)
 }
 \arguments{
-\item{x}{Input data, in the format given by format_snps output option 1. Must contain a column with pop info named "pop".}
+\item{x}{Input data, in the format given by format_snps output option "ac". Must contain a column with pop info named "pop".}
+
+\item{ecs}{Numeric, number of metadata columns at the start of x to maintain for output.}
 }
 \value{
 Data frame with no metadata but sorted identically to input noting if each (row) locus is private in each (column) population, coded as 1 if private, 0 if not.
@@ -23,8 +25,7 @@ Description of x:
 #add a private allele for demonstration purposes.
 pall <- data.frame(snp = rep(10000, 6), position = rep(1, 6), group = rep("Dup", 6), pop = c("ASP", "CLF", "PAL", "OPL", "SMR", "UPD"), n_total = rep(100, 6), n_alleles = rep (2, 6), ni1 = c(rep(0, 5), 20), ni2 = c(rep(100, 5), 80))
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-ac <- format_snps(stickSNPs, 3, pop = l)
+ac <- format_snps(stickSNPs, 3, pop = pops)
 ac <- rbind(ac, pall)
 ac <- dplyr::arrange(ac, pop, position, group)
 check_private(ac)

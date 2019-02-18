@@ -4,10 +4,12 @@
 \alias{calc_pi}
 \title{Calculate PI from SNP data.}
 \usage{
-calc_pi(x)
+calc_pi(x, ecs)
 }
 \arguments{
-\item{x}{Input SNP data, in allele count format as given by format_snps output option}
+\item{x}{Input SNP data, in allele count format as given by format_snps output option.}
+
+\item{ecs}{Numeric, number of metadata columns at the start of x to keep for output.}
 }
 \value{
 A vector of PI values, in the same order as the input SNPs.

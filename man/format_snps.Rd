@@ -4,7 +4,7 @@
 \alias{format_snps}
 \title{Re-format genomic data.}
 \usage{
-format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
+format_snps(x, ecs, output = 1, input_form = "NN", mDat = "NN",
   pop = 1, n_samp = NA, interp_miss = T, lnames = NULL,
   outfile = FALSE, ped = NULL, in.tab = FALSE, out.tab = FALSE)
 }
@@ -17,9 +17,9 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
 
 \item{input_form}{Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?}
 
-\item{miss}{Character, default "N". The coding for missing \emph{alleles} in x (typically "N" or "00").}
+\item{mDat}{Character, default "NN". The coding for missing \emph{genotypes} in x (typically "NN" or "0000").}
 
-\item{pop}{List or integer 1, default 1. Population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If 1, assumes one population. For output options 1 and 5 or 2 if outfile requested.}
+\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
 \item{n_samp}{Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
 
@@ -34,6 +34,8 @@ format_snps(x, ecs, output = 1, input_form = "NN", miss = "N",
 \item{in.tab}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 
 \item{out.tab}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
+
+\item{FALSE}{or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 }
 \value{
 A data.frame in the specified format.
@@ -74,8 +76,7 @@ Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, a
 \examples{
 #allele count with pops:
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-format_snps(stickSNPs, 3, "ac", pop = l)
+format_snps(stickSNPs, 3, "ac", pop = pops)
 
 #genepop:
 format_snps(stickSNPs, 3, "genepop")
@@ -94,8 +95,7 @@ format_snps(stickSNPs, 3, "numeric")
 
 #hapmap for migrate-n:
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-format_snps(stickSNPs, 3, "hapmap", pop = l)
+format_snps(stickSNPs, 3, "hapmap", pop = pops)
 
 #character:
 num <- format_snps(stickSNPs, 3, 4)
@@ -109,8 +109,11 @@ format_snps(sthMSATS[seq(1, 13, by = 4),], 3, "pa", input_form = "msat_3", miss 
 
 #RAFM, taking only 100 random snps.
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-format_snps(stickSNPs, 3, "rafm", pop = l, n_samp = 100)
+format_snps(stickSNPs, 3, "rafm", pop = pops, n_samp = 100)
+
+#dadi
+pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
+format_snps(cbind(ref = "ATA", anc = "ACT", stickSNPs), 5, "dadi", pop = pops)
 
 #PLINK! format
 format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
