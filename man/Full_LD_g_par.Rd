@@ -5,7 +5,7 @@
 \title{Pairwise LD from SNP data, split by group.}
 \usage{
 Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
-  mDat = "N", chr.length = NULL, input = "SNP", ss = FALSE)
+  mDat = "NN", chr.length = NULL, input = "SNP", ss = FALSE)
 }
 \arguments{
 \item{x}{Input data, in either numeric or character formats, as given by format_snps output options 2 or 6.}
@@ -18,7 +18,7 @@ Full_LD_g_par(x, ecs, num_cores, prox_table = TRUE, matrix_out = TRUE,
 
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
-\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
+\item{mDat}{Character variable matching the coding for missing *genotypes* in x (typically "N" or "00").}
 
 \item{chr.length}{Numeric value, default NULL. If input is ms, what are the chromosome lengths used to produce the data? Only for scaling the positions of the segregating sites, not used in any calculations.}
 

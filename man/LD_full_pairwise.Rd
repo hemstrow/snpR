@@ -5,7 +5,7 @@
 \title{Pairwise LD from SNP data.}
 \usage{
 LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE,
-  mDat = "N", sr = FALSE, input = "SNP", chr.length = NULL,
+  mDat = "NN", sr = FALSE, input = "SNP", chr.length = NULL,
   levels = FALSE, par = FALSE, ss = FALSE, level_report = 1,
   maf = FALSE)
 }
@@ -18,7 +18,7 @@ LD_full_pairwise(x, ecs, prox_table = TRUE, matrix_out = TRUE,
 
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
-\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").#' @return Data frame containing metadata, and Ho for each population in named columns.}
+\item{mDat}{Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").}
 
 \item{sr}{boolean, default FALSE. Should progress reports be surpessed?}
 

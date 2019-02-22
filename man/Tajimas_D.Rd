@@ -28,8 +28,7 @@ Description of x:
 \examples{
 #convert example data into the correct format and run splitting by groups and pops.
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-ac <- format_snps(stickSNPs, 3, pop = l)
+ac <- format_snps(stickSNPs, 3, pop = pops)
 run_gp(ac, Tajimas_D, 200, 50)
 
 }

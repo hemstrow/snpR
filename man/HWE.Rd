@@ -4,18 +4,18 @@
 \alias{HWE}
 \title{Hardy-Weinburg Equilibrium from SNP data.}
 \usage{
-HWE(x, ecs, miss = "NN", test = "exact", n.reps = 20000)
+HWE(x, ecs, mDat = "NN", test = "exact", n.reps = 20000)
 }
 \arguments{
 \item{x}{Input data, in either NN or 0000 format, as given by format_snps output options 4 or 6.}
 
 \item{ecs}{The number of extra columns at the start of the input data.frame containing metadata.}
 
-\item{miss}{Characters which code for missing *genotypes* ("NN" or "0000", for example).}
-
 \item{test}{Which test to use? "exact" for the exact test, "permutation" for permutation test.}
 
 \item{n.reps}{Number of reps to use for permutation test.}
+
+\item{miss}{Characters which code for missing *genotypes* ("NN" or "0000", for example).}
 }
 \value{
 A numeric vector containing p-values, which are the probability that a SNP in HWE would be as or more diverged from the expected equilibrium genotype frequencies. In the same order as input.

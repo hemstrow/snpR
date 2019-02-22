@@ -4,7 +4,7 @@
 \alias{Full_LD_w_groups}
 \title{Pairwise LD from SNP data, split by group.}
 \usage{
-Full_LD_w_groups(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
+Full_LD_w_groups(x, ecs, prox_table = T, matrix_out = T, mDat = "NN",
   report = 1, sr = TRUE, chr.length = NULL, input = "SNP",
   ss = FALSE)
 }
@@ -17,7 +17,7 @@ Full_LD_w_groups(x, ecs, prox_table = T, matrix_out = T, mDat = "N",
 
 \item{matrix_out}{If TRUE, pairwise LD matrices are produced.}
 
-\item{mDat}{Character variable matching the coding for missing *alleles* in x (typically "N" or "00").}
+\item{mDat}{Character variable matching the coding for missing *genotypes* in x (typically "N" or "00").}
 
 \item{report}{Reports progress every report linkage groups/chromosomes.}
 

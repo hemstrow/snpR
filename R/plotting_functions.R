@@ -184,16 +184,17 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #'
 #' @param x Input presence/absence data, as described in details.
 #' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
-#' @param do.plot FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
+#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
 #' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
 #' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
+#' @param do.plot boolean, default TRUE. Should a plot be produced?
 #'
 #' @return A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
 #' @examples
 #' PCAfromPA(stickPA, 2)
-PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts = FALSE){
+PCAfromPA <- function(x, ecs, plot.vars = "none", c.dup = FALSE, mc = FALSE, counts = FALSE, do.plot = TRUE){
 
   #grab metadata and data
   meta <- x[,1:ecs]
@@ -221,17 +222,18 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     }
   }
 
-  if(is.character(do.plot)){
-    if(length(do.plot) > 2){
-      stop("Only two plotting variables supported. For more, set do.plot to FALSE and plot manually.\n")
+  if(is.character(plot.vars)){
+    if(length(plot.vars) > 2){
+      stop("Only two plotting variables supported. For more, set plot.vars to FALSE and plot manually.\n")
+    }
+    if (!all(plot.vars %in% colnames(meta))){
+      stop("Plotting variables specified in plot.vars must match column names present in the metadata of x.\n")
     }
   }
-  else if (do.plot != FALSE){
-    stop("do.plot must be either FALSE or between 1 and 2 variables to plot by.")
+  else if (plot.vars != FALSE){
+    stop("plot.vars must be either FALSE or between 1 and 2 variables to plot by.")
   }
-  else if (!all(do.plot) %in% colnames(meta)){
-    stop("Plotting variables specified in do.plot must match column names present in the metadata of x.\n")
-  }
+
 
   ############################################
   #filter if requested
@@ -259,7 +261,7 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 
 
   #return just the pca data if the plot isn't requested, which is useful for complex plots.
-  if(!is.character(do.plot)){
+  if(do.plot == FALSE){
     return(list(raw = pca_r, pca = pca))
   }
 
@@ -267,27 +269,32 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
   #construct plot.
   cat("Preparing plot...\n")
 
-  #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
+  #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
   out <- ggplot2::ggplot(pca, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
+
+
+  if(plot.vars[1] == F){
+    return(list(raw = pca_r, plot = out + ggplot2::geom_point()))
+  }
 
   cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 
   #add variables.
-  if(do.plot[1] != FALSE){
+  if(plot.vars[1] != FALSE){
 
-    v1 <- pca[,which(colnames(pca) == do.plot[1])] #get the factors
+    v1 <- pca[,which(colnames(pca) == plot.vars[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
     # add geoms to plot
-    if(length(do.plot) == 1){
+    if(length(plot.vars) == 1){
       out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
     }
     else{
       # if two plotting variables, prepare the second and add it as well.
-      v2 <- pca[,which(colnames(pca) == do.plot[2])]
+      v2 <- pca[,which(colnames(pca) == plot.vars[2])]
       v2u <- length(unique(v2))
       out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
     }
@@ -296,29 +303,29 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
     # change the color scales for the variables
     ## for the first variable
     if(v1u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = plot.vars[1])
     }
     else{
       # if the data is likely continuous:
       if(is.numeric(v1)){
-        warning("Plotting ", do.plot[1], " as a continuous variable.\n")
-        out <- out + ggplot2::scale_color_viridis_c(name = do.plot[1])
+        warning("Plotting ", plot.vars[1], " as a continuous variable.\n")
+        out <- out + ggplot2::scale_color_viridis_c(name = plot.vars[1])
       }
-      out <- out + ggplot2::scale_color_viridis_d(name = do.plot[1])
+      out <- out + ggplot2::scale_color_viridis_d(name = plot.vars[1])
     }
 
     ## for the second variable if defined
-    if(length(do.plot) == 2){
+    if(length(plot.vars) == 2){
       if(v2u <= 8){#are there too many categories to color with the cbb palette?
-        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = plot.vars[2])
       }
       else{
         if(is.numeric(v2)){
-          warning("Plotting ", do.plot[2], " as a continuous variable.\n")
-          out <- out + ggplot2::scale_fill_viridis_c(name = do.plot[2])
+          warning("Plotting ", plot.vars[2], " as a continuous variable.\n")
+          out <- out + ggplot2::scale_fill_viridis_c(name = plot.vars[2])
         }
         else{
-          out <- out + ggplot2::scale_fill_viridis_d(name = do.plot[2])
+          out <- out + ggplot2::scale_fill_viridis_d(name = plot.vars[2])
         }
       }
     }
@@ -348,25 +355,25 @@ PCAfromPA <- function(x, ecs, do.plot = "pop", c.dup = FALSE, mc = FALSE, counts
 #'
 #' @param x Input presence/absence data, as described in details.
 #' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
-#' @param do.plot FALSE or character vector, default "pop". If FALSE, no plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
+#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
 #' @param dims Integer, output dimensionality, default 2.
 #' @param initial_dims Integer, default 50. The number of dimensions retained in the initial PCA step.
-#' @param perplex Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#' @param gravity Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
+#' @param perplexity Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
+#' @param theta Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
 #' @param iter Integer, default 5000. Number of tSNE iterations to perform.
 #' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
 #' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
 #' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
+#' @param do.plot boolean, default TRUE. Should a plot be produced?
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
 #'
 #' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
 #'
 #' @examples
 #' tSNEfromPA(stickPA, 2, c.dup = TRUE)
-tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
-                       perplex = FALSE, gravity = 0, iter = 5000,
-                       c.dup = FALSE, mc = FALSE, counts = FALSE, ...){
-  library(ggplot2)
+tSNEfromPA <- function(x, ecs, plot.vars = "pop", dims = 2, initial_dims = 50,
+                       perplexity = FALSE, theta = 0, iter = 5000,
+                       c.dup = FALSE, mc = FALSE, counts = FALSE, do.plot = TRUE, ...){
   #grab metadata and data
   meta <- x[,1:ecs]
   x <- x[,(ecs+1):ncol(x)]
@@ -397,16 +404,16 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     warning("If there are duplicates in x, expect wierd results! Set c.dup to TRUE to check.\n")
   }
 
-  if(is.character(do.plot)){
-    if(length(do.plot) > 2){
-      stop("Only two plotting variables supported. For more, set do.plot to FALSE and plot manually.\n")
+  if(is.character(plot.vars)){
+    if(length(plot.vars) > 2){
+      stop("Only two plotting variables supported. For more, set plot.vars to FALSE and plot manually.\n")
+    }
+    if (!all(plot.vars %in% colnames(meta))){
+      stop("Plotting variables specified in plot.vars must match column names present in the metadata of x.\n")
     }
   }
-  else if (do.plot != FALSE){
-    stop("do.plot must be either FALSE or between 1 and 2 variables to plot by.")
-  }
-  else if (!all(do.plot) %in% colnames(meta)){
-    stop("Plotting variables specified in do.plot must match column names present in the metadata of x.\n")
+  else if (plot.vars != FALSE){
+    stop("plot.vars must be either FALSE or between 1 and 2 variables to plot by.")
   }
 
   ##############################
@@ -430,20 +437,20 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
   }
 
   #get perplexity if not provided
-  if(!perplex){
+  if(!perplexity){
     cat("Estimating perplexity...\n")
     perp <- mmtsne::hbeta(x, beta = 1)
-    perplex <- perp$H
+    perplexity <- perp$H
   }
 
   #run the tSNE
   cat("Running tSNE...\n")
-  tsne.out <- Rtsne::Rtsne(x, dims, initial_dims, perplex,
-                           gravity, iter, check_duplicates = FALSE,
+  tsne.out <- Rtsne::Rtsne(X = x, dims = dims, initial_dims = initial_dims, perplexity = perplexity,
+                           theta = theta, max_iter = iter, check_duplicates = FALSE,
                            verbose=TRUE, ...)
   tsne_plot <- cbind(meta, as.data.frame(tsne.out$Y))
 
-  if(!is.character(do.plot)){
+  if(do.plot == FALSE){
     return(list(raw = tsne.out, pca = tsne_plot))
   }
 
@@ -454,7 +461,7 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
   cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
                   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-  #Categories (pops, fathers, mothers, ect.) are given in do.plot argument. Supports up to two!
+  #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
   #make the base plot, then add categories as color and fill.
   out <- ggplot2::ggplot(tsne_plot, ggplot2::aes(V1, V2)) + ggplot2::theme_bw() +
     ggplot2::theme(axis.ticks = element_blank(),
@@ -462,19 +469,23 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
           axis.text = element_blank(),
           panel.grid = element_blank()) #initialize plot
 
-  #add variables.
-  if(do.plot[1] != FALSE){
+  if(plot.vars[1] == F){
+    return(list(raw = pca_r, plot = out + ggplot::geom_point()))
+  }
 
-    v1 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[1])] #get the factors
+  #add variables.
+  if(plot.vars[1] != FALSE){
+
+    v1 <- tsne_plot[,which(colnames(tsne_plot) == plot.vars[1])] #get the factors
     v1u <- length(unique(v1)) #number of categories
 
     # add geoms to plot
-    if(length(do.plot) == 1){
+    if(length(plot.vars) == 1){
       out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
     }
     else{
       # if two plotting variables, prepare the second and add it as well.
-      v2 <- tsne_plot[,which(colnames(tsne_plot) == do.plot[2])]
+      v2 <- tsne_plot[,which(colnames(tsne_plot) == plot.vars[2])]
       v2u <- length(unique(v2))
       out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
     }
@@ -483,29 +494,29 @@ tSNEfromPA <- function(x, ecs, do.plot = "pop", dims = 2, initial_dims = 50,
     # change the color scales for the variables
     ## for the first variable
     if(v1u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = do.plot[1])
+      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = plot.vars[1])
     }
     else{
       # if the data is likely continuous:
       if(is.numeric(v1)){
-        warning("Plotting ", do.plot[1], " as a continuous variable.\n")
-        out <- out + ggplot2::scale_color_viridis_c(name = do.plot[1])
+        warning("Plotting ", plot.vars[1], " as a continuous variable.\n")
+        out <- out + ggplot2::scale_color_viridis_c(name = plot.vars[1])
       }
-      out <- out + ggplot2::scale_color_viridis_d(name = do.plot[1])
+      out <- out + ggplot2::scale_color_viridis_d(name = plot.vars[1])
     }
 
     ## for the second variable if defined
-    if(length(do.plot) == 2){
+    if(length(plot.vars) == 2){
       if(v2u <= 8){#are there too many categories to color with the cbb palette?
-        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = do.plot[2])
+        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = plot.vars[2])
       }
       else{
         if(is.numeric(v2)){
-          warning("Plotting ", do.plot[2], " as a continuous variable.\n")
-          out <- out + ggplot2::scale_fill_viridis_c(name = do.plot[2])
+          warning("Plotting ", plot.vars[2], " as a continuous variable.\n")
+          out <- out + ggplot2::scale_fill_viridis_c(name = plot.vars[2])
         }
         else{
-          out <- out + ggplot2::scale_fill_viridis_d(name = do.plot[2])
+          out <- out + ggplot2::scale_fill_viridis_d(name = plot.vars[2])
         }
       }
     }

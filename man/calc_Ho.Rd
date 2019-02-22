@@ -4,16 +4,16 @@
 \alias{calc_Ho}
 \title{Observed heterozygosity from SNP data.}
 \usage{
-calc_Ho(x, ecs, m.dat = "NN", pop = NULL)
+calc_Ho(x, ecs, mDat = "NN", pop = NULL)
 }
 \arguments{
 \item{x}{Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.}
 
 \item{ecs}{Number of extra metadata columns at the start of x.}
 
-\item{m.dat}{Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").}
+\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
-\item{pop}{List with population information for individuals. Format is as produced by: list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops, second vector is the count of each pop. Input data MUST be in the same order as this list. If null, assumes one population.}
+\item{m.dat}{Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").}
 }
 \value{
 Data frame containing metadata, and Ho for each population in named columns.
@@ -31,7 +31,6 @@ calc_Ho(stickSNPs, 3)
 
 #seperate pops
 pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-calc_Ho(stickSNPs, 3, pop = l)
+calc_Ho(stickSNPs, 3, pop = pops)
 
 }
