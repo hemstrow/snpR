@@ -286,8 +286,12 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
   }
 
   #put the correct names on the smoothed variables
-  if(length((ncol(out) - length(parms)):(ncol(out) - 1)) == 0){browser()}
-  colnames(out)[(ncol(out) - length(parms)):(ncol(out) - 1)] <- paste0("smoothed_", parms)
+  if(!any(is.na(levs))){
+    out <- out[,c(levs, "position",
+                  sort(colnames(out)[grep("V", colnames(out))]), # sort the colnames that contain V1, ect.
+                  "n_snps")]
+  }
+  colnames(out)[grep("V", colnames(out))] <- paste0("smoothed_", parms)
 
   #shouldn't ever happen save when this is called with run_gp for backwards compatibility, but may as well include it.
   if(nrow(out) == 0){
