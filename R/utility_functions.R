@@ -4,65 +4,27 @@
 #'
 #' This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
 #'
-#' @param xv Character vector containing genotype calls, ordered by locus and then individual, as produced by as.vector(t(data))
-#' @param snp_form Integer. How many characters are there per genotype?
+#' @param x Input genotype data, where columns are individuals and rows are snps. No metadata.
 #' @param mDat Character string. How are missing \emph{genotypes} noted?
-#' @param nsamp Integer. How many individuals does the data have?
-#' @param nloci Integer. How many loci does the data have?
 #' @param verbose Logical. Should the function report progress?
 #'
 #' @return A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm is the genotype matrix with missing genotypes.
 #'
 #' @examples
-#' xv <- as.vector(t(stickSNPs[,c(4:ncol(stickSNPs))]))
-#' tabulate_genotypes(xv, 2, "NN", ncol(stickSNPs) - 3, nrow(stickSNPs))
+#' tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
 #'
-tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
-  #create tables of genotype counts for each locus.
-  #function to do this, takes the pattern to match and the data, which is as a SINGLE VECTOR, by rows.
-  #needs the number of samples from global function environment
-  count_genos <- function(pattern, x){
-    XXs <- grep(pattern, x) #figure out which entries match pattern
-    out <- table(ceiling(XXs/nsamp)) #devide the entries that match by the number of samps to get which samp they come from (when rounded up), then table that.
-    return(out)
-  }
-
-  #get all possible genotypes
-  gs <- unique(xv)
-
-  #which gs are heterozygous?
-  hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-
-  #which genotype is the missing data?
-  mpos <- which(gs == mDat)
-
-  #what are the possible alleles at all loci?
-  as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-  as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-
-  ##############################################################################################
-  ###get a table of genotype and allele counts at each locus.
-  if(verbose){cat("Creating genotype table...\n")}
-
-  #for each element of gs, get the tables of genotype counts and add them to a matrix
-  gmat <- matrix(0, nloci, length(gs)) #initialize matrix
-  colnames(gmat) <- gs #set the matrix names
-  #fill the matrix, one possible genotype at a time (hard enough to vectorize as it is).
-  for(i in 1:length(gs)){
-    tab <- count_genos(gs[i], xv)
-    gmat[as.numeric(names(tab)),i] <- as.numeric(tab)
-  }
-
-  if(length(mpos) > 0){
-    tmat <- gmat[,-c(mpos)] #gmat without missing data
-  }
-  else{
-    tmat <- gmat
-  }
+tabulate_genotypes <- function(x, mDat, verbose = F){
+  # get a genotype table
+  snp_form <- nchar(x[1,1])   # get information on data format
+  x <- reshape2::melt(t(x)) # transpose and melt
+  gmat <-table(x[,2:3]) # table to get a count of genotypes per locus
+  tmat <- gmat[,-which(colnames(gmat) == mDat)] # remove missing data
 
   #get matrix of allele counts
   #initialize
+  hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
   if(verbose){cat("Getting allele table...\n")}
+  as <- unique(unlist(strsplit(paste0(colnames(tmat)), "")))
   amat <- matrix(0, nrow(gmat), length(as))
   colnames(amat) <- as
 
@@ -91,6 +53,7 @@ tabulate_genotypes <- function(xv, snp_form, mDat, nsamp, nloci, verbose = F){
   }
   return(list(gs = tmat, as = amat, wm = gmat))
 }
+
 
 #'Filter SNP data.
 #'
@@ -212,17 +175,12 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   filt_by_loci <- function(){
     #========================generate a and gmats if not provided==========
     if(!("emats" %in% names(in.tab))){
-      #get a single vector of genotypes
-      xv <- as.vector(t(x))
 
       #determine snp format
       snp_form <- nchar(xv[1])
 
-      #get number of samples
-      nsamp <- ncol(x)
-
       #get the genotype/allele tables
-      gto <- tabulate_genotypes(xv, snp_form, mDat, ncol(x), nrow(x), verbose = T)
+      gto <- tabulate_genotypes(x, mDat, verbose = T)
 
       #pull info out of gto with the correct names for the rest of the process.
       amat <- gto$as
@@ -341,14 +299,8 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
               popx <- x[,(sum(pop[1:(i-1)]) + 1):(sum(pop[1:i]))]
             }
 
-            #get a single vector of genotypes
-            popxv <- as.vector(t(popx))
-
-            #get number of samples
-            nsamp <- ncol(popx)
-
             #get matrices
-            gto <- tabulate_genotypes(popxv, nchar(popxv[1]), mDat, nsamp, nrow(popx))
+            gto <- tabulate_genotypes(popx, mDat)
 
             #correct names
             popamat <- gto$as
@@ -649,7 +601,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   #possible outputs, recode to numbers so that I don't have to rewrite the whole damn thing. Still allowing numbers for reverse compatiblity.
   if(!is.numeric(output)){
     pos_outs <- c("ac", "genepop", "structure", "numeric", "hapmap", "character", "pa",
-                  "rafm", "faststructure", "dadi", "plink")
+                  "rafm", "faststructure", "dadi", "plink", "sn")
     if(!(output %in% pos_outs)){
       stop("Unaccepted output format specified. Check documentation. Remember, no capitalization!")
     }
@@ -767,6 +719,9 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
     }
 
     cat("Converting to PLINK! binary format.")
+  }
+  else if(output == 12){
+    cat("Converting to single character numeric format.\n")
   }
 
   else{
@@ -987,8 +942,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       }
       ##otherwise make a new table.
       else{
-        xv <- as.vector(t(data[,(ecs + 1):ncol(data)]))
-        tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(data) - ecs, nrow(data), verbose = T)
+        tabs <- tabulate_genotypes(data[,-c(1:ecs)], paste0(miss, miss), verbose = T)
       }
 
       #save results if requested
@@ -1167,8 +1121,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
         }
         ##otherwise get the info
         else{
-          xv <- as.vector(t(x))
-          temp_tab <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), pop_sizes[i], nrow(data))
+          temp_tab <- tabulate_genotypes(x, paste0(miss, miss))
           pop_as[[i]] <- temp_tab$as
         }
         ##re-order
@@ -1669,7 +1622,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   }
 
 
-  #PLINK format
+  #PLINK formatt
   if(output == 11){
     #============convert the genotypes into a binary string==========
     # pull out genotypes, save headers
@@ -1730,7 +1683,7 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
       }
       #otherwise make a new table.
       else{
-        tabs <- tabulate_genotypes(xv, nchar(xv[1]), paste0(miss, miss), ncol(x), nrow(x), verbose = T)
+        tabs <- tabulate_genotypes(x, paste0(miss, miss), verbose = T)
         as <- tabs$as
       }
 
@@ -1849,6 +1802,72 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
 
     # name output
     rdata <- list(ped = ped, bed = bed, map = map, bim = bim)
+  }
+
+
+  # single-character numeric format
+  if(output == 12){
+    x <- data[,-c(1:ecs)]
+    browser()
+
+    # generate allele info to get maj_min info. The strategy here is to figure out the row maxes, check which indices
+    # contain those, get their column position, and then get the name of that column. For the minor alleles, same, but
+    # check that the index contains a number but isn't the maximum.
+    gs <- tabulate_genotypes(x, "NN")
+    maj <- rep(matrixStats::rowMaxs(gs$as), each = ncol(gs$as))
+    maj <- gs$as == matrix(maj, ncol = ncol(gs$as), byrow = T)
+    # deal with special cases where two alleles are of equal frequency:
+    if(any(rowSums(maj) != 1)){
+      eqf <- which(rowSums(maj) != 1)
+
+      eq.min <- which(t(maj[eqf,])) %% ncol(maj)
+      eq.maj <- eq.min[seq(1, length(eq.min), by = 2)]
+      eq.min <- eq.min[seq(2, length(eq.min), by = 2)]
+
+      eq.min[eq.min == 0] <- 4
+      eq.maj[eq.maj == 0] <- 4
+      eq.maj <- colnames(gs$as)[eq.maj] # these are the major alleles
+      eq.min <- colnames(gs$as)[eq.min] # these are the minor alleles
+
+      maj <- maj[-eqf,]
+
+      # create the normal min
+      min <- which(t(as.logical(gs$as[-eqf,]) + maj) == 1)
+    }
+    else{
+      min <- which(t(as.logical(gs$as) + maj) == 1)
+    }
+    min <- min %% ncol(maj)
+    min[min == 0] <- 4
+    maj <- which(t(maj)) %% ncol(maj)
+    maj[maj == 0] <- 4
+    maj <- colnames(gs$as)[maj] # these are the major alleles
+    min <- colnames(gs$as)[min] # these are the minor alleles
+    # re-insert the exceptions
+    if(exists("eqf")){
+      maj.fix <- sort(c(1:length(maj), eqf))
+      min.fix <- maj.fix
+      dup <- duplicated(maj.fix,fromLast = T)
+      maj.fix[dup] <- eq.maj
+      maj.fix[!dup] <- maj
+      maj <- maj.fix
+
+      min.fix[dup] <- eq.min
+      min.fix[!dup] <- min
+      min <- min.fix
+    }
+
+    # check to see if each allele is the minor, assign a one if so
+    a1 <- substr(unlist(t(x)), 1, 1)
+    a2 <- substr(unlist(t(x)), 2, 2)
+
+    a1 <- a1 == rep(min, each = ncol(x))
+    a2 <- a2 == rep(min, each = ncol(x))
+
+    # collapse to output
+    rdata <- t(a1 + a2)
+    rdata[as.matrix(x) == mDat] <- -1
+    rdata <- cbind(data[,1:ecs], rdata, stringsAsFactors = F)
   }
 
   ############################################################################
