@@ -14,6 +14,7 @@
 #' tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
 #'
 tabulate_genotypes <- function(x, mDat, verbose = F){
+
   # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
   x <- reshape2::melt(t(x)) # transpose and melt
@@ -51,7 +52,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
       }
     }
   }
-  return(list(gs = tmat, as = amat, wm = gmat))
+  return(list(gs = unclass(tmat), as = amat, wm = unclass(gmat)))
 }
 
 
