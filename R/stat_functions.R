@@ -42,6 +42,92 @@ calc_pi <- function(x, ecs){
 }
 
 
+#function to calc pi from data. should be in format with num alleles, total count of alleles,
+#and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
+#Returns a VECTOR of pi values.
+
+#'Find minor and major allele frequencies.
+#'
+#'\code{calc_maf} determines the minor and major allele frequencies for snp data for each locus, splitting by any desired facets.
+#'
+#' @param x Input SNP data, a snpRdata object.
+#' @param facets Character vector, default NULL. Name of a given facet to calculate maf for. If NULL calculates for all facets in x.
+#'
+#' @return Adds minor and major allele frequency information to a snpRdata object, accessable under the "\\@min.maj".
+calc_maf <- function(x, facets = NULL){
+  # function to run on whatever desired facets:
+  func <- function(gs){
+    browser()
+    maj <- rep(matrixStats::rowMaxs(gs$as), each = ncol(gs$as))
+    maj <- gs$as == matrix(maj, ncol = ncol(gs$as), byrow = T)
+    # deal with special cases where two alleles are of equal frequency
+    if(any(rowSums(maj) != 1)){
+      eqf <- which(rowSums(maj) != 1)
+
+      eq.min <- which(t(maj[eqf,])) %% ncol(maj)
+      eq.maj <- eq.min[seq(1, length(eq.min), by = 2)]
+      eq.min <- eq.min[seq(2, length(eq.min), by = 2)]
+
+      eq.min[eq.min == 0] <- 4
+      eq.maj[eq.maj == 0] <- 4
+      eq.maj <- colnames(gs$as)[eq.maj] # these are the major alleles
+      eq.min <- colnames(gs$as)[eq.min] # these are the minor alleles
+
+      maj <- maj[-eqf,]
+
+      # create the normal min
+      min <- which(t(as.logical(gs$as[-eqf,]) + maj) == 1)
+    }
+    else{
+      min <- which(t(as.logical(gs$as) + maj) == 1)
+    }
+    min <- min %% ncol(maj)
+    min[min == 0] <- 4
+    maj <- which(t(maj)) %% ncol(maj)
+    maj[maj == 0] <- 4
+    maj <- colnames(gs$as)[maj] # these are the major alleles
+    min <- colnames(gs$as)[min] # these are the minor alleles
+    # re-insert the exceptions
+    if(exists("eqf")){
+      maj.fix <- sort(c(1:length(maj), eqf))
+      dup <- duplicated(maj.fix,fromLast = T)
+      maj.fix[dup] <- eq.maj
+      maj.fix[!dup] <- maj
+      maj <- maj.fix
+
+      min.fix <- sort(c(1:length(min), eqf))
+      dup <- duplicated(min.fix,fromLast = T)
+      min.fix[dup] <- eq.min
+      min.fix[!dup] <- min
+      min <- min.fix
+    }
+
+    # fix any non-polymorphic minor allele frequencies
+    np <- which(rowSums(matrix(as.logical(gs$as), nrow(gs$as))) == 1)
+    if(length(np) != 0){
+      min.fix <- sort(c(1:length(min), np))
+      dup <- duplicated(min.fix,fromLast = T)
+      min.fix[dup] <- "N"
+      min.fix[!dup] <- min
+      min <- min.fix
+    }
+
+    # grab the actual maf
+    maf <- matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
+
+    # return
+    return(data.frame(major = maj, minor = min, maf = maf))
+  }
+
+  browser()
+  out <- apply.snpR.facets(x,
+                           facets = facets,
+                           req = "geno_tables",
+                           fun = fun,
+                           case = "ps")
+}
+
+
 #calculates a pop weighted stat. Needs columns named "n_total" and one with a name matching
 #the "stat" argument, which should be a character string. "boots" argument is the number of bootstraps
 #to do do get standard errors
@@ -2628,3 +2714,6 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   return(out)
 
 }
+
+
+

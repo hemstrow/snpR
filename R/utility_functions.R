@@ -105,9 +105,9 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #' ##filter
 #' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
 #'
-filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", pop = FALSE,
-                        non_poly = TRUE, bi_al = TRUE, mDat = "NN", in.tab = FALSE, out.tab = FALSE){
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
+                        min_loci = FALSE, re_run = "partial", maf.facets = NULL,
+                        non_poly = TRUE, bi_al = TRUE){
 
   #############################################################################################
   #do sanity checks
@@ -137,17 +137,14 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     if(length(min_ind) != 1){
       stop("min_ind must be a numeric vector of length 1.")
     }
+    if(min_ind > 1 | min_ind < 0){
+      stop("min_ind is the minimum proportion of sequenced individuals, and so must be between 0 and 1.\n")
+    }
   }
 
   if(min_loci){
     if(!is.numeric(min_loci) | (min_loci <= 0 | min_loci >= 1) | length(min_loci) != 1){
       stop("min_loci must be a numeric value between but not equal to 0 and 1.")
-    }
-  }
-
-  if(is.table(pop)){
-    if(sum(pop) != (ncol(x) - ecs)){
-      stop("sum of pop must be equal to number of individuals in x (check ecs as well).")
     }
   }
 
@@ -157,104 +154,74 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     }
   }
 
-  if(out.tab == TRUE & re_run == FALSE & min_loci != FALSE){
-    warning("Can't provide output allele and genotype count tables if individuals have been filtered but allele filters aren't re-run! Setting out.tab to FALSE.")
-    out.tab <- FALSE
-  }
-
-  ##############################################################################################
-  ###set up, get values used later, clean up data a bit, set any functions used lower
+  #==============set up, get values used later, clean up data a bit,define subfunctions==========
   cat("Initializing...\n")
 
   #get headers
-  headers <- x[,1:ecs]
+  headers <- x@snp.meta
+  snp_form <- x@snp.form
+  mDat <- x@mDat
 
-  #seperate out the genotypes alone
-  x <- x[,(ecs+1):ncol(x)]
 
+  browser()
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
-    #========================generate a and gmats if not provided==========
-    if(!("emats" %in% names(in.tab))){
+    browser()
+    #============run filters========================
+    # keep <- logical(nrow(x)) #vector to track status
 
-      #determine snp format
-      snp_form <- nchar(xv[1])
+    amat <- x@facets$all@geno_tables$all$as
+    gmat <- x@facets$all@geno_tables$all$gs
+    wmat <- x@facets$all@geno_tables$all$wm
 
-      #get the genotype/allele tables
-      gto <- tabulate_genotypes(x, mDat, verbose = T)
-
-      #pull info out of gto with the correct names for the rest of the process.
-      amat <- gto$as
-      tmat <- gto$gs
-      gmat <- gto$wm
-      gs <- colnames(gmat)
-      mpos <- which(colnames(gmat) == mDat)
-      hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-    }
-
-    #otherwise, prepare input matrix
-    else{
-      amat <- in.tab$emats$amat
-      gmat <- in.tab$emats$gmat
-      mpos <- which(colnames(gmat) == mDat)
-      tmat <- gmat[,-mpos]
-      gs <- colnames(gmat)
-      snp_form <- nchar(gs[1])
-      hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-    }
-
-    ##############################################################################################
-    ###do filters
-    keep <- logical(nrow(x)) #vector to track status
-
-    #===============================================
-    ##non-biallelic loci
-    if(bi_al){
-      cat("Filtering non-biallelic loci...\n")
+    # non-biallelic and non-polymorphic loci
+    if(bi_al | non_poly){
       bimat <- ifelse(amat, TRUE, FALSE)
-      bi <- ifelse(rowSums(bimat) > 2, T, F) #if true, should keep the allele
-      #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
-      if((maf | hf_hets) &  sum(bi) != 0){
-        x <- x[bi,]
-        xv <-   xv <- as.vector(t(x))
-        gs <- unique(xv)
-        hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-        mpos <- which(gs == mDat)
-        as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-        as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-        gmat <- gmat[bi,]
-        tmat <- tmat[bi,]
-        amat <- amat[bi,]
-        headers <- headers[bi,]
-      }
-      else{
-        keep <- keep + bi
-      }
-    }
 
-    #===============================================
-    ##non-poly
-    if(non_poly){
-      cat("Filtering non-polymorphic loci...\n")
-      npmat <- ifelse(tmat == 0, F, T) #convert to logical
-      gcounts <- rowSums(npmat) #how many genotypes observed?
-      hgcounts <- as.logical(rowSums(npmat[,hs[-mpos]])) #are hets observed?
-      gcounts <- ifelse(gcounts == 1, F, T) #are there more than one genotype observed?
-      np <- gcounts + hgcounts #figure out if either or both of the above are true
-      np <- !as.logical(np) #convert to logical (if at least one is true, this will be false and we should keep the snp)
-      keep <- keep + np
+      if(bi_al){
+        cat("Filtering non-biallelic loci...\n")
+        bi <- ifelse(rowSums(bimat) > 2, T, F) # if true, should keep the allele
+        bi.vio <- x@snp.meta$.snp.id[which(bi)] # IDs of violating snps.
+        cat(paste0("\t", length(bi.vio), " bad loci\n"))
+      }
+
+      if(non_poly){
+        cat("Filtering non_polymorphic loci...\n")
+        np <- ifelse(rowSums(bimat) < 2, T, F) # if true, should keep the allele
+        np.vio <- x@snp.meta$.snp.id[which(np)]
+        cat(paste0("\t", length(np.vio), " bad loci\n"))
+      }
+
+      #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
+      # if((maf | hf_hets) &  sum(bi) != 0){
+      #   x <- x[bi,]
+      #   xv <-   xv <- as.vector(t(x))
+      #   gs <- unique(xv)
+      #   hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
+      #   mpos <- which(gs == mDat)
+      #   as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
+      #   as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
+      #   gmat <- gmat[bi,]
+      #   tmat <- tmat[bi,]
+      #   amat <- amat[bi,]
+      #   headers <- headers[bi,]
+      # }
+      # else{
+      #   keep <- keep + bi
+      # }
     }
 
     #===============================================
     ##min inds
     if(min_ind){
       cat("Filtering loci sequenced in few individuals...\n")
-      mi <- ncol(x) - gmat[,colnames(gmat) == mDat]
-      mi <- !mi >= min_ind #if false, enough samples, so keep.
-      keep <- keep + mi
+      mi <- wmat[,colnames(wmat) == mDat]
+      mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
+      mi.vio <- x@snp.meta$.snp.id[which(mi)]
+      cat(paste0("\t", length(mi.vio), " bad loci\n"))
     }
 
-
+    # working here
     #===============================================
     ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
     if(maf){
@@ -402,24 +369,7 @@ filter_snps <- function(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     cat("Filtering loci. Starting loci:", nrow(x), "\n")
 
     #run the filter
-    #If we are going to be running this again, need to not use an in tab the second time around and no reason to produce an out tab the first time.
-    if(min_loci != FALSE & re_run != FALSE){
-      if(out.tab == TRUE){
-        out.tab <- FALSE
-        out <- filt_by_loci()
-        out.tab <- TRUE
-      }
-      else{
-        out <- filt_by_loci()
-      }
-      in.tab <- FALSE #won't be one for the re-run, don't want to use the outdated provided version.
-    }
-    else{
-      out <- filt_by_loci()
-    }
-    x <- out$x
-
-
+    out <- filt_by_loci()
 
     if(nrow(x) == 1){
       stop("No loci remain after filters.")
