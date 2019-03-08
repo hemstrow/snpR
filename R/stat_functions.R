@@ -57,74 +57,93 @@ calc_pi <- function(x, ecs){
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs){
-    browser()
-    maj <- rep(matrixStats::rowMaxs(gs$as), each = ncol(gs$as))
-    maj <- gs$as == matrix(maj, ncol = ncol(gs$as), byrow = T)
-    # deal with special cases where two alleles are of equal frequency
-    if(any(rowSums(maj) != 1)){
-      eqf <- which(rowSums(maj) != 1)
+    as <- gs$as
+    majl <- rep(matrixStats::rowMaxs(as), each = ncol(as))
+    majl <- as == matrix(majl, ncol = ncol(as), byrow = T)
 
-      eq.min <- which(t(maj[eqf,])) %% ncol(maj)
-      eq.maj <- eq.min[seq(1, length(eq.min), by = 2)]
-      eq.min <- eq.min[seq(2, length(eq.min), by = 2)]
-
-      eq.min[eq.min == 0] <- 4
-      eq.maj[eq.maj == 0] <- 4
-      eq.maj <- colnames(gs$as)[eq.maj] # these are the major alleles
-      eq.min <- colnames(gs$as)[eq.min] # these are the minor alleles
-
-      maj <- maj[-eqf,]
-
-      # create the normal min
-      min <- which(t(as.logical(gs$as[-eqf,]) + maj) == 1)
+    # set aside special cases
+    np <- which(rowSums(matrix(as.logical(as), nrow(as))) == 1) # non-polymorphic
+    eqf <- which(rowSums(majl) == 2) # two alleles of equal frequency
+    ns <- which(rowSums(as) == 0) # nothing sequenced
+    vio <- sort(c(np, eqf, ns)) # all
+    if(length(vio) != 0){
+      majl.s <- majl[vio,]
+      as.s <- as[vio,]
+      majl <- majl[-vio,]
+      as <- as[-vio,]
     }
-    else{
-      min <- which(t(as.logical(gs$as) + maj) == 1)
-    }
-    min <- min %% ncol(maj)
+
+    # major and minor alleles for everything without issues
+    min <- which(t(as.logical(as) + majl) == 1)
+    min <- min %% ncol(majl)
     min[min == 0] <- 4
-    maj <- which(t(maj)) %% ncol(maj)
+    maj <- which(t(majl)) %% ncol(majl)
     maj[maj == 0] <- 4
-    maj <- colnames(gs$as)[maj] # these are the major alleles
-    min <- colnames(gs$as)[min] # these are the minor alleles
-    # re-insert the exceptions
-    if(exists("eqf")){
-      maj.fix <- sort(c(1:length(maj), eqf))
-      dup <- duplicated(maj.fix,fromLast = T)
-      maj.fix[dup] <- eq.maj
-      maj.fix[!dup] <- maj
-      maj <- maj.fix
+    maj <- colnames(as)[maj] # these are the major alleles
+    min <- colnames(as)[min] # these are the minor alleles
 
-      min.fix <- sort(c(1:length(min), eqf))
-      dup <- duplicated(min.fix,fromLast = T)
-      min.fix[dup] <- eq.min
-      min.fix[!dup] <- min
-      min <- min.fix
-    }
+    # fix for special cases
+    if(length(vio) != 0){
+      maj.s <- character(nrow(majl.s))
+      min.s <- maj.s
 
-    # fix any non-polymorphic minor allele frequencies
-    np <- which(rowSums(matrix(as.logical(gs$as), nrow(gs$as))) == 1)
-    if(length(np) != 0){
-      min.fix <- sort(c(1:length(min), np))
-      dup <- duplicated(min.fix,fromLast = T)
-      min.fix[dup] <- "N"
-      min.fix[!dup] <- min
-      min <- min.fix
+      # non-poly
+      if(length(np) != 0){
+        wnp <- which(rowSums(matrix(as.logical(as.s), nrow(as.s))) == 1)
+        np.as <- as.s[wnp,]
+        np.maj <- which(as.logical(t(np.as))) %% ncol(majl)
+        np.maj[np.maj == 0] <- 4
+        np.maj <- colnames(as)[np.maj] # these are the major alleles
+        maj.s[wnp] <- np.maj
+        min.s[wnp] <- "N"
+      }
+
+      # equal frequencies
+      if(length(eqf) != 0){
+        weqf <- which(rowSums(majl.s) == 2)
+
+        eq.min <- which(t(majl.s[weqf,])) %% ncol(majl.s)
+        eq.maj <- eq.min[seq(1, length(eq.min), by = 2)]
+        eq.min <- eq.min[seq(2, length(eq.min), by = 2)]
+
+        eq.min[eq.min == 0] <- 4
+        eq.maj[eq.maj == 0] <- 4
+        maj.s[weqf] <- colnames(as.s)[eq.maj] # these are the major alleles
+        min.s[weqf] <- colnames(as.s)[eq.min] # these are the minor alleles
+      }
+
+      # not sequenced
+      if(length(ns) != 0){
+        wns <- which(rowSums(as.s) == 0)
+        maj.s[wns] <- "N"
+        min.s[wns] <- "N"
+      }
+
+      # add the major and minors for the special cases back in by binding and ordering
+      f.order <- order(c((1:nrow(gs$as))[-vio], vio)) # this gets the indices of the non-special cases, binds them to the indices of the special cases, and then gets the order to put them in.
+      maj <- c(maj, maj.s)
+      maj <- maj[f.order]
+      min <- c(min, min.s)
+      min <- min[f.order]
     }
 
     # grab the actual maf
     maf <- matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
+    maf[is.nan(maf)] <- 0
 
     # return
     return(data.frame(major = maj, minor = min, maf = maf))
   }
 
-  browser()
   out <- apply.snpR.facets(x,
                            facets = facets,
-                           req = "geno_tables",
-                           fun = fun,
+                           req = "gs",
+                           fun = func,
                            case = "ps")
+
+  browser()
+  x@stats <- merge(x@stats, out, by = colnames(x@stats), all = T, sort = F)
+  return(x)
 }
 
 
