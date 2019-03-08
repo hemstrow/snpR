@@ -1,3 +1,269 @@
+#' Import genotype and metadata into a snpRdata object.
+#'
+#' \code{import.snpR.data} converts genotype and meta data to the snpRdata class, which stores raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+#'
+#' The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
+#' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+#'
+import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
+  # calculate some of the basic summary data, such as the genotype, allele, maf, min, ect. data
+
+  snp.meta <- cbind(snp.meta, .snp.id = 1:nrow(snp.meta))
+  sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
+  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
+  ac <- format_snps(cbind(rep("temp", nrow(genotypes)), rep("temp", nrow(genotypes)), genotypes), # fix this when format_snps is updated!
+                    ecs = 2, output = "ac") # add an in tab option later once format_snps is fixed.
+  ac <- ac[,-c(1:2)] # remove this later
+
+  fm <- data.frame(facet = rep("all", nrow(gs$gs)),
+                   subfacet = rep("all", nrow(gs$gs)),
+                   facet.type = rep("all", nrow(gs$gs)))
+  fm <- cbind(fm, snp.meta)
+
+  x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
+           facet.meta = fm,
+           geno.tables = gs,
+           mDat = mDat,
+           ac = ac,
+           stats = fm,
+           snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes))
+  return(x)
+}
+
+
+# function to add a new facet to snpRdata, generating gs, as, and wmat tables, and ac formatted data.
+# need to add the ac part.
+add.facets.snpR.data <- function(x, facet.list){
+  #===========================sanity check==========
+  # check that the facet list is a list
+  if(!is.list(facet.list)){
+    if(is.character(facet.list)){
+      warning("facet.list is not a list, and so will be treated as a single facet (for example, c(chromosome, population) would be treated as a single facet.\n")
+      facet.list <- list(facet.list)
+    }
+    else{
+      stop("Invalid facet.list.\n")
+    }
+  }
+
+  # check that we haven't done these facets before, and remove any that we have.
+  all.facets <- character(length = length(facet.list))
+  for(i in 1:length(facet.list)){
+    all.facets[i] <- paste0(facet.list[[i]], collapse = ".")
+  }
+  if(all(all.facets %in% x@facets)){stop("All facets already added to dataset.\n")}
+  else if (any(all.facets %in% x@facets)){
+    already.added <- all.facets[which(all.facets %in% x@facets)]
+    warning(paste0("Some facets already present in data:\n\t", paste0(already.added, collapse = "\n\t"), "\n"))
+    facet.list <- facet.list[-which(all.facets %in% x@facets)]
+  }
+
+  # check that all of the facet columns actually exist
+  all.facets <- unlist(unlist(facet.list))
+  opts <- c(colnames(x@sample.meta), colnames(x@snp.meta))
+  used <- opts[which(opts %in% all.facets)]
+  if(!all(all.facets %in% opts)){
+    bad.facets <- which(!(all.facets %in% c(colnames(x@sample.meta), colnames(x@snp.meta))))
+    stop(paste0("Facets ", paste0(all.facets[bad.facets], collapse = " "), " not found in sample or snp metadata.\n"))
+  }
+  if(any(duplicated(used))){
+    stop(paste0("Facets ", paste0(used[which(duplicated(used))], collapse = " "), " are duplicated in the sample and or snp metadata.\n"))
+  }
+
+  #===========================process each facet.===================
+  for(k in 1:length(facet.list)){
+    facets <- facet.list[[k]] # column levels for this facet.
+    #=========================figure out unique levels for the facet==========
+    # figure out what kind of facets we are working with.
+    if(any(facets %in% colnames(x@snp.meta))){
+      if(any(facets %in% colnames(x@sample.meta))){
+        set <- "both"
+        x@facet.type <- c(x@facet.type, "both")
+      }
+      else{
+        set <- "snp"
+        x@facet.type <- c(x@facet.type, "snp")
+      }
+    }
+    else{
+      set <- "sample"
+      x@facet.type <- c(x@facet.type, "sample")
+    }
+
+    # get the unique options for each facet.
+    if(set == "snp" | set == "both"){
+      snp.meta <- x@snp.meta[colnames(x@snp.meta) %in% facets]
+      snp.opts <- unique(snp.meta)
+      if(!is.data.frame(snp.opts)){
+        snp.opts <- as.data.frame(snp.opts, stringsAsFactors = F)
+        colnames(snp.opts) <- facets[which(facets %in% colnames(x@snp.meta))]
+      }
+    }
+    if(set == "sample" | set == "both"){
+      sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
+      sample.opts <- unique(sample.meta)
+      if(!is.data.frame(sample.opts)){
+        sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+        colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
+      }
+    }
+
+
+    gs <- x@geno.tables
+    #=========================get gs matrices==========
+    if(set == "snp" | set == "both"){
+      for(i in 1:nrow(snp.opts)){
+        matches <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[i,]))))
+        t.x <- x[matches,]
+        if(set == "both"){
+          for(j in 1:nrow(sample.opts)){
+            matches2 <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
+            t.x.2 <- t.x[,matches2]
+            tgs <- tabulate_genotypes(t.x.2, x@mDat)
+            gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
+            gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
+            gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+            x@facet.meta <- rbind(x@facet.meta,
+                                  cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
+                                                   subfacet = rep(paste0(paste0(snp.opts[i,], collapse = "."),
+                                                                         ".",
+                                                                         paste0(sample.opts[j,], collapse = ".")),
+                                                                  nrow(tgs$gs)),
+                                                   facet.type = rep("both", nrow(tgs$gs))),
+                                        x@snp.meta[matches,]))
+          }
+        }
+        else{
+          tgs <- tabulate_genotypes(t.x, x@mDat)
+          gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
+          gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
+          gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+          x@facet.meta <- rbind(x@facet.meta,
+                                cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
+                                                 subfacet = rep(paste0(snp.opts[i,], collapse = "."), nrow(tgs$gs)),
+                                                 facet.type = rep("snp", nrow(tgs$gs))),
+                                      x@snp.meta[matches,]))
+        }
+      }
+    }
+    else{
+      for(i in 1:nrow(sample.opts)){
+        matches <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[i,]))))
+        t.x <- x[,matches]
+        tgs <- tabulate_genotypes(t.x, x@mDat)
+        gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
+        gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
+        gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+        x@facet.meta <- rbind(x@facet.meta,
+                              cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
+                                               subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
+                                               facet.type = rep("sample", nrow(tgs$gs))),
+                                    x@snp.meta))
+
+      }
+    }
+
+    #=========================pack and return==========
+    x@geno.tables <- gs
+    x@facets <- c(x@facets, paste0(facets, collapse = "."))
+  }
+
+  # add this when I get format_snps up and running.
+  # browser()
+  # added.facets <- lapply(facet.list, function(x) paste0(x, collapse = "."))
+  # added.facets <- unlist(added.facets)
+  # tas <- x@geno.tables$as[x@facet.meta$facet %in% added.facets,]
+  # ni1 <- matrixStats::rowMaxs(tas)
+  # nt <- rowSums(tas)
+  # x@ac <- rbind(x@ac, data.frame(n_total = nt,
+  #                                n_alleles = rowSums(matrix(as.logical(tas), nrow = nrow(tas))),
+  #                                ni1 = ni1,
+  #                                ni2 = nt - ni1))
+  return(x)
+
+}
+
+# function to list existing facets.
+find.snpR.facets <- function(x){
+  facets <- vector("list", length(x@facets))
+  names(facets) <- x@facets
+  for(i in 1:length(facets)){
+    facets[[i]] <- unique(x@facet.meta[x@facet.meta$facet == names(facets)[i],]$subfacet)
+  }
+  return(facets)
+}
+
+# function to pull stats for a given facet
+get.snpR.stats <- function(x, facets = NULL){
+  if(!is.null(facets)){
+    if(facets[1] == "all"){
+      facets <- dat@facets
+    }
+  }
+  else {
+    facets <- "all"
+  }
+
+  return(x@stats[which(x@stats$facet %in% facets), -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))])
+}
+
+# function to apply a function across selected facets
+# req: which part of the snpR.data object is required and should be pulled out? gs: genotype tables
+# facets: if NULL, run on everything.
+# cases: ps, per snp.
+# fun: which function should be applied?
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
+  if(!is.null(facets)){
+    if(facets[1] == "all"){
+      facets <- dat@facets
+    }
+  }
+  else {
+    facets <- "all"
+  }
+
+  # add any missing facets
+  miss.facets <- facets[which(!(facets %in% x@facets))]
+  if(length(miss.facets) != 0){
+    # need to fix any multivariate facets (those with a .)
+    comp.facets <- grep("\\.", miss.facets)
+    run.facets <- as.list(miss.facets[-c(comp.facets)])
+    run.facets <- c(run.facets, strsplit(miss.facets[comp.facets], split = "\\."))
+    x <- add.facets.snpR.data(x, as.list(run.facets))
+  }
+
+  if(case == "ps"){
+    if(req == "gs"){
+      # bind metadata
+      gs <- x@geno.tables
+      gs <- plyr::llply(gs, function(y) cbind(x@facet.meta, y))
+
+      # subset
+      gs <- plyr::llply(gs, function(y) subset(y, y$facet %in% facets))
+
+      # remove metadata
+      gs$gs <- gs$gs[,-which(colnames(gs$gs) %in% c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))]
+      gs$as <- gs$as[,-which(colnames(gs$as) %in% c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))]
+      gs$wm <- gs$wm[,-which(colnames(gs$wm) %in% c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))]
+
+      # convert back to matrix
+      gs <- plyr::llply(gs, function(y) as.matrix(y))
+
+      # run the function indicated
+      out <- fun(gs)
+
+      # bind metadata
+      out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+
+      # return
+      return(out)
+    }
+  }
+}
+
+
+
+
 #' Tabulate allele and genotype counts at each locus.
 #'
 #' \code{tabulate_genotypes} creates matricies containing counts of observed alleles and genotypes at each locus.
@@ -109,8 +375,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf.facets = NULL,
                         non_poly = TRUE, bi_al = TRUE){
 
-  #############################################################################################
-  #do sanity checks
+  #==============do sanity checks====================
 
   if(maf){
     if(!is.numeric(maf)){
@@ -154,6 +419,27 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     }
   }
 
+  if(!is.null(maf.facets[1])){
+    # add any needed facets...
+    miss.facets <- maf.facets[which(!(maf.facets %in% x@facets))]
+    if(length(miss.facets) != 0){
+      cat("Adding missing facets...\n")
+      # need to fix any multivariate facets (those with a .)
+      comp.facets <- grep("\\.", miss.facets)
+      run.facets <- as.list(miss.facets[-c(comp.facets)])
+      run.facets <- c(run.facets, strsplit(miss.facets[comp.facets], split = "\\."))
+      x <- add.facets.snpR.data(x, as.list(run.facets))
+    }
+
+    # check for bad facets to remove (those that don't just consider samples)
+    if(any(x@facet.type[x@facets %in% maf.facets] != "sample")){
+      vio.facets <- maf.facets[match(maf.facets, x@facets)]
+      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf.facets] != "sample")]
+      warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
+      maf.facets <- maf.facets[-which(maf.facets %in% vio.facets)]
+    }
+  }
+
   #==============set up, get values used later, clean up data a bit,define subfunctions==========
   cat("Initializing...\n")
 
@@ -163,16 +449,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   mDat <- x@mDat
 
 
-  browser()
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
-    browser()
-    #============run filters========================
-    # keep <- logical(nrow(x)) #vector to track status
+    #==========================run filters========================
+    vio.snps <- logical(nrow(x)) #vector to track status
 
-    amat <- x@facets$all@geno_tables$all$as
-    gmat <- x@facets$all@geno_tables$all$gs
-    wmat <- x@facets$all@geno_tables$all$wm
+    amat <- x@geno.tables$as[x@facet.meta$facet == "all",]
+    gmat <- x@geno.tables$gs[x@facet.meta$facet == "all",]
+    wmat <- x@geno.tables$wm[x@facet.meta$facet == "all",]
 
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
@@ -183,6 +467,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         bi <- ifelse(rowSums(bimat) > 2, T, F) # if true, should keep the allele
         bi.vio <- x@snp.meta$.snp.id[which(bi)] # IDs of violating snps.
         cat(paste0("\t", length(bi.vio), " bad loci\n"))
+        vio.snps[which(bi)] <- T
       }
 
       if(non_poly){
@@ -190,6 +475,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         np <- ifelse(rowSums(bimat) < 2, T, F) # if true, should keep the allele
         np.vio <- x@snp.meta$.snp.id[which(np)]
         cat(paste0("\t", length(np.vio), " bad loci\n"))
+        vio.snps[which(np)] <- T
       }
 
       #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
@@ -211,8 +497,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       # }
     }
 
-    #===============================================
-    ##min inds
+    #========min inds=======
     if(min_ind){
       cat("Filtering loci sequenced in few individuals...\n")
       mi <- wmat[,colnames(wmat) == mDat]
@@ -221,135 +506,118 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       cat(paste0("\t", length(mi.vio), " bad loci\n"))
     }
 
-    # working here
-    #===============================================
-    ##minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.
+    #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
     if(maf){
       #if not filtering with multiple pops
-      if(!is.table(pop)){
+      if(is.null(maf.facets)){
         cat("Filtering low minor allele frequencies, no pops...\n")
-        mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+
+        # check to see if we need to calculate mafs:
+        if(any(colnames(x@stats) == "maf")){ # check that mafs have been calculated, the all facet must exist
+          if(any(is.na(x@stats$maf[x@stats$facet == "all"]))){ # check that mafs have been calculated for the all facet
+            mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+          }
+          else{
+            mafs <- x@stats$maf[x@stats$facet == "all"]
+          }
+        }
+        else{
+          mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+        }
+
+
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
-        keep <- keep + mafs
+        maf.vio <- x@snp.meta$.snp.id[which(mafs)]
+        vio.snps[which(mafs)] <- T
       }
       else{
-        cat("Filtering low minor allele frequencies, pop:\n")
-        pmafs <- logical(nrow(x))
+        cat("Filtering low minor allele frequencies by facet.\n")
+        # pmafs <- logical(nrow(x))
 
-        #if matrices are requested as output, prepare somewhere to save these.
-        if(out.tab == TRUE){
-          if(!("pop.emats" %in% names(in.tab))){
-            pop.amat.save <- vector(mode = "list", length = length(pop))
-            names(pop.amat.save) <- names(pop)
+        # see if we need to calculate mafs
+        if(any(colnames(x@stats) == "maf")){ # mafs have been caluclated
+          # get mafs for any uncalculated facets
+
+          # if mafs have been calculated, but not for of the requested any facets...
+          if(!any(x@stats$facet %in% maf.facets)){
+            x <- calc_maf(x, facets = maf.facets)
           }
-
-          #if we are given input tables, copy these over.
-          else{
-            pop.amat.save <- in.tab$pop.emats
-          }
-        }
-
-        #do the filtering
-        for(i in 1:length(pop)){
-
-          #generate allele count tables if not provided.
-          if(!("pop.emats" %in% names(in.tab))){
-
-            cat(names(pop)[i], "\n")
-            #re-establish matrices with each pop
-
-            #set the input data
-            if(i == 1){
-              popx <- x[,1:pop[i]]
-            }
-            else{
-              popx <- x[,(sum(pop[1:(i-1)]) + 1):(sum(pop[1:i]))]
-            }
-
-            #get matrices
-            gto <- tabulate_genotypes(popx, mDat)
-
-            #correct names
-            popamat <- gto$as
-            popgmat <- gto$wm
-            poptmat <- gto$gs
-          }
-
-          #otherwise extract info
-          else{
-            popamat <- in.tab$pop.emats[[i]]$amat
-            popgmat <- in.tab$pop.emats[[i]]$gmat
-            poptmat <- in.tab$pop.emats[[i]]$tmat
-          }
-
-          #established new set for this, now do maf as above.
-          popmafs <- 1 - matrixStats::rowMaxs(popamat)/rowSums(popamat)
-          popmafs <-  popmafs >= maf #if greater than requested, passes check for this pop
-          popmafs[is.na(popmafs)] <- FALSE #call false, no information to go on here
-          pmafs <- pmafs + popmafs #add this logical to the vector containing the sum of all such vectors
-
-          #save the output pop tables if requested!
-          if(out.tab){
-            pop.amat.save[[i]]<- list(gmat = popgmat, amat = popamat, tmat = poptmat)
+          #if mafs have been calculated for some but not all of our facets
+          else if(any(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))){
+            run.facets <- unique(x@stats$facet[which(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))])
+            x <- calc_maf(x, facets = run.facets)
           }
         }
-        pmafs <- !as.logical(pmafs) #if false, we keep the allele since it was at >= maf in at least one pop
-        #add in the overall mafs, since differential fixation will be removed by this!
-        mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
-        mafs <- mafs < maf #less than required, set to true and reject.
-        mafs[is.na(mafs)] <- TRUE
-        omafs <- (mafs + pmafs) == 2 #only keep those that failed both within pop and overal maf filters.
+        else{
+          x <- calc_maf(x, facets = maf.facets)
+        }
 
-        keep <- keep + omafs
+        # grab mafs
+        mafs <- x@stats[x@stats$facet %in% maf.facets,]
+        mafs$maf <- mafs$maf < maf
+
+        # now, figure out in how many subfacets the maf is too low. If all, the loci violates the filter
+        cmafs <- reshape2::dcast(mafs[,c(".snp.id", "maf")], fun.aggregate = sum,
+                                 formula = ... ~ "maf", value.var = "maf")
+
+        # add in the overall maf, since differential fixation would otherwise be removed.
+        if(any(is.na(x@stats$maf[x@stats$facet == "all"]))){ # check that mafs have been calculated for the all facet
+          a.mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+        }
+        else{
+          a.mafs <- x@stats$maf[x@stats$facet == "all"]
+        }
+
+        a.mafs <- a.mafs < maf
+        cmafs$maf <- cmafs$maf + a.mafs
+
+        # check vio and report
+        maf.vio <- x@snp.meta$.snp.id[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))]
+        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+        vio.snps[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))] <- T
       }
     }
 
-    #===============================================
-    ##hf_hets. Should only run if bi_al = TRUE.
+    #========hf_hets. Should only run if bi_al = TRUE.==========
+    # working here
     if(hf_hets){
       cat("Filtering high frequency heterozygote loci...\n")
-      #get heterozygote counts
-      if(sum(hs[-mpos]) > 1){
-        hetsum <- rowSums(tmat[,hs[-mpos]])
-      }
-      else if (sum(hs[-mpos]) == 0){
-        hetsum <- numeric(nrow(x))
-      }
-      else{
-        hetsum <- tmat[,hs[-mpos]]
-      }
-      hf <- hetsum/rowSums(tmat)
-      hf <- hf >= hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
-      keep <- keep + hf
+
+      # get heterozygote frequency
+      hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
+      het_f <- rowSums(gmat[,hs])/rowSums(gmat)
+
+      # check violation
+      het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
+      het_f.vio <- x@snp.meta$.snp.id[which(het_f)]
+      cat(paste0("\t", length(het_f.vio), " bad loci\n"))
+      vio.snps[which(het_f)] <- T
     }
 
-    keep <- !as.logical(keep)
-    x <- x[keep,]
 
-    #return the genotype and allele tables if requested, return the correct lists.
-    if(out.tab){
+    #==========remove violating loci==================
+    if(any(vio.snps)){
+      vio.ids <- x@snp.meta$.snp.id[which(vio.snps)]
+      ngs <- x@geno.tables$gs[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
+      nas <- x@geno.tables$as[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
+      nwm <- x@geno.tables$wm[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
+      ngs <- list(gs = ngs, as = nas, wm = nwm)
+      rm(nas, nwm)
 
-      #prepare the a and gmat for export
-      amat <- amat[keep,]
-      gmat <- gmat[keep,]
-
-      #if pops were run, update the pop a and gmats for export.
-      if(out.tab == TRUE){
-        if(exists("pop.amat.save")){
-          for(i in 1:length(pop.amat.save)){
-            pop.amat.save[[i]]$gmat <- pop.amat.save[[i]]$gmat[keep,]
-            pop.amat.save[[i]]$amat <- pop.amat.save[[i]]$amat[keep,]
-            pop.amat.save[[i]]$tmat <- pop.amat.save[[i]]$tmat[keep,]
-          }
-          return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat, tmat = tmat), pop.emats = pop.amat.save))
-        }
-      }
-      return(list(x = x, headers = headers[keep,], emats = list(amat = amat, gmat = gmat, tmat = tmat)))
+      x <- snpRdata(.Data = x[-which(vio.snps),],
+                    sample.meta = x@sample.meta,
+                    snp.meta = x@snp.meta[-which(vio.snps),],
+                    facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                    geno.tables = ngs,
+                    # ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),], add this when I get ac up and running.
+                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids)],
+                    window.stats = x@window.stats,
+                    facets = x@facets,
+                    facet.type = x@facet.type,
+                    row.names = x@row.names[-which(vio.snps)])
     }
-
-    #otherwise just return the data.
-    return(list(x = x, headers = headers[keep,]))
+    return(x)
   }
 
   #funciton to filter by individuals.
@@ -358,36 +626,42 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     mcounts <- colSums(ifelse(x == mDat, 1, 0))
     rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
     if(length(rejects) > 0){
-      x <- x[,-rejects]
+      old.facets <- x@facets
+      old.facets <- sapply(old.facets, function(x) strsplit(x, "\\."))
+      invisible(capture.output(x <- import.snpR.data(x[,-rejects],
+                                                     snp.meta = x@snp.meta,
+                                                     sample.meta = x@sample.meta[-rejects,],
+                                                     mDat = mDat)))
+      cat("Re-calculating and adding facets.\n")
+      x <- add.facets.snpR.data(x, old.facets)
+      warning("Any calculated stats will be removed, since individuals were filtered out!\n")
     }
     return(list(x = x, rejects = rejects))
   }
 
-  ##############################################################################################
-  ###call the functions as requested.
+  #==========================call the functions as requested.==================
   if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
     cat("Filtering loci. Starting loci:", nrow(x), "\n")
 
-    #run the filter
-    out <- filt_by_loci()
+    # run the filter
+    x <- filt_by_loci()
 
     if(nrow(x) == 1){
       stop("No loci remain after filters.")
     }
 
-    headers <- out$headers
     cat("\tEnding loci:", nrow(x), "\n")
   }
 
+  # run the minimum sequenced loci filter
   if(min_loci){
     cat("Filtering individuals. Starting individuals:", ncol(x), "\n")
-    out_if <- min_loci_filt()
-    if(length(out_if$rejects) == 0){
+    x <- min_loci_filt()
+    if(length(x$rejects) == 0){
       cat("No individuals removed.\n")
     }
     else{
-      out <- out_if
-      x <- out$x
+      x <- x$x
       cat("\tEnding individuals:", ncol(x), "\n")
       if(re_run != FALSE){
         cat("Re-filtering loci...\n")
@@ -399,23 +673,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
           bi_al <- FALSE
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-          rejects <- out$rejects
-          if(is.table(pop)){ #remake pop if necissary after accounting for the removed samples
-            s <- 1
-            pop_temp <- pop
-            for(i in 1:length(pop)){
-              pop_temp[i] <- pop[i] - sum(rejects >= s & rejects < s + pop[i])
-              s <- s + pop[i]
-            }
-            pop <- pop_temp
-            empties <- which(pop == 0)
-            if(length(empties) > 0){
-              pop <- pop[-empties]
-            }
-          }
-          out <- filt_by_loci() #re-filter loci to make sure that we don't have any surprise non-polys ect.
-          x <- out$x
-          headers <- out$headers
+          x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys ect.
           cat("\tFinal loci count:", nrow(x), "\n")
         }
         else{
@@ -425,11 +683,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     }
   }
 
-  #return results
-  x <- cbind(headers, x)
-  if(out.tab == TRUE){
-    return(c(list(x = x), out[-which(names(out) %in% c("x", "headers"))]))
-  }
+  # return results
   return(x)
 }
 
@@ -1759,7 +2013,6 @@ format_snps <- function(x, ecs, output = 1, input_form = "NN",
   # single-character numeric format
   if(output == 12){
     x <- data[,-c(1:ecs)]
-    browser()
 
     # generate allele info to get maj_min info. The strategy here is to figure out the row maxes, check which indices
     # contain those, get their column position, and then get the name of that column. For the minor alleles, same, but
