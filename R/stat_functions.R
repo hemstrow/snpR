@@ -128,7 +128,7 @@ calc_maf <- function(x, facets = NULL){
     }
 
     # grab the actual maf
-    maf <- matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
+    maf <- 1 - matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
     maf[is.nan(maf)] <- 0
 
     # return
@@ -141,7 +141,6 @@ calc_maf <- function(x, facets = NULL){
                            fun = func,
                            case = "ps")
 
-  browser()
   x@stats <- merge(x@stats, out, by = colnames(x@stats), all = T, sort = F)
   return(x)
 }
