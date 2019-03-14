@@ -56,7 +56,7 @@ calc_pi <- function(x, ecs){
 #' @return Adds minor and major allele frequency information to a snpRdata object, accessable under the "\\@min.maj".
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
-  func <- function(gs){
+  func <- function(gs, m.al){
     as <- gs$as
     majl <- rep(matrixStats::rowMaxs(as), each = ncol(as))
     majl <- as == matrix(majl, ncol = ncol(as), byrow = T)
@@ -84,6 +84,12 @@ calc_maf <- function(x, facets = NULL){
 
     # fix for special cases
     if(length(vio) != 0){
+      if(is.null(nrow(majl.s))){
+        majl.s <- matrix(majl.s, nrow = 1)
+        colnames(majl.s) <- colnames(gs$as)
+        as.s <- matrix(as.s, nrow = 1)
+        colnames(as.s) <- colnames(gs$as)
+      }
       maj.s <- character(nrow(majl.s))
       min.s <- maj.s
 
@@ -115,8 +121,8 @@ calc_maf <- function(x, facets = NULL){
       # not sequenced
       if(length(ns) != 0){
         wns <- which(rowSums(as.s) == 0)
-        maj.s[wns] <- "N"
-        min.s[wns] <- "N"
+        maj.s[wns] <- m.al
+        min.s[wns] <- m.al
       }
 
       # add the major and minors for the special cases back in by binding and ordering
@@ -131,15 +137,20 @@ calc_maf <- function(x, facets = NULL){
     maf <- 1 - matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
     maf[is.nan(maf)] <- 0
 
+    # get the major and minor counts
+    maj.count <- rowSums(gs$as)*(1-maf)
+    min.count <- rowSums(gs$as)*(maf)
+
     # return
-    return(data.frame(major = maj, minor = min, maf = maf))
+    return(data.frame(major = maj, minor = min, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
   }
 
   out <- apply.snpR.facets(x,
                            facets = facets,
                            req = "gs",
                            fun = func,
-                           case = "ps")
+                           case = "ps",
+                           m.al = substr(temp@mDat,1, nchar(temp@mDat)/2))
 
   x@stats <- merge(x@stats, out, by = colnames(x@stats), all = T, sort = F)
   return(x)
