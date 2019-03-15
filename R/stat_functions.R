@@ -826,6 +826,9 @@ calc_Ho <- function(x, ecs, mDat = "NN", pop = NULL){
   c.col <- (ecs + 1)
   for (j in 1:length(pns)){
     wdat <- x[,c.col:(c.col+psz[j] - 1)]
+    if(is.null(nrow(wdat))){
+      wdat <- matrix(wdat, ncol = 1)
+    }
     #with this data, figure out heterozygosity
     het.c <- rowSums(ifelse(wdat == hl[1] | wdat == hl[2]
                             | wdat == hl[3] | wdat == hl[4]
