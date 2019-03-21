@@ -42,12 +42,13 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
 # need to add the ac part.
 add.facets.snpR.data <- function(x, facets = NULL){
   if(is.null(facets[1])){return(x)}
+  facets <- check.snpR.facet.request(x, facets)
   #===========================turn into list========
   # need to fix any multivariate facets (those with a .)
-  comp.facets <- grep("\\.", facets)
+  comp.facets <- grep("(?<!^)\\.", facets, perl = T)
   if(length(comp.facets) != 0){
     run.facets <- as.list(facets[-c(comp.facets)])
-    facet.list <- c(run.facets, strsplit(facets[comp.facets], split = "\\."))
+    facet.list <- c(run.facets, strsplit(facets[comp.facets], split = "(?<!^)\\.", perl = T))
   }
   else{
     facet.list <- list(facets)
@@ -79,97 +80,55 @@ add.facets.snpR.data <- function(x, facets = NULL){
   }
 
   #===========================process each facet.===================
+  # for sample acets, prep summary data and geno tables.
+  # For snp facets, nothing to do here besides add them to the facet list and facet type list.
+  # For complex facets, prep summary tables for the sample facet portion if they don't exist and add to facet list.
+  added.facets <- character(0)
+  oac <- cbind(x@facet.meta[,c("facet", "subfacet", ".snp.id")], x@ac) # grab original ac with meta for later
   for(k in 1:length(facet.list)){
     facets <- facet.list[[k]] # column levels for this facet.
+    facets <- sort(facets) # sort things to avoid unexpected duplicates!
     #=========================figure out unique levels for the facet==========
     # figure out what kind of facets we are working with.
-    if(any(facets %in% colnames(x@snp.meta))){
-      if(any(facets %in% colnames(x@sample.meta))){
-        set <- "both"
-        x@facet.type <- c(x@facet.type, "both")
-      }
-      else{
-        set <- "snp"
-        x@facet.type <- c(x@facet.type, "snp")
-      }
+
+    # save info and get the unique options for each facet
+    # save info
+    if(length(facets) > 1){
+      x@facets <- c(x@facets, paste0(facets, collapse = "."))
+      added.facets <- c(added.facets, paste0(facets, collapse = "."))
     }
     else{
-      set <- "sample"
-      x@facet.type <- c(x@facet.type, "sample")
+      x@facets <- c(x@facets, facets)
+      added.facets <- c(added.facets, facets)
     }
+    x@facet.type <- c(x@facet.type, "sample")
 
-    # get the unique options for each facet.
-    if(set == "snp" | set == "both"){
-      snp.meta <- x@snp.meta[colnames(x@snp.meta) %in% facets]
-      snp.opts <- unique(snp.meta)
-      if(!is.data.frame(snp.opts)){
-        snp.opts <- as.data.frame(snp.opts, stringsAsFactors = F)
-        colnames(snp.opts) <- facets[which(facets %in% colnames(x@snp.meta))]
-      }
-    }
-    if(set == "sample" | set == "both"){
-      sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
-      sample.opts <- unique(sample.meta)
-      if(!is.data.frame(sample.opts)){
-        sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
-        colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
-      }
-    }
 
+    # get unique options for this facet
+    sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
+    sample.opts <- unique(sample.meta)
+    if(!is.data.frame(sample.opts)){
+      sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+      colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
+    }
 
     gs <- x@geno.tables
     #=========================get gs matrices==========
-    if(set == "snp" | set == "both"){
-      for(i in 1:nrow(snp.opts)){
-        matches <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[i,]))))
-        t.x <- x[matches,]
-        if(set == "both"){
-          for(j in 1:nrow(sample.opts)){
-            matches2 <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
-            t.x.2 <- t.x[,matches2]
-            tgs <- tabulate_genotypes(t.x.2, x@mDat)
-            gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
-            gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
-            gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
-            x@facet.meta <- rbind(x@facet.meta,
-                                  cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
-                                                   subfacet = rep(paste0(paste0(snp.opts[i,], collapse = "."),
-                                                                         ".",
-                                                                         paste0(sample.opts[j,], collapse = ".")),
-                                                                  nrow(tgs$gs)),
-                                                   facet.type = rep("both", nrow(tgs$gs))),
-                                        x@snp.meta[matches,]))
-          }
-        }
-        else{
-          tgs <- tabulate_genotypes(t.x, x@mDat)
-          gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
-          gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
-          gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
-          x@facet.meta <- rbind(x@facet.meta,
-                                cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
-                                                 subfacet = rep(paste0(snp.opts[i,], collapse = "."), nrow(tgs$gs)),
-                                                 facet.type = rep("snp", nrow(tgs$gs))),
-                                      x@snp.meta[matches,]))
-        }
-      }
-    }
-    else{
-      for(i in 1:nrow(sample.opts)){
-        matches <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[i,]))))
-        t.x <- x[,matches]
-        tgs <- tabulate_genotypes(t.x, x@mDat)
-        gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
-        gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
-        gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
-        x@facet.meta <- rbind(x@facet.meta,
-                              cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
-                                               subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
-                                               facet.type = rep("sample", nrow(tgs$gs))),
-                                    x@snp.meta))
+    for(i in 1:nrow(sample.opts)){
+      matches <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[i,]))))
+      t.x <- x[,matches]
+      tgs <- tabulate_genotypes(t.x, x@mDat)
+      gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
+      gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
+      gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+      x@facet.meta <- rbind(x@facet.meta,
+                            cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
+                                             subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
+                                             facet.type = rep("sample", nrow(tgs$gs))),
+                                  x@snp.meta))
 
-      }
     }
+
 
     #=========================sort, pack, and return==========
     # sort
@@ -182,23 +141,22 @@ add.facets.snpR.data <- function(x, facets = NULL){
 
     # output
     x@geno.tables <- gs
-    x@facets <- c(x@facets, paste0(facets, collapse = "."))
   }
 
-  # add ac formated data.
-  added.facets <- lapply(facet.list, function(x) paste0(x, collapse = "."))
-  added.facets <- unlist(added.facets)
-  tac <- format_snps(x, output = "ac", facets = added.facets)
-  x@ac <- rbind(x@ac, tac[,c("n_total","n_alleles", "ni1", "ni2")])
+  # add and sort ac formated data.
+  invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
+  nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+  nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
+  x@ac <- nac[,-c(1:3)]
 
   # add in dummy rows to stats
-  x@facet.meta[x@facet.meta$facet %in% added.facets,]
   sm <- x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))]
+  sm <- cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm)))
+  colnames(sm) <- colnames(x@stats)
   x@stats <- rbind(x@stats, cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm))))
   x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
 
   return(x)
-
 }
 
 # function to list existing facets.
@@ -222,13 +180,30 @@ get.snpR.stats <- function(x, facets = NULL){
     facets <- ".base"
   }
 
+  for(i in 1:length(facets)){
+    browser()
+    if(any(facets %in% colnames(x@snp.meta))){
+      if(any(facets %in% colnames(x@sample.meta))){
+        samp.facets <- which(facets %in% colnames(x@sample.meta))
+        facets <- facets[samp.facets]
+      }
+      else{
+        next() # snp level facet, skip.
+      }
+    }
+  }
+
   return(x@stats[which(x@stats$facet %in% facets), -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))])
 }
 
 # function to apply a function across selected facets
-# req: which part of the snpR.data object is required and should be pulled out? gs: genotype tables
+# req: which part of the snpR.data object is required and should be pulled out?
+#        gs: genotype tables
+#        ac: ac formatted data
+#        meta.gs: facet, .snp.id metadata cbound genotype tables.
 # facets: if NULL, run without facets.
-# cases: ps, per snp.
+# cases: ps: per snp.
+#        ps.pf: per snp, but split per facet (such as for private alleles, comparisons only exist within a facet!)
 # fun: which function should be applied?
 apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
   if(!is.null(facets)){
@@ -242,6 +217,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
 
 
   if(case == "ps"){
+    facets <- check.snpR.facet.request(x, facets)
     if(req == "gs"){
       # subset
       gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
@@ -255,7 +231,22 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
       # return
       return(out)
     }
-    if(req == "ac"){ # really simple, just here for consistancy across functions. you just... run it on the thing.
+    else if(req == "meta.gs"){
+      # gs with metadata on facets attached.
+      # subset
+      gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
+      gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet %in% facets, c("facet", "subfacet", ".snp.id")], y))
+
+      # run the function indicated
+      out <- fun(gs, ...)
+
+      # bind metadata
+      out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+
+      # return
+      return(out)
+    }
+    else if(req == "ac"){ # really simple, just here for consistancy across functions. you just... run it on the thing.
       # subset
       ac <- x@ac[x@facet.meta$facet %in% facets,]
 
@@ -264,6 +255,33 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
 
       # bind metadata
       out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+
+      # return
+      return(out)
+    }
+  }
+  else if(case == "ps.pf"){
+    out <- data.frame() # initialize
+    if(req == "meta.gs"){
+      # gs with metadata on facets attached.
+      # loop through each facet
+      for(i in 1:length(facets)){
+        # subset
+        gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet == facets[i]))
+        gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet == facets[i], c("facet", "subfacet", ".snp.id")], y))
+
+        # run the function indicated
+        this.out <- fun(gs, ...)
+
+        # bind metadata
+        this.out <- cbind(x@facet.meta[x@facet.meta$facet == facets[i],], this.out)
+
+        # bind to full data
+        out <- rbind(out, this.out)
+      }
+
+      # return
+      return(out)
     }
   }
 }
@@ -329,24 +347,44 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x)){
   }
 }
 
-# checks facet types against acceptable types
-check.snpR.facet.type <- function(x, facets, acceptable.types){
-
-  facet.types <- x@facet.type[match(facets, x@facets)]
-
-  vio.facets <- which(!(facet.types %in% acceptable.types))
-
-  if(length(vio.facets) != 0){
-    mess <- "Some facets reference unaccepted data aspects: \n"
-    tab <- rbind(facets[vio.facets], "\t", facet.types[vio.facets], "\n")
-    tab <- as.vector(tab)
-    warning(cat(mess, tab, "\nAcceptable facet types: ", paste0(acceptable.types, collapse = " ")))
+# checks requested facets, sorts, remove duplicates, and may remove a type of facet (usually snp based)
+# currently only removes snp based...
+check.snpR.facet.request <- function(x, facets, remove.type = "snp"){
+  if(any(facets == "all")){
+    facets <- x@facets
+  }
+  if(is.null(facets)){
+    facets <- ".base"
   }
 
 
+  # remove the sample part of facets and any facets that are purely sample based.
+  facets <- strsplit(facets, "(?<!^)\\.", perl = T)
+  to.remove <- logical(length(facets))
+  for(i in 1:length(facets)){
+    if(identical(facets[[i]], ".base")){next()}
+    facets[[i]] <- sort(facets[[i]])
+    if(any(facets[[i]] %in% colnames(x@snp.meta))){
+      if(any(facets[[i]] %in% colnames(x@sample.meta))){
+        samp.facets <- which(facets[[i]] %in% colnames(x@sample.meta))
+        facets[[i]] <- facets[[i]][samp.facets]
+      }
+      else if(remove.type == "snp"){
+        to.remove[i] <- T
+      }
+    }
+    facets[[i]] <- paste(facets[[i]], collapse = ".")
+  }
+  if(any(to.remove)){
+    facets <- facets[-which(to.remove)]
+  }
 
-
-  facets <- facets[-c(snp.facets, both.facets)]
+  # remove duplicates and return
+  dups <- duplicated(facets)
+  if(any(dups)){
+    facets <- facets[-which(dups)]
+  }
+  return(unlist(facets))
 }
 
 #' Tabulate allele and genotype counts at each locus.
@@ -1260,11 +1298,15 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       return(out)
     }
 
-    # working here
     #=========apply to requested facets=======
     # get missing maf info
     if(!any(colnames(x@stats) == "maf")){
-      x <- calc_maf(x, facets = c(".base", facets))
+      if(identical(".base", facets)){
+        x <- calc_maf(x, facets = c(facets))
+      }
+      else{
+        x <- calc_maf(x, facets = c(".base", facets))
+      }
     }
     else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)]))){
       miss.facets <- which(c(".base", facets) %in% unique(x@stats[is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)]),]$facet))
@@ -1724,7 +1766,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       llist[length(llist)] <- paste0("SNP_", ncol(rdata))
 
       # write output
-      cat(paste0(unlist(strsplit(outfile, split =  "\\."))[1], "_genepop\n"), file = outfile)
+      cat(paste0(unlist(strsplit(outfile, split =  "(?<!^)\\.", perl = T))[1], "_genepop\n"), file = outfile)
       cat(llist, "\nPOP\n", file = outfile, append = T)
 
       # write the tables, splitting by pop if requested:
