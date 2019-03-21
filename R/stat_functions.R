@@ -23,7 +23,7 @@
 #' pi <- cbind(ac[,1:4], pi)
 #'
 calc_pi <- function(x, facets = NULL){
-  pi_func <- function(x){
+  func <- function(x){
     nt <- as.numeric(x[,"n_total"])
     n1 <- as.numeric(x[,"ni1"])
     n2 <- as.numeric(x[,"ni2"])
@@ -35,7 +35,13 @@ calc_pi <- function(x, facets = NULL){
     p <- 1 - (binom_n1 + binom_n2)/binom_nt
   }
 
-  out <- apply.snpR.facets(x, facets, "ac", pi_func, case = "ps")
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+  }
+
+  out <- apply.snpR.facets(x, facets, "ac", func, case = "ps")
   colnames(out)[ncol(out)] <- "pi"
   x <- merge.snpR.stats(x, out)
 
@@ -148,10 +154,10 @@ calc_maf <- function(x, facets = NULL){
   }
 
   # add any missing facets
-  if(!any(facets == "all")){
-    x <- add.facets.snpR.data(x, facets)
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
-
   out <- apply.snpR.facets(x,
                            facets = facets,
                            req = "gs",
@@ -630,44 +636,29 @@ calc_pairwise_nk <- function(x, ecs){
 #' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
 #' calc_Ho(stickSNPs, 3, pop = pops)
 #'
-calc_Ho <- function(x, ecs, mDat = "NN", pop = NULL){
+calc_ho <- function(x, facets = NULL){
+  func <- function(gs){
+    #identify heterozygote rows in genotype matrix
+    genos <- colnames(gs$gs)
+    hets <- which(substr(genos, 1, 1) != substr(genos, 2,2))
 
-  #set possible heterozygotes
-  if(nchar(x[1,(ecs + 1)]) == 4 & nchar(mDat) == 4){
-    hl <- c(mDat, "0101", "0202", "0303", "0404")
-  }
-  else if (nchar(x[1,(ecs + 1)]) == 2 & nchar(mDat) == 2){
-    hl <- c(mDat, "AA", "TT", "CC", "GG")
-  }
-  else{
-    stop("Data and missing signifier must be in either one (NN) or two character (0000) per allele format.")
+    # calculate ho
+    ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
   }
 
-  #initalize output
-  if(!is.table(pop)){
-    pop <- table(rep("ho", ncol(x) - (ecs + 1) + 1))
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
-  pns <- names(pop)
-  psz <- as.numeric(pop)
-  out <- matrix(NA, nrow(x), length(pns))
-  out <- cbind(x[,1:((ecs + 1) - 1)], out)
-  colnames(out) <- c(colnames(x)[1:((ecs + 1) - 1)], pns) #set output column names
 
-
-  #do each pop, need to loop here.
-
-  c.col <- (ecs + 1)
-  for (j in 1:length(pns)){
-    wdat <- x[,c.col:(c.col+psz[j] - 1)]
-    #with this data, figure out heterozygosity
-    het.c <- rowSums(ifelse(wdat == hl[1] | wdat == hl[2]
-                            | wdat == hl[3] | wdat == hl[4]
-                            | wdat == hl[5], 0, 1))
-    ho <- het.c/rowSums(ifelse(wdat == mDat, 0, 1))
-    out[,(ecs + 1) + j - 1] <- ho
-    c.col <- c.col + psz[j]
-  }
-  return(out)
+  out <- apply.snpR.facets(x,
+                           facets = facets,
+                           req = "gs",
+                           fun = func,
+                           case = "ps")
+  colnames(out)[ncol(out)] <- "ho"
+  return(merge.snpR.stats(x, out))
 }
 
 #Checks for private alleles.
@@ -696,40 +687,62 @@ calc_Ho <- function(x, ecs, mDat = "NN", pop = NULL){
 #' ac <- dplyr::arrange(ac, pop, position, group)
 #' check_private(ac)
 #'
-check_private <- function(x, ecs){
-  l <- unique(x$pop) #gets unique pops, requires column named pop
+calc_private <- function(x, facets = NULL){
+  func <- function(gs){
+    # # things to add two kinds of private alleles for debugging purposes.
+    # temp <- tail(gs$as)
+    # temp$C <- c(0,0,0,0,0,43)
+    # temp$.snp.id <- max(gs$as$.snp.id) + 1
+    # temp$G <- c(temp$G[-6], 0)
+    # temp2 <- head(gs$as)
+    # temp2$A <- c(0,0,0,0,0,4)
+    # gs$as <- rbind(gs$as, temp)
+    # gs$as[1:6,] <- temp2
 
-  if(all(c("group", "position", "pop") %in% colnames(x))){
-    x <- dplyr::arrange(x, pop, group, position)
+    out <- numeric(nrow(gs$as)) # initialize
+
+    # no private alleles if only one level this facet
+    if(length(unique(gs$as$subfacet)) == 1){
+      return(out)
+    }
+
+    # convert to logical, then melt down to long and cast back up to summarize the number of times each allele is observed across all populations in for each locus
+    logi <- ifelse(gs$as[,4:ncol(gs$as)] == 0, F, T)
+    logi <- cbind(gs$as[,1:3], logi)
+    cgs <- reshape2::melt(logi, id.vars = c("facet", "subfacet", ".snp.id"))
+    cgs <- reshape2::dcast(cgs, formula = .snp.id ~ variable, value.var = "value", fun.aggregate = sum)
+
+    # find those with private alleles in any populations
+    logi.cgs <- ifelse(cgs[,-1] == 1, T, F) # anything TRUE is a private allele in a population
+    pa.loci <- which(rowSums(logi.cgs) != 0)
+
+
+    if(length(pa.loci) != 0){
+      # determine which population the private allele is in. Do so by first grabbing just the private allele logical
+      # as and tabulated matrices. Then, make a comparison series that repeats the private allele series (T, F, F, F) for an A private allele for example)
+      # once for each subfacet level. The row which matches this will be that for the populations that have the private allele!
+      pa.cgs <- logi.cgs[pa.loci,]
+      pa <- logi[logi$.snp.id %in% cgs$.snp.id[pa.loci],]
+      comp.series <- rep(pa.cgs, each = length(unique(gs$as$subfacet)))
+      has.private <- as.matrix(pa[,-c(1:3)])[comp.series] # here's where the private alleles are in the subset data.
+
+      # mark as private in vector and return
+      out[logi$.snp.id %in% cgs$.snp.id[pa.loci]][has.private] <- 1
+    }
+    # return
+    return(out)
   }
-  else{warning("Data must be sorted by pop, then identicallly by other meta data, such as by group and position. If columns named pop, group, and position are given in x, this will be done automatically.")}
 
-  a1m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a1 storage
-  a2m <- matrix(NA, nrow(x)/length(l), length(l)) #initialize a2 storage
-  nloc <- nrow(x)/length(l)
 
-  #loop through pops load a1s and a2s
-  count <- 1
-  for(i in 1:length(l)){
-    a1m[,i] <- x$ni1[count:(count + nloc - 1)]
-    a2m[,i] <- x$ni2[count:(count + nloc - 1)]
-    count <- count + nloc
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
-  #convert to presence absence
-  a1m <- ifelse(a1m != 0, 1, 0)
-  a2m <- ifelse(a2m != 0, 1, 0)
-
-  #convert to private/not private
-  a1m <- ifelse(rowSums(a1m) == 1 & a1m == 1, 1, 0)
-  a2m <- ifelse(rowSums(a2m) == 1 & a2m == 1, 1, 0)
-
-  #combine a1 and a2
-  pa <- a1m + a2m
-
-  #return data
-  colnames(pa) <- paste0(l)
-  return(cbind(x[,1:ecs], as.data.frame(pa)))
+  out <- apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
+  colnames(out)[ncol(out)] <- "pa"
+  x <- merge.snpR.stats(x, out)
 }
 
 #Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
