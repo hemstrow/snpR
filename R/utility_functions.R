@@ -335,31 +335,68 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
 }
 
 # merge newly calculated stats with a snpRdata object.
-merge.snpR.stats <- function(x, stats){
-  # if new stats, easy to merge
-  if(!all(colnames(stats) %in% colnames(x@stats))){
-    x@stats <- merge(x@stats, stats,
-                     by = colnames(x@stats)[which(colnames(x@stats) %in% colnames(stats))], # note here that we are only merging by columns that already exist in both datasets
-                     all = T, sort = F)
+merge.snpR.stats <- function(x, stats, type = "stats"){
+  if(type == "stats"){
+    # if new stats, easy to merge
+    if(!all(colnames(stats) %in% colnames(x@stats))){
+      x@stats <- merge(x@stats, stats,
+                       by = colnames(x@stats)[which(colnames(x@stats) %in% colnames(stats))], # note here that we are only merging by columns that already exist in both datasets
+                       all = T, sort = F)
+    }
+
+    # otherwise need to overwrite
+    else{
+      add.rows <- which(x@stats$facet %in% stats$facet)
+      y <- x@stats[add.rows,]
+
+      # sort identically
+      y <- dplyr::arrange(y, .snp.id, facet, subfacet)
+      stats <- dplyr::arrange(stats, .snp.id, facet, subfacet)
+      y[,which(colnames(y) %in% colnames(stats))] <- stats
+
+      #replace and add
+      x@stats[add.rows,] <- y # add back
+    }
+
+    # sort and return
+    x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
   }
+  else if(type == "pairwise"){
+    # since pairwise.stats data.frames aren't automatically initizalized, need to add new rows if they don't already exist.
+    missing.rows <- which(!(paste0(stats$facet, "__", stats$comparison) %in% paste0(x@pairwise.stats$facet, "__", x@pairwise.stats$comparison)))
+    if(length(missing.rows) > 0){
+      new.rows <- stats[,1:which(colnames(stats) == "comparison")]
+      if(ncol(x@pairwise.stats) > ncol(new.rows)){
+        new.rows <- cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(x@pairwise.stats) - ncol(new.rows))))
+        colnames(new.rows) <- colnames(x@pairwise.stats)
+      }
+      x@pairwise.stats <- rbind(x@pairwise.stats, new.rows)
+    }
 
-  # otherwise need to overwrite
-  else{
-    add.rows <- which(x@stats$facet %in% stats$facet)
-    y <- x@stats[add.rows,]
+    # if new stats, easy to merge
+    if(!all(colnames(stats) %in% colnames(x@pairwise.stats))){
+      x@pairwise.stats <- merge(x@pairwise.stats, stats,
+                       by = colnames(x@pairwise.stats)[which(colnames(x@pairwise.stats) %in% colnames(stats))], # note here that we are only merging by columns that already exist in both datasets
+                       all = T, sort = F)
+    }
 
-    # sort identically
-    y <- dplyr::arrange(y, .snp.id, facet, subfacet)
-    stats <- dplyr::arrange(stats, .snp.id, facet, subfacet)
-    y[,which(colnames(y) %in% colnames(stats))] <- stats
+    # otherwise need to overwrite
+    else{
+      add.rows <- which(x@pairwise.stats$facet %in% stats$facet)
+      y <- x@pairwise.stats[add.rows,]
 
-    #replace and add
-    x@stats[add.rows,] <- y # add back
+      # sort identically
+      y <- dplyr::arrange(y, .snp.id, facet, subfacet)
+      stats <- dplyr::arrange(stats, .snp.id, facet, subfacet)
+      y[,which(colnames(y) %in% colnames(stats))] <- stats
+
+      #replace and add
+      x@pairwise.stats[add.rows,] <- y # add back
+    }
+
+    # sort and return
+    x@pairwise.stats <- dplyr::arrange(x@pairwise.stats, .snp.id, facet, comparison)
   }
-
-  # sort and return
-  x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
-
 
 
   return(x)
