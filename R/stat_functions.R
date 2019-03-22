@@ -559,6 +559,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   # call apply.snpR.facets, slightly different for each method, since they require different stuff.
   if(method == "genepop"){
     out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
+    ave.fst <- out[[2]]
+    out <- out[[1]]
   }
   else if(method == "wc" | method == "wier"){
     x <- calc_ho(x, facets)
@@ -570,7 +572,16 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
 
   # working here, just need to adjust merge.snpR.stats to work with pairwise stats.
-  browser()
+  x <- merge.snpR.stats(x, out, type = "pairwise")
+
+  if(method == "genepop"){
+    message("Returning list: first element is the snpRdata object now containing pairwise fst values, second is the average pairwise fst for all comparisons.\n")
+    return(list(x, ave.fst))
+  }
+  else{
+    return(x)
+  }
+
 
 }
 
