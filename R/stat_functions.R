@@ -322,18 +322,20 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
           resp <- readLines(n = 1)
         }
         if(resp == "n"){
-          stop("Please provide acceptable path to file for output.\n")
+          genepop::Fst(g.filename, pairs = TRUE)
         }
         else{
           file.remove(g.filename)
           invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+          genepop::Fst(g.filename, pairs = TRUE)
         }
       }
       else{
         invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+        genepop::Fst(g.filename, pairs = TRUE)
       }
 
-      genepop::Fst(g.filename, pairs = TRUE)
+
 
       #read in and parse genepop output
       cat("Parsing genepop output...\n")
@@ -350,13 +352,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
       #check that the correct number of pop names were provided or grab new ones if they weren't.
       ##get pop data
-      py <- grep("Indices for populations:", y)
-      py <- y[(py+2):(py+1+np)]
-      py <- unlist(strsplit(py, " +"))
-      py <- py[seq(2, length(py), 2)]
+      # py <- grep("Indices for populations:", y)
+      # py <- y[(py+2):(py+1+np)]
+      # py <- unlist(strsplit(py, " +"))
+      # py <- py[seq(2, length(py), 2)]
 
       # population names
-      pnames <- unique(x@facet.meta$subfacet[x@facet.meta$facet == facets])
+      pnames <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
 
 
       #get the indices containing locus headers
