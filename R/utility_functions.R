@@ -87,7 +87,6 @@ add.facets.snpR.data <- function(x, facets = NULL){
   oac <- cbind(x@facet.meta[,c("facet", "subfacet", ".snp.id")], x@ac) # grab original ac with meta for later
   for(k in 1:length(facet.list)){
     facets <- facet.list[[k]] # column levels for this facet.
-    facets <- sort(facets) # sort things to avoid unexpected duplicates!
     #=========================figure out unique levels for the facet==========
     # figure out what kind of facets we are working with.
 
@@ -106,11 +105,18 @@ add.facets.snpR.data <- function(x, facets = NULL){
 
     # get unique options for this facet
     sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
+    sample.meta <- sample.meta[,sort(colnames(sample.meta))]
+    if(!is.data.frame(sample.meta)){
+      sample.meta <- as.data.frame(sample.meta)
+      colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
+    }
     sample.opts <- unique(sample.meta)
     if(!is.data.frame(sample.opts)){
       sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
       colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
     }
+    sample.opts <- dplyr::arrange_all(sample.opts)
+
 
     gs <- x@geno.tables
     #=========================get gs matrices==========
@@ -124,7 +130,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
       x@facet.meta <- rbind(x@facet.meta,
                             cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
                                              subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
-                                             facet.type = rep("sample", nrow(tgs$gs))),
+                                             facet.type = rep("sample", nrow(tgs$gs)), stringsAsFactors = F),
                                   x@snp.meta))
     }
 
