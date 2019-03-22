@@ -280,15 +280,7 @@ Tajimas_D <- function(x, ws, step, report = 20){
 #'}
 #'
 #' @param x Input data frame, in allele count format as given by format_snps option "ac", with an additional column containing pi or Ho estimates.
-#' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
-#' @param do.nk Should pairwise nk (allele sample sizes) also be calculated?
-#' @param skip.FST Should FST calcs be skipped (only set to TRUE if do.nk is as well).
 #' @param method Which FST estimator should be used?
-#' @param pnames Character vector, default NULL. Vector of population names to use for method "Genepop"
-#' @param char.dat Data.frame, defualt NULL. Input data in character format, as given by format_snps option "character". Only needed if no Ho column provided to Wier or WC methods.
-#' @param m.dat Character, default "NN". Missing *genotype* identifier in char.dat, used if no Ho column provided to Wier or WC methods.
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table. Only needed if WC or Wier used but no "Ho" column provided.
-#' @param c.d.ecs Numeric, default NULL. Number of extra metadata columns at the start of char.dat. Only needed if WC or Wier method chosen but no Ho column provided.
 #'
 #' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
 #' @examples
@@ -313,195 +305,159 @@ Tajimas_D <- function(x, ws, step, report = 20){
 #' ##calculate FST:
 #' FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
 
-calc_pairwise_Fst <- function(x, facets, do.nk = FALSE, skip.FST = FALSE, method = "WC"){
+calc_pairwise_fst <- function(x, facets, method = "WC"){
+  func <- function(x, method, facets = NULL){
+    # initialize nk storage, same for all methods
+    pnk <- data.frame(comparison = character(0),
+                      n_total = numeric(0))
 
-
-  #============================sanity and facet checks========================
-  browser()
-  if(!do.nk & skip.FST){
-    stop("Must specify either pairwise FST, nk, or both")
-  }
-  if(any(x@ac$n_alleles > 2)){
-    vio <- which(x@ac$n_alleles > 2)
-    vio <- unique(x@facet.meta$.snp.id[vio])
-    stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
-  }
-
-  add.facets <- which(!(facets %in% x@facets))
-  if(length(add.facets) != 0){
-    cat("Adding missing facets.\n")
-    x <- add.facets.snpR.data(x, facets[add.facets])
-  }
-  # work here
-
-
-
-
-
-
-  ###############################################################################
-  #do genepop if requested
-  if(method == "Genepop"){
-    #sanity checks
-    if(!is.character(x) | length(x) != 1){
-      stop("For genepop, x is the path to the genepop file. Format_snps output option 2 can provide this.\n")
-    }
-    if(!file.exists(x)){
-      stop("For genepop, x is the path to the genepop file. Format_snps output option 2 can provide this.\n")
-    }
-    if(is.null(pnames)){
-      cat("No pop names provided, pulling from file.\n")
-    }
-    else if(!is.character(pnames)){
-      stop("pnames must be a character vector.\n")
-    }
-
-    if(do.nk){
-      stop("Set method to something other than Genepop for do.nk.\n")
-    }
-    if(skip.FST){
-      stop("Nothing to do. Stopping.\n")
-    }
-
-    #run genepop
-    cat("Genepop results:\n\t")
-    genepop::Fst(x, pairs = TRUE)
-
-    ############
-    #read in the genepop output and parse the bugger.
-    cat("Parsing genepop output...\n")
-
-    #read the file in
-    x <- paste0(x, ".ST2") #data file
-    x <- readLines(x)
-
-    #get the number of pops and the number of loci.
-    np <- grep("Number of populations detected", x)
-    np <- as.numeric(unlist(strsplit(x[np], " : "))[2])
-    nl <- grep("Number of loci detected", x)
-    nl <- as.numeric(unlist(strsplit(x[nl], " : "))[2])
-
-    #check that the correct number of pop names were provided or grab new ones if they weren't.
-    ##get pop data
-    px <- grep("Indices for populations:", x)
-    px <- x[(px+2):(px+1+np)]
-    px <- unlist(strsplit(px, " +"))
-    px <- px[seq(2, length(px), 2)]
-
-    if(is.null(pnames)){
-      cat("Pulling pop names from x...\n")
-      pnames <- px
-    }
-    else if (length(pnames) != np){
-      warning("Vector of provided pop names is not equal in length to the number of populations in x!\n")
-      cat("Substituting pop names form x...\n")
-      pnames <- px
-    }
-    else{
-      if(all(pnames != sort(pnames))){
-        warning("Pop names have been sorted, ensure input genepop file also has alphabetically sorted pop names.")
+    #===============genepop======================
+    if(method == "genepop"){
+      g.filename <- paste0("genepop.", facets, ".txt")
+      if(file.exists(g.filename)){
+        cat("Genepop input file", g.filename,  "already exits. ")
+        resp <- "empty"
+        while(resp != "y" & resp != "n"){
+          cat("Overwrite? (y or n)\n")
+          resp <- readLines(n = 1)
+        }
+        if(resp == "n"){
+          stop("Please provide acceptable path to file for output.\n")
+        }
+        else{
+          file.remove(g.filename)
+          invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+        }
       }
-      pnames <- sort(pnames)
+      else{
+        invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+      }
+
+      genepop::Fst(g.filename, pairs = TRUE)
+
+      #read in and parse genepop output
+      cat("Parsing genepop output...\n")
+
+      #read the file in
+      y <- paste0(g.filename, ".ST2") #data file
+      y <- readLines(y)
+
+      #get the number of pops and the number of loci.
+      np <- grep("Number of populations detected", y)
+      np <- as.numeric(unlist(strsplit(y[np], " : "))[2])
+      nl <- grep("Number of loci detected", y)
+      nl <- as.numeric(unlist(strsplit(y[nl], " : "))[2])
+
+      #check that the correct number of pop names were provided or grab new ones if they weren't.
+      ##get pop data
+      py <- grep("Indices for populations:", y)
+      py <- y[(py+2):(py+1+np)]
+      py <- unlist(strsplit(py, " +"))
+      py <- py[seq(2, length(py), 2)]
+
+      # population names
+      pnames <- unique(x@facet.meta$subfacet[x@facet.meta$facet == facets])
+
+
+      #get the indices containing locus headers
+      locs <- grep("  Locus:", y)
+      locs <- c(locs, grep("Estimates for all loci", y))
+
+      #get indices not containing data to parse and remove them.
+      empts <- c(1:(locs[1]-2), locs, locs + 1, locs + 2, locs - 1, (length(y)-2):length(y))
+      vals <- y[-empts]
+
+      #initialize output.
+      fmat <- matrix(NA, nrow = nl + 1, ncol = ((np-1)*np)/2)
+      colnames(fmat) <- 1:ncol(fmat)
+
+      #fill the matrix with a loop. Not a bad loop, since it only loops through each pop.
+      prog <- 1 #column fill progress tracker
+      for(i in 2:np){
+        #grab the values
+        tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
+        tvals <- gsub(paste0("^", i, " +"), "", tvals) #get just the values
+        tvals <- unlist(strsplit(tvals, " +")) #spit and unlist the values
+        tvals <- suppressWarnings(as.numeric(tvals)) #get them as numeric, NAs are fine, they should be NAs.
+
+        #put them in a matrix to get their comparison ID.
+        tmat <- matrix(tvals, nl + 1, i - 1, TRUE) #fill these values into a matrix
+        colnames(tmat) <- paste0(pnames[1:(i-1)], "~", pnames[i]) #name the comparison in each column
+        fmat[,prog:(prog + ncol(tmat) - 1)] <- tmat #save to the final output
+        colnames(fmat)[prog:(prog + ncol(tmat) - 1)] <- colnames(tmat) #save the column names
+        prog <- prog + ncol(tmat) #increment column progress.
+      }
+
+      fmat <- fmat[,order(colnames(fmat))] #re-organize output by column name
+
+      if(np != 2){
+        #grab out the overall Fst
+        overall <- fmat[nrow(fmat),]
+
+        #grab the per-locus estimates
+        fmat <- fmat[-nrow(fmat),]
+        out <- list(loci = as.data.frame(fmat, stringsAsFactors = F), overall = overall)
+      }
+      else{
+        overall <- fmat[length(fmat)]
+        fmat <- fmat[-length(fmat)]
+        out <- list(loci = fmat, overall = overall)
+      }
+
+      # melt
+      suppressMessages(out$loci <- reshape2::melt(out$loci))
+      colnames(out$loci) <- c("comparison", "fst")
+
+      # get nk values:
+      n_tots <- data.frame(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
+                           .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
+                           n_total = x@ac[x@facet.meta$facet == facets, "n_total"])
+      n_tots <- reshape2::dcast(n_tots, .snp.id ~ pop, value.var = "n_total")
+      n_tots <- n_tots[,-1]
+      pops <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
+      for(i in 1:(ncol(n_tots) - 1)){
+        for(j in (i+1):ncol(n_tots)){
+          pnk <- rbind(pnk,
+                       data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
+                                  n_total = n_tots[,i] + n_tots[,j]))
+        }
+      }
+
+      out$loci <- cbind(out$loci, n_total = pnk$n_total)
+
+      # return, we're done.
+      cat("Finished.\n")
+      return(out)
     }
 
+    #===============others=====================
+    pops <- sort(unique(x$subfacet))
+    out <- as.data.frame(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
-    #get the indices containing locus headers
-    locs <- grep("  Locus:", x)
-    locs <- c(locs, grep("Estimates for all loci", x))
-
-    #get indices not containing data to parse and remove them.
-    empts <- c(1:(locs[1]-2), locs, locs + 1, locs + 2, locs - 1, (length(x)-2):length(x))
-    vals <- x[-empts]
-
-    #initialize output.
-    fmat <- matrix(NA, nrow = nl + 1, ncol = ((np-1)*np)/2)
-    colnames(fmat) <- 1:ncol(fmat)
-
-    #fill the matrix with a loop. Not a bad loop, since it only loops through each pop.
-    prog <- 1 #column fill progress tracker
-    for(i in 2:np){
-      #grab the values
-      tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
-      tvals <- gsub(paste0("^", i, " +"), "", tvals) #get just the values
-      tvals <- unlist(strsplit(tvals, " +")) #spit and unlist the values
-      tvals <- suppressWarnings(as.numeric(tvals)) #get them as numeric, NAs are fine, they should be NAs.
-
-      #put them in a matrix to get their comparison ID.
-      tmat <- matrix(tvals, nl + 1, i - 1, TRUE) #fill these values into a matrix
-      colnames(tmat) <- paste0(pnames[1:(i-1)], "_", pnames[i]) #name the comparison in each column
-      fmat[,prog:(prog + ncol(tmat) - 1)] <- tmat #save to the final output
-      colnames(fmat)[prog:(prog + ncol(tmat) - 1)] <- colnames(tmat) #save the column names
-      prog <- prog + ncol(tmat) #increment column progress.
+    #initialize pop comparison columns.
+    comps <- c()
+    i <- 1
+    while (i < (length(pops))){
+      j <- 1 + i
+      for (j in j:length(pops)){
+        comps <- c(comps, paste0(pops[i], "~", pops[j]))
+        j <- j + 1
+      }
+      i <- i + 1
     }
+    i <- 1
 
-    fmat <- fmat[,order(colnames(fmat))] #re-organize output by column name
+    colnames(out) <- comps
 
-    if(np != 2){
-      #grab out the overall Fst
-      overall <- fmat[nrow(fmat),]
+    #loop through each comparison and caculate pairwise FST at each site
+    c.col <- 1
+    for (i in 1:(length(pops) - 1)){ #i is the first pop
+      idat <- x[x$subfacet == pops[i],] #get data for first pop
+      j <- i + 1 #intialize j as the next pop
+      for (j in j:length(pops)){#j is pop being compared
+        jdat <- x[x$subfacet == pops[j],] #get data for second pop
 
-      #grab the per-locus estimates
-      fmat <- fmat[-nrow(fmat),]
-      out <- list(loci = as.data.frame(fmat, stringsAsFactors = F), overall = overall)
-    }
-    else{
-      overall <- fmat[length(fmat)]
-      fmat <- fmat[-length(fmat)]
-      out <- list(loci = fmat, overall = overall)
-    }
-    #return, we're done.
-    cat("Finished.\n")
-    return(out)
-  }
-
-  ###############################################################################
-  #otherwise do in house Fst calcs
-  pops <- sort(unique(x[,"pop"]))
-  out <- as.data.frame(matrix(NA, ncol = ecs+(length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
-
-  if(method == "WC" | method == "Wier"){
-    # if Ho not provided, need to calculate it and merge it into the dataset.
-    if(!"Ho" %in% colnames(x)){
-      ho <- calc_Ho(char.dat, ecs = c.d.ecs, mDat = mDat, pop = pop)
-      ho <- reshape2::melt(ho, id.vars = colnames(x)[1:ecs])
-      colnames(ho)[(ecs + 1):ncol(ho)] <- c("pop", "Ho")
-      x <- merge(x, ho, by.x = c(colnames(x)[1:ecs], "pop"), by.y = colnames(ho)[-ncol(ho)], sort = F)
-    }
-  }
-  if(method == "Hohenlohe"){
-    ac$pi <- calc_pi(ac) # add a pi column.
-  }
-
-
-  #print(out)
-  #initialize pop comparison columns.
-  comps <- c()
-  while (i < (length(pops))){
-    j <- 1 + i
-    for (j in j:length(pops)){
-      comps <- c(comps, paste0(pops[i], "_", pops[j]))
-      j <- j + 1
-    }
-    i <- i + 1
-  }
-  i <- 1
-  colnames(out) <- c(colnames(x)[1:ecs], comps)
-  out[,1:ecs] <- x[x$pop == pops[1],1:ecs] #add snp, position, group to output
-  if(do.nk){ #prepare nk output if requested
-    nout <- out
-    colnames(nout)[(ecs+1):ncol(nout)] <- paste0("nk_", comps)
-  }
-
-  #print(out)
-  #loop through each comparison and caculate pairwise FST at each site
-  c.col <- ecs + 1 #set starting column for pasting data
-  for (i in 1:(length(pops) - 1)){ #i is the first pop
-    idat <- x[x$pop == pops[i],] #get data for first pop
-    j = i + 1 #intialize j as the next pop
-    for (j in j:length(pops)){#j is pop being compared
-      jdat <- x[x$pop == pops[j],] #get data for second pop
-      if(!skip.FST){
-        if(method == "WC" | method == "Wier"){
+        if(method == "wc" | method == "wier"){
 
           #allele frequencies in both i and jdat.
           ps1 <- idat$ni1/idat$n_total
@@ -515,14 +471,14 @@ calc_pairwise_Fst <- function(x, facets, do.nk = FALSE, skip.FST = FALSE, method
           nc <- nbar*(1-(CV^2)/r)
           pbar <- ((idat$n_total*ps1) + (jdat$n_total*ps2))/(r*nbar) #average sample allele frequency
           ssq <- (((idat$n_total)*(ps1-pbar)^2) + ((jdat$n_total)*(ps2-pbar)^2))/((r-1)*nbar) #sample varaince of allele frequencies
-          hbar <- ((idat$n_total*idat$Ho) + (jdat$n_total*jdat$Ho))/(r*nbar) #average heterozygote frequencies
+          hbar <- ((idat$n_total*idat$ho) + (jdat$n_total*jdat$ho))/(r*nbar) #average heterozygote frequencies
 
           #equation parts used in both
           inner1 <- pbar*(1-pbar)
           inner2 <- ((r-1)/r)*ssq
           inner3 <- .25*hbar
 
-          if(method == "WC"){
+          if(method == "wc"){
             inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
             a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
             b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
@@ -542,7 +498,7 @@ calc_pairwise_Fst <- function(x, facets, do.nk = FALSE, skip.FST = FALSE, method
 
         }
 
-        else if(method == "Hohenlohe"){
+        else if(method == "hohenlohe"){
 
           #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
           #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
@@ -565,45 +521,57 @@ calc_pairwise_Fst <- function(x, facets, do.nk = FALSE, skip.FST = FALSE, method
         else{
           stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tWier: Wier (1990).\n\tHohenlohe: Hohenlohe et al. (2010).")
         }
+
+        # update pnk
+        pnk <- rbind(pnk,
+                     data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
+                                n_total = idat$n_total + jdat$n_total))
+
+        c.col <- c.col + 1 #agument c.col
       }
-      if(do.nk){
-        nout[,c.col] <- idat$n_total + jdat$n_total
-      }
-      c.col <- c.col + 1 #agument c.col
     }
-  }
-  if(do.nk){
-    if(skip.FST){
-      return(nout)
-    }
-    else{
-      return(list(FST = out, nk = nout))
-    }
-  }
-  else if (!skip.FST){
+
+    # melt, cbind pnk
+    suppressMessages(out <- reshape2::melt(out))
+    colnames(out) <- c("comparison", "fst")
+    out <- cbind(out, n_total = pnk$n_total)
+
+    # return
     return(out)
   }
-}
 
-#wrapper for just doing pairwise.nk
+  #============================sanity and facet checks========================
+  if(any(x@ac$n_alleles > 2)){
+    vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
+    vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
+    stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
+  }
 
-#'Pairwise nk from SNP data.
-#'
-#'\code{calc_pairwise_nk} calculates number of alleles observed in each parwise combination of populations. Wrapper function for \code{\link{calc_pairwise_Fst}}
-#'
-#' Description of x:
-#'     Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP.
-#'
-#' @param x Input data frame, in allele count format as given by format_snps option 1.
-#' @param ecs Number of extra metadata columns at the start of x *not counting the column with population IDs* but counting position, ect. as normal.
-#'
-#' @return A data.frame containing the number of alleles secquenced in each pair of populations.
-#'
-#' @examples
-#' calc_pairwise_nk(ac, 3)
-calc_pairwise_nk <- function(x, ecs){
-  out <- calc_pairwise_Fst(x, ecs, do.nk = TRUE, skip.FST = TRUE)
-  return(out)
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+  }
+
+  method <- tolower(method)
+
+
+  # call apply.snpR.facets, slightly different for each method, since they require different stuff.
+  if(method == "genepop"){
+    out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
+  }
+  else if(method == "wc" | method == "wier"){
+    x <- calc_ho(x, facets)
+    out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = method)
+  }
+  else if(method == "hohenlohe"){
+    x <- calc_pi(x, facets)
+    out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
+  }
+
+  # working here, just need to adjust merge.snpR.stats to work with pairwise stats.
+  browser()
+
 }
 
 #Calculates observed heterozygosity at a snp.
