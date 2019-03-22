@@ -126,7 +126,6 @@ add.facets.snpR.data <- function(x, facets = NULL){
                                              subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
                                              facet.type = rep("sample", nrow(tgs$gs))),
                                   x@snp.meta))
-
     }
 
 
@@ -201,6 +200,7 @@ get.snpR.stats <- function(x, facets = NULL){
 #        gs: genotype tables
 #        ac: ac formatted data
 #        meta.gs: facet, .snp.id metadata cbound genotype tables.
+#        ac.stats: ac data cbound to stats
 # facets: if NULL, run without facets.
 # cases: ps: per snp.
 #        ps.pf: per snp, but split per facet (such as for private alleles, comparisons only exist within a facet!)
@@ -282,6 +282,54 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
 
       # return
       return(out)
+    }
+  }
+  else if(case == "facet.pairwise"){
+    if(req == "snpRdata"){
+      # initialize
+      out1 <- data.frame()
+      out2 <- data.frame()
+
+
+      # in this case, the whole snpRdata object is requested, but should be passed several times with the correct facet noted.
+      for(i in 1:length(facets)){
+        out <- fun(x, facets[i], ...)
+        # if this is a genepop fst output, we should expect a list of size two. Need to return the correct parts!
+        if(length(out) == 2){
+          suppressWarnings(out1 <- rbind(out1, cbind(x@snp.meta, facet = facets[i], out[[1]])))
+          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]]))
+        }
+      }
+
+      # return
+      if(nrow(out2) > 0){
+        return(list(out1, out2))
+      }
+      else{
+        return(out1)
+      }
+    }
+
+
+    else if (req == "ac.stats"){
+      out <- data.frame()
+      # need to loop through each facet, since they are all internally compared!
+      for(i in 1:length(facets)){
+        # subset
+        ac <- x@ac[x@facet.meta$facet == facets[i],]
+        stats <- x@stats[x@facet.meta$facet == facets[i],]
+
+        # run the function indicated
+        this.out <- fun(cbind(stats, ac), ...)
+
+        # bind metadata and combine with full output
+        suppressWarnings(out <- rbind(out, cbind(x@snp.meta, facet = facets[i], this.out)))
+
+      }
+
+      # return
+      return(out)
+
     }
   }
 }
@@ -1749,8 +1797,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     rdata <- cbind(x@snp.meta[,-which(colnames(x@snp.meta) == ".snp.id")], as.data.frame(rdata))
   }
 
-  ############################################################################
-  #return the final product, printing an outfile if requested.
+  #======================return the final product, printing an outfile if requested.=============
   if(outfile != FALSE){
     cat("Writing output file...\n")
 
@@ -1774,20 +1821,25 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
         cat("\tWriting genepop file seperated by populations. First provided facet is treated as pop.\t")
 
         # sort by pop
-        rdata$pop <- x@sample.meta[,which(colnames(x@sample.meta) == facets[1])]
+        write.facets <- sort(unlist(strsplit(facets, split = "(?<!^)\\.", perl = T)))
+        facet.cols <- match(write.facets, colnames(x@sample.meta))
+        pop <- do.call(paste, as.data.frame(x@sample.meta[,facet.cols]))
+        pop <- gsub(" ", ".", pop)
+        rdata$pop <- pop
+
         pop <- sort(unique(rdata$pop)) # for later
-        pop.rows <- rdata$pop
 
 
         # sort and remove pop column
         rdata$rnames <- rownames(rdata)
         rdata <- dplyr::arrange(rdata, pop)
+        pop.rows <- rdata$pop
         rownames(rdata) <- rdata$rnames
         rdata <- rdata[,-which(colnames(rdata) %in% c("pop", "rnames"))]
 
         #second loop prints results.
         for (i in 1:(length(pop))){
-          cat(names(pop)[i], "\t")
+          cat(pop[i], "\t")
           data.table::fwrite(rdata[pop.rows == pop[i],], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
           cat("POP\n", file = outfile, append = T)
         }
