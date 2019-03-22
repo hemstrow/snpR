@@ -36,7 +36,9 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        facets = "character",
                                        facet.type = "character",
                                        stats = "data.frame",
-                                       window.stats = "data.frame"),
+                                       window.stats = "data.frame",
+                                       pairwise.stats = "data.frame",
+                                       pairwise.meta = "data.frame"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
 
