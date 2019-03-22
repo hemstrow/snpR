@@ -386,8 +386,8 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       y <- x@pairwise.stats[add.rows,]
 
       # sort identically
-      y <- dplyr::arrange(y, .snp.id, facet, subfacet)
-      stats <- dplyr::arrange(stats, .snp.id, facet, subfacet)
+      y <- dplyr::arrange(y, .snp.id, facet, comparison)
+      stats <- dplyr::arrange(stats, .snp.id, facet, comparison)
       y[,which(colnames(y) %in% colnames(stats))] <- stats
 
       #replace and add
@@ -1399,10 +1399,12 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     }
 
     # grab the major and minors for each snp in the analysis.
-    snp.ord <- x@stats$.snp.id[x@stats$facet %in% facets]
-    maj.min.comp <- x@stats[x@stats$facet %in% facets,]
-    maj <- maj.min.comp$major[match(maj.min.comp$.snp.id, snp.ord)]
-    min <- maj.min.comp$minor[match(maj.min.comp$.snp.id, snp.ord)]
+    x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
+    maj <- x@stats$major[x@stats$facet == ".base"]
+    min <- x@stats$minor[x@stats$facet == ".base"]
+    maj <- rep(maj, each = length(unique(x@stats[x@stats$facet %in% facets,]$subfacet)))
+    min <- rep(min, each = length(unique(x@stats[x@stats$facet %in% facets,]$subfacet)))
+
 
     # get the ac file
     ac.dat <- get.ac(x@stats[x@stats$facet %in% facets,],
@@ -1410,7 +1412,6 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
                      min = min,
                      substr(x@mDat, 1, nchar(x@mDat)/2))
 
-    # working here
     if(output == "dadi"){
       rdata <- cbind(x@stats[x@stats$facet %in% facets, c("facet", "subfacet", ".snp.id")], ac.dat)
       ni1 <- reshape2::dcast(rdata, facet + .snp.id ~ subfacet, value.var = c("ni1"))
