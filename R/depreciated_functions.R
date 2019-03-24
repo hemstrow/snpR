@@ -1,6 +1,307 @@
 # This contains functions that are currently depreciated. Some may be restored in the future.
 
+# LD from hapmap and ms. Only a snippet, no supporting. Check the old versions of LD full pairwise.
+LD_hap_ms <- function(x, mDat, input){
+  if(input == "haplotype" | input == "ms"){
+    library(data.table)
+    #functions
+    tabulate_haplotypes <- function(x){
+      thaps <- matrix(paste0(x[1,], t(x[-1,])), ncol = nrow(x) - 1) #convert each cell to haplotype vs row one
+      mthaps <- reshape2::melt(thaps) #put this into long form for tabulation
+      cnames <- levels(mthaps$value)
+      hapmat <- bigtabulate::bigtabulate(mthaps, ccols = c(2,3))
+      colnames(hapmat) <- cnames
+      return(hapmat)
+    }
+    LD_func <- function(x, meta, prox_table = TRUE, matrix_out = TRUE, mDat = "N", sr = FALSE, chr.length = NULL, stop.row = nrow(x) - 1){
+      #function to count the number of haplotypes vs every other given position
+      #################
+      #prep stuff
+      if(prox_table){
+        ncomps <- (nrow(x)*(nrow(x)-1)/2) - (nrow(x)-stop.row)*((nrow(x)-stop.row)-1)/2
+        prox <- data.table::as.data.table(data.frame(p1 = numeric(ncomps),
+                                                     p2 = numeric(ncomps),
+                                                     rsq = numeric(ncomps),
+                                                     Dprime = numeric(ncomps),
+                                                     pval = numeric(ncomps)))
+      }
+      if(matrix_out){
+        rmat <- matrix(as.numeric(NA), stop.row, nrow(x) - 1)
+        rmat <- data.table::as.data.table(rmat)
+        colnames(rmat) <- as.character(meta$position[-1])
+        rownames(rmat) <- make.names(as.character(meta$position[1:stop.row]), unique = T)
+        Dpmat <- data.table::copy(rmat)
+        pvmat <- data.table::copy(rmat)
+      }
+      if(!matrix_out & !prox_table){
+        stop("Please specify output format.\n")
+      }
 
+      #run length prediction variables for progress reporting
+      compfun <- function(x){
+        return(((x-1)*x)/2)
+      }
+      totcomp <- compfun(nrow(x))
+      prog <- 0
+      cpercent <- 0
+
+      ##################
+      #calculate Dprime, rsq, ect.
+      for(i in 1:stop.row){
+        prog_after <- prog + nrow(x) - i
+
+        #report progress
+        if(!sr){
+          cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
+          if(cprog >= 0.01 + cpercent){
+            cat("Progress:", paste0(round(cprog*100), "%."), "\n")
+            cpercent <- cprog
+          }
+        }
+
+        #check that this site isn't fixed.
+        if(length(unique(x[i,])) == 1){
+          if(prox_table){
+            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
+            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
+            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = NA)
+            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = NA)
+            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = NA)
+          }
+          prog <- prog_after
+          next()
+        }
+
+        #get haplotypes
+        haps <- tabulate_haplotypes(x[i:nrow(x),])
+
+        #fix for very rare cases
+        if(!is.matrix(haps)){
+          haps <- t(as.matrix(haps))
+        }
+
+        #Fix only three haplotypes. While Dprime is 1, can't just set rsq, so fix the table and continue.
+        if(ncol(haps) == 3){
+          pos.a <- unique(unlist(unlist(strsplit(colnames(haps), ""))))
+          if(!(any(colnames(haps) == paste0(pos.a[1], pos.a[1])))){
+            tnames <- colnames(haps)
+            if(nrow(haps) == 1){
+              haps <- t(as.matrix(c(0, haps)))
+            }
+            else{
+              haps <- cbind(numeric(nrow(haps)), haps)
+            }
+            colnames(haps)<- c(paste0(pos.a[1], pos.a[1]), tnames)
+          }
+          else if(!(any(colnames(haps) == paste0(pos.a[1], pos.a[2])))){
+            tnames <- colnames(haps)
+            if(nrow(haps) == 1){
+              haps <- t(as.matrix(c(haps[1], 0, haps[2:3])))
+            }
+            else{
+              haps <- cbind(haps[,1], numeric(nrow(haps)), haps[,2:3])
+            }
+            colnames(haps) <- c(tnames[1], paste0(pos.a[1], pos.a[2]), tnames[2:3])
+          }
+          else if(!(any(colnames(haps) == paste0(pos.a[2], pos.a[1])))){
+            tnames <- colnames(haps)
+            if(nrow(haps) == 1){
+              haps <- t(as.matrix(c(haps[1:2], 0, haps[3])))
+            }
+            else{
+              haps <- cbind(haps[,1:2], numeric(nrow(haps)), haps[,3])
+            }
+            colnames(haps) <-  c(tnames[1:2], paste0(pos.a[2], pos.a[1]), tnames[3])
+          }
+          else{
+            tnames <- colnames(haps)
+            if(nrow(haps) == 1){
+              haps <- t(as.matrix(c(haps, 0)))
+            }
+            else{
+              haps <- cbind(haps, numeric(nrow(haps)))
+            }
+            colnames(haps) <- c(tnames, paste0(pos.a[2], pos.a[2]))
+          }
+        }
+
+        #fix two haplotype cases (NA if either snp is fixed, otherwise 1)
+        if(ncol(haps) == 2){
+          cn <- colnames(haps)
+          check <- ifelse(substr(cn[1], 1, nchar(cn[1])/2) !=
+                            substr(cn[2], 1, nchar(cn[1])/2) &
+                            substr(cn[1], (nchar(cn[1])/2) + 1, nchar(cn[1])) !=
+                            substr(cn[2], (nchar(cn[1])/2) + 1, nchar(cn[1])),
+                          1,NA)
+
+          if(is.null(nrow(cn))){
+            Dprime <- rep(check, 1)
+            rsq <- rep(check, 1)
+          }
+          else{
+            Dprime <- rep(check, nrow(cn))
+            rsq <- rep(check, nrow(cn))
+          }
+          chisqu <- rsq*(4)
+          pval <- 1 - pchisq(chisqu, 1)
+
+          #write:
+          if(prox_table){
+            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
+            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
+            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
+            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
+            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
+          }
+          if(matrix_out){
+            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+            fill <- rep(NA, nrow(x) - length(Dprime) - 1)
+            Dprime <- c(fill, Dprime)
+            rsq <- c(fill, rsq)
+            pval <- c(fill, pval)
+            data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
+            data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
+            data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
+            rm(pval, rsq, Dprime)
+          }
+          prog <- prog_after
+          next()
+        }
+
+        #fix three missing haplotypes (everything NA)
+        if(ncol(haps) == 1){
+
+          Dprime <- rep(NA, nrow(haps))
+          rsq <- rep(NA, nrow(haps))
+          pval <- rep(NA, nrow(haps))
+
+          #write
+          if(prox_table){
+            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
+            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
+            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
+            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
+            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
+          }
+          if(matrix_out){
+            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+            fill <- rep(NA, nrow(x) - length(Dprime) - 1)
+            Dprime <- c(fill, Dprime)
+            rsq <- c(fill, rsq)
+            pval <- c(fill, pval)
+            data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
+            data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
+            data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
+            rm(pval, rsq, Dprime)
+          }
+          prog <- prog_after
+          next()
+        }
+
+        #calc Dprime, rsq
+        A1B1f <- haps[,1]/rowSums(haps)
+        A1B2f <- haps[,2]/rowSums(haps)
+        A2B1f <- haps[,3]/rowSums(haps)
+        A2B2f <- haps[,4]/rowSums(haps)
+        A1f <- A1B1f + A1B2f
+        A2f <- 1 - A1f
+        B1f <- A1B1f + A2B1f
+        B2f <- 1 - B1f
+        D <- A1B1f - A1f*B1f
+        D2 <- A2B1f - A2f*B1f
+        Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
+                         ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
+                                0))
+        rsq <- (D^2)/(A1f*A2f*B1f*B2f)
+
+        #fix for when more missing haps.
+        Dprime[which(rowSums(ifelse(haps == 0, T, F)) == 3)] <- 0 #if three missing haplotypes, call 0.
+        Dprime[which(rowSums(ifelse(haps == 0, T, F)) == 4)] <- NA # if four, call NA.
+        rsq[which(rowSums(ifelse(haps == 0, T, F)) %in% 3:4)] <- NA #replace rsq with NA when 3 or 4 missing haplotypes (the latter shouldn't ever happen without missing data.)
+
+
+
+        #if two missing, harder:
+        miss2 <- rowSums(ifelse(haps == 0, T, F)) == 2
+        if(any(miss2)){
+          #get the missing haplotypes in each row:
+          tm_mat <- haps[which(miss2),] #grab the violating rows
+          tm_mat[tm_mat != 0] <- NA
+          tm_mat[tm_mat == 0] <- 1
+          tm_mat <- t(t(tm_mat)*(1:ncol(haps)))
+          tm_mat[!is.na(tm_mat)] <- colnames(haps)[as.numeric(tm_mat[!is.na(tm_mat)])]
+          tm_mat <- matrix(t(tm_mat)[!is.na(t(tm_mat))], ncol = 2, byrow = T)
+
+          #if both are actually polymorphic, assign a one, otherwise asign a 0.
+          check <- ifelse(substr(tm_mat[,1], 1, nchar(tm_mat[1,1])/2) !=
+                            substr(tm_mat[,2], 1, nchar(tm_mat[1,1])/2) &
+                            substr(tm_mat[,1], (nchar(tm_mat[1,1])/2) + 1, nchar(tm_mat[1,1])) !=
+                            substr(tm_mat[,2], (nchar(tm_mat[1,1])/2) + 1, nchar(tm_mat[1,1])),
+                          1,NA)
+          Dprime[which(miss2)] <- check
+          rsq[which(miss2)] <- check
+          rm(tm_mat)
+        }
+
+        #get pvals
+        chisqu <- rsq*(4)
+        pval <- 1 - pchisq(chisqu, 1)
+
+        #remove stuff to clear memory
+        rm(A1B1f, A1B2f, A2B1f, A2B2f, haps, miss2, D, D2, chisqu, B1f, B2f, A1f, A2f)
+
+        #write
+        if(prox_table){
+          data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
+          data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
+          data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
+          data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
+          data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
+        }
+        if(matrix_out){
+          #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+          fill <- rep(NA, nrow(x) - length(Dprime) - 1)
+          Dprime <- c(fill, Dprime)
+          rsq <- c(fill, rsq)
+          pval <- c(fill, pval)
+          data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
+          data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
+          data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
+        }
+        prog <- prog_after
+      }
+
+      ###################################
+      #finish and return output
+      if(prox_table){
+        prox$proximity <- abs(prox$p1 - prox$p2)
+        if(any(colnames(meta) == "group")){
+          prox$group <- meta[1,"group"]
+        }
+        if(any(colnames(meta) == "pop")){
+          prox$pop <- meta[1,"pop"]
+        }
+        prox <- prox[,c(6:ncol(prox), 1:5)]
+      }
+      if(matrix_out){
+        Dpmat <- cbind(position = meta$position[1:stop.row], Dpmat)
+        rmat <- cbind(position = meta$position[1:stop.row], rmat)
+        pvmat <- cbind(position = meta$position[1:stop.row], pvmat)
+      }
+      if(prox_table){
+        if(matrix_out){
+          return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
+        }
+        else{
+          return(prox = prox)
+        }
+      }
+      else{
+        return(list(Dprime = Dpmat, rsq = rmat, pval = pvmat))
+      }
+    }
+  }
+}
 
 
 
