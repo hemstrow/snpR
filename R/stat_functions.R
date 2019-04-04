@@ -742,19 +742,12 @@ calc_private <- function(x, facets = NULL){
 #'Description of x:
 #'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations}, split data into distinct populations before running.
 #'
-#' @param x Input data, usually in either numeric or character formats for SNP data, as given by format_snps output options "numeric" or "character". ms filepath or phased haplotypes (such as from an imported ms output) also accepted.
-#' @param ecs Number of extra metadata columns at the start of x.
-#' @param prox_table If TRUE, a proximity table is produced.
-#' @param matrix_out If TRUE, pairwise LD matrices are produced.
-#' @param mDat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
-#' @param sr boolean, default FALSE. Should progress reports be surpessed?
-#' @param input Character, default "SNP". Input data type. Options: "SNP", as given by format_snps output options "numeric" or "character". "ms": filepath to ms formatted data. "haplotype": imported ms data, where each column is a fully phased gene copy/chromosome.
-#' @param chr.length Numeric, default NULL. Length of chromosomes, for ms inputs.
-#' @param levels Levels to split the data by for LD calculations, such as chromosome or linkage group. Must match in input column name.
-#' @param par Numeric or FALSE, default FALSE. Number of cores to parallelize the analysis by.
-#' @param ss Numeric or FALSE, default FALSE. Number or proportion of SNPs to subsample for LD analysis.
-#' @param level_report Numeric, default 1. Progress through levels is reported every level_report levels.
-#' @param maf Numeric or FALSE, default FALSE. Minor allele frequency filter cuttoff, only for ms or haplotype data.
+#' @param x snpRdata object
+#' @param facets Facets to split by. Multi-level facets can be noted with a ".". "pop.family.chr", for example, will split by chr within each family and within each group/family level combo.
+#' @param subfacets Subsets the facet levels to run. Given as a named list: list(fam = A) will run only fam A, list(fam = c("A", "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A", pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop = "A.ASP") will run only samples in fam A and pop ASP.
+#' @param ss number of snps to subsample.
+#' @param par number of parallel cores to run
+#' @param sr should reports be supressed?
 #'
 #' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
 #'
@@ -762,18 +755,11 @@ calc_private <- function(x, facets = NULL){
 #' #returns prox table and LD matrices.
 #' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
 #'
-LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
-                             mDat = "NN", sr = FALSE, input = "SNP", chr.length = NULL,
-                             levels = FALSE, par = FALSE, ss = FALSE, level_report = 1, maf = FALSE){
-
-  # correct missing data format, since I later standardized.
-  mDat <- substr(mDat, 1, nchar(mDat)/2)
-
-  #=====================sanity checks=============
+calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
+                             par = FALSE, sr = FALSE){
+  #========================sanity checks=============
   #sanity checks:
-  if (prox_table == FALSE & matrix_out == FALSE){
-    stop("Please specify output format.")
-  }
+  # subsampling
   if(is.numeric(ss) & ss <= 0){
     stop("Number/proportion of sites to subsample must be larger than 0.")
   }
@@ -781,6 +767,7 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
     stop("Unaccepted ss. Please provide a numeric value or set to FALSE.")
   }
 
+  # parallelizing
   if(par != FALSE & !is.numeric(par)){
     stop("Par must be FALSE or an integer.")
   }
@@ -791,798 +778,859 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
     if(par > parallel::detectCores()){
       stop("Par must be equal to or less than the number of available cores.")
     }
-  }
-
-
-  if(is.numeric(maf)){
-    if((maf >= 1 & maf <= 0) | !(input %in% c("ms", "haplotype"))){
-      stop("Minor allele frequency filtering is only for ms or haplotype input and requires that the provided maf be a numeric value between 0 and 1.\nTo use other filters or filter other input data, see filter_snps().")
-    }
-  }
-  else if(maf != FALSE & !is.numeric(maf)){
-    stop("Minor allele frequency filtering is only for ms or haplotype input and requires that the provided maf be a numeric value between 0 and 1.\nTo use other filters or filter other input data, see filter_snps().")
-  }
-
-  if(!(input %in% c("haplotype", "ms", "SNP"))){
-    stop("Only haplotype, ms or SNP inputs accepted.")
-  }
-
-  #=====================functions and final checks=============
-  #functions to do stuff with MS or phased haplotypes.
-  else if(input == "haplotype" | input == "ms"){
-    library(data.table)
-
-    #prepare input data
-    if(input == "ms"){
-      cat("Reading and formatting ms input file.\n")
-      infile <- x #infile
-      lines <- readLines(x)
-      lines <- lines[-which(lines == "")] #remove empty entries
-      lines <- lines[-c(1,2)] #remove header info
-      nss <- grep("segsites", lines) #get the number of segsites per chr
-      chrls <- gsub("segsites: ", "", lines[nss]) #parse this to get the lengths
-      chrls <- as.numeric(chrls)
-      lines <- lines[-nss] #remove the segsites lines
-      pos <- lines[grep("positions:", lines)] #find the positions
-      lines <- lines[-grep("positions:", lines)] #remove the position
-      div <- grep("//", lines) #find the seperators
-      gc <- div[2] - div[1] - 1 #find the number of gene copies per chr
-      if(is.na(gc)){gc <- length(lines) - 1} #if there's only one chr
-      dat <- lines[-div] #get the data only
-      dat <- strsplit(dat, "") #split the lines by individual snp calls
-      x <- matrix(NA, nrow = sum(chrls), ncol = gc) #prepare output
-      meta <- matrix(NA, nrow = sum(chrls), 2)
-
-      #process this into workable data
-      pchrls <- c(0, chrls)
-      pchrls <- cumsum(pchrls)
-      cat("Processing chromsomes/regions:")
-      for(i in 1:length(chrls)){
-        cat("\n\tChr ", i)
-        tg <- dat[(gc*(i-1) + 1):(gc*i)] #get only this data
-        tg <- unlist(tg) #unlist
-        tg <- matrix(tg, ncol = chrls[i], nrow = gc, byrow = T) #put into a matrix
-        tg <- t(tg) #transpose. rows are now snps, columns are gene copies
-        tpos <- unlist(strsplit(pos[i], " ")) #grap and process the positions
-        tpos <- tpos[-1]
-        meta[(pchrls[i] + 1):pchrls[i + 1],] <- cbind(paste0(rep("chr", length = nrow(tg)), i), tpos)
-        x[(pchrls[i] + 1):pchrls[i + 1],] <- tg #add data to output
-      }
-      cat("\n")
-
-      meta <- as.data.frame(meta, stringsAsFactors = F)
-      meta[,2] <- as.numeric(meta[,2])
-      meta[,2] <- meta[,2] * chr.length
-
-      colnames(meta) <- c("group", "position")
-      colnames(x) <- paste0("gc_", 1:ncol(x))
-      rm(tg, dat, pchrls, pos, tpos, lines, div, gc, i, chrls, infile)
-      gc()
-      ecs <- 2
-    }
-    else{
-      meta <- x[,1:ecs]
-      x <- as.matrix(x[,(ecs+1):ncol(x)])
-    }
-
-    #do filtering (for minor allele frequency) if requested.
-    if(is.numeric(maf)){
-      cat("Filtering sites with low minor allele frequencies. Starting sites: ", nrow(x), "\n")
-      mafs <- matrixStats::rowSums2(matrix(as.numeric(x), nrow(x))/ncol(x))
-      mafs[mafs > 0.5] <- 1 - mafs[mafs > 0.5]
-      vio <- which(mafs < maf)
-      x <- x[-vio,]
-      meta <- meta[-vio,]
-      cat("Ending sites: ", nrow(x), "\n")
-    }
-
-    #functions
-    tabulate_haplotypes <- function(x){
-      thaps <- matrix(paste0(x[1,], t(x[-1,])), ncol = nrow(x) - 1) #convert each cell to haplotype vs row one
-      mthaps <- reshape2::melt(thaps) #put this into long form for tabulation
-      cnames <- levels(mthaps$value)
-      hapmat <- bigtabulate::bigtabulate(mthaps, ccols = c(2,3))
-      colnames(hapmat) <- cnames
-      return(hapmat)
-    }
-    LD_func <- function(x, meta, prox_table = TRUE, matrix_out = TRUE, mDat = "N", sr = FALSE, chr.length = NULL, stop.row = nrow(x) - 1){
-      #function to count the number of haplotypes vs every other given position
-      #################
-      #prep stuff
-      if(prox_table){
-        ncomps <- (nrow(x)*(nrow(x)-1)/2) - (nrow(x)-stop.row)*((nrow(x)-stop.row)-1)/2
-        prox <- data.table::as.data.table(data.frame(p1 = numeric(ncomps),
-                                                     p2 = numeric(ncomps),
-                                                     rsq = numeric(ncomps),
-                                                     Dprime = numeric(ncomps),
-                                                     pval = numeric(ncomps)))
-      }
-      if(matrix_out){
-        rmat <- matrix(as.numeric(NA), stop.row, nrow(x) - 1)
-        rmat <- data.table::as.data.table(rmat)
-        colnames(rmat) <- as.character(meta$position[-1])
-        rownames(rmat) <- make.names(as.character(meta$position[1:stop.row]), unique = T)
-        Dpmat <- data.table::copy(rmat)
-        pvmat <- data.table::copy(rmat)
-      }
-      if(!matrix_out & !prox_table){
-        stop("Please specify output format.\n")
-      }
-
-      #run length prediction variables for progress reporting
-      compfun <- function(x){
-        return(((x-1)*x)/2)
-      }
-      totcomp <- compfun(nrow(x))
-      prog <- 0
-      cpercent <- 0
-
-      ##################
-      #calculate Dprime, rsq, ect.
-      for(i in 1:stop.row){
-        prog_after <- prog + nrow(x) - i
-
-        #report progress
-        if(!sr){
-          cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
-          if(cprog >= 0.01 + cpercent){
-            cat("Progress:", paste0(round(cprog*100), "%."), "\n")
-            cpercent <- cprog
-          }
-        }
-
-        #check that this site isn't fixed.
-        if(length(unique(x[i,])) == 1){
-          if(prox_table){
-            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
-            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
-            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = NA)
-            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = NA)
-            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = NA)
-          }
-          prog <- prog_after
-          next()
-        }
-
-        #get haplotypes
-        haps <- tabulate_haplotypes(x[i:nrow(x),])
-
-        #fix for very rare cases
-        if(!is.matrix(haps)){
-          haps <- t(as.matrix(haps))
-        }
-
-        #Fix only three haplotypes. While Dprime is 1, can't just set rsq, so fix the table and continue.
-        if(ncol(haps) == 3){
-          pos.a <- unique(unlist(unlist(strsplit(colnames(haps), ""))))
-          if(!(any(colnames(haps) == paste0(pos.a[1], pos.a[1])))){
-            tnames <- colnames(haps)
-            if(nrow(haps) == 1){
-              haps <- t(as.matrix(c(0, haps)))
-            }
-            else{
-              haps <- cbind(numeric(nrow(haps)), haps)
-            }
-            colnames(haps)<- c(paste0(pos.a[1], pos.a[1]), tnames)
-          }
-          else if(!(any(colnames(haps) == paste0(pos.a[1], pos.a[2])))){
-            tnames <- colnames(haps)
-            if(nrow(haps) == 1){
-              haps <- t(as.matrix(c(haps[1], 0, haps[2:3])))
-            }
-            else{
-              haps <- cbind(haps[,1], numeric(nrow(haps)), haps[,2:3])
-            }
-            colnames(haps) <- c(tnames[1], paste0(pos.a[1], pos.a[2]), tnames[2:3])
-          }
-          else if(!(any(colnames(haps) == paste0(pos.a[2], pos.a[1])))){
-            tnames <- colnames(haps)
-            if(nrow(haps) == 1){
-              haps <- t(as.matrix(c(haps[1:2], 0, haps[3])))
-            }
-            else{
-              haps <- cbind(haps[,1:2], numeric(nrow(haps)), haps[,3])
-            }
-            colnames(haps) <-  c(tnames[1:2], paste0(pos.a[2], pos.a[1]), tnames[3])
-          }
-          else{
-            tnames <- colnames(haps)
-            if(nrow(haps) == 1){
-              haps <- t(as.matrix(c(haps, 0)))
-            }
-            else{
-              haps <- cbind(haps, numeric(nrow(haps)))
-            }
-            colnames(haps) <- c(tnames, paste0(pos.a[2], pos.a[2]))
-          }
-        }
-
-        #fix two haplotype cases (NA if either snp is fixed, otherwise 1)
-        if(ncol(haps) == 2){
-          cn <- colnames(haps)
-          check <- ifelse(substr(cn[1], 1, nchar(cn[1])/2) !=
-                   substr(cn[2], 1, nchar(cn[1])/2) &
-                   substr(cn[1], (nchar(cn[1])/2) + 1, nchar(cn[1])) !=
-                   substr(cn[2], (nchar(cn[1])/2) + 1, nchar(cn[1])),
-                 1,NA)
-
-          if(is.null(nrow(cn))){
-            Dprime <- rep(check, 1)
-            rsq <- rep(check, 1)
-          }
-          else{
-            Dprime <- rep(check, nrow(cn))
-            rsq <- rep(check, nrow(cn))
-          }
-          chisqu <- rsq*(4)
-          pval <- 1 - pchisq(chisqu, 1)
-
-          #write:
-          if(prox_table){
-            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
-            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
-            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
-            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
-            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
-          }
-          if(matrix_out){
-            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-            fill <- rep(NA, nrow(x) - length(Dprime) - 1)
-            Dprime <- c(fill, Dprime)
-            rsq <- c(fill, rsq)
-            pval <- c(fill, pval)
-            data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
-            data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
-            data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
-            rm(pval, rsq, Dprime)
-          }
-          prog <- prog_after
-          next()
-        }
-
-        #fix three missing haplotypes (everything NA)
-        if(ncol(haps) == 1){
-
-          Dprime <- rep(NA, nrow(haps))
-          rsq <- rep(NA, nrow(haps))
-          pval <- rep(NA, nrow(haps))
-
-          #write
-          if(prox_table){
-            data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
-            data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
-            data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
-            data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
-            data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
-          }
-          if(matrix_out){
-            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-            fill <- rep(NA, nrow(x) - length(Dprime) - 1)
-            Dprime <- c(fill, Dprime)
-            rsq <- c(fill, rsq)
-            pval <- c(fill, pval)
-            data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
-            data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
-            data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
-            rm(pval, rsq, Dprime)
-          }
-          prog <- prog_after
-          next()
-        }
-
-        #calc Dprime, rsq
-        A1B1f <- haps[,1]/rowSums(haps)
-        A1B2f <- haps[,2]/rowSums(haps)
-        A2B1f <- haps[,3]/rowSums(haps)
-        A2B2f <- haps[,4]/rowSums(haps)
-        A1f <- A1B1f + A1B2f
-        A2f <- 1 - A1f
-        B1f <- A1B1f + A2B1f
-        B2f <- 1 - B1f
-        D <- A1B1f - A1f*B1f
-        D2 <- A2B1f - A2f*B1f
-        Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
-                         ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
-                                0))
-        rsq <- (D^2)/(A1f*A2f*B1f*B2f)
-
-        #fix for when more missing haps.
-        Dprime[which(rowSums(ifelse(haps == 0, T, F)) == 3)] <- 0 #if three missing haplotypes, call 0.
-        Dprime[which(rowSums(ifelse(haps == 0, T, F)) == 4)] <- NA # if four, call NA.
-        rsq[which(rowSums(ifelse(haps == 0, T, F)) %in% 3:4)] <- NA #replace rsq with NA when 3 or 4 missing haplotypes (the latter shouldn't ever happen without missing data.)
-
-
-
-        #if two missing, harder:
-        miss2 <- rowSums(ifelse(haps == 0, T, F)) == 2
-        if(any(miss2)){
-          #get the missing haplotypes in each row:
-          tm_mat <- haps[which(miss2),] #grab the violating rows
-          tm_mat[tm_mat != 0] <- NA
-          tm_mat[tm_mat == 0] <- 1
-          tm_mat <- t(t(tm_mat)*(1:ncol(haps)))
-          tm_mat[!is.na(tm_mat)] <- colnames(haps)[as.numeric(tm_mat[!is.na(tm_mat)])]
-          tm_mat <- matrix(t(tm_mat)[!is.na(t(tm_mat))], ncol = 2, byrow = T)
-
-          #if both are actually polymorphic, assign a one, otherwise asign a 0.
-          check <- ifelse(substr(tm_mat[,1], 1, nchar(tm_mat[1,1])/2) !=
-                            substr(tm_mat[,2], 1, nchar(tm_mat[1,1])/2) &
-                            substr(tm_mat[,1], (nchar(tm_mat[1,1])/2) + 1, nchar(tm_mat[1,1])) !=
-                            substr(tm_mat[,2], (nchar(tm_mat[1,1])/2) + 1, nchar(tm_mat[1,1])),
-                          1,NA)
-          Dprime[which(miss2)] <- check
-          rsq[which(miss2)] <- check
-          rm(tm_mat)
-        }
-
-        #get pvals
-        chisqu <- rsq*(4)
-        pval <- 1 - pchisq(chisqu, 1)
-
-        #remove stuff to clear memory
-        rm(A1B1f, A1B2f, A2B1f, A2B2f, haps, miss2, D, D2, chisqu, B1f, B2f, A1f, A2f)
-
-        #write
-        if(prox_table){
-          data.table::set(prox, (prog + 1):prog_after, j = "p1", value = meta$position[i])
-          data.table::set(prox, (prog + 1):prog_after, j = "p2", value = meta$position[(i+1):nrow(x)])
-          data.table::set(prox, (prog + 1):prog_after, j = "rsq", value = rsq)
-          data.table::set(prox, (prog + 1):prog_after, j = "Dprime", value = Dprime)
-          data.table::set(prox, (prog + 1):prog_after, j = "pval", value = pval)
-        }
-        if(matrix_out){
-          #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-          fill <- rep(NA, nrow(x) - length(Dprime) - 1)
-          Dprime <- c(fill, Dprime)
-          rsq <- c(fill, rsq)
-          pval <- c(fill, pval)
-          data.table::set(rmat, i, 1:ncol(rmat), as.list(rsq))
-          data.table::set(Dpmat, i, 1:ncol(Dpmat), as.list(Dprime))
-          data.table::set(pvmat, i, 1:ncol(pvmat), as.list(pval))
-        }
-        prog <- prog_after
-      }
-
-      ###################################
-      #finish and return output
-      if(prox_table){
-        prox$proximity <- abs(prox$p1 - prox$p2)
-        if(any(colnames(meta) == "group")){
-          prox$group <- meta[1,"group"]
-        }
-        if(any(colnames(meta) == "pop")){
-          prox$pop <- meta[1,"pop"]
-        }
-        prox <- prox[,c(6:ncol(prox), 1:5)]
-      }
-      if(matrix_out){
-        Dpmat <- cbind(position = meta$position[1:stop.row], Dpmat)
-        rmat <- cbind(position = meta$position[1:stop.row], rmat)
-        pvmat <- cbind(position = meta$position[1:stop.row], pvmat)
-      }
-      if(prox_table){
-        if(matrix_out){
-          return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
-        }
-        else{
-          return(prox = prox)
-        }
-      }
-      else{
-        return(list(Dprime = Dpmat, rsq = rmat, pval = pvmat))
-      }
-    }
-  }
-
-
-  #function to do LD with SNPs
-  else{
-    #prepare input and metadata.
-    meta <- x[,1:ecs]
-    x <- x[,(ecs + 1):ncol(x)]
-    x <- as.matrix(x)
-
-    library(dplyr)
-
-    #functions:
-    #goal: make a haplotype table, where each row is a comparison and each column is a haplotype count
-    #to count haplotypes: Double heterozgote (AC CG) = mark neither.
-    #                     Double homozygote (AA CC): mark two of the combination (A with C)
-    #                     homo/het (AA CG): mark one of each combination (A with C and A with G)
-    #
-    #function to do this need to: 1) paste together the observed genotypes of all observed genotype combinations.
-    #                             2) convert this to a table of counts of these genotypes for each pairwise combo.
-    #                             3) clean the table
-    #                             4) get haplotype counts.
-    #
-    #make a function to generate this table given a starting locus:
-    # inputs: x: row containing genotypes at starting locus
-    #         y: rows containing genotypes at all comparison loci
-    tabulate_haplotypes <- function(x, y, as, dmDat, sform){
-      #1)
-      #get the observed genotype combinations
-      yv <- as.vector(t(y))
-      gcv <- paste0(x, yv)
-      if(!is.matrix(y)){
-        gcv <- matrix(gcv, 1, length(x), byrow = T)
-      }
-      else{
-        gcv <- matrix(gcv, nrow(y), length(x), byrow = T)
-      }
-
-
-      #2)
-      #turn this into a genotype count table
-      mgcv <- reshape2::melt(gcv)
-      cnames <- levels(mgcv$value)
-      ghapmat <- bigtabulate::bigtabulate(mgcv, ccols = which(colnames(mgcv) %in% c("Var1", "value")))
-      colnames(ghapmat) <- cnames
-
-      #3) clean the table
-      ##grab column names
-      gl <- colnames(ghapmat)
-      ##remove anything with missing data and double hets
-      rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
-                grep(paste0(dmDat, "$"), gl), #missing second locus
-                which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
-                        substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
-
-      ##remove any double heterozygotes
-      ghapmat <- ghapmat[,-rgcs]
-
-      #add a filler row for the last pairwise comparison to make life easier.
-      if(!is.matrix(y)){
-        if(length(ghapmat) > 1){ #stop it from doing this if there is data for only one haplotype.
-          ghapmat <- rbind(ghapmat, rep(c(10,0), 100)[1:length(ghapmat)])
-        }
-      }
-
-      #if nothing remains, return nothing
-      if(length(ghapmat) == 0){
-        return(NA)
-      }
-      else if(!is.matrix(ghapmat)){ #if only one column remains...
-        if(substr(gl[-rgcs], 1,sform) == substr(gl[-rgcs], sform + 1, sform*2)){ #double hom
-          return(NA)
-        }
-        else{
-          return(c(D = 0))
-        }
-      }
-
-      #4) get hap table. Use the rules above to do this. Possible conditions, where alleles at locus 1 = 1a1b and locus 2 = 2a2b
-      ghapmat <- ghapmat[,order(colnames(ghapmat))] #put in order, just in case
-      gl <- colnames(ghapmat) #get column names again
-      hnames <- c(paste0(as, as[1]),
-                  paste0(as, as[2]),
-                  paste0(as, as[3]),
-                  paste0(as, as[4]))
-      if(any(grepl("NA", hnames))){ #in the case of a missing allele...
-        hnames <- hnames[-grep("NA",hnames)]
-      }
-      hnames <- sort(hnames)
-      hapmat <- matrix(0, nrow(ghapmat), length(hnames))#initialize. all possible haplotypes
-      colnames(hapmat) <- hnames
-
-
-      ##figure out which are homozygotes and heterozygotes at either locus in the pairwise comparison.
-      dhom <- substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
-        substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4) #columns with double homozygotes
-      dhom <- ghapmat[,dhom]
-      het_l1 <- substr(gl, 1, sform) != substr(gl, sform + 1, sform*2) #columns where the first locus is het
-      het_l1 <- ghapmat[,het_l1]
-      het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
-      het_l2 <- ghapmat[,het_l2]
-
-      #fix wierd cases where one of these isn't a matrix because only one haplotype falls into the category.
-      if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
-        if(!is.matrix(dhom)){
-          dhom <- as.matrix(dhom)
-          colnames(dhom) <- colnames(ghapmat)[substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
-                                                substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4)] #columns with double homozygotes
-        }
-        if(!is.matrix(het_l1)){
-          het_l1 <- as.matrix(het_l1)
-          colnames(het_l1) <- colnames(ghapmat)[substr(gl, 1, sform) != substr(gl, sform + 1, sform*2)] #columns where the first locus is het
-        }
-        if(!is.matrix(het_l2)){
-          het_l2 <- as.matrix(het_l2)
-          colnames(het_l2) <- colnames(ghapmat)[substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4)]
-        }
-      }
-
-      #count up the haplotypes.
-      #function to correct haplotype input matrix:
-      GtoH <- function(x, n){
-        m1 <- matrix(as.numeric(x), nrow(x), ncol(x))
-        colnames(m1) <- colnames(x)
-        m1 <- cbind(as.data.frame(t(m1)), n)
-        m2 <- m1 %>% group_by(n) %>% summarise_all(funs(sum))
-        m2 <- t(as.matrix(m2[,-1]))
-        colnames(m2) <- sort(unique(n))
-        return(m2)
-      }
-      ##homozygotes:
-      hapmat[,colnames(hapmat) %in% paste0(substr(colnames(dhom), 1, sform),
-                                           substr(colnames(dhom),(sform*2)+1,sform*3))] <- dhom*2
-      ##heterozyogote locus 1
-      n1 <- paste0(substr(colnames(het_l1), 1, sform),
-                   substr(colnames(het_l1),(sform*2)+1,sform*3))
-      n1 <- GtoH(het_l1, n1)
-      n2 <- paste0(substr(colnames(het_l1),sform+1, sform*2),
-                   substr(colnames(het_l1),(sform*3)+1, sform*4))
-      n2 <- GtoH(het_l1, n2)
-      hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
-      hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
-
-      ##heterozyogote locus 2
-      n1 <- paste0(substr(colnames(het_l2), 1, sform),
-                   substr(colnames(het_l2),(sform*2)+1,sform*3))
-      n1 <- GtoH(het_l2, n1)
-      n2 <- paste0(substr(colnames(het_l2),sform+1, sform*2),
-                   substr(colnames(het_l2),(sform*3)+1, sform*4))
-      n2 <- GtoH(het_l2, n2)
-      hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
-      hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
-
-
-      #5)condense this hap table into the 1a2a, 1a2b, 1b2a, 1b2b format.
-      # figure out how where haplotypes are missing. Note, do the case of two or three
-      # missin haplotypes at the end.
-      pmat <- ifelse(hapmat == 0, F, T)
-      mmat <- pmat
-      l1 <- substr(colnames(pmat), 1, sform)
-      l2 <- substr(colnames(pmat), sform + 1, sform*2)
-      mc <- 4 - rowSums(pmat)
-
-      #function to see if haplotype is missing. x is the row index, m is a vector of the number missing haplotypes at each locus.
-      cmhap <- function(x){
-        out <- ifelse(rowSums(pmat[,l1 == l1[x]]) == 0 | rowSums(pmat[,l1 == l1[x]]) == 2, F,
-                      ifelse(rowSums(pmat[,l2 == l2[x]]) > 0 & pmat[,x] != TRUE, T, F))
-        return(out)
-      }
-      #fill the mmat.
-      for(i in 1:ncol(pmat)){
-        mmat[,i] <- cmhap(i)
-      }
-
-      #set the missing values in hapmat to NA, then replace those with zeros where there
-      #are missing haplotypes.
-      hapmat[hapmat == 0] <- NA
-      hapmat[mmat == TRUE] <- 0
-
-
-
-
-
-
-      #put in fillers when there are more than one haplotype is missing.
-      pmat <- ifelse(is.na(hapmat), F, T)
-      missing <- 4 - rowSums(pmat)
-      m2 <- ifelse(missing >= 2, 0, NA)
-      m3 <- ifelse(missing >= 3, 0, NA)
-      m4 <- ifelse(missing == 4, 0, NA)
-      mc <- cbind(m2,m2,m3,m4)
-
-      #figure out which D, r values to give if two are missing...
-      if(any(missing == 2)){
-        m2mat <- hapmat[missing == 2,]
-        m2matv <- as.vector(t(m2mat))
-        if(is.matrix(m2mat)){
-          m2matvcn <- rep(colnames(m2mat), nrow(m2mat))
-        }
-        else{
-          m2matvcn <- rep(names(m2mat), 1)
-        }
-        m2matv[!is.na(m2matv)] <- m2matvcn[!is.na(m2matv)]
-        m2matv <- na.omit(m2matv)
-        if(is.matrix(m2mat)){
-          m2mat <- matrix(m2matv, nrow(m2mat), 2, T)
-          m2mat <- ifelse(substr(m2mat[,1], 1, sform) != substr(m2mat[,2], 1, sform) &
-                            substr(m2mat[,1], sform + 1, sform*2) != substr(m2mat[,2], sform + 1, sform*2),
-                          1,0)
-        }
-        else{
-          m2mat <- ifelse(substr(m2matv[1], 1, sform) != substr(m2matv[2], 1, sform) &
-                            substr(m2matv[1], sform + 1, sform*2) != substr(m2matv[2], sform + 1, sform*2),
-                          1,0)
-        }
-
-      }
-      else{
-        m2mat <- "none"
-      }
-
-      hapmat <- cbind(hapmat, mc)
-      hapmat <- as.vector(t(hapmat))
-      hapmat <- na.omit(hapmat)
-      #if(length(hapmat) %% nrow(y) != 0){
-      #  browser()
-      #}
-      hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
-
-      #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
-      #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
-      return(list(hapmat = hapmat, missing = missing, m2 = m2mat))
-    }
-    LD_func <- function(x, meta, prox_table = TRUE, matrix_out = TRUE, mDat = "N", sr = FALSE, chr.length = NULL, stop.row = nrow(x) - 1){
-      #double check that the position variable is numeric!
-      if(!is.numeric(meta$position)){meta$position <- as.numeric(meta$position)}
-
-      dmDat <- paste0(mDat, mDat) #missing genotype
-      #data format
-      sform <- nchar(x[1,1])/2
-
-      #get unique alleles present at each locus (note: this made a much quicker a tab... should implement this elsewhere...)
-      #note, tabulate_haplotypes needs this...
-      p1 <- substr(as.matrix(x), 1, sform)
-      p2 <- substr(as.matrix(x), sform + 1, sform*2)
-      pc <- reshape2::melt(cbind(p1,p2))
-      #amat <- with(pc, table(Var1, value))
-      #amat <- amat[,colnames(amat) != mDat]
-      as <- sort(unique(pc$value))
-      as <- as.character(as[as != mDat])
-
-
-      #need to loop through each loci and compare to everything else. Probably can't really vectorize the outer loop.
-
-
-
-      #initialize output.
-      if(prox_table){
-        prox <- data.frame(p1 = numeric(1), p2 = numeric(1), rsq = numeric(1), Dprime = numeric(1), pval = numeric(1))
-      }
-      if(matrix_out){
-        rmat <- matrix(NA, stop.row, nrow(x) - 1)
-        colnames(rmat) <- meta$position[-1]
-        rownames(rmat) <- meta$position[1:stop.row]
-        Dpmat <- rmat
-        pvmat <- rmat
-      }
-
-      #run length prediction variables for progress reporting
-      compfun <- function(x){
-        return(((x-1)*x)/2)
-      }
-      totcomp <- compfun(nrow(x))
-      cpercent <- 0
-
-      #loop through and get haplotypes, calc LD for each locus.
-      for(i in 1:stop.row){
-        if(!sr){
-          cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
-          if(cprog >= 0.05 + cpercent){
-            cat("Progress:", paste0(round(cprog*100), "%."), "\n")
-            cpercent <- cprog
-          }
-        }
-        haps <- tabulate_haplotypes(x[i,], x[(i+1):nrow(x),], as, dmDat, sform)
-
-        #if we had only one haplotype or no haplotypes:
-        if(is.na(haps[1])){
-          if(prox_table){
-            prox <- rbind(prox,
-                          cbind(p1 = meta$position[i], p2 = meta$position[(i+1):nrow(x)],
-                                rsq = NA, Dprime = NA, pval = NA))
-          }
-          if(matrix_out){
-            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-            rmat[i,] <- NA
-            Dpmat[i,] <- NA
-            pvmat[i,] <- NA
-          }
-          next()
-        }
-        if(length(haps) == 1){
-          if(prox_table){
-            prox <- rbind(prox,
-                          cbind(p1 = meta$position[i], p2 = meta$position[(i+1):nrow(x)],
-                                rsq = 0, Dprime = 0, pval = 0))
-          }
-          if(matrix_out){
-            #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-            fill <- rep(NA, nrow(x) - (nrow(x[,i:nrow(x)]) - 1) - 1)
-            Dprime <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
-            rsq <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
-            pval <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
-            rmat[i,] <- rsq
-            Dpmat[i,] <- Dprime
-            pvmat[i,] <- pval
-          }
-          next()
-        }
-
-
-        missing <- haps$missing
-        m2 <- haps$m2
-        haps <- haps$hapmat
-        #A1B1 is col 1, A1B2 is col 2, A2B1 is col 3, A2B2 is col 4.
-
-        #calc stats where >1 haps aren't missing
-        A1B1f <- haps[,1]/rowSums(haps)
-        A1B2f <- haps[,2]/rowSums(haps)
-        A2B1f <- haps[,3]/rowSums(haps)
-        A2B2f <- haps[,4]/rowSums(haps)
-        A1f <- A1B1f + A1B2f
-        A2f <- 1 - A1f
-        B1f <- A1B1f + A2B1f
-        B2f <- 1 - B1f
-        D <- A1B1f - A1f*B1f
-        D2 <- A2B1f - A2f*B1f
-        Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
-                         ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
-                                0))
-        rsq <- (D^2)/(A1f*A2f*B1f*B2f)
-
-        #fix for when more missing haps.
-        Dprime[missing == 3] <- 0
-        Dprime[missing == 4] <- NA
-        rsq[missing == 3 | missing == 4] <- NA
-        if(length(m2) > 1){
-          Dprime[missing == 2] <- m2
-          rsq[missing == 2] <- ifelse(m2 == 1, 1, NA)
-        }
-
-        #get pvals
-        chisqu <- rsq*(4)
-        pval <- 1 - pchisq(chisqu, 1)
-
-        #remove dummy filler if this was the final comparison.
-        if(i == (nrow(x) - 1)){
-          Dprime <- Dprime[-2]
-          rsq <- rsq[-2]
-          pval <- pval[-2]
-        }
-
-        #write output.
-        if(prox_table){
-          prox <- rbind(prox,
-                        cbind(p1 = meta$position[i], p2 = meta$position[(i+1):nrow(x)],
-                              rsq = rsq, Dprime = Dprime, pval = pval))
-        }
-        if(matrix_out){
-          #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-          fill <- rep(NA, nrow(x) - length(Dprime) - 1)
-          Dprime <- c(fill, Dprime)
-          rsq <- c(fill, rsq)
-          pval <- c(fill, pval)
-          rmat[i,] <- rsq
-          Dpmat[i,] <- Dprime
-          pvmat[i,] <- pval
-        }
-      }
-      if(prox_table){
-        prox <- prox[-1,]
-        prox$proximity <- abs(prox$p1 - prox$p2)
-        if(any(colnames(meta) == "group")){
-          prox$group <- meta[1,"group"]
-        }
-        if(any(colnames(meta) == "pop")){
-          prox$pop <- meta[1,"pop"]
-        }
-        prox <- prox[,c(6:ncol(prox), 1:5)]
-      }
-      if(prox_table){
-        if(matrix_out){
-          return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
-        }
-        else{
-          return(prox = prox)
-        }
-      }
-      else{
-        return(list(Dprime = Dpmat, rsq = rmat, pval = pvmat))
-      }
-    }
-  }
-
-
-  #one more sanity check.
+  }  #one more sanity check.
   if(ss > nrow(x)){
     stop("Number of sites to subsample cannot be large than the number of provided sites.")
   }
 
+  #========================sub-functions=============
+  #function to do LD with SNPs
+  library(dplyr)
+
+  # sub functions:
+
+  #function to correct haplotype input matrix:
+  GtoH <- function(x, n){
+    m1 <- matrix(as.numeric(x), nrow(x), ncol(x))
+    colnames(m1) <- colnames(x)
+    m1 <- cbind(as.data.frame(t(m1)), n)
+    m2 <- m1 %>% group_by(n) %>% summarise_all(funs(sum))
+    m2 <- t(as.matrix(m2[,-1]))
+    colnames(m2) <- sort(unique(n))
+    return(m2)
+  }
+
+  #goal: make a haplotype table, where each row is a comparison and each column is a haplotype count
+  #to count haplotypes: Double heterozgote (AC CG) = mark neither.
+  #                     Double homozygote (AA CC): mark two of the combination (A with C)
+  #                     homo/het (AA CG): mark one of each combination (A with C and A with G)
+  #
+  #function to do this need to: 1) paste together the observed genotypes of all observed genotype combinations.
+  #                             2) convert this to a table of counts of these genotypes for each pairwise combo.
+  #                             3) clean the table
+  #                             4) get haplotype counts.
+  #
+  #make a function to generate this table given a starting locus:
+  # inputs: x: row containing genotypes at starting locus
+  #         y: rows containing genotypes at all comparison loci
+  tabulate_haplotypes <- function(x, y, as, dmDat, sform){
+    #1)
+    #get the observed genotype combinations
+    yv <- as.vector(t(y))
+    gcv <- paste0(x, yv)
+    if(length(y) == length(x)){
+      gcv <- matrix(gcv, 1, length(x), byrow = T)
+    }
+    else{
+      gcv <- matrix(gcv, nrow(y), length(x), byrow = T)
+    }
+
+
+    #2)
+    #turn this into a genotype count table
+    mgcv <- reshape2::melt(gcv)
+    cnames <- levels(mgcv$value)
+    ghapmat <- bigtabulate::bigtabulate(mgcv, ccols = which(colnames(mgcv) %in% c("Var1", "value")))
+    colnames(ghapmat) <- cnames
+
+    #3) clean the table
+    ##grab column names
+    gl <- colnames(ghapmat)
+    ##remove anything with missing data and double hets
+    rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
+              grep(paste0(dmDat, "$"), gl), #missing second locus
+              which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
+                      substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
+
+    ##remove any double heterozygotes
+    ghapmat <- ghapmat[,-rgcs]
+
+    #add a filler row for the last pairwise comparison to make life easier.
+    if(length(y) == length(x)){
+      if(length(ghapmat) > 1){ #stop it from doing this if there is data for only one haplotype.
+        ghapmat <- rbind(ghapmat, rep(c(10,0), 100)[1:length(ghapmat)])
+      }
+    }
+
+    #if nothing remains, return nothing
+    if(length(ghapmat) == 0){
+      return(NA)
+    }
+    else if(!is.matrix(ghapmat)){ #if only one column remains...
+      if(substr(gl[-rgcs], 1,sform) == substr(gl[-rgcs], sform + 1, sform*2)){ #double hom
+        return(NA)
+      }
+      else{
+        return(c(D = 0))
+      }
+    }
+
+    #4) get hap table. Use the rules above to do this. Possible conditions, where alleles at locus 1 = 1a1b and locus 2 = 2a2b
+    ghapmat <- ghapmat[,order(colnames(ghapmat))] #put in order, just in case
+    gl <- colnames(ghapmat) #get column names again
+    hnames <- c(paste0(as, as[1]),
+                paste0(as, as[2]),
+                paste0(as, as[3]),
+                paste0(as, as[4]))
+    if(any(grepl("NA", hnames))){ #in the case of a missing allele...
+      hnames <- hnames[-grep("NA",hnames)]
+    }
+    hnames <- sort(hnames)
+    hapmat <- matrix(0, nrow(ghapmat), length(hnames))#initialize. all possible haplotypes
+    colnames(hapmat) <- hnames
+
+
+    ##figure out which are homozygotes and heterozygotes at either locus in the pairwise comparison.
+    dhom <- substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
+      substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4) #columns with double homozygotes
+    dhom <- ghapmat[,dhom]
+    het_l1 <- substr(gl, 1, sform) != substr(gl, sform + 1, sform*2) #columns where the first locus is het
+    het_l1 <- ghapmat[,het_l1]
+    het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
+    het_l2 <- ghapmat[,het_l2]
+
+    #fix wierd cases where one of these isn't a matrix because only one haplotype falls into the category.
+    if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
+      if(!is.matrix(dhom)){
+        dhom <- as.matrix(dhom)
+        colnames(dhom) <- colnames(ghapmat)[substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
+                                              substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4)] #columns with double homozygotes
+      }
+      if(!is.matrix(het_l1)){
+        het_l1 <- as.matrix(het_l1)
+        colnames(het_l1) <- colnames(ghapmat)[substr(gl, 1, sform) != substr(gl, sform + 1, sform*2)] #columns where the first locus is het
+      }
+      if(!is.matrix(het_l2)){
+        het_l2 <- as.matrix(het_l2)
+        colnames(het_l2) <- colnames(ghapmat)[substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4)]
+      }
+    }
+
+    #count up the haplotypes.
+    ##homozygotes:
+    hapmat[,colnames(hapmat) %in% paste0(substr(colnames(dhom), 1, sform),
+                                         substr(colnames(dhom),(sform*2)+1,sform*3))] <- dhom*2
+    ##heterozyogote locus 1
+    n1 <- paste0(substr(colnames(het_l1), 1, sform),
+                 substr(colnames(het_l1),(sform*2)+1,sform*3))
+    n1 <- GtoH(het_l1, n1)
+    n2 <- paste0(substr(colnames(het_l1),sform+1, sform*2),
+                 substr(colnames(het_l1),(sform*3)+1, sform*4))
+    n2 <- GtoH(het_l1, n2)
+    hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
+    hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
+
+    ##heterozyogote locus 2
+    n1 <- paste0(substr(colnames(het_l2), 1, sform),
+                 substr(colnames(het_l2),(sform*2)+1,sform*3))
+    n1 <- GtoH(het_l2, n1)
+    n2 <- paste0(substr(colnames(het_l2),sform+1, sform*2),
+                 substr(colnames(het_l2),(sform*3)+1, sform*4))
+    n2 <- GtoH(het_l2, n2)
+    hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
+    hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
+
+
+    #5)condense this hap table into the 1a2a, 1a2b, 1b2a, 1b2b format.
+    # figure out how where haplotypes are missing. Note, do the case of two or three
+    # missin haplotypes at the end.
+    pmat <- ifelse(hapmat == 0, F, T)
+    mmat <- pmat
+    l1 <- substr(colnames(pmat), 1, sform)
+    l2 <- substr(colnames(pmat), sform + 1, sform*2)
+    mc <- 4 - rowSums(pmat)
+
+    #function to see if haplotype is missing. x is the row index, m is a vector of the number missing haplotypes at each locus.
+    cmhap <- function(x){
+      out <- ifelse(rowSums(pmat[,l1 == l1[x]]) == 0 | rowSums(pmat[,l1 == l1[x]]) == 2, F,
+                    ifelse(rowSums(pmat[,l2 == l2[x]]) > 0 & pmat[,x] != TRUE, T, F))
+      return(out)
+    }
+    #fill the mmat.
+    for(i in 1:ncol(pmat)){
+      mmat[,i] <- cmhap(i)
+    }
+
+    #set the missing values in hapmat to NA, then replace those with zeros where there
+    #are missing haplotypes.
+    hapmat[hapmat == 0] <- NA
+    hapmat[mmat == TRUE] <- 0
+
+
+
+
+
+
+    #put in fillers when there are more than one haplotype is missing.
+    pmat <- ifelse(is.na(hapmat), F, T)
+    missing <- 4 - rowSums(pmat)
+    m2 <- ifelse(missing >= 2, 0, NA)
+    m3 <- ifelse(missing >= 3, 0, NA)
+    m4 <- ifelse(missing == 4, 0, NA)
+    mc <- cbind(m2,m2,m3,m4)
+
+    #figure out which D, r values to give if two are missing...
+    if(any(missing == 2)){
+      m2mat <- hapmat[missing == 2,]
+      m2matv <- as.vector(t(m2mat))
+      if(is.matrix(m2mat)){
+        m2matvcn <- rep(colnames(m2mat), nrow(m2mat))
+      }
+      else{
+        m2matvcn <- rep(names(m2mat), 1)
+      }
+      m2matv[!is.na(m2matv)] <- m2matvcn[!is.na(m2matv)]
+      m2matv <- na.omit(m2matv)
+      if(is.matrix(m2mat)){
+        m2mat <- matrix(m2matv, nrow(m2mat), 2, T)
+        m2mat <- ifelse(substr(m2mat[,1], 1, sform) != substr(m2mat[,2], 1, sform) &
+                          substr(m2mat[,1], sform + 1, sform*2) != substr(m2mat[,2], sform + 1, sform*2),
+                        1,0)
+      }
+      else{
+        m2mat <- ifelse(substr(m2matv[1], 1, sform) != substr(m2matv[2], 1, sform) &
+                          substr(m2matv[1], sform + 1, sform*2) != substr(m2matv[2], sform + 1, sform*2),
+                        1,0)
+      }
+
+    }
+    else{
+      m2mat <- "none"
+    }
+
+    hapmat <- cbind(hapmat, mc)
+    hapmat <- as.vector(t(hapmat))
+    hapmat <- na.omit(hapmat)
+    #if(length(hapmat) %% nrow(y) != 0){
+    #  browser()
+    #}
+    hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
+
+    #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
+    #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
+    return(list(hapmat = hapmat, missing = missing, m2 = m2mat))
+  }
+
+  # LD sub function, called in func
+  LD_func <- function(x, meta, mDat, sr = FALSE, stop.row = nrow(x) - 1){
+    smDat <- substr(mDat, 1, nchar(mDat)/2)
+    if(!is.matrix(x)){x <- as.matrix(x)}
+
+    #double check that the position variable is numeric!
+    browser()
+    if(!is.numeric(meta$position)){meta$position <- as.numeric(meta$position)}
+
+    #data format
+    sform <- nchar(x[1,1])/2
+
+    #get unique alleles present at each locus
+    #note, tabulate_haplotypes needs this...
+    p1 <- substr(x, 1, sform)
+    p2 <- substr(x, sform + 1, sform*2)
+    pc <- sort(unique(c(p1,p2)))
+    as <- as.character(pc[pc != smDat])
+
+
+    #need to loop through each loci and compare to everything else. Probably can't really vectorize the outer loop.
+
+
+
+    #initialize output.
+    prox <- matrix(NA, nrow = 0, ncol = 2*ncol(meta) + 4)
+    colnames(prox) <- c(paste0("s1_", colnames(meta)), paste0("s2_", colnames(meta)), "proximity", "rsq", "Dprime", "pval")
+    prox <- as.data.frame(prox)
+    rmat <- matrix(NA, stop.row, nrow(x) - 1)
+    colnames(rmat) <- meta$position[-1]
+    rownames(rmat) <- meta$position[1:stop.row]
+    Dpmat <- rmat
+    pvmat <- rmat
+
+    #run length prediction variables for progress reporting
+    compfun <- function(x){
+      return(((x-1)*x)/2)
+    }
+    totcomp <- compfun(nrow(x))
+    cpercent <- 0
+
+    #loop through and get haplotypes, calc LD for each locus.
+    for(i in 1:stop.row){
+      if(!sr){
+        cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
+        if(cprog >= 0.05 + cpercent){
+          cat("Progress:", paste0(round(cprog*100), "%."), "\n")
+          cpercent <- cprog
+        }
+      }
+      haps <- tabulate_haplotypes(x[i,], x[(i+1):nrow(x),], as, mDat, sform)
+
+      #if we had only one haplotype or no haplotypes:
+      if(is.na(haps[1])){
+        if(prox_table){
+          prox <- rbind(prox,
+                        cbind(p1 = meta$position[i], p2 = meta$position[(i+1):nrow(x)],
+                              rsq = NA, Dprime = NA, pval = NA))
+        }
+        if(matrix_out){
+          #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+          rmat[i,] <- NA
+          Dpmat[i,] <- NA
+          pvmat[i,] <- NA
+        }
+        next()
+      }
+      if(length(haps) == 1){
+        prox <- rbind(prox,
+                      cbind(p1 = meta$position[i], p2 = meta$position[(i+1):nrow(x)],
+                            rsq = 0, Dprime = 0, pval = 0))
+
+        #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+        fill <- rep(NA, nrow(x) - (nrow(x[,i:nrow(x)]) - 1) - 1)
+        Dprime <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
+        rsq <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
+        pval <- c(fill, rep(0, length = (nrow(x[,i:nrow(x)]) - 1)))
+        rmat[i,] <- rsq
+        Dpmat[i,] <- Dprime
+        pvmat[i,] <- pval
+        next()
+      }
+
+
+      missing <- haps$missing
+      m2 <- haps$m2
+      haps <- haps$hapmat
+      #A1B1 is col 1, A1B2 is col 2, A2B1 is col 3, A2B2 is col 4.
+
+      #calc stats where >1 haps aren't missing
+      A1B1f <- haps[,1]/rowSums(haps)
+      A1B2f <- haps[,2]/rowSums(haps)
+      A2B1f <- haps[,3]/rowSums(haps)
+      A2B2f <- haps[,4]/rowSums(haps)
+      A1f <- A1B1f + A1B2f
+      A2f <- 1 - A1f
+      B1f <- A1B1f + A2B1f
+      B2f <- 1 - B1f
+      D <- A1B1f - A1f*B1f
+      D2 <- A2B1f - A2f*B1f
+      # note that many sources give an inaccurate Dprime calculation--this should be correct.
+      Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
+                       ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
+                              0))
+      rsq <- (D^2)/(A1f*A2f*B1f*B2f)
+
+      #fix for when more missing haps.
+      Dprime[missing == 3] <- 0
+      Dprime[missing == 4] <- NA
+      rsq[missing == 3 | missing == 4] <- NA
+      if(length(m2) > 1){
+        Dprime[missing == 2] <- m2
+        rsq[missing == 2] <- ifelse(m2 == 1, 1, NA)
+      }
+
+      #get pvals
+      chisqu <- rsq*(4)
+      pval <- 1 - pchisq(chisqu, 1)
+
+      #remove dummy filler if this was the final comparison.
+      if(i == (nrow(x) - 1)){
+        Dprime <- Dprime[-2]
+        rsq <- rsq[-2]
+        pval <- pval[-2]
+      }
+
+      #write output.
+      tprox <- cbind(meta[rep(i, length(Dprime)),],
+                     meta[(i+1):nrow(meta),],
+                     abs(meta[i,]$position - meta[(i+1):nrow(meta),]$position),
+                     rsq, Dprime, pval)
+      colnames(tprox) <- colnames(prox)
+      prox <- rbind(prox, tprox)
+
+      #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
+      fill <- rep(NA, nrow(x) - length(Dprime) - 1)
+      Dprime <- c(fill, Dprime)
+      rsq <- c(fill, rsq)
+      pval <- c(fill, pval)
+      rmat[i,] <- rsq
+      Dpmat[i,] <- Dprime
+      pvmat[i,] <- pval
+    }
+
+    # fix this. prox should have all of the metadata columns for snp and sample levels!
+    if(any(colnames(meta) == "group")){
+      prox$group <- meta[1,"group"]
+    }
+    if(any(colnames(meta) == "pop")){
+      prox$pop <- meta[1,"pop"]
+    }
+    prox <- prox[,c(6:ncol(prox), 1:5)]
+
+
+    return(list(prox = prox, Dprime = Dpmat, rsq = rmat, pval = pvmat))
+
+  }
+
+  # function to figure out which snps we are comparing to each
+  # outputs a nested list: per sub.facet/samples to compare + a list per snp/snps to compare for each snp.
+  determine.comparison.snps <- function(x, facets, facet.types){
+    browser()
+
+    # sub-subfunctions
+    get.samp.opts <- function(x, t.facet){
+      sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% t.facet]
+      sample.meta <- sample.meta[,sort(colnames(sample.meta))]
+      if(!is.data.frame(sample.meta)){
+        sample.meta <- as.data.frame(sample.meta)
+        colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% t.facet]
+      }
+      sample.opts <- unique(sample.meta)
+      if(!is.data.frame(sample.opts)){
+        sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+        colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
+      }
+      sample.opts <- dplyr::arrange_all(sample.opts)
+
+      return(list(sample.opts, sample.meta))
+    }
+
+    get.snp.opts <- function(x, t.facet){
+      snp.meta <- x@snp.meta[colnames(x@snp.meta) %in% t.facet]
+      snp.meta <- snp.meta[,sort(colnames(snp.meta))]
+      if(!is.data.frame(snp.meta)){
+        snp.meta <- as.data.frame(snp.meta)
+        colnames(snp.meta) <- colnames(x@snp.meta)[colnames(x@snp.meta) %in% t.facet]
+      }
+      snp.opts <- unique(snp.meta)
+      if(!is.data.frame(snp.opts)){
+        snp.opts <- as.data.frame(snp.opts, stringsAsFactors = F)
+        colnames(snp.opts) <- facets[which(facets %in% colnames(x@snp.meta))]
+      }
+      snp.opts <- dplyr::arrange_all(snp.opts)
+
+      return(list(snp.opts, snp.meta))
+    }
+
+
+    out <- vector(mode = "list", length(facets))
+
+    for(i in 1:length(facets)){
+      names(out)[i] <- facets[i]
+      t.facet <- unlist(strsplit(facets[i], split = "(?<!^)\\.", perl = T))
+
+
+      if(facet.types[i] == c("sample")){
+
+        # get options
+        opts <- get.samp.opts(x, t.facet)
+        sample.opts <- opts[[1]]
+        sample.meta <- opts[[2]]
+
+        # add snp/snp comparisons. Since the facet is simple, we do all snps. Do so with a loop through all subfacets
+        out[[i]] <- vector("list", nrow(sample.opts))
+        for(j in 1:nrow(sample.opts)){
+          samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
+          out[[i]][[j]] <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
+
+          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+          for(k in 1:(nrow(x) - 1)){
+            out[[i]][[j]]$snps[[k]] <- (k + 1):nrow(x)
+          }
+        }
+
+      }
+      else if(facet.types[i] == "snp"){
+        # get the subfacet options
+        opts <- get.snp.opts(x, t.facet)
+        snp.opts <- opts[[1]]
+        snp.meta <- opts[[2]]
+
+        # add snp/snp comparisons. Since the facet is simple, we do all samples, but pick the correct snps.
+        out[[i]] <- vector("list", nrow(snp.opts))
+        for(j in 1:nrow(snp.opts)){
+          snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[j,]))))
+          out[[i]][[j]] <- list(snps = vector("list", nrow(x)), samps = 1:nrow(x@sample.meta))
+
+          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+          for(k in 1:(length(snps.in.subfacet))){
+            out[[i]][[j]]$snps[[k]] <- snps.in.subfacet[(k + 1):length(snps.in.subfacet)]
+          }
+        }
+      }
+      else if(facet.types[i] == "complex"){
+        # get the subfacet sample options, snp and sample
+        sample.opts <- get.samp.opts(x, t.facet)
+        snp.opts <- get.snp.opts(x, t.facet)
+        sample.meta <- sample.opts[[2]]
+        snp.meta <- snp.opts[[2]]
+
+        # working here!
+
+
+        # add snp/snp comparisons. Since the facet is simple, we do all samples, but pick the correct snps.
+        out[[i]] <- vector("list", nrow(snp.opts))
+        for(j in 1:nrow(snp.opts)){
+          snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[j,]))))
+          out[[i]][[j]] <- list(snps = vector("list", nrow(x)), samps = 1:nrow(x@sample.meta))
+
+          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+          for(k in 1:(length(snps.in.subfacet))){
+            out[[i]][[j]]$snps[[k]] <- snps.in.subfacet[(k + 1):length(snps.in.subfacet)]
+          }
+        }
+      }
+    }
+
+
+  }
+
+  #========================primary looping function==========================
+
+  # the overall function. x is snpRdata object.
+  func <- function(x, facets, snp.facets, par, sr){
+    browser()
+
+    facet.types <- facets[[2]]
+    facets <- facets[[1]]
+
+    #=====================call functions=========
+    # call these functions (possibly in parallel) according to supplied levels.
+
+    cat("Beginning LD calculation...\n")
+
+    #=====================no facets==============
+    if(length(facets) == 1 & facets[1] == ".base"){
+      cat("No facets specified.\n")
+
+      # grab metadata, mDat
+      meta <- x@snp.meta
+      mDat <- x@mDat
+
+
+      # run in parallel if requested
+      if(is.numeric(par)){
+        cat("Running in parallel.\n\t")
+        #this is tricky. Needs to be fed essentially the same data (although it can start farther along), but have different stopping points.
+        #then need to knit the matrix outputs together. The prox outputs are easy, just pass them along.
+        split <- (nrow(x)*(nrow(x)-1)/2)/par #number of comparisons to do per core
+        split <- ceiling(split)
+        cat("At least", split, "pairwise comparisons per processor.\n")
+
+        #vector of comps per row
+        nc.pr <- (nrow(x) - 1):0 #since the number is always this row vs every other.
+        snc.pr <- cumsum(nc.pr) #cumulative sum
+
+        #which rows does each processor do?
+        rproc <- matrix(0, nrow = par, 2) #i is the proc, col 1 is the starting row, col 2 is the ending row
+        cr <- 1
+        for(i in 1:par){
+          rproc[i,1] <- cr
+          if(i == par){
+            rproc[i,2] <- length(nc.pr) - 1
+          }
+          else{
+            rproc[i,2] <- which(cumsum(nc.pr) >= split*i)[1]
+          }
+          cr <- rproc[i,2] + 1
+        }
+
+        #now need to start the parallel job:
+        library(doParallel);library(foreach)
+        cl <- snow::makeSOCKcluster(par)
+        doSNOW::registerDoSNOW(cl)
+
+        #prepare reporting function
+        ntasks <- par
+        progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
+        opts <- list(progress=progress)
+
+
+        #save the info as a bigmatrix if it can be safely converted to numeric. Usually this is true for ms but not necissarily other data types.
+        if(as.numeric(x[1]) == x[1]){
+          cat("Saving matrix as big.matrix object for quicker sharing.\n")
+          xb <- bigmemory::as.big.matrix(x, type = "char")
+          xbd <- bigmemory::describe(xb)
+          remove(x)
+        }
+
+        cat("Begining run.\n")
+        # for(q in 1:par){
+        #   w_data <- LD_func(x = xb[rproc[q,1]:nrow(xb),],
+        #                     meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
+        #                     sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
+        # }
+
+        #run the jobs
+        output <- foreach::foreach(q = 1:ntasks, .packages = c("bigmemory", "dplyr"), .inorder = TRUE,
+                                   .options.snow = opts) %dopar% {
+                                     if(exists("xbd")){
+                                       x <- bigmemory::attach.big.matrix(xbd)
+                                     }
+                                     #note that matrix out is FALSE, since we have to build one up from the prox table anyway...
+                                     w_data <- LD_func(x = x[rproc[q,1]:nrow(x),],
+                                                       meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
+                                                       sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
+                                   }
+
+        #release cores
+        parallel::stopCluster(cl)
+        doSNOW::registerDoSNOW()
+
+        cat("LD computation completed. Preparing results.\n\t")
+
+        #combine the results
+        if(matrix_out){
+          cat("Standardizing matrices. Batch:")
+          #standardize column and row names, melt
+          fnames <- meta$position
+          fnames <- paste0(fnames, "_", 1:length(fnames))
+          cnames <- fnames[-1]
+          rnames <- fnames[-length(fnames)]
+
+          for(i in 1:length(output)){
+            cat(paste0("\n\t\t", i))
+
+            #fixes for matrices and objects without a position column. Mostly for the snp data format.
+            if(!data.table::is.data.table(output[[i]]$Dprime)){
+              output[[i]]$Dprime <- data.table::as.data.table(output[[i]]$Dprime)
+              output[[i]]$rsq <- data.table::as.data.table(output[[i]]$rsq)
+              output[[i]]$pval <- data.table::as.data.table(output[[i]]$pval)
+            }
+
+            if(!any(colnames(output[[i]]$Dprime) == "position")){
+              output[[i]]$Dprime <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$Dprime)
+              output[[i]]$rsq <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$rsq)
+              output[[i]]$pval <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$pval)
+            }
+
+            #fix the names.
+            colnames(output[[i]]$Dprime)[-1] <- cnames[rproc[i,1]:(nrow(x)-1)]
+            colnames(output[[i]]$rsq) <- colnames(output[[i]]$Dprime)
+            colnames(output[[i]]$pval) <- colnames(output[[i]]$Dprime)
+
+            output[[i]]$Dprime$position <- rnames[rproc[i,1]:rproc[i,2]]
+            output[[i]]$rsq$position <- output[[i]]$Dprime$position
+            output[[i]]$pval$position <- output[[i]]$Dprime$position
+
+            #melt
+            output[[i]]$Dprime <- reshape2::melt(output[[i]]$Dprime, id.vars = "position")
+            output[[i]]$rsq <- reshape2::melt(output[[i]]$rsq, id.vars = "position")
+            output[[i]]$pval <- reshape2::melt(output[[i]]$pval, id.vars = "position")
+          }
+          cat("\n\tDone.\n")
+        }
+
+        #bind everything together
+        cat("Combining results. Batch:")
+        w_list <- output[[1]]
+        cat("\n\t1")
+        for (i in 2:length(output)){
+          cat(paste0("\n\t\t", i))
+          if(prox_table){
+            if(matrix_out){
+              w_list$prox <- rbind(w_list$prox, output[[i]]$prox)
+            }
+            else{
+              w_list <- rbind(w_list, output[[i]])
+            }
+          }
+          if(matrix_out){
+            w_list$Dprime <- rbind(w_list$Dprime, output[[i]]$Dprime)
+            w_list$rsq <- rbind(w_list$rsq, output[[i]]$rsq)
+            w_list$pval <- rbind(w_list$pval, output[[i]]$pval)
+          }
+        }
+        cat("\n\tDone.\n")
+
+        #re-cast the output matrix
+        if(matrix_out){
+          cat("Re-casting output matrices.\n")
+          w_list$Dprime <- reshape2::acast(w_list$Dprime, formula = position ~ variable)
+          w_list$rsq <- reshape2::acast(w_list$rsq, formula = position ~ variable)
+          w_list$pval <- reshape2::acast(w_list$pval, formula = position ~ variable)
+
+          #fix columns and positions
+          colnames(w_list$Dprime) <- gsub("_.+", "", colnames(w_list$Dprime))
+          colnames(w_list$rsq) <- gsub("_.+", "", colnames(w_list$rsq))
+          colnames(w_list$pval) <- gsub("_.+", "", colnames(w_list$pval))
+
+          rownames(w_list$Dprime) <- gsub("_.+", "", rownames(w_list$Dprime))
+          rownames(w_list$rsq) <- gsub("_.+", "", rownames(w_list$rsq))
+          rownames(w_list$pval) <- gsub("_.+", "", rownames(w_list$pval))
+          cat("\tDone.\n")
+        }
+
+        return(w_list)
+      }
+
+      #otherwise run normally
+      else{
+        return(LD_func(x, meta, mDat = mDat, sr))
+      }
+    }
+
+    #=====================facets=================
+    # approach/psuedo-code:
+    # Each facet is a level to break down by. "pop" means break by pop, c("pop", "group") means break twice, once by pop, once by group,
+    # c("pop.group") means to break by pop and group.
+    # For each sample level facet, we must loop through all snps, since D values will be different depending on what samples we look at.
+    # These must be looped through seperately!
+    # If there are multiple snp level facets requested, there is no reason to do re-do snp/snp comparisons within each sample level facet. Just do the all of the relevent snp/snp comparisons.
+    # If there are complex facets with repeated sample levels (c("pop.group", "pop.subgroup")), then same deal.
+
+    # work point!
+    # So:
+    #     For each sample level facet:
+    #       check if we've run the facet before
+    #       For each level of those facets:
+    #         For each snp:
+    #           Figure out which snps we need to compare to across all snp level facets.
+    #           Remove any comparisons that we've already done!
+    #           Pass the genotypes and per snp comparison info to the LD_func (need to edit that function slightly to accomodate)
+    #     Parse and output results.
+
+    # as a part of this, need a function to determine the comparisons to do for each facet and subfacet.
+
+    comps <- determine.comparison.snps(x, facets, facet.types)
+
+    #prepare output list
+    w_list<- vector("list", length = prox_table + nrow(facets)*matrix_out)
+    if(prox_table){names(w_list)[1] <- "prox"}
+    if(matrix_out){
+      if(prox_table){
+        names(w_list)[-1] <- apply(facets, 1, paste, collapse = "_")
+      }
+      else{
+        names(w_list) <- apply(facets, 1, paste, collapse = "_")
+      }
+    }
+
+    #not in parallel
+    if(par == FALSE){
+
+      #loop through each set of facets
+      for (i in 1:nrow(facets)){
+        #grab the data matching these facets...
+        matches <- which(apply(meta, 1, function(x) identical(as.character(x[colnames(meta) %in% levels]), facets[i,])))
+        w_data <- x[matches,]
+        w_meta <- meta[matches,]
+
+        #if there are no or one row in data, skip it.
+        if(nrow(w_data) == 0 | nrow(w_data) == 1){
+          next()
+        }
+
+        #report progress
+        if(i %% level_report == 0){cat("Facet #:", i, "of", nrow(facets), " Name:", paste0(facets[i,], collapse = " "), "\n")}
+
+        #do the pariwise LD using the correct LD func
+        out <-LD_func(x = w_data, meta = w_meta, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out, sr = sr, chr.length = chr.length)
+
+        #add the correct data
+        if(prox_table == TRUE){
+          w_list$prox <- rbind(w_list$prox, out$prox)
+        }
+        if(matrix_out == TRUE){
+          w_list[[i + 1]] <- out[-1]
+        }
+      }
+
+      #return
+      return(w_list)
+    }
+
+    #in parallel
+    else{
+      library(doParallel);library(foreach)
+      cl <- snow::makeSOCKcluster(par)
+      doSNOW::registerDoSNOW(cl)
+
+      #prepare reporting function
+      ntasks <- nrow(facets)
+      progress <- function(n) cat(sprintf("Facet %d out of",n), ntasks, "is complete.\n")
+      opts <- list(progress=progress)
+
+      #loop through each set of facets
+      output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate"), .inorder = TRUE,
+                                 .options.snow = opts) %dopar% {
+
+                                   matches <- which(apply(meta, 1, function(x) identical(as.character(x[colnames(meta) %in% levels]), facets[i,])))
+                                   w_data <- x[matches,]
+                                   w_meta <- meta[matches,]
+
+                                   if(nrow(w_data) > 1){
+                                     w_data <- LD_func(x = w_data, meta = w_meta, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out, sr = sr, chr.length = chr.length)
+                                   }
+                                 }
+
+
+      #release cores
+      parallel::stopCluster(cl)
+      doSNOW::registerDoSNOW()
+
+      #make the output sensible
+      for(i in 1:length(output)){
+        ##prox table
+        if(prox_table){
+          if(!matrix_out){
+            w_list$prox <- rbind(w_list$prox, output[[i]])
+          }
+          else{
+            w_list$prox <- rbind(w_list$prox, output[[i]][1]$prox)
+          }
+        }
+        ##matrices
+        if(matrix_out){
+          if(!prox_table){
+            w_list[[i]] <- output[[i]]
+          }
+          else{
+            w_list[[i + 1]] <- output[[i]][-1]
+          }
+        }
+      }
+
+
+      #return
+      return(w_list)
+    }
+  }
+
+  #========================prepare and pass the primary function to apply.snpR.facets==================
   #subset data if requested:
+  browser()
+  if(!(is.null(subfacets[1]))){
+    ssfacets <- names(subfacets)
+
+    # check complex facets
+    complex.sfacets <- check.snpR.facet.request(x, ssfacets, remove.type = "simple")
+    if(length(complex.sfacets) > 0){
+      stop("Complex (snp and sample) level subfacets not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels.\n")
+    }
+
+    # combine duplicates
+    if(any(duplicated(ssfacets))){
+      dup.sfacets <- subfacets[which(duplicated(ssfacets))]
+      subfacets <- subfacets[-which(duplicated(ssfacets))]
+      for(i in 1:length(dup.sfacets)){
+        wmatch <- which(names(subfacets) == names(dup.sfacets[1]))
+        subfacets[[wmatch]] <- c(subfacets[[wmatch]], dup.sfacets[[i]])
+        ndup <- which(duplicated(subfacets[[wmatch]]))
+        if(length(ndup) > 0){
+          subfacets[[wmatch]] <- subfacets[[wmatch]][-ndup]
+        }
+      }
+      ssfacets <- ssfacets[-which(duplicated(ssfacets))]
+    }
+
+    # get subfacet types
+    ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
+
+    invisible(capture.output(x <- subset.snpR.data(x,
+                                                   facets = names(subfacets)[which(ssfacet.types == "sample")],
+                                                   subfacets = subfacets[[which(ssfacet.types == "sample")]],
+                                                   snp.facets = names(subfacets)[which(ssfacet.types == "snp")],
+                                                   snp.subfacets = subfacets[[which(ssfacet.types == "snp")]])))
+  }
+
   if(is.numeric(ss)){
     #get sample
     if(ss <= 1){
@@ -1593,296 +1641,15 @@ LD_full_pairwise <- function(x, ecs, prox_table = TRUE, matrix_out = TRUE,
     }
 
     #subset
-    meta <- meta[ss,]
-    x <- x[ss,]
-
-    #re-sort
-    meta$ord <- 1:nrow(meta)
-    meta <- dplyr::arrange(meta, position)
-    x <- x[meta$ord,]
-    meta <- meta[,-ncol(meta)]
+    x <- subset.snpR.data(x, ss)
   }
 
 
+  # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
 
-  #=====================call functions=========
-  #call these functions (possibly in parallel) according to supplied levels.
+  out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
 
-  cat("Beginning LD calculation...\n")
-
-  #no facets
-  if(levels == FALSE){
-    cat("No levels specified.\n")
-
-    #run in parallel if requested
-    if(is.numeric(par)){
-      cat("Running in parallel.\n\t")
-      #this is tricky. Needs to be fed essentially the same data (although it can start farther along), but have different stopping points.
-      #then need to knit the matrix outputs together. The prox outputs are easy, just pass them along.
-      split <- (nrow(x)*(nrow(x)-1)/2)/par #number of comparisons to do per core
-      split <- ceiling(split)
-      cat("At least", split, "pairwise comparisons per processor.\n")
-
-      #vector of comps per row
-      nc.pr <- (nrow(x) - 1):0 #since the number is always this row vs every other.
-      snc.pr <- cumsum(nc.pr) #cumulative sum
-
-      #which rows does each processor do?
-      rproc <- matrix(0, nrow = par, 2) #i is the proc, col 1 is the starting row, col 2 is the ending row
-      cr <- 1
-      for(i in 1:par){
-        rproc[i,1] <- cr
-        if(i == par){
-          rproc[i,2] <- length(nc.pr) - 1
-        }
-        else{
-          rproc[i,2] <- which(cumsum(nc.pr) >= split*i)[1]
-        }
-        cr <- rproc[i,2] + 1
-      }
-
-      #now need to start the parallel job:
-      library(doParallel);library(foreach)
-      cl <- snow::makeSOCKcluster(par)
-      doSNOW::registerDoSNOW(cl)
-
-      #prepare reporting function
-      ntasks <- par
-      progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
-      opts <- list(progress=progress)
-
-
-      #save the info as a bigmatrix if it can be safely converted to numeric. Usually this is true for ms but not necissarily other data types.
-      if(as.numeric(x[1]) == x[1]){
-        cat("Saving matrix as big.matrix object for quicker sharing.\n")
-        xb <- bigmemory::as.big.matrix(x, type = "char")
-        xbd <- bigmemory::describe(xb)
-        remove(x)
-      }
-
-      cat("Begining run.\n")
-      # for(q in 1:par){
-      #   w_data <- LD_func(x = xb[rproc[q,1]:nrow(xb),],
-      #                     meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
-      #                     sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
-      # }
-
-      #run the jobs
-      output <- foreach::foreach(q = 1:ntasks, .packages = c("bigmemory", "dplyr"), .inorder = TRUE,
-                                 .options.snow = opts) %dopar% {
-                                   if(exists("xbd")){
-                                     x <- bigmemory::attach.big.matrix(xbd)
-                                   }
-                                   #note that matrix out is FALSE, since we have to build one up from the prox table anyway...
-                                   w_data <- LD_func(x = x[rproc[q,1]:nrow(x),],
-                                                     meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
-                                                     sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
-                                 }
-
-      #release cores
-      parallel::stopCluster(cl)
-      doSNOW::registerDoSNOW()
-
-      cat("LD computation completed. Preparing results.\n\t")
-
-      #combine the results
-      if(matrix_out){
-        cat("Standardizing matrices. Batch:")
-        #standardize column and row names, melt
-        fnames <- meta$position
-        fnames <- paste0(fnames, "_", 1:length(fnames))
-        cnames <- fnames[-1]
-        rnames <- fnames[-length(fnames)]
-
-        for(i in 1:length(output)){
-          cat(paste0("\n\t\t", i))
-
-          #fixes for matrices and objects without a position column. Mostly for the snp data format.
-          if(!data.table::is.data.table(output[[i]]$Dprime)){
-            output[[i]]$Dprime <- data.table::as.data.table(output[[i]]$Dprime)
-            output[[i]]$rsq <- data.table::as.data.table(output[[i]]$rsq)
-            output[[i]]$pval <- data.table::as.data.table(output[[i]]$pval)
-          }
-
-          if(!any(colnames(output[[i]]$Dprime) == "position")){
-            output[[i]]$Dprime <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$Dprime)
-            output[[i]]$rsq <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$rsq)
-            output[[i]]$pval <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$pval)
-          }
-
-          #fix the names.
-          colnames(output[[i]]$Dprime)[-1] <- cnames[rproc[i,1]:(nrow(x)-1)]
-          colnames(output[[i]]$rsq) <- colnames(output[[i]]$Dprime)
-          colnames(output[[i]]$pval) <- colnames(output[[i]]$Dprime)
-
-          output[[i]]$Dprime$position <- rnames[rproc[i,1]:rproc[i,2]]
-          output[[i]]$rsq$position <- output[[i]]$Dprime$position
-          output[[i]]$pval$position <- output[[i]]$Dprime$position
-
-          #melt
-          output[[i]]$Dprime <- reshape2::melt(output[[i]]$Dprime, id.vars = "position")
-          output[[i]]$rsq <- reshape2::melt(output[[i]]$rsq, id.vars = "position")
-          output[[i]]$pval <- reshape2::melt(output[[i]]$pval, id.vars = "position")
-        }
-        cat("\n\tDone.\n")
-      }
-
-      #bind everything together
-      cat("Combining results. Batch:")
-      w_list <- output[[1]]
-      cat("\n\t1")
-      for (i in 2:length(output)){
-        cat(paste0("\n\t\t", i))
-        if(prox_table){
-          if(matrix_out){
-            w_list$prox <- rbind(w_list$prox, output[[i]]$prox)
-          }
-          else{
-            w_list <- rbind(w_list, output[[i]])
-          }
-        }
-        if(matrix_out){
-          w_list$Dprime <- rbind(w_list$Dprime, output[[i]]$Dprime)
-          w_list$rsq <- rbind(w_list$rsq, output[[i]]$rsq)
-          w_list$pval <- rbind(w_list$pval, output[[i]]$pval)
-        }
-      }
-      cat("\n\tDone.\n")
-
-      #re-cast the output matrix
-      if(matrix_out){
-        cat("Re-casting output matrices.\n")
-        w_list$Dprime <- reshape2::acast(w_list$Dprime, formula = position ~ variable)
-        w_list$rsq <- reshape2::acast(w_list$rsq, formula = position ~ variable)
-        w_list$pval <- reshape2::acast(w_list$pval, formula = position ~ variable)
-
-        #fix columns and positions
-        colnames(w_list$Dprime) <- gsub("_.+", "", colnames(w_list$Dprime))
-        colnames(w_list$rsq) <- gsub("_.+", "", colnames(w_list$rsq))
-        colnames(w_list$pval) <- gsub("_.+", "", colnames(w_list$pval))
-
-        rownames(w_list$Dprime) <- gsub("_.+", "", rownames(w_list$Dprime))
-        rownames(w_list$rsq) <- gsub("_.+", "", rownames(w_list$rsq))
-        rownames(w_list$pval) <- gsub("_.+", "", rownames(w_list$pval))
-        cat("\tDone.\n")
-      }
-
-      return(w_list)
-    }
-
-    #otherwise run normally
-    else{
-      return(LD_func(x, meta, prox_table, matrix_out, mDat, sr, chr.length))
-    }
-  }
-
-
-  #prepare storage
-  #find facets to loop through
-  facets <- unique(meta[,colnames(meta) %in% levels])
-  facets <- as.matrix(facets)
-
-  #prepare output list
-  w_list<- vector("list", length = prox_table + nrow(facets)*matrix_out)
-  if(prox_table){names(w_list)[1] <- "prox"}
-  if(matrix_out){
-    if(prox_table){
-      names(w_list)[-1] <- apply(facets, 1, paste, collapse = "_")
-    }
-    else{
-      names(w_list) <- apply(facets, 1, paste, collapse = "_")
-    }
-  }
-
-  #not in parallel
-  if(par == FALSE){
-
-    #loop through each set of facets
-    for (i in 1:nrow(facets)){
-      #grab the data matching these facets...
-      matches <- which(apply(meta, 1, function(x) identical(as.character(x[colnames(meta) %in% levels]), facets[i,])))
-      w_data <- x[matches,]
-      w_meta <- meta[matches,]
-
-      #if there are no or one row in data, skip it.
-      if(nrow(w_data) == 0 | nrow(w_data) == 1){
-        next()
-      }
-
-      #report progress
-      if(i %% level_report == 0){cat("Facet #:", i, "of", nrow(facets), " Name:", paste0(facets[i,], collapse = " "), "\n")}
-
-      #do the pariwise LD using the correct LD func
-      out <-LD_func(x = w_data, meta = w_meta, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out, sr = sr, chr.length = chr.length)
-
-      #add the correct data
-      if(prox_table == TRUE){
-        w_list$prox <- rbind(w_list$prox, out$prox)
-      }
-      if(matrix_out == TRUE){
-        w_list[[i + 1]] <- out[-1]
-      }
-    }
-
-    #return
-    return(w_list)
-  }
-
-  #in parallel
-  else{
-    library(doParallel);library(foreach)
-    cl <- snow::makeSOCKcluster(par)
-    doSNOW::registerDoSNOW(cl)
-
-    #prepare reporting function
-    ntasks <- nrow(facets)
-    progress <- function(n) cat(sprintf("Facet %d out of",n), ntasks, "is complete.\n")
-    opts <- list(progress=progress)
-
-    #loop through each set of facets
-    output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate"), .inorder = TRUE,
-                               .options.snow = opts) %dopar% {
-
-                                 matches <- which(apply(meta, 1, function(x) identical(as.character(x[colnames(meta) %in% levels]), facets[i,])))
-                                 w_data <- x[matches,]
-                                 w_meta <- meta[matches,]
-
-                                 if(nrow(w_data) > 1){
-                                   w_data <- LD_func(x = w_data, meta = w_meta, prox_table = prox_table, mDat = mDat, matrix_out = matrix_out, sr = sr, chr.length = chr.length)
-                                 }
-                               }
-
-
-    #release cores
-    parallel::stopCluster(cl)
-    doSNOW::registerDoSNOW()
-
-    #make the output sensible
-    for(i in 1:length(output)){
-      ##prox table
-      if(prox_table){
-        if(!matrix_out){
-          w_list$prox <- rbind(w_list$prox, output[[i]])
-        }
-        else{
-          w_list$prox <- rbind(w_list$prox, output[[i]][1]$prox)
-        }
-      }
-      ##matrices
-      if(matrix_out){
-        if(!prox_table){
-          w_list[[i]] <- output[[i]]
-        }
-        else{
-          w_list[[i + 1]] <- output[[i]][-1]
-        }
-      }
-    }
-
-
-    #return
-    return(w_list)
-  }
 }
 
 
