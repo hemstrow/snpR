@@ -6,10 +6,20 @@
 #' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
 #'
 import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
-  # calculate some of the basic summary data, such as the genotype, allele, maf, min, ect. data
 
-  snp.meta <- cbind(snp.meta, .snp.id = 1:nrow(snp.meta))
-  sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
+  # prepare things for addition to data
+  if(any(colnames(snp.meta) == ".snp.id")){
+    if(any(duplicated(snp.meta$.snp.id))){stop("Duplicated .snp.id entries found in snp.meta.\n")}
+  }
+  else{
+    snp.meta <- cbind(snp.meta, .snp.id = 1:nrow(snp.meta))
+  }
+  if(any(colnames(sample.meta) == ".sample.id")){
+    if(any(duplicated(sample.meta$.sample.id))){stop("Duplicated .sample.id entries found in sample.meta.\n")}
+  }
+  else{
+    sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
+  }
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
@@ -409,11 +419,60 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 }
 
 # subsets snpR data
-subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x)){
+subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+  # if subfacets or snp.subfacets were selected, figure out which samples and loci to keep
+  if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1])) | !(is.null(facets[1])) & !(is.null(subfacets[1]))){
+
+    # if snp.subfacets are requested
+    if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1]))){
+      t.snp.meta <- x@snp.meta
+
+      # check for and get info on complex facets
+      complex.snp.facets <- snp.facets[grep("\\.", snp.facets)]
+      if(length(complex.snp.facets) > 0){
+        for(i in 1:length(complex.snp.facets)){
+          tfacets <- unlist(strsplit(complex.snp.facets[i], "\\."))
+          tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
+          tcols <- tcols[,match(colnames(tcols), tfacets)]
+          t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+        }
+        colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
+      }
+
+      # get the snps to keep
+      t.snp.meta <- t.snp.meta[,colnames(t.snp.meta) %in% snp.facets]
+      fsnps <- which(as.logical(rowSums(matrix(as.matrix(t.snp.meta) %in% snp.subfacets, nrow(x@snp.meta))))) # here's the snps to keep, those where at least one subfacet level is present in the provided snp.subfacets.
+      snps <- snps[snps %in% fsnps]
+    }
+
+    # if sample subfacets are requested
+    if(!(is.null(facets[1])) & !(is.null(subfacets[1]))){
+      t.samp.meta <- x@sample.meta
+
+      # check for and get info on complex facets
+      complex.samp.facets <- facets[grep("\\.", facets)]
+      if(length(complex.samp.facets) > 0){
+        for(i in 1:length(complex.samp.facets)){
+          tfacets <- unlist(strsplit(complex.samp.facets[i], "\\."))
+          tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
+          tcols <- tcols[,match(colnames(tcols), tfacets)]
+          t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+        }
+        colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
+      }
+
+      # get the samples to keep
+      t.samp.meta <- t.samp.meta[,colnames(t.samp.meta) %in% facets]
+      fsamps <- which(as.logical(rowSums(matrix(as.matrix(t.samp.meta) %in% subfacets, nrow(x@sample.meta))))) # here's the samples to keep, those where at least one subfacet level is present in the provided snp.subfacets.
+      samps <- samps[samps %in% fsamps]
+    }
+  }
+
+  # subset
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
     dat <- import.snpR.data(dat, snp.meta = x@snp.meta[snps,], sample.meta = x@sample.meta[samps,], mDat = x@mDat)
-    dat <- add.facets.snpR.data(x, dat@facets)
+    dat <- add.facets.snpR.data(dat, x@facets)
     warning("Since samples were subset, any stats will need to be recalculated.\n")
     return(dat)
   }
@@ -439,8 +498,8 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x)){
 }
 
 # checks requested facets, sorts, remove duplicates, and may remove a type of facet (usually snp based)
-# currently only removes snp based...
-check.snpR.facet.request <- function(x, facets, remove.type = "snp"){
+# remove.types: snp, sample, complex (both), simple (only one type)
+check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = F){
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -449,33 +508,96 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp"){
   }
 
 
-  # remove the sample part of facets and any facets that are purely sample based.
+  # remove the facet parts as requested.
   facets <- strsplit(facets, "(?<!^)\\.", perl = T)
   to.remove <- logical(length(facets))
+  missing.facets <- character(0)
+  facet.types <- character(length(facets))
   for(i in 1:length(facets)){
     if(identical(facets[[i]], ".base")){next()}
     facets[[i]] <- sort(facets[[i]])
-    if(any(facets[[i]] %in% colnames(x@snp.meta))){
-      if(any(facets[[i]] %in% colnames(x@sample.meta))){
-        samp.facets <- which(facets[[i]] %in% colnames(x@sample.meta))
-        facets[[i]] <- facets[[i]][samp.facets]
+    samp.facets <- which(facets[[i]] %in% colnames(x@sample.meta))
+    snp.facets <- which(facets[[i]] %in% colnames(x@snp.meta))
+    missing.facets <- c(missing.facets, facets[[i]][which(!((1:length(facets[[i]])) %in% c(samp.facets, snp.facets)))])
+
+    if(remove.type == "snp"){
+      if(length(snp.facets) > 0){
+        if(length(snp.facets) == length(facets[[i]])){
+          to.remove[i] <- T
+        }
+        else{
+          facets[[i]] <- facets[[i]][-snp.facets]
+        }
       }
-      else if(remove.type == "snp"){
+    }
+
+    else if(remove.type == "sample"){
+      if(length(samp.facets) > 0){
+        if(length(samp.facets) == length(facets[[i]])){
+          to.remove[i] <- T
+        }
+        else{
+          facets[[i]] <- facets[[i]][-samp.facets]
+        }
+      }
+    }
+
+    else if(remove.type == "complex"){
+      if(length(snp.facets) > 0 & length(samp.facets) > 0){
         to.remove[i] <- T
+      }
+    }
+
+    else if(remove.type == "simple"){
+      if(!(length(snp.facets) > 0 & length(samp.facets) > 0)){
+        to.remove[i] <- T
+      }
+    }
+
+    if(return.type){
+      samp.facets <- which(facets[[i]] %in% colnames(x@sample.meta))
+      snp.facets <- which(facets[[i]] %in% colnames(x@snp.meta))
+      missing.facets <- c(missing.facets, facets[[i]][which(!((1:length(facets[[i]])) %in% c(samp.facets, snp.facets)))])
+
+      if(length(samp.facets) > 0 & length(snp.facets) > 0){
+        facet.types[i] <- "complex"
+      }
+      else if(length(samp.facets) > 0){
+        facet.types[i] <- "sample"
+      }
+      else if(length(snp.facets) > 0){
+        facet.types[i] <- "snp"
       }
     }
     facets[[i]] <- paste(facets[[i]], collapse = ".")
   }
+
+  if(length(missing.facets) > 0){
+    dups <- which(duplicated(missing.facets))
+    if(length(dups) > 0){
+      stop("Facet(s) ", paste(missing.facets[-dups], collapse = ", "), " not found in x metadata.\n")
+    }
+    stop("Facet(s) ", paste(missing.facets, collapse = ", "), " not found in x metadata.\n")
+  }
+
   if(any(to.remove)){
     facets <- facets[-which(to.remove)]
+    facet.types <- facet.types[-which(to.remove)]
   }
 
   # remove duplicates and return
   dups <- duplicated(facets)
   if(any(dups)){
     facets <- facets[-which(dups)]
+    facet.types <- facet.types[-which(to.remove)]
   }
-  return(unlist(facets))
+  if(return.type){
+    return(list(unlist(facets), facet.types))
+  }
+  else{
+      return(unlist(facets))
+
+  }
 }
 
 #' Tabulate allele and genotype counts at each locus.
@@ -821,8 +943,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                     snp.meta = x@snp.meta[-which(vio.snps),],
                     facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
                     geno.tables = ngs,
-                    # ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),], add this when I get ac up and running.
-                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids)],
+                    ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
                     window.stats = x@window.stats,
                     facets = x@facets,
                     facet.type = x@facet.type,
