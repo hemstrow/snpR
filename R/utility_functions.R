@@ -20,6 +20,11 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
   else{
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
   }
+  if(any(colnames(snp.meta) == "position")){
+    snp.meta$position <- as.numeric(as.character(snp.meta$position))
+  }
+
+
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
