@@ -201,7 +201,6 @@ get.snpR.stats <- function(x, facets = NULL){
   }
 
   for(i in 1:length(facets)){
-    browser()
     if(any(facets %in% colnames(x@snp.meta))){
       if(any(facets %in% colnames(x@sample.meta))){
         samp.facets <- which(facets %in% colnames(x@sample.meta))
