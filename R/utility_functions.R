@@ -509,6 +509,12 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   }
   if(is.null(facets)){
     facets <- ".base"
+    if(return.type){
+      return(list(facets, ".base"))
+    }
+    else{
+      return(".base")
+    }
   }
 
 
