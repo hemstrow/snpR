@@ -1085,20 +1085,28 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #if we had only one haplotype or no haplotypes:
       if(is.na(haps[1])){
-        prox <- rbind(prox,
-                      cbind(p1 = meta$position[i], p2 = meta$position[snp.list$snps[[i]]],
-                            rsq = NA, Dprime = NA, pval = NA))
+        tprox <- cbind(meta[i,],
+                       meta[snp.list$snps[[i]],],
+                       abs(meta[i,]$position - meta[snp.list$snps[[i]],]$position),
+                       rsq = NA, Dprime = NA, pval = NA)
+
+        colnames(tprox) <- colnames(prox)
+        prox <- rbind(prox, tprox)
 
         #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
-        rmat[i,] <- NA
-        Dpmat[i,] <- NA
-        pvmat[i,] <- NA
+        rmat[i,snp.list$snps[[i]]] <- NA
+        Dpmat[i,snp.list$snps[[i]]] <- NA
+        pvmat[i,snp.list$snps[[i]]] <- NA
         next()
       }
       if(length(haps) == 1){
-        prox <- rbind(prox,
-                      cbind(p1 = meta$position[i], p2 = meta$position[snp.list$snps[[i]]],
-                            rsq = 0, Dprime = 0, pval = 0))
+        tprox <- cbind(meta[i,],
+                       meta[snp.list$snps[[i]],],
+                       abs(meta[i,]$position - meta[snp.list$snps[[i]],]$position),
+                       rsq = 0, Dprime = 0, pval = 0)
+
+        colnames(tprox) <- colnames(prox)
+        prox <- rbind(prox, tprox)
 
         #reminder: columns start at locus two, rows start at locus one (but end at nlocus - 1)
         rmat[i,snp.list$snps[[i]]] <- 0
@@ -1152,7 +1160,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #write output.
       tprox <- cbind(meta[rep(i, length(Dprime)),],
-                     meta[(i+1):nrow(meta),],
+                     meta[snp.list$snps[[i]],],
                      abs(meta[i,]$position - meta[snp.list$snps[[i]],]$position),
                      rsq, Dprime, pval)
       colnames(tprox) <- colnames(prox)
@@ -1173,6 +1181,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # in this is an entry for each snp that lists the snps it is compared to.
   # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
   determine.comparison.snps <- function(x, facets, facet.types){
+    browser()
+    # progress: need to make this work with the .base facet
 
     # sub-subfunctions to get the options for the snp and sample facets
     get.samp.opts <- function(x, t.facet){
@@ -1371,7 +1381,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
   # the overall function. x is snpRdata object.
   func <- function(x, facets, snp.facets, par, sr){
-    browser()
 
     facet.types <- facets[[2]]
     facets <- facets[[1]]
@@ -1382,7 +1391,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     cat("Beginning LD calculation...\n")
 
     #=====================no facets==============
-    if(length(facets) == 1 & facets[1] == ".base"){
+    if( (length(facets) == 1 & facets[1] == ".base") | all(facet.types == "snp")){
+      browser()
+
+      comps <- determine.comparison.snps(x, facets, facet.types)
+
       cat("No facets specified.\n")
 
       # grab metadata, mDat
@@ -1581,14 +1594,14 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     w_list<- vector("list", length = length(comps))
     names(w_list) <- names(comps)
     tot_subfacets <- 0
-    task_list <- matrix(NA, 1, 2)
+    task_list <- matrix(NA, 0, 2)
     for(i in 1:length(comps)){
       w_list[[i]] <- vector("list", length = length(comps[[i]]))
       names(w_list[[i]]) <- names(comps[[i]])
+      tot_subfacets <- tot_subfacets + length(comps[[i]])
       for(j in 1:length(w_list[[i]])){
-        tot_subfacets <- tot_subfacets + length(comps[[i]])
         w_list[[i]][[j]] <- list(Dprime = NULL, rsq = NULL, pvalue = NULL)
-        task_list <- rbind(task_list, i, j)
+        task_list <- rbind(task_list, c(i, j))
       }
     }
     w_list <- list(prox = NULL, LD_mats = w_list)
@@ -1597,21 +1610,27 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(par == FALSE){
 
       #loop through each set of facets
-      progress <- 0
+      progress <- 1
       for (i in 1:length(comps)){
         for(j in 1:length(comps[[i]])){
+          cat("Subfacet #:", progress, "of", tot_subfacets, " Name:", paste0(names(comps)[i], " " , names(comps[[i]])[j]), "\n")
           out <- LD_func(x, meta = x@snp.meta, mDat = x@mDat, snp.list = comps[[i]][[j]], sr = sr)
           #report progress
           progress <- progress + 1
-          browser()
-          cat("Subfacet #:", progress, "of", tot_subfacets, " Name:", paste0(names(comps)[i], " " , names(comps[[i]])[j]), "\n")
           w_list$prox <- rbind(w_list$prox, out$prox)
           w_list$LD_mats[[i]][[j]][[1]] <- out$Dprime
           w_list$LD_mats[[i]][[j]][[2]] <- out$rsq
           w_list$LD_mats[[i]][[j]][[3]] <- out$pval
         }
       }
-      #return
+
+      browser()
+      # split apart matrices to
+      prox <- w_list$prox
+      mats <- w_list$LD_mats
+
+
+
       return(w_list)
     }
 
