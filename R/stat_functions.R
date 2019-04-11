@@ -1181,7 +1181,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # in this is an entry for each snp that lists the snps it is compared to.
   # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
   determine.comparison.snps <- function(x, facets, facet.types){
-    browser()
     # progress: need to make this work with the .base facet
 
     # sub-subfunctions to get the options for the snp and sample facets
@@ -1250,6 +1249,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         opts <- get.samp.opts(x, t.facet)
         sample.opts <- opts[[1]]
         sample.meta <- opts[[2]]
+
+        if(t.facet == ".base"){
+          sample.opts <- matrix(".base")
+          sample.meta <- matrix(".base", nrow = nrow(x@sample.meta))
+        }
 
         # add snp/snp comparisons. Since the facet is simple, we do all snps. Do so with a loop through all subfacets
         if(is.null(this.out)){
@@ -1374,6 +1378,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     return(out)
   }
 
+
+  # function to unpack a nested output list to parse out for snp level facets.
+  # working here
+
   #========================primary looping function==========================
   # this will determine how to call the LD_func.
   # if just one level (".basic"), call the function simply, possibly par.
@@ -1394,7 +1402,14 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if( (length(facets) == 1 & facets[1] == ".base") | all(facet.types == "snp")){
       browser()
 
-      comps <- determine.comparison.snps(x, facets, facet.types)
+      if(length(facets) == 1 & facets[1] == ".base"){
+        comps <- determine.comparison.snps(x, facets, "sample")
+      }
+
+      else{
+        comps <- determine.comparison.snps(x, facets, facet.types)
+      }
+
 
       cat("No facets specified.\n")
 
@@ -1556,12 +1571,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           cat("\tDone.\n")
         }
 
-        return(w_list)
+        out <- return(w_list)
       }
 
       #otherwise run normally
       else{
-        return(LD_func(x, meta, mDat = mDat, sr))
+        return(LD_func(x, meta, snp.list = comps[[1]][[1]], mDat = mDat, sr))
       }
     }
 
@@ -1621,6 +1636,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           w_list$LD_mats[[i]][[j]][[1]] <- out$Dprime
           w_list$LD_mats[[i]][[j]][[2]] <- out$rsq
           w_list$LD_mats[[i]][[j]][[3]] <- out$pval
+
         }
       }
 
