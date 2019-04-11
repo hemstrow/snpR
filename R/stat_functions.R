@@ -45,7 +45,7 @@ calc_pi <- function(x, facets = NULL){
   colnames(out)[ncol(out)] <- "pi"
   x <- merge.snpR.stats(x, out)
 
-  return(return(x))
+  return(x)
 }
 
 
@@ -1728,3 +1728,140 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 
+
+#'Calculate HWE divergence from SNP data.
+#'
+#'\code{calc_hwe} Calculates p-values for Hardy-Weinburg Equilibrium divergence from snp.R.data objects.
+#'
+#' @param x Input SNP data, in the snpRdata format.
+#' @param facets Facets to run. Non-sample level facets will be removed. Periods can be used to list complex facets, such as pop.fam to split by both pop and fam simultaniously.
+#'
+#' @return A snpRdata object with HWE data added.
+#'
+#' @examples
+#'
+calc_hwe <- function(x, facets = NULL, method = "exact"){
+  func <- function(gs, method){
+    # exact test to use if there are too few observations in a cell
+    # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
+    # Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
+    # code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
+    exact.hwe <- function(pp, qq, pq2){
+      obs_homr <- min(c(pp, qq))
+      obs_homc <- max(c(pp, qq))
+      obs_hets <- pq2
+      if (obs_homr < 0 || obs_homc < 0 || obs_hets < 0){
+        return(-1.0)
+      }
+      # total number of genotypes
+      N <- obs_homr + obs_homc + obs_hets
+
+      # number of rare allele copies
+      rare  <- obs_homr * 2 + obs_hets
+
+      # Initialize probability array
+      probs <- rep(0, 1 + rare)
+
+      # Find midpoint of the distribution
+      mid <- floor(rare * ( 2 * N - rare) / (2 * N))
+      if ((mid %% 2) != (rare %% 2)) mid <- mid + 1
+
+      probs[mid + 1] <- 1.0
+      mysum <- 1.0
+
+      # Calculate probablities from midpoint down
+      curr_hets <- mid
+      curr_homr <- (rare - mid) / 2
+      curr_homc <- N - curr_hets - curr_homr
+
+      while (curr_hets >=  2){
+        #equation 2
+        probs[curr_hets - 1]  <- probs[curr_hets + 1] * curr_hets * (curr_hets - 1.0) / (4.0 * (curr_homr + 1.0)  * (curr_homc + 1.0))
+        mysum <- mysum + probs[curr_hets - 1]
+
+        # 2 fewer heterozygotes -> add 1 rare homozygote, 1 common homozygote
+        curr_hets <- curr_hets - 2
+        curr_homr <- curr_homr + 1
+        curr_homc <- curr_homc + 1
+      }
+
+      # Calculate probabilities from midpoint up
+      curr_hets <- mid
+      curr_homr <- (rare - mid) / 2
+      curr_homc <- N - curr_hets - curr_homr
+
+      while (curr_hets <= rare - 2){
+        probs[curr_hets + 3] <- probs[curr_hets + 1] * 4.0 * curr_homr * curr_homc / ((curr_hets + 2.0) * (curr_hets + 1.0))
+        mysum <- mysum + probs[curr_hets + 3]
+
+        # add 2 heterozygotes -> subtract 1 rare homozygtote, 1 common homozygote
+        curr_hets <- curr_hets + 2
+        curr_homr <- curr_homr - 1
+        curr_homc <- curr_homc - 1
+      }
+
+      # P-value calculation
+      target <- probs[obs_hets + 1]
+      p <- min(1.0, sum(probs[probs <= target])/ mysum)
+      return(p)
+    }
+
+    gs <- gs$gs
+
+    # get observed genotype counts
+    het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
+    o2pq <- rowSums(gs[,het.col])
+    opp <- matrixStats::rowMaxs(gs[,-het.col])
+    oqq <- rowSums(gs) - o2pq - opp
+
+    # if we are using a chisq test, easy and quick
+    if(method == "chisq"){
+      # get allele frequencies
+      fp <- (opp*2 + o2pq)/(rowSums(gs)*2)
+      fq <- 1 - fp
+
+      # get expected genotype counts
+      epp <- fp^2 * rowSums(gs)
+      eqq <- fq^2 * rowSums(gs)
+      e2pq <- 2*fp*fq * rowSums(gs)
+
+      # calculate chi-squared
+      calc.chi <- function(o,e){
+        return(((o-e)^2)/e)
+      }
+      chi.pp <- calc.chi(opp, epp)
+      chi.qq <- calc.chi(oqq, eqq)
+      chi.2pq <- calc.chi(o2pq, e2pq)
+      chi <- chi.pp + chi.qq + chi.2pq
+
+      # calculate p-values
+      out <- pchisq(chi, 2, lower.tail = FALSE)
+      out[is.nan(out)] <- 0
+      return(out)
+    }
+
+    # otherwise we have to use the looped version:
+    else if(method == "exact"){
+      cat("Using exact test from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005).\n")
+      out <- numeric(nrow(gs))
+      for(i in 1:nrow(gs)){
+        out[i] <- exact.hwe(oqq[i], opp[i], o2pq[i])
+      }
+      return(out)
+    }
+  }
+
+  if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
+
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+  }
+
+  out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
+  colnames(out)[ncol(out)] <- "pHWE"
+  x <- merge.snpR.stats(x, out)
+
+  return(x)
+}
