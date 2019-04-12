@@ -1380,7 +1380,72 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
   # function to unpack a nested output list to parse out for snp level facets.
-  # working here
+  decompose.LD.matrix <- function(x, LD_matrix, facets, facet.types){
+    # for each facet type that included a snp.level facet, we need to split corrected matrices for sample or .base, just spit out everything
+    out <- list()
+    for(i in 1:length(facets)){
+      # if a sample of base facet, just return it, no need for changes
+      if(facet.types[i] == "sample" | facet.types[i] == ".base"){
+        out[[i]] <- LD_martix[[which(names(LD_matrix) == facets[i])]]
+        names(out)[i] <- facets[i]
+      }
+
+      # otherwise need to split matrices
+      else{
+
+        # determine sample and snp parts
+        samp.facet <- check.snpR.facet.request(x, facets[i])
+        if(is.null(samp.facet)){samp.facet <- ".base"}
+        snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
+        split.snp.facet <- unlist(strsplit(snp.facet, "\\."))
+
+        # grab the matrices for the corresponding sample level facet
+        this.matrix <- LD_matrix[[which(names(LD_matrix) == samp.facet)]]
+
+        # grab metadata and metadata options, ensuring correct column order
+        this.meta <- x@snp.meta[,which(colnames(x@snp.meta) %in% split.snp.facet)]
+        this.meta <- as.matrix(this.meta)
+        if(ncol(this.meta) == 1){
+          colnames(this.meta) <- split.snp.facet
+        }
+        else{
+          this.meta <- this.meta[,order(colnames(this.meta))]
+        }
+        meta.opts <- as.matrix(unique(this.meta))
+        colnames(meta.opts) <- colnames(this.meta)
+
+        # intialize output
+        out[[i]] <- vector(mode = "list", length = length(this.matrix))
+        names(out[[i]]) <- names(this.matrix)
+        names(out)[i] <- facets[i]
+
+        for(k in 1:length(this.matrix)){
+          # intialize and name
+          out[[i]][[k]] <- vector(mode = "list", length = nrow(meta.opts))
+          names(out[[i]][[k]]) <- do.call(paste, as.data.frame(meta.opts))
+        }
+
+        # loop through each meta option and subset parts of the matrix
+        for(j in 1:nrow(meta.opts)){
+          # which snps do we keep?
+          keep.snps <- which(apply(this.meta, 1, function(x) identical(as.character(x), as.character(meta.opts[j,]))))
+
+          # subset matrices
+          for(k in 1:length(this.matrix)){
+            Dprime <- this.matrix[[k]]$Dprime[keep.snps, keep.snps]
+            rsq <- this.matrix[[k]]$rsq[keep.snps, keep.snps]
+            pval <- this.matrix[[k]]$pval[keep.snps, keep.snps]
+
+            # add to output
+            out[[i]][[k]][[j]] <- list(Dprime = Dprime, rsq = rsq, pval = pval)
+          }
+        }
+      }
+    }
+
+    return(out)
+  }
+
 
   #========================primary looping function==========================
   # this will determine how to call the LD_func.
@@ -1603,8 +1668,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     comps <- determine.comparison.snps(x, facets, facet.types)
 
-    # work point:
-
     #prepare output list
     w_list<- vector("list", length = length(comps))
     names(w_list) <- names(comps)
@@ -1632,7 +1695,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           out <- LD_func(x, meta = x@snp.meta, mDat = x@mDat, snp.list = comps[[i]][[j]], sr = sr)
           #report progress
           progress <- progress + 1
-          w_list$prox <- rbind(w_list$prox, out$prox)
+          w_list$prox <- rbind(w_list$prox, cbind(out$prox, sample.facet = names(comps)[i]))
           w_list$LD_mats[[i]][[j]][[1]] <- out$Dprime
           w_list$LD_mats[[i]][[j]][[2]] <- out$rsq
           w_list$LD_mats[[i]][[j]][[3]] <- out$pval
@@ -1640,13 +1703,15 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         }
       }
 
-      browser()
       # split apart matrices to
       prox <- w_list$prox
-      mats <- w_list$LD_mats
+      mats <- decompose.LD.matrix(x, w_list$LD_mats, facets, facet.types)
+
+      w_list <- list(prox = prox, LD_matrices = mats)
 
 
 
+      browser()
       return(w_list)
     }
 
