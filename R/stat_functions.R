@@ -1060,6 +1060,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     Dpmat <- rmat
     pvmat <- rmat
 
+
     #run length prediction variables for progress reporting
     compfun <- function(x){
       return(((x-1)*x)/2)
@@ -1386,7 +1387,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     for(i in 1:length(facets)){
       # if a sample of base facet, just return it, no need for changes
       if(facet.types[i] == "sample" | facet.types[i] == ".base"){
-        out[[i]] <- LD_martix[[which(names(LD_matrix) == facets[i])]]
+        out[[i]] <- LD_matrix[[which(names(LD_matrix) == facets[i])]]
         names(out)[i] <- facets[i]
       }
 
@@ -1703,10 +1704,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         }
       }
 
-      # split apart matrices to
+      # split apart matrices and decompose
       prox <- w_list$prox
       mats <- decompose.LD.matrix(x, w_list$LD_mats, facets, facet.types)
-
       w_list <- list(prox = prox, LD_matrices = mats)
 
 
@@ -1727,42 +1727,42 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
       opts <- list(progress=progress)
 
+      x_storage <- as.matrix(as.data.frame(x))
+      meta_storage <- x@snp.meta
+      mDat_storage <- x@mDat
+
+
       #loop through each set of facets
-      output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate"), .inorder = TRUE,
-                                 .options.snow = opts) %dopar% {
+      output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
+                                 .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                    t.task <- task_list[i,]
                                    t.facet <- t.task[1]
                                    t.subfacet <- t.task[2]
-                                   w_data <- LD_func(x, meta = x@snp.meta, mDat = x@mDat, snp.list = comps[[t.facet]][[t.subfacet]], sr = sr)
+                                   LD_func(x_storage, meta = meta_storage, mDat = mDat_storage, snp.list = comps[[t.facet]][[t.subfacet]], sr = sr)
                                  }
 
-
-      #release cores
+      #release cores and clean up
       parallel::stopCluster(cl)
       doSNOW::registerDoSNOW()
+      rm(x_storage, meta_storage, mDat_storage)
+      gc();gc()
 
-      #make the output sensible
-      for(i in 1:length(output)){
-        ##prox table
-        if(prox_table){
-          if(!matrix_out){
-            w_list$prox <- rbind(w_list$prox, output[[i]])
-          }
-          else{
-            w_list$prox <- rbind(w_list$prox, output[[i]][1]$prox)
-          }
-        }
-        ##matrices
-        if(matrix_out){
-          if(!prox_table){
-            w_list[[i]] <- output[[i]]
-          }
-          else{
-            w_list[[i + 1]] <- output[[i]][-1]
-          }
-        }
+      browser()
+
+      # make the output sensible but putting it into the same format as from the other, then running the decompose function
+      for(i in 1:ntasks){
+        t.facet <- task_list[i,1]
+        t.subfacet <- task_list[i,2]
+        w_list$prox <- rbind(w_list$prox, cbind(output[[i]]$prox, sample.facet = names(comps)[t.facet]))
+        w_list$LD_mats[[t.facet]][[t.subfacet]]$Dprime <- output[[i]]$Dprime
+        w_list$LD_mats[[t.facet]][[t.subfacet]]$rsq <- output[[i]]$rsq
+        w_list$LD_mats[[t.facet]][[t.subfacet]]$pvalue <- output[[i]]$pval
       }
 
+      # split apart matrices and decompose
+      prox <- w_list$prox
+      mats <- decompose.LD.matrix(x, w_list$LD_mats, facets, facet.types)
+      w_list <- list(prox = prox, LD_matrices = mats)
 
       #return
       return(w_list)
