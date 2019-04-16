@@ -1,6 +1,13 @@
 # odds ratio association testing wrapper. Needs internal and apply.snpR.dat support.
 calc_odds_ratio <- function(x, facet){
-  func <- function(cast_ac){}
+  func <- function(cast_ac){
+    a<- cast_ac[,1]
+    b<- cast_ac[,2]
+    c<- cast_ac[,3]
+    d<- cast_ac[,4]
+    odds<- (a/b)/(c/d)
+    return(odds)
+  }
 
 
   facets <- check.snpR.facet.request(x, facets)
