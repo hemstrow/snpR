@@ -8,6 +8,12 @@
 import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
 
   # prepare things for addition to data
+  if(any(colnames(snp.meta) == "position")){
+    snp.meta$position <- as.numeric(as.character(snp.meta$position))
+    genotypes <- genotypes[order(snp.meta$position),]
+    snp.meta <- dplyr::arrange(snp.meta, position)
+  }
+
   if(any(colnames(snp.meta) == ".snp.id")){
     if(any(duplicated(snp.meta$.snp.id))){stop("Duplicated .snp.id entries found in snp.meta.\n")}
   }
@@ -19,9 +25,6 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
   }
   else{
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
-  }
-  if(any(colnames(snp.meta) == "position")){
-    snp.meta$position <- as.numeric(as.character(snp.meta$position))
   }
 
 
@@ -417,8 +420,38 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     # sort and return
     x@pairwise.stats <- dplyr::arrange(x@pairwise.stats, .snp.id, facet, comparison)
   }
+  else if(type == "LD"){
 
+    if(length(x@pairwise.LD) == 0){
+      x@pairwise.LD <- stats
+      return(x)
+    }
+    else{
+      # deal with prox
+      prox.check_x <- do.call(paste, as.data.frame(x@pairwise.LD$prox[,which(!colnames(x@pairwise.LD$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
+      prox.check_stats <- do.call(paste, as.data.frame(stats$prox[,which(!colnames(stats$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
+      prox.check <- which(!(prox.check_stats %in% prox.check_x))
+      if(length(prox.check) != 0){
+        x@pairwise.LD$prox <- rbind(x@pairwise.LD$prox, stats$prox[prox.check,])
+      }
 
+      # deal with matrices. Overwrite any matrices that already exist and add any new ones.
+      facets <- names(x@pairwise.LD$LD_matrices)
+      overwrite.facets <- which(facets %in% names(stats$LD_matrices)) # which existing facets need to be overwritten?
+      add.facets <- which(!(names(stats$LD_matrices) %in% facets)) # which LD facets need to be added?
+
+      ## overwrite
+      if(length(overwrite.facets) != 0){
+        x@pairwise.LD$LD_matrices[overwrite.facets] <- stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)]
+        names(x@pairwise.LD$LD_matrices)[overwrite.facets] <- names(stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)])
+      }
+
+      ## add
+      if(length(add.facets) > 0){
+        x@pairwise.LD$LD_matrices <- c(x@pairwise.LD$LD_matrices, stats$LD_matrices[add.facets])
+      }
+    }
+  }
   return(x)
 }
 

@@ -1024,7 +1024,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
   # LD sub function, called in func
-  LD_func <- function(x, meta, mDat, snp.list, sr = FALSE, stop.row = nrow(x) - 1){
+  LD_func <- function(x, meta, mDat, snp.list, sr = FALSE){
     smDat <- substr(mDat, 1, nchar(mDat)/2)
 
     # subset the requested samps
@@ -1069,7 +1069,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     cpercent <- 0
 
     #loop through and get haplotypes, calc LD for each locus.
-    for(i in 1:stop.row){
+    for(i in 1:length(snp.list$snps)){
       if(!sr){
         cprog <- (totcomp - compfun(nrow(x) - i - 1))/totcomp
         if(cprog >= 0.05 + cpercent){
@@ -1448,6 +1448,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
 
+
+
   #========================primary looping function==========================
   # this will determine how to call the LD_func.
   # if just one level (".basic"), call the function simply, possibly par.
@@ -1466,8 +1468,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #=====================no facets==============
     if( (length(facets) == 1 & facets[1] == ".base") | all(facet.types == "snp")){
-      browser()
-
       if(length(facets) == 1 & facets[1] == ".base"){
         comps <- determine.comparison.snps(x, facets, "sample")
       }
@@ -1487,29 +1487,16 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       # run in parallel if requested
       if(is.numeric(par)){
         cat("Running in parallel.\n\t")
-        #this is tricky. Needs to be fed essentially the same data (although it can start farther along), but have different stopping points.
-        #then need to knit the matrix outputs together. The prox outputs are easy, just pass them along.
-        split <- (nrow(x)*(nrow(x)-1)/2)/par #number of comparisons to do per core
+
+        # each thread needs to be given a roughly equal number of comparisons to do
+        ncomps <-  length(unlist(comps[[1]][[1]]$snps)) # number of comparisons
+        split <- (ncomps)/par #number of comparisons to do per core
         split <- ceiling(split)
         cat("At least", split, "pairwise comparisons per processor.\n")
 
-        #vector of comps per row
-        nc.pr <- (nrow(x) - 1):0 #since the number is always this row vs every other.
-        snc.pr <- cumsum(nc.pr) #cumulative sum
-
-        #which rows does each processor do?
-        rproc <- matrix(0, nrow = par, 2) #i is the proc, col 1 is the starting row, col 2 is the ending row
-        cr <- 1
-        for(i in 1:par){
-          rproc[i,1] <- cr
-          if(i == par){
-            rproc[i,2] <- length(nc.pr) - 1
-          }
-          else{
-            rproc[i,2] <- which(cumsum(nc.pr) >= split*i)[1]
-          }
-          cr <- rproc[i,2] + 1
-        }
+        # need to figure out which comps entries to null out for each processor.
+        comps.per.snp <- unlist(lapply(comps[[1]][[1]]$snps, length))
+        rproc <- ceiling(cumsum(as.numeric(comps.per.snp))/split) # which processor should each comparison be assigned to?
 
         #now need to start the parallel job:
         library(doParallel);library(foreach)
@@ -1521,128 +1508,101 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
         opts <- list(progress=progress)
 
-
-        #save the info as a bigmatrix if it can be safely converted to numeric. Usually this is true for ms but not necissarily other data types.
-        if(as.numeric(x[1]) == x[1]){
-          cat("Saving matrix as big.matrix object for quicker sharing.\n")
-          xb <- bigmemory::as.big.matrix(x, type = "char")
-          xbd <- bigmemory::describe(xb)
-          remove(x)
+        # initialize and store things
+        x_storage <- as.matrix(as.data.frame(x))
+        na.test <- suppressWarnings(as.numeric(x_storage[1]))
+        #save the info as a bigmatrix if it can be safelx_storage converted to numeric. Usuallx_storage this is true for ms but not necissarilx_storage other data tx_storagepes.
+        if(!is.na(na.test)){
+          if(as.numeric(x_storage[1]) == x_storage[1]){
+            cat("Saving matrix as big.matrix object for quicker sharing.\n")
+            xb <- bigmemorx_storage::as.big.matrix(x, tx_storagepe = "char")
+            xbd <- bigmemorx_storage::describe(xb)
+            remove(x)
+          }
         }
+        meta_storage <- x@snp.meta
+        mDat_storage <- x@mDat
+        t.comps <- comps[[1]][[1]]$snps
 
         cat("Begining run.\n")
-        # for(q in 1:par){
-        #   w_data <- LD_func(x = xb[rproc[q,1]:nrow(xb),],
-        #                     meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
-        #                     sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
-        # }
 
-        #run the jobs
+        # run the LD calculations
         output <- foreach::foreach(q = 1:ntasks, .packages = c("bigmemory", "dplyr"), .inorder = TRUE,
-                                   .options.snow = opts) %dopar% {
+                                   .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                      if(exists("xbd")){
-                                       x <- bigmemory::attach.big.matrix(xbd)
+                                       x_storage <- bigmemory::attach.big.matrix(xbd)
                                      }
-                                     #note that matrix out is FALSE, since we have to build one up from the prox table anyway...
-                                     w_data <- LD_func(x = x[rproc[q,1]:nrow(x),],
-                                                       meta = meta[rproc[q,1]:nrow(x),], prox_table = prox_table, mDat = mDat, matrix_out = matrix_out,
-                                                       sr = T, chr.length = chr.length, stop.row = rproc[q,2] - (rproc[q,1]-1))
-                                   }
+
+                                     # get comps and run
+                                     t.comps[which(rproc != q)] <- vector("list", sum(rproc != q)) # null out any comparisons we aren't doing
+                                     t.comps <- list(snps = t.comps, samps = comps[[1]][[1]]$samps)
+
+                                     LD_func(x = x_storage, snp.list = t.comps,
+                                             meta = meta_storage, mDat = mDat_storage,
+                                             sr = T)
+                                     }
 
         #release cores
         parallel::stopCluster(cl)
         doSNOW::registerDoSNOW()
 
+
         cat("LD computation completed. Preparing results.\n\t")
 
-        #combine the results
-        if(matrix_out){
-          cat("Standardizing matrices. Batch:")
-          #standardize column and row names, melt
-          fnames <- meta$position
-          fnames <- paste0(fnames, "_", 1:length(fnames))
-          cnames <- fnames[-1]
-          rnames <- fnames[-length(fnames)]
+        # combine results
+        ## initialize
+        prox <- data.frame()
+        Dprime <- matrix(NA, nrow(x), nrow(x))
+        colnames(Dprime) <- x@snp.meta$position
+        row.names(Dprime) <- x@snp.meta$position
+        rsq <- Dprime
+        pval <- Dprime
 
-          for(i in 1:length(output)){
-            cat(paste0("\n\t\t", i))
+        ## combine results
+        for(i in 1:length(output)){
+          prox <- rbind(prox, output[[i]]$prox)
 
-            #fixes for matrices and objects without a position column. Mostly for the snp data format.
-            if(!data.table::is.data.table(output[[i]]$Dprime)){
-              output[[i]]$Dprime <- data.table::as.data.table(output[[i]]$Dprime)
-              output[[i]]$rsq <- data.table::as.data.table(output[[i]]$rsq)
-              output[[i]]$pval <- data.table::as.data.table(output[[i]]$pval)
-            }
-
-            if(!any(colnames(output[[i]]$Dprime) == "position")){
-              output[[i]]$Dprime <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$Dprime)
-              output[[i]]$rsq <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$rsq)
-              output[[i]]$pval <- cbind(position = rep(NA, nrow(output[[i]]$Dprime)), output[[i]]$pval)
-            }
-
-            #fix the names.
-            colnames(output[[i]]$Dprime)[-1] <- cnames[rproc[i,1]:(nrow(x)-1)]
-            colnames(output[[i]]$rsq) <- colnames(output[[i]]$Dprime)
-            colnames(output[[i]]$pval) <- colnames(output[[i]]$Dprime)
-
-            output[[i]]$Dprime$position <- rnames[rproc[i,1]:rproc[i,2]]
-            output[[i]]$rsq$position <- output[[i]]$Dprime$position
-            output[[i]]$pval$position <- output[[i]]$Dprime$position
-
-            #melt
-            output[[i]]$Dprime <- reshape2::melt(output[[i]]$Dprime, id.vars = "position")
-            output[[i]]$rsq <- reshape2::melt(output[[i]]$rsq, id.vars = "position")
-            output[[i]]$pval <- reshape2::melt(output[[i]]$pval, id.vars = "position")
-          }
-          cat("\n\tDone.\n")
+          # just overwrite anything that is NA. If it was NA because of poor data at a legitimate comparison, it will just get overwritten with NA. Nothing with data should be overwritten like this.
+          fill <- which(is.na(Dprime))
+          Dprime[fill] <- output[[i]]$Dprime[fill]
+          rsq[fill] <- output[[i]]$rsq[fill]
+          pval[fill] <- output[[i]]$pval[fill]
         }
 
-        #bind everything together
-        cat("Combining results. Batch:")
-        w_list <- output[[1]]
-        cat("\n\t1")
-        for (i in 2:length(output)){
-          cat(paste0("\n\t\t", i))
-          if(prox_table){
-            if(matrix_out){
-              w_list$prox <- rbind(w_list$prox, output[[i]]$prox)
-            }
-            else{
-              w_list <- rbind(w_list, output[[i]])
-            }
-          }
-          if(matrix_out){
-            w_list$Dprime <- rbind(w_list$Dprime, output[[i]]$Dprime)
-            w_list$rsq <- rbind(w_list$rsq, output[[i]]$rsq)
-            w_list$pval <- rbind(w_list$pval, output[[i]]$pval)
-          }
-        }
-        cat("\n\tDone.\n")
+        # decompose and return (mostly for snp level facets)
+        ## prep for decomposition function, done to make the format equal to something with sample level facets.
+        LD_mats <- vector("list", 1)
+        LD_mats[[1]] <- vector("list", 1)
+        names(LD_mats) <- ".base"
+        LD_mats[[1]][[1]] <- vector("list", 1)
+        names(LD_mats[[1]]) <- ".base"
+        LD_mats[[1]][[1]] <- list(Dprime = Dprime, rsq = rsq, pval = pval)
 
-        #re-cast the output matrix
-        if(matrix_out){
-          cat("Re-casting output matrices.\n")
-          w_list$Dprime <- reshape2::acast(w_list$Dprime, formula = position ~ variable)
-          w_list$rsq <- reshape2::acast(w_list$rsq, formula = position ~ variable)
-          w_list$pval <- reshape2::acast(w_list$pval, formula = position ~ variable)
-
-          #fix columns and positions
-          colnames(w_list$Dprime) <- gsub("_.+", "", colnames(w_list$Dprime))
-          colnames(w_list$rsq) <- gsub("_.+", "", colnames(w_list$rsq))
-          colnames(w_list$pval) <- gsub("_.+", "", colnames(w_list$pval))
-
-          rownames(w_list$Dprime) <- gsub("_.+", "", rownames(w_list$Dprime))
-          rownames(w_list$rsq) <- gsub("_.+", "", rownames(w_list$rsq))
-          rownames(w_list$pval) <- gsub("_.+", "", rownames(w_list$pval))
-          cat("\tDone.\n")
-        }
-
-        out <- return(w_list)
+        ## decompose and return
+        LD_mats <- decompose.LD.matrix(x, LD_mats, facets = facets, facet.types = facet.types)
+        out <- list(prox = prox, LD_mats = LD_matrices)
+        return(out)
       }
 
       #otherwise run normally
       else{
-        return(LD_func(x, meta, snp.list = comps[[1]][[1]], mDat = mDat, sr))
+        browser()
+        out <- LD_func(x, meta, snp.list = comps[[1]][[1]], mDat = mDat, sr)
+
+        # decompose and return (mostly for snp level facets)
+        ## prep for decomposition function, done to make the format equal to something with sample level facets.
+        LD_mats <- vector("list", 1)
+        LD_mats[[1]] <- vector("list", 1)
+        names(LD_mats) <- ".base"
+        LD_mats[[1]][[1]] <- vector("list", 1)
+        names(LD_mats[[1]]) <- ".base"
+        LD_mats[[1]][[1]] <- list(Dprime = out$Dprime, rsq = out$rsq, pval = out$pval)
+
+        prox <- out$prox
+        out <- decompose.LD.matrix(x, LD_mats, facets, facet.types)
+        out <- list(prox = prox, LD_matrices = out)
+
+        return(out)
       }
     }
 
@@ -1709,16 +1669,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       mats <- decompose.LD.matrix(x, w_list$LD_mats, facets, facet.types)
       w_list <- list(prox = prox, LD_matrices = mats)
 
-
-
-      browser()
       return(w_list)
     }
 
     #in parallel
     else{
       library(doParallel);library(foreach)
-      browser()
       cl <- snow::makeSOCKcluster(par)
       doSNOW::registerDoSNOW(cl)
 
@@ -1747,7 +1703,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       rm(x_storage, meta_storage, mDat_storage)
       gc();gc()
 
-      browser()
 
       # make the output sensible but putting it into the same format as from the other, then running the decompose function
       for(i in 1:ntasks){
@@ -1822,8 +1777,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
   facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
 
+  # run the function
   out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
 
+  # add to snpRdata object and return
+  out <- merge.snpR.stats(x, out, "LD")
+  return(out)
 }
 
 
