@@ -163,7 +163,7 @@ calc_maf <- function(x, facets = NULL){
                            req = "gs",
                            fun = func,
                            case = "ps",
-                           m.al = substr(temp@mDat,1, nchar(temp@mDat)/2))
+                           m.al = substr(x@mDat,1, nchar(x@mDat)/2))
   return(merge.snpR.stats(x, out))
 }
 
@@ -1353,7 +1353,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
             snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[l,]))))
 
             # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+            if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
             for(k in 1:(length(snps.in.subfacet) - 1)){
+              cat(i, " ", j, " ", l, " ", k, "\n")
               c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
               c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
               dups <- which(duplicated(c.comps))
@@ -1806,6 +1808,9 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
     # Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
     # code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
     exact.hwe <- function(pp, qq, pq2){
+      if(all(c(pp, qq, pq2) == 0)){
+        return(-1.0)
+      }
       obs_homr <- min(c(pp, qq))
       obs_homc <- max(c(pp, qq))
       obs_hets <- pq2

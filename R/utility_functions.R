@@ -27,6 +27,8 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
   }
 
+  rownames(genotypes) <- 1:nrow(genotypes)
+  rownames(snp.meta) <- 1:nrow(snp.meta)
 
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
@@ -46,8 +48,8 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
            facet.type = ".base")
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
-  cat("Imput data will be filtered to remove non-polymorphic and non bi-allelic data.\n")
-  invisible(capture.output(x <- filter_snps(x)))
+  cat("Imput data will be filtered to remove non bi-allelic data.\n")
+  invisible(capture.output(x <- filter_snps(x, non_poly = F)))
 
   # add ac
   invisible(capture.output(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")]))
@@ -196,7 +198,7 @@ find.snpR.facets <- function(x){
 get.snpR.stats <- function(x, facets = NULL){
   if(!is.null(facets)){
     if(facets[1] == "all"){
-      facets <- dat@facets
+      facets <- x@facets
     }
   }
   else {
@@ -1525,31 +1527,16 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
                         ni1 = numeric(nrow(x)),
                         ni2 = numeric(nrow(x)))
 
-      # figure out matches and mismatches for this pops major and minor and the overall, and check for non-poly/unsequenced loci
-      # note, no reason to account for unsequenced loci, since they will get zeros naturally via the numeric initialization!
-      maj.match <- which(maj == x$major)
-      min.match <- which(min == x$minor)
-      swap <- which(maj == x$minor & min == x$major)
-      np <- which(x$minor == mis.al & x$major != mis.al)
 
-      # add ni1 and ni2 counts
-      out$ni1[maj.match] <- x$maj.count[maj.match]
-      out$ni2[min.match] <- x$min.count[min.match]
-      out$ni1[swap] <- x$min.count[swap]
-      out$ni2[swap] <- x$maj.count[swap]
+      # get the column from as matching the target allele.
+      maj.col.match <- match(maj, colnames(x))
+      out$ni1 <- t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
 
-      # add counts for the np loci
-      if(length(np) != 0){
-        np.maj.match <- which(x$minor == mis.al & x$major == maj)
-        np.maj.no.match <- np[!(np %in% np.maj.match)]
-
-        out$ni1[np.maj.match] <- x$maj.count[np.maj.match]
-        out$ni1[np.maj.no.match] <- x$min.count[np.maj.no.match]
-      }
-
-      # finish the table
-      out$n_total <- rowSums(out[,3:4])
+      # ni1 is the rowsums minus this
+      out$ni2 <- rowSums(x) - out$ni1
+      out$n_total <- rowSums(x)
       out$n_alleles <- rowSums(ifelse(out[,3:4] != 0, 1, 0))
+      out[is.na(out)] <- 0
 
       return(out)
     }
@@ -1573,12 +1560,12 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
     maj <- x@stats$major[x@stats$facet == ".base"]
     min <- x@stats$minor[x@stats$facet == ".base"]
-    maj <- rep(maj, each = length(unique(x@stats[x@stats$facet %in% facets,]$subfacet)))
-    min <- rep(min, each = length(unique(x@stats[x@stats$facet %in% facets,]$subfacet)))
+    maj <- rep(maj, each = length(unique(x@facet.meta[x@facet.meta$facet %in% facets,]$subfacet)))
+    min <- rep(min, each = length(unique(x@facet.meta[x@facet.meta$facet %in% facets,]$subfacet)))
 
 
     # get the ac file
-    ac.dat <- get.ac(x@stats[x@stats$facet %in% facets,],
+    ac.dat <- get.ac(x@geno.tables$as[x@facet.meta$facet %in% facets,],
                      maj = maj,
                      min = min,
                      substr(x@mDat, 1, nchar(x@mDat)/2))
