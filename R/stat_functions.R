@@ -307,10 +307,6 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
-    # initialize nk storage, same for all methods
-    pnk <- data.frame(comparison = character(0),
-                      n_total = numeric(0))
-
     #===============genepop======================
     if(method == "genepop"){
       g.filename <- paste0("genepop.", facets, ".txt")
@@ -419,9 +415,22 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       pops <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
-          pnk <- rbind(pnk,
-                       data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
-                                  n_total = n_tots[,i] + n_tots[,j]))
+          if(!exists(pnk)){
+            pnk <-data.table::as.data.table(
+              data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
+                         n_total = n_tots[,i] + n_tots[,j])
+              )
+          }
+          else{
+            pnk <- rbind(pnk,
+                         data.table::as.data.table(
+                           data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
+                                      n_total = n_tots[,i] + n_tots[,j])
+                           )
+                         )
+          }
+
+
         }
       }
 
@@ -525,10 +534,20 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         }
 
         # update pnk
-        pnk <- rbind(pnk,
-                     data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
-                                n_total = idat$n_total + jdat$n_total))
-
+        if(!exists("pnk")){
+          pnk <- data.table::as.data.table(
+            data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
+                       ntotal = idat$n_total + jdat$n_total)
+          )
+        }
+        else{
+          pnk <- rbind(pnk,
+                       data.table::as.data.table(
+                         data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
+                                    ntotal = idat$n_total + jdat$n_total)
+                       )
+          )
+        }
         c.col <- c.col + 1 #agument c.col
       }
     }
@@ -536,7 +555,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     # melt, cbind pnk
     suppressMessages(out <- reshape2::melt(out))
     colnames(out) <- c("comparison", "fst")
-    out <- cbind(out, n_total = pnk$n_total)
+    out$n_total <- pnk$n_total
 
     # return
     return(out)
@@ -686,12 +705,13 @@ calc_private <- function(x, facets = NULL){
     if(length(unique(gs$as$subfacet)) == 1){
       return(out)
     }
+    gs$as <- data.table::as.data.table(gs$as)
 
     # convert to logical, then melt down to long and cast back up to summarize the number of times each allele is observed across all populations in for each locus
-    logi <- ifelse(gs$as[,4:ncol(gs$as)] == 0, F, T)
+    logi <- data.table::as.data.table(ifelse(gs$as[,4:ncol(gs$as)] == 0, F, T))
     logi <- cbind(gs$as[,1:3], logi)
-    cgs <- reshape2::melt(logi, id.vars = c("facet", "subfacet", ".snp.id"))
-    cgs <- reshape2::dcast(cgs, formula = .snp.id ~ variable, value.var = "value", fun.aggregate = sum)
+    cgs <- data.table::melt(logi, id.vars = c("facet", "subfacet", ".snp.id"))
+    cgs <- data.table::dcast(cgs, formula = .snp.id ~ variable, value.var = "value", fun.aggregate = sum)
 
     # find those with private alleles in any populations
     logi.cgs <- ifelse(cgs[,-1] == 1, T, F) # anything TRUE is a private allele in a population
@@ -1900,7 +1920,6 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
       # calculate p-values
       out <- pchisq(chi, 2, lower.tail = FALSE)
-      out[is.nan(out)] <- 0
       return(out)
     }
 

@@ -6,7 +6,6 @@
 #' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
 #'
 import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
-
   # prepare things for addition to data
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
@@ -35,13 +34,13 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
                    subfacet = rep(".base", nrow(gs$gs)),
                    facet.type = rep(".base", nrow(gs$gs)))
+
   fm <- cbind(fm, snp.meta)
 
   x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
            facet.meta = fm,
            geno.tables = gs,
            mDat = mDat,
-           # ac = ac,
            stats = fm,
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
            facets = ".base",
@@ -104,7 +103,8 @@ add.facets.snpR.data <- function(x, facets = NULL){
   # For snp facets, nothing to do here besides add them to the facet list and facet type list.
   # For complex facets, prep summary tables for the sample facet portion if they don't exist and add to facet list.
   added.facets <- character(0)
-  oac <- cbind(x@facet.meta[,c("facet", "subfacet", ".snp.id")], x@ac) # grab original ac with meta for later
+  oac <- cbind(data.table::as.data.table(x@facet.meta[,c("facet", "subfacet", ".snp.id")]),
+               data.table::as.data.table(x@ac)) # grab original ac with meta for later
   for(k in 1:length(facet.list)){
     facets <- facet.list[[k]] # column levels for this facet.
     #=========================figure out unique levels for the facet==========
@@ -167,19 +167,27 @@ add.facets.snpR.data <- function(x, facets = NULL){
     # output
     x@geno.tables <- gs
   }
-
   # add and sort ac formated data.
   invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
+  nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
   x@ac <- nac[,-c(1:3)]
 
   # add in dummy rows to stats
-  sm <- x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))]
-  sm <- cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm)))
+  sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
+  if(ncol(x@stats) - ncol(sm) > 0){
+    sm <- cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm)))
+  }
   colnames(sm) <- colnames(x@stats)
-  x@stats <- rbind(x@stats, cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm))))
-  x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
+  os <- data.table::as.data.table(x@stats)
+  if(ncol(os) - ncol(sm) > 0){
+    os <- rbind(os, cbind(sm, matrix(NA, nrow(sm), ncol(os) - ncol(sm))))
+  }
+  else{
+    os <- rbind(os, sm)
+  }
+  x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
 
   return(x)
 }
@@ -248,10 +256,11 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
       gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
 
       # run the function indicated
-      out <- fun(gs, ...)
+      out <- data.table::as.data.table(fun(gs, ...))
 
       # bind metadata
-      out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
+      #out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
 
       # return
       return(out)
@@ -263,10 +272,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
       gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet %in% facets, c("facet", "subfacet", ".snp.id")], y))
 
       # run the function indicated
-      out <- fun(gs, ...)
+      out <- data.table::as.data.table(fun(gs, ...))
 
       # bind metadata
-      out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
 
       # return
       return(out)
@@ -276,10 +285,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
       ac <- x@ac[x@facet.meta$facet %in% facets,]
 
       # run the function indicated
-      out <- fun(ac, ...)
+      out <- data.table::as.data.table(fun(ac, ...))
 
       # bind metadata
-      out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
 
       # return
       return(out)
@@ -296,10 +305,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
         gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet == facets[i], c("facet", "subfacet", ".snp.id")], y))
 
         # run the function indicated
-        this.out <- fun(gs, ...)
+        this.out <- data.table::as.data.table(fun(gs, ...))
 
         # bind metadata
-        this.out <- cbind(x@facet.meta[x@facet.meta$facet == facets[i],], this.out)
+        this.out <- data.table::as.data.table(cbind(x@facet.meta[x@facet.meta$facet == facets[i],], this.out))
 
         # bind to full data
         out <- rbind(out, this.out)
@@ -321,7 +330,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
         out <- fun(x, facets[i], ...)
         # if this is a genepop fst output, we should expect a list of size two. Need to return the correct parts!
         if(length(out) == 2){
-          suppressWarnings(out1 <- rbind(out1, cbind(x@snp.meta, facet = facets[i], out[[1]])))
+          suppressWarnings(out1 <- rbind(out1, cbind(data.table::as.data.table(x@snp.meta), facet = facets[i], data.table::as.data.table(out[[1]]))))
           out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]]))
         }
       }
@@ -345,10 +354,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
         stats <- x@stats[x@facet.meta$facet == facets[i],]
 
         # run the function indicated
-        this.out <- fun(cbind(stats, ac), ...)
+        this.out <- data.table::as.data.table(fun(cbind(stats, ac), ...))
 
         # bind metadata and combine with full output
-        suppressWarnings(out <- rbind(out, cbind(x@snp.meta, facet = facets[i], this.out)))
+        suppressWarnings(out <- rbind(out, cbind(data.table::as.data.table(x@snp.meta), facet = facets[i], this.out)))
 
       }
 
@@ -362,65 +371,69 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", ...){
 # merge newly calculated stats with a snpRdata object.
 merge.snpR.stats <- function(x, stats, type = "stats"){
   if(type == "stats"){
+    o.s <- data.table::as.data.table(x@stats)
+    n.s<- data.table::as.data.table(stats)
     # if new stats, easy to merge
-    if(!all(colnames(stats) %in% colnames(x@stats))){
-      x@stats <- merge(x@stats, stats,
-                       by = colnames(x@stats)[which(colnames(x@stats) %in% colnames(stats))], # note here that we are only merging by columns that already exist in both datasets
+    if(!all(colnames(n.s) %in% colnames(o.s))){
+      o.s <- merge(o.s, n.s,
+                       by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
                        all = T, sort = F)
     }
 
     # otherwise need to overwrite
     else{
-      add.rows <- which(x@stats$facet %in% stats$facet)
-      y <- x@stats[add.rows,]
+      add.rows <- which(o.s$facet %in% n.s$facet)
+      y <- o.s[add.rows,]
 
       # sort identically
       y <- dplyr::arrange(y, .snp.id, facet, subfacet)
-      stats <- dplyr::arrange(stats, .snp.id, facet, subfacet)
-      y[,which(colnames(y) %in% colnames(stats))] <- stats
+      n.s <- dplyr::arrange(n.s, .snp.id, facet, subfacet)
+      y[,which(colnames(y) %in% colnames(n.s))] <- n.s
 
       #replace and add
-      x@stats[add.rows,] <- y # add back
+      o.s[add.rows,] <- y # add back
     }
 
     # sort and return
-    x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
+    x@stats <- dplyr::arrange(o.s, .snp.id, facet, subfacet)
   }
   else if(type == "pairwise"){
+    o.s <- data.table::as.data.table(x@pairwise.stats)
+    n.s <- data.table::as.data.table(stats)
     # since pairwise.stats data.frames aren't automatically initizalized, need to add new rows if they don't already exist.
-    missing.rows <- which(!(paste0(stats$facet, "__", stats$comparison) %in% paste0(x@pairwise.stats$facet, "__", x@pairwise.stats$comparison)))
+    missing.rows <- which(!(paste0(n.s$facet, "__", n.s$comparison) %in% paste0(o.s$facet, "__", o.s$comparison)))
     if(length(missing.rows) > 0){
-      new.rows <- stats[,1:which(colnames(stats) == "comparison")]
-      if(ncol(x@pairwise.stats) > ncol(new.rows)){
-        new.rows <- cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(x@pairwise.stats) - ncol(new.rows))))
-        colnames(new.rows) <- colnames(x@pairwise.stats)
+      new.rows <- n.s[,1:which(colnames(n.s) == "comparison")]
+      if(ncol(o.s) > ncol(new.rows)){
+        new.rows <- cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(o.s) - ncol(new.rows))))
+        colnames(new.rows) <- colnames(o.s)
       }
-      x@pairwise.stats <- rbind(x@pairwise.stats, new.rows)
+      o.s <- rbind(o.s, new.rows)
     }
 
     # if new stats, easy to merge
-    if(!all(colnames(stats) %in% colnames(x@pairwise.stats))){
-      x@pairwise.stats <- merge(x@pairwise.stats, stats,
-                       by = colnames(x@pairwise.stats)[which(colnames(x@pairwise.stats) %in% colnames(stats))], # note here that we are only merging by columns that already exist in both datasets
+    if(!all(colnames(n.s) %in% colnames(o.s))){
+      o.s <- merge(o.s, n.s,
+                       by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
                        all = T, sort = F)
     }
 
     # otherwise need to overwrite
     else{
-      add.rows <- which(x@pairwise.stats$facet %in% stats$facet)
-      y <- x@pairwise.stats[add.rows,]
+      add.rows <- which(o.s$facet %in% n.s$facet)
+      y <- o.s[add.rows,]
 
       # sort identically
       y <- dplyr::arrange(y, .snp.id, facet, comparison)
-      stats <- dplyr::arrange(stats, .snp.id, facet, comparison)
-      y[,which(colnames(y) %in% colnames(stats))] <- stats
+      n.s <- dplyr::arrange(n.s, .snp.id, facet, comparison)
+      y[,which(colnames(y) %in% colnames(n.s))] <- n.s
 
       #replace and add
-      x@pairwise.stats[add.rows,] <- y # add back
+      o.s[add.rows,] <- y # add back
     }
 
     # sort and return
-    x@pairwise.stats <- dplyr::arrange(x@pairwise.stats, .snp.id, facet, comparison)
+    x@pairwise.stats <- dplyr::arrange(o.s, .snp.id, facet, comparison)
   }
   else if(type == "LD"){
 
@@ -511,7 +524,7 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
     dat <- import.snpR.data(dat, snp.meta = x@snp.meta[snps,], sample.meta = x@sample.meta[samps,], mDat = x@mDat)
-    dat <- add.facets.snpR.data(dat, x@facets)
+    dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     warning("Since samples were subset, any stats will need to be recalculated.\n")
     return(dat)
   }
@@ -663,9 +676,13 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
 tabulate_genotypes <- function(x, mDat, verbose = F){
 
   # get a genotype table
+  x <- data.table::as.data.table(x)
+
   snp_form <- nchar(x[1,1])   # get information on data format
-  x <- reshape2::melt(t(x)) # transpose and melt
-  gmat <-table(x[,2:3]) # table to get a count of genotypes per locus
+  x <- data.table::melt(t(x)) # transpose and melt
+
+  gmat <- data.table::dcast(data.table::setDT(x), Var2 ~ value, value.var='value', length)
+  gmat <- gmat[,-1]
   tmat <- gmat[,-which(colnames(gmat) == mDat)] # remove missing data
 
   #get matrix of allele counts
@@ -687,7 +704,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
     else{
       het <- b[b != hom]
       if(length(het) > 0){
-        if(is.matrix(tmat[,het])){
+        if(is.matrix(tmat[,het]) | data.table::is.data.table(tmat[,het])){
           amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
         }
         else{
@@ -699,7 +716,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
       }
     }
   }
-  return(list(gs = unclass(tmat), as = amat, wm = unclass(gmat)))
+  return(list(gs = as.matrix(tmat), as = amat, wm = as.matrix(gmat)))
 }
 
 
