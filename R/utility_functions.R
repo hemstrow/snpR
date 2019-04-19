@@ -378,6 +378,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       o.s <- merge(o.s, n.s,
                        by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
                        all = T, sort = F)
+      o.s <- data.table::setorder(o.s, .snp.id, facet, subfacet)
     }
 
     # otherwise need to overwrite
@@ -386,8 +387,8 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       y <- o.s[add.rows,]
 
       # sort identically
-      y <- dplyr::arrange(y, .snp.id, facet, subfacet)
-      n.s <- dplyr::arrange(n.s, .snp.id, facet, subfacet)
+      #y <- dplyr::arrange(y, .snp.id, facet, subfacet)
+      n.s <- data.table::setorder(n.s, .snp.id, facet, subfacet)
       y[,which(colnames(y) %in% colnames(n.s))] <- n.s
 
       #replace and add
@@ -395,7 +396,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     }
 
     # sort and return
-    x@stats <- dplyr::arrange(o.s, .snp.id, facet, subfacet)
+    x@stats <- o.s
   }
   else if(type == "pairwise"){
     o.s <- data.table::as.data.table(x@pairwise.stats)
@@ -405,10 +406,11 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     if(length(missing.rows) > 0){
       new.rows <- n.s[,1:which(colnames(n.s) == "comparison")]
       if(ncol(o.s) > ncol(new.rows)){
-        new.rows <- cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(o.s) - ncol(new.rows))))
+        new.rows <- data.table::as.data.table(cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(o.s) - ncol(new.rows)))))
         colnames(new.rows) <- colnames(o.s)
       }
       o.s <- rbind(o.s, new.rows)
+      o.s <- data.table::setorder(o.s, .snp.id, facet, comparison)
     }
 
     # if new stats, easy to merge
@@ -416,6 +418,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       o.s <- merge(o.s, n.s,
                        by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
                        all = T, sort = F)
+      o.s <- data.table::setorder(o.s, .snp.id, facet, comparison)
     }
 
     # otherwise need to overwrite
@@ -424,16 +427,17 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       y <- o.s[add.rows,]
 
       # sort identically
-      y <- dplyr::arrange(y, .snp.id, facet, comparison)
-      n.s <- dplyr::arrange(n.s, .snp.id, facet, comparison)
+      # y <- data.table::setorder(y, .snp.id, facet, comparison) # should already be sorted, and this can be slow.
+      n.s <- data.table::setorder(n.s, .snp.id, facet, comparison)
       y[,which(colnames(y) %in% colnames(n.s))] <- n.s
 
       #replace and add
-      o.s[add.rows,] <- y # add back
+      o.s <- data.table::set(o.s, i = add.rows, j = 1:ncol(o.s), value = y)
     }
 
-    # sort and return
-    x@pairwise.stats <- dplyr::arrange(o.s, .snp.id, facet, comparison)
+    # sort and return -- should be able to skip this.
+    # x@pairwise.stats <- data.table::setorder(o.s, .snp.id, facet, comparison)
+    x@pairwise.stats <- o.s
   }
   else if(type == "LD"){
 

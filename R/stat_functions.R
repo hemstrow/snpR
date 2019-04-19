@@ -307,6 +307,11 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
+    pops <- sort(unique(x$subfacet))
+    npops <- length(pops)
+    pnk.length <- (npops*(npops-1))/2 * (nrow(x)/npops)
+    pnk <- data.table::data.table(comparison = character(pnk.length), ntotal = integer(pnk.length))
+
     #===============genepop======================
     if(method == "genepop"){
       g.filename <- paste0("genepop.", facets, ".txt")
@@ -407,34 +412,23 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       colnames(out$loci) <- c("comparison", "fst")
 
       # get nk values:
-      n_tots <- data.frame(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
-                           .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
-                           n_total = x@ac[x@facet.meta$facet == facets, "n_total"])
-      n_tots <- reshape2::dcast(n_tots, .snp.id ~ pop, value.var = "n_total")
+      n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
+                                       .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
+                                       n_total = x@ac[x@facet.meta$facet == facets, "n_total"])
+      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "n_total")
       n_tots <- n_tots[,-1]
-      pops <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
+
+
+      prog <- 1
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
-          if(!exists(pnk)){
-            pnk <-data.table::as.data.table(
-              data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
-                         n_total = n_tots[,i] + n_tots[,j])
-              )
-          }
-          else{
-            pnk <- rbind(pnk,
-                         data.table::as.data.table(
-                           data.frame(comparison = paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]),
-                                      n_total = n_tots[,i] + n_tots[,j])
-                           )
-                         )
-          }
-
-
+            pnk <- set(pnk, prog:(prog + nrow(n_tots) - 1), 1L, paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]))
+            pnk <- set(pnk, prog:(prog + nrow(n_tots) - 1), 2L, as.integer(n_tots[,i] + n_tots[,j]))
+            prog <- prog + nrow(n_tots)
         }
       }
 
-      out$loci <- cbind(out$loci, n_total = pnk$n_total)
+      out$loci <- pnk$n_total
 
       # return, we're done.
       cat("Finished.\n")
@@ -442,7 +436,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     }
 
     #===============others=====================
-    pops <- sort(unique(x$subfacet))
+
+
     out <- as.data.frame(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
     #initialize pop comparison columns.
@@ -462,6 +457,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
     #loop through each comparison and caculate pairwise FST at each site
     c.col <- 1
+    prog <- 1
     for (i in 1:(length(pops) - 1)){ #i is the first pop
       idat <- x[x$subfacet == pops[i],] #get data for first pop
       j <- i + 1 #intialize j as the next pop
@@ -534,20 +530,11 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         }
 
         # update pnk
-        if(!exists("pnk")){
-          pnk <- data.table::as.data.table(
-            data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
-                       ntotal = idat$n_total + jdat$n_total)
-          )
-        }
-        else{
-          pnk <- rbind(pnk,
-                       data.table::as.data.table(
-                         data.frame(comparison = paste0(idat$subfacet, "~", jdat$subfacet),
-                                    ntotal = idat$n_total + jdat$n_total)
-                       )
-          )
-        }
+        pnk <- set(pnk, prog:(prog + nrow(idat) - 1), 1L, paste0(idat$subfacet, "~", jdat$subfacet))
+        pnk <- set(pnk, prog:(prog + nrow(idat) - 1), 2L, as.integer(idat$n_total + jdat$n_total))
+        prog <- prog + nrow(idat)
+
+
         c.col <- c.col + 1 #agument c.col
       }
     }
