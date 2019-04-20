@@ -436,9 +436,12 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     }
 
     #===============others=====================
+    browser()
+    x <- data.table::as.data.table(x)
+    data.table::setkey(x, subfacet)
 
 
-    out <- as.data.frame(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
+    out <- data.table::as.data.table(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
 
     #initialize pop comparison columns.
     comps <- c()
@@ -459,6 +462,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     c.col <- 1
     prog <- 1
     for (i in 1:(length(pops) - 1)){ #i is the first pop
+      system.time(temp <- x[x$subfacet == pops[i],]) #get data for first pop
+      system.time(temp2 <- x[subfacet == pops[i],])
+
+
       idat <- x[x$subfacet == pops[i],] #get data for first pop
       j <- i + 1 #intialize j as the next pop
       for (j in j:length(pops)){#j is pop being compared

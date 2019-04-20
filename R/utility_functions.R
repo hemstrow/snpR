@@ -680,43 +680,45 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
 tabulate_genotypes <- function(x, mDat, verbose = F){
 
   # get a genotype table
-  x <- data.table::as.data.table(x)
+  x <- data.table::setDT(x)
 
   snp_form <- nchar(x[1,1])   # get information on data format
   x <- data.table::melt(t(x)) # transpose and melt
 
   gmat <- data.table::dcast(data.table::setDT(x), Var2 ~ value, value.var='value', length)
   gmat <- gmat[,-1]
-  tmat <- gmat[,-which(colnames(gmat) == mDat)] # remove missing data
+  mis.cols <- -which(colnames(gmat) == mDat)
+  tmat <- gmat[,..mis.cols] # remove missing data
 
   #get matrix of allele counts
   #initialize
   hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
   if(verbose){cat("Getting allele table...\n")}
   as <- unique(unlist(strsplit(paste0(colnames(tmat)), "")))
-  amat <- matrix(0, nrow(gmat), length(as))
+  amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
   colnames(amat) <- as
 
   #fill in
   for(i in 1:length(as)){
+    as[i]
     b <- grep(as[i], colnames(tmat))
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
       het <- b
-      amat[,i] <- rowSums(tmat[,het])
+      amat[,..i] <- rowSums(tmat[,..het])
     }
     else{
       het <- b[b != hom]
       if(length(het) > 0){
-        if(is.matrix(tmat[,het]) | data.table::is.data.table(tmat[,het])){
-          amat[,i] <- (tmat[,hom] * 2) + rowSums(tmat[,het])
+        if(data.table::is.data.table(tmat[,..het])){
+          set(amat, j = i, value = (tmat[,..hom] * 2) + rowSums(tmat[,..het]))
         }
         else{
           amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
         }
       }
       else{
-        amat[,i] <- (tmat[,hom] * 2)
+        set(amat, j = i, value = (tmat[,..hom] * 2))
       }
     }
   }
