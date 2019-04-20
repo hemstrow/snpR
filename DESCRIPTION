@@ -25,6 +25,8 @@ Imports:
     ggplot2,
     plyr,
     reshape2
+Depends:
+    data.table
 Suggests:
     BMS,
     genepop,
