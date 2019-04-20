@@ -1,2 +1,0 @@
-cat("hello")
-cat("Hi")

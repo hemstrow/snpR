@@ -50,11 +50,14 @@ calc_odds_ratio <- function(x, facet){
   # stuff to be added to the apply function with edits!
   tac <- cbind(x@facet.meta, x@ac)
   tac <- tac[tac$facet == "phenotype",]
-  tac <- tac[-which(colnames(tac) %in% c("facet", "snp", "position", "group", "facet.type"))]
-
-
   ctac <- data.table::dcast(data.table::setDT(tac), .snp.id ~ subfacet, value.var = c("ni1", "ni2"))
   ctac <- as.matrix(ctac)[,-1]
+
+  # or for gs tables!
+  gs <- data.table::as.data.table(cbind(dat2@facet.meta, dat2@geno.tables$gs))
+  gs <- gs[gs$facet == "pheontype",]
+  cast_gs <- data.table::dcast(data.table::setDT(gs), .snp.id ~ subfacet, value.var = colnames(dat2@geno.tables$gs))
+  cast_gs <- as.matrix(cast_gs)[,-1]
 
 }
 
