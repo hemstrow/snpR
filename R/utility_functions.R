@@ -225,7 +225,9 @@ get.snpR.stats <- function(x, facets = NULL){
     }
   }
 
-  return(x@stats[which(x@stats$facet %in% facets), -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))])
+  keep.rows <- -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))
+
+  return(as.data.frame(x@stats[x@stats$facet %in% facets, ..keep.rows]))
 }
 
 # function to apply a function across selected facets
@@ -722,7 +724,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
       }
     }
   }
-  return(list(gs = as.matrix(tmat), as = amat, wm = as.matrix(gmat)))
+  return(list(gs = as.matrix(tmat), as = as.matrix(amat), wm = as.matrix(gmat)))
 }
 
 

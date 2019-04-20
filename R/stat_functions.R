@@ -307,9 +307,22 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
-    pops <- sort(unique(x$subfacet))
-    npops <- length(pops)
-    pnk.length <- (npops*(npops-1))/2 * (nrow(x)/npops)
+    browser()
+    if(method != "genepop"){
+      x <- data.table::as.data.table(x)
+      data.table::setkey(x, subfacet, .snp.id)
+      pops <- sort(unique(x$subfacet))
+      npops <- length(pops)
+      pnk.length <- (npops*(npops-1))/2 * (nrow(x)/npops)
+    }
+    else{
+      fmeta <- data.table::setDT(x@facet.meta)
+      pops <- sort(unique(fmeta[facet == facets, subfacet]))
+      rm(fmeta)
+      npops <- length(pops)
+      pnk.length <- (npops*(npops-1))/2 * (nrow(x))
+    }
+
     pnk <- data.table::data.table(comparison = character(pnk.length), ntotal = integer(pnk.length))
 
     #===============genepop======================
@@ -375,7 +388,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       colnames(fmat) <- 1:ncol(fmat)
 
       #fill the matrix with a loop. Not a bad loop, since it only loops through each pop.
-      prog <- 1 #column fill progress tracker
+      prog <- 1L #column fill progress tracker
       for(i in 2:np){
         #grab the values
         tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
@@ -388,7 +401,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         colnames(tmat) <- paste0(pnames[1:(i-1)], "~", pnames[i]) #name the comparison in each column
         fmat[,prog:(prog + ncol(tmat) - 1)] <- tmat #save to the final output
         colnames(fmat)[prog:(prog + ncol(tmat) - 1)] <- colnames(tmat) #save the column names
-        prog <- prog + ncol(tmat) #increment column progress.
+        prog <- prog + as.integer(ncol(tmat)) #increment column progress.
       }
 
       fmat <- fmat[,order(colnames(fmat))] #re-organize output by column name
@@ -419,16 +432,19 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       n_tots <- n_tots[,-1]
 
 
-      prog <- 1
+      prog <- 1L
+      browser()
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
-            pnk <- set(pnk, prog:(prog + nrow(n_tots) - 1), 1L, paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]))
-            pnk <- set(pnk, prog:(prog + nrow(n_tots) - 1), 2L, as.integer(n_tots[,i] + n_tots[,j]))
-            prog <- prog + nrow(n_tots)
+          new.rows <- prog:(prog + nrow(n_tots) - 1)
+          data.table::set(pnk, i = new.rows, 1L, paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]))
+          suppressWarnings(data.table::set(pnk, i = new.rows, 2L, n_tots[,..i] + n_tots[,..j]))
+          prog <- prog + as.integer(nrow(n_tots))
+
         }
       }
 
-      out$loci <- pnk$n_total
+      out$loci$n_total <- pnk$ntotal
 
       # return, we're done.
       cat("Finished.\n")
@@ -436,9 +452,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     }
 
     #===============others=====================
-    browser()
-    x <- data.table::as.data.table(x)
-    data.table::setkey(x, subfacet)
+    data.table::setkey(x, subfacet, .snp.id) # sort the data
 
 
     out <- data.table::as.data.table(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
@@ -459,17 +473,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     colnames(out) <- comps
 
     #loop through each comparison and caculate pairwise FST at each site
-    c.col <- 1
-    prog <- 1
+    c.col <- 1L
+    prog <- 1L
     for (i in 1:(length(pops) - 1)){ #i is the first pop
-      system.time(temp <- x[x$subfacet == pops[i],]) #get data for first pop
-      system.time(temp2 <- x[subfacet == pops[i],])
-
-
-      idat <- x[x$subfacet == pops[i],] #get data for first pop
+      idat <- x[.(pops[i])] # get data for first pop
       j <- i + 1 #intialize j as the next pop
       for (j in j:length(pops)){#j is pop being compared
-        jdat <- x[x$subfacet == pops[j],] #get data for second pop
+        jdat <- x[.(pops[j]),] #get data for second pop
 
         if(method == "wc" | method == "wier"){
 
@@ -498,7 +508,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
             b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
             c <- .5*hbar
             Fst <- a/(a+b+c)
-            out[,c.col] <- Fst #write fst
+            data.table::set(out, j = c.col, value = Fst) # write fst
           }
           else{
             S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
@@ -507,7 +517,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
             S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
             S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
             Fst <- S1/S2
-            out[,c.col] <- Fst #write fst
+            data.table::set(out, j = c.col, value = Fst) # write fst
           }
 
         }
@@ -529,7 +539,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
           Fst <- 1 - com.top/com.bot #get fst
           if(any(abs(Fst) > 1, na.rm = T)){cat("Fst > 1 at", which(Fst > 1), ". That's not good.");stop()}
           #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
-          out[,c.col] <- Fst #write fst
+          data.table::set(out, j = c.col, value = Fst) # write fst
         }
 
         else{
@@ -537,19 +547,19 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         }
 
         # update pnk
-        pnk <- set(pnk, prog:(prog + nrow(idat) - 1), 1L, paste0(idat$subfacet, "~", jdat$subfacet))
-        pnk <- set(pnk, prog:(prog + nrow(idat) - 1), 2L, as.integer(idat$n_total + jdat$n_total))
-        prog <- prog + nrow(idat)
+        pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 1L, paste0(idat$subfacet, "~", jdat$subfacet))
+        pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 2L, as.integer(idat$n_total + jdat$n_total))
+        prog <- prog + as.integer(nrow(idat))
 
 
-        c.col <- c.col + 1 #agument c.col
+        c.col <- c.col + 1L #agument c.col
       }
     }
 
     # melt, cbind pnk
-    suppressMessages(out <- reshape2::melt(out))
+    suppressWarnings(out <- data.table::melt(out))
     colnames(out) <- c("comparison", "fst")
-    out$n_total <- pnk$n_total
+    out$n_total <- pnk$ntotal
 
     # return
     return(out)
