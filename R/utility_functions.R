@@ -636,9 +636,9 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     o.s <- data.table::as.data.table(x@window.stats)
     if(nrow(o.s) == 0){
       x@window.stats <- stats
+      return(x)
     }
     else{
-      browser()
       n.s <- data.table::as.data.table(stats)
 
       # column names with metadata
@@ -646,19 +646,43 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       meta.cols.n <- colnames(n.s)[meta.cols.n]
       meta.cols.o <- which(colnames(o.s) %in% c("facet", "subfacet", colnames(x@snp.meta)))
       meta.cols.o <- colnames(o.s)[meta.cols.o]
-      #meta.cols <- unique(c(meta.cols, colnames(o.s)[meta.cols.o]))
+      meta.cols <- unique(c(meta.cols.n, meta.cols.o))
 
+      # make sure the meta columns are congruent
       new.meta <- meta.cols.n[which(!(meta.cols.n %in% meta.cols.o))]
-      o.s <- rbind(o.s)
+      if(length(new.meta) > 0){
+        fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
+        colnames(fill) <- new.meta
+        o.s <- cbind(o.s[,1:2], fill, o.s[,-c(1:2)])
+      }
+      old.meta <- meta.cols.n[which(!(meta.cols.o %in% meta.cols.n))]
+      if(length(old.meta) > 0){
+        fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
+        colnames(fill) <- old.meta
+        n.s <- cbind(n.s[,1:2], fill, n.s[,-c(1:2)])
+      }
 
-      m.s <- merge(n.s, o.s, by = meta.cols)
+      # make sure metadata columns are sorted identically
+      new.meta <- n.s[,..meta.cols]
+      n.ord <- match(colnames(new.meta), meta.cols)
+      new.meta <- new.meta[,..n.ord]
+      old.meta <- o.s[,..meta.cols]
+      o.ord <- match(colnames(old.meta), meta.cols)
+      old.meta <- old.meta[,..o.ord]
+      o.s <- cbind(old.meta, o.s[,-..meta.cols])
+      n.s <- cbind(new.meta, n.s[,-..meta.cols])
+
+      # bind on any rows that are new in y
+      n.id <- do.call(paste, n.s[,..meta.cols])
+      o.id <- do.call(paste, o.s[,..meta.cols])
+      missing.rows <- which(!(n.id %in% o.id))
+
+      # once I add smoothing, I'll need to adjust this to account for new stats:
+      if(length(missing.rows) > 0){
+        o.s <- rbind(o.s, n.s[missing.rows,])
+      }
+      x@window.stats <- o.s
     }
-
-
-    meta.cols <- which(colnames(stats) %in% c("facet", "subfacet", colnames(x@snp.meta)))
-
-
-    browser()
   }
   return(x)
 }

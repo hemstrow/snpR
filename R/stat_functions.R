@@ -269,8 +269,6 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
                            par = par,
                            ws = ws,
                            step = step)
-  browser()
-
 
   return(merge.snpR.stats(x, out, type = "window.stats"))
 
