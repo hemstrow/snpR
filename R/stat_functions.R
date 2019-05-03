@@ -196,11 +196,10 @@ calc_maf <- function(x, facets = NULL){
 #' ac <- format_snps(stickSNPs, 3, pop = pops)
 #' run_gp(ac, Tajimas_D, 200, 50)
 #'
-calc_tajimas_d <- function(x, facets, ws, step, par = F, report = 20){
+calc_tajimas_d <- function(x, facets, ws, step, par = F){
   func <- function(ac, par, ws, step, report){
-    browser()
-    out <- data.frame() #initialize output
-    tps <- sort(x$position) #get the site positions, sort
+    out <- data.frame(position = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), nsnps = numeric(0)) #initialize output
+    tps <- sort(ac$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
@@ -208,10 +207,9 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F, report = 20){
     while (c <= lsp){
       start <- c - ws #change window start
       end <- c + ws #change window end
-      if(i %% report == 0){cat("Window Postion:", c, "out of", lsp, "\n")}
 
       #take all the snps in the window, calculate T's theta, W's theta, and T's D
-      wsnps <- x[x$position <= end & x$position >= start,] #get only the sites in the window
+      wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
       wsnps <- wsnps[!(wsnps[,"ni1"] == 0 & wsnps[,"ni2"] == 0),] #remove any sites that are not sequenced in this pop/group/whatever
       if(nrow(wsnps) == 0){ #if no snps in window
         c <- c + step*1000 #step along
@@ -241,8 +239,6 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F, report = 20){
       D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
 
       #output result for this window, step to the next window
-
-      out[i,"group"] <- x[1,"group"]
       if("pop" %in% colnames(x)){
         out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
       }
@@ -250,6 +246,7 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F, report = 20){
       out[i,"ws.theta"] <- ws.theta
       out[i,"ts.theta"] <- ts.theta
       out[i,"D"] <- D
+      out[i, "nsnps"] <- nrow(wsnps)
       c <- c + step*1000
       i <- i + 1
     }
@@ -257,25 +254,25 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F, report = 20){
   }
 
 
-  browser()
   # add any missing facets
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
-  if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+  add.facets <- check.snpR.facet.request(x, facets)
+  if(!all(add.facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, add.facets)))
   }
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
 
   out <- apply.snpR.facets(x,
                            facets = facets,
-                           req = "ac",
+                           req = "meta.ac",
                            fun = func,
                            case = "ps.pf.psf",
                            par = par,
                            ws = ws,
-                           step = step,
-                           report = report)
+                           step = step)
+  browser()
 
 
-  return(merge.snpR.stats(x, out))
+  return(merge.snpR.stats(x, out, type = "window.stats"))
 
 }
 
@@ -881,6 +878,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #3) clean the table
     ##grab column names
     gl <- colnames(ghapmat)
+
     ##remove anything with missing data and double hets
     rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
               grep(paste0(dmDat, "$"), gl), #missing second locus
@@ -1127,6 +1125,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       if(is.null(snp.list$snps[[i]])){
         next()
       }
+
       haps <- tabulate_haplotypes(x[i,], x[snp.list$snps[[i]],], as, mDat, sform)
 
       #if we had only one haplotype or no haplotypes:
@@ -1226,8 +1225,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # outputs a nested list. Each entry in the list is a unique sample facet. In each of these lists is an entry for each unique subfacet level.
   # in this is an entry for each snp that lists the snps it is compared to.
   # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
+  # this function also does the composite LD calculations, since that's most efficiently done here for each subfacet level.
   determine.comparison.snps <- function(x, facets, facet.types){
-    # progress: need to make this work with the .base facet
+
 
     # sub-subfunctions to get the options for the snp and sample facets
     get.samp.opts <- function(x, t.facet){
@@ -1400,7 +1400,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
             # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
             if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
             for(k in 1:(length(snps.in.subfacet) - 1)){
-              cat(i, " ", j, " ", l, " ", k, "\n")
               c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
               c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
               dups <- which(duplicated(c.comps))
