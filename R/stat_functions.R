@@ -196,64 +196,82 @@ calc_maf <- function(x, facets = NULL){
 #' ac <- format_snps(stickSNPs, 3, pop = pops)
 #' run_gp(ac, Tajimas_D, 200, 50)
 #'
-Tajimas_D <- function(x, ws, step, report = 20){
+calc_tajimas_d <- function(x, facets, ws, step, par = F){
+  func <- function(ac, par, ws, step, report){
+    out <- data.frame(position = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), nsnps = numeric(0)) #initialize output
+    tps <- sort(ac$position) #get the site positions, sort
+    lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
+    c <- 0 #set starting position
+    i <- 1 #set starting iteration for writing output
+    ws <- 1000*ws
+    while (c <= lsp){
+      start <- c - ws #change window start
+      end <- c + ws #change window end
 
-  #windowing
-  out <- data.frame() #initialize output
-  tps <- sort(x$position) #get the site positions, sort
-  lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
-  c <- 0 #set starting position
-  i <- 1 #set starting iteration for writing output
-  ws <- 1000*ws
-  while (c <= lsp){
-    start <- c - ws #change window start
-    end <- c + ws #change window end
-    if(i %% report == 0){cat("Window Postion:", c, "out of", lsp, "\n")}
+      #take all the snps in the window, calculate T's theta, W's theta, and T's D
+      wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
+      wsnps <- wsnps[!(wsnps[,"ni1"] == 0 & wsnps[,"ni2"] == 0),] #remove any sites that are not sequenced in this pop/group/whatever
+      if(nrow(wsnps) == 0){ #if no snps in window
+        c <- c + step*1000 #step along
+        next #go to the next window
+      }
+      b1s <- choose(wsnps[,"ni1"],2) #binomial for first allele
+      b2s <- choose(wsnps[,"ni2"],2) #binomial for second allele
+      bts <- choose(wsnps[,"n_total"],2) #binomial for all alleles
+      ts.theta <- sum(1-((b1s+b2s)/bts)) #average number of pairwise differences (pi) per snp. Equivalent to sum((ndif/ncomp)) for all snps
+      #ts.thetaf <- ts.theta/nrow(wsnps) #pi for the whole region, which includes all of the non-polymorphic sites. Reason why this shouldn't be run with a maf filter, probably.
+      n_seg <- nrow(wsnps[wsnps$ni1 != 0 & wsnps$ni2 != 0,]) #number of segregating sites
+      K <- round(mean(wsnps[,"n_total"])) #average sample size for ws.theta, as in hohenlohe 2010. Alternative would make this into a function, then use lapply on the vector of K values
+      #if(is.nan(K) == TRUE){browser()}
+      a1 <- sum(1/seq(1:(K-1))) #get a1
+      ws.theta <- n_seg/a1 #get ws.theta
+      #ws.thetaf <- ws.theta/nrow(wsnps) #ws.theta fraction
 
-    #take all the snps in the window, calculate T's theta, W's theta, and T's D
-    wsnps <- x[x$position <= end & x$position >= start,] #get only the sites in the window
-    wsnps <- wsnps[!(wsnps[,"ni1"] == 0 & wsnps[,"ni2"] == 0),] #remove any sites that are not sequenced in this pop/group/whatever
-    if(nrow(wsnps) == 0){ #if no snps in window
-      c <- c + step*1000 #step along
-      next #go to the next window
+      #get T's D by part. See original paper, Tajima 1989.
+
+      a2 <- sum(1/(seq(1:(K-1))^2))
+      b1 <- (K+1)/(3*(K-1))
+      b2 <- (2*(K^2 + K + 3))/(9*K*(K-1))
+      c1 <- b1 - (1/a1)
+      c2 <- b2 - ((K+2)/(a1*K)) + (a2/(a1^2))
+      e1 <- c1/a1
+      e2 <- c2/(a1^2 + a2)
+      D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
+
+      #output result for this window, step to the next window
+      if("pop" %in% colnames(x)){
+        out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
+      }
+      out[i,"position"] <- c
+      out[i,"ws.theta"] <- ws.theta
+      out[i,"ts.theta"] <- ts.theta
+      out[i,"D"] <- D
+      out[i, "nsnps"] <- nrow(wsnps)
+      c <- c + step*1000
+      i <- i + 1
     }
-    b1s <- choose(wsnps[,"ni1"],2) #binomial for first allele
-    b2s <- choose(wsnps[,"ni2"],2) #binomial for second allele
-    bts <- choose(wsnps[,"n_total"],2) #binomial for all alleles
-    ts.theta <- sum(1-((b1s+b2s)/bts)) #average number of pairwise differences (pi) per snp. Equivalent to sum((ndif/ncomp)) for all snps
-    #ts.thetaf <- ts.theta/nrow(wsnps) #pi for the whole region, which includes all of the non-polymorphic sites. Reason why this shouldn't be run with a maf filter, probably.
-    n_seg <- nrow(wsnps[wsnps$ni1 != 0 & wsnps$ni2 != 0,]) #number of segregating sites
-    K <- round(mean(wsnps[,"n_total"])) #average sample size for ws.theta, as in hohenlohe 2010. Alternative would make this into a function, then use lapply on the vector of K values
-    #if(is.nan(K) == TRUE){browser()}
-    a1 <- sum(1/seq(1:(K-1))) #get a1
-    ws.theta <- n_seg/a1 #get ws.theta
-    #ws.thetaf <- ws.theta/nrow(wsnps) #ws.theta fraction
-
-    #get T's D by part. See original paper, Tajima 1989.
-
-    a2 <- sum(1/(seq(1:(K-1))^2))
-    b1 <- (K+1)/(3*(K-1))
-    b2 <- (2*(K^2 + K + 3))/(9*K*(K-1))
-    c1 <- b1 - (1/a1)
-    c2 <- b2 - ((K+2)/(a1*K)) + (a2/(a1^2))
-    e1 <- c1/a1
-    e2 <- c2/(a1^2 + a2)
-    D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
-
-    #output result for this window, step to the next window
-
-    out[i,"group"] <- x[1,"group"]
-    if("pop" %in% colnames(x)){
-      out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
-    }
-    out[i,"position"] <- c
-    out[i,"ws.theta"] <- ws.theta
-    out[i,"ts.theta"] <- ts.theta
-    out[i,"D"] <- D
-    c <- c + step*1000
-    i <- i + 1
+    return(out)
   }
-  return(out)
+
+
+  # add any missing facets
+  add.facets <- check.snpR.facet.request(x, facets)
+  if(!all(add.facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, add.facets)))
+  }
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
+
+  out <- apply.snpR.facets(x,
+                           facets = facets,
+                           req = "meta.ac",
+                           fun = func,
+                           case = "ps.pf.psf",
+                           par = par,
+                           ws = ws,
+                           step = step)
+
+  return(merge.snpR.stats(x, out, type = "window.stats"))
+
 }
 
 
@@ -307,7 +325,6 @@ Tajimas_D <- function(x, ws, step, report = 20){
 
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
-    browser()
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
@@ -433,7 +450,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
 
       prog <- 1L
-      browser()
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
           new.rows <- prog:(prog + nrow(n_tots) - 1)
@@ -860,6 +876,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #3) clean the table
     ##grab column names
     gl <- colnames(ghapmat)
+
     ##remove anything with missing data and double hets
     rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
               grep(paste0(dmDat, "$"), gl), #missing second locus
@@ -1106,6 +1123,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       if(is.null(snp.list$snps[[i]])){
         next()
       }
+
       haps <- tabulate_haplotypes(x[i,], x[snp.list$snps[[i]],], as, mDat, sform)
 
       #if we had only one haplotype or no haplotypes:
@@ -1205,8 +1223,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # outputs a nested list. Each entry in the list is a unique sample facet. In each of these lists is an entry for each unique subfacet level.
   # in this is an entry for each snp that lists the snps it is compared to.
   # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
+  # this function also does the composite LD calculations, since that's most efficiently done here for each subfacet level.
   determine.comparison.snps <- function(x, facets, facet.types){
-    # progress: need to make this work with the .base facet
+
 
     # sub-subfunctions to get the options for the snp and sample facets
     get.samp.opts <- function(x, t.facet){
@@ -1379,7 +1398,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
             # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
             if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
             for(k in 1:(length(snps.in.subfacet) - 1)){
-              cat(i, " ", j, " ", l, " ", k, "\n")
               c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
               c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
               dups <- which(duplicated(c.comps))
