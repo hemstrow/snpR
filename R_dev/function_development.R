@@ -117,11 +117,64 @@ do.drift <- function(as, gen, N){
 
   # do random mating for gen generations and save the frequencies at each step
   out.matrix <- matrix(0, nrow = nrow(as), ncol = gen)
-  for(i in 1:gen){
+  for(i in 1:gen){ # this loop needs to be edited to work with the new output from the random mating function.
     as.n <- random.mating(as, N)
     p <- matrixStats::rowMaxs(as.n)/rowSums(as.n)
     out.matrix[,i] <- p
     as <- as.n
   }
   return(out.matrix)
+}
+
+
+calc_armitage<- function(a, w){#where a is the matrix you want to run the test on, and w is the weights
+  #separate controls
+  control.cols <- grep("control", colnames(a))
+  control<- a[,control.cols]
+  #separate cases
+  case <- a[,-control.cols]
+
+
+  #identify ps qs and pqs
+  homs <- substr(colnames(control), 1, 1) == substr(colnames(control), 2, 2)
+  hom_controls <- control[,which(homs)]
+  het_controls <- control[,which(!homs)]
+
+  homs <- substr(colnames(case), 1, 1) == substr(colnames(case), 2, 2)
+  hom_cases <- case[,which(homs)]
+  het_cases <- case[,which(!homs)]
+
+  pp_cont <- matrixStats::rowMaxs(hom_controls)
+  pp_case <- matrixStats::rowMaxs(hom_cases)
+  qq_cont <- rowSums(hom_controls) - pp_cont
+  qq_case <- rowSums(hom_cases) - pp_case
+  pq_cont <- rowSums(het_controls)
+  pq_case <- rowSums(het_cases)
+
+
+  # define values for the three sums
+  n <- rbind(pp_case, pq_case, qq_case)
+  s1 <- n*w
+  s1 <- colSums(s1)
+
+  N <- n + rbind(pp_cont, pq_cont, qq_cont)
+  s2 <- N*w
+  s2 <- colSums(s2)
+  s3 <- N*w^2
+  s3 <- colSums(s3)
+
+  bT <- colSums(N)
+  t <- colSums(n)
+
+  # equation 5
+  b <- (bT*s1 - t*s2)/(bT*s3 - (s2^2))
+
+  # equation 6
+  Vb <- (t*(bT - t))/(bT*(bT*s3 - s2^2))
+
+  # equation 7
+  chi <- (b^2)/Vb
+
+  # use the pchisq function with 1 degree of freedom to get a p-value and return.
+  return(pchisq(chi, 1, lower.tail = F))
 }
