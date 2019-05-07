@@ -85,7 +85,7 @@ smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = 
 #' #no splitting
 #' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
 #'
-s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group", "pop")) {
+calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.type = "all") {
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\tsigma = ", sig, "\n\tWindow slide = ", ws*1000, "\n\t")
 
@@ -94,30 +94,6 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
   if(!all(is.logical(nk) & length(nk) == 1)){
     stop("nk must be TRUE or FALSE.")
   }
-  if(nk){
-    if(!any(colnames(x) == "n_total" | colnames(x) == "nk")){
-      stop("If nk = TRUE, columns named 'nk' or 'n_total' must be in x.")
-    }
-    if(any(colnames(x) == "n_total")){
-      colnames(x)[which(colnames(x) == "n_total")] <- "nk"
-    }
-    x[,"nk"] <- as.numeric(x[,"nk"])
-    cat("nk weighting = TRUE\n\t")
-  }
-  else{
-    cat("nk weighting = FALSE\n\t")
-  }
-  x$position <- as.numeric(x$position)
-
-
-  #parms
-  if(!all(parms %in% colnames(x))){
-    stop("All entries in parms must be present in x. Column names in x must match entries in parms exactly.")
-  }
-  cat("Paramters:\n\t")
-  for(i in 1:length(parms)){
-    cat("\t",parms[i], "\n\t")
-  }
 
   #sigma and ws
   if(!is.null(ws)){
@@ -125,7 +101,7 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
       stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
     }
     if(sigma >= 500 | ws >= 500){
-      warning("sigma and ws are the number of bases in megabases!")
+      warning("Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
     }
     else if(sig <= 100){
       warning("Provided sigma is very small:", sig, "bp!")
@@ -136,29 +112,20 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
       stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
     }
     if(sigma >= 500){
-      warning("sigmais the number of bases in megabases!")
+      warning("Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
     }
     else if(sig <= 100){
       warning("Provided sigma is very small:", sig, "bp!")
     }
   }
 
-
-  #levs
-  if(!all(levs %in% colnames(x)) & !all(is.na(levs))){
-    stop("All entries in levs must be present in x. Column names in x must match entries in levs exactly.")
-  }
-  else if(length(levs) > 1 & any(is.na(levs)) | is.numeric(levs) | length(levs) > 1 & any(is.null(levs))){
-    stop("All entries in levs must be characters! Use NA to subset by no levels.")
-  }
-  cat("Smoothing levels:")
-  for(i in 1:length(levs)){
-    cat("\t",levs[i], "\n\t")
-  }
-
   #================subfunction========
   #funciton to do a sliding window analysis on a data set. Vectorized!:
-  sw  <- function(x, scols, ws, sig, nk){
+  # x: a data frame containing one column with positions and one for each column to be smoothed
+  # nk: logical, should nk wieghting be performed (usually yes)
+  # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
+  func <- function(x, ws, sig, nk){
+    browser()
     if(nrow(x) <= 1){
       ret <- rbind(rep(NA, length = 2 + length(parms)))
       ret <- as.data.frame(ret)
@@ -257,25 +224,36 @@ s_ave_multi <- function(x, parms, sigma, ws = NULL, nk = TRUE, levs = c("group",
 
   #================smooth at proper levels========
   #which cols hold the stats of interest?
-  scols <- which(colnames(x) %in% parms)
 
   if(!is.null(ws)){ws <- ws*1000}
 
   cat("Smoothing...")
 
+
+  out <- apply.snpR.facets(x = x,
+                           facets = facets,
+                           req =  "pos.all.stats",
+                           fun = func,
+                           case =  "ps.pf.psf",
+                           par = par,
+                           ws = ws,
+                           sigma = sigma,
+                           stat.type = stat.type,
+                           nk = nk)
+
   #do the smoothing, could add a parallel option
-  if(!any(is.na(levs))){
-    out <- plyr::ddply(
-      .data = x,
-      .variables = levs,
-      .fun = sw,
-      .progress = "text",
-      scols = scols, ws = ws, sig = sig, nk = nk
-    )
-  }
-  else{
-    out <- sw(x, scols, ws, sig, nk)
-  }
+  # if(!any(is.na(levs))){
+  #   out <- plyr::ddply(
+  #     .data = x,
+  #     .variables = levs,
+  #     .fun = sw,
+  #     .progress = "text",
+  #     scols = scols, ws = ws, sig = sig, nk = nk
+  #   )
+  # }
+  # else{
+  #   out <- sw(x, scols, ws, sig, nk)
+  # }
 
   #remove any empty facets.
   nas <- ifelse(is.na(out), 1, 0)

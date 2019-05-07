@@ -243,7 +243,7 @@ get.snpR.stats <- function(x, facets = NULL){
 #        facet.pairwise: pairwise between facets, ps otherwise.
 #        ps.pf.psf: per snp, but per both sample and snp facet.
 # fun: which function should be applied?
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ...){
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all"){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -371,82 +371,67 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
     }
   }
   else if(case == "ps.pf.psf"){
-    if(req == "meta.ac"){
+    if(req == "meta.ac" | req == "pos.all.stats"){
+      browser()
+      x@facet.meta$facet <- as.character(x@facet.meta$facet)
+      x@facet.meta$subfacet <- x@facet.meta$subfacet
 
-      # get all of the possible snp/sample facet options.
-      facets <- check.snpR.facet.request(x, facets, "none", F)
-      if(par != FALSE){
+      get.task.list <- function(x, facets, source = "stats"){
+        facets <- check.snpR.facet.request(x, facets, "none", F)
         task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
-      }
 
-      snp.facet.list <- vector("list", length = length(facets))
-      for(i in 1:length(facets)){
-        t.facet <- facets[i]
-        t.facet <- unlist(strsplit(t.facet, split = "(?<!^)\\.", perl = T))
-        t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
-
-        # sample facets
-        if(any(t.facet.type == "sample")){
-          t.sample.facet <- check.snpR.facet.request(x, facets[i], remove.type = "snp")
-          t.sample.meta <- x@facet.meta[x@facet.meta$facet == t.sample.facet, c("subfacet")]
-          sample.opts <- unique(t.sample.meta)
-          t.sample.meta <- x@facet.meta[,c("facet", "subfacet")]
-          if(is.null(nrow(sample.opts))){
-            sample.opts <- as.data.frame(sample.opts)
-            t.sample.meta <- as.data.frame(t.sample.meta)
-          }
+        if(source == "stats"){
+          meta.to.use <- x@facet.meta
         }
-        else{
-          t.sample.facet <- ".base"
-          t.sample.meta <- x@facet.meta[,c("facet", "subfacet")]
-          sample.opts <- data.frame(.base = ".base")
+        else if (source == "pairwise.stats"){
+          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")])
+          meta.to.use$subfacet <- meta.to.use$comparison
         }
 
-        # snp facets
-        if(any(t.facet.type == "snp")){
-          t.snp.meta <- x@facet.meta[,t.facet[t.facet.type == "snp"]]
-          snp.opts <- unique(t.snp.meta)
-          t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
-          if(is.null(nrow(snp.opts))){
-            snp.opts <- as.data.frame(snp.opts)
-            t.snp.meta <- as.data.frame(t.snp.meta)
-            colnames(snp.opts) <- t.facet[which(t.facet %in% colnames(x@facet.meta))]
-            colnames(t.snp.meta) <- colnames(snp.opts)
-          }
-          else{
-            t.snp.meta <- t.snp.meta[,match(colnames(t.snp.meta), colnames(snp.opts))]
-          }
-        }
-        else{
-          t.snp.facet <- ".base"
-          t.snp.meta <- as.data.frame(rep(".base", nrow(x@facet.meta)))
-          snp.opts <- data.frame(.base = ".base")
-        }
+        snp.facet.list <- vector("list", length = length(facets))
+        for(i in 1:length(facets)){
+          t.facet <- facets[i]
+          t.facet <- unlist(strsplit(t.facet, split = "(?<!^)\\.", perl = T))
+          t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
 
-        # if not in parallel, go ahead and run
-        if(par == FALSE){
-          cat("Running Tajima's D calculations:\n")
-          t.out <- vector("list", length = nrow(sample.opts) * nrow(snp.opts))
-          tracker <- 1
-          for(j in 1:nrow(sample.opts)){
-            sample.matches <- which(apply(t.sample.meta, 1, function(x) identical(as.character(x), c(as.character(t.sample.facet), as.character(sample.opts[j,])))))
-            for(k in 1:nrow(snp.opts)){
-              cat("Sample Subfacet:\t", as.character(sample.opts[j,]), "\tSNP Subfacet:\t", as.character(snp.opts[k,]), "\n")
-              snp.matches <- which(apply(t.snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[k,]))))
-              run.lines <- intersect(snp.matches, sample.matches)
-              res <- fun(cbind(x@facet.meta[run.lines,], x@ac[run.lines,]), ...)
-              res <- cbind(sample_facet = rep(as.character(t.sample.facet), nrow(res)),
-                           sample_subfacet = rep(as.character(sample.opts[j,]), nrow(res)),
-                           t.snp.meta[rep(k, nrow(res)),],
-                           res)
-              t.out[[tracker]] <- res
-              tracker <- tracker + 1
+          # sample facets
+          if(any(t.facet.type == "sample")){
+            t.sample.facet <- check.snpR.facet.request(x, facets[i], remove.type = "snp")
+            t.sample.meta <- meta.to.use[meta.to.use$facet == t.sample.facet, c("subfacet")]
+            sample.opts <- unique(t.sample.meta)
+            t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
+            if(is.null(nrow(sample.opts))){
+              sample.opts <- as.data.frame(sample.opts)
+              t.sample.meta <- as.data.frame(t.sample.meta)
             }
           }
-        }
-        # otherwise finish the task list, but don't run yet
+          else{
+            t.sample.facet <- ".base"
+            t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
+            sample.opts <- data.frame(.base = ".base")
+          }
 
-        else{
+          # snp facets
+          if(any(t.facet.type == "snp")){
+            use.facet <- t.facet[t.facet.type == "snp"]
+            t.snp.meta <- meta.to.use[,use.facet]
+            snp.opts <- unique(t.snp.meta)
+            t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
+            if(is.null(nrow(snp.opts))){
+              snp.opts <- as.data.frame(snp.opts)
+              t.snp.meta <- as.data.frame(t.snp.meta)
+              colnames(snp.opts) <- t.facet[which(t.facet %in% colnames(meta.to.use))]
+              colnames(t.snp.meta) <- colnames(snp.opts)
+            }
+            else{
+              t.snp.meta <- t.snp.meta[,match(colnames(t.snp.meta), colnames(snp.opts))]
+            }
+          }
+          else{
+            t.snp.facet <- ".base"
+            t.snp.meta <- as.data.frame(rep(".base", nrow(meta.to.use)))
+            snp.opts <- data.frame(.base = ".base")
+          }
           # get all of the possible factor/subfactor options and make the task list for this facet
           all.opts.1 <- matrix(rep(as.matrix(sample.opts), each = nrow(snp.opts)), ncol = ncol(sample.opts))
           all.opts.1 <- do.call(paste, as.data.frame(all.opts.1))
@@ -455,11 +440,72 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
           t.task.list <- cbind(t.sample.facet, all.opts.1, t.snp.facet, all.opts.2)
           task.list <- rbind(task.list, t.task.list)
         }
+
+        return(task.list)
+      }
+
+      run.one.loop <- function(stats_to_use, meta, task.list, q, par){
+        if(par == FALSE){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
+
+        # get comps and run
+        sample.matches <- which(apply(meta[,1:2], 1, function(x) identical(as.character(x), as.character(task.list[q,1:2]))))
+
+        # snp comps
+        snp.facets <- unlist(strsplit(task.list[q,3], "(?<!^)\\.", perl = T))
+
+        if(snp.facets[1] != ".base"){
+          snp.cols <- meta[,snp.facets]
+          snp.cols <- do.call(paste, as.data.frame(snp.cols))
+          snp.matches <- which(snp.cols == task.list[q,4])
+          run.lines <- intersect(snp.matches, sample.matches)
+          snp.res <- unlist(strsplit(task.list[q,4], " "))
+        }
+        else{
+          run.lines <- sample.matches
+          snp.res <- ".base"
+        }
+
+        res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
+
+        snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
+        colnames(snp.res) <- snp.facets
+
+        return(cbind(task.list[rep(q, nrow(res)),1:2],
+                     snp.res,
+                     res))
+
+      }
+
+      if(req == "meta.ac"){
+        stats_to_use <- x@ac
+        task.list <- get.task.list(x, facets)
+      }
+      else{
+        if(stats.type %in% c("all", "stats")){
+          pos.col <- which(colnames(x@stats) == "position")
+          start.col <- which(colnames(x@stats) == ".snp.id") + 1
+          cols.to.use <- c(pos.col, start.col:ncol(x@stats))
+          stats_to_use <- x@stats[,..cols.to.use]
+          task.list <- get.task.list(x, facets)
+        }
+        else{
+          pos.col <- which(colnames(x@pairwise.stats) == "position")
+          start.col <- which(colnames(x@pairwise.stats) == "comparison") + 1
+          cols.to.use <- c(pos.col, start.col:ncol(x@pairwise.stats))
+          stats_to_use <- x@pairwise.stats[,..cols.to.use]
+          task.list <- get.task.list(x, facets, source = "pairwise.stats")
+        }
+      }
+
+      if(par == FALSE){
+        out <- vector("list", nrow(task.list))
+        for(q in 1:nrow(task.list)){
+          out[[q]] <- run.one.loop(stats_to_use, x@facet.meta, task.list, q, FALSE)
+        }
       }
 
       # run in parallel or not
-      if(par != FALSE){
-
+      else{
         library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
         doSNOW::registerDoSNOW(cl)
@@ -470,52 +516,22 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         opts <- list(progress=progress)
 
         # initialize and store things
-        x_storage <- as.matrix(as.data.frame(x))
-        ac_storage <- x@ac
         meta_storage <- x@facet.meta
-        meta_storage$facet <- as.character(meta_storage$facet)
-        meta_storage$subfacet <- as.character(meta_storage$subfacet)
 
         cat("Begining run.\n")
 
         # run the LD calculations
-        t.out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                                  .options.snow = opts) %dopar% {
-
-                                    # get comps and run
-                                    sample.matches <- which(apply(meta_storage[,1:2], 1, function(x) identical(as.character(x), as.character(task.list[q,1:2]))))
-
-                                    # snp comps
-                                    snp.facets <- unlist(strsplit(task.list[q,3], "(?<!^)\\.", perl = T))
-
-                                    if(snp.facets[1] != ".base"){
-                                      snp.cols <- meta_storage[,snp.facets]
-                                      snp.cols <- do.call(paste, as.data.frame(snp.cols))
-                                      snp.matches <- which(snp.cols == task.list[q,4])
-                                      run.lines <- intersect(snp.matches, sample.matches)
-                                      snp.res <- unlist(strsplit(task.list[q,4], " "))
-                                    }
-                                    else{
-                                      run.lines <- sample.matches
-                                      snp.res <- ".base"
-                                    }
-
-                                    res <- fun(cbind(meta_storage[run.lines,], ac_storage[run.lines,]), ...)
-
-                                    snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
-                                    colnames(snp.res) <- snp.facets
-
-                                    cbind(task.list[rep(q, nrow(res)),1:2],
-                                          snp.res,
-                                          res)
-                                  }
+        out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
+                                .options.snow = opts) %dopar% {
+                                  run.one.loop(stats_to_use, meta_storage, task.list, q, TRUE)
+                                }
 
         #release cores
         parallel::stopCluster(cl)
         doSNOW::registerDoSNOW()
       }
 
-      suppressWarnings(out <- dplyr::bind_rows(t.out))
+      suppressWarnings(out <- dplyr::bind_rows(out))
       if(any(colnames(out) == ".base")){
         out <- out[,-which(colnames(out) == ".base")]
       }
@@ -524,6 +540,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       meta <- out[,meta.cols]
       meta[is.na(meta)] <- ".base"
       out <- cbind(meta, out[,-meta.cols])
+      browser()
       return(out)
     }
   }
