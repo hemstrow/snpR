@@ -2242,7 +2242,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     # collapse to output
     rdata <- t(a1 + a2)
-    rdata[as.matrix(x) == x@mDat] <- -1
+    rdata[as.matrix(x) == x@mDat] <- NA
     rdata <- cbind(x@snp.meta[,-which(colnames(x@snp.meta) == ".snp.id")], as.data.frame(rdata))
   }
 

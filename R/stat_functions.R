@@ -1630,7 +1630,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #otherwise run normally
       else{
-        browser()
         out <- LD_func(x, meta, snp.list = comps[[1]][[1]], mDat = mDat, sr)
 
         # decompose and return (mostly for snp level facets)

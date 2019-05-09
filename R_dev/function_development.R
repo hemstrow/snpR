@@ -63,9 +63,11 @@ calc_odds_ratio <- function(x, facet){
 
 
 do.drift <- function(as, gen, N){
+  browser()
 
   # a function to do random mating in one generation
   random.mating <- function(as, N){
+    browser()
     # initialize, note that since R assigns column indices by column, and we need to deal with each locus and assign within that first, we need to transpose things
     new.matrix <- matrix(NA, nrow = nrow(as), ncol = ncol(as))
     colnames(new.matrix) <- colnames(as)
@@ -177,4 +179,360 @@ calc_armitage<- function(a, w){#where a is the matrix you want to run the test o
 
   # use the pchisq function with 1 degree of freedom to get a p-value and return.
   return(pchisq(chi, 1, lower.tail = F))
+}
+
+
+# process:
+# Take the current guesses at haplotypes to estimate the true frequencies
+# use these updated frequencies to make new guesses at haplotypes (doesn't have to be 1 or 0, can be .75 of one haplotype)
+# repeat
+estimate_haplotype_frequencies <- function(x){
+  #function to correct haplotype input matrix:
+  GtoH <- function(x, n){
+    m1 <- matrix(as.numeric(x), nrow(x), ncol(x))
+    colnames(m1) <- colnames(x)
+    m1 <- cbind(as.data.frame(t(m1)), n)
+    m2 <- m1 %>% group_by(n) %>% summarise_all(funs(sum))
+    m2 <- t(as.matrix(m2[,-1]))
+    colnames(m2) <- sort(unique(n))
+    return(m2)
+  }
+
+  browser()
+  #1)
+  #get the observed genotype combinations
+  yv <- as.vector(t(y))
+  gcv <- paste0(x, yv)
+  if(length(y) == length(x)){
+    gcv <- matrix(gcv, 1, length(x), byrow = T)
+  }
+  else{
+    gcv <- matrix(gcv, nrow(y), length(x), byrow = T)
+  }
+
+
+  #2)
+  #turn this into a genotype count table
+  mgcv <- reshape2::melt(gcv)
+  cnames <- levels(mgcv$value)
+  ghapmat <- bigtabulate::bigtabulate(mgcv, ccols = which(colnames(mgcv) %in% c("Var1", "value")))
+  colnames(ghapmat) <- cnames
+
+  #3) clean the table
+  ##grab column names
+  gl <- colnames(ghapmat)
+
+  ##remove anything with missing data and double hets
+  rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
+            grep(paste0(dmDat, "$"), gl), #missing second locus
+            which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
+                    substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
+
+  ##remove any double heterozygotes
+  ghapmat <- ghapmat[,-rgcs]
+
+  #add a filler row for the last pairwise comparison to make life easier.
+  if(length(y) == length(x)){
+    if(length(ghapmat) > 1){ #stop it from doing this if there is data for only one haplotype.
+      ghapmat <- rbind(ghapmat, rep(c(10,0), 100)[1:length(ghapmat)])
+    }
+  }
+
+  #if nothing remains, return nothing
+  if(length(ghapmat) == 0){
+    return(NA)
+  }
+  else if(!is.matrix(ghapmat)){ #if only one column remains...
+    if(substr(gl[-rgcs], 1,sform) == substr(gl[-rgcs], sform + 1, sform*2)){ #double hom
+      return(NA)
+    }
+    else{
+      return(c(D = 0))
+    }
+  }
+
+  #4) get hap table. Use the rules above to do this. Possible conditions, where alleles at locus 1 = 1a1b and locus 2 = 2a2b
+  ghapmat <- ghapmat[,order(colnames(ghapmat))] #put in order, just in case
+  gl <- colnames(ghapmat) #get column names again
+  hnames <- c(paste0(as, as[1]),
+              paste0(as, as[2]),
+              paste0(as, as[3]),
+              paste0(as, as[4]))
+  if(any(grepl("NA", hnames))){ #in the case of a missing allele...
+    hnames <- hnames[-grep("NA",hnames)]
+  }
+  hnames <- sort(hnames)
+  hapmat <- matrix(0, nrow(ghapmat), length(hnames))#initialize. all possible haplotypes
+  colnames(hapmat) <- hnames
+
+
+  ##figure out which are homozygotes and heterozygotes at either locus in the pairwise comparison.
+  dhom <- substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
+    substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4) #columns with double homozygotes
+  dhom <- ghapmat[,dhom]
+  het_l1 <- substr(gl, 1, sform) != substr(gl, sform + 1, sform*2) #columns where the first locus is het
+  het_l1 <- ghapmat[,het_l1]
+  het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
+  het_l2 <- ghapmat[,het_l2]
+
+  #fix wierd cases where one of these isn't a matrix because only one haplotype falls into the category.
+  if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
+    if(!is.matrix(dhom)){
+      dhom <- as.matrix(dhom)
+      colnames(dhom) <- colnames(ghapmat)[substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
+                                            substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4)] #columns with double homozygotes
+    }
+    if(!is.matrix(het_l1)){
+      het_l1 <- as.matrix(het_l1)
+      colnames(het_l1) <- colnames(ghapmat)[substr(gl, 1, sform) != substr(gl, sform + 1, sform*2)] #columns where the first locus is het
+    }
+    if(!is.matrix(het_l2)){
+      het_l2 <- as.matrix(het_l2)
+      colnames(het_l2) <- colnames(ghapmat)[substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4)]
+    }
+  }
+
+  #count up the haplotypes.
+  ##homozygotes:
+  ### unless there are no double homozygotes:
+  if(sum(substr(gl, 1, sform) == substr(gl, sform + 1, sform*2) &
+         substr(gl, (sform*2) + 1, sform*3) == substr(gl, (sform*3+1), sform*4)) != 0){
+    hapmat[,colnames(hapmat) %in% paste0(substr(colnames(dhom), 1, sform),
+                                         substr(colnames(dhom),(sform*2)+1,sform*3))] <- dhom*2
+  }
+
+  ##heterozyogote locus 1
+  ### unless locus one has no heterozygotes:
+  if(sum(substr(gl, 1, sform) != substr(gl, sform + 1, sform*2)) != 0){
+    n1 <- paste0(substr(colnames(het_l1), 1, sform),
+                 substr(colnames(het_l1),(sform*2)+1,sform*3))
+    n1 <- GtoH(het_l1, n1)
+    n2 <- paste0(substr(colnames(het_l1),sform+1, sform*2),
+                 substr(colnames(het_l1),(sform*3)+1, sform*4))
+    n2 <- GtoH(het_l1, n2)
+    hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
+    hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
+  }
+
+
+  ##heterozyogote locus 2
+  ### unless locus two has no heterozygotes
+  if(sum(substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4)) != 0){
+    n1 <- paste0(substr(colnames(het_l2), 1, sform),
+                 substr(colnames(het_l2),(sform*2)+1,sform*3))
+    n1 <- GtoH(het_l2, n1)
+    n2 <- paste0(substr(colnames(het_l2),sform+1, sform*2),
+                 substr(colnames(het_l2),(sform*3)+1, sform*4))
+    n2 <- GtoH(het_l2, n2)
+    hapmat[,colnames(hapmat) %in% colnames(n1)] <- n1 + hapmat[,colnames(hapmat) %in% colnames(n1)]
+    hapmat[,colnames(hapmat) %in% colnames(n2)] <- n2 + hapmat[,colnames(hapmat) %in% colnames(n2)]
+  }
+
+
+  #5)condense this hap table into the 1a2a, 1a2b, 1b2a, 1b2b format.
+  # figure out how where haplotypes are missing. Note, do the case of two or three
+  # missin haplotypes at the end.
+  pmat <- ifelse(hapmat == 0, F, T)
+  mmat <- pmat
+  l1 <- substr(colnames(pmat), 1, sform)
+  l2 <- substr(colnames(pmat), sform + 1, sform*2)
+  mc <- 4 - rowSums(pmat)
+
+  #function to see if haplotype is missing. x is the row index, m is a vector of the number missing haplotypes at each locus.
+  cmhap <- function(x){
+    out <- ifelse(rowSums(pmat[,l1 == l1[x]]) == 0 | rowSums(pmat[,l1 == l1[x]]) == 2, F,
+                  ifelse(rowSums(pmat[,l2 == l2[x]]) > 0 & pmat[,x] != TRUE, T, F))
+    return(out)
+  }
+  #fill the mmat.
+  for(i in 1:ncol(pmat)){
+    mmat[,i] <- cmhap(i)
+  }
+
+  #set the missing values in hapmat to NA, then replace those with zeros where there
+  #are missing haplotypes.
+  hapmat[hapmat == 0] <- NA
+  hapmat[mmat == TRUE] <- 0
+
+
+
+
+
+
+  #put in fillers when there are more than one haplotype is missing.
+  pmat <- ifelse(is.na(hapmat), F, T)
+  missing <- 4 - rowSums(pmat)
+  m2 <- ifelse(missing >= 2, 0, NA)
+  m3 <- ifelse(missing >= 3, 0, NA)
+  m4 <- ifelse(missing == 4, 0, NA)
+  mc <- cbind(m2,m2,m3,m4)
+
+  #figure out which D, r values to give if two are missing...
+  if(any(missing == 2)){
+    m2mat <- hapmat[missing == 2,]
+    m2matv <- as.vector(t(m2mat))
+    if(is.matrix(m2mat)){
+      m2matvcn <- rep(colnames(m2mat), nrow(m2mat))
+    }
+    else{
+      m2matvcn <- rep(names(m2mat), 1)
+    }
+    m2matv[!is.na(m2matv)] <- m2matvcn[!is.na(m2matv)]
+    m2matv <- na.omit(m2matv)
+    if(is.matrix(m2mat)){
+      m2mat <- matrix(m2matv, nrow(m2mat), 2, T)
+      m2mat <- ifelse(substr(m2mat[,1], 1, sform) != substr(m2mat[,2], 1, sform) &
+                        substr(m2mat[,1], sform + 1, sform*2) != substr(m2mat[,2], sform + 1, sform*2),
+                      1,0)
+    }
+    else{
+      m2mat <- ifelse(substr(m2matv[1], 1, sform) != substr(m2matv[2], 1, sform) &
+                        substr(m2matv[1], sform + 1, sform*2) != substr(m2matv[2], sform + 1, sform*2),
+                      1,0)
+    }
+
+  }
+  else{
+    m2mat <- "none"
+  }
+
+  hapmat <- cbind(hapmat, mc)
+  hapmat <- as.vector(t(hapmat))
+  hapmat <- na.omit(hapmat)
+  #if(length(hapmat) %% nrow(y) != 0){
+  #  browser()
+  #}
+  hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
+
+  #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
+  #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
+  return(list(hapmat = hapmat, missing = missing, m2 = m2mat))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  # browser()
+  # phenos <- which(x != 0)
+  # x <- x[phenos]
+  # # cj values for each possible genotype:
+  # s1 <- substr(names(x), 1, 1)
+  # s2 <- substr(names(x), 2, 2)
+  # s3 <- substr(names(x), 3, 3)
+  # s4 <- substr(names(x), 4, 4)
+  #
+  #
+  #
+  # het.1 <- s1 != s2
+  # het.2 <- s3 != s4
+  # sj <- het.1 + het.2
+  # pair1 <- paste0(s1, s3)
+  # pair2 <- paste0(s2, s4)
+  # pair3 <- paste0(s1, s4)
+  # pair4 <- paste0(s2, s3)
+  # haplopair1 <- cbind(pair1, pair2)
+  # haplopair2 <- cbind(pair3, pair4)
+  #
+  # haplopairs <- array(dim = c(nrow(haplopair1), 2, 2))
+  # haplopairs[,,1] <- haplopair1
+  # haplopairs[,,2] <- haplopair2
+  #
+  # # equation 2
+  # cj <- 2^(sj - 1)
+  # cj[sj == 0] <- 1
+  #
+  # # equation 3, starting prob of each possible genotype contributing to each observed phenotype
+  # P0 <- 1/cj
+  # P0 <- P0
+
+  # only unkown are double hets. Everything else has a known state.
+
+  # get.pj <- function(t, j, i, P0, hap.freqs, rep){
+  #   tpair <- haplopairs[j,,i] # haplopair for phenotype j, option i (there will only be two DIFFERENT options for double hets)
+  #   delta <- sum(tpair == haps[t])
+  #   if(delta == 0){return(c(NA, delta))}
+  #
+  #   # expectation
+  #   # nj <- x[j]
+  #   # n <- sum(x)
+  #   if(rep == 0){
+  #     pj <- P0[j]
+  #   }
+  #   else{
+  #     hap.matches <- match(tpair, haps)
+  #     if(tpair[1] == tpair[2]){
+  #       pj <- hap.freqs[hap.matches[1]]^2
+  #     }
+  #     else{
+  #       pj <- 2*prod(hap.freqs[hap.matches])
+  #     }
+  #   }
+  #   return(c(pj, delta))
+  # }
+  #
+  # rep <- 0
+  #
+  # # expectation
+  # # Pj is the frequency of phenotype j
+  # # Pj(hkhl) is the probability of drawing the phenotype pair (p^2 or 2pq)
+  # # nj is the count of the jth phenotype
+  # # n is the total count
+  #
+  # # maximization
+  # hap.freqs <- numeric(length(haps))
+  # for(t in 1:nhap){
+  #   browser()
+  #   tcount <- 0
+  #   for(j in 1:m){
+  #     gpsj <- numeric(0)
+  #     deltas <- numeric(0)
+  #     for(i in 1:cj[m]){
+  #       pjd <- get.pj(t, j, i, P0, hap.freqs, rep)
+  #       gpsj <- c(gpsj, pjd[1])
+  #       deltas <- c(deltas, pjd[2])
+  #       # tcount <- tcount + delta*tp
+  #     }
+  #     pjs <- gpsj/sum(gpsj, na.rm = T)
+  #     tcount <- tcount + sum(pjs*deltas, na.rm = T)
+  #
+  #
+  #   }
+  #   tcount <- .5*tcount
+  #   n.freqs[t] <- tcount
+  # }
+
+
+
+
 }
