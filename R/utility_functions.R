@@ -2358,3 +2358,33 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
   }
 }
 
+
+# function to interpolate an sn formated dataset
+interpolate_sn <- function(sn, method = "bernoulli"){
+  if(!method %in% c("bernoulli", "af")){
+    stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
+  }
+
+  # find allele frequencies
+  sn <- as.matrix(sn)
+  sn <- t(sn)
+  af <- colMeans(sn, na.rm = T) # this is the allele frequency of the "1" allele
+
+  # identify all of the NAs and the columns that they belong to
+  NAs <- which(is.na(sn)) # cells with NA
+  NA.cols <- floor(NAs/nrow(sn)) + 1 # figure out the column
+  adj <- which(NAs%%nrow(sn) == 0) # adjust for anything that sits in the last row, since it'll get assigned the wrong column
+  NA.cols[adj] <- NA.cols[adj] - 1
+
+  # do interpolation for each missing data point
+  if(method == "bernoulli"){
+    ndat <- rbinom(length(NAs), 2, af[NA.cols])
+  }
+  else if(method == "af"){
+    ndat <- af[NA.cols]
+  }
+
+  # replace and return
+  sn[NAs] <- ndat
+  return(t(sn))
+}
