@@ -758,7 +758,9 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
     dat <- import.snpR.data(dat, snp.meta = x@snp.meta[snps,], sample.meta = x@sample.meta[samps,], mDat = x@mDat)
-    dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
+    if(any(x@facets != ".base")){
+      dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
+    }
     warning("Since samples were subset, any stats will need to be recalculated.\n")
     return(dat)
   }

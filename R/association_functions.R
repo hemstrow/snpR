@@ -31,5 +31,42 @@ run_genomic_prediction <- function(x, responce, iterations,
     h2[i] <- varU[i]/(varU[i] + varE[i])
   }
   h2 <- mean(h2)
-  return(list(model = BGLR_mod, h2 = h2))
+  return(list(model = BGLR_mod, h2 = h2, transposed_interpolated_genotypes = t(sn)))
+}
+
+cross_validate_genomic_prediction <- function(x, responce, iterations,
+                                              burn_in, thin, cross_percentage, formula = NULL,
+                                              model = "BayesB"){
+
+  # pick samples to make the model with
+  model.samples <- sample(ncol(x), floor(ncol(x)*(cross_percentage)), replace = F)
+
+  # run the model
+  capture.output(suppressWarnings(suppressMessages(sub.x <- subset.snpR.data(x, samps = model.samples))))
+  model <- run_genomic_prediction(sub.x, responce, iterations,
+                                  burn_in, thin, formula, model)
+
+
+  # check accuracy
+  cross.samples <- (1:ncol(x))[-sort(model.samples)]
+  capture.output(suppressWarnings(suppressMessages(new.x <- subset.snpR.data(x, samps = cross.samples))))
+  new.sn <- format_snps(new.x, "sn")
+  new.sn <- new.sn[,-(1:(ncol(x@snp.meta) - 1))]
+  new.sn <- interpolate_sn(new.sn)
+  new.sn <- t(new.sn)
+  pred.phenos <- new.sn%*%model$model$ETA[[1]]$b
+  pdat <- as.data.frame(cbind(observed = x@sample.meta[cross.samples, responce], predicted = pred.phenos), stringsAsFactors = F)
+  colnames(pdat) <- c("observed", "predicted")
+
+  # plot
+  tplot <- ggplot2::ggplot(as.data.frame(pdat), ggplot2::aes(observed, predicted)) +
+    ggplot2::geom_point() +
+    ggplot2::geom_smooth(method = "lm") +
+    ggplot2::theme_bw()
+
+  print(tplot)
+
+  return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
+              rsq = summary(lm(observed~predicted, pdat))$r.squared))
+
 }
