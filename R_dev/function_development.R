@@ -63,11 +63,9 @@ calc_odds_ratio <- function(x, facet){
 
 
 do.drift <- function(as, gen, N){
-  browser()
 
   # a function to do random mating in one generation
   random.mating <- function(as, N){
-    browser()
     # initialize, note that since R assigns column indices by column, and we need to deal with each locus and assign within that first, we need to transpose things
     new.matrix <- matrix(NA, nrow = nrow(as), ncol = ncol(as))
     colnames(new.matrix) <- colnames(as)
@@ -88,10 +86,10 @@ do.drift <- function(as, gen, N){
     # then compare this to the input matrix to determine which cells hold major allele counts.
     max.matrix <- matrix(rep(p.count, each = 4), ncol = ncol(tas))
     logi.matrix <- ifelse(tas == max.matrix, TRUE, FALSE)
-    vio.cols <- which(colSums(logi.matrix) == 2) # need to note any rows where frequency of p = .5, since that may mess things up.
+    vio.cols <- which(colSums(logi.matrix) != 1) # need to note any cols where frequency of p = .5, since that may mess things up.
     clean.logi <- logi.matrix[,-vio.cols] # remove vio cols
     major.slots <- which(clean.logi) # these cells are the major alleles
-    new.matrix[,-vio.rows][major.slots] <- new.ps[-vio.rows] # assign to the output
+    new.matrix[,-vio.cols][major.slots] <- new.ps[-vio.cols] # assign to the output
 
 
     # do the same thing for the minor alleles. Note that there may be columns with no minor alleles, so we need to adjust for that as well.
@@ -101,17 +99,19 @@ do.drift <- function(as, gen, N){
     logi.matrix.min <- ifelse(tas == min.matrix, T, F)
     clean.logi.min <- logi.matrix.min[,-vio.cols]
     minor.slots <- which(clean.logi.min) # cells with minor alleles
-    new.matrix[,-vio.rows][minor.slots] <- new.qs[-sort(c(vio.rows, fixed.rows))] # assign, note that we need to account for both fixed and violating rows now.
+    new.matrix[,-vio.cols][minor.slots] <- new.qs[-sort(c(vio.cols, fixed.cols))] # assign, note that we need to account for both fixed and violating rows now.
 
-    # now need to fix the violating rows.
+    # now need to fix the violating cols.
     ## make the replacement matrix
-    vio.matrix <- matrix(0, ncol = length(vio.rows), nrow = 2)
-    vio.matrix[1,] <- new.ps[vio.rows]
-    vio.matrix[2,] <- new.qs[vio.rows]
+    vio.matrix <- matrix(0, ncol = length(vio.cols), nrow = 2)
+    vio.matrix[1,] <- new.ps[vio.cols]
+    vio.matrix[2,] <- new.qs[vio.cols]
 
     ## replace
-    replace.slots <- which(ifelse(tas[,vio.rows] != 0, T, F)) # the slots to replace, where the as data actually has allele counts.
-    new.matrix[,vio.rows][which(ifelse(tas[,vio.rows] != 0, T, F))] <- vio.matrix
+    no.dat.cols <- which(colSums(tas[,vio.cols]) == 0)
+    replace.slots <- which(ifelse(tas[,vio.cols][,-no.dat.cols] != 0, T, F)) # the slots to replace, where the as data actually has allele counts.
+    new.matrix[,vio.cols][,-no.dat.cols][replace.slots] <- vio.matrix[,-no.dat.cols]
+    new.matrix[is.na(new.matrix)] <- 0
 
     # transpose and return
     return(t(new.matrix))
