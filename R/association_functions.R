@@ -35,36 +35,50 @@ run_genomic_prediction <- function(x, responce, iterations,
 }
 
 cross_validate_genomic_prediction <- function(x, responce, iterations,
-                                              burn_in, thin, cross_percentage, formula = NULL,
-                                              model = "BayesB"){
+                                              burn_in, thin, cross_percentage = 0.9, formula = NULL,
+                                              model = "BayesB", cross_samples = NULL, plot = TRUE){
 
   # pick samples to make the model with
-  model.samples <- sample(ncol(x), floor(ncol(x)*(cross_percentage)), replace = F)
+  if(is.numeric(cross_samples)){
+    msg <- "Provided cross_samples must be sample indices.\n"
+    if(as.integer(cross_samples) != cross_samples){
+      stop(msg)
+    }
+    if(any(cross_samples > ncol(x)) | any(cross_samples < 0)){
+      stop(msg)
+    }
+    model.samples <- (1:ncol(x))[-cross_samples]
+  }
+  else{
+    model.samples <- sample(ncol(x), floor(ncol(x)*(cross_percentage)), replace = F)
+  }
+
 
   # run the model
   capture.output(suppressWarnings(suppressMessages(sub.x <- subset.snpR.data(x, samps = model.samples))))
   model <- run_genomic_prediction(sub.x, responce, iterations,
                                   burn_in, thin, formula, model)
 
-
   # check accuracy
   cross.samples <- (1:ncol(x))[-sort(model.samples)]
-  capture.output(suppressWarnings(suppressMessages(new.x <- subset.snpR.data(x, samps = cross.samples))))
-  new.sn <- format_snps(new.x, "sn")
-  new.sn <- new.sn[,-(1:(ncol(x@snp.meta) - 1))]
-  new.sn <- interpolate_sn(new.sn)
+  whole.sn <- format_snps(x, "sn")
+  whole.sn <- whole.sn[,-(1:(ncol(x@snp.meta) - 1))]
+  whole.sn <- interpolate_sn(whole.sn)
+  new.sn <- whole.sn[,cross.samples]
   new.sn <- t(new.sn)
   pred.phenos <- new.sn%*%model$model$ETA[[1]]$b
   pdat <- as.data.frame(cbind(observed = x@sample.meta[cross.samples, responce], predicted = pred.phenos), stringsAsFactors = F)
   colnames(pdat) <- c("observed", "predicted")
 
   # plot
-  tplot <- ggplot2::ggplot(as.data.frame(pdat), ggplot2::aes(observed, predicted)) +
-    ggplot2::geom_point() +
-    ggplot2::geom_smooth(method = "lm") +
-    ggplot2::theme_bw()
+  if(plot == TRUE){
+    tplot <- ggplot2::ggplot(as.data.frame(pdat), ggplot2::aes(observed, predicted)) +
+      ggplot2::geom_point() +
+      ggplot2::geom_smooth(method = "lm") +
+      ggplot2::theme_bw()
 
-  print(tplot)
+    print(tplot)
+  }
 
   return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
               rsq = summary(lm(observed~predicted, pdat))$r.squared))
