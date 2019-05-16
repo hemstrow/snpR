@@ -536,3 +536,39 @@ estimate_haplotype_frequencies <- function(x){
 
 
 }
+
+# caluclate a one dimensional sfs. Not fully vectorized, loops through bins.
+do.afs <- function(as, bins){
+  # get p and q
+  p <- matrixStats::rowMaxs(as)/rowSums(as)
+  q <- 1 - p
+
+  # make bins
+  lbin <- seq(0, .5, length.out = bins + 1)
+
+  # do a for loop
+  tracker <- 1
+  my.mat <- matrix(NA, 1, bins)
+  for(i in lbin[-length(lbin)]){
+    out <- q > i & q < lbin[tracker + 1]
+
+    num <- sum(out, na.rm = T)
+
+    my.mat[1, tracker] <- num
+
+    tracker <- tracker + 1
+  }
+
+  binnames <- lbin[-length(lbin)]
+  colnames(my.mat) <- binnames
+
+  plot.dat <- as.data.frame(t(my.mat))
+  plot.dat$bin <- colnames(my.mat)
+  colnames(plot.dat)[1] <- "snps"
+
+  plot <- ggplot(plot.dat, aes(x = bin, y = snps)) + geom_col() + theme_bw()
+
+  print(plot)
+
+  return(my.mat)
+}
