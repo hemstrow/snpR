@@ -28,6 +28,7 @@ Imports:
 Depends:
     data.table
 Suggests:
+    BGLR,
     BMS,
     genepop,
     knitr,
