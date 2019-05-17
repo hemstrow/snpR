@@ -1951,6 +1951,11 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
       for(i in 1:nrow(gs)){
         out[i] <- exact.hwe(oqq[i], opp[i], o2pq[i])
       }
+
+      nas <- which(out == -1)
+      if(length(nas) > 1){
+        out[nas] <- NA
+      }
       return(out)
     }
   }
