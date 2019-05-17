@@ -376,6 +376,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       x@facet.meta$facet <- as.character(x@facet.meta$facet)
       x@facet.meta$subfacet <- x@facet.meta$subfacet
 
+      # subfunctions:
+      ## a function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
       get.task.list <- function(x, facets, source = "stats"){
         facets <- check.snpR.facet.request(x, facets, "none", F)
         task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
@@ -444,6 +446,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         return(task.list)
       }
 
+      ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
         if(par == FALSE){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
 
@@ -465,38 +468,61 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
           snp.res <- ".base"
         }
 
+        # working here, need to pass scols in the case of smoothed averages!
         res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
-
         snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
         colnames(snp.res) <- snp.facets
 
-        return(cbind(task.list[rep(q, nrow(res)),1:2],
-                     snp.res,
-                     res))
+        if(nrow(res) == 1){
+          return(cbind.data.frame(as.data.frame(t(task.list[rep(q, nrow(res)),1:2])),
+                                  snp.res,
+                                  res))
+        }
+        else{
+          return(cbind.data.frame(task.list[rep(q, nrow(res)),1:2],
+                                  snp.res,
+                                  res))
+        }
+
 
       }
 
+
+      # get the statistics needed by the function and the task list. For now, expects only meta cbound to ac or snp-wise statistics.
       if(req == "meta.ac"){
         stats_to_use <- x@ac
         task.list <- get.task.list(x, facets)
       }
       else{
-        if(stats.type %in% c("all", "stats")){
+        if(stats.type == "stats"){
+
+          # task list for non-pairwise case
+          ## get the columns containing statistics
           pos.col <- which(colnames(x@stats) == "position")
           start.col <- which(colnames(x@stats) == ".snp.id") + 1
-          cols.to.use <- c(pos.col, start.col:ncol(x@stats))
-          stats_to_use <- x@stats[,..cols.to.use]
+          cols.to.use <- start.col:ncol(x@stats)
+          ## add nk and remove any non-numeric columns
+          nk <- matrixStats::rowSums2(x@geno.tables$as)
+          stats_to_use <- cbind(nk = nk, x@stats[,..cols.to.use])
+          numeric.cols <- which(sapply(stats_to_use, class) %in% c("numeric", "integer"))
+          ## save
+          stats_to_use <- stats_to_use[,..numeric.cols]
           task.list <- get.task.list(x, facets)
+
         }
         else{
+          # need to add nk here.
+          browser()
           pos.col <- which(colnames(x@pairwise.stats) == "position")
           start.col <- which(colnames(x@pairwise.stats) == "comparison") + 1
-          cols.to.use <- c(pos.col, start.col:ncol(x@pairwise.stats))
+          cols.to.use <- start.col:ncol(x@pairwise.stats)
           stats_to_use <- x@pairwise.stats[,..cols.to.use]
           task.list <- get.task.list(x, facets, source = "pairwise.stats")
         }
       }
 
+
+      # run the looping function for each row of the task list
       if(par == FALSE){
         out <- vector("list", nrow(task.list))
         for(q in 1:nrow(task.list)){
@@ -504,7 +530,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         }
       }
 
-      # run in parallel or not
+      ## same, but in parallel
       else{
         library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
@@ -531,6 +557,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         doSNOW::registerDoSNOW()
       }
 
+      # bind the results together.
+      browser()
       suppressWarnings(out <- dplyr::bind_rows(out))
       if(any(colnames(out) == ".base")){
         out <- out[,-which(colnames(out) == ".base")]
@@ -540,7 +568,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       meta <- out[,meta.cols]
       meta[is.na(meta)] <- ".base"
       out <- cbind(meta, out[,-meta.cols])
-      browser()
       return(out)
     }
   }

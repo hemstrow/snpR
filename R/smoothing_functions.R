@@ -85,7 +85,7 @@ smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = 
 #' #no splitting
 #' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
 #'
-calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.type = "all") {
+calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\tsigma = ", sig, "\n\tWindow slide = ", ws*1000, "\n\t")
 
@@ -124,8 +124,8 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
   # x: a data frame containing one column with positions and one for each column to be smoothed
   # nk: logical, should nk wieghting be performed (usually yes)
   # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
-  func <- function(x, ws, sig, nk){
-    browser()
+  func <- function(x, ws, sig, nk, scols){
+    scols <- (which(colnames(x) == "nk") + 1):ncol(x)
     if(nrow(x) <= 1){
       ret <- rbind(rep(NA, length = 2 + length(parms)))
       ret <- as.data.frame(ret)
@@ -165,13 +165,15 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
 
     #remove any windows with no SNPs
     gmat <- gmat[,n_snps != 0] #doing it this way allows for windows with SNPs but a stat value of 0.
+    cs <- cs[n_snps != 0]
     n_snps <- n_snps[n_snps != 0]
+
 
     #fix any NA values
     vals <- as.matrix(x[,scols])
     NAs <- which(is.na(vals))
     if(length(NAs) > 0){
-      vals[NAs] <- 0 #fix the NAs
+      vals[NAs] <- 0
     }
 
     #multiply by value of the statistics and nk if requested
@@ -182,9 +184,17 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
       if(length(NAs) > 0){
         nkv[NAs] <- 0 #make sure that these snps don't contribute to the weight!
       }
+
+      # fix any -1s (for ungenotyped stuff)
+      mdats <- which(nkv == -1)
+      if(any(mdats)){
+        nkv[mdats] <- 0
+      }
+
       #run
       win_vals <- t(gmat) %*% (vals*(x$nk - 1))
       win_scales <- t(gmat) %*% nkv
+
     }
     else{
       win_vals <- t(gmat) %*% vals
@@ -194,32 +204,8 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
     #get the weighted value of the window
     win_stats <- win_vals/win_scales
 
-    #prepare metadata
-    if(!any(is.na(levs))){
-      if(nrow(win_stats) == 1){
-        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
-      }
-      else{
-        levs <- sort(levs)
-        meta <- as.character(x[1,levs])
-        meta <- rep(meta, length = nrow(win_vals)*length(meta))
-        meta <- matrix(meta, nrow = nrow(win_vals), byrow = TRUE)
-        colnames(meta) <- levs
-        meta <- as.data.frame(meta, stringsAsFactors = F)
-        ret <- cbind(meta, position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
-      }
-    }
-    else{
-      if(nrow(win_stats) == 1){
-        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
-      }
-      else{
-        ret <- cbind(position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
-      }
-    }
-
     #return
-    return(ret)
+    return(cbind(position = cs, win_stats))
   }
 
   #================smooth at proper levels========
@@ -229,17 +215,35 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
 
   cat("Smoothing...")
 
+  browser()
+  if("stats" %in% stats.type){
+    out <- apply.snpR.facets(x = x,
+                             facets = facets,
+                             req =  "pos.all.stats",
+                             fun = func,
+                             case =  "ps.pf.psf",
+                             par = par,
+                             ws = ws,
+                             sig = sig,
+                             stats.type = "stats",
+                             nk = nk)
 
-  out <- apply.snpR.facets(x = x,
-                           facets = facets,
-                           req =  "pos.all.stats",
-                           fun = func,
-                           case =  "ps.pf.psf",
-                           par = par,
-                           ws = ws,
-                           sigma = sigma,
-                           stat.type = stat.type,
-                           nk = nk)
+    # need to bind
+  }
+  if("pairwise" %in% stats.type){
+    out <- apply.snpR.facets(x = x,
+                             facets = facets,
+                             req =  "pos.all.stats",
+                             fun = func,
+                             case =  "ps.pf.psf",
+                             par = par,
+                             ws = ws,
+                             sig = sig,
+                             stats.type = "pairwise",
+                             nk = nk)
+    # need to bind
+  }
+
 
   #do the smoothing, could add a parallel option
   # if(!any(is.na(levs))){
