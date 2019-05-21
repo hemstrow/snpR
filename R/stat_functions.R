@@ -197,6 +197,9 @@ calc_maf <- function(x, facets = NULL){
 #' run_gp(ac, Tajimas_D, 200, 50)
 #'
 calc_tajimas_d <- function(x, facets, sigma, step, par = F){
+  sanity_check_window(x, sigma, step, stats.type = "pairwise", nk = TRUE)
+
+
   func <- function(ac, par, sigma, step, report){
     out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
@@ -1975,5 +1978,30 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
   colnames(out)[ncol(out)] <- "pHWE"
   x <- merge.snpR.stats(x, out)
 
+  return(x)
+}
+
+
+calc_basic_snp_stats <- function(x, facets, fst.method = "wc", sigma = NULL, step = NULL, par = F, nk = TRUE){
+  #=========sanity checks=======
+  if(!is.null(sigma)){
+    sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"))
+  }
+
+  #=========stats===============
+  # basic stats
+  x <- calc_maf(x, facets)
+  x <- calc_pi(x, facets)
+  x <- calc_hwe(x, facets)
+  x <- calc_private(x, facets)
+  x <- calc_ho(x, facets)
+  x <- calc_pairwise_fst(x, facets, method = fst.method)
+
+  #=========smoothing===========
+  if(!is.null(sigma)){
+    x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par)
+  }
+
+  #=========return==============
   return(x)
 }
