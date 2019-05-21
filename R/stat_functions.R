@@ -196,17 +196,17 @@ calc_maf <- function(x, facets = NULL){
 #' ac <- format_snps(stickSNPs, 3, pop = pops)
 #' run_gp(ac, Tajimas_D, 200, 50)
 #'
-calc_tajimas_d <- function(x, facets, ws, step, par = F){
-  func <- function(ac, par, ws, step, report){
-    out <- data.frame(position = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), nsnps = numeric(0)) #initialize output
+calc_tajimas_d <- function(x, facets, sigma, step, par = F){
+  func <- function(ac, par, sigma, step, report){
+    out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
-    ws <- 1000*ws
+    sigma <- 1000*sigma
     while (c <= lsp){
-      start <- c - ws #change window start
-      end <- c + ws #change window end
+      start <- c - sigma*3 #change window start
+      end <- c + sigma*3 #change window end
 
       #take all the snps in the window, calculate T's theta, W's theta, and T's D
       wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
@@ -246,9 +246,12 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
       out[i,"ws.theta"] <- ws.theta
       out[i,"ts.theta"] <- ts.theta
       out[i,"D"] <- D
-      out[i, "nsnps"] <- nrow(wsnps)
+      out[i, "n_snps"] <- nrow(wsnps)
       c <- c + step*1000
       i <- i + 1
+    }
+    if(nrow(out) > 0){
+      out$sigma <- sigma/1000
     }
     return(out)
   }
@@ -267,7 +270,7 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
                            fun = func,
                            case = "ps.pf.psf",
                            par = par,
-                           ws = ws,
+                           sigma = sigma,
                            step = step)
 
   return(merge.snpR.stats(x, out, type = "window.stats"))
@@ -444,8 +447,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       # get nk values:
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
                                        .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
-                                       n_total = x@ac[x@facet.meta$facet == facets, "n_total"])
-      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "n_total")
+                                       nk = x@ac[x@facet.meta$facet == facets, "n_total"])
+      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
 
 
@@ -575,7 +578,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     # melt, cbind pnk
     suppressWarnings(out <- data.table::melt(out))
     colnames(out) <- c("comparison", "fst")
-    out$n_total <- pnk$ntotal
+    out$nk <- pnk$ntotal
 
     # return
     return(out)

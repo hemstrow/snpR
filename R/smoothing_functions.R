@@ -85,38 +85,53 @@ smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = 
 #' #no splitting
 #' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
 #'
-calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
+calc_smoothed_averages <- function(x, facets, sigma, step = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
   sig <- 1000*sigma
-  cat("Smoothing Parameters:\n\tsigma = ", sig, "\n\tWindow slide = ", ws*1000, "\n\t")
+  cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
   #================sanity checks=============
+  msg <- character(0)
   #nk
   if(!all(is.logical(nk) & length(nk) == 1)){
-    stop("nk must be TRUE or FALSE.")
+    msg <- "nk must be TRUE or FALSE."
+  }
+
+  #smothing method
+  good.methods <- c("stats", "pairwise")
+  if(sum(good.methods %in% stats.type) < 1){
+    msg <- c(msg, paste0("No accepted stats types provided. Acceptable types:\n\t", paste0(good.methods, collapse = "\t")))
+  }
+  bad.stats <- which(!(stats.type %in% good.methods))
+  if(length(bad.stats) > 0){
+    msg <- c(msg, paste0("Unaccepted stats types provided:\n\t", paste0(stats.type[bad.stats], collapse = "\t")))
   }
 
   #sigma and ws
-  if(!is.null(ws)){
-    if(!all(is.numeric(sigma), is.numeric(ws), length(sigma) == 1, length(ws) == 1)){
-      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
+  if(!is.null(step)){
+    if(!all(is.numeric(sigma), is.numeric(step), length(sigma) == 1, length(step) == 1)){
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
-    if(sigma >= 500 | ws >= 500){
-      warning("Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
+    if(sigma >= 500 | sigma >= 500){
+      msg <- c(msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
     }
     else if(sig <= 100){
-      warning("Provided sigma is very small:", sig, "bp!")
+      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
     }
   }
   else{
     if(!all(is.numeric(sigma), length(sigma) == 1)){
-      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
     if(sigma >= 500){
-      warning("Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
+      msg <- c(msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
     }
     else if(sig <= 100){
-      warning("Provided sigma is very small:", sig, "bp!")
+      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
     }
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n  "))
   }
 
   #================subfunction========
@@ -124,14 +139,17 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stats
   # x: a data frame containing one column with positions and one for each column to be smoothed
   # nk: logical, should nk wieghting be performed (usually yes)
   # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
-  func <- function(x, ws, sig, nk, scols){
+  func <- function(x, step, sig, nk){
     scols <- (which(colnames(x) == "nk") + 1):ncol(x)
+    un.genotyped <- which(x$nk== 0)
+    if(length(un.genotyped) > 0){
+      x <- x[-which(x$nk == 0),]
+
+    }
     if(nrow(x) <= 1){
-      ret <- rbind(rep(NA, length = 2 + length(parms)))
+      ret <- matrix(NA, 0, 3 + length(scols))
       ret <- as.data.frame(ret)
-      colnames(ret)[1] <- "position"
-      colnames(ret)[ncol(ret)] <- "n_snps"
-      colnames(ret)[2:(ncol(ret) - 1)] <- paste0("V", 1:(ncol(ret) - 2))
+      colnames(ret) <- c("position", "sigma", "n_snps", colnames(x)[scols])
       return(ret)
     }
     #get window centers, starts, and stops:
@@ -140,8 +158,8 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stats
     pos <- as.numeric(pos)
 
     #window starts, stops, and ends
-    if(!is.null(ws)){
-      cs <- seq(0, max(pos), by = ws)
+    if(!is.null(step)){
+      cs <- seq(0, max(pos), by = step)
     }
     else{
       cs <- pos
@@ -205,81 +223,62 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stats
     win_stats <- win_vals/win_scales
 
     #return
-    return(cbind(position = cs, win_stats))
+    out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, win_stats)
+    colnames(out)[-c(1:3)] <- colnames(x)[scols]
+    return(out)
   }
 
   #================smooth at proper levels========
   #which cols hold the stats of interest?
 
-  if(!is.null(ws)){ws <- ws*1000}
+  if(!is.null(step)){step <- step*1000}
 
-  cat("Smoothing...")
-
-  browser()
   if("stats" %in% stats.type){
+    cat("\nSmoothing typical stats...")
     out <- apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
                              fun = func,
                              case =  "ps.pf.psf",
                              par = par,
-                             ws = ws,
+                             step = step,
                              sig = sig,
                              stats.type = "stats",
                              nk = nk)
 
-    # need to bind
+    x <- merge.snpR.stats(x, out, "window.stats")
+
+    if("pairwise" %in% stats.type){
+      cat("\nSmoothing pairwise stats...")
+      out <- apply.snpR.facets(x = x,
+                               facets = facets,
+                               req =  "pos.all.stats",
+                               fun = func,
+                               case =  "ps.pf.psf",
+                               par = par,
+                               step = step,
+                               sig = sig,
+                               stats.type = "pairwise",
+                               nk = nk)
+      return(merge.snpR.stats(x, out, "pairwise.window.stats"))
+    }
+    else{
+      return(x)
+    }
   }
-  if("pairwise" %in% stats.type){
+
+  else{
+    cat("Smoothing pairwise stats...")
     out <- apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
                              fun = func,
                              case =  "ps.pf.psf",
                              par = par,
-                             ws = ws,
+                             step = step,
                              sig = sig,
                              stats.type = "pairwise",
                              nk = nk)
-    # need to bind
+    return(merge.snpR.stats(x, out, "pairwise.window.stats"))
   }
-
-
-  #do the smoothing, could add a parallel option
-  # if(!any(is.na(levs))){
-  #   out <- plyr::ddply(
-  #     .data = x,
-  #     .variables = levs,
-  #     .fun = sw,
-  #     .progress = "text",
-  #     scols = scols, ws = ws, sig = sig, nk = nk
-  #   )
-  # }
-  # else{
-  #   out <- sw(x, scols, ws, sig, nk)
-  # }
-
-  #remove any empty facets.
-  nas <- ifelse(is.na(out), 1, 0)
-  nas <- rowSums(nas)
-  nas <- which(nas > 0)
-  if(length(nas) > 0){
-    out <- out[-nas,]
-  }
-
-  #put the correct names on the smoothed variables
-  if(!any(is.na(levs))){
-    out <- out[,c(levs, "position",
-                  sort(colnames(out)[grep("V", colnames(out))]), # sort the colnames that contain V1, ect.
-                  "n_snps")]
-  }
-  colnames(out)[grep("V", colnames(out))] <- paste0("smoothed_", parms)
-
-  #shouldn't ever happen save when this is called with run_gp for backwards compatibility, but may as well include it.
-  if(nrow(out) == 0){
-    out[1,] <- rep(NA, ncol(out))
-  }
-
-  cat("Done!\n")
-  return(out)
 }
