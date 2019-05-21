@@ -2481,3 +2481,57 @@ interpolate_sn <- function(sn, method = "bernoulli"){
   sn[NAs] <- ndat
   return(t(sn))
 }
+
+
+# function to sanity check for window functions
+sanity_check_window <- function(x, sigma, step, stats.type, nk){
+  #================sanity checks=============
+  msg <- character(0)
+  #nk
+  if(!all(is.logical(nk) & length(nk) == 1)){
+    msg <- "nk must be TRUE or FALSE."
+  }
+
+  #smoothing method
+  good.methods <- c("stats", "pairwise")
+  if(sum(good.methods %in% stats.type) < 1){
+    msg <- c(msg, paste0("No accepted stats types provided. Acceptable types:\n\t", paste0(good.methods, collapse = "\t")))
+  }
+  bad.stats <- which(!(stats.type %in% good.methods))
+  if(length(bad.stats) > 0){
+    msg <- c(msg, paste0("Unaccepted stats types provided:\n\t", paste0(stats.type[bad.stats], collapse = "\t")))
+  }
+
+  #sigma and ws
+  if(!is.null(step)){
+    if(!all(is.numeric(sigma), is.numeric(step), length(sigma) == 1, length(step) == 1)){
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
+    }
+    if(sigma >= 500 | sigma >= 500){
+      msg <- c(msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
+    }
+    else if(sigma <= 100){
+      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
+    }
+  }
+  else{
+    if(!all(is.numeric(sigma), length(sigma) == 1)){
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
+    }
+    if(sigma >= 500){
+      msg <- c(msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
+    }
+    else if(sigma <= 100){
+      msg <- c(msg, paste0("Provided sigma is very small:", sigma, "bp!"))
+    }
+  }
+
+  if(!any(colnames(x@snp.meta) == "position")){
+    msg <- c(msg, "No column named position found in snp metadata.")
+  }
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n  "))
+  }
+
+  return(TRUE)
+}

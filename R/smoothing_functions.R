@@ -89,50 +89,7 @@ calc_smoothed_averages <- function(x, facets, sigma, step = NULL, nk = TRUE, sta
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
-  #================sanity checks=============
-  msg <- character(0)
-  #nk
-  if(!all(is.logical(nk) & length(nk) == 1)){
-    msg <- "nk must be TRUE or FALSE."
-  }
-
-  #smothing method
-  good.methods <- c("stats", "pairwise")
-  if(sum(good.methods %in% stats.type) < 1){
-    msg <- c(msg, paste0("No accepted stats types provided. Acceptable types:\n\t", paste0(good.methods, collapse = "\t")))
-  }
-  bad.stats <- which(!(stats.type %in% good.methods))
-  if(length(bad.stats) > 0){
-    msg <- c(msg, paste0("Unaccepted stats types provided:\n\t", paste0(stats.type[bad.stats], collapse = "\t")))
-  }
-
-  #sigma and ws
-  if(!is.null(step)){
-    if(!all(is.numeric(sigma), is.numeric(step), length(sigma) == 1, length(step) == 1)){
-      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
-    }
-    if(sigma >= 500 | sigma >= 500){
-      msg <- c(msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
-    }
-    else if(sig <= 100){
-      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
-    }
-  }
-  else{
-    if(!all(is.numeric(sigma), length(sigma) == 1)){
-      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
-    }
-    if(sigma >= 500){
-      msg <- c(msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
-    }
-    else if(sig <= 100){
-      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
-    }
-  }
-
-  if(length(msg) > 0){
-    stop(paste0(msg, collapse = "\n  "))
-  }
+  sanity_check_window(x, sigma, step, stats.type = stats.type, nk)
 
   #================subfunction========
   #funciton to do a sliding window analysis on a data set. Vectorized!:
