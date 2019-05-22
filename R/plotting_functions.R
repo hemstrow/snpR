@@ -175,6 +175,188 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 }
 
 
+make_snp_plot <- function(x, facets = FALSE, plot_type = "PCA", check_duplicates = FALSE,
+                          minimum_percent_coverage = FALSE, interpolation_method = "bernoulli",
+                          dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
+
+  #=============sanity checks============
+  msg <- character(0)
+
+  # mpc
+  if(minimum_percent_coverage != FALSE){
+    problem <- F
+    if(!is.numeric(minimum_percent_coverage)){
+      problem <- T
+    }
+    if(length(minimum_percent_coverage) > 1){
+      problem <- T
+    }
+    if(minimum_percent_coverage > 1 | minimum_percent_coverage <= 0){
+      problem <- T
+    }
+    if(problem){
+      msg <- c(msg, "minimum_percent_coverage must be a numeric value between 0 and 1.")
+    }
+  }
+
+  # facets
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  if(length(facets[[1]]) > 1){
+    msg <- c(msg, "Only one facet may be specified at a time. This facet may be complex, with up to two sample levels (e.g. pop.family).")
+  }
+  if(any(facets[[2]] != "sample")){
+    bf <- facets[[1]][which(facets[[2]] != "sample")]
+    msg <- c(msg,  paste0("Only sample level facets can be plotted. Facets ", paste0(bf, collapse = ", "), " refer to snp metadata."))
+  }
+  facets <- facets[[1]]
+
+
+  plot_type <- tolower(plot_type)
+  good_plot_types <- c("pca", "tsne")
+  if(any(!(plot_type %in% good_plot_types))){
+    msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
+  }
+  if(!(length(plot_type) %in% length(good_plot_types))){
+    msg <- c(msg, paste0("No more than", length(good_plot_types), "plots may be made at once."))
+  }
+
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "  \t"))
+  }
+
+  #=============prepare dataset===============
+  cat("Formatting data...\n")
+  suppressWarnings(sn <- format_snps(x, "sn", interpolate = interpolation_method))
+  sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
+  meta <- x@sample.meta
+
+  # figure out which snps should be dropped due to low coverage
+  if(minimum_percent_coverage != FALSE){
+    counts <- rowSums(x@geno.tables$gs[x@facet.meta$subfacet == ".base",])
+    counts <- counts/ncol(x)
+    bad.loci <- which(counts <= minimum_percent_coverage)
+    if(length(bad.loci) > 0){
+      sn <- sn[-bad.loci,]
+    }
+  }
+
+  if(check_duplicates){
+    cat("Checking for duplicates...\n")
+    dups <- which(duplicated(sn) | duplicated(sn, fromLast=TRUE))
+    if(length(dups) > 0){
+      cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")
+      sn <- sn[,-dups]
+    }
+  }
+
+
+  rm.snps <- ncol(sn)
+  if(rm.snps == 0){
+    stop("No remaining SNPs after filtering.\n")
+  }
+  if(rm.snps < 20){
+    warning("Few remaining SNPs after filtering! Remaining SNPs:", rm.snps, ".\n")
+  }
+
+  cat("Plotting using", rm.snps, "loci.\n")
+  sn <- t(sn)
+
+  #=============prepare plot data=============
+  plot_dats <- vector("list", length(plot_type))
+  names(plot_dats) <- plot_type
+
+  browser()
+
+  if("pca" %in% plot_type){
+    cat("Preparing pca...\n")
+    pca_r <- prcomp(as.matrix(sn))
+    pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
+    plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
+  }
+  if("tsne" %in% plot_type){
+    #get perplexity if not provided
+    if(perplexity == FALSE){
+      cat("Estimating perplexity...\n")
+      perp <- mmtsne::hbeta(sn, beta = 1)
+      perplexity <- perp$H
+    }
+
+    #run the tSNE
+    cat("Running tSNE...\n")
+    tsne.out <- Rtsne::Rtsne(X = sn, dims = dims, initial_dims = initial_dims, perplexity = perplexity,
+                             theta = theta, max_iter = iter, check_duplicates = FALSE,
+                             verbose=TRUE, ...)
+    colnames(tsne.out$Y) <- paste0("PC", 1:ncol(tsne.out$Y))
+    plot_dats$tsne <- cbind(meta, as.data.frame(tsne.out$Y))
+  }
+  #=============make ggplots=====================
+  plots <- vector("list", length(plot_dats))
+  names(plots) <- names(plot_dats)
+  for(i in 1:length(plot_dats)){
+    browser()
+    tpd <- plot_dats[[i]]
+
+    #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
+    #make the base plot, then add categories as color and fill.
+    out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
+
+
+    if(facets[1] == FALSE){
+      plots[[i]] <- plot = out + ggplot2::geom_point()
+      next
+    }
+
+
+    #add variables.
+    v1 <- tpd[,which(colnames(tpd) == facets[1])] #get the factors
+
+    # add geoms to plot
+    if(length(facets) == 1){
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+    }
+    else{
+      # if two plotting variables, prepare the second and add it as well.
+      v2 <- tpd[,which(colnames(tpd) == facets[2])]
+      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+    }
+
+
+    # change the color scales for the variables
+    ## for the first variable
+    # if the data is likely continuous:
+    if(is.numeric(v1)){
+      out <- out + ggplot2::scale_color_viridis_c(name = facets[1])
+    }
+    else{
+      out <- out + ggplot2::scale_color_viridis_d(name = facets[1])
+    }
+
+    ## for the second variable if defined
+    if(length(facets) == 2){
+      if(is.numeric(v2)){
+        out <- out + ggplot2::scale_fill_viridis_c(name = facets[2])
+      }
+      else{
+        out <- out + ggplot2::scale_fill_viridis_d(name = facets[2])
+      }
+    }
+
+    if(plot_type[i] == "pca"){
+      loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
+      loadings <- round(loadings * 100, 2)
+      out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
+    }
+    else{
+      out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
+    }
+    print(out)
+    plots[[i]] <- out
+  }
+  return(list(data = plot_dats, plots = plots))
+}
+
+
 #'PCAs from genetic data.
 #'
 #'\code{PCAfromPA} creates a ggplot object PCA from presence/absense allelic data. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
@@ -194,65 +376,12 @@ LD_pairwise_heatmap <- function(x, r = NULL,
 #'
 #' @examples
 #' PCAfromPA(stickPA, 2)
-PCAfromPA <- function(x, ecs, plot.vars = "none", c.dup = FALSE, mc = FALSE, counts = FALSE, do.plot = TRUE){
-
-  #grab metadata and data
-  meta <- x[,1:ecs]
-  x <- x[,(ecs+1):ncol(x)]
+make_PCA_plot <- function(x, facets = FALSE, check_duplicates = FALSE,
+                          minimum_percent_coverage = FALSE, interpolation_method = "bernoulli"){
 
 
-  ##############################
-  #sanity checks...
-  if((mc != FALSE & !length(counts) > 1) | (mc == FALSE & length(counts) > 1)){
-    stop("Counts and mc must either both be defined or neither must be.")
-  }
-
-  if(mc != FALSE & length(counts) > 1){
-    if(!is.numeric(mc) | !is.numeric(counts)){
-      stop("Counts and mc must both be numeric vectors.\n")
-    }
-    if(length(mc) > 1){
-      stop("mc must a single numeric value equal to the desired cuttoff number of sequenced loci.\n")
-    }
-    if(mc > (ncol(x) - ecs)/2){
-      stop("mc must be less than the total number of sequenced loci.\n")
-    }
-    if(length(counts) != nrow(x)){
-      stop("counts must be equal in length to the number of samples in x.")
-    }
-  }
-
-  if(is.character(plot.vars)){
-    if(length(plot.vars) > 2){
-      stop("Only two plotting variables supported. For more, set plot.vars to FALSE and plot manually.\n")
-    }
-    if (!all(plot.vars %in% colnames(meta))){
-      stop("Plotting variables specified in plot.vars must match column names present in the metadata of x.\n")
-    }
-  }
-  else if (plot.vars != FALSE){
-    stop("plot.vars must be either FALSE or between 1 and 2 variables to plot by.")
-  }
 
 
-  ############################################
-  #filter if requested
-  if(is.numeric(mc) & is.numeric(counts)){
-    keeps <- which(counts >= mc)
-    x <- x[keeps,]
-    meta <- meta[keeps,]
-  }
-
-  #check for any duplicates, which need to be removed!
-  if(c.dup){
-    cat("Checking for duplicates...\n")
-    dups <- which(duplicated(x) | duplicated(x, fromLast=TRUE))
-    if(length(dups) > 0){
-      cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")
-      x <- x[-dups,]
-      meta <- meta[-dups,]
-    }
-  }
 
   cat("Preparing pca...\n")
   pca_r <- prcomp(as.matrix(x))
@@ -269,72 +398,7 @@ PCAfromPA <- function(x, ecs, plot.vars = "none", c.dup = FALSE, mc = FALSE, cou
   #construct plot.
   cat("Preparing plot...\n")
 
-  #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
-  #make the base plot, then add categories as color and fill.
-  out <- ggplot2::ggplot(pca, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
 
-
-  if(plot.vars[1] == F){
-    return(list(raw = pca_r, plot = out + ggplot2::geom_point()))
-  }
-
-  cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
-                  "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-
-  #add variables.
-  if(plot.vars[1] != FALSE){
-
-    v1 <- pca[,which(colnames(pca) == plot.vars[1])] #get the factors
-    v1u <- length(unique(v1)) #number of categories
-
-    # add geoms to plot
-    if(length(plot.vars) == 1){
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
-    }
-    else{
-      # if two plotting variables, prepare the second and add it as well.
-      v2 <- pca[,which(colnames(pca) == plot.vars[2])]
-      v2u <- length(unique(v2))
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
-    }
-
-
-    # change the color scales for the variables
-    ## for the first variable
-    if(v1u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = plot.vars[1])
-    }
-    else{
-      # if the data is likely continuous:
-      if(is.numeric(v1)){
-        warning("Plotting ", plot.vars[1], " as a continuous variable.\n")
-        out <- out + ggplot2::scale_color_viridis_c(name = plot.vars[1])
-      }
-      out <- out + ggplot2::scale_color_viridis_d(name = plot.vars[1])
-    }
-
-    ## for the second variable if defined
-    if(length(plot.vars) == 2){
-      if(v2u <= 8){#are there too many categories to color with the cbb palette?
-        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = plot.vars[2])
-      }
-      else{
-        if(is.numeric(v2)){
-          warning("Plotting ", plot.vars[2], " as a continuous variable.\n")
-          out <- out + ggplot2::scale_fill_viridis_c(name = plot.vars[2])
-        }
-        else{
-          out <- out + ggplot2::scale_fill_viridis_d(name = plot.vars[2])
-        }
-      }
-    }
-  }
-
-  loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
-  loadings <- round(loadings * 100, 2)
-
-  out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
 
   return(list(raw = pca_r, plot = out))
 }
@@ -436,19 +500,7 @@ tSNEfromPA <- function(x, ecs, plot.vars = "pop", dims = 2, initial_dims = 50,
     }
   }
 
-  #get perplexity if not provided
-  if(!perplexity){
-    cat("Estimating perplexity...\n")
-    perp <- mmtsne::hbeta(x, beta = 1)
-    perplexity <- perp$H
-  }
 
-  #run the tSNE
-  cat("Running tSNE...\n")
-  tsne.out <- Rtsne::Rtsne(X = x, dims = dims, initial_dims = initial_dims, perplexity = perplexity,
-                           theta = theta, max_iter = iter, check_duplicates = FALSE,
-                           verbose=TRUE, ...)
-  tsne_plot <- cbind(meta, as.data.frame(tsne.out$Y))
 
   if(do.plot == FALSE){
     return(list(raw = tsne.out, pca = tsne_plot))

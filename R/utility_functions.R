@@ -1514,7 +1514,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
 format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
-                        interp_miss = T, outfile = FALSE,
+                        interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL){
@@ -2104,16 +2104,16 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     amat <- pa_alleles(t(xv), 2, x@mDat)
 
-    if(interp_miss){
-      #average number observed in columns
-      cat("Interpolating missing data...\n")
-      afs <- colMeans(amat, TRUE)
-      temp <- which(is.na(amat))/nrow(amat)
-      fill_element <- floor(temp) + 1 #get the column for each missing data point
-      fill_element[which(temp %% 1 == 0)] <- fill_element[which(temp %% 1 == 0)] - 1 #correct for anything in the last row
-      amat[which(is.na(amat))] <- afs[fill_element] #fill with the appropriate allele frequency.
-    }
-    else{cat("Finished. Warning: Missing data counts are also stored!\n")}
+    # if(interp_miss){
+    #   #average number observed in columns
+    #   cat("Interpolating missing data...\n")
+    #   afs <- colMeans(amat, TRUE)
+    #   temp <- which(is.na(amat))/nrow(amat)
+    #   fill_element <- floor(temp) + 1 #get the column for each missing data point
+    #   fill_element[which(temp %% 1 == 0)] <- fill_element[which(temp %% 1 == 0)] - 1 #correct for anything in the last row
+    #   amat[which(is.na(amat))] <- afs[fill_element] #fill with the appropriate allele frequency.
+    # }
+    # else{cat("Finished. Warning: Missing data counts are also stored!\n")}
     amat <- cbind(samp = as.character(colnames(x)), as.data.frame(amat, stringsAsFactors = F))
     rdata <- amat
   }
@@ -2336,7 +2336,32 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     # collapse to output
     rdata <- t(a1 + a2)
     rdata[as.matrix(x) == x@mDat] <- NA
-    rdata <- cbind(x@snp.meta[,-which(colnames(x@snp.meta) == ".snp.id")], as.data.frame(rdata))
+
+    # grab out metadata
+    meta <- x@snp.meta
+
+    # if interpolating and there are any bad loci with zero called genotypes, remove them
+    if(interpolate != FALSE){
+      bad.loci <- ifelse(is.na(rdata), 0, 1)
+      bad.loci <- which(rowSums(bad.loci) == 0)
+
+      if(length(bad.loci) > 0){
+        rdata <- rdata[-bad.loci,]
+        meta <- meta[-bad.loci,]
+        warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
+      }
+    }
+
+    # interpolate?
+    if(interpolate == "bernoulli"){
+      rdata <- interpolate_sn(rdata, "bernoulli")
+    }
+    else if(interpolate == "af"){
+      rdata <- interpolate_sn(rdata, "sn")
+    }
+
+    # bind and save
+    rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
   }
 
   #======================return the final product, printing an outfile if requested.=============
@@ -2457,7 +2482,6 @@ interpolate_sn <- function(sn, method = "bernoulli"){
   if(!method %in% c("bernoulli", "af")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
   }
-
   # find allele frequencies
   sn <- as.matrix(sn)
   sn <- t(sn)
@@ -2477,8 +2501,17 @@ interpolate_sn <- function(sn, method = "bernoulli"){
     ndat <- af[NA.cols]
   }
 
-  # replace and return
+  # replace
   sn[NAs] <- ndat
+
+  # remove any columns (loci) with NO data and warn!
+  no_dat_loci <- which(is.na(af))
+
+  if(length(no_dat_loci) > 0){
+    sn <- sn[,-no_dat_loci]
+    warning("Some loci had no called genotypes and were removed: ", paste0(no_dat_loci, collapse = ", "), "\n")
+  }
+
   return(t(sn))
 }
 
