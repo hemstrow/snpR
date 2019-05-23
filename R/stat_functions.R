@@ -1631,7 +1631,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         ## decompose and return
         LD_mats <- decompose.LD.matrix(x, LD_mats, facets = facets, facet.types = facet.types)
         prox$sample.facet <- ".base"
+
         out <- list(prox = prox, LD_matrices = LD_mats)
+
         return(out)
       }
 
