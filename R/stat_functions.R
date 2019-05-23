@@ -1630,7 +1630,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         ## decompose and return
         LD_mats <- decompose.LD.matrix(x, LD_mats, facets = facets, facet.types = facet.types)
-        out <- list(prox = prox, LD_mats = LD_matrices)
+        prox$sample.facet <- ".base"
+        out <- list(prox = prox, LD_mats = LD_mats)
         return(out)
       }
 
@@ -1648,6 +1649,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         LD_mats[[1]][[1]] <- list(Dprime = out$Dprime, rsq = out$rsq, pval = out$pval)
 
         prox <- out$prox
+        prox$sample.facet <- ".base"
         out <- decompose.LD.matrix(x, LD_mats, facets, facet.types)
         out <- list(prox = prox, LD_matrices = out)
 
