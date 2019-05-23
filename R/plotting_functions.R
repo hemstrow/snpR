@@ -34,42 +34,86 @@
 #' #Change colors with agruments, add lines at SNP 10 using ggplot functions.
 #' LD_pairwise_heatmap(stickLD, colors = c("green", "red"), title = "ASP group IX Pairwise LD") + geom_vline(xintercept = 10, color = "blue") + geom_hline(yintercept = 10, color = "blue")
 #'
-LD_pairwise_heatmap <- function(x, r = NULL,
-                                l.text = "rsq", colors = c("white", "black"),
-                                title = NULL, t.sizes = c(16, 13, 10, 12, 10),
-                                background = "white"){
-
+plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_measure = "rsq", r = NULL,
+                                     l.text = "rsq", colors = c("white", "black"),
+                                     title = NULL, t.sizes = c(16, 13, 10, 12, 10),
+                                     background = "white"){
   #Created in part by Nick Sard
+  browser()
 
-  if(is.matrix(x)){
-    x <- as.data.frame(x, stringsAsFactors = F)
+  #==============sanity checks===========
+  msg <- character()
+
+  if(length(x@pairwise.LD) == 0){
+    stop("No LD data found.\n")
   }
 
+  if(is.null(facets)){facets <- ".base"}
+
+
+
+  # check facets
+  snp.facet <- check.snpR.facet.request(x, facets, remove.type = "sample")
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  facet.type <- facets[[2]]
+  facets <- facets[[1]]
+  bad.facets <- facets[!(facets %in% names(x@pairwise.LD$LD_matrices))]
+
+  if(length(bad.facets) > 0){
+    msg <- c(msg, paste0("LD data not found for some facets: ", paste0(bad.facets, collapse = ", "), "."))
+  }
+
+  if(length(facets) > 1){
+    msg <- c(msg, "Only one facet may be plotted at once.")
+  }
+
+
+  # check LD measure
+  good.ld.measures <- c("rsq", "Dprime", "pval")
+  if(length(LD_measure) != 1){
+    msg <- c(msg, "Only one LD measure may be plotted at once.")
+  }
+  if(!(LD_measure %in% good.ld.measures)){
+    msg <- c(msg, paste0("Unaccepted LD measure. Accepted measures:", paste0(good.ld.measures, collapse = ", "), "."))
+  }
+
+
+  # check snp.subfacet
+  if(!is.null(snp.subfacet)){
+    if(length(snp.subfacet) > 1){
+      msg <- c(msg, "If specific snp.subfacets requested, only one snp.subfacet may be plotted at once.")
+    }
+    if(length(snp.facet) == 0 & !is.null(snp.subfacet)){
+      msg <- c(msg, "SNP subfacet graph requested, but no snp or complex facets listed in facets.")
+    }
+    else if(!(snp.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]][[1]]))){
+      msg <- c(msg, "Requested SNP subfacet not located in possible subfacets. SNP subfacet may not be in the provided SNP metadata.")
+    }
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n  "))
+  }
+  #==============subfunctions================
   #function to prepare data.
   prep_hm_dat <- function(x, r = NULL){
-    #remove columns and rows with no data
+
+    # remove columns and rows with no data
     x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
 
-    #if first column doesn't contain positions, take the row names and set as first column.
-    if(any(is.na(x[,1]))){
-      x <- cbind(V1 = row.names(x), x)
-    }
+    # set rownames as first column.
+    x <- cbind(position = rownames(x), x)
+    x <- data.table::as.data.table(x)
 
 
     #melting the df and fixing the names of the columns
-    heatmap_x <- reshape2::melt(x, id.vars = "V1")
+    heatmap_x <- data.table::melt(x, id.vars = "position")
     names(heatmap_x) <- c("SNPa", "SNPb", "value")
 
     #getting rid of all the zeros from snps being compared to themselves
-    heatmap_x$SNPa <- as.numeric(as.character(heatmap_x$SNPa))
-    heatmap_x$SNPb <- as.numeric(as.character(heatmap_x$SNPb))
-    heatmap_x <- heatmap_x[!(heatmap_x$SNPa == heatmap_x$SNPb),]
-
-    #removing NA values, since no Dups.  Note, also grabbing only section of interest
-    heatmap_x <- heatmap_x[!is.na(heatmap_x$value),]
-
-    #remove any other NAs
-    heatmap_x <- heatmap_x[!is.na(heatmap_x$SNPa) & !is.na(heatmap_x$SNPb),]
+    heatmap_x <- na.omit(heatmap_x)
+    heatmap_x$SNPa <- as.numeric(as.character(heatmap_x$SNPa))/1000000
+    heatmap_x$SNPb <- as.numeric(as.character(heatmap_x$SNPb))/1000000
 
     #make sure that for all comparisons, SNPa is less than SNPb.
     vio <- which(heatmap_x$SNPa > heatmap_x$SNPb)
@@ -78,35 +122,141 @@ LD_pairwise_heatmap <- function(x, r = NULL,
       heatmap_x <- rbind(heatmap_x[-vio,], viofix)
     }
 
-    #get site names
-    ms <- unique(c(heatmap_x$SNPa, heatmap_x$SNPb))
-    ms <- sort(as.numeric(as.character(ms)))
-
     #subset down to the desired r if requested
     if(!is.null(r)){
-      r <- r*1000000
       heatmap_x <- heatmap_x[heatmap_x$SNPa >= r[1] & heatmap_x$SNPa <= r[2] &
                                heatmap_x$SNPb >= r[1] & heatmap_x$SNPb <= r[2],]
-      ms <- ms[ms >= r[1] & ms <= r[2]]
     }
 
-    #finish messing with site names
+    return(heatmap_x)
+  }
+
+  # convert positions to ordered factors
+  order_levels <- function(x){
+    # convert positions to factors:
+    ms <- unique(c(x$SNPa, x$SNPb))
+    ms <- sort(as.numeric(as.character(ms)))
+
+    # finish messing with site names
     ms <- ms/1000000
     ms <- sort(ms)
     ms <- as.factor(ms)
 
-    #set site positions to mb, convert to factor
-    heatmap_x$SNPa <- heatmap_x$SNPa/1000000
-    heatmap_x$SNPb <- heatmap_x$SNPb/1000000
-    heatmap_x$SNPa <- as.factor(heatmap_x$SNPa)
-    heatmap_x$SNPb <- as.factor(heatmap_x$SNPb)
+    # set site positions to mb, convert to factor
+    x$SNPa <- x$SNPa/1000000
+    x$SNPb <- x$SNPb/1000000
+    x$SNPa <- as.factor(x$SNPa)
+    x$SNPb <- as.factor(x$SNPb)
 
-    #reordering based on factors
-    heatmap_x[["SNPa"]]<-factor(heatmap_x[["SNPa"]],levels=ms, ordered = T)
-    heatmap_x[["SNPb"]]<-factor(heatmap_x[["SNPb"]],levels=rev(ms), ordered = T)
+    # reordering based on factors
+    x[["SNPa"]]<-factor(x[["SNPa"]],levels=ms, ordered = T)
+    x[["SNPb"]]<-factor(x[["SNPb"]],levels=rev(ms), ordered = T)
 
-    return(heatmap_x)
+    return(x)
   }
+
+
+  #==============collapse all of the LD data into a list, then bind that list together into a single data frame===========
+  browser()
+
+  # for sample level facets:
+  if(facet.type == "sample"){
+    browser()
+    LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
+    names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
+
+    # bind to a list
+    for(i in 1:length(LD_mat_list)){
+      # if all missing data...
+      if(all(is.null(x@pairwise.LD$LD_matrices[[facets]][[i]][[LD_measure]]))){
+        next()
+      }
+      LD_mat_list[[i]] <- cbind(var = names(LD_mat_list)[i], prep_hm_dat(x@pairwise.LD$LD_matrices[[facets]][[i]][[LD_measure]], r))
+    }
+
+    # bind the data.tables together
+    LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
+    rm(LD_mat_list)
+  }
+  else if(facet.type == "complex"){
+
+    # intialize either with or without snp.subfacet filtering
+    if(!is.null(snp.subfacet)){
+      LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
+      names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
+    }
+    else{
+      LD_mat_list <- vector("list",
+                            length = length(x@pairwise.LD$LD_matrices[[facets]])*length(x@pairwise.LD$LD_matrices[[facets]][[1]]))
+    }
+
+    tracker <- 1
+    # add matrices to list
+    for(i in 1:length(x@pairwise.LD$LD_matrices[[facets]])){
+      rtd <- x@pairwise.LD$LD_matrices[[facets]][[i]] # data for this iteration
+
+      # filter by snp.subfacet if needed
+      if(!is.null(snp.subfacet)){
+        rtd <- rtd[which(names(rtd) == snp.subfacet)]
+      }
+
+      # add data for each remaining snp.subfacet
+      for(j in 1:length(rtd)){
+        # if all data is missing...
+        if(all(is.na(rtd[[j]][[LD_measure]]))){
+          next()
+        }
+        LD_mat_list[[tracker]] <- cbind(var = names(x@pairwise.LD$LD_matrices[[facets]])[i], snp.subfacet = names(rtd)[j], prep_hm_dat(rtd[[j]][[LD_measure]], r))
+        tracker <- tracker + 1
+      }
+    }
+    # bind together
+    LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
+  }
+  else{
+
+  }
+
+  browser()
+  out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
+    ggplot2::geom_tile(color = "white")+
+    ggplot2::facet_wrap(~var) +
+    ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
+    ggplot2::theme_bw()+
+    ggplot2::labs(x = "",y="", fill=l.text)+
+    ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
+                   axis.text = ggplot2::element_text(size = t.sizes[5]),
+                   panel.grid.major = ggplot2::element_line(color = background),
+                   strip.background = ggplot2::element_blank(),
+                   strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
+                   axis.title = ggplot2::element_text(size = t.sizes[4]),
+                   legend.text = ggplot2::element_text(size = t.sizes[3]),
+                   panel.background = ggplot2::element_rect(fill = background, colour = background)) +
+    ggplot2::scale_x_discrete(breaks = levels(LD_mats$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
+    ggplot2::scale_y_discrete(breaks = rev(levels(LD_mats$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
+                              limits = rev(levels(LD_mats$SNPb))) +
+    ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+
+  if(!is.null(title)){
+    out <- out + ggplot2::ggtitle(title)
+  }
+  out <- list(plot = out, dat = heatmap_x)
+
+
+
+
+
+
+  ggplot2::ggplot(temp, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
+    ggplot2::geom_tile(color = "white")+
+    ggplot2::facet_wrap(~var)
+
+
+
+
+
+
+
 
 
   if(is.data.frame(x)){
@@ -174,8 +324,36 @@ LD_pairwise_heatmap <- function(x, r = NULL,
   return(out)
 }
 
-
-make_snp_plot <- function(x, facets = FALSE, plot_type = "PCA", check_duplicates = FALSE,
+#'tSNE from genetic data.
+#'
+#'\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
+#'
+#'See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
+#'
+#'Description of x:
+#'    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
+#'
+#'This function results from collaboration with Matt Thorstensen.
+#'
+#' @param x Input presence/absence data, as described in details.
+#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
+#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
+#' @param dims Integer, output dimensionality, default 2.
+#' @param initial_dims Integer, default 50. The number of dimensions retained in the initial PCA step.
+#' @param perplexity Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
+#' @param theta Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
+#' @param iter Integer, default 5000. Number of tSNE iterations to perform.
+#' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
+#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
+#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
+#' @param do.plot boolean, default TRUE. Should a plot be produced?
+#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
+#'
+#' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
+#'
+#' @examples
+#' tSNEfromPA(stickPA, 2, c.dup = TRUE)
+plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
 
@@ -357,222 +535,3 @@ make_snp_plot <- function(x, facets = FALSE, plot_type = "PCA", check_duplicates
 }
 
 
-#'PCAs from genetic data.
-#'
-#'\code{PCAfromPA} creates a ggplot object PCA from presence/absense allelic data. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
-#'
-#'Description of x:
-#'    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
-#'
-#' @param x Input presence/absence data, as described in details.
-#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
-#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
-#' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
-#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
-#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
-#' @param do.plot boolean, default TRUE. Should a plot be produced?
-#'
-#' @return A list containing the raw PCA output and a PCA plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
-#'
-#' @examples
-#' PCAfromPA(stickPA, 2)
-make_PCA_plot <- function(x, facets = FALSE, check_duplicates = FALSE,
-                          minimum_percent_coverage = FALSE, interpolation_method = "bernoulli"){
-
-
-
-
-
-  cat("Preparing pca...\n")
-  pca_r <- prcomp(as.matrix(x))
-  pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
-  pca <- cbind(meta, pca)  #add metadata that is present in the input.
-
-
-  #return just the pca data if the plot isn't requested, which is useful for complex plots.
-  if(do.plot == FALSE){
-    return(list(raw = pca_r, pca = pca))
-  }
-
-  ################################################
-  #construct plot.
-  cat("Preparing plot...\n")
-
-
-
-  return(list(raw = pca_r, plot = out))
-}
-
-
-# tsne fxn using Rtsne, which uses Barnes-Hut simulation at theta>0 and returns more data than tsne()
-
-#'tSNE from genetic data.
-#'
-#'\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
-#'
-#'See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
-#'
-#'Description of x:
-#'    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
-#'
-#'This function results from collaboration with Matt Thorstensen.
-#'
-#' @param x Input presence/absence data, as described in details.
-#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
-#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
-#' @param dims Integer, output dimensionality, default 2.
-#' @param initial_dims Integer, default 50. The number of dimensions retained in the initial PCA step.
-#' @param perplexity Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#' @param theta Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
-#' @param iter Integer, default 5000. Number of tSNE iterations to perform.
-#' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
-#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
-#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
-#' @param do.plot boolean, default TRUE. Should a plot be produced?
-#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
-#'
-#' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
-#'
-#' @examples
-#' tSNEfromPA(stickPA, 2, c.dup = TRUE)
-tSNEfromPA <- function(x, ecs, plot.vars = "pop", dims = 2, initial_dims = 50,
-                       perplexity = FALSE, theta = 0, iter = 5000,
-                       c.dup = FALSE, mc = FALSE, counts = FALSE, do.plot = TRUE, ...){
-  #grab metadata and data
-  meta <- x[,1:ecs]
-  x <- x[,(ecs+1):ncol(x)]
-  x <- as.matrix(x)
-
-  ##############################
-  #sanity checks...
-  if((mc != FALSE & !length(counts) > 1) | (mc == FALSE & length(counts) > 1)){
-    stop("Counts and mc must either both be defined or neither must be.")
-  }
-
-  if(mc != FALSE & length(counts) > 1){
-    if(!is.numeric(mc) | !is.numeric(counts)){
-      stop("Counts and mc must both be numeric vectors.\n")
-    }
-    if(length(mc) > 1){
-      stop("mc must a single numeric value equal to the desired cuttoff number of sequenced loci.\n")
-    }
-    if(mc > (ncol(x) - ecs)/2){
-      stop("mc must be less than the total number of sequenced loci.\n")
-    }
-    if(length(counts) != nrow(x)){
-      stop("counts must be equal in length to the number of samples in x.")
-    }
-  }
-
-  if(c.dup == FALSE){
-    warning("If there are duplicates in x, expect wierd results! Set c.dup to TRUE to check.\n")
-  }
-
-  if(is.character(plot.vars)){
-    if(length(plot.vars) > 2){
-      stop("Only two plotting variables supported. For more, set plot.vars to FALSE and plot manually.\n")
-    }
-    if (!all(plot.vars %in% colnames(meta))){
-      stop("Plotting variables specified in plot.vars must match column names present in the metadata of x.\n")
-    }
-  }
-  else if (plot.vars != FALSE){
-    stop("plot.vars must be either FALSE or between 1 and 2 variables to plot by.")
-  }
-
-  ##############################
-  #filter if requested
-  if(is.numeric(mc) & is.numeric(counts)){
-    keeps <- which(counts >= mc)
-    x <- x[keeps,]
-    meta <- meta[keeps,]
-  }
-
-
-  if(c.dup){
-    #check for any duplicates, which need to be removed!
-    cat("Checking for duplicates...\n")
-    dups <- which(duplicated(x) | duplicated(x, fromLast=TRUE))
-    if(length(dups) > 0){
-      cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")
-      x <- x[-dups,]
-      meta <- meta[-dups,]
-    }
-  }
-
-
-
-  if(do.plot == FALSE){
-    return(list(raw = tsne.out, pca = tsne_plot))
-  }
-
-  #############################
-  #plot the result
-  cat("Preparing plot...\n")
-
-  cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
-                  "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-  #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
-  #make the base plot, then add categories as color and fill.
-  out <- ggplot2::ggplot(tsne_plot, ggplot2::aes(V1, V2)) + ggplot2::theme_bw() +
-    ggplot2::theme(axis.ticks = element_blank(),
-          axis.title = element_blank(),
-          axis.text = element_blank(),
-          panel.grid = element_blank()) #initialize plot
-
-  if(plot.vars[1] == F){
-    return(list(raw = pca_r, plot = out + ggplot::geom_point()))
-  }
-
-  #add variables.
-  if(plot.vars[1] != FALSE){
-
-    v1 <- tsne_plot[,which(colnames(tsne_plot) == plot.vars[1])] #get the factors
-    v1u <- length(unique(v1)) #number of categories
-
-    # add geoms to plot
-    if(length(plot.vars) == 1){
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
-    }
-    else{
-      # if two plotting variables, prepare the second and add it as well.
-      v2 <- tsne_plot[,which(colnames(tsne_plot) == plot.vars[2])]
-      v2u <- length(unique(v2))
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
-    }
-
-
-    # change the color scales for the variables
-    ## for the first variable
-    if(v1u <= 8){#are there too many categories to color with the cbb palette?
-      out <- out + ggplot2::scale_color_manual(values = cbbPalette, name = plot.vars[1])
-    }
-    else{
-      # if the data is likely continuous:
-      if(is.numeric(v1)){
-        warning("Plotting ", plot.vars[1], " as a continuous variable.\n")
-        out <- out + ggplot2::scale_color_viridis_c(name = plot.vars[1])
-      }
-      out <- out + ggplot2::scale_color_viridis_d(name = plot.vars[1])
-    }
-
-    ## for the second variable if defined
-    if(length(plot.vars) == 2){
-      if(v2u <= 8){#are there too many categories to color with the cbb palette?
-        out <- out + ggplot2::scale_fill_manual(values = cbbPalette, name = plot.vars[2])
-      }
-      else{
-        if(is.numeric(v2)){
-          warning("Plotting ", plot.vars[2], " as a continuous variable.\n")
-          out <- out + ggplot2::scale_fill_viridis_c(name = plot.vars[2])
-        }
-        else{
-          out <- out + ggplot2::scale_fill_viridis_d(name = plot.vars[2])
-        }
-      }
-    }
-  }
-
-  return(list(tSNE = tsne.out, plot = out))
-}
