@@ -34,13 +34,11 @@
 #' #Change colors with agruments, add lines at SNP 10 using ggplot functions.
 #' LD_pairwise_heatmap(stickLD, colors = c("green", "red"), title = "ASP group IX Pairwise LD") + geom_vline(xintercept = 10, color = "blue") + geom_hline(yintercept = 10, color = "blue")
 #'
-plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_measure = "rsq", r = NULL,
-                                     l.text = "rsq", colors = c("white", "black"),
+plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "rsq", r = NULL,
+                                     l.text = "rsq", viridis.option = "B",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
   #Created in part by Nick Sard
-  browser()
-
   #==============sanity checks===========
   msg <- character()
 
@@ -53,7 +51,9 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
 
 
   # check facets
-  snp.facet <- check.snpR.facet.request(x, facets, remove.type = "sample")
+  browser()
+  snp.facet <- check.snpR.facet.request(x, facets, remove.type = "sample")[[1]]
+  sample.facet <- check.snpR.facet.request(x, facets, remove.type = "snp")[[1]]
   facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   facet.type <- facets[[2]]
   facets <- facets[[1]]
@@ -80,13 +80,22 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
 
   # check snp.subfacet
   if(!is.null(snp.subfacet)){
-    if(length(snp.subfacet) > 1){
-      msg <- c(msg, "If specific snp.subfacets requested, only one snp.subfacet may be plotted at once.")
-    }
     if(length(snp.facet) == 0 & !is.null(snp.subfacet)){
       msg <- c(msg, "SNP subfacet graph requested, but no snp or complex facets listed in facets.")
     }
-    else if(!(snp.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]][[1]]))){
+    else if(!(all(snp.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]][[1]])))){
+      msg <- c(msg, "Requested SNP subfacet not located in possible subfacets. SNP subfacet may not be in the provided SNP metadata.")
+    }
+  }
+
+  # check sample.subfacet
+  if(!is.null(sample.subfacet)){
+    browser()
+
+    if(length(sample.facet) == 0 & !is.null(sample.subfacet)){
+      msg <- c(msg, "Sample subfacet graph requested, but no sample facets listed in facets.")
+    }
+    else if(!(sample.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]][[1]]))){
       msg <- c(msg, "Requested SNP subfacet not located in possible subfacets. SNP subfacet may not be in the provided SNP metadata.")
     }
   }
@@ -128,6 +137,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
                                heatmap_x$SNPb >= r[1] & heatmap_x$SNPb <= r[2],]
     }
 
+    heatmap_x$value <- as.numeric(heatmap_x$value)
     return(heatmap_x)
   }
 
@@ -138,27 +148,23 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
     ms <- sort(as.numeric(as.character(ms)))
 
     # finish messing with site names
-    ms <- ms/1000000
+    ms <- ms
     ms <- sort(ms)
     ms <- as.factor(ms)
 
-    # set site positions to mb, convert to factor
-    x$SNPa <- x$SNPa/1000000
-    x$SNPb <- x$SNPb/1000000
+    # convert to factor
     x$SNPa <- as.factor(x$SNPa)
     x$SNPb <- as.factor(x$SNPb)
 
     # reordering based on factors
     x[["SNPa"]]<-factor(x[["SNPa"]],levels=ms, ordered = T)
-    x[["SNPb"]]<-factor(x[["SNPb"]],levels=rev(ms), ordered = T)
+    x[["SNPb"]]<-factor(x[["SNPb"]],levels=ms, ordered = T)
 
     return(x)
   }
 
 
   #==============collapse all of the LD data into a list, then bind that list together into a single data frame===========
-  browser()
-
   # for sample level facets:
   if(facet.type == "sample"){
     browser()
@@ -197,7 +203,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
 
       # filter by snp.subfacet if needed
       if(!is.null(snp.subfacet)){
-        rtd <- rtd[which(names(rtd) == snp.subfacet)]
+        rtd <- rtd[which(names(rtd) %in% snp.subfacet)]
       }
 
       # add data for each remaining snp.subfacet
@@ -213,17 +219,61 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
     # bind together
     LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
   }
-  else{
+  else if(facet.type == "snp"){
+    rtd <- x@pairwise.LD$LD_matrices[[facets]][[".base"]]
 
+    # filter by snp.subfacet if needed
+    if(!is.null(snp.subfacet)){
+      rtd <- rtd[which(names(rtd) %in% snp.subfacet)]
+    }
+
+    # initialize
+    LD_mat_list <- vector("list", length = length(rtd))
+
+    # add data for each remaining snp.subfacet
+    for(i in 1:length(rtd)){
+      # if all data is missing...
+      if(all(is.na(rtd[[i]][[LD_measure]]))){
+        next()
+      }
+      LD_mat_list[[i]] <- cbind(var = names(x@pairwise.LD$LD_matrices[[facets]]), snp.subfacet = names(rtd)[i], prep_hm_dat(rtd[[i]][[LD_measure]], r))
+    }
+
+    # bind
+    LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
+  }
+  else{
+    LD_mats <-cbind(var = ".base", snp.subfacet = ".base", prep_hm_dat(x@pairwise.LD$LD_matrices[[".base"]][[".base"]][[LD_measure]], r))
+
+    LD_mats <- order_levels(LD_mats)
   }
 
-  browser()
-  out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
-    ggplot2::geom_tile(color = "white")+
-    ggplot2::facet_wrap(~var) +
-    ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
-    ggplot2::theme_bw()+
-    ggplot2::labs(x = "",y="", fill=l.text)+
+  if(exists("LD_mat_list")){rm(LD_mat_list)}
+  if(exists("rtd")){rm(rtd)}
+
+  LD_mats <- as.data.frame(LD_mats)
+
+  out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value, color = value)) +
+    ggplot2::geom_tile(color = "white")
+
+  if(length(unique(LD_mats$snp.subfacet)) > 1 & length(unique(LD_mats$var)) > 1){
+    out <- out + ggplot2::facet_wrap(var~snp.subfacet, scales = "free")
+  }
+  else if(length(unique(LD_mats$snp.subfacet)) > 1){
+    out <- out + ggplot2::facet_wrap(~snp.subfacet, scales = "free")
+  }
+  else if(length(unique(LD_mats$var)) > 1){
+    out <- out + ggplot2::facet_wrap(~var)
+  }
+
+  comb.levels <- sort(unique(as.numeric(c(levels(LD_mats$SNPa), levels(LD_mats$SNPb)))))
+  comb.plot.levels <- comb.levels[seq(1, length(comb.levels), length.out = 10)]
+
+  out <- out +
+    scale_fill_viridis_c(direction = -1, option = viridis.option) +
+    scale_color_viridis_c(direction = -1, option = viridis.option) +
+    ggplot2::theme_bw() +
+    ggplot2::labs(x = "",y="", fill=l.text) +
     ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
                    axis.text = ggplot2::element_text(size = t.sizes[5]),
                    panel.grid.major = ggplot2::element_line(color = background),
@@ -232,95 +282,16 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, LD_m
                    axis.title = ggplot2::element_text(size = t.sizes[4]),
                    legend.text = ggplot2::element_text(size = t.sizes[3]),
                    panel.background = ggplot2::element_rect(fill = background, colour = background)) +
-    ggplot2::scale_x_discrete(breaks = levels(LD_mats$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
-    ggplot2::scale_y_discrete(breaks = rev(levels(LD_mats$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
-                              limits = rev(levels(LD_mats$SNPb))) +
+    ggplot2::scale_x_discrete(breaks = comb.plot.levels, label = abbreviate) +
+    ggplot2::scale_y_discrete(breaks = comb.plot.levels, label = abbreviate) +
     ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
+
 
   if(!is.null(title)){
     out <- out + ggplot2::ggtitle(title)
   }
-  out <- list(plot = out, dat = heatmap_x)
 
-
-
-
-
-
-  ggplot2::ggplot(temp, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
-    ggplot2::geom_tile(color = "white")+
-    ggplot2::facet_wrap(~var)
-
-
-
-
-
-
-
-
-
-  if(is.data.frame(x)){
-    #the plot
-    heatmap_x <- prep_hm_dat(x, r)
-    out <- ggplot2::ggplot(heatmap_x, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
-      ggplot2::geom_tile(color = "white")+
-      ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
-      ggplot2::theme_bw()+
-      ggplot2::labs(x = "",y="", fill=l.text)+
-      ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
-            axis.text = ggplot2::element_text(size = t.sizes[5]),
-            panel.grid.major = ggplot2::element_line(color = background),
-            plot.title = ggplot2::element_text(size = t.sizes[1], hjust = 0.5),
-            axis.title = ggplot2::element_text(size = t.sizes[4]),
-            legend.text = ggplot2::element_text(size = t.sizes[3]),
-            panel.background = ggplot2::element_rect(fill = background, colour = background)) +
-      ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
-      ggplot2::scale_y_discrete(breaks = levels(heatmap_x$SNPb)[c(T, rep(F, 20))], label = abbreviate) +
-      ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
-
-    if(!is.null(title)){
-      out <- out + ggplot2::ggtitle(title)
-    }
-    out <- list(plot = out, dat = heatmap_x)
-  }
-
-  else{
-    #multple plots
-    heatmap_x <- cbind(prep_hm_dat(as.data.frame(x[[1]], stringsAsFactors = F), r), var = names(x)[1])
-    for(i in 2:length(x)){
-      heatmap_x <- rbind(heatmap_x, cbind(prep_hm_dat(x[[i]], r), var = names(x)[i]))
-    }
-
-    #refactor
-    heatmap_x$SNPa <- as.factor(as.numeric(as.character(heatmap_x$SNPa)))
-    heatmap_x$SNPb <- as.factor(as.numeric(as.character(heatmap_x$SNPb)))
-
-    #plot, with facets
-    out <- ggplot2::ggplot(heatmap_x, ggplot2::aes(x = SNPa, y=SNPb, fill=value))+
-      ggplot2::geom_tile(color = "white")+
-      ggplot2::facet_wrap(~var) +
-      ggplot2::scale_fill_gradient(low = colors[1], high = colors[2]) +
-      ggplot2::theme_bw()+
-      ggplot2::labs(x = "",y="", fill=l.text)+
-      ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
-                     axis.text = ggplot2::element_text(size = t.sizes[5]),
-                     panel.grid.major = ggplot2::element_line(color = background),
-                     strip.background = ggplot2::element_blank(),
-                     strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
-                     axis.title = ggplot2::element_text(size = t.sizes[4]),
-                     legend.text = ggplot2::element_text(size = t.sizes[3]),
-                     panel.background = ggplot2::element_rect(fill = background, colour = background)) +
-      ggplot2::scale_x_discrete(breaks = levels(heatmap_x$SNPa)[c(T, rep(F, 20))], label = abbreviate) +
-      ggplot2::scale_y_discrete(breaks = rev(levels(heatmap_x$SNPb)[c(T, rep(F, 20))]), label = abbreviate,
-                                limits = rev(levels(heatmap_x$SNPb))) +
-      ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
-
-    if(!is.null(title)){
-      out <- out + ggplot2::ggtitle(title)
-    }
-
-    out <- list(plot = out, dat = heatmap_x)
-  }
+  out <- list(plot = out, dat = LD_mats)
   return(out)
 }
 
