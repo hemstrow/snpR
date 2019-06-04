@@ -22,8 +22,31 @@
 #' @examples
 #' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
 #'
-resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, fws = NULL, n_snps = T, report = 10000, level = "group"){
+do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = T, report = 10000){
   browser()
+
+  # sanity checks
+  if(length(facets) > 1){
+    stop("Please provide only one facet at a time.\n")
+  }
+
+  pairwise.types <- c("fst")
+  single.types <- c("pi", "ho", "pa", "pHWE")
+  all.types <- c(pairwise.types, single.types)
+  if(statistics == "all"){
+    statistics <- all.types[which(all.types %in% c(colnames(x@stats), colnames(x@pairwise.stats)))]
+  }
+
+  stats.type <- character()
+  if(any(statistics %in% pairwise.types)){
+    stats.type <- "pairwise"
+  }
+  if(any(statistics %in% single.types)){
+    stats.type <- c(stats.type, "stats")
+  }
+
+  sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
+
   #report a few things, intialize others
   sig <- 1000*sigma #correct sigma
   num_snps <- nrow(x)
@@ -31,20 +54,44 @@ resample_long <- function(x, statistic, boots, sigma = 150, nk_weight = FALSE, f
   smoothed_dist <- numeric(boots)
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n")
 
+  position <- x@snp.meta$position
 
+  snp.facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
   #draw random centriods, their positions, lgs of those centroids, and number of snps in window if provided
-  if(is.null(fws)){
+  if(!step){
     csnps <- sample(1:nrow(x), boots, replace = T) #get random centroids
-    cs <- x$position[csnps] #get centroid positions
-    if(!is.null(level)){
-      grps <- x[csnps, level] #get centroid groups
+    cs <- position[csnps] #get centroid positions
+
+    # get centroid and all snp groups for this facet
+    if(!is.null(snp.facets[1])){
+      get.grps <- function(snps){
+        grps <- x@snp.meta[snps, snp.facets]
+        grps <- as.data.frame(grps)
+        colnames(grps) <- snp.facets
+        grps <- do.call(paste0, grps)
+        return(grps)
+      }
+      cgrps <- get.grps(csnps)
+      all.grps <- get.grps(1:nrow(x))
     }
-    if(n_snps){ #if n_snps is specified, draw all of the random snps to fill in around centroids on windows now.
-      nrands <- sample(1:nrow(x),sum(x$n_snps[csnps]), replace = T)
-      nrprog <- 1
-    }
+    # draw all of the random snps to fill in around centroids on windows now. First need to figure out snp count in each window.
+    ## to do this, figure out which snps are in the csnp windows.
+    ends <- cs + sig*3
+    starts <- cs - sig*3
+    lmat <- outer(position, starts, function(pos, starts) pos >= starts)
+    lmat <- lmat + outer(position, ends, function(pos, ends) pos <= ends)
+    lmat <- lmat + outer(all.grps, cgrps, function(all.grps, cgrps) all.grps == cgrps)
+    colnames(lmat) <- cs
+    rownames(lmat) <- position
+    lmat <- ifelse(lmat == 3, TRUE, FALSE)
+    n_snps <- colSums(lmat)
+    ## draw the random snps
+    nrands <- sample(1:nrow(x), sum(n_snps), replace = T)
+    nrprog <- 1
+
   }
+  # working here. Do I re-determine the windows or just pull from provided data? The latter if possible, otherwise the former!
   else{ #same deal, but for fixed slide windows from provided window information
     cwin <- sample(1:nrow(fws), boots, replace = T)
     cs <- fws$position[cwin]
