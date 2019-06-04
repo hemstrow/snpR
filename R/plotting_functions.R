@@ -48,10 +48,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 
   if(is.null(facets)){facets <- ".base"}
 
-
-
   # check facets
-  browser()
   snp.facet <- check.snpR.facet.request(x, facets, remove.type = "sample")[[1]]
   sample.facet <- check.snpR.facet.request(x, facets, remove.type = "snp")[[1]]
   facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
@@ -90,13 +87,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 
   # check sample.subfacet
   if(!is.null(sample.subfacet)){
-    browser()
-
     if(length(sample.facet) == 0 & !is.null(sample.subfacet)){
       msg <- c(msg, "Sample subfacet graph requested, but no sample facets listed in facets.")
     }
-    else if(!(sample.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]][[1]]))){
-      msg <- c(msg, "Requested SNP subfacet not located in possible subfacets. SNP subfacet may not be in the provided SNP metadata.")
+    else if(!(all(sample.subfacet %in% names(x@pairwise.LD$LD_matrices[[facets]])))){
+      msg <- c(msg, "Requested sample subfacet not all located in possible subfacets. Sample subfacet may not be in the provided SNP metadata.")
     }
   }
 
@@ -141,7 +136,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     return(heatmap_x)
   }
 
-  # convert positions to ordered factors
+  # convert positions to ordered factors, get 10 unique levels from each snp.subfacet to plot!
   order_levels <- function(x){
     # convert positions to factors:
     ms <- unique(c(x$SNPa, x$SNPb))
@@ -160,24 +155,58 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     x[["SNPa"]]<-factor(x[["SNPa"]],levels=ms, ordered = T)
     x[["SNPb"]]<-factor(x[["SNPb"]],levels=ms, ordered = T)
 
-    return(x)
+    # get 10 unique levels per snp.subfacet
+    u.subfacets <- unique(x$snp.subfacet)
+    comb.levs <- data.frame(pos = numeric(), source = character())
+    if(length(u.subfacets) == 0){
+      t.levs <- unique(as.numeric(c(levels(x$SNPa), levels(x$SNPb))))
+
+      if(length(t.levs) >= 10){
+        t.levs <- t.levs[seq(1, length(t.levs), length.out = 10)]
+      }
+      comb.levs <- rbind.data.frame(comb.levs, cbind.data.frame(t.levs, ".base", stringsAsFactors = F), stringsAsFactors = F)
+    }
+    for(i in 1:length(u.subfacets)){
+      t.subfacet <- x[x$snp.subfacet == u.subfacets[i],]
+      t.subfacet <- droplevels.data.frame(t.subfacet)
+      t.levs <- unique(as.numeric(c(levels(t.subfacet$SNPa), levels(t.subfacet$SNPb))))
+      if(length(t.levs) >= 10){
+        t.levs <- t.levs[seq(1, length(t.levs), length.out = 10)]
+      }
+
+      comb.levs <- rbind.data.frame(comb.levs, cbind.data.frame(t.levs, u.subfacets[i], stringsAsFactors = F), stringsAsFactors = F)
+    }
+
+    return(list(dat = x, levs = comb.levs))
   }
 
 
   #==============collapse all of the LD data into a list, then bind that list together into a single data frame===========
   # for sample level facets:
   if(facet.type == "sample"){
-    browser()
-    LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
-    names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
+    if(!is.null(sample.subfacet[1])){
+      LD_mat_list <- vector("list", length = length(sample.subfacet))
+      names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]][sample.subfacet])
+    }
+    else{
+      LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
+      names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
+    }
 
     # bind to a list
-    for(i in 1:length(LD_mat_list)){
+    tracker <- 1
+    for(i in 1:length(x@pairwise.LD$LD_matrices[[facets]])){
       # if all missing data...
       if(all(is.null(x@pairwise.LD$LD_matrices[[facets]][[i]][[LD_measure]]))){
         next()
       }
-      LD_mat_list[[i]] <- cbind(var = names(LD_mat_list)[i], prep_hm_dat(x@pairwise.LD$LD_matrices[[facets]][[i]][[LD_measure]], r))
+      if(!is.null(sample.subfacet[1])){
+        if(!(names(x@pairwise.LD$LD_matrices[[facets]][i]) %in% sample.subfacet)){
+          next
+        }
+      }
+      LD_mat_list[[tracker]] <- cbind(var = names(x@pairwise.LD$LD_matrices[[facets]][i]), prep_hm_dat(x@pairwise.LD$LD_matrices[[facets]][[i]][[LD_measure]], r))
+      tracker <- tracker + 1
     }
 
     # bind the data.tables together
@@ -186,23 +215,41 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   }
   else if(facet.type == "complex"){
 
-    # intialize either with or without snp.subfacet filtering
-    if(!is.null(snp.subfacet)){
+    # intialize either with or without snp.subfacet filtering, and fix if doing sample subfacets
+    if(!is.null(snp.subfacet[1])){
       LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
       names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
+      if(!is.null(sample.subfacet))?{
+        LD_mat_list <- LD_mat_list[[which(names(LD_mat_list) %in% sample.subfacet)]]
+      }
     }
     else{
-      LD_mat_list <- vector("list",
-                            length = length(x@pairwise.LD$LD_matrices[[facets]])*length(x@pairwise.LD$LD_matrices[[facets]][[1]]))
+      if(!is.null(sample.subfacet[1])){
+        LD_mat_list <- vector("list",
+                              length = length(x@pairwise.LD$LD_matrices[[facets]][sample.subfacet])*length(x@pairwise.LD$LD_matrices[[facets]][[1]]))
+      }
+      else{
+        LD_mat_list <- vector("list",
+                              length = length(x@pairwise.LD$LD_matrices[[facets]])*length(x@pairwise.LD$LD_matrices[[facets]][[1]]))
+      }
     }
+
 
     tracker <- 1
     # add matrices to list
     for(i in 1:length(x@pairwise.LD$LD_matrices[[facets]])){
+
+      # skip if this sample subfacet isn't supposed to be run.
+      if(!is.null(sample.subfacet[1])){
+        if(!(names(x@pairwise.LD$LD_matrices[[facets]][i])) %in% sample.subfacet){
+          next
+        }
+      }
+
       rtd <- x@pairwise.LD$LD_matrices[[facets]][[i]] # data for this iteration
 
       # filter by snp.subfacet if needed
-      if(!is.null(snp.subfacet)){
+      if(!is.null(snp.subfacet[1])){
         rtd <- rtd[which(names(rtd) %in% snp.subfacet)]
       }
 
@@ -223,7 +270,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     rtd <- x@pairwise.LD$LD_matrices[[facets]][[".base"]]
 
     # filter by snp.subfacet if needed
-    if(!is.null(snp.subfacet)){
+    if(!is.null(snp.subfacet[1])){
       rtd <- rtd[which(names(rtd) %in% snp.subfacet)]
     }
 
@@ -243,7 +290,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
   }
   else{
-    LD_mats <-cbind(var = ".base", snp.subfacet = ".base", prep_hm_dat(x@pairwise.LD$LD_matrices[[".base"]][[".base"]][[LD_measure]], r))
+    LD_mats <- cbind(var = ".base", snp.subfacet = ".base", prep_hm_dat(x@pairwise.LD$LD_matrices[[".base"]][[".base"]][[LD_measure]], r))
 
     LD_mats <- order_levels(LD_mats)
   }
@@ -251,7 +298,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   if(exists("LD_mat_list")){rm(LD_mat_list)}
   if(exists("rtd")){rm(rtd)}
 
-  LD_mats <- as.data.frame(LD_mats)
+  levs <- LD_mats$levs
+  LD_mats <- as.data.frame(LD_mats$dat)
 
   out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value, color = value)) +
     ggplot2::geom_tile(color = "white")
@@ -266,12 +314,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     out <- out + ggplot2::facet_wrap(~var)
   }
 
-  comb.levels <- sort(unique(as.numeric(c(levels(LD_mats$SNPa), levels(LD_mats$SNPb)))))
-  comb.plot.levels <- comb.levels[seq(1, length(comb.levels), length.out = 10)]
+  comb.plot.levels <- levs$t.levs
 
   out <- out +
-    scale_fill_viridis_c(direction = -1, option = viridis.option) +
-    scale_color_viridis_c(direction = -1, option = viridis.option) +
+    ggplot2::scale_fill_viridis_c(direction = -1, option = viridis.option) +
+    ggplot2::scale_color_viridis_c(direction = -1, option = viridis.option) +
     ggplot2::theme_bw() +
     ggplot2::labs(x = "",y="", fill=l.text) +
     ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
