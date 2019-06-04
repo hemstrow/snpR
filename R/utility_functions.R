@@ -473,7 +473,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         # run the function and create a snp res metadata df to bind to the results.
         assign("last.warning", NULL, envir = baseenv())
         res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
-        if(length(warnings()) > 0){browser()}
         snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
         colnames(snp.res) <- snp.facets
 
@@ -572,10 +571,11 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         cat("Begining run.\n")
 
         # run the LD calculations
-        out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                                .options.snow = opts, .export = "data.table") %dopar% {
-                                  run.one.loop(stats_to_use, meta.to.use, task.list, q, TRUE)
-                                }
+        ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
+        suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
+                                                 .options.snow = opts, .export = "data.table") %dopar% {
+                                                   run.one.loop(stats_to_use, meta.to.use, task.list, q, TRUE)
+                                                 })
 
         #release cores
         parallel::stopCluster(cl)
@@ -768,7 +768,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     match.cols <- colnames(m.s)[which(colnames(m.s) %in% c(colnames(o.s), colnames(n.s)))]
     stat.cols.to.fix <- m.s[,-..match.cols]
     stat.cols.y <- grep("\\.y$", colnames(stat.cols.to.fix))
-    if(length(stat.cols.y) > 1){
+    if(length(stat.cols.y) > 0){
       # replace NAs in y with values from x. No reason to do the vice versa.
       stat.cols.y <- as.matrix(stat.cols.to.fix[,..stat.cols.y])
       stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
@@ -2517,9 +2517,11 @@ interpolate_sn <- function(sn, method = "bernoulli"){
 
 
 # function to sanity check for window functions
-sanity_check_window <- function(x, sigma, step, stats.type, nk){
+sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = NULL, good.types = NULL){
   #================sanity checks=============
-  msg <- character(0)
+  msg <- character()
+  warn.msg <- character()
+
   #nk
   if(!all(is.logical(nk) & length(nk) == 1)){
     msg <- "nk must be TRUE or FALSE."
@@ -2541,10 +2543,10 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk){
       msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
     if(sigma >= 500 | sigma >= 500){
-      msg <- c(msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
+      warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
     }
-    else if(sigma <= 100){
-      msg <- c(msg, paste0("Provided sigma is very small:", sig, "bp!"))
+    else if(sigma <= 50){
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
     }
   }
   else{
@@ -2552,15 +2554,44 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk){
       msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
     if(sigma >= 500){
-      msg <- c(msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
+      warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
     }
-    else if(sigma <= 100){
-      msg <- c(msg, paste0("Provided sigma is very small:", sigma, "bp!"))
+    else if(sigma <= 50){
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
     }
   }
 
+  # position needs to be available
   if(!any(colnames(x@snp.meta) == "position")){
     msg <- c(msg, "No column named position found in snp metadata.")
+  }
+
+  # facets
+  if(is.null(facets[1]) & any(stats.type == "pairwise")){
+    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'stats'")
+  }
+  facet.types <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  if(any(facet.types[[2]] == "snp") & any(stats.type == "pairwise")){
+    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'stats'")
+  }
+
+  # statistics, really only for bootstrapping
+  if(!is.null(stats[1])){
+    bad.stats <- which(!(stats %in% good.stats))
+    if(length(bad.stats) > 0){
+      msg <- c(msg, paste0("Some statics are not acceptable for bootstrapping: ", paste0(stats[bad.stats], collapse = " "),
+                           "Acceptable stats: ", paste0(good.stats, collapse = " ")))
+    }
+
+    missing.stats <- which(!(stats %in% c(colnames(x@stats), colnames(x@pairwise.stats))))
+    if(length(missing.stats) > 0){
+      msg <- c(msg, paste0("Some statics are not acceptable found in the data: ", paste0(stats[missing.stats], collapse = " "),
+                            ". Please run these statistics for the supplied facets!"))
+    }
+  }
+
+  if(length(warn.msg) > 0){
+    warning(warn.msg)
   }
   if(length(msg) > 0){
     stop(paste0(msg, collapse = "\n  "))
