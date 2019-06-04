@@ -85,11 +85,11 @@ smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = 
 #' #no splitting
 #' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
 #'
-calc_smoothed_averages <- function(x, facets, sigma, step = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
-  sanity_check_window(x, sigma, step, stats.type = stats.type, nk)
+  sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
 
   #================subfunction========
   #funciton to do a sliding window analysis on a data set. Vectorized!:
