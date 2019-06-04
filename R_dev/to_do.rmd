@@ -1,0 +1,27 @@
+---
+title: "to do:"
+date: "6/3/2019"
+output: html_document
+---
+# Before 1.0 release:
+#### Fix bootstrapping.
+* Needs to run just like the smoothing function. Can do in two ways: one set of boots for each statistic, or once and caluclate all statistics.
+
+#### Fix p-value calculation from bootstrapping.
+
+#### Make a function to make nice plots of smoothed statistics
+
+# New features and upgrades:
+
+#### Make a function to do manhattan plots. Keming is working on this.
+
+#### Make a function to calculate an SFS. Avani is working on this.
+
+* Should do either a raw frequency bin or do projection.
+
+#### Integrate new LD calculation methods.
+
+* Integrate Keming's haplotype likelihood function into the LD calculations as an option.
+
+* Integrate CLD into LD calculations. As an option, run ONLY these, since they are a lot faster (just a single cor() call!).
+
