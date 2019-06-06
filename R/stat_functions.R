@@ -1989,7 +1989,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 calc_basic_snp_stats <- function(x, facets, fst.method = "wc", sigma = NULL, step = NULL, par = F, nk = TRUE){
   #=========sanity checks=======
   if(!is.null(sigma)){
-    sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"))
+    sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"), facets = facets)
   }
 
   #=========stats===============

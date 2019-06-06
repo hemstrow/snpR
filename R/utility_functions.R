@@ -2577,10 +2577,10 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 
   # statistics, really only for bootstrapping
   if(!is.null(stats[1])){
-    bad.stats <- which(!(stats %in% good.stats))
+    bad.stats <- which(!(stats %in% good.types))
     if(length(bad.stats) > 0){
       msg <- c(msg, paste0("Some statics are not acceptable for bootstrapping: ", paste0(stats[bad.stats], collapse = " "),
-                           "Acceptable stats: ", paste0(good.stats, collapse = " ")))
+                           "Acceptable stats: ", paste0(good.types, collapse = " ")))
     }
 
     missing.stats <- which(!(stats %in% c(colnames(x@stats), colnames(x@pairwise.stats))))

@@ -22,10 +22,12 @@
 #' @examples
 #' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
 #'
-do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = T, report = 10000){
+do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = NULL, report = 10000, par = FALSE){
   browser()
 
-  # sanity checks
+  #================sanity checks================
+  facets <- check.snpR.facet.request(x, facets, "none")
+
   if(length(facets) > 1){
     stop("Please provide only one facet at a time.\n")
   }
@@ -47,8 +49,126 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
 
+  # get mafs if doing any normal stats
+  if("stats" %in% stats.type & nk){
+    x <- calc_maf(x, facets)
+    x@stats$nk <- x@stats$maj.count + x@stats$min.count
+  }
+
+  #===========subfunctions=======
+  get.grps <- function(snps){
+    grps <- x@snp.meta[snps, snp.facets]
+    grps <- as.data.frame(grps)
+    colnames(grps) <- snp.facets
+    grps <- do.call(paste0, grps)
+    return(grps)
+  }
+
+  # gets a list containing the position of snps within each window. Note that names are window centroids
+  # and NAs are still in each list. These should be removed when finished.
+  get.window.info <- function(cs, sig, position, cgrps = NULL, all.grps = NULL){
+    ends <- cs + sig*3
+    starts <- cs - sig*3
+    lmat <- outer(position, starts, function(pos, starts) pos >= starts)
+    lmat <- lmat + outer(position, ends, function(pos, ends) pos <= ends)
+    if(!is.null(cgrps)){
+      lmat <- lmat + outer(all.grps, cgrps, function(all.grps, cgrps) all.grps == cgrps)
+    }
+    colnames(lmat) <- cs
+    rownames(lmat) <- position
+    if(!is.null(cgrps)){
+      lmat <- ifelse(lmat == 3, TRUE, FALSE)
+    }
+    else{
+      lmat <- ifelse(lmat == 2, TRUE, FALSE)
+    }
+
+    n_snps <- colSums(lmat)
+
+    # map positions to TRUEs
+    lmat[lmat == FALSE] <- NA
+    pos.mat <- matrix(position, nrow = nrow(lmat), ncol = ncol(lmat))
+    lmat <- lmat * pos.mat
+    lmat <- as.list(as.data.frame(lmat))
+
+    return(list(lmat = lmat, n_snps = n_snps))
+  }
+
+  # runs the bootstrapping on a set of data.
+  run.bootstrap.set <- function(fws, nrands, stats = NULL, pairwise.stats = NULL, stats.type, sample.facet, sample.subfacet = NULL, n_snps, comparison = NULL){
+    browser()
+
+    # grab the stats
+    if("stats" %in% stats.type){
+      if(!data.table::is.data.table(stats)){
+        stats <- data.table::as.data.table(stats)
+      }
+
+      # grab the relevent facet only!
+      if(length(sample.facet) > 0){
+        stats <- stats[stats$facet == sample.facet,]
+      }
+      if(!is.null(sample.subfacet[1])){
+        stats <- stats[stats$subfacet == sample.subfacet,]
+      }
+      if(nk){
+        keep.cols <- c(statistics[which(statistics %in% single.types)], "nk")
+      }
+      else{
+        keep.cols <- statistics[which(statistics %in% single.types)]
+
+      }
+      stats <- stats[nrands, ..keep.cols]
+    }
+    if("pairwise" %in% stats.type){
+      if(!data.table::is.data.table(pairwise.stats)){
+        pairwise.stats <- data.table::as.data.table(pairwise.stats)
+      }
+
+      # grab the relevent facet only!
+      if(length(sample.facet) > 0){
+        pairwise.stats <- pairwise.stats[pairwise.stats$facet == sample.facet,]
+      }
+      if(!is.null(comparison[1])){
+        pairwise.stats <- pairwise.stats[pairwise.stats$comparison == comparison,]
+      }
+
+      if(nk){
+        keep.cols <- c(statistics[which(statistics %in% pairwise.types)], "nk")
+      }
+      else{
+        keep.cols <- statistics[which(statistics %in% pairwise.types)]
+      }
+
+      pairwise.stats <- pairwise.stats[nrands, ..keep.cols]
+    }
+
+    # work point
+    cpos <- as.numeric(names(fws))
+    spos <- as.numeric(unlist(fws))
+
+    for (j in 1:length(fws)){
+
+      #calculate smoothed statistics from the random stats and their positions.
+      if(nk){
+        gwp <- gaussian_weight(fws[[j]],as.numeric(names(fws[j]),sig))*rs
+        gws <- gaussian_weight(tpos,cs[j],sig)
+      }
+      else{
+        gwp <- gaussian_weight(tpos,cs[j],sig)*rs*(rnk - 1)
+        gws <- gaussian_weight(tpos,cs[j],sig)*(rnk - 1)
+      }
+      if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){stop("Got a NA value for a bootstrapped smoothed window. This usually happens if the nk_weight is TRUE but no column titled nk is provided.")}
+      smoothed_dist[j] <- (sum(gwp, na.rm = T)/sum(gws, na.rm = T)) #save the random stat
+    }
+  }
+
+  #===========initialize=========
   #report a few things, intialize others
   sig <- 1000*sigma #correct sigma
+  if(!is.null(step)){
+    step <- 1000*step
+  }
   num_snps <- nrow(x)
   #print(count_dist)
   smoothed_dist <- numeric(boots)
@@ -58,96 +178,62 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   snp.facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
-  #draw random centriods, their positions, lgs of those centroids, and number of snps in window if provided
-  if(!step){
+  #draw random centriods including the positions of those centroids and of the snps in those centroids.
+  if(is.null(step)){
     csnps <- sample(1:nrow(x), boots, replace = T) #get random centroids
     cs <- position[csnps] #get centroid positions
 
     # get centroid and all snp groups for this facet
     if(!is.null(snp.facets[1])){
-      get.grps <- function(snps){
-        grps <- x@snp.meta[snps, snp.facets]
-        grps <- as.data.frame(grps)
-        colnames(grps) <- snp.facets
-        grps <- do.call(paste0, grps)
-        return(grps)
-      }
       cgrps <- get.grps(csnps)
       all.grps <- get.grps(1:nrow(x))
     }
     # draw all of the random snps to fill in around centroids on windows now. First need to figure out snp count in each window.
     ## to do this, figure out which snps are in the csnp windows.
-    ends <- cs + sig*3
-    starts <- cs - sig*3
-    lmat <- outer(position, starts, function(pos, starts) pos >= starts)
-    lmat <- lmat + outer(position, ends, function(pos, ends) pos <= ends)
-    lmat <- lmat + outer(all.grps, cgrps, function(all.grps, cgrps) all.grps == cgrps)
-    colnames(lmat) <- cs
-    rownames(lmat) <- position
-    lmat <- ifelse(lmat == 3, TRUE, FALSE)
-    n_snps <- colSums(lmat)
-    ## draw the random snps
-    nrands <- sample(1:nrow(x), sum(n_snps), replace = T)
-    nrprog <- 1
+    fws <- get.window.info(cs, sig, position, cgrps, all.grps)
+    n_snps <- fws$n_snps
+    fws <- lapply(fws$lmat, na.omit)
 
+    ## draw the random snps
+    nrands <- sample(1:nrow(x), length(unlist(fws)), replace = T)
   }
-  # working here. Do I re-determine the windows or just pull from provided data? The latter if possible, otherwise the former!
   else{ #same deal, but for fixed slide windows from provided window information
-    cwin <- sample(1:nrow(fws), boots, replace = T)
-    cs <- fws$position[cwin]
-    if(!is.null(level)){
-      grps <- fws[cwin, level]
+    browser()
+    # go through each group and get the windows
+    grps <- get.grps(1:nrow(x))
+    u.grps <- unique(grps)
+    fws <- vector("list")
+    n_snps <- numeric()
+    for(i in 1:length(u.grps)){
+      t.pos <- x@snp.meta$position[grps == u.grps[i]]
+      cs <- seq(0, max(t.pos), by = step)
+      tfws <- get.window.info(cs, sig, t.pos)
+      n_snps <- c(n_snps, tfws$n_snps)
+      fws <- c(fws, tfws$lmat)
     }
-    if(n_snps){
-      nrands <- sample(1:nrow(x),sum(fws$n_snps[cwin]), replace = T)
-      nrprog <- 1
-    }
+
+    # clean up the window info list
+    fws <- lapply(fws, na.omit)
+
+
+    # get whatever info we can before passing to a looping function
+    cwin <- sample(1:length(fws), boots, replace = T)
+    fws <- fws[cwin]
+    cs <- as.numeric(names(fws))
+
+    nrands <- sample(1:nrow(x), sum(n_snps), replace = T) # these are the snps to pass
   }
+
+
+
+  #===========run the bootstraps==========
 
   #do bootstraps
-  for (j in 1:boots){
-    if(j %% report == 0){cat("Bootstrap number: ", j, "\n")}
-
-    #figure out positions to use. Must be on the same group as the centriod and within 3*sigma
-    if(!is.null(level)){
-      tpos <- x$position[x$position >= cs[j] - 3*sig &
-                         x$position <= cs[j] + 3*sig &
-                         x[,level] == grps[j]]
-    }
-    else{
-      tpos <- x$position[x$position >= cs[j] - 3*sig &
-                         x$position <= cs[j] + 3*sig]
-    }
-    #if random snps haven't already been drawn...
-    if(!n_snps){
-      #draw random snps to fill those positions from ALL snps, with replacement
-      rdraws <- sample(1:nrow(x), length(tpos), replace = T)
-    }
-    else{
-      #pull the correct randomly chosen snps from the vector of random snps.
-      rdraws <- nrands[nrprog:(nrprog + length(tpos) - 1)]
-      nrprog <- nrprog + length(tpos)
-    }
-
-
-    #get random stats and nks
-    rs <- x[rdraws, statistic] #sample stats for the randomly selected snps
-    if (nk_weight == TRUE){
-      rnk <- x$nk[rdraws] #sample nks for the randomly selected snps
-    }
-
-
-    #calculate smoothed statistics from the random stats and their positions.
-    if(nk_weight == FALSE){
-      gwp <- gaussian_weight(tpos,cs[j],sig)*rs
-      gws <- gaussian_weight(tpos,cs[j],sig)
-    }
-    else{
-      gwp <- gaussian_weight(tpos,cs[j],sig)*rs*(rnk - 1)
-      gws <- gaussian_weight(tpos,cs[j],sig)*(rnk - 1)
-    }
-    if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){stop("Got a NA value for a bootstrapped smoothed window. This usually happens if the nk_weight is TRUE but no column titled nk is provided.")}
-    smoothed_dist[j] <- (sum(gwp, na.rm = T)/sum(gws, na.rm = T)) #save the random stat
+  if(par == FALSE){
+    out <- run.bootstrap.set(fws = fws, nrands = nrands,
+                             stats = x@stats, pairwise.stats = x@pairwise.stats,
+                             stats.type =  stats.type, sample.facet = "pop", sample.subfacet = "ASP", comparison = "ASP~CLF",
+                             n_snps = n_snps)
   }
   return(smoothed_dist)
 }
