@@ -22,33 +22,6 @@ gaussian_weight <- function(p, c, s) {
 #cut off at 3sigma where weight becomes very low. Sigma should be given in kbp, although input should be
 # in bp, in the second column of each row.
 
-#'Gaussian smooth statistics.
-#'
-#'Wrapper for \code{\link{s_ave_multi}} called with no levels to split by.
-#'
-#' @param x Input SNP data frame.
-#' @param parameter Name of the statistic to smooth.
-#' @param sigma Smoothing statistic/window size, in kb.
-#' @param nk_weight Should statistic contribution to window mean be additionally scaled by column "nk"?
-#' @param fixed_window Should a window with a fixed slide distance be used? If so, provide window slide length in kb.
-#'
-#' @return If fixed_window == FALSE, returns the input data frame with an additional column containing smoothed average. Otherwise, returns a new data frame containing the position info for each window and smoothed value of the statistic at that window. Both outputs will also contain a column with the number of SNPs in each window.
-#'
-#' @examples
-#' #fixed slide window:
-#' smoothed_ave(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 200, TRUE, fixed_window = 50)
-#'
-#' #windows centered on each snp
-#' smoothed_ave(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 200, TRUE)
-#'
-#' #wrapped in run_gp
-#' run_gp(randPI, smoothed_ave, parameter = "pi", sigma = 200, nk_weight = TRUE, fixed_window = 50)
-#'
-smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL) {
-  out <- s_ave_multi(x, parameter, sigma, fixed_window, nk_weight, levs = NA)
-}
-
-
 
 #'Gaussian smooth multiple statistics
 #'
