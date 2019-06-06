@@ -24,21 +24,21 @@
 #'
 do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = NULL, report = 10000, par = FALSE){
   browser()
+  #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
+  #      be run simultainously, with no need to loop across facets.
+  #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
+  #      we need to do everything once for each unique snp level facet defined in the data.
 
   #================sanity checks================
   facets <- check.snpR.facet.request(x, facets, "none")
 
-  if(length(facets) > 1){
-    stop("Please provide only one facet at a time.\n")
-  }
-
+  # figure out which stats we are using!
   pairwise.types <- c("fst")
   single.types <- c("pi", "ho", "pa", "pHWE")
   all.types <- c(pairwise.types, single.types)
   if(statistics == "all"){
     statistics <- all.types[which(all.types %in% c(colnames(x@stats), colnames(x@pairwise.stats)))]
   }
-
   stats.type <- character()
   if(any(statistics %in% pairwise.types)){
     stats.type <- "pairwise"
@@ -47,25 +47,66 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
     stats.type <- c(stats.type, "stats")
   }
 
+  # run basic sanity checks
   sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
 
-  # get mafs if doing any normal stats
+  # get mafs if doing any normal stats. Can make this more effeicent by adding only where missing in the future.
   if("stats" %in% stats.type & nk){
     x <- calc_maf(x, facets)
     x@stats$nk <- x@stats$maj.count + x@stats$min.count
   }
 
   #===========subfunctions=======
-  get.grps <- function(snps){
-    grps <- x@snp.meta[snps, snp.facets]
+  get.grps <- function(snps, facet){
+    grps <- x@snp.meta[snps, facet]
     grps <- as.data.frame(grps)
-    colnames(grps) <- snp.facets
+    colnames(grps) <- facet
     grps <- do.call(paste0, grps)
     return(grps)
   }
 
+  # gaussian weights on data
+  do.gaus <- function(fws, stats, nk, tnk, sig){
+    gws <- gaussian_weight(fws[[1]], as.numeric(names(fws)), sig)
+    gwp <- gws * stats
+    if(nk){
+      gws <- gws * (tnk - 1)
+      gwp <- gwp * (tnk - 1)
+    }
+    return((colSums(gwp, na.rm = T)/sum(gws, na.rm = T)))
+  }
+
+  # runs the bootstrapping on a set of data.
+  # this function should be given all of the stats in wide form, so multiple sample level facets can be done at once!
+  # note, this could be made more efficent by cbinding the single and pairwise stats together, and then making a long vector of nk values to use with that.
+  run.bootstrap.set <- function(fws, nrands, stats = NULL, pairwise.stats = NULL, stats.type, n_snps){
+
+    #==========run the bootstrap=======
+    browser()
+    cpos <- as.numeric(names(fws))
+    spos <- as.numeric(unlist(fws))
+
+    tracker <- 1
+    for (j in 1:length(fws)){
+      trows <- tracker:(tracker + n_snps[j] - 1)
+
+      # get smoothed stats and save output
+      if("stats" %in% stats.type){
+        stats.out[j,] <- do.gaus(fws[j], stats[trows,], nk, unlist(snk[trows]), sig)
+      }
+      if("pairwise" %in% stats.type){
+        pairwise.out[j,] <- do.gaus(fws[j], pairwise.stats[trows,], nk, unlist(psnk[trows]), sig)
+      }
+      tracker <- trows[length(trows)] + 1
+    }
+
+    # prepare and return output
+
+
+    return()
+  }
+
   # gets a list containing the position of snps within each window. Note that names are window centroids
-  # and NAs are still in each list. These should be removed when finished.
   get.window.info <- function(cs, sig, position, cgrps = NULL, all.grps = NULL){
     ends <- cs + sig*3
     starts <- cs - sig*3
@@ -89,144 +130,180 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
     lmat[lmat == FALSE] <- NA
     pos.mat <- matrix(position, nrow = nrow(lmat), ncol = ncol(lmat))
     lmat <- lmat * pos.mat
+
     lmat <- as.list(as.data.frame(lmat))
 
     return(list(lmat = lmat, n_snps = n_snps))
   }
 
-  # runs the bootstrapping on a set of data.
-  run.bootstrap.set <- function(fws, nrands, stats = NULL, pairwise.stats = NULL, stats.type, sample.facet, sample.subfacet = NULL, n_snps, comparison = NULL){
-    browser()
+  # prepares a single snp facet to run
+  prep.one.snp.facet <- function(x, facet.info, stats = NULL, pairwise.stats = NULL){
+    #============prepare a centroid list=========
+    # elements named for all of the random centroids, contain a vector of the positions of snps in those windows
+    # make sure to save a vector of the number of snps per window (n_snps)
+    if(is.null(step)){
+      csnps <- sample(1:nrow(x), boots, replace = T) #get random centroids
+      cs <- position[csnps] #get centroid positions
 
-    # grab the stats
+      # get centroid and all snp groups for this facet
+      if(!is.null(snp.facets[1])){
+        cgrps <- get.grps(csnps, names(facet.info))
+        all.grps <- get.grps(1:nrow(x), names(facet.info))
+      }
+      # draw all of the random snps to fill in around centroids on windows now. First need to figure out snp count in each window.
+      ## to do this, figure out which snps are in the csnp windows.
+      fws <- get.window.info(cs, sig, position, cgrps, all.grps)
+      n_snps <- fws$n_snps
+      fws <- lapply(fws$lmat, na.omit)
+
+      ## draw the random snps
+      nrands <- sample(1:nrow(x), length(unlist(fws)), replace = T)
+    }
+    else{ #same deal, but for fixed slide windows from provided window information
+      # go through each group and get the windows
+      grps <- get.grps(1:nrow(x), names(facet.info))
+      u.grps <- unique(grps)
+      fws <- vector("list")
+      n_snps <- numeric()
+      for(i in 1:length(u.grps)){
+        t.pos <- x@snp.meta$position[grps == u.grps[i]]
+        cs <- seq(0, max(t.pos), by = step)
+        tfws <- get.window.info(cs, sig, t.pos)
+        n_snps <- c(n_snps, tfws$n_snps)
+        fws <- c(fws, tfws$lmat)
+      }
+
+      # clean up the window info list
+      fws <- lapply(fws, na.omit)
+
+
+      # get whatever info we can before passing to a looping function
+      cwin <- sample(1:length(fws), boots, replace = T)
+      fws <- fws[cwin]
+      n_snps <- n_snps[cwin]
+      cs <- as.numeric(names(fws))
+
+    }
+
+    #============draw random snps to assign to each position in each window========
+    nrands <- sample(1:nrow(x), sum(n_snps), replace = T)
+
+    #============prepare the stats and/or pairwise stats=========
+    # put them into long form across sample level facets
+    # cbind stats and pairwise stats, creating an nk vector to pass
+
+    # get nk info and cast each type
     if("stats" %in% stats.type){
       if(!data.table::is.data.table(stats)){
         stats <- data.table::as.data.table(stats)
       }
 
-      # grab the relevent facet only!
-      if(length(sample.facet) > 0){
-        stats <- stats[stats$facet == sample.facet,]
-      }
-      if(!is.null(sample.subfacet[1])){
-        stats <- stats[stats$subfacet == sample.subfacet,]
-      }
-      if(nk){
-        keep.cols <- c(statistics[which(statistics %in% single.types)], "nk")
-      }
-      else{
-        keep.cols <- statistics[which(statistics %in% single.types)]
+      # get only data for the correct sample facets
+      stats <- stats[stats$facet %in% unlist(facet.info),]
 
+
+      if(nk){
+        snk <- stats$nk
       }
-      stats <- stats[nrands, ..keep.cols]
+
+      # melt to put different stat/facet+subfacets in one row via snp id
+      stat.cols <- statistics[which(statistics %in% single.types)]
+      meta.cols <- c("facet", "subfacet", ".snp.id")
+      keep.cols <- c(meta.cols, stat.cols)
+      stats <- stats[,..keep.cols]
+      stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols)
+
+      # subset according to the snps we are using
+      stats <- stats[nrands, -".snp.id"]
+
+      if(nk){
+        snk <- snk[nrands]
+      }
     }
     if("pairwise" %in% stats.type){
       if(!data.table::is.data.table(pairwise.stats)){
         pairwise.stats <- data.table::as.data.table(pairwise.stats)
       }
 
-      # grab the relevent facet only!
-      if(length(sample.facet) > 0){
-        pairwise.stats <- pairwise.stats[pairwise.stats$facet == sample.facet,]
-      }
-      if(!is.null(comparison[1])){
-        pairwise.stats <- pairwise.stats[pairwise.stats$comparison == comparison,]
-      }
+      # get only data for the correct sample facets
+      pairwise.stats <- pairwise.stats[pairwise.stats$facet %in% unlist(facet.info),]
+
 
       if(nk){
-        keep.cols <- c(statistics[which(statistics %in% pairwise.types)], "nk")
-      }
-      else{
-        keep.cols <- statistics[which(statistics %in% pairwise.types)]
+        pnk <- pairwise.stats$nk
       }
 
-      pairwise.stats <- pairwise.stats[nrands, ..keep.cols]
-    }
+      # melt to put different stat/facet+subfacets in one row via snp id
+      stat.cols <- statistics[which(statistics %in% pairwise.types)]
+      meta.cols <- c("facet", "comparison", ".snp.id")
+      keep.cols <- c(meta.cols, stat.cols)
+      pairwise.stats <- pairwise.stats[,..keep.cols]
+      pairwise.stats <- data.table::dcast(pairwise.stats, .snp.id~facet + comparison, value.var = stat.cols)
 
-    # work point
-    cpos <- as.numeric(names(fws))
-    spos <- as.numeric(unlist(fws))
+      # subset according to the snps we are using
+      pairwise.stats <- pairwise.stats[nrands, -".snp.id"]
 
-    for (j in 1:length(fws)){
-
-      #calculate smoothed statistics from the random stats and their positions.
       if(nk){
-        gwp <- gaussian_weight(fws[[j]],as.numeric(names(fws[j]),sig))*rs
-        gws <- gaussian_weight(tpos,cs[j],sig)
+        pnk <- pnk[nrands]
       }
-      else{
-        gwp <- gaussian_weight(tpos,cs[j],sig)*rs*(rnk - 1)
-        gws <- gaussian_weight(tpos,cs[j],sig)*(rnk - 1)
-      }
-      if(is.na(sum(gwp, na.rm = T)/sum(gws, na.rm = T))){stop("Got a NA value for a bootstrapped smoothed window. This usually happens if the nk_weight is TRUE but no column titled nk is provided.")}
-      smoothed_dist[j] <- (sum(gwp, na.rm = T)/sum(gws, na.rm = T)) #save the random stat
     }
+
+    #============bind and prepare nk================
+    browser()
+    if(data.table::is.data.table(stats) & data.table::is.data.table(pairwise.stats)){
+      bound.stats <- cbind(stats, pairwise.stats)
+      cnk <- c(rep(snk, times = ncol(stats)), rep(pnk, times = ncol(pairwise.stats)))
+    }
+    else if(data.table::is.data.table(stats)){
+      bound.stats <- stats
+      cnk <- snk
+    }
+    else{
+      bound.stats <- pairwise.stats
+      cnk <- pnk
+    }
+
+    return(list(fws = fws, n_snps = n_snps, nrands = nrands, stats = bound.stats, nk = cnk))
   }
 
   #===========initialize=========
+  # figure out what different snp level facets we have, and figure out which facets have which snp levels
+  snp.facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
+  snp.facet.matches <- lapply(snp.facets, grep, x = facets)
+  names(snp.facet.matches) <- snp.facets
+  snp.facet.matches <- lapply(snp.facet.matches, function(y){
+    lapply(facets[y], function(z) check.snpR.facet.request(x, z))
+  })
+  snp.facet.matches <- lapply(snp.facet.matches, unlist) # this is now a list with an entry for each snp level facet containing the pop level facets to run.
+
+  # add in .base if needed
+  samp.facets <- check.snpR.facet.request(x, facets, "none", T)
+  samp.facets <- samp.facets[[1]][which(samp.facets[[2]] == "sample")]
+  if(length(samp.facets) > 0){
+     snp.facet.matches <- c(snp.facet.matches, .base = samp.facets)
+  }
+
   #report a few things, intialize others
   sig <- 1000*sigma #correct sigma
   if(!is.null(step)){
     step <- 1000*step
   }
   num_snps <- nrow(x)
-  #print(count_dist)
-  smoothed_dist <- numeric(boots)
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n")
+  cat("Unique sample level facets:", paste0(snp.facets, collapse = ", "), "\n")
 
   position <- x@snp.meta$position
 
-  snp.facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
-  #draw random centriods including the positions of those centroids and of the snps in those centroids.
-  if(is.null(step)){
-    csnps <- sample(1:nrow(x), boots, replace = T) #get random centroids
-    cs <- position[csnps] #get centroid positions
-
-    # get centroid and all snp groups for this facet
-    if(!is.null(snp.facets[1])){
-      cgrps <- get.grps(csnps)
-      all.grps <- get.grps(1:nrow(x))
-    }
-    # draw all of the random snps to fill in around centroids on windows now. First need to figure out snp count in each window.
-    ## to do this, figure out which snps are in the csnp windows.
-    fws <- get.window.info(cs, sig, position, cgrps, all.grps)
-    n_snps <- fws$n_snps
-    fws <- lapply(fws$lmat, na.omit)
-
-    ## draw the random snps
-    nrands <- sample(1:nrow(x), length(unlist(fws)), replace = T)
-  }
-  else{ #same deal, but for fixed slide windows from provided window information
-    browser()
-    # go through each group and get the windows
-    grps <- get.grps(1:nrow(x))
-    u.grps <- unique(grps)
-    fws <- vector("list")
-    n_snps <- numeric()
-    for(i in 1:length(u.grps)){
-      t.pos <- x@snp.meta$position[grps == u.grps[i]]
-      cs <- seq(0, max(t.pos), by = step)
-      tfws <- get.window.info(cs, sig, t.pos)
-      n_snps <- c(n_snps, tfws$n_snps)
-      fws <- c(fws, tfws$lmat)
-    }
-
-    # clean up the window info list
-    fws <- lapply(fws, na.omit)
-
-
-    # get whatever info we can before passing to a looping function
-    cwin <- sample(1:length(fws), boots, replace = T)
-    fws <- fws[cwin]
-    cs <- as.numeric(names(fws))
-
-    nrands <- sample(1:nrow(x), sum(n_snps), replace = T) # these are the snps to pass
-  }
-
+  #===========convert all of the data into wide form, with each stat across all sample facets and subfacets side by side=========
+  temp <- prep.one.snp.facet(x, snp.facet.matches[1], x@stats, x@pairwise.stats)
+  temp <- run.bootstrap.set(temp$fws, nrands = temp$nrands,
+                            stats = temp$stats, pairwise.stats = temp$pairwise.stats,
+                            stats.type = stats.type, n_snps = temp$n_snps)
 
 
   #===========run the bootstraps==========
+
 
   #do bootstraps
   if(par == FALSE){
