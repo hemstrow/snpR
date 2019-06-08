@@ -23,7 +23,6 @@
 #' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
 #'
 do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = NULL, report = 10000, par = FALSE){
-  browser()
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
   #      be run simultainously, with no need to loop across facets.
   #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
@@ -58,6 +57,10 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   #===========subfunctions=======
   get.grps <- function(snps, facet){
+    if(facet == ".base"){
+      grps <- rep(".base", length(snps))
+      return(grps)
+    }
     grps <- x@snp.meta[snps, facet]
     grps <- as.data.frame(grps)
     colnames(grps) <- facet
@@ -78,32 +81,62 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   # runs the bootstrapping on a set of data.
   # this function should be given all of the stats in wide form, so multiple sample level facets can be done at once!
-  # note, this could be made more efficent by cbinding the single and pairwise stats together, and then making a long vector of nk values to use with that.
-  run.bootstrap.set <- function(fws, nrands, stats = NULL, pairwise.stats = NULL, stats.type, n_snps){
+  run.bootstrap.set <- function(fws, nrands, stats = NULL, stats.type, n_snps, nk, snk, pnk, part.cols){
+
+    # zero fixer subfunction
+    fix.zeros <- function(x){
+      zeros <- x == 0
+      if(any(zeros)){
+        x[zeros] <- 1
+      }
+      return(x)
+    }
 
     #==========run the bootstrap=======
-    browser()
     cpos <- as.numeric(names(fws))
     spos <- as.numeric(unlist(fws))
 
+    # fix zeros and make a simple nk for when using just one stat.
+    if(length(part.cols) == 1){
+      use.nk <- c(snk, pnk)
+      use.nk <- fix.zeros(use.nk)
+    }
+    else{
+      snk <- fix.zeros(snk)
+      pnk <- fix.zeros(pnk)
+    }
+
     tracker <- 1
-    for (j in 1:length(fws)){
+    percentage <- 0
+    stats.out <- matrix(0, boots, ncol(stats))
+    colnames(stats.out) <- colnames(stats)
+    cat("Bootstrap Progress:\n0%\n")
+    for (j in 1:boots){
+      npercentage <- j/boots
+      if(npercentage - percentage >= 0.05){
+        cat(paste0(round(npercentage*100), "%"), "\n")
+        percentage <- npercentage
+      }
+
       trows <- tracker:(tracker + n_snps[j] - 1)
 
+      # figure out nk
+      if(!is.null(part.cols$stats) & !is.null(part.cols$pairwise)){
+        tnk <- c(rep(snk[trows], part.cols$stats),
+                 rep(pnk[trows], part.cols$pairwise))
+      }
+      else{
+        tnk <- use.nk[trows]
+      }
+
       # get smoothed stats and save output
-      if("stats" %in% stats.type){
-        stats.out[j,] <- do.gaus(fws[j], stats[trows,], nk, unlist(snk[trows]), sig)
-      }
-      if("pairwise" %in% stats.type){
-        pairwise.out[j,] <- do.gaus(fws[j], pairwise.stats[trows,], nk, unlist(psnk[trows]), sig)
-      }
+      stats.out[j,] <- do.gaus(fws[j], stats[trows,], nk, tnk, sig)
+
       tracker <- trows[length(trows)] + 1
     }
 
     # prepare and return output
-
-
-    return()
+    return(stats.out)
   }
 
   # gets a list containing the position of snps within each window. Note that names are window centroids
@@ -154,6 +187,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
       ## to do this, figure out which snps are in the csnp windows.
       fws <- get.window.info(cs, sig, position, cgrps, all.grps)
       n_snps <- fws$n_snps
+
+
+      fws$lmat <- fws$lmat[-empties]
+      n_snps <- n_snps[-empties]
+
       fws <- lapply(fws$lmat, na.omit)
 
       ## draw the random snps
@@ -173,6 +211,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
         fws <- c(fws, tfws$lmat)
       }
 
+      # remove any empty windows
+      empties <- n_snps == 0
+      if(any(empties)){
+        fws <- fws[-which(empties)]
+        n_snps <- n_snps[-which(empties)]
+      }
+
       # clean up the window info list
       fws <- lapply(fws, na.omit)
 
@@ -190,7 +235,10 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
     #============prepare the stats and/or pairwise stats=========
     # put them into long form across sample level facets
-    # cbind stats and pairwise stats, creating an nk vector to pass
+    # cbind stats and pairwise stats, creating an nk vector to pass and saving facet and subfacet/comparison data
+    facet.meta <- character()
+    subfacet.meta <- facet.meta
+    stattype.meta <- character()
 
     # get nk info and cast each type
     if("stats" %in% stats.type){
@@ -210,6 +258,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
       stat.cols <- statistics[which(statistics %in% single.types)]
       meta.cols <- c("facet", "subfacet", ".snp.id")
       keep.cols <- c(meta.cols, stat.cols)
+      stattype.meta <- rep("single", length(facet.meta))
       stats <- stats[,..keep.cols]
       stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols)
 
@@ -242,28 +291,77 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
       # subset according to the snps we are using
       pairwise.stats <- pairwise.stats[nrands, -".snp.id"]
+      colnames(pairwise.stats) <- paste0("fst_", colnames(pairwise.stats))
 
       if(nk){
         pnk <- pnk[nrands]
       }
     }
 
-    #============bind and prepare nk================
-    browser()
+    #============bind and prepare nk and column type info================
+    part.cols <- vector("list", length(stats.type))
+    names(part.cols) <- stats.type
     if(data.table::is.data.table(stats) & data.table::is.data.table(pairwise.stats)){
       bound.stats <- cbind(stats, pairwise.stats)
-      cnk <- c(rep(snk, times = ncol(stats)), rep(pnk, times = ncol(pairwise.stats)))
+      part.cols$stats <- ncol(stats)
+      part.cols$pairwise <- ncol(pairwise.stats)
     }
     else if(data.table::is.data.table(stats)){
       bound.stats <- stats
-      cnk <- snk
+      part.cols$stats <- ncol(stats)
     }
     else{
       bound.stats <- pairwise.stats
-      cnk <- pnk
+      part.cols$pairwise <- ncol(pairwise.stats)
     }
 
-    return(list(fws = fws, n_snps = n_snps, nrands = nrands, stats = bound.stats, nk = cnk))
+    return(list(fws = fws, n_snps = n_snps, nrands = nrands, stats = bound.stats, snk = snk, pnk = pnk, part.cols = part.cols))
+  }
+
+  # melt a bootstrap output back into a long form and add some extra metadata
+  melt.bootstrap <- function(boot.set, sigma, nk, step){
+    # melt data
+    boot.set <- data.table::as.data.table(boot.set)
+    suppressWarnings(boot.set <- data.table::melt(boot.set))
+
+    # get metadata
+    facet <- unlist(strsplit(as.character(boot.set$variable), "_"))
+    stats <- facet[seq(1, length(facet), by = 3)]
+    subfacet <- facet[seq(3, length(facet), by = 3)]
+    facet <- facet[seq(2, length(facet), by = 3)]
+
+    # set metadata
+    set(boot.set, j = "facet", value = facet)
+    set(boot.set, j = "subfacet", value = subfacet)
+    set(boot.set, j = "stat", value = stats)
+    set(boot.set, j = "sigma", value = sigma)
+    set(boot.set, j = "nk", value = nk)
+    if(step == FALSE){
+      set(boot.set, j = "step", value = step)
+    }
+    else{
+      set(boot.set, j = "step", value = step/1000)
+    }
+
+    # rearrange
+    ord <- c(3, 4, 5, 6, 7, 8, 2)
+    boot.set <- boot.set[,..ord]
+
+    return(boot.set)
+  }
+
+  # wrapper function to run a single facet for a given number of boots
+  boot.wrapper <- function(x, nk, stats.type, sigma, step){
+    temp <- run.bootstrap.set(fws = x$fws,
+                              nrands = x$nrands,
+                              stats = x$stats,
+                              nk = nk,
+                              snk = x$snk, pnk = x$pnk,
+                              stats.type = stats.type,
+                              n_snps = x$n_snps,
+                              part.cols = x$part.cols)
+    boot.out <- melt.bootstrap(temp, sigma, nk, step)
+    return(boot.out)
   }
 
   #===========initialize=========
@@ -290,29 +388,86 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
   }
   num_snps <- nrow(x)
   cat("Sigma:", sigma, "\nTotal number of input snps: ", num_snps, "\nNumber of boots:", boots, "\n")
-  cat("Unique sample level facets:", paste0(snp.facets, collapse = ", "), "\n")
 
   position <- x@snp.meta$position
 
 
-  #===========convert all of the data into wide form, with each stat across all sample facets and subfacets side by side=========
-  temp <- prep.one.snp.facet(x, snp.facet.matches[1], x@stats, x@pairwise.stats)
-  temp <- run.bootstrap.set(temp$fws, nrands = temp$nrands,
-                            stats = temp$stats, pairwise.stats = temp$pairwise.stats,
-                            stats.type = stats.type, n_snps = temp$n_snps)
+  #===========run a loop to do bootstraps for each snp level facet==============
+  out <- vector("list", length(snp.facet.matches))
+  names(out) <- names(snp.facet.matches)
+  cat("Unique snp level facets:", paste0(names(snp.facet.matches), collapse = ", "), "\n")
+
+  for(i in 1:length(snp.facet.matches)){
+    cat("Bootstrap facet:\n", names(snp.facet.matches[i]), "\n")
+
+    # prepare data
+    prepped.facet <- prep.one.snp.facet(x, snp.facet.matches[i], x@stats, x@pairwise.stats)
+
+    # run in serial
+    if(par == FALSE){
+      out[[i]] <- boot.wrapper(x = prepped.facet,
+                               nk = nk,
+                               stats.type = stats.type,
+                               sigma = sigma,
+                               step = step)
+      set(out[[i]], j = "snp.facet", value = names(snp.facet.matches[i]))
+    }
+    # run in parallel
+    else{
+      library(doParallel);library(foreach)
+      cl <- snow::makeSOCKcluster(par)
+      doSNOW::registerDoSNOW(cl)
+
+      #prepare reporting function
+      task_list <- split(1:boots, sort((1:boots)%%par))
+      ntasks <- par
+      progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
+      opts <- list(progress=progress)
 
 
-  #===========run the bootstraps==========
+      tout <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
+                               .options.snow = opts, .export = "data.table") %dopar% {
+                                 # extract the correct parts of the prepped.facet
+                                 tpf <- prepped.facet
+                                 tpf$fws <- tpf$fws[task_list[[q]]]
+                                 tpf$n_snps <- tpf$n_snps[task_list[[q]]]
 
+                                 # for nrands, need to figure out where to start and end
+                                 if(q != 1){
+                                   prior.sum <- sum(prepped.facet$n_snps[1:(task_list[[q]][1] - 1)])
+                                 }
+                                 else{
+                                   prior.sum <- 1
+                                 }
+                                 post.sum <- sum(prepped.facet$n_snps[1:(task_list[[q]][length(task_list[[q]])])])
 
-  #do bootstraps
-  if(par == FALSE){
-    out <- run.bootstrap.set(fws = fws, nrands = nrands,
-                             stats = x@stats, pairwise.stats = x@pairwise.stats,
-                             stats.type =  stats.type, sample.facet = "pop", sample.subfacet = "ASP", comparison = "ASP~CLF",
-                             n_snps = n_snps)
+                                 tpf$nrands <- tpf$nrands[prior.sum:post.sum]
+
+                                 # do the bootstrapp
+                                 boots <- length(task_list[[q]])
+                                 boot.wrapper(x = tpf,
+                                              nk = nk,
+                                              stats.type = stats.type,
+                                              sigma = sigma,
+                                              step = step)
+                               }
+
+      #release cores
+      parallel::stopCluster(cl)
+      doSNOW::registerDoSNOW()
+
+      # bind
+      out[[i]] <- data.table::rbindlist(tout)
+      set(out[[i]], j = "snp.facet", value = names(snp.facet.matches[i]))
+    }
   }
-  return(smoothed_dist)
+
+  # bind and return
+  out <- data.table::rbindlist(out)
+  col.ord <- c(1, 2, ncol(out), 3:(ncol(out) - 1))
+  out <- out[,..col.ord]
+  x@window.bootstraps <- rbind(x@window.bootstraps, out)
+  return(x)
 }
 
 #calculates a p-value for a stat based on a null distribution caluclated via bootstraps of that stat.
