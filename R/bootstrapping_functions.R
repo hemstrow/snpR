@@ -72,11 +72,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
   do.gaus <- function(fws, stats, nk, tnk, sig){
     gws <- gaussian_weight(fws[[1]], as.numeric(names(fws)), sig)
     gwp <- gws * stats
+    gws <- matrix(gws, nrow = nrow(gwp), ncol = ncol(gwp))
     if(nk){
       gws <- gws * (tnk - 1)
       gwp <- gwp * (tnk - 1)
     }
-    return((colSums(gwp, na.rm = T)/sum(gws, na.rm = T)))
+    return((colSums(gwp, na.rm = T)/colSums(gws, na.rm = T)))
   }
 
   # runs the bootstrapping on a set of data.
@@ -98,7 +99,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
     # fix zeros and make a simple nk for when using just one stat.
     if(length(part.cols) == 1){
-      use.nk <- c(snk, pnk)
+      if(!is.null(pnk[1,1])){
+        use.nk <- pnk
+      }
+      else{
+        use.nk <- snk
+      }
       use.nk <- fix.zeros(use.nk)
     }
     else{
@@ -122,11 +128,10 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
       # figure out nk
       if(!is.null(part.cols$stats) & !is.null(part.cols$pairwise)){
-        tnk <- c(rep(snk[trows], part.cols$stats),
-                 rep(pnk[trows], part.cols$pairwise))
+        tnk <- cbind(snk, pnk)[trows,]
       }
       else{
-        tnk <- use.nk[trows]
+        tnk <- use.nk[trows,]
       }
 
       # get smoothed stats and save output
@@ -189,8 +194,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
       n_snps <- fws$n_snps
 
 
-      fws$lmat <- fws$lmat[-empties]
-      n_snps <- n_snps[-empties]
+      # remove any empty windows
+      empties <- n_snps == 0
+      if(any(empties)){
+        fws <- fws[-which(empties)]
+        n_snps <- n_snps[-which(empties)]
+      }
 
       fws <- lapply(fws$lmat, na.omit)
 
@@ -250,24 +259,24 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
       stats <- stats[stats$facet %in% unlist(facet.info),]
 
 
-      if(nk){
-        snk <- stats$nk
-      }
-
       # melt to put different stat/facet+subfacets in one row via snp id
       stat.cols <- statistics[which(statistics %in% single.types)]
       meta.cols <- c("facet", "subfacet", ".snp.id")
       keep.cols <- c(meta.cols, stat.cols)
       stattype.meta <- rep("single", length(facet.meta))
+      if(nk){ # grab a cast nk as well...
+        nk.meta <- c(meta.cols, "nk")
+        snk <- data.table::dcast(stats[,..nk.meta], .snp.id~facet + subfacet, value.var = "nk")
+        snk <- snk[nrands,-".snp.id"]
+        ## need to duplicate columns, since each nk value will be used for multiple stats!
+        col.seq <- rep(1:ncol(snk), sum(statistics %in% single.types))
+        snk <- snk[,..col.seq]
+      }
       stats <- stats[,..keep.cols]
       stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols)
 
       # subset according to the snps we are using
       stats <- stats[nrands, -".snp.id"]
-
-      if(nk){
-        snk <- snk[nrands]
-      }
     }
     if("pairwise" %in% stats.type){
       if(!data.table::is.data.table(pairwise.stats)){
@@ -277,28 +286,26 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
       # get only data for the correct sample facets
       pairwise.stats <- pairwise.stats[pairwise.stats$facet %in% unlist(facet.info),]
 
-
-      if(nk){
-        pnk <- pairwise.stats$nk
-      }
-
       # melt to put different stat/facet+subfacets in one row via snp id
       stat.cols <- statistics[which(statistics %in% pairwise.types)]
       meta.cols <- c("facet", "comparison", ".snp.id")
       keep.cols <- c(meta.cols, stat.cols)
+      if(nk){ # grab a cast nk as well...
+        nk.meta <- c(meta.cols, "nk")
+        pnk <- data.table::dcast(pairwise.stats[,..nk.meta], .snp.id~facet + comparison, value.var = "nk")
+        pnk <- pnk[nrands,-".snp.id"]
+        col.seq <- rep(1:ncol(pnk), sum(statistics %in% pairwise.types))
+        pnk <- pnk[,..col.seq]
+      }
       pairwise.stats <- pairwise.stats[,..keep.cols]
       pairwise.stats <- data.table::dcast(pairwise.stats, .snp.id~facet + comparison, value.var = stat.cols)
 
       # subset according to the snps we are using
       pairwise.stats <- pairwise.stats[nrands, -".snp.id"]
       colnames(pairwise.stats) <- paste0("fst_", colnames(pairwise.stats))
-
-      if(nk){
-        pnk <- pnk[nrands]
-      }
     }
 
-    #============bind and prepare nk and column type info================
+    #============bind and prepare column type info================
     part.cols <- vector("list", length(stats.type))
     names(part.cols) <- stats.type
     if(data.table::is.data.table(stats) & data.table::is.data.table(pairwise.stats)){
@@ -336,8 +343,8 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
     set(boot.set, j = "stat", value = stats)
     set(boot.set, j = "sigma", value = sigma)
     set(boot.set, j = "nk", value = nk)
-    if(step == FALSE){
-      set(boot.set, j = "step", value = step)
+    if(is.null(step)){
+      set(boot.set, j = "step", value = NA)
     }
     else{
       set(boot.set, j = "step", value = step/1000)
