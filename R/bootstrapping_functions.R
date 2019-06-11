@@ -22,7 +22,7 @@
 #' @examples
 #' resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
 #'
-do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk = T, step = NULL, report = 10000, par = FALSE){
+do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = T, par = FALSE){
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
   #      be run simultainously, with no need to loop across facets.
   #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
@@ -70,20 +70,23 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   # gaussian weights on data
   do.gaus <- function(fws, stats, nk, tnk, sig){
-    gws <- gaussian_weight(fws[[1]], as.numeric(names(fws)), sig)
-    gwp <- gws * stats
-    gws <- matrix(gws, nrow = nrow(gwp), ncol = ncol(gwp))
+
     if(nk){
-      gws <- gws * (tnk - 1)
-      gwp <- gwp * (tnk - 1)
+      gws <- matrix(gaussian_weight(fws[[1]], as.numeric(names(fws)), sig), nrow(stats), ncol(stats))* (tnk - 1)
     }
+
+    else{
+      gws <- matrix(gaussian_weight(fws[[1]], as.numeric(names(fws)), sig), nrow(stats), ncol(stats))
+    }
+
+    gwp <- gws * stats
+
     return((colSums(gwp, na.rm = T)/colSums(gws, na.rm = T)))
   }
 
   # runs the bootstrapping on a set of data.
   # this function should be given all of the stats in wide form, so multiple sample level facets can be done at once!
   run.bootstrap.set <- function(fws, nrands, stats = NULL, stats.type, n_snps, nk, snk, pnk, part.cols){
-
     # zero fixer subfunction
     fix.zeros <- function(x){
       zeros <- x == 0
@@ -176,6 +179,8 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
   # prepares a single snp facet to run
   prep.one.snp.facet <- function(x, facet.info, stats = NULL, pairwise.stats = NULL){
+    snk <- NULL
+    pnk <- NULL
     #============prepare a centroid list=========
     # elements named for all of the random centroids, contain a vector of the positions of snps in those windows
     # make sure to save a vector of the number of snps per window (n_snps)
@@ -277,6 +282,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
       # subset according to the snps we are using
       stats <- stats[nrands, -".snp.id"]
+
+      # fix column names if needed.
+      if(sum(statistics %in% single.types) == 1){
+        colnames(stats) <- paste0(statistics[which(statistics %in% single.types)], "_", colnames(stats))
+      }
     }
     if("pairwise" %in% stats.type){
       if(!data.table::is.data.table(pairwise.stats)){
@@ -302,18 +312,22 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, statistics = "all", nk
 
       # subset according to the snps we are using
       pairwise.stats <- pairwise.stats[nrands, -".snp.id"]
-      colnames(pairwise.stats) <- paste0("fst_", colnames(pairwise.stats))
+
+      # fix column names if needed.
+      if(sum(statistics %in% pairwise.types) == 1){
+        colnames(pairwise.stats) <- paste0(statistics[which(statistics %in% pairwise.types)], "_", colnames(pairwise.stats))
+      }
     }
 
     #============bind and prepare column type info================
     part.cols <- vector("list", length(stats.type))
     names(part.cols) <- stats.type
-    if(data.table::is.data.table(stats) & data.table::is.data.table(pairwise.stats)){
+    if(any(statistics %in% single.types) & any(statistics %in% pairwise.types)){
       bound.stats <- cbind(stats, pairwise.stats)
       part.cols$stats <- ncol(stats)
       part.cols$pairwise <- ncol(pairwise.stats)
     }
-    else if(data.table::is.data.table(stats)){
+    else if(any(statistics %in% single.types)){
       bound.stats <- stats
       part.cols$stats <- ncol(stats)
     }
