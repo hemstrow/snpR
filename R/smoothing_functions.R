@@ -65,7 +65,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
 
   #================subfunction========
-  #funciton to do a sliding window analysis on a data set. Vectorized!:
+  # funciton to do a sliding window analysis on a data set.
   # x: a data frame containing one column with positions and one for each column to be smoothed
   # nk: logical, should nk wieghting be performed (usually yes)
   # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
@@ -77,9 +77,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 
     }
     if(nrow(x) <= 1){
-      ret <- matrix(NA, 0, 3 + length(scols))
+      ret <- matrix(NA, 0, 5 + length(scols))
       ret <- as.data.frame(ret)
-      colnames(ret) <- c("position", "sigma", "n_snps", colnames(x)[scols])
+      colnames(ret) <- c("position", "sigma", "n_snps", "step", "nk.status", colnames(x)[scols])
       return(ret)
     }
     #get window centers, starts, and stops:
@@ -153,8 +153,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     win_stats <- win_vals/win_scales
 
     #return
-    out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, win_stats)
-    colnames(out)[-c(1:3)] <- colnames(x)[scols]
+    if(is.numeric(step)){
+      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step/1000, nk.status = nk, win_stats)
+    }
+    else{
+      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step, nk.status = nk, win_stats)
+    }
+    colnames(out)[-c(1:5)] <- colnames(x)[scols]
     return(out)
   }
 

@@ -618,7 +618,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
   }
 
-  # working here, just need to adjust merge.snpR.stats to work with pairwise stats.
+  # merge
   x <- merge.snpR.stats(x, out, type = "pairwise")
 
   if(method == "genepop"){
@@ -1986,10 +1986,23 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 }
 
 
-calc_basic_snp_stats <- function(x, facets, fst.method = "wc", sigma = NULL, step = NULL, par = F, nk = TRUE){
+calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc", sigma = NULL, step = NULL, par = F, nk = TRUE){
   #=========sanity checks=======
+  if(!is.null(facets[1])){
+    facet.types <- check.snpR.facet.request(x, facets, "none", T)
+    snp.facets <- which(facet.types[[2]] == "snp")
+  }
+
   if(!is.null(sigma)){
-    sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"), facets = facets)
+    if(is.null(facets[1])){
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "stats", facets = facets)
+    }
+    else if(any(facet.types[[2]] == "snp")){
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "stats", facets = facets)
+    }
+    else{
+      sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"), facets = facets)
+    }
   }
 
   #=========stats===============
@@ -1999,11 +2012,39 @@ calc_basic_snp_stats <- function(x, facets, fst.method = "wc", sigma = NULL, ste
   x <- calc_hwe(x, facets)
   x <- calc_private(x, facets)
   x <- calc_ho(x, facets)
-  x <- calc_pairwise_fst(x, facets, method = fst.method)
+  if(!is.null(facets[1])){
+    x <- calc_pairwise_fst(x, facets, method = fst.method)
+  }
+
+  # if a snp facet level is requested, run everything at the base level too.
+  if(length(snp.facets) > 0){
+    x <- calc_maf(x)
+    x <- calc_pi(x)
+    x <- calc_hwe(x)
+    x <- calc_private(x)
+    x <- calc_ho(x)
+  }
 
   #=========smoothing===========
   if(!is.null(sigma)){
-    x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par)
+
+    # if no facets, run only non-pairwise
+    if(is.null(facets[1])){
+      x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par, stats.type = "stats")
+    }
+
+    # otherwise, need to run any snp facets with only stats, everything else with pairwise.
+    else{
+      if(length(snp.facets) > 0){
+        x <- calc_smoothed_averages(x, facets[snp.facets], sigma, step, nk, par = par, stats.type = "stats")
+        if(length(snp.facets) != length(facets)){
+          x <- calc_smoothed_averages(x, facets[-snp.facets], sigma, step, nk, par = par)
+        }
+      }
+      else{
+        x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par)
+      }
+    }
   }
 
   #=========return==============

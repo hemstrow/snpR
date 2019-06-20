@@ -463,7 +463,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
           # get the intersect and return.
           run.lines <- intersect(snp.matches, sample.matches)
-          snp.res <- unlist(strsplit(task.list[q,4], " "))
+          snp.res <- gsub(" ", ".", task.list[q,4])
         }
         else{
           run.lines <- sample.matches
@@ -473,18 +473,18 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         # run the function and create a snp res metadata df to bind to the results.
         assign("last.warning", NULL, envir = baseenv())
         res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
-        snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
-        colnames(snp.res) <- snp.facets
 
         # return
         if(nrow(res) == 1){
           return(cbind.data.frame(as.data.frame(t(task.list[rep(q, nrow(res)),1:2])),
-                                  snp.res,
+                                  snp.facet = task.list[q,3],
+                                  snp.subfacet = snp.res,
                                   res))
         }
         else{
           return(cbind.data.frame(task.list[rep(q, nrow(res)),1:2],
-                                  snp.res,
+                                  snp.facet = rep(task.list[q,3], nrow(res)),
+                                  snp.subfacet = rep(snp.res, nrow(res)),
                                   res))
         }
       }
@@ -584,11 +584,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
       # bind the results together.
       suppressWarnings(out <- dplyr::bind_rows(out))
-      if(any(colnames(out) == ".base")){
-        out <- out[,-which(colnames(out) == ".base")]
-      }
       colnames(out)[1:2] <- c("facet", "subfacet")
-      meta.cols <- c(1,2, which(colnames(out) %in% colnames(x@snp.meta)))
+      meta.cols <- c(1,2,3,4, which(colnames(out) %in% colnames(x@snp.meta)))
       meta <- out[,meta.cols]
       meta[is.na(meta)] <- ".base"
       out <- cbind(meta, out[,-meta.cols])
@@ -678,7 +675,12 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 
     # sort by .snp.id if that's a thing here.
     if(any(colnames(m.s) == ".snp.id")){
-      m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
+      if("subfacet" %in% colnames(m.s)){
+        m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
+      }
+      else{
+        m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
+      }
     }
     return(m.s)
   }
@@ -699,14 +701,14 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   }
   else if(type == "window.stats"){
     # merge and return
-    meta.cols <- c("facet", "subfacet", "n_snps", "sigma", "position", colnames(x@snp.meta))
-    starter.meta <- c("facet", "subfacet", "position")
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
     n.s <- smart.merge(stats, x@window.stats, meta.cols, starter.meta)
     x@window.stats <- n.s
   }
   else if(type == "pairwise.window.stats"){
-    meta.cols <- c("facet", "subfacet", "n_snps", "sigma", "position", "comparison", colnames(x@snp.meta))
-    starter.meta <- c("facet", "subfacet", "position")
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
     n.s <- smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
     x@pairwise.window.stats <- n.s
   }

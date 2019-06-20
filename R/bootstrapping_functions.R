@@ -373,15 +373,15 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 
   # wrapper function to run a single facet for a given number of boots
   boot.wrapper <- function(x, nk, stats.type, sigma, step){
-    temp <- run.bootstrap.set(fws = x$fws,
-                              nrands = x$nrands,
-                              stats = x$stats,
-                              nk = nk,
-                              snk = x$snk, pnk = x$pnk,
-                              stats.type = stats.type,
-                              n_snps = x$n_snps,
-                              part.cols = x$part.cols)
-    boot.out <- melt.bootstrap(temp, sigma, nk, step)
+    boot.out <- run.bootstrap.set(fws = x$fws,
+                                  nrands = x$nrands,
+                                  stats = x$stats,
+                                  nk = nk,
+                                  snk = x$snk, pnk = x$pnk,
+                                  stats.type = stats.type,
+                                  n_snps = x$n_snps,
+                                  part.cols = x$part.cols)
+    boot.out <- melt.bootstrap(boot.out, sigma, nk, step)
     return(boot.out)
   }
 
@@ -444,7 +444,6 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
       ntasks <- par
       progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
       opts <- list(progress=progress)
-
 
       tout <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
                                .options.snow = opts, .export = "data.table") %dopar% {
@@ -516,30 +515,66 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS)
 #' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS, alt = "less")
 #'
-p_calc_boots <- function(x, dist, alt = "two-sided"){
-  if(!alt %in% c("less", "greater", "two-sided")){
-    stop("Alt must be one of character strings: less, greater, or two-sided.\n")
+calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "two-sided", par = FALSE){
+  #===========subfunctions=======
+  # finds matching rows for given facet, ect (all of which are inherited)
+  get.matches <- function(y){
+    matches <- y$facet == facet &
+      y$subfacet == subfacet &
+      y$snp.facet == snp.facet &
+      y$sigma == sigma &
+      y$nk == nk &
+      y$step == step
+    if(any(colnames(y) == "stat")){
+      matches <- (y$stat == statistic) & matches
+    }
+    return(which(matches))
   }
 
-  #create a cumulative distibution function of the distribution
-  edist <- ecdf(dist)
+  # extracts an edf with the matching bootstrap info and calculates p-values
+  get.one.pvalue <- function(x, facet, subfacet, snp.facet, statistic, nk, step, sigma, alt){
 
-  #get the proportion of the bootstrapped distribution less than or equal to the observed point.
-  xp <- edist(x)
+    # grab the matching raw statistical data
+    matches <- get.matches(x@window.bootstraps)
 
-  #get p-values
-  if(alt == "two-sided"){
-    #Take abs(.5 - xp), which is the proportion of the distribution between the point and the distribution mean.
-    #Multiply that by 2 to get the proportion of the distribution between that point and the distirbution mean
-    #as well as between the mean and a point equally extreme in the other direction.
-    #take 1 minus that to get the proportion of the as or more extreme
-    xp <- 1 - (abs(xp - .5)*2)
+
+    # create a cumulative distibution function of the distribution
+    edist <- ecdf(x@window.bootstraps[matches,]$value)
+
+    # get p-values
+    ## get the matching statistic data
+    type <- ifelse(statistic %in% colnames(x@window.stats), "single", "pairwise")
+    if(type == "single"){
+      scol <- which(colnames(x@window.stats) == statistic)
+      matches <- x@window.stats[get.matches(x@window.stats), ..scol]
+    }
+    else{
+      scol <- which(colnames(x@pairwise.window.stats) == statistic)
+      matches <- x@pairwise.window.stats[get.matches(x@pairwise.window.stats), ..scol]
+    }
+
+    ## get the proportion of the bootstrapped distribution less than or equal to the observed point.
+    xp <- edist(matches[[1]])
+    if(alt == "two-sided"){
+      #Take abs(.5 - xp), which is the proportion of the distribution between the point and the distribution mean.
+      #Multiply that by 2 to get the proportion of the distribution between that point and the distirbution mean
+      #as well as between the mean and a point equally extreme in the other direction.
+      #take 1 minus that to get the proportion of the as or more extreme
+      xp <- 1 - (abs(xp - .5)*2)
+    }
+    else if (alt == "greater"){
+      #get the proportion of data greater than observed data points
+      xp <- 1 - xp
+    }
+
+    return(xp)
   }
-  else if (alt == "greater"){
-    #get the proportion of data greater than observed data points
-    xp <- 1 - xp
-  }
-  #if alt is "less", no conversion needed. already gives the proportion less than observed.
+
+  #===========loop through all of the requested facets/statistics=========
+  browser()
+
+  # generate a matrix containing all of the possible tasks
+  snp.
 
   return(xp)
 }
