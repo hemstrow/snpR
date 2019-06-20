@@ -38,6 +38,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   if(statistics == "all"){
     statistics <- all.types[which(all.types %in% c(colnames(x@stats), colnames(x@pairwise.stats)))]
   }
+  else if(statistics == "single"){
+    statistics <- single.types
+  }
+  else if(statistics == "pairwise"){
+    statisitcs <- pairwise.types
+  }
+
   stats.type <- character()
   if(any(statistics %in% pairwise.types)){
     stats.type <- "pairwise"
@@ -395,11 +402,17 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   })
   snp.facet.matches <- lapply(snp.facet.matches, unlist) # this is now a list with an entry for each snp level facet containing the pop level facets to run.
 
-  # add in .base if needed
+  # add in .base if needed, for sample level only facets
   samp.facets <- check.snpR.facet.request(x, facets, "none", T)
   samp.facets <- samp.facets[[1]][which(samp.facets[[2]] == "sample")]
   if(length(samp.facets) > 0){
      snp.facet.matches <- c(snp.facet.matches, .base = samp.facets)
+  }
+
+  # for snp level only facets, change the NULL to ".base"
+  nulls <- which(unlist(lapply(snp.facet.matches, function(x) any(is.null(x)))))
+  if(length(nulls) > 0){
+    snp.facet.matches[[nulls]] <- ".base"
   }
 
   #report a few things, intialize others
