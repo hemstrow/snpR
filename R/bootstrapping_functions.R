@@ -448,7 +448,6 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     }
     # run in parallel
     else{
-      library(doParallel);library(foreach)
       cl <- snow::makeSOCKcluster(par)
       doSNOW::registerDoSNOW(cl)
 
@@ -529,6 +528,22 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS, alt = "less")
 #'
 calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE){
+  #==========sanity checks==========
+  msg <- character()
+
+  # check statistics
+  if(statistics != "all"){
+    miss.stats <- which(!statistics %in% unique(x@window.bootstraps$stat))
+    if(length(miss.stats) > 0){
+      msg <- c(msg,
+               paste0("Some statistics not found in bootstraps: ", paste0(miss.stats, collapse = ", "), "\n"))
+    }
+  }
+
+  if(length(msg) > 0){
+    stop(msg)
+  }
+
   #===========subfunctions=======
   # finds matching rows for given facet, ect
   get.matches <- function(y, facet, subfacet, snp.facet, sigma, nk, step, statistic){
@@ -598,7 +613,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
 
   # figure out which parts of the unique tasks are part of the requested facet
   if(facets[1] != "all"){
-    facets <- check.snpR.facet.request(x, facets, "none", T)
+
     keep.rows <- logical(nrow(u.rows))
 
     # loop through each facet
@@ -646,7 +661,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     }
   }
   else{
-    library(doParallel);library(foreach)
     cl <- snow::makeSOCKcluster(par)
     doSNOW::registerDoSNOW(cl)
 
