@@ -4,10 +4,6 @@ date: "6/3/2019"
 output: html_document
 ---
 # Before 1.0 release:
-#### Fix bootstrapping.
-* Needs to run just like the smoothing function. Can do in two ways: one set of boots for each statistic, or once and caluclate all statistics.
-
-#### Fix p-value calculation from bootstrapping.
 
 #### Make a function to make nice plots of smoothed statistics
 
@@ -25,3 +21,5 @@ output: html_document
 
 * Integrate CLD into LD calculations. As an option, run ONLY these, since they are a lot faster (just a single cor() call!).
 
+#### Make a function to do nj trees
+* Relatedness matricies is a part of this. Maybe use RAFM.
