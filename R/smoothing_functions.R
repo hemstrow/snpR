@@ -58,7 +58,7 @@ gaussian_weight <- function(p, c, s) {
 #' #no splitting
 #' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
 #'
-calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("stats", "pairwise"), par = FALSE) {
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
@@ -168,8 +168,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 
   if(!is.null(step)){step <- step*1000}
 
-  if("stats" %in% stats.type){
-    cat("\nSmoothing typical stats...")
+  if("single" %in% stats.type){
+    cat("\nSmoothing single group stats...")
     out <- apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",

@@ -831,7 +831,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
   #========================sub-functions=============
   #function to do LD with SNPs
-  library(dplyr)
 
   # sub functions:
 
@@ -1549,7 +1548,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         rproc <- ceiling(cumsum(as.numeric(comps.per.snp))/split) # which processor should each comparison be assigned to?
 
         #now need to start the parallel job:
-        library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
         doSNOW::registerDoSNOW(cl)
 
@@ -1727,7 +1725,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #in parallel
     else{
-      library(doParallel);library(foreach)
       cl <- snow::makeSOCKcluster(par)
       doSNOW::registerDoSNOW(cl)
 
@@ -1995,13 +1992,13 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc
 
   if(!is.null(sigma)){
     if(is.null(facets[1])){
-      sanity_check_window(x, sigma, step, nk = nk, stats.type = "stats", facets = facets)
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
     }
     else if(any(facet.types[[2]] == "snp")){
-      sanity_check_window(x, sigma, step, nk = nk, stats.type = "stats", facets = facets)
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
     }
     else{
-      sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "stats"), facets = facets)
+      sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "single"), facets = facets)
     }
   }
 
@@ -2030,13 +2027,13 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc
 
     # if no facets, run only non-pairwise
     if(is.null(facets[1])){
-      x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par, stats.type = "stats")
+      x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par, stats.type = "single")
     }
 
-    # otherwise, need to run any snp facets with only stats, everything else with pairwise.
+    # otherwise, need to run any snp facets with only single, everything else with pairwise.
     else{
       if(length(snp.facets) > 0){
-        x <- calc_smoothed_averages(x, facets[snp.facets], sigma, step, nk, par = par, stats.type = "stats")
+        x <- calc_smoothed_averages(x, facets[snp.facets], sigma, step, nk, par = par, stats.type = "single")
         if(length(snp.facets) != length(facets)){
           x <- calc_smoothed_averages(x, facets[-snp.facets], sigma, step, nk, par = par)
         }

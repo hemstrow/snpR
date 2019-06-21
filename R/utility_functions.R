@@ -203,7 +203,66 @@ find.snpR.facets <- function(x){
 }
 
 # function to pull stats for a given facet
-get.snpR.stats <- function(x, facets = NULL){
+get.snpR.stats <- function(x, facets = NULL, type = "single"){
+
+  #=======subfunctions======
+  extract.basic <- function(y, facets, type = "standard"){
+    if(type == "standard"){
+      keep.rows <- which(y$facet %in% facets)
+      keep.cols <- which(!colnames(y) %in% c(".snp.id", "facet.type"))
+    }
+    else if(type == "window"){
+      facets <- check.snpR.facet.request(x, facets, "none", T)
+      keep.rows <- numeric()
+      keep.cols <- 1:ncol(y)
+
+      # for each facet, figure out which rows conform
+      for(i in 1:length(facets[[1]])){
+        if(facets[[2]][i] == "snp"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == facets[[1]][i] & y$facet == ".base"))
+        }
+        else if(facets[[2]][i] == "sample"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == facets[[1]][i]))
+        }
+        else if(facets[[2]][i] == ".base"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
+        }
+        else{
+          tfacet <- unlist(strsplit(facets[[1]][i], "\\."))
+          tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
+
+          # need to paste together any snp or sample faces
+          sample.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "sample")], collapse = ".")
+          sample.facets <- check.snpR.facet.request(x, sample.facets)
+          snp.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "snp")], collapse = ".")
+          snp.facets <- check.snpR.facet.request(x, snp.facets, remove.type = "none")
+
+          keep.rows <- c(keep.rows, which(y$snp.facet == snp.facets & y$facet == sample.facets))
+        }
+      }
+    }
+
+    return(as.data.frame(y[keep.rows, ..keep.cols]))
+  }
+
+  extract.LD <- function(y, facets){
+    # get sample facets
+    samp.facets <- check.snpR.facet.request(x, facets)
+    if(length(samp.facets) != length(facets)){
+      samp.facets <- c(samp.facets, ".base")
+    }
+
+    # get prox
+    prox <- y$prox[y$prox$sample.facet %in% samp.facets,]
+
+    # get matrices
+    matrices <- y$LD_matrices[[which(names(y$LD_matrices) %in% facets)]]
+
+    return(list(prox = prox, matrices = matrices))
+  }
+
+  #========prep=============
+  browser()
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -213,21 +272,34 @@ get.snpR.stats <- function(x, facets = NULL){
     facets <- ".base"
   }
 
-  for(i in 1:length(facets)){
-    if(any(facets %in% colnames(x@snp.meta))){
-      if(any(facets %in% colnames(x@sample.meta))){
-        samp.facets <- which(facets %in% colnames(x@sample.meta))
-        facets <- facets[samp.facets]
-      }
-      else{
-        next() # snp level facet, skip.
-      }
+  facets <- check.snpR.facet.request(x, facets, "none")
+
+  #========extract data======
+  if(type == "single"){
+    facets <- check.snpR.facet.request(x, facets)
+    return(extract.basic(x@stats, facets))
+  }
+  else if(type == "pairwise"){
+    facets <- check.snpR.facet.request(x, facets)
+    base.facets <- which(facets == ".base")
+    if(length(base.facets) > 0){
+      stop("Cannot find pairwise statistics without any facets (facets = NULL or '.base').\n")
     }
+    return(extract.basic(x@pairwise.stats, facets))
+  }
+  else if(type == "window.stats"){
+    return(extract.basic(x@window.stats, facets, "window"))
+  }
+  else if(type == "pairwise.window.stats"){
+    return(extract.basic(x@pairwise.window.stats, facets, "window"))
+  }
+  else if(type == "LD"){
+    return(extract.LD(x@pairwise.LD, facets))
+  }
+  else if(type == "bootstraps"){
+    return(extract.basic(x@window.bootstraps, facets, "window"))
   }
 
-  keep.rows <- -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))
-
-  return(as.data.frame(x@stats[x@stats$facet %in% facets, ..keep.rows]))
 }
 
 # function to apply a function across selected facets
@@ -558,7 +630,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
       ## same, but in parallel
       else{
-        library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
         doSNOW::registerDoSNOW(cl)
 
@@ -921,6 +992,14 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   if(any(to.remove)){
     facets <- facets[-which(to.remove)]
     facet.types <- facet.types[-which(to.remove)]
+  }
+
+  # fix the facet type for .base
+  if(return.type){
+    base.facets <- which(facet.types == "")
+    if(length(base.facets) > 0){
+      facet.types[base.facets] <- ".base"
+    }
   }
 
   # remove duplicates and return
@@ -2484,7 +2563,7 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
   }
 
   #smoothing method
-  good.methods <- c("stats", "pairwise")
+  good.methods <- c("single", "pairwise")
   if(sum(good.methods %in% stats.type) < 1){
     msg <- c(msg, paste0("No accepted stats types provided. Acceptable types:\n\t", paste0(good.methods, collapse = "\t")))
   }
@@ -2524,11 +2603,11 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 
   # facets
   if(is.null(facets[1]) & any(stats.type == "pairwise")){
-    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'stats'")
+    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
   }
   facet.types <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   if(any(facet.types[[2]] == "snp") & any(stats.type == "pairwise")){
-    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'stats'")
+    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
   }
 
   # statistics, really only for bootstrapping
