@@ -224,12 +224,10 @@ do.afs <- function(as, bins){
 
 
 
-
+# x is a haplotype table, like in 'R_dev/haplotype_frequency_estimation_example.RDS'
+# haptable is a haplotype identity table (00, 01, 10, 11), like in "R_dev/hapmat_example.RDS"
+# sigma is the ML difference cuttoff
 multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
-  browser()
-
-
-  out <- matrix(NA, nrow(x), 4)
 
   # find the double het. Should be able to use an approach like this when this gets extended to work with everything.
   # cj values for each possible genotype:
@@ -267,9 +265,17 @@ multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
   # we'll use a while loop, which will run as long as the conditions are met. Note that this can freeze your computer if
   # the conditions are NEVER met! Try just hitting the stop sign, if that doesn't work you'll need to restart Rstudio.
 
+  out <- matrix(NA, nrow(haptable), ncol = 4)
+  completed <- logical(nrow(hapmat))
 
   diff <- sigma + 1 # initialize the diff. Doesn't matter what it is as long as it's larger than sigma.
-  while(diff > sigma){
+  while(any(diff > sigma)){
+
+    if(is.null(nrow(shap.freqs))){
+      shap.freqs <- matrix(shap.freqs, 1)
+      x <- matrix(x, 1)
+      haptable <- matrix(haptable, 1)
+    }
 
     # 1)
     # expectation, which is that we are drawing haplotypes (aka alleles) from a pool of options. Follows HWE, essentially,
@@ -280,21 +286,47 @@ multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
 
     # maximization: given the expected haplotype frequencies, how many of each haplotype should we have? get new frequencies
     n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambigious phenotypes again.
-    n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(x[,doub.het])*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
-    n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(x[,doub.het])*op2.e*.5)
+    if(nrow(x) == 1){
+      n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(matrix(x[,doub.het], 1))*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
+      n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(matrix(x[,doub.het], 1))*op2.e*.5)
+    }
+    else{
+      n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(x[,doub.het])*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
+      n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(x[,doub.het])*op2.e*.5)
+    }
     n1hap.freqs <- n1hap.freqs/rowSums(n1hap.freqs)
 
     # calculate the diff and update
     diff <- rowSums(abs(n1hap.freqs - shap.freqs))
 
-    # next, check which entries have a diff of less than sigma, and save the results for those rows.
-    # somehow stop calculation on those rows, or at least stop updating them. We only want to save results for each row ONCE.
-    # then, adjust the loop to stop once all rows have finished.
-
-    shap.freqs <- n1hap.freqs
+    # save any completed results
+    done <- which(diff <= sigma)
+    if(length(done) > 0){
+      if(sum(completed) > 0){
+        if(nrow(n1hap.freqs) > 1){
+          out[-which(completed),][done,] <- n1hap.freqs[done,]
+        }
+        else{
+          out[-which(completed),] <- n1hap.freqs[done,]
+        }
+        completed[-which(completed)][done] <- T
+      }
+      else{
+        out[done,] <- n1hap.freqs[done,]
+        completed[done] <- T
+      }
+      n1hap.freqs <- n1hap.freqs[-done,]
+      shap.freqs <- n1hap.freqs
+      haptable <- haptable[-done,]
+      x <- x[-done,]
+    }
+    else{
+      shap.freqs <- n1hap.freqs
+    }
   }
 
+
   # return the output
-  return(shap.freqs)
+  return(out)
 }
 
