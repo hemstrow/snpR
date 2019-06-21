@@ -528,10 +528,10 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS)
 #' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS, alt = "less")
 #'
-calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "two-sided", par = FALSE){
+calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE){
   #===========subfunctions=======
-  # finds matching rows for given facet, ect (all of which are inherited)
-  get.matches <- function(y){
+  # finds matching rows for given facet, ect
+  get.matches <- function(y, facet, subfacet, snp.facet, sigma, nk, step, statistic){
     matches <- y$facet == facet &
       y$subfacet == subfacet &
       y$snp.facet == snp.facet &
@@ -541,6 +541,7 @@ calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "t
     if(any(colnames(y) == "stat")){
       matches <- (y$stat == statistic) & matches
     }
+    if(sum(matches) == 0){browser()}
     return(which(matches))
   }
 
@@ -548,7 +549,7 @@ calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "t
   get.one.pvalue <- function(x, facet, subfacet, snp.facet, statistic, nk, step, sigma, alt){
 
     # grab the matching raw statistical data
-    matches <- get.matches(x@window.bootstraps)
+    matches <- get.matches(x@window.bootstraps, facet, subfacet, snp.facet, sigma, nk, step, statistic)
 
 
     # create a cumulative distibution function of the distribution
@@ -559,11 +560,17 @@ calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "t
     type <- ifelse(statistic %in% colnames(x@window.stats), "single", "pairwise")
     if(type == "single"){
       scol <- which(colnames(x@window.stats) == statistic)
-      matches <- x@window.stats[get.matches(x@window.stats), ..scol]
+      meta.cols <- 1:which(colnames(x@window.stats) == "nk.status")
+      matches <- get.matches(x@window.stats, facet, subfacet, snp.facet, sigma, nk, step, statistic)
+      meta <- x@window.stats[matches,..meta.cols]
+      matches <- x@window.stats[matches, ..scol]
     }
     else{
       scol <- which(colnames(x@pairwise.window.stats) == statistic)
-      matches <- x@pairwise.window.stats[get.matches(x@pairwise.window.stats), ..scol]
+      meta.cols <- 1:which(colnames(x@window.stats) == "nk.status")
+      matches <- get.matches(x@pairwise.window.stats, facet, subfacet, snp.facet, sigma, nk, step, statistic)
+      meta <- x@pairwise.window.stats[matches,..meta.cols]
+      matches <- x@pairwise.window.stats[matches, ..scol]
     }
 
     ## get the proportion of the bootstrapped distribution less than or equal to the observed point.
@@ -580,15 +587,114 @@ calc_p_from_bootstraps <- function(x, facet = NULL, statistics = "all", alt = "t
       xp <- 1 - xp
     }
 
-    return(xp)
+    # bind and return
+    out <- cbind(meta, stat = statistic, p = xp)
+    return(out)
   }
 
   #===========loop through all of the requested facets/statistics=========
-  browser()
-
   # generate a matrix containing all of the possible tasks
-  snp.
+  u.rows <- unique(x@window.bootstraps[,1:(which(colnames(x@window.bootstraps) == "value") - 1)])
 
-  return(xp)
+  # figure out which parts of the unique tasks are part of the requested facet
+  if(facets[1] != "all"){
+    facets <- check.snpR.facet.request(x, facets, "none", T)
+    keep.rows <- logical(nrow(u.rows))
+
+    # loop through each facet
+    for(i in 1:length(facets[[1]])){
+
+      # for sample facets
+      if(facets[[2]][[i]] == "sample"){
+        keep.rows[which(u.rows$facet == facets[[1]][[i]])] <- T
+      }
+      # for complex facets
+      else if(facets[[2]][[i]] == "complex"){
+        u.facet <-  unlist(strsplit(facets[[1]][[i]], "(?<!^)\\.", perl = T))
+        samp.part <- check.snpR.facet.request(x, u.facet)
+        snp.part <- check.snpR.facet.request(x, u.facet, "sample")
+
+        keep.samp <- which(u.rows$facet == samp.part)
+        keep.snp <- which(u.rows$snp.facet == snp.part)
+        keep.rows[intersect(keep.samp, keep.snp)] <- T
+      }
+      else if(facets[[2]][[i]] == "snp"){
+        keep.rows[which(u.rows$snp.facet == facets[[1]][[i]])] <- T
+      }
+      else{
+        keep.rows[which(u.rows$facet == ".base" & u.rows$snp.facet == ".base")] <- T
+      }
+    }
+    u.rows <- u.rows[keep.rows,]
+  }
+
+  # initialize
+  out <- vector("list", nrow(u.rows))
+
+  browser()
+  # run the loop
+  if(par == FALSE){
+    for(q in 1:nrow(u.rows)){
+      out[[q]] <- get.one.pvalue(x, facet = u.rows$facet[q],
+                                 subfacet = u.rows$subfacet[q],
+                                 snp.facet = u.rows$snp.facet[q],
+                                 statistic = u.rows$stat[q],
+                                 nk = u.rows$nk[q],
+                                 step = u.rows$step[q],
+                                 sigma = u.rows$sigma[q],
+                                 alt = alt)
+    }
+  }
+  else{
+    library(doParallel);library(foreach)
+    cl <- snow::makeSOCKcluster(par)
+    doSNOW::registerDoSNOW(cl)
+
+    #prepare reporting function
+    ntasks <- nrow(u.list)
+    progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
+    opts <- list(progress=progress)
+
+    tout <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
+                             .options.snow = opts, .export = "data.table") %dopar% {
+                               get.one.pvalue(x, facet = u.rows$facet[q],
+                                              subfacet = u.rows$subfacet[q],
+                                              snp.facet = u.rows$snp.facet[q],
+                                              statistic = u.rows$stat[q],
+                                              nk = u.rows$nk[q],
+                                              step = u.rows$step[q],
+                                              sigma = u.rows$sigma[q],
+                                              alt = alt)
+                             }
+
+    #release cores
+    parallel::stopCluster(cl)
+    doSNOW::registerDoSNOW()
+  }
+
+  #===========bind, cast, and merge===========
+  browser()
+  # bind the result
+  out <- data.table::rbindlist(out)
+
+  # melt
+  meta.cols <- colnames(out)[-ncol(out)]
+  meta.cols <- meta.cols[-which(meta.cols == "stat")]
+
+  # merge
+  if(any(out$stat == "fst")){
+    cout <- data.table::dcast(out[which(out$stat == "fst"),], facet + subfacet + snp.facet + snp.subfacet + position + sigma + n_snps + step + nk.status ~ stat, value.var = "p")
+    colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)] <- paste0("p_", colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)])
+    x <- merge.snpR.stats(x, cout, type = "pairwise.window.stats")
+  }
+  if(any(out$stat != "fst")){
+    s.stats <- which(out$stat != "fst")
+    cout <- data.table::dcast(out[s.stats,], facet + subfacet + snp.facet + snp.subfacet + position + sigma + n_snps + step + nk.status ~ stat, value.var = "p")
+    colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)] <- paste0("p_", colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)])
+    x <- merge.snpR.stats(x, cout, type = "window.stats")
+  }
+
+
+  return(x)
 }
 
