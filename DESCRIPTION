@@ -17,16 +17,16 @@ LazyData: true
 Imports:
     bigtabulate,
     data.table,
-    dplyr,
-    doParallel,
     doSNOW,
-    foreach,
+    dplyr,
     matrixStats,
     ggplot2,
     plyr,
     reshape2
 Depends:
-    data.table
+    data.table,
+    doParallel,
+    foreach
 Suggests:
     BGLR,
     BMS,
