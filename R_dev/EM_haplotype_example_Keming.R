@@ -102,3 +102,94 @@ while(n <= nrow(ex)){
 # Note: the haplotype table is provided by the tabulate_haplotypes function in the calc_pairwise_ld function in the package.
 # Go to the R/stat_functions.R file, then ctrl + F "tabulate_haplotypes" to find it. That function calls "GtoH", a function that is defined just above
 # it in the script!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
+  browser()
+
+
+  out <- matrix(NA, nrow(x), 4)
+
+  # find the double het. Should be able to use an approach like this when this gets extended to work with everything.
+  # cj values for each possible genotype:
+  s1 <- substr(colnames(x), 1, 1)
+  s2 <- substr(colnames(x), 2, 2)
+  s3 <- substr(colnames(x), 3, 3)
+  s4 <- substr(colnames(x), 4, 4)
+  het.1 <- s1 != s2
+  het.2 <- s3 != s4
+
+
+
+  # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambigious haplotype frequencies,
+  # then making a guess at the haplotype composition in the double heterozygote assuming that all possible haplotypes are equally likely
+  doub.het <- which(het.1 + het.2 == 2) # identify double heterozygotes
+
+  # if there are no double heterozygotes, we already no the haplotype frequencies, so we can just return those.
+  if(length(doub.het) == 0){
+    return(haptable/rowSums(haptable))
+  }
+
+  nhap.counts <- haptable # grab the haplotypes
+  ehap.counts <- nhap.counts + .5*rowSums(x[,doub.het]) # assuming that both haplopairs are equaly likely in the double het
+  shap.freqs <- ehap.counts/rowSums(ehap.counts) # get the starting haplotype frequencies
+
+
+
+  # now that we have our starting conditions, we will do the EM loops.
+  # 1) First, we find out how many of each haplotype
+  # we expect to get from our double heterozygotes given the initial haplotype frequencies we guessed above.
+  # 2) Then, we use those expected frequencies to update our estimates of the haplotype frequencies.
+  # 3) repeat 1 and 2 until the difference between the haplotype frequencies between loop iterations is less than sigma.
+
+
+  # we'll use a while loop, which will run as long as the conditions are met. Note that this can freeze your computer if
+  # the conditions are NEVER met! Try just hitting the stop sign, if that doesn't work you'll need to restart Rstudio.
+
+
+  diff <- sigma + 1 # initialize the diff. Doesn't matter what it is as long as it's larger than sigma.
+  while(diff > sigma){
+
+    # 1)
+    # expectation, which is that we are drawing haplotypes (aka alleles) from a pool of options. Follows HWE, essentially,
+    # but the "alleles" are actually haplotypes
+    op1.e <- (2*shap.freqs[,1]*shap.freqs[,4])/
+      ((2*shap.freqs[,1]*shap.freqs[,4])+(2*shap.freqs[,2]*shap.freqs[,3])) # percentage of AC/GG haplo pairs
+    op2.e <- 1 - op1.e
+
+    # maximization: given the expected haplotype frequencies, how many of each haplotype should we have? get new frequencies
+    n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambigious phenotypes again.
+    n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(x[,doub.het])*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
+    n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(x[,doub.het])*op2.e*.5)
+    n1hap.freqs <- n1hap.freqs/rowSums(n1hap.freqs)
+
+    # calculate the diff and update
+    diff <- rowSums(abs(n1hap.freqs - shap.freqs))
+
+    # next, check which entries have a diff of less than sigma, and save the results for those rows.
+    # somehow stop calculation on those rows, or at least stop updating them. We only want to save results for each row ONCE.
+    # then, adjust the loop to stop once all rows have finished.
+
+    shap.freqs <- n1hap.freqs
+  }
+
+  # return the output
+  return(shap.freqs)
+}
