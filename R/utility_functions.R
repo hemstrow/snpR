@@ -262,7 +262,6 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
 
   #========prep=============
-  browser()
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
