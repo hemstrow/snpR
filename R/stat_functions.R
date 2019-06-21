@@ -1,27 +1,34 @@
-#function to calc pi from data. should be in format with num alleles, total count of alleles,
-#and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
-#Returns a VECTOR of pi values.
-
 #'Calculate PI from SNP data.
 #'
-#'\code{calc_pi} Calculates pi (genetic diversity/average number of pairwise differences) according to Hohenlohe et al. (2010) from SNP data. Returns a vector of pi values for each SNP as sorted in input.
+#'\code{calc_pi} Calculates pi from SNP data.
 #'
-#'Description of x:
-#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
+#'Calculates pi (genetic diversity/average number of pairwise differences)
+#'according to Hohenlohe et al. (2010).
 #'
-#' @param x Input SNP data, in allele count format as given by format_snps output option.
-#' @param ecs Numeric, number of metadata columns at the start of x to keep for output.
+#'Facet designation follows the typical format. Facets are given as a character
+#'vector, where each entry designates one unique combination of levels over
+#'which to seperate the data. Levels within a facet are seperated by a '.'. Each
+#'facet can contain multiple snp and/or sample level facet.
 #'
-#' @return A vector of PI values, in the same order as the input SNPs.
+#'For example, c("group.pop", "pop") would split the data first by both group
+#'and pop and then by pop alone.
+#'
+#'Since pi is a non-pairwise statistic that is independantly calculated for each
+#'snp, snp levels in facets are ignored.
+#'
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Facets to use.
+#'
+#'@return snpRdata object with containing merged in pi data in the stats socket
+#'
+#'@export
 #'
 #' @examples
-#' #get pop info, convert character data into the appropriate format, calculate pi, and add metadata.
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' ac <- format_snps(stickSNPs, 3, pop = l)
-#' pi <- calc_pi(ac)
-#' pi <- cbind(ac[,1:4], pi)
+#' # base facet
+#' x <- calc_pi(stickSNPs)
 #'
+#' # multiple facets
+#' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -48,19 +55,35 @@ calc_pi <- function(x, facets = NULL){
   return(x)
 }
 
-
-#function to calc pi from data. should be in format with num alleles, total count of alleles,
-#and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
-#Returns a VECTOR of pi values.
-
 #'Find minor and major allele frequencies.
 #'
-#'\code{calc_maf} determines the minor and major allele frequencies for snp data for each locus, splitting by any desired facets.
+#'\code{calc_maf} determines the minor and major allele frequencies for snp data
+#'for each locus, splitting by any desired facets.
 #'
-#' @param x Input SNP data, a snpRdata object.
-#' @param facets Character vector, default NULL. Name of a given facet to calculate maf for. If NULL calculates for all facets in x.
+#'Facet designation follows the typical format. Facets are given as a character
+#'vector, where each entry designates one unique combination of levels over
+#'which to seperate the data. Levels within a facet are seperated by a '.'. Each
+#'facet can contain multiple snp and/or sample level facet.
 #'
-#' @return Adds minor and major allele frequency information to a snpRdata object, accessable under the "\\@min.maj".
+#'For example, c("group.pop", "pop") would split the data first by both group
+#'and pop and then by pop alone.
+#'
+#'Since maf is a non-pairwise statistic that is independantly calculated for
+#'each snp, snp levels in facets are ignored.
+#'
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Facets to use.
+#'
+#'@return snpRdata object with containing merged in maf data in the stats socket
+#'
+#'@export
+#'
+#' @examples
+#' # base facet
+#' x <- calc_maf(stickSNPs)
+#'
+#' # multiple facets
+#' x <- calc_maf(stickSNPs, facets = c("pop", "pop.fam"))
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
