@@ -223,7 +223,7 @@ do.afs <- function(as, bins){
 
 
 
-
+# descriptive note
 # x is a haplotype table, like in 'R_dev/haplotype_frequency_estimation_example.RDS'
 # haptable is a haplotype identity table (00, 01, 10, 11), like in "R_dev/hapmat_example.RDS"
 # sigma is the ML difference cuttoff

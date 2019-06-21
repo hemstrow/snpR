@@ -736,6 +736,13 @@ calc_private <- function(x, facets = NULL){
   x <- merge.snpR.stats(x, out)
 }
 
+# Keming: Edit this function to fully integrate the multihaplotype ME estimation function we worked on.
+#         Mostly this will be edits in the tabulate.haplotypes function, and you'll need to add the ME function
+#         under the subfunctions heading. Once it is done, load the package in with cntrl + L or devtools::load_all("."),
+#         then run calc_pairwise_LD(stickSNPs, facets = "group.pop", use.ME = TRUE).
+#         Try to fix errors with browser(), but no worries if we need to meet to work on it.
+#         Could try to update sanity checks if feeling motivated.
+
 #'Pairwise LD from SNP data.
 #'
 #'\code{LD_full_pairwise} calculates LD between each pair of SNPs. If called as is, assumes one linkage group/chromosome and one population!
@@ -759,7 +766,7 @@ calc_private <- function(x, facets = NULL){
 #' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
 #'
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
-                             par = FALSE, sr = FALSE){
+                             par = FALSE, sr = FALSE, use.ME = FALSE, sigma = 0.0001){
   #========================sanity checks=============
   #sanity checks:
   # subsampling
@@ -840,6 +847,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     gl <- colnames(ghapmat)
 
     ##remove anything with missing data and double hets
+    ## Keming: this line can be edited--remove the last which statement, save as a new variable which identifes
+    ##         columns containing missing data.
     rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
               grep(paste0(dmDat, "$"), gl), #missing second locus
               which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
@@ -847,6 +856,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     ##remove any double heterozygotes
     ghapmat <- ghapmat[,-rgcs]
+
+    ## Keming: make a ghapmat with the new variable instead of rgcs. This will be x in our multihaplotype estimation function
 
     #add a filler row for the last pairwise comparison to make life easier.
     if(length(y) == length(x)){
@@ -1020,6 +1031,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #  browser()
     #}
     hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
+
+    ## Keming: the hapmat variable is the second argument, haptable
+    ##         now, what want to do is take an argument (let's name it use.ME). If use.ME == TURE,
+    ##         we want to call our ME function, get a hapmat out from it, and return this instead of the
+    ##         hapmat that we calculated above.
 
     #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
     #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
