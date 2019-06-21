@@ -2,31 +2,51 @@
 % Please edit documentation in R/stat_functions.R
 \name{calc_pi}
 \alias{calc_pi}
-\title{Calculate PI from SNP data.}
+\alias{calc_maf}
+\title{Calculate standard single-SNP genetic statistics.}
 \usage{
-calc_pi(x, ecs)
+calc_pi(x, facets = NULL)
 }
 \arguments{
-\item{x}{Input SNP data, in allele count format as given by format_snps output option.}
+\item{x}{snpRdata. Input SNP data.}
 
-\item{ecs}{Numeric, number of metadata columns at the start of x to keep for output.}
+\item{facets}{character. Facets to use.}
 }
 \value{
-A vector of PI values, in the same order as the input SNPs.
+snpRdata object with containing merged in pi data in the stats socket
 }
 \description{
-\code{calc_pi} Calculates pi (genetic diversity/average number of pairwise differences) according to Hohenlohe et al. (2010) from SNP data. Returns a vector of pi values for each SNP as sorted in input.
+These functions calculate a basic genetic statistics from SNP data contained in snpRdata objects, splitting samples by any number of provided facets. Since these statistics all use only a single SNP at a time, they ignore any SNP specific facet levels.
 }
 \details{
-Description of x:
-   Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
-}
-\examples{
-#get pop info, convert character data into the appropriate format, calculate pi, and add metadata.
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-ac <- format_snps(stickSNPs, 3, pop = l)
-pi <- calc_pi(ac)
-pi <- cbind(ac[,1:4], pi)
+Facet designation follows a specific format. Facets are given as a character
+vector, where each entry designates one unique combination of levels over
+which to seperate the data. Levels within a facet are seperated by a '.'. Each
+facet can contain multiple snp and/or sample levels.
 
+All listed facet levels must match column names in the snp of sample level facet data provided when constructing a snpRdata object with \code{\link{import.snpR.data}}. The order of the provided levels within each facet does not matter.
+
+See examples.
+}
+\section{pi}{
+
+
+Calculates pi (genetic diversity/average number of pairwise differences)
+according to Hohenlohe et al. (2010).
+
+
+
+For example, c("group.pop", "pop") would split the data first by both group
+and pop and then by pop alone.
+
+Since pi is a non-pairwise statistic that is independantly calculated for each
+snp, snp levels in facets are ignored.
+}
+
+\examples{
+# base facet
+x <- calc_pi(stickSNPs)
+
+# multiple facets
+x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
 }

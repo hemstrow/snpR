@@ -1,20 +1,41 @@
-#'Calculate PI from SNP data.
+#'Calculate standard single-SNP genetic statistics.
 #'
-#'\code{calc_pi} Calculates pi from SNP data.
+#'These functions calculate a basic genetic statistics from SNP data contained in snpRdata objects, splitting samples by any number of provided facets. Since these statistics all use only a single SNP at a time, they ignore any SNP specific facet levels.
 #'
-#'Calculates pi (genetic diversity/average number of pairwise differences)
-#'according to Hohenlohe et al. (2010).
+#'@section: facet designation:
 #'
-#'Facet designation follows the typical format. Facets are given as a character
+#'Facet designation follows a specific format. Facets are given as a character
 #'vector, where each entry designates one unique combination of levels over
 #'which to seperate the data. Levels within a facet are seperated by a '.'. Each
-#'facet can contain multiple snp and/or sample level facet.
+#'facet can contain multiple snp and/or sample levels.
 #'
 #'For example, c("group.pop", "pop") would split the data first by both group
 #'and pop and then by pop alone.
 #'
-#'Since pi is a non-pairwise statistic that is independantly calculated for each
-#'snp, snp levels in facets are ignored.
+#'All listed facet levels must match column names in the snp of sample level facet data provided when constructing a snpRdata object with \code{\link{import.snpR.data}}. The order of the provided levels within each facet does not matter.
+#'
+#'See examples.
+#'
+#'@section pi:
+#'
+#'Calculates pi (genetic diversity/average number of pairwise differences)
+#'according to Hohenlohe et al. (2010).
+#'
+#'@section maf:
+#'
+#'Calculates minor allele frequencies and note identities and counts of major and minor alleles.
+#'
+#'@section ho:
+#'
+#'Calculates observed heterozygosity.
+#'
+#'@section private alleles:
+#'
+#'Determines if each SNP is a private allele across all levels in each sample facet. Will return an error of no sample  facets are provided.
+#'
+#'@section HWE:
+#'
+#'Finds
 #'
 #'@param x snpRdata. Input SNP data.
 #'@param facets character. Facets to use.
@@ -23,12 +44,19 @@
 #'
 #'@export
 #'
+#'@name calc_single_stats
+#'
 #' @examples
 #' # base facet
 #' x <- calc_pi(stickSNPs)
 #'
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+NULL
+
+
+#'@export
+#'@rdname calc_single_stats
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -55,35 +83,9 @@ calc_pi <- function(x, facets = NULL){
   return(x)
 }
 
-#'Find minor and major allele frequencies.
-#'
-#'\code{calc_maf} determines the minor and major allele frequencies for snp data
-#'for each locus, splitting by any desired facets.
-#'
-#'Facet designation follows the typical format. Facets are given as a character
-#'vector, where each entry designates one unique combination of levels over
-#'which to seperate the data. Levels within a facet are seperated by a '.'. Each
-#'facet can contain multiple snp and/or sample level facet.
-#'
-#'For example, c("group.pop", "pop") would split the data first by both group
-#'and pop and then by pop alone.
-#'
-#'Since maf is a non-pairwise statistic that is independantly calculated for
-#'each snp, snp levels in facets are ignored.
-#'
-#'@param x snpRdata. Input SNP data.
-#'@param facets character. Facets to use.
-#'
-#'@return snpRdata object with containing merged in maf data in the stats socket
-#'
+
 #'@export
-#'
-#' @examples
-#' # base facet
-#' x <- calc_maf(stickSNPs)
-#'
-#' # multiple facets
-#' x <- calc_maf(stickSNPs, facets = c("pop", "pop.fam"))
+#'@rdname calc_single_stats
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
@@ -190,15 +192,6 @@ calc_maf <- function(x, facets = NULL){
   return(merge.snpR.stats(x, out))
 }
 
-#Calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Takes the bayescan/allele count format. Pi calculated as in hohenlohe 2010.
-#inputs: x: input data, first three columns are: snp ID, position, snp scaffold/lg/chr. Named required columns are "n_total", "ni1", and "ni2". Named column "pop" is optional, and will be returned in output if exists.
-#        ws: window size in kbp
-#        step: step size in kbp
-#        report: give progress every "report" windows.
-#output: A data frame where column one is group, two is position, three is Tajima's theta,
-#        four is Waterson's theta, and five is D. Note that both thetas are reported as a
-#        frequency (so the number per base). Full number per window is ws*theta.
-
 #'Tajima's D from SNP data.
 #'
 #'\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
@@ -304,9 +297,7 @@ calc_tajimas_d <- function(x, facets, sigma, step, par = F){
 }
 
 
-#Calculates pairwise fst for each pair of populations according to hohenlohe (2010). Input format is
-#snp, position, group, pop, total allele count (total), number of alleles (num), ni1, ni2, and pi (diversity, from calc_pi).
-#Automatically sorts data by group, position, and population.
+
 
 #'Pairwise FST from SNP data.
 #'
@@ -655,36 +646,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
 }
 
-#Calculates observed heterozygosity at a snp.
-#Inputs:  data: Input data. In numeric or NN character format, see format_snps output options 4 or 6.
-#               Nucleotides coded as 01 to 04 or A,T,C,G, respectively.
-#         ecs: Number of columns containing metadata.
-#         m.dat: Missing data indicator. Should be in the same format as data.
-#         pop: List with population information for individuals. Format is as produced by:
-#              list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops,
-#              second vector is the count of each pop. Input data MUST be in the same order as this list.
 
-#'Observed heterozygosity from SNP data.
-#'
-#'\code{calc_Ho} calculates observed heterozygosity at each SNP, potentially in many populations.
-#'
-#'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. If the data contains individuals from multiple populatoins, they must be in the same order as given to the pop agrument.
-#'
-#' @param x Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.
-#' @param ecs Number of extra metadata columns at the start of x.
-#' @param m.dat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @return Data frame containing metadata, and Ho for each population in named columns.
-#'
-#' @examples
-#' #no seperate pops:
-#' calc_Ho(stickSNPs, 3)
-#'
-#' #seperate pops
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' calc_Ho(stickSNPs, 3, pop = pops)
-#'
+
+#'@export
+#'@rdname calc_single_stats
 calc_ho <- function(x, facets = NULL){
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
@@ -710,32 +675,8 @@ calc_ho <- function(x, facets = NULL){
   return(merge.snpR.stats(x, out))
 }
 
-#Checks for private alleles.
-#inputs: x: data, in allele count format such as that given by format_snps option 1. Expects
-#           columns named "pop", "ni1", and "ni2", which contain pop designations, allele one counts,
-#           and allele 2 counts.
-
-#'Private Alleles from SNP data.
-#'
-#'\code{check_private} checks for the presence of private alleles at any loci across multiple populations.
-#'
-#'Description of x:
-#'    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop, and sorted first by pop! For example, sorted by pop, group, position then position. Runs with output from format_snps output option 1.
-#'
-#' @param x Input data, in the format given by format_snps output option "ac". Must contain a column with pop info named "pop".
-#' @param ecs Numeric, number of metadata columns at the start of x to maintain for output.
-#'
-#' @return Data frame with no metadata but sorted identically to input noting if each (row) locus is private in each (column) population, coded as 1 if private, 0 if not.
-#'
-#' @examples
-#' #add a private allele for demonstration purposes.
-#' pall <- data.frame(snp = rep(10000, 6), position = rep(1, 6), group = rep("Dup", 6), pop = c("ASP", "CLF", "PAL", "OPL", "SMR", "UPD"), n_total = rep(100, 6), n_alleles = rep (2, 6), ni1 = c(rep(0, 5), 20), ni2 = c(rep(100, 5), 80))
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ac <- format_snps(stickSNPs, 3, pop = pops)
-#' ac <- rbind(ac, pall)
-#' ac <- dplyr::arrange(ac, pop, position, group)
-#' check_private(ac)
-#'
+#'@export
+#'@rdname calc_single_stats
 calc_private <- function(x, facets = NULL){
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
@@ -794,13 +735,6 @@ calc_private <- function(x, facets = NULL){
   colnames(out)[ncol(out)] <- "pa"
   x <- merge.snpR.stats(x, out)
 }
-
-#Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
-#inputs: x: data, in either numeric or NN form. Must contain a column named "position", can contain a column named "group" and/or "pop"
-#        ecs: number of extra columns (headers) before the data in x
-#        prox_table: Should a proximity table be output?
-#        matrix_out: Should LD matrices be created?
-#        mDat: What is the missing data character? Expects marker for a single allele. ("N" or "01")
 
 #'Pairwise LD from SNP data.
 #'
@@ -1861,17 +1795,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 
-#'Calculate HWE divergence from SNP data.
-#'
-#'\code{calc_hwe} Calculates p-values for Hardy-Weinburg Equilibrium divergence from snp.R.data objects.
-#'
-#' @param x Input SNP data, in the snpRdata format.
-#' @param facets Facets to run. Non-sample level facets will be removed. Periods can be used to list complex facets, such as pop.fam to split by both pop and fam simultaniously.
-#'
-#' @return A snpRdata object with HWE data added.
-#'
-#' @examples
-#'
+#'@export
+#'@rdname calc_single_stats
 calc_hwe <- function(x, facets = NULL, method = "exact"){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell

@@ -4,15 +4,12 @@
 \alias{filter_snps}
 \title{Filter SNP data.}
 \usage{
-filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-  min_loci = FALSE, re_run = "partial", pop = FALSE,
-  non_poly = TRUE, bi_al = TRUE, mDat = "NN", in.tab = FALSE,
-  out.tab = FALSE)
+filter_snps(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
+  min_loci = FALSE, re_run = "partial", maf.facets = NULL,
+  non_poly = TRUE, bi_al = TRUE)
 }
 \arguments{
 \item{x}{data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.}
-
-\item{ecs}{Integer. Number of metadata columns at the start of x.}
 
 \item{maf}{FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency}
 
@@ -24,11 +21,13 @@ filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 
 \item{re_run}{FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?}
 
-\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
-
 \item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be removed?}
 
 \item{bi_al}{boolean, default TRUE. Should non-biallelic SNPs be removed?}
+
+\item{ecs}{Integer. Number of metadata columns at the start of x.}
+
+\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
 \item{mDat}{character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".}
 

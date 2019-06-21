@@ -4,18 +4,12 @@
 \alias{tabulate_genotypes}
 \title{Tabulate allele and genotype counts at each locus.}
 \usage{
-tabulate_genotypes(xv, snp_form, mDat, nsamp, nloci, verbose = F)
+tabulate_genotypes(x, mDat, verbose = F)
 }
 \arguments{
-\item{xv}{Character vector containing genotype calls, ordered by locus and then individual, as produced by as.vector(t(data))}
-
-\item{snp_form}{Integer. How many characters are there per genotype?}
+\item{x}{Input genotype data, where columns are individuals and rows are snps. No metadata.}
 
 \item{mDat}{Character string. How are missing \emph{genotypes} noted?}
-
-\item{nsamp}{Integer. How many individuals does the data have?}
-
-\item{nloci}{Integer. How many loci does the data have?}
 
 \item{verbose}{Logical. Should the function report progress?}
 }
@@ -29,7 +23,6 @@ A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm i
 This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
 }
 \examples{
-xv <- as.vector(t(stickSNPs[,c(4:ncol(stickSNPs))]))
-tabulate_genotypes(xv, 2, "NN", ncol(stickSNPs) - 3, nrow(stickSNPs))
+tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
 
 }

@@ -4,16 +4,23 @@
 \alias{format_snps}
 \title{Re-format genomic data.}
 \usage{
-format_snps(x, ecs, output = 1, input_form = "NN", mDat = "NN",
-  pop = 1, n_samp = NA, interp_miss = T, lnames = NULL,
-  outfile = FALSE, ped = NULL, in.tab = FALSE, out.tab = FALSE)
+format_snps(x, output = "ac", facets = NULL, n_samp = NA,
+  interpolate = "bernoulli", outfile = FALSE, ped = NULL,
+  input_format = NULL, input_meta_columns = NULL, input_mDat = NULL,
+  sample.meta = NULL, snp.meta = NULL)
 }
 \arguments{
 \item{x}{data.frame. Input data, in any of the above listed input formats.}
 
-\item{ecs}{Integer. Number of extra metadata columns at the start of x.}
-
 \item{output}{Character. Which of the output format should be used?}
+
+\item{n_samp}{Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
+
+\item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
+
+\item{ped}{data.frame, default NULL. If provided, the six column header for plink .ped files.}
+
+\item{ecs}{Integer. Number of extra metadata columns at the start of x.}
 
 \item{input_form}{Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?}
 
@@ -21,21 +28,15 @@ format_snps(x, ecs, output = 1, input_form = "NN", mDat = "NN",
 
 \item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
-\item{n_samp}{Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
+\item{FALSE}{or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 
 \item{interp_miss}{boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.}
 
 \item{lnames}{character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).}
 
-\item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
-
-\item{ped}{data.frame, default NULL. If provided, the six column header for plink .ped files.}
-
 \item{in.tab}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 
 \item{out.tab}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
-
-\item{FALSE}{or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
 }
 \value{
 A data.frame in the specified format.
@@ -68,7 +69,7 @@ Input formats: For now, all input formats require at least two metadata columns.
    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
-   \item{0_geno: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
+   \item{sn: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
 }
 
 Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
