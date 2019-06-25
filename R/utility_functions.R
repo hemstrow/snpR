@@ -970,34 +970,48 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 
 #' Subset snpRdata objects
 #'
-#' Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect. Throws away as few calculated stats as possible.
+#' Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
+#' Throws away as few calculated stats as possible.
 #'
-#' This function exists to intelligently subset snpRdata. While the typical bracket notation can be used
-#' to subset snpRdata, that method is inherited from the data.frame S3 object class for consistancy.
-#' As such, the result will be a data.frame, not a snpRdata object. This function keeps the data in
-#' a snpRdata object, and retains as much previously calculated data as possible.
+#' This function exists to intelligently subset snpRdata. While the typical
+#' bracket notation can be used to subset snpRdata, that method is inherited
+#' from the data.frame S3 object class for consistancy. As such, the result will
+#' be a data.frame, not a snpRdata object. This function keeps the data in a
+#' snpRdata object, and retains as much previously calculated data as possible.
 #'
-#' If \emph{samples} are removed, most statistics will be thrown away, since values like pi will change. In
-#' contrast, if \emph{snps} are removed, many statistics will simply be subset. LD, bootstraps, and window stats
-#' will \emph{always} be discarded, so overwrite with caution.
+#' If \emph{samples} are removed, most statistics will be thrown away, since
+#' values like pi will change. In contrast, if \emph{snps} are removed, many
+#' statistics will simply be subset. LD, bootstraps, and window stats will
+#' \emph{always} be discarded, so overwrite with caution.
 #'
-#' Sample and snp facets to subset over can be provided. Facet levels to keep are provided in the corresponding
-#' subfacet arguments. Facets designated as described in \code{\link{Facets_in_snpR}}.
+#' Sample and snp facets to subset over can be provided. Facet levels to keep
+#' are provided in the corresponding subfacet arguments. Facets designated as
+#' described in \code{\link{Facets_in_snpR}}.
 #'
 #' @param x snpRdata object.
-#' @param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs to keep.
-#' @param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding to samples to keep.
-#' @param facets character, default NULL. \emph{sample specific} facets over which subsetting will occur.
-#' @param subfacets character, default NULL. Levels of the specified sample level facet to keep. Samples in other levels will be removed.
-#' @param snp.facets characet, default NULL. \emph{snp specific} facets over which subsetting will occur.
-#' @param snp.facets character, default NULL. Levels of the specified snp facets to keep. SNPs in other levels will be removed.
+#' @param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'   SNPs to keep.
+#' @param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
+#'   to samples to keep.
+#' @param facets character, default NULL. \emph{sample specific} facets over
+#'   which subsetting will occur.
+#' @param subfacets character, default NULL. Levels of the specified sample
+#'   level facet to keep. Samples in other levels will be removed.
+#' @param snp.facets characet, default NULL. \emph{snp specific} facets over
+#'   which subsetting will occur.
+#' @param snp.facets character, default NULL. Levels of the specified snp facets
+#'   to keep. SNPs in other levels will be removed.
 #'
+#' @export
 #' @examples
 #' # Keep only individuals in the ASP and PAL populations and on the LGIX or LGIV chromosome.
 #' subset.snpR.data(stickSNPs, facets = "pop", subfacets = c("ASP", "PAL"), snp.facets = "group", snp.subfacets = c("groupIX", "groupIV"))
 #'
 #' # Keep only individuals and SNPs 1 through 10
 #' subset.snpR.data(stickSNPs, snps = 1:10, samps = 1:10)
+#'
+#' # Keep SNPs 1:100, individuals in the ASP population
+#' subset.snpR.data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
 subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
   # if subfacets or snp.subfacets were selected, figure out which samples and loci to keep
   if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1])) | !(is.null(facets[1])) & !(is.null(subfacets[1]))){
@@ -1080,6 +1094,24 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 
 # checks requested facets, sorts, remove duplicates, and may remove a type of facet (usually snp based)
 # remove.types: snp, sample, complex (both), simple (only one type)
+
+#' Get details on and clean up facet arguments.
+#'
+#' Given a snpRdata object, this function cleans up and determines the types of
+#' requested facets. Internal. If requested, can clean facet requests to purge a
+#' specific facet type (snp, sample, complex). Used in functions that run only
+#' on a specific type of facet.
+#'
+#' Facet designation of NULL or "all" follows the typical rules.
+#'
+#' Facets designated as described in \code{\link{Facets_in_snpR}}.
+#'
+#' @param x snpRdata object to compare to
+#' @param facets character. facets to check.
+#' @param remove.type character. "snp", "sample", "complex", "simple" or anything else,
+#'   typically "none". Type of facet to remove.
+#' @param return.type logical, default FALSE. If true, returns both facets and
+#'   facet types ("snp", "sample", "complex", or ".base") as a length two list.
 check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = F){
   if(any(facets == "all")){
     facets <- x@facets
@@ -1197,15 +1229,18 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
 
 #' Tabulate allele and genotype counts at each locus.
 #'
-#' \code{tabulate_genotypes} creates matricies containing counts of observed alleles and genotypes at each locus.
+#' \code{tabulate_genotypes} creates matricies containing counts of observed
+#' alleles and genotypes at each locus.
 #'
-#' This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
+#' This function is pirmarily used interally in several other funcitons.
 #'
-#' @param x Input genotype data, where columns are individuals and rows are snps. No metadata.
-#' @param mDat Character string. How are missing \emph{genotypes} noted?
+#' @param x Input raw genotype data, where columns are individuals and rows are
+#'   snps. No metadata.
+#' @param mDat Character. How are missing \emph{genotypes} noted?
 #' @param verbose Logical. Should the function report progress?
 #'
-#' @return A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm is the genotype matrix with missing genotypes.
+#' @return A list of matrices. gs is the genotype matrix, as is the allele
+#'   matrix, and wm is the genotype matrix with missing genotypes.
 #'
 #' @examples
 #' tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
@@ -1259,12 +1294,14 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 }
 
 
-#'Filter SNP data.
+#'Filter SNPs in snpRdata objects.
 #'
-#'\code{filter_snps} filters SNP data to remove loci which violate any of several assumptions and/or individuals which are sequenced at too few SNP loci.
+#'\code{filter_snps} filters snpRdata objects to remove SNPs or individuals which fail
+#'to pass user defined thresholds for several statistics. Since this function removes
+#'all calculated statistics, etc. from the snpRdata object, this should usually be the first step
+#'in an analysis. See details for filters.
 #'
-#'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6.
+#'
 #'
 #'Possible filters:
 #'\itemize{
@@ -1276,37 +1313,65 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #'    \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than two observed alleles.}
 #'}
 #'
-#'Note that filtering out poorly sequenced individuals creates a possible conflict with the loci filters, since after individuals are removed, some loci may no longer pass filters. For example, if a portion of individuals in one population all carry the only instances of a rare minor allele that still passes the maf threshold, removing those individuals may cause the loci to no longer be polymorphic in the sample.
+#'Note that filtering out poorly sequenced individuals creates a possible
+#'conflict with the loci filters, since after individuals are removed, some loci
+#'may no longer pass filters. For example, if a portion of individuals in one
+#'population all carry the only instances of a rare minor allele that still
+#'passes the maf threshold, removing those individuals may cause the loci to no
+#'longer be polymorphic in the sample.
 #'
-#'To counter this, the "re_run" argument can be used to pass the data through a second filtering step after individuals are removed. By default, the "partial" re-run option is used, which re-runs only the non-polymorphic filter (if it was originally set), since these may cause downstream analysis errors. The "full" option re-runs all set filters. Note that re-running any of these filters may cause individuals to fail the individual filter after loci removal, and so subsequent tertiary re-running of the individual filters, followed by the loci filters, and so on, could be justified. This function stops after the second loci re-filtering, since that step is likely to be the most important to prevent downstream analytical errors.
+#'To counter this, the "re_run" argument can be used to pass the data through a
+#'second filtering step after individuals are removed. By default, the "partial"
+#'re-run option is used, which re-runs only the non-polymorphic filter (if it
+#'was originally set), since these may cause downstream analysis errors. The
+#'"full" option re-runs all set filters. Note that re-running any of these
+#'filters may cause individuals to fail the individual filter after loci
+#'removal, and so subsequent tertiary re-running of the individual filters,
+#'followed by the loci filters, and so on, could be justified. This function
+#'stops after the second loci re-filtering, since that step is likely to be the
+#'most important to prevent downstream analytical errors.
 #'
-#'Via the "pop" argument, this function can filter by minor allele frequencies in either \emph{all} samples or \emph{in each population and the entire sample}. The latter should be used in instances where populaiton sizes are very different or there are \emph{many} populations, and thus common alleles of interest in one population might be otherwise filtered out. With very small populations, however, this may leave noise in the sample! In most cases, filtering the entire sample is sufficient.
+#'Via the "maf.filter" argument, this function can filter by minor allele
+#'frequencies in either \emph{all} samples or \emph{each level of a supplied
+#'sample specific facet and the entire dataset}. In the latter case, any SNPs
+#'that pass the maf filter in \emph{any} facet level are considered to pass the
+#'filter. The latter should be used in instances where populaiton sizes are very
+#'different or there are \emph{many} populations, and thus common alleles of
+#'interest in one population might be otherwise filtered out. With very small
+#'populations, however, this may leave noise in the sample! In most cases,
+#'filtering the entire dataset is sufficient. Facets should be provided as
+#'described in \code{\link{Facets_in_snpR}}.
 #'
-#' @param x data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.
-#' @param ecs Integer. Number of metadata columns at the start of x.
-#' @param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency
-#' @param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum acceptable heterozygote frequency.
-#' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced.
-#' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.
-#' @param re_run FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
+#'
+#' @param x snpRdata object.
+#' @param maf FALSE or numeric between 0 and 1, default FALSE. Minimum
+#'   acceptable minor allele frequency
+#' @param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
+#'   acceptable heterozygote frequency.
+#' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals
+#'   in which a loci must be sequenced.
+#' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
+#'   proportion of SNPs an individual must be genotyped at.
+#' @param re_run FALSE, "partial", or "full", default "partial". How should loci
+#'   be re_filtered after individuals are filtered?
+#' @param maf.facets FALSE or character, default FALSE. Sample-specific facets
+#'   over which the maf filter can be checked.
+#' @param non_poly boolean, default TRUE. Should non-polymorphic loci be
+#'   removed?
 #' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
-#' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
-#' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
-#' @param out.tab. FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
 #'
-#' @return A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.
+#' @return A data.frame in the same format as the input, with SNPs and
+#'   individuals not passing the filters removed.
 #'
 #' @examples
-#' #Strict filtering for missing individuals and unsequenced loci with partial re-run:
-#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75)
+#' # Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
+#' # of 0.55, 250 minimum individuals, and at least 75% of loci sequenced per
+#' # individual.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75)
 #'
-#' #Strict maf filtering with pops.
-#' ##prep pop info
-#' l <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ##filter
-#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
+#' # The same filters, but with minor allele frequency considered per-population
+#' # and a full re-run of loci filters after individual removal.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
 #'
 filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf.facets = NULL,
@@ -1620,12 +1685,23 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   return(x)
 }
 
-#'Re-format genomic data.
+#'Re-format SNP data.
 #'
-#'\code{format_snps} reformats SNP data into a range of different possible formats for use in snpR functions and elsewhere. Supports microsatellite data for conversion to a few formats as well.
+#'\code{format_snps} reformats SNP data into a range of different possible formats for use in
+#'snpR functions and elsewhere.
 #'
+#'While this function can accept a few non-snpRdata input formats, it will reformat to a snpRdata object internally.
+#'As such, it takes a facets argument that works identically to elsewhere in the package, as described in
+#'\code{\link{Facets_in_snpR}}. This argument is only used for output formats where facets are important,
+#'such as the genepop format. Additionally, this function can therefore be used as an alternative to
+#'\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
 #'
-#'Format options:
+#'If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP metadata may either be provided
+#'in the first few columns of x, the number of which is designated by the input_meta_columns argument, or in
+#'a data.frame given as via the snp.meta argument. Sample metadata may be provided in a data.frame via the
+#'sample.meta argument.
+#'
+#'Output format options:
 #'\itemize{
 #'    \item{ac: }{allele count format, allele counts tabulated for all samples or within populations.}
 #'    \item{genepop: }{genepop format, genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.}
@@ -1638,31 +1714,31 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
 #'    \item{dadi: }{dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
 #'    \item{plink: }{PLINK! binary input format, requires columns named "group", "snp", and "position", and may contain a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file.}
+#'    \item{sn: }{Single character numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the 'interpolate' argument.}
+#'    \item{snpRdata: }{a snpRdata object.}
 #'}
 #'
 #'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
 #'
-#'Input formats: For now, all input formats require at least two metadata columns.
+#'Input formats:
 #'\itemize{
+#'    \item{NULL or snpRdata: }{snpRdata object, the default.}
 #'    \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA", "CT").}
 #'    \item{0000: }{SNP genotypes stored as four numeric characters (e.g. "0101", "0204").}
-#'    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
-#'    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
 #'    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
 #'    \item{sn: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
 #'}
 #'
-#'Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
 #'
-#'
-#' @param x data.frame. Input data, in any of the above listed input formats.
-#' @param ecs Integer. Number of extra metadata columns at the start of x.
-#' @param output Character. Which of the output format should be used?
-#' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
+#' @param x snpRdata object or data.frame. Input data, in any of the above listed input formats.
+#' @param output Character, default "snpRdata". The desired output format. A snpRdata object by default.
+#' @param facets Character or NULL, default NULL. Facets overwhich to break up data for some output formats, following the format described in \code{\link{Facets_in_snpR}}.
+#' @param input_form Character, default NULL. Format of x, by default a snpRdata object. See description for details.
+#' @param n_samp Integer or numeric vector, default NA. For structure output. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
+#' @param interpolate Character, default "bernoulli".
 #' @param mDat Character, default "NN". The coding for missing \emph{genotypes} in x (typically "NN" or "0000").
 #' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
 #' @param FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
 #' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
 #' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
 #' @param outfile character vector, default FALSE. If provided, the path to the output file to write to.
@@ -1723,13 +1799,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #' format_snps(stickSNPs, 3, "plink", outfile = "plink_out", ped = ped)
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
-format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
+format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL){
 
   #======================sanity checks================
+  if(to.lower(input_format) == "snprdata"){input_format <- NULL}
   # check that a useable output format is given.
   output <- tolower(output) # convert to lower case.
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
@@ -1891,7 +1968,12 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       x <- x[,-c(1:input_meta_columns)]
     }
     else{
-      headers <- snp.meta
+      if(is.null(snp.meta)){
+        headers <- data.frame(snpID = 1:nrow(x))
+      }
+      else{
+        headers <- snp.meta
+      }
     }
     if(is.null(sample.meta)){
       sample.meta <- data.frame(ID = 1:ncol(x))
