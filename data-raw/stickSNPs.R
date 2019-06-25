@@ -1,4 +1,4 @@
-x <- read.table("data/stick_NN_input.txt", stringsAsFactors = F, header = T, colClasses = "character")
+x <- stickRAW
 
 stickSNPs <- import.snpR.data(x[,-c(1:3)],
                               x[,1:3],
