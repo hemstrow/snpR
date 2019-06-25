@@ -7,50 +7,55 @@
 calc_pairwise_fst(x, facets, method = "WC")
 }
 \arguments{
-\item{x}{Input data frame, in allele count format as given by format_snps option "ac", with an additional column containing pi or Ho estimates.}
+\item{x}{snpRdata. Input SNP data.}
 
-\item{method}{Which FST estimator should be used?}
+\item{facets}{character. Facets to use.}
+
+\item{method}{character, default "WC". Defines the FST estimator to use.}
 }
 \value{
-If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
+A snpRdata object with pairwise FST as well as the number of total
+ observations at each SNP in each comparison merged in to the pairwise.stats
+ socket.
 }
 \description{
-\code{calc_pairwise_Fst} calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Wier and Cockerham 1984, Wier 1990, or Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
+\code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
+possible pairwise combination of populations.
 }
 \details{
-Description of x:
-   Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi (for Hohenlohe) or Ho (for WC or Wier) for each SNP, as given by calc_pi or calc_Ho, respectively.
+Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
+Hohenlohe et al 2010, or using the \code{\link[genepop]{FST}} function from
+the genepop package (see references).
 
-Smoothing note:
-   To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").#'
+If the genpop option is used, several intermediate files will be created in
+the current working directory, which are not cleaned automatically.
+\code{calc_pairwise_fst} will ask for permission to continue if these files
+already exist.
 
-Method Options:
-\itemize{
-   \item{"WC": }{Wier and Cockerham 1984.}
-   \item{"Wier": }{Wier 1990.}
-   \item{"Genepop": }{As used in genepop, Rousset 2008.}
-   \item{"Hohenlohe": }{Hohenlohe 2010.}
-}
+The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
+produce very similar results. Generally, either of the two former options are
+prefered for computational efficieny.
+
+The data can be broken up categorically by either SNP and/or sample metadata,
+as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
+statistic, at least a single sample level facet must be provided.
+
+Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
+\item{"Wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
+2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
 }
 \examples{
-#Wier and Cockerham
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-ac <- format_snps(stickSNPs, 3, pop = l)
-Ho <- calc_Ho(stickSNPs, 3, pop = l)
-m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
-ac$Ho <- m_Ho$value
-calc_pairwise_Fst(ac, 3, do.nk = T)
+calc_pairwise_fst <- function(stickSNPs, facets = "pop")
+}
+\references{
+Wier and Cockerham (1984). \emph{Evolution}
 
-#Wier and Cockerham without binding the Ho column manually:
-calc_pairwise_Fst(ac, 3, do.nk = T, char.dat = stickSNPs, pop = pops, c.d.ecs = 3)
+Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
 
+Hohenlohe et al. (2010). \emph{PLOS Genetics}
 
-#genepop
-##prepare pop list for both formatting and FST.
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-l <- list(c(names(pops)), as.numeric(pops))
-##write the genepop file.
-format_snps(stickSNPs, 3, 2, outfile = "stickGENEP.txt", pop = l)
-##calculate FST:
-FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
+Rousset (2008). \emph{Molecular Ecology Resources}
+}
+\author{
+William Hemstrom
 }

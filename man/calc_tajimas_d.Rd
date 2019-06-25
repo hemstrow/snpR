@@ -4,31 +4,49 @@
 \alias{calc_tajimas_d}
 \title{Tajima's D from SNP data.}
 \usage{
-calc_tajimas_d(x, facets, sigma, step, par = F)
+calc_tajimas_d(x, facets = NULL, sigma, step, par = F)
 }
 \arguments{
-\item{x}{Input data, in allele count format as given by format_snps output option 1.}
+\item{x}{snpRdata. Input SNP data.}
 
-\item{step}{Lenght to slide between each window, in kb.}
+\item{facets}{character. Facets to use.}
 
-\item{ws}{The size of each window, in kb.}
+\item{sigma}{numeric. Sliding window size, in kilobases. Each window will
+include all SNPs within 3*sigma kilobases.}
 
-\item{report}{When reporting progress, how many windows should be calculated between each report?}
+\item{step}{numeric. Number of bases to move between each window, in
+kilobases.}
+
+\item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
+use for parallel processing.}
 }
 \value{
-Data frame containing metadata, Waterson's Theta, Tajima's Theta, and Tajima's D for each window.
+snpRdata object, with Waterson's Theta, Tajima's Theta, and Tajima's D
+ for each window merged in to the window.stats slot.
 }
 \description{
-\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
+\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's
+D over a sliding window.
 }
 \details{
-Description of x:
-   Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one.
+Tajima's D compares estimates of theta based on either the number of observed
+pairwise differences (Tajima's theta) and the number of substitutions vs
+expected total tree length (Waterson's Theta). Since low frequency minor
+variants contribute to these statistics and they rely on the ratio of the
+number of variants vs the number of sequenced non-polymorphic sites, this
+function should only be run on data that is \emph{unfiltered} aside from the
+removal of poorly sequenced bases, ect.
+
+The data can be broken up categorically by either SNP and/or sample metadata, as
+described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
-#convert example data into the correct format and run splitting by groups and pops.
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-ac <- format_snps(stickSNPs, 3, pop = pops)
-run_gp(ac, Tajimas_D, 200, 50)
+calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
 
+}
+\references{
+Tajima, F. (1989). \emph{Genetics}
+}
+\author{
+William Hemstrom
 }

@@ -7,20 +7,23 @@
 tabulate_genotypes(x, mDat, verbose = F)
 }
 \arguments{
-\item{x}{Input genotype data, where columns are individuals and rows are snps. No metadata.}
+\item{x}{Input raw genotype data, where columns are individuals and rows are
+snps. No metadata.}
 
-\item{mDat}{Character string. How are missing \emph{genotypes} noted?}
+\item{mDat}{Character. How are missing \emph{genotypes} noted?}
 
 \item{verbose}{Logical. Should the function report progress?}
 }
 \value{
-A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm is the genotype matrix with missing genotypes.
+A list of matrices. gs is the genotype matrix, as is the allele
+  matrix, and wm is the genotype matrix with missing genotypes.
 }
 \description{
-\code{tabulate_genotypes} creates matricies containing counts of observed alleles and genotypes at each locus.
+\code{tabulate_genotypes} creates matricies containing counts of observed
+alleles and genotypes at each locus.
 }
 \details{
-This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
+This function is pirmarily used interally in several other funcitons.
 }
 \examples{
 tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")

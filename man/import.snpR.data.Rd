@@ -4,12 +4,77 @@
 \alias{import.snpR.data}
 \title{Import genotype and metadata into a snpRdata object.}
 \usage{
-import.snpR.data(genotypes, snp.meta, sample.meta, mDat)
+import.snpR.data(genotypes, snp.meta, sample.meta, mDat = "NN")
+}
+\arguments{
+\item{genotypes}{data.frame. Raw genotypes in a two-character format ("GG",
+"GA", "CT", "NN"), where SNPs are in rows and individual samples are in
+columns.}
+
+\item{snp.meta}{data.frame. Metadata for each SNP, must have a number of rows
+equal to the number of SNPs in the dataset.}
+
+\item{sample.meta}{data.frame. Metadata for each individual sample, must have
+a number of rows equal to the number of samples in the dataset.}
+
+\item{mDat}{character, default "NN", matching the encoding of missing
+\emph{genotypes} in the data provided to the genotypes argument.}
 }
 \description{
-\code{import.snpR.data} converts genotype and meta data to the snpRdata class, which stores raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+\code{import.snpR.data} converts genotype and meta data to the snpRdata
+class, which stores raw genotype data, sample and locus specific metadata,
+useful data summaries, repeatedly internally used tables, calculated summary
+statistics, and smoothed statistic data.
 }
 \details{
-The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
-Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+The snpRdata class is built to contain SNP genotype data for use by functions
+in the snpR package. It inherits from the S3 class data.frame, in which the
+genotypes are stored, and can be manipulated identically. It also stores
+sample and locus specific metadata, genomic summary information, and results
+from most snpR functions. Genotypes are stored in the "character" format, as
+output by \code{\link{format_snps}}. Missing data is noted with "NN".
+
+Genotypes, metadata, and results are stored in sockets and directly
+accessable with the 'at' symbol operator. Sockets are as follows:
+
+\itemize{ \item{sample.meta: } sample metadata (population, family,
+phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome, linkage
+group, position, etc.). \item{facet.meta: } internal metadata used to track
+facets that have been previously applied to the dataset. \item{mDat: }
+missing data format. \item{snp.form: } number of characters per SNP.
+\item{genotables: } a list containing tabulated genotypes (gs), allele counts
+(as), and missing data (wm). facet.meta contains the corresponding metadata.
+\item{ac: } data in allele count format, used internally. facet.meta contains
+corresponding metadata. \item{facets: } vector of the facets that have been
+added to the data. \item{facet.type: } classes of the added facets (snp,
+sample, complex, or .base). \item{stats: } data.frame containing all
+calculated non-pairwise single-snp statistics and metadata.
+\item{window.stats: } data.frame/table containing all non-pairwise statistics
+calculated for sliding windows. \item{pairwise.stats: } data.frame/table
+containing all pairwise (fst) single-snp statistics.
+\item{pairwise.window.stats: } data.frame/table containing all pairwise
+statistics calculated for sliding windows. \item{pairwise.LD: } nested list
+containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
+for more information). \item{window.bootstraps: } data.frame/table containing
+all calculated bootstraps for sliding window statistics. \item{names: }
+column names for genotypes. \item{row.names: } row names for genotypes.
+\item{.Data: } list of vectors containing raw genotype data. \item{.S3Class:
+} notes the inherited S3 object class. }
+
+Note that most of these sockets are used primarily internally.
+
+All calculated data can be accessed using the \code{\link{get.snpR.stats}}
+function. See documentaion.
+}
+\examples{
+# import example data as a snpRdata object
+# produces data identical to that contained in the stickSNPs example dataset.
+genos <- stickRAW[,-c(1:3)]
+snp_meta <- stickRAW[,1:3]
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+
+}
+\author{
+William Hemstrom
 }

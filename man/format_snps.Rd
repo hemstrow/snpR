@@ -2,27 +2,29 @@
 % Please edit documentation in R/utility_functions.R
 \name{format_snps}
 \alias{format_snps}
-\title{Re-format genomic data.}
+\title{Re-format SNP data.}
 \usage{
-format_snps(x, output = "ac", facets = NULL, n_samp = NA,
+format_snps(x, output = "snpRdata", facets = NULL, n_samp = NA,
   interpolate = "bernoulli", outfile = FALSE, ped = NULL,
   input_format = NULL, input_meta_columns = NULL, input_mDat = NULL,
   sample.meta = NULL, snp.meta = NULL)
 }
 \arguments{
-\item{x}{data.frame. Input data, in any of the above listed input formats.}
+\item{x}{snpRdata object or data.frame. Input data, in any of the above listed input formats.}
 
-\item{output}{Character. Which of the output format should be used?}
+\item{output}{Character, default "snpRdata". The desired output format. A snpRdata object by default.}
 
-\item{n_samp}{Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
+\item{facets}{Character or NULL, default NULL. Facets overwhich to break up data for some output formats, following the format described in \code{\link{Facets_in_snpR}}.}
+
+\item{n_samp}{Integer or numeric vector, default NA. For structure output. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.}
+
+\item{interpolate}{Character, default "bernoulli".}
 
 \item{outfile}{character vector, default FALSE. If provided, the path to the output file to write to.}
 
 \item{ped}{data.frame, default NULL. If provided, the six column header for plink .ped files.}
 
-\item{ecs}{Integer. Number of extra metadata columns at the start of x.}
-
-\item{input_form}{Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?}
+\item{input_form}{Character, default NULL. Format of x, by default a snpRdata object. See description for details.}
 
 \item{mDat}{Character, default "NN". The coding for missing \emph{genotypes} in x (typically "NN" or "0000").}
 
@@ -42,10 +44,22 @@ format_snps(x, output = "ac", facets = NULL, n_samp = NA,
 A data.frame in the specified format.
 }
 \description{
-\code{format_snps} reformats SNP data into a range of different possible formats for use in snpR functions and elsewhere. Supports microsatellite data for conversion to a few formats as well.
+\code{format_snps} reformats SNP data into a range of different possible formats for use in
+snpR functions and elsewhere.
 }
 \details{
-Format options:
+While this function can accept a few non-snpRdata input formats, it will reformat to a snpRdata object internally.
+As such, it takes a facets argument that works identically to elsewhere in the package, as described in
+\code{\link{Facets_in_snpR}}. This argument is only used for output formats where facets are important,
+such as the genepop format. Additionally, this function can therefore be used as an alternative to
+\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
+
+If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP metadata may either be provided
+in the first few columns of x, the number of which is designated by the input_meta_columns argument, or in
+a data.frame given as via the snp.meta argument. Sample metadata may be provided in a data.frame via the
+sample.meta argument.
+
+Output format options:
 \itemize{
    \item{ac: }{allele count format, allele counts tabulated for all samples or within populations.}
    \item{genepop: }{genepop format, genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.}
@@ -58,21 +72,20 @@ Format options:
    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
    \item{dadi: }{dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
    \item{plink: }{PLINK! binary input format, requires columns named "group", "snp", and "position", and may contain a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file.}
+   \item{sn: }{Single character numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the 'interpolate' argument.}
+   \item{snpRdata: }{a snpRdata object.}
 }
 
 Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
 
-Input formats: For now, all input formats require at least two metadata columns.
+Input formats:
 \itemize{
+   \item{NULL or snpRdata: }{snpRdata object, the default.}
    \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA", "CT").}
    \item{0000: }{SNP genotypes stored as four numeric characters (e.g. "0101", "0204").}
-   \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
-   \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
    \item{sn: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
 }
-
-Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
 }
 \examples{
 #allele count with pops:
