@@ -1,11 +1,70 @@
 #' Import genotype and metadata into a snpRdata object.
 #'
-#' \code{import.snpR.data} converts genotype and meta data to the snpRdata class, which stores raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+#' \code{import.snpR.data} converts genotype and meta data to the snpRdata
+#' class, which stores raw genotype data, sample and locus specific metadata,
+#' useful data summaries, repeatedly internally used tables, calculated summary
+#' statistics, and smoothed statistic data.
 #'
-#' The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
-#' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+#' The snpRdata class is built to contain SNP genotype data for use by functions
+#' in the snpR package. It inherits from the S3 class data.frame, in which the
+#' genotypes are stored, and can be manipulated identically. It also stores
+#' sample and locus specific metadata, genomic summary information, and results
+#' from most snpR functions. Genotypes are stored in the "character" format, as
+#' output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
-import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
+#' Genotypes, metadata, and results are stored in sockets and directly
+#' accessable with the 'at' symbol operator. Sockets are as follows:
+#'
+#' \itemize{ \item{sample.meta: } sample metadata (population, family,
+#' phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome, linkage
+#' group, position, etc.). \item{facet.meta: } internal metadata used to track
+#' facets that have been previously applied to the dataset. \item{mDat: }
+#' missing data format. \item{snp.form: } number of characters per SNP.
+#' \item{genotables: } a list containing tabulated genotypes (gs), allele counts
+#' (as), and missing data (wm). facet.meta contains the corresponding metadata.
+#' \item{ac: } data in allele count format, used internally. facet.meta contains
+#' corresponding metadata. \item{facets: } vector of the facets that have been
+#' added to the data. \item{facet.type: } classes of the added facets (snp,
+#' sample, complex, or .base). \item{stats: } data.frame containing all
+#' calculated non-pairwise single-snp statistics and metadata.
+#' \item{window.stats: } data.frame/table containing all non-pairwise statistics
+#' calculated for sliding windows. \item{pairwise.stats: } data.frame/table
+#' containing all pairwise (fst) single-snp statistics.
+#' \item{pairwise.window.stats: } data.frame/table containing all pairwise
+#' statistics calculated for sliding windows. \item{pairwise.LD: } nested list
+#' containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
+#' for more information). \item{window.bootstraps: } data.frame/table containing
+#' all calculated bootstraps for sliding window statistics. \item{names: }
+#' column names for genotypes. \item{row.names: } row names for genotypes.
+#' \item{.Data: } list of vectors containing raw genotype data. \item{.S3Class:
+#' } notes the inherited S3 object class. }
+#'
+#' Note that most of these sockets are used primarily internally.
+#'
+#' All calculated data can be accessed using the \code{\link{get.snpR.stats}}
+#' function. See documentaion.
+#'
+#' @param genotypes data.frame. Raw genotypes in a two-character format ("GG",
+#'   "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
+#'   columns.
+#' @param snp.meta data.frame. Metadata for each SNP, must have a number of rows
+#'   equal to the number of SNPs in the dataset.
+#' @param sample.meta data.frame. Metadata for each individual sample, must have
+#'   a number of rows equal to the number of samples in the dataset.
+#' @param mDat character, default "NN", matching the encoding of missing
+#'   \emph{genotypes} in the data provided to the genotypes argument.
+#'
+#' @examples
+#' # import example data as a snpRdata object
+#' # produces data identical to that contained in the stickSNPs example dataset.
+#' genos <- stickRAW[,-c(1:3)]
+#' snp_meta <- stickRAW[,1:3]
+#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+#' import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+#'
+#'@export
+#'@author William Hemstrom
+import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   # prepare things for addition to data
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
@@ -57,8 +116,15 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
 }
 
 
-# function to add a new facet to snpRdata, generating gs, as, and wmat tables, and ac formatted data.
-# need to add the ac part.
+#' Add facets to snpRdata objects
+#'
+#' Adds facets to snpRdata objects, following the rules described in
+#' \code{\link(Facets_in_snpR)}. Internal, called by many other functions when
+#' facets are requested.
+#'
+#' @param x snpRdata object
+#' @param facets character. Facets to use.
+#'
 add.facets.snpR.data <- function(x, facets = NULL){
   if(is.null(facets[1])){return(x)}
   facets <- check.snpR.facet.request(x, facets)
@@ -192,7 +258,13 @@ add.facets.snpR.data <- function(x, facets = NULL){
   return(x)
 }
 
-# function to list existing facets.
+#' Grab information of the facets present in snpRdata objects.
+#'
+#' Internal, grabs via reference to face.meta socket rather than the facets
+#' socket.
+#'
+#' @param x snpRdata object.
+#'
 find.snpR.facets <- function(x){
   facets <- vector("list", length(x@facets))
   names(facets) <- x@facets
@@ -202,8 +274,39 @@ find.snpR.facets <- function(x){
   return(facets)
 }
 
-# function to pull stats for a given facet
+#' Pull calculated statistics from snpRdata objects.
+#'
+#' A convenience function that pulls statistics of any specified type at
+#' particular facets from a snpRdata object.
+#'
+#' Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets
+#' = "all", data for all facets, including the base facet, will be returned. By
+#' default, the base facet alone will be returned.
+#'
+#' Different types of statistics are retrieved via the following options under
+#' the "type" argument:
+#'
+#' \itemize{ \item{single: } non-pairwise, non-window statitics (pi, ho, ect.)
+#' \item{pairwise: } pairwise, non-window statistics (Fst). \item{single.window:
+#' } non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
+#' sliding window statistics. \item{LD: } linkage disequilibrium matrices and
+#' tables. \item{bootstraps: } bootstraps of window statistics. }
+#'
+#' @export
+#' @author William Hemstrom
 get.snpR.stats <- function(x, facets = NULL, type = "single"){
+  # sanity check
+  if(is.null(facets[1])){
+    facets <- ".base"
+  }
+  if(facets[1] == "all"){
+    facets <- x@facets
+  }
+
+  bad.facets <- which(!facets %in% x@facets)
+  if(length(bad.facets) > 0){
+    stop("No data statistics calculated for facets: ", paste0(facets[bad.facets], collapse = ", "), ".\n")
+  }
 
   #=======subfunctions======
   extract.basic <- function(y, facets, type = "standard"){
@@ -286,10 +389,10 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     }
     return(extract.basic(x@pairwise.stats, facets))
   }
-  else if(type == "window.stats"){
+  else if(type == "single.window"){
     return(extract.basic(x@window.stats, facets, "window"))
   }
-  else if(type == "pairwise.window.stats"){
+  else if(type == "pairwise.window"){
     return(extract.basic(x@pairwise.window.stats, facets, "window"))
   }
   else if(type == "LD"){
@@ -301,19 +404,48 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 
 }
 
-# function to apply a function across selected facets
-# req: which part of the snpR.data object is required and should be pulled out?
-#        gs: genotype tables
-#        ac: ac formatted data
-#        meta.gs: facet, .snp.id metadata cbound genotype tables.
-#        ac.stats: ac data cbound to stats
-#        meta.ac: ac data cbound to snp metadata
-# facets: if NULL, run without facets.
-# cases: ps: per snp.
-#        ps.pf: per snp, but split per facet (such as for private alleles, comparisons only exist within a facet!)
-#        facet.pairwise: pairwise between facets, ps otherwise.
-#        ps.pf.psf: per snp, but per both sample and snp facet.
-# fun: which function should be applied?
+#' Apply functions across snpR facets.
+#'
+#' Internal function to apply functions across snpR data. Facet desicnations
+#' follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
+#' designations follow typical rules.
+#'
+#' This function should never be called externally. Raw statistics with metadata
+#' are returned and are not automatically merged into x.
+#'
+#' For examples, look at how this function is called in functions such as
+#' calc_pi, calc_pairwise_fst, ect.
+#'
+#' Options:
+#'
+#' req:
+#'
+#' \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
+#' \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
+#' \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
+#' snp metadata }
+#'
+#' case:
+#'
+#' \itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
+#' per snp, but split per facet (such as for private alleles, comparisons only
+#' exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
+#' between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per
+#' snp, but per both sample and snp facet. }
+#'
+#' @param x snpRdata object
+#' @param facets character or NULL, default NULL. Facets to add.
+#' @param req character. Data type required by fun. See description.
+#' @param fun function. Function to apply to data.
+#' @param case character, default "ps". Type of statistic required by fun. See
+#'   description.
+#' @param par numeric or FALSE, default FALSE. Number of parallel computing
+#'   cores to use. Works for some cases/reqs.
+#' @param ... other arguments to be passed to fun.
+#' @param stats.type character, default "all". Other options "pairwise" or
+#'   "stats". Type of statistic under to pull under the ps.pf.psf option.
+#'
+#'
 apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all"){
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -665,8 +797,26 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 }
 
 # merge newly calculated stats with a snpRdata object.
-# this can be cleaned up a bit by taking the approach from window.stats and pairwise.window.stats and applying it to
-# everything except for the LD results.
+#' Merge newly calculated stats into a snpRdata object.
+#'
+#' Internal function to quickly and accurately merge newly calculated statistics
+#' into a snpRdata object. This should never be called externally. Takes and
+#' returns the same snpRdata object, with new data.
+#'
+#' Mostly relies on the smart.merge subfunction, which must be edited with care
+#' and testing. LD merging is independant.
+#'
+#' Type options: stats, pairwise, window.stats, pairwise.window.stats, and LD,
+#' corresponding to slots of the snpRdata S4 object class.
+#'
+#' For examples, see functions that use merge.snpR.stats, such as calc_pi or
+#' calc_pairwise_ld.
+#'
+#' @param x snpRdata object
+#' @param stats data.frame/table/list. New data to be added to the existing
+#'   snpRdata object, x.
+#' @param type character, default "stats". The type of statistic to merge, see
+#'   list in description.
 merge.snpR.stats <- function(x, stats, type = "stats"){
 
   # the merging function used for most cases.
@@ -818,7 +968,36 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   return(x)
 }
 
-# subsets snpR data
+#' Subset snpRdata objects
+#'
+#' Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect. Throws away as few calculated stats as possible.
+#'
+#' This function exists to intelligently subset snpRdata. While the typical bracket notation can be used
+#' to subset snpRdata, that method is inherited from the data.frame S3 object class for consistancy.
+#' As such, the result will be a data.frame, not a snpRdata object. This function keeps the data in
+#' a snpRdata object, and retains as much previously calculated data as possible.
+#'
+#' If \emph{samples} are removed, most statistics will be thrown away, since values like pi will change. In
+#' contrast, if \emph{snps} are removed, many statistics will simply be subset. LD, bootstraps, and window stats
+#' will \emph{always} be discarded, so overwrite with caution.
+#'
+#' Sample and snp facets to subset over can be provided. Facet levels to keep are provided in the corresponding
+#' subfacet arguments. Facets designated as described in \code{\link{Facets_in_snpR}}.
+#'
+#' @param x snpRdata object.
+#' @param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs to keep.
+#' @param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding to samples to keep.
+#' @param facets character, default NULL. \emph{sample specific} facets over which subsetting will occur.
+#' @param subfacets character, default NULL. Levels of the specified sample level facet to keep. Samples in other levels will be removed.
+#' @param snp.facets characet, default NULL. \emph{snp specific} facets over which subsetting will occur.
+#' @param snp.facets character, default NULL. Levels of the specified snp facets to keep. SNPs in other levels will be removed.
+#'
+#' @examples
+#' # Keep only individuals in the ASP and PAL populations and on the LGIX or LGIV chromosome.
+#' subset.snpR.data(stickSNPs, facets = "pop", subfacets = c("ASP", "PAL"), snp.facets = "group", snp.subfacets = c("groupIX", "groupIV"))
+#'
+#' # Keep only individuals and SNPs 1 through 10
+#' subset.snpR.data(stickSNPs, snps = 1:10, samps = 1:10)
 subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
   # if subfacets or snp.subfacets were selected, figure out which samples and loci to keep
   if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1])) | !(is.null(facets[1])) & !(is.null(subfacets[1]))){
@@ -1059,7 +1238,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
       het <- b
-      amat[,..i] <- rowSums(tmat[,..het])
+      set(amat, j = i, value = rowSums(tmat[,..het]))
     }
     else{
       het <- b[b != hom]
