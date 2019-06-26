@@ -9,9 +9,12 @@ calc_pairwise_fst(x, facets, method = "WC")
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Facets to use.}
+\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{method}{character, default "WC". Defines the FST estimator to use.}
+\item{method}{character, default "WC". Defines the FST estimator to use.
+Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+(1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
+package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total

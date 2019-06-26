@@ -22,10 +22,14 @@ calc_hwe(x, facets = NULL, method = "exact")
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Facets to use.}
+\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{method}{character, default "exact". Either exact or chisq. Defines the
-method to use for calculating p-values for HWE divergence.}
+\item{method}{character, default "exact". Defines the
+method to use for calculating p-values for HWE divergence. Options: \itemize{
+  \item{exact: } Uses the exact test as described in Wigginton et al (2005).
+  \item{chisq: } Uses a chi-squared test.
+}
+See details}
 }
 \value{
 snpRdata object with requested stats merged into the stats socket

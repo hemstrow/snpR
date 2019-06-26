@@ -41,9 +41,13 @@
 #'  For the exact test, code derived from \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Facets to use.
-#'@param method character, default "exact". Either exact or chisq. Defines the
-#'  method to use for calculating p-values for HWE divergence.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param method character, default "exact". Defines the
+#'  method to use for calculating p-values for HWE divergence. Options: \itemize{
+#'    \item{exact: } Uses the exact test as described in Wigginton et al (2005).
+#'    \item{chisq: } Uses a chi-squared test.
+#'  }
+#'  See details
 #'
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
@@ -80,8 +84,8 @@ NULL
 #'Facet designation follows a specific format. Facets are given as a character
 #'vector, where each entry designates one unique combination of levels over
 #'which to seperate the data. Levels within a facet are seperated by a '.'. Each
-#'facet can contain multiple snp and/or sample levels. Multiple facets can be run
-#'with a single line of code.
+#'facet can contain multiple snp and/or sample levels. Multiple facets can be
+#'run with a single line of code.
 #'
 #'For example, c("group.pop", "pop") would split the data first by both group
 #'and pop and then by pop alone. This will produce the same result as running
@@ -272,11 +276,11 @@ calc_maf <- function(x, facets = NULL){
 #'function should only be run on data that is \emph{unfiltered} aside from the
 #'removal of poorly sequenced bases, ect.
 #'
-#'The data can be broken up categorically by either SNP and/or sample metadata, as
-#'described in \code{\link{Facets_in_snpR}}.
+#'The data can be broken up categorically by either SNP and/or sample metadata,
+#'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Facets to use.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param sigma numeric. Sliding window size, in kilobases. Each window will
 #'  include all SNPs within 3*sigma kilobases.
 #'@param step numeric. Number of bases to move between each window, in
@@ -407,8 +411,11 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
 #'2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Facets to use.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param method character, default "WC". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
+#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
 #'
 #'@return A snpRdata object with pairwise FST as well as the number of total
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
@@ -855,7 +862,7 @@ calc_private <- function(x, facets = NULL){
 #'\code{\link{plot_pairwise_LD_heatmap}}
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Facets to use.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param subfacets character, default NULL. Subsets the facet levels to run.
 #'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
 #'  "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A",
@@ -2075,8 +2082,39 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
   return(x)
 }
 
-
-calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc", sigma = NULL, step = NULL, par = F, nk = TRUE){
+#'Caluclate basic SNP statistics
+#'
+#'Automatically calculate most basic statistics from snpRdata. Calculates maf,
+#'pi, ho, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
+#'smoothing to produce per-window averages of all of these.
+#'
+#'The data can be broken up categorically by sample or SNP metadata, as
+#'described in \code{\link{Facets_in_snpR}}. Note that Fst and private allele
+#'calculations require a sample specific contrast (the pairwise part of pairwise
+#'Fst), and thus will not be calculated unless a facet with a sample meta data
+#'variable included is specified. The other stats, in contrast, are snp-specific
+#'and thus ignore any snp meta data variables included in facets. Providing NULL or
+#'"all" to the facets argument works as described in \code{\link{Facets_in_snpR}}.
+#'
+#'@param x snpRdata object.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param fst.method character, default "WC". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
+#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'@param sigma numeric. Designates the width of windows in kilobases. Full
+#'  window size is 6*sigma.
+#'@param step numeric or NULL, default NULL. Designates the number of kilobases
+#'  between each window centroid. If NULL, windows are centered on each SNP.
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
+#'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
+#'  averages by the number of observations at those SNPs.
+#'
+#'@seealso calc_single_stats calc_pairwise_fst calc_smoothed_averages
+#'@return A snpRdata object with all of the described statistics merged into the appropriate sockets.
+#'
+calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = F, nk = TRUE){
   #=========sanity checks=======
   if(!is.null(facets[1])){
     facet.types <- check.snpR.facet.request(x, facets, "none", T)
@@ -2100,10 +2138,10 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc
   x <- calc_maf(x, facets)
   x <- calc_pi(x, facets)
   x <- calc_hwe(x, facets)
-  x <- calc_private(x, facets)
   x <- calc_ho(x, facets)
   if(!is.null(facets[1])){
     x <- calc_pairwise_fst(x, facets, method = fst.method)
+    x <- calc_private(x, facets)
   }
 
   # if a snp facet level is requested, run everything at the base level too.
@@ -2111,7 +2149,6 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst = FALSE, fst.method = "wc
     x <- calc_maf(x)
     x <- calc_pi(x)
     x <- calc_hwe(x)
-    x <- calc_private(x)
     x <- calc_ho(x)
   }
 

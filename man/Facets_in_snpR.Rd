@@ -11,8 +11,8 @@ up for analysis.
 Facet designation follows a specific format. Facets are given as a character
 vector, where each entry designates one unique combination of levels over
 which to seperate the data. Levels within a facet are seperated by a '.'. Each
-facet can contain multiple snp and/or sample levels. Multiple facets can be run
-with a single line of code.
+facet can contain multiple snp and/or sample levels. Multiple facets can be
+run with a single line of code.
 
 For example, c("group.pop", "pop") would split the data first by both group
 and pop and then by pop alone. This will produce the same result as running

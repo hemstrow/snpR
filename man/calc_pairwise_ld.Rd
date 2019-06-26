@@ -11,7 +11,7 @@ calc_pairwise_ld(x, facets = NULL, subfacets = NULL, ss = FALSE,
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Facets to use.}
+\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{subfacets}{character, default NULL. Subsets the facet levels to run.
 Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",

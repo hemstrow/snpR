@@ -77,3 +77,6 @@ do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 15
 \references{
 Hohenlohe et al. (2010). \emph{PLOS Genetics}
 }
+\author{
+William Hemstrom
+}

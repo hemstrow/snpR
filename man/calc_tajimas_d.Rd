@@ -9,7 +9,7 @@ calc_tajimas_d(x, facets = NULL, sigma, step, par = F)
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Facets to use.}
+\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{sigma}{numeric. Sliding window size, in kilobases. Each window will
 include all SNPs within 3*sigma kilobases.}
@@ -37,8 +37,8 @@ number of variants vs the number of sequenced non-polymorphic sites, this
 function should only be run on data that is \emph{unfiltered} aside from the
 removal of poorly sequenced bases, ect.
 
-The data can be broken up categorically by either SNP and/or sample metadata, as
-described in \code{\link{Facets_in_snpR}}.
+The data can be broken up categorically by either SNP and/or sample metadata,
+as described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
 calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)

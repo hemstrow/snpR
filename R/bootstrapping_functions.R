@@ -51,6 +51,8 @@
 #'  window.bootstraps slot.
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
+#'@author William Hemstrom
+#'@export
 #'
 #' @examples
 #' # add statistics
@@ -543,24 +545,51 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #         alt: Alternative hypothesis for p-value. Can be less, greater, or two-sided (default).
 
 
-#' Caculate p-values from bootstrapped distributions.
+#'Caculate p-values from bootstrapped distributions.
 #'
-#' \code{p_calc_boots} finds p-values for observed \emph{smoothed} statistics from bootstrapped distributions, such as that produced by \code{\link{resample_long}}.
+#'\code{calc_p_from_bootstraps} finds p-values for observed \emph{smoothed
+#'window} statistics from bootstrapped distributions, such as produced by
+#'\code{\link{do_bootstraps}}.
 #'
-#' Calculates p-values for smoothed values of a statistic based upon a bootstrapped null distribution of that statistic, such as those produced by resample_long using an emperical continuous distribution function.
+#'Calculates p-values for smoothed values of a statistic based upon a
+#'bootstrapped null distribution of that statistic using an emperical continuous
+#'distribution function.
 #'
-#' @param x Numeric vector of smoothed values for which to calculate p-values.
-#' @param dist: Numeric vector of bootstrapped smoothed values.
-#' @param alt: Character string. Which alternative hypothesis should be used? Options: #' \itemize{
-#'    \item "less": probability that a bootstrapped value is as small or smaller than observed.
-#'    \item "greater": probability that a bootstrapped value is as large or larger than observed.
-#'    \item "two-sided": probability that a bootstrapped value is as or more extreme than observed.
-#' }
-#' @return A numeric vector containing p-values for each input smoothed value.
+#'p-values can be generated for specific snp or sample metadata categories
+#'susing the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
+#'facets for which bootstrap data and raws statistical data have both been
+#'calculated will be run. "all" and NULL follow the typical facet rules.
+#'
+#'Likewise, p-values can be generated for specific statistics using the
+#'statistics argument. Only statistics for which bootstrap data and raws
+#'statistical data have both been calculated will be run. By default, all stats
+#'for which a bootstrap null distribution has been generated will be run.
+#'
+#'@param x snpRdata object.
+#'@param facets character, default "all". Facets to use.
+#'@param alt character, default "two-sided". Specifies the alternative
+#'  hypothesis to be used. Options: \itemize{ \item "less": probability that a
+#'  bootstrapped value is as small or smaller than observed. \item "greater":
+#'  probability that a bootstrapped value is as large or larger than observed.
+#'  \item "two-sided": probability that a bootstrapped value is as or more
+#'  extreme than observed. }
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
+#'
+#'@return snpRdata object, with p-values merged into the stats or pairwise.stats
+#'  sockets.
+#'
+#'@seealso ecdf
+#'
+#'@export
+#'@author William Hemstrom
 #'
 #' @examples
-#' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS)
-#' p_calc_boots(randSMOOTHed[randSMOOTHed$pop == "A",]$smoothed_pi, randPIBOOTS, alt = "less")
+#' # add statistics and generate bootstraps
+#' dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
+#' dat <- do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+#' calc_p_from_bootstraps(dat)
+#'
 #'
 calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE){
   #==========sanity checks==========
