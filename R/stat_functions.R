@@ -50,7 +50,7 @@
 #'
 #'@return snpRdata object with requested stats merged into the stats socket
 #'
-#'@name SingleStats
+#'@name calc_single_stats
 #'
 #'@export
 #'
@@ -123,7 +123,7 @@ NULL
 NULL
 
 #'@export
-#'@describeIn SingleStats pi (average number of pairwise differences/expected heterozygosity)
+#'@describeIn calc_single_stats pi (average number of pairwise differences/expected heterozygosity)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -152,7 +152,7 @@ calc_pi <- function(x, facets = NULL){
 
 
 #'@export
-#'@describeIn SingleStats minor allele frequency
+#'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
@@ -729,7 +729,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
 
 #'@export
-#'@describeIn SingleStats observed heterozygosity
+#'@describeIn calc_single_stats observed heterozygosity
 calc_ho <- function(x, facets = NULL){
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
@@ -756,7 +756,7 @@ calc_ho <- function(x, facets = NULL){
 }
 
 #'@export
-#'@describeIn SingleStats find private alleles
+#'@describeIn calc_single_stats find private alleles
 calc_private <- function(x, facets = NULL){
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
@@ -827,44 +827,62 @@ calc_private <- function(x, facets = NULL){
 #'
 #'\code{LD_full_pairwise} calculates LD between each pair of SNPs.
 #'
-#'Calculates pairwise linkage disequilibrium between pairs of SNPs using several different methods.
-#'By default uses the Burrow's Composite Linkage Disequilibrium method.
+#'Calculates pairwise linkage disequilibrium between pairs of SNPs using several
+#'different methods. By default uses the Burrow's Composite Linkage
+#'Disequilibrium method.
 #'
-#'If cld is not "only", haplotypes are estimated either via direct count after removing all "0101" double heterozygote haplotypes
-#'(if use.ME is FALSE) or via the Minimization-Expectation method  described in Excoffier, L., and Slatkin, M. (1995).
-#'Note that while the latter method is likely more accurate, it can be \emph{very} slow and often produces qualitatively
-#'equivalent results, and so is not prefered during casual or preliminary analysis. Either method will
+#'If cld is not "only", haplotypes are estimated either via direct count after
+#'removing all "0101" double heterozygote haplotypes (if use.ME is FALSE) or via
+#'the Minimization-Expectation method  described in Excoffier, L., and Slatkin,
+#'M. (1995). Note that while the latter method is likely more accurate, it can
+#'be \emph{very} slow and often produces qualitatively equivalent results, and
+#'so is not prefered during casual or preliminary analysis. Either method will
 #'calculate D', r-squared, and the p-value for that r-squared.
 #'
 #'Since this process involves many pairwise comparisons, it can be very slow.
 #'
-#'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated very quickly via the
-#'\code{\link{cor}} function from base R. \code{LD_full_pairwise} will perform this method alongside the other
-#'methods if cld = TRUE and by itslef if cld = "only". For most analyses, this will be sufficient and much
-#'faster than the other methods. This is the default behavior.
+#'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated
+#'very quickly via the \code{\link{cor}} function from base R.
+#'\code{LD_full_pairwise} will perform this method alongside the other methods
+#'if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+#'sufficient and much faster than the other methods. This is the default
+#'behavior.
 #'
-#'The data can be broken up categorically by either SNP and/or sample metadata, as
-#'described in \code{\link{Facets_in_snpR}}.
+#'The data can be broken up categorically by either SNP and/or sample metadata,
+#'as described in \code{\link{Facets_in_snpR}}.
 #'
-#'Heatmaps of the resulting data can be easily plotted using \code{\link{plot_pairwise_LD_heatmap}}
+#'Heatmaps of the resulting data can be easily plotted using
+#'\code{\link{plot_pairwise_LD_heatmap}}
 #'
 #'@param x snpRdata. Input SNP data.
 #'@param facets character. Facets to use.
-#'@param subfacets character, default NULL. Subsets the facet levels to run. Given as a named list: list(fam = A) will run only fam A, list(fam = c("A", "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A", pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop = "A.ASP") will run only samples in fam A and pop ASP.
+#'@param subfacets character, default NULL. Subsets the facet levels to run.
+#'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
+#'  "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A",
+#'  pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop =
+#'  "A.ASP") will run only samples in fam A and pop ASP.
 #'@param ss numeric, default NULL. Number of snps to subsample.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param CLD TRUE, FALSE, or "only", default "only". Specifies if the CLD method should be used either in addition to or instead of default methods. See details.
-#'@param use.ME logical, default FALSE. Specifies if the Minimization-Expectation haplotype estimation should be used. See details.
-#'@param sigma numeric, default 0.0001. If the ME method is used, specifies the minimum difference required between steps before haplotype frequencies are accepted.
+#'@param CLD TRUE, FALSE, or "only", default "only". Specifies if the CLD method
+#'  should be used either in addition to or instead of default methods. See
+#'  details.
+#'@param use.ME logical, default FALSE. Specifies if the
+#'  Minimization-Expectation haplotype estimation should be used. See details.
+#'@param sigma numeric, default 0.0001. If the ME method is used, specifies the
+#'  minimum difference required between steps before haplotype frequencies are
+#'  accepted.
 #'
 #'
-#'@return a snpRdata object with linkage results stored in the pairwise.LD slot. Specifically, this slot will
-#'contain a list containing any LD matrices in a nested list broken down facet then by facet levels and a data.frame
-#'containing all pairwise comparisons, their metadata, and calculated statistics in long format for easy plotting.
+#'@return a snpRdata object with linkage results stored in the pairwise.LD slot.
+#'  Specifically, this slot will contain a list containing any LD matrices in a
+#'  nested list broken down facet then by facet levels and a data.frame
+#'  containing all pairwise comparisons, their metadata, and calculated
+#'  statistics in long format for easy plotting.
 #'
 #'@references Dimitri Zaykin (2004). \emph{Genetic Epidemiology}
-#'@references Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and Evolution}
+#'@references Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
+#'  Evolution}
 #'@references Lewontin (1964). \emph{Genetics}
 #'
 #' @examples
@@ -1923,7 +1941,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 #'@export
-#'@describeIn SingleStats p-values for Hardy-Wienberg Equilibrium divergence
+#'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
 calc_hwe <- function(x, facets = NULL, method = "exact"){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell

@@ -13,48 +13,65 @@ calc_pairwise_ld(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 \item{facets}{character. Facets to use.}
 
-\item{subfacets}{character, default NULL. Subsets the facet levels to run. Given as a named list: list(fam = A) will run only fam A, list(fam = c("A", "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A", pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop = "A.ASP") will run only samples in fam A and pop ASP.}
+\item{subfacets}{character, default NULL. Subsets the facet levels to run.
+Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
+"B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A",
+pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop =
+"A.ASP") will run only samples in fam A and pop ASP.}
 
 \item{ss}{numeric, default NULL. Number of snps to subsample.}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{CLD}{TRUE, FALSE, or "only", default "only". Specifies if the CLD method should be used either in addition to or instead of default methods. See details.}
+\item{CLD}{TRUE, FALSE, or "only", default "only". Specifies if the CLD method
+should be used either in addition to or instead of default methods. See
+details.}
 
-\item{use.ME}{logical, default FALSE. Specifies if the Minimization-Expectation haplotype estimation should be used. See details.}
+\item{use.ME}{logical, default FALSE. Specifies if the
+Minimization-Expectation haplotype estimation should be used. See details.}
 
-\item{sigma}{numeric, default 0.0001. If the ME method is used, specifies the minimum difference required between steps before haplotype frequencies are accepted.}
+\item{sigma}{numeric, default 0.0001. If the ME method is used, specifies the
+minimum difference required between steps before haplotype frequencies are
+accepted.}
 }
 \value{
-a snpRdata object with linkage results stored in the pairwise.LD slot. Specifically, this slot will
-contain a list containing any LD matrices in a nested list broken down facet then by facet levels and a data.frame
-containing all pairwise comparisons, their metadata, and calculated statistics in long format for easy plotting.
+a snpRdata object with linkage results stored in the pairwise.LD slot.
+ Specifically, this slot will contain a list containing any LD matrices in a
+ nested list broken down facet then by facet levels and a data.frame
+ containing all pairwise comparisons, their metadata, and calculated
+ statistics in long format for easy plotting.
 }
 \description{
 \code{LD_full_pairwise} calculates LD between each pair of SNPs.
 }
 \details{
-Calculates pairwise linkage disequilibrium between pairs of SNPs using several different methods.
-By default uses the Burrow's Composite Linkage Disequilibrium method.
+Calculates pairwise linkage disequilibrium between pairs of SNPs using several
+different methods. By default uses the Burrow's Composite Linkage
+Disequilibrium method.
 
-If cld is not "only", haplotypes are estimated either via direct count after removing all "0101" double heterozygote haplotypes
-(if use.ME is FALSE) or via the Minimization-Expectation method  described in Excoffier, L., and Slatkin, M. (1995).
-Note that while the latter method is likely more accurate, it can be \emph{very} slow and often produces qualitatively
-equivalent results, and so is not prefered during casual or preliminary analysis. Either method will
+If cld is not "only", haplotypes are estimated either via direct count after
+removing all "0101" double heterozygote haplotypes (if use.ME is FALSE) or via
+the Minimization-Expectation method  described in Excoffier, L., and Slatkin,
+M. (1995). Note that while the latter method is likely more accurate, it can
+be \emph{very} slow and often produces qualitatively equivalent results, and
+so is not prefered during casual or preliminary analysis. Either method will
 calculate D', r-squared, and the p-value for that r-squared.
 
 Since this process involves many pairwise comparisons, it can be very slow.
 
-In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated very quickly via the
-\code{\link{cor}} function from base R. \code{LD_full_pairwise} will perform this method alongside the other
-methods if cld = TRUE and by itslef if cld = "only". For most analyses, this will be sufficient and much
-faster than the other methods. This is the default behavior.
+In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated
+very quickly via the \code{\link{cor}} function from base R.
+\code{LD_full_pairwise} will perform this method alongside the other methods
+if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+sufficient and much faster than the other methods. This is the default
+behavior.
 
-The data can be broken up categorically by either SNP and/or sample metadata, as
-described in \code{\link{Facets_in_snpR}}.
+The data can be broken up categorically by either SNP and/or sample metadata,
+as described in \code{\link{Facets_in_snpR}}.
 
-Heatmaps of the resulting data can be easily plotted using \code{\link{plot_pairwise_LD_heatmap}}
+Heatmaps of the resulting data can be easily plotted using
+\code{\link{plot_pairwise_LD_heatmap}}
 }
 \examples{
 #CLD
@@ -69,7 +86,8 @@ calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
 \references{
 Dimitri Zaykin (2004). \emph{Genetic Epidemiology}
 
-Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and Evolution}
+Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
+ Evolution}
 
 Lewontin (1964). \emph{Genetics}
 }

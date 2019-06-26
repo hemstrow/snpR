@@ -2,44 +2,78 @@
 % Please edit documentation in R/bootstrapping_functions.R
 \name{do_bootstraps}
 \alias{do_bootstraps}
-\title{Bootstrapped smoothed values.}
+\title{Generate bootstrapped windowed statistics}
 \usage{
 do_bootstraps(x, facets = NULL, boots, sigma, step = NULL,
   statistics = "all", nk = T, par = FALSE)
 }
 \arguments{
-\item{x}{Input data containing \emph{unsmoothed} statistic of interest and SNP position. Note that this data must contain a column titled "group" containing the linkage group/chromosome/scaffold for each observed value, since positions are drawn from the same group only.}
+\item{x}{snpRdata object.}
 
-\item{boots}{Number of bootstraps to run.}
+\item{facets}{character or NULL, default NULL. Categories by which to break up
+bootstraps.}
 
-\item{sigma}{Size variable in kb for gaussian smoothing. Full window size is 6*sigma.}
+\item{boots}{numeric. Number of bootstraps to generate.}
 
-\item{statistic}{A character string designating the \emph{unsmoothed} statistic to smooth.}
+\item{sigma}{numeric. Designates the width of windows in kilobases. Full
+window size is 6*sigma.}
 
-\item{nk_weight}{If true, weights smoothing by randomly drawing variables from a column titled "nk" in x.}
+\item{step}{numeric or NULL, default NULL. Designates the number of kilobases
+between each window centroid. If NULL, windows are centered on each SNP.}
 
-\item{fws}{If using a window with a fixed slide rather than snp centralized, provide a data frame of window positions.}
+\item{nk}{logical, default TRUE. If TRUE, weights SNP contribution to window
+averages by the number of observations at those SNPs.}
 
-\item{n_snps}{If true, draws all random numbers up front. A column containing the number of snps in each selected window must be provided, titled "n_snps", in either x or fws. This allows for faster processing. Otherwise, random numbers will be drawn after this value is determined for each bootstrap.}
+\item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
+use for parallel processing.}
 
-\item{report}{Progress report interval, in bootstraps.}
-
-\item{level}{Character or NULL, default "group." What level to bootstrap across?}
+\item{statistic}{character. Designates the statistic(s) to smooth, typically
+"all", "single", or "pairwise". See details for options.}
 }
 \value{
-A numeric vector containing bootstrapped smoothed values.
+A  snpRdata object with bootstrapped windows merged in to the
+ window.bootstraps slot.
 }
 \description{
-\code{resample_long} creates a distribution of bootstrapped smoothed values for a desired statistic.
+\code{do_bootstraps} creates a distribution of bootstrapped smoothed values
+for requested statistcs.
 }
 \details{
-Bootstrapps are conducted as described by Hohenlohe et al. (2010), Population genomics of parallel adaptation in threespine stickleback using sequenced RAD tags.
+Bootstrapps are conducted as described by Hohenlohe et al. (2010). For each
+bootstrap, this function draws random window position, then draws random
+statistics from all provided SNPs to fill each observed position on that
+window and calculates a smoothed statistic for that window using
+gaussian-smoothing. Note that a "position" column \emph{must} be present in
+the snp metadata of the snpRdata object to do any window calculations.
 
-For each bootstrap, this function draws random window position, then draws random statistics from all provided SNPs to fill each observed position on that window and calculates a smoothed statistic for that window using gaussian-smoothing.
+Bootstraps for multiple statistics can be calculated at once. If the
+statistics argument is set to "all", all calculated stats will be run. If it
+is set to "single", then all non-pairwise statistics will be bootstrapped, if
+it is set to "pairwise", then all pairwise statistics will be bootstrapped.
+Inidividual statistics can also be requested by name ("pi", "ho", etc.). All
+statistics bootstrapped at the same time will be calculated using \emph{the
+same randomly filled windows}, and thus do not represent independant
+observations between statistics. This is still computationally more efficient,
+however.
 
-This function can pick windows to bootstrap either from a provided data frame or around SNPs given a particular window size. It can also weight observations by random wieghts drawn from the provided SNP data. The function is built to run over one level, such as linkage group or chromosome.
+The data can be broken up categorically by snp or sample metadata, as
+described in \code{\link{Facets_in_snpR}}.
+
+As described in Hohelohe et al. (2010), the contribution of individual SNPs to
+window averages can be weighted by the number of observations per SNP by
+setting the nk argument to TRUE, as is the default. For bootstraps, nk values
+are randomly drawn for each SNP in each window.
+
+Centroids for windows can either be centered around every SNP, or centered
+every step kilobases from the 0 position of each snp level facet category
+(chromosome, etc.).
 }
 \examples{
-resample_long(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 100, 200, TRUE, randSMOOTHed[randSMOOTHed$pop == "A" & randSMOOTHed$group == "chr1",], TRUE, 10)
+# add statistics
+dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
+do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
 
+}
+\references{
+Hohenlohe et al. (2010). \emph{PLOS Genetics}
 }
