@@ -51,8 +51,11 @@
 #'  window.bootstraps slot.
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
+<<<<<<< HEAD
 #'@author William Hemstrom
 #'@export
+=======
+>>>>>>> e8019e6da1968f390be2ded966067158a72b6004
 #'
 #' @examples
 #' # add statistics
