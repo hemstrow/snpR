@@ -50,7 +50,7 @@
 #'
 #'@return snpRdata object with requested stats merged into the stats socket
 #'
-#'@name SingleStats
+#'@name calc_single_stats
 #'
 #'@export
 #'
@@ -123,7 +123,7 @@ NULL
 NULL
 
 #'@export
-#'@describeIn SingleStats pi (average number of pairwise differences/expected heterozygosity)
+#'@describeIn calc_single_stats pi (average number of pairwise differences/expected heterozygosity)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -152,7 +152,7 @@ calc_pi <- function(x, facets = NULL){
 
 
 #'@export
-#'@describeIn SingleStats minor allele frequency
+#'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
@@ -729,7 +729,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
 
 #'@export
-#'@describeIn SingleStats observed heterozygosity
+#'@describeIn calc_single_stats observed heterozygosity
 calc_ho <- function(x, facets = NULL){
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
@@ -756,7 +756,7 @@ calc_ho <- function(x, facets = NULL){
 }
 
 #'@export
-#'@describeIn SingleStats find private alleles
+#'@describeIn calc_single_stats find private alleles
 calc_private <- function(x, facets = NULL){
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
@@ -1923,7 +1923,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 #'@export
-#'@describeIn SingleStats p-values for Hardy-Wienberg Equilibrium divergence
+#'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
 calc_hwe <- function(x, facets = NULL, method = "exact"){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell

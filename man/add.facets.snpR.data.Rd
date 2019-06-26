@@ -13,6 +13,6 @@ add.facets.snpR.data(x, facets = NULL)
 }
 \description{
 Adds facets to snpRdata objects, following the rules described in
-\code{\link(Facets_in_snpR)}. Internal, called by many other functions when
+\code{\link{Facets_in_snpR}}. Internal, called by many other functions when
 facets are requested.
 }
