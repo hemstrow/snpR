@@ -19,8 +19,8 @@ apply.snpR.facets(x, facets = NULL, req, fun, case = "ps", par = F,
 \item{case}{character, default "ps". Type of statistic required by fun. See
 description.}
 
-\item{par}{numeric or FALSE, default FALSE. Number of parallel computing
-cores to use. Works for some cases/reqs.}
+\item{par}{numeric or FALSE, default FALSE. Number of parallel computing cores
+to use. Works for some cases/reqs.}
 
 \item{...}{other arguments to be passed to fun.}
 
@@ -53,6 +53,9 @@ case:
 \itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
 per snp, but split per facet (such as for private alleles, comparisons only
 exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
-between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per
-snp, but per both sample and snp facet. }
+between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per snp,
+but per both sample and snp facet. }
+}
+\author{
+William Hemstrom
 }

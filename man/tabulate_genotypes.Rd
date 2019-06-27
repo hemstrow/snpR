@@ -16,7 +16,7 @@ snps. No metadata.}
 }
 \value{
 A list of matrices. gs is the genotype matrix, as is the allele
-  matrix, and wm is the genotype matrix with missing genotypes.
+ matrix, and wm is the genotype matrix with missing genotypes.
 }
 \description{
 \code{tabulate_genotypes} creates matricies containing counts of observed
@@ -28,4 +28,7 @@ This function is pirmarily used interally in several other funcitons.
 \examples{
 tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
 
+}
+\author{
+William Hemstrom
 }

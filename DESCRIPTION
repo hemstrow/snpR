@@ -6,7 +6,8 @@ Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Nick", "Sard", email = "sardnich@anr.msu.edu", role = "ctb"),
   person("Matt", "Thorstensen", email = "mthorstensen@ucdavis.edu", role = "ctb"),
-  person("Avani", "Chitre", email = "aachitre@ucdavis.edu", role = "ctb"))
+  person("Avani", "Chitre", email = "aachitre@ucdavis.edu", role = "ctb"),
+  person("Keming", "Su", email = "kmsu@ucdavis.edu", role = "ctb"))
 Description: This package contains functions for analyzing SNP whole-genome data. 
     This includes functions to get most summary statistics and gaussian smooth them, map pairwise LD, 
     determine the significance of smoothed statistics via bootstrapping, convert to several common output formats, 
@@ -34,7 +35,6 @@ Suggests:
     knitr,
     mmtsne,
     rmarkdown,
-    Rtsne,
-    zoo
+    Rtsne
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1

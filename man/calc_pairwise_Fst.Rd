@@ -9,7 +9,8 @@ calc_pairwise_fst(x, facets, method = "WC")
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
+\item{facets}{character. Categorical metadata variables by which to break up
+analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{method}{character, default "WC". Defines the FST estimator to use.
 Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
@@ -27,7 +28,7 @@ possible pairwise combination of populations.
 }
 \details{
 Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
-Hohenlohe et al 2010, or using the \code{\link[genepop]{FST}} function from
+Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
 the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in

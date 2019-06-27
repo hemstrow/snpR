@@ -6,13 +6,21 @@
 \usage{
 get.snpR.stats(x, facets = NULL, type = "single")
 }
+\arguments{
+\item{x}{snpRdata object.}
+
+\item{facets}{character or NULL, default NULL. Facets for which to fetch data.}
+
+\item{type}{character, default "single". Type of statistics to pull, see
+description.}
+}
 \description{
 A convenience function that pulls statistics of any specified type at
 particular facets from a snpRdata object.
 }
 \details{
-Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets
-= "all", data for all facets, including the base facet, will be returned. By
+Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets =
+"all", data for all facets, including the base facet, will be returned. By
 default, the base facet alone will be returned.
 
 Different types of statistics are retrieved via the following options under
@@ -23,6 +31,15 @@ the "type" argument:
 } non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
 sliding window statistics. \item{LD: } linkage disequilibrium matrices and
 tables. \item{bootstraps: } bootstraps of window statistics. }
+}
+\examples{
+# generate some statistics
+dat <- calc_pi(stickSNPs, "group.pop")
+dat <- calc_pairwise_fst(stickSNPs, "group.pop")
+
+# fetch pi get.snpR.stats(stickSNPs, "group.pop") # fetch fst
+get.snpR.stats(stickSNPs, "group.pop", "pairwise")
+
 }
 \author{
 William Hemstrom

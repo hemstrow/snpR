@@ -21,9 +21,9 @@ a number of rows equal to the number of samples in the dataset.}
 \emph{genotypes} in the data provided to the genotypes argument.}
 }
 \description{
-\code{import.snpR.data} converts genotype and meta data to the snpRdata
-class, which stores raw genotype data, sample and locus specific metadata,
-useful data summaries, repeatedly internally used tables, calculated summary
+\code{import.snpR.data} converts genotype and meta data to the snpRdata class,
+which stores raw genotype data, sample and locus specific metadata, useful
+data summaries, repeatedly internally used tables, calculated summary
 statistics, and smoothed statistic data.
 }
 \details{
@@ -33,39 +33,43 @@ genotypes are stored, and can be manipulated identically. It also stores
 sample and locus specific metadata, genomic summary information, and results
 from most snpR functions. Genotypes are stored in the "character" format, as
 output by \code{\link{format_snps}}. Missing data is noted with "NN".
-
-Genotypes, metadata, and results are stored in sockets and directly
-accessable with the 'at' symbol operator. Sockets are as follows:
-
-\itemize{ \item{sample.meta: } sample metadata (population, family,
-phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome, linkage
-group, position, etc.). \item{facet.meta: } internal metadata used to track
-facets that have been previously applied to the dataset. \item{mDat: }
-missing data format. \item{snp.form: } number of characters per SNP.
-\item{genotables: } a list containing tabulated genotypes (gs), allele counts
-(as), and missing data (wm). facet.meta contains the corresponding metadata.
-\item{ac: } data in allele count format, used internally. facet.meta contains
-corresponding metadata. \item{facets: } vector of the facets that have been
-added to the data. \item{facet.type: } classes of the added facets (snp,
-sample, complex, or .base). \item{stats: } data.frame containing all
-calculated non-pairwise single-snp statistics and metadata.
-\item{window.stats: } data.frame/table containing all non-pairwise statistics
-calculated for sliding windows. \item{pairwise.stats: } data.frame/table
-containing all pairwise (fst) single-snp statistics.
-\item{pairwise.window.stats: } data.frame/table containing all pairwise
-statistics calculated for sliding windows. \item{pairwise.LD: } nested list
-containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
-for more information). \item{window.bootstraps: } data.frame/table containing
-all calculated bootstraps for sliding window statistics. \item{names: }
-column names for genotypes. \item{row.names: } row names for genotypes.
-\item{.Data: } list of vectors containing raw genotype data. \item{.S3Class:
-} notes the inherited S3 object class. }
-
-Note that most of these sockets are used primarily internally.
-
-All calculated data can be accessed using the \code{\link{get.snpR.stats}}
-function. See documentaion.
 }
+\section{Sockets}{
+
+
+ Genotypes, metadata, and results are stored in sockets and directly
+ accessable with the 'at' symbol operator. Sockets are as follows:
+
+ \itemize{ \item{sample.meta: } sample metadata (population, family,
+ phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
+ linkage group, position, etc.). \item{facet.meta: } internal metadata used
+ to track facets that have been previously applied to the dataset.
+ \item{mDat: } missing data format. \item{snp.form: } number of characters
+ per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
+ allele counts (as), and missing data (wm). facet.meta contains the
+ corresponding metadata. \item{ac: } data in allele count format, used
+ internally. facet.meta contains corresponding metadata. \item{facets: }
+ vector of the facets that have been added to the data. \item{facet.type: }
+ classes of the added facets (snp, sample, complex, or .base). \item{stats: }
+ data.frame containing all calculated non-pairwise single-snp statistics and
+ metadata. \item{window.stats: } data.frame/table containing all non-pairwise
+ statistics calculated for sliding windows. \item{pairwise.stats: }
+ data.frame/table containing all pairwise (fst) single-snp statistics.
+ \item{pairwise.window.stats: } data.frame/table containing all pairwise
+ statistics calculated for sliding windows. \item{pairwise.LD: } nested list
+ containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
+ for more information). \item{window.bootstraps: } data.frame/table
+ containing all calculated bootstraps for sliding window statistics.
+ \item{names: } column names for genotypes. \item{row.names: } row names for
+ genotypes. \item{.Data: } list of vectors containing raw genotype data.
+ \item{.S3Class: } notes the inherited S3 object class. }
+
+ Note that most of these sockets are used primarily internally.
+
+ All calculated data can be accessed using the \code{\link{get.snpR.stats}}
+ function. See documentaion.
+}
+
 \examples{
 # import example data as a snpRdata object
 # produces data identical to that contained in the stickSNPs example dataset.

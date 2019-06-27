@@ -56,8 +56,6 @@
 #'
 #'@name calc_single_stats
 #'
-#'@export
-#'
 #'
 #'@author William Hemstrom
 #'
@@ -390,7 +388,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
 #'possible pairwise combination of populations.
 #'
 #'Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
-#'Hohenlohe et al 2010, or using the \code{\link[genepop]{FST}} function from
+#'Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
 #'the genepop package (see references).
 #'
 #'If the genpop option is used, several intermediate files will be created in
@@ -411,7 +409,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
 #'2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param method character, default "WC". Defines the FST estimator to use.
 #'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
 #'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
@@ -1912,7 +1911,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     # get subfacet types
     ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
 
-    invisible(capture.output(x <- subset.snpR.data(x,
+    invisible(capture.output(x <- subset_snpR_data(x,
                                                    facets = names(subfacets)[which(ssfacet.types == "sample")],
                                                    subfacets = subfacets[[which(ssfacet.types == "sample")]],
                                                    snp.facets = names(subfacets)[which(ssfacet.types == "snp")],
@@ -1929,7 +1928,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     #subset
-    x <- subset.snpR.data(x, ss)
+    x <- subset_snpR_data(x, ss)
   }
 
 

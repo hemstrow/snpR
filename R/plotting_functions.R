@@ -1,44 +1,67 @@
-#Prepares a heatmap from pariwse LD data.
-#Inputs:  x: Data, format like that given by LD_full_pairwise rsq and Dprime outputs.
-#            However, first column can contain snp names rather than first column of data. Otherwise,
-#            Data will be reformated in this way.
-#         r: Region of the chromosome to subset and plot.
-#            Given in mb in the format numeric vector c(lower, upper).
-#         l.text: Legend title.
-#         colors: Colors to use, character vector format c("lower", "upper").
-#         title: Plot title
-#         t.sizes: Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)
-
 #'Create a heatmap from pairwise linkage data.
 #'
-#'\code{LD_pairwise_heatmap} prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by \code{\link{LD_full_pairwise}}. Should also work on pairwise FST data. Darker values are higher. Special thanks to Nicholas Sard for part of this code!
+#'Prepares a ggplot2 heatmap from pairwise linkage disequilibrium data stored in
+#'a snpRdata object.
 #'
-#'Since the output is a ggplot object, options can be added or changed by adding "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options are also built into this function as agruments, but can be overwritten freely.
+#'Since the output is a ggplot object, options can be added or changed by adding
+#'"+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options
+#'are also built into this function as agruments, but can be overwritten freely.
 #'
-#'Output from \code{\link{LD_full_pairwise}} runs directly or after saving and re-import without issue. Position data for the rows can be saved either as rownames or as the first column.
+#'Specific facets and facet levels can be requested as long as LD data for those
+#'facets has been previously calculated. Facets should be provided as described
+#'in \code{\link{Facets_in_snpR}}. Only one facet can be plotted at once. Plots
+#'for individual SNP or sample-specific facet levels for the specified facet can
+#'also be requested. See examples. For facets with many categories, this is
+#'strongly recommended, since plots with many facet levels become
+#'computationally challenging to produce and difficult to interpret. A facets
+#'argument of NULL will plot the base level facet, a facet argument of "all" is
+#'not accepted.
 #'
-#'This function was partially written by Nicholas Sard.
+#'Note that NA LD values will be colored white in the resulting plot.
 #'
-#' @param x Data, format like that given by LD_full_pairwise rsq and Dprime outputs. Column names must be snp positions, as must either the first column or row names. Alternatively, a named list of the several such objects to plot and their titles can be provided.
-#' @param r Region of the chromosome to subset and plot. Given in kb in the format numeric vector c(lower, upper).
-#' @param l.text Legend title.
-#' @param colors Colors to use in tiles, character vector format c("lower", "upper").
-#' @param title Plot title.
-#' @param t.sizes Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)
-#' @return A pairwise LD heatmap as a ggplot object. If multiple objects were provided to plot, these will be included as objects.
+#'@param x snpRdata object.
+#'@param facets character, default NULL. Categorical metadata variables by which
+#'  to break up plots. Must match facets for which LD data has been previously
+#'  calculated, and only a single facet can be plotted at once. See
+#'  \code{\link{Facets_in_snpR}} for more details.
+#'@param snp.subfacet character, default NULL. Specific snp-specific levels of
+#'  the provided facet to plot. See examples.
+#'@param sample.subfacet character, default NULL. Specific sample-specific
+#'  levels of the provided facet to plot. See examples.
+#'@param LD_measure character, default rsq. LD metric to plot. Must be present
+#'  in the calculated LD data.
+#'@param r Numeric. Region of the chromosome to subset and plot. Given in kb in
+#'  the format numeric vector c(lower, upper).
+#'@param l.text character, default "rsq". Legend title.
+#'@param viridis.option character, default B. Viridis color scale option to use.
+#'  Other color scales may be subsituted by appending the scale_color_continuous
+#'  and scale_fill_continuous ggplot functions to the produced plot using the
+#'  '+' operator. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'@param title character. Plot title.
+#'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
+#'  c(title, legend.title, legend.ticks, axis, axis.ticks).
+#'
+#'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
+#'  ggplot object. \item{dat: } Data used to generate the ggplot object. }
+#'
+#'@author William Hemstrom
+#'@author Nicholas Sard
 #'
 #' @examples
-#' #base plot
-#' LD_pairwise_heatmap(stickLD, title = "ASP group IX Pairwise LD")
+#' # get LD data
+#' dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
 #'
-#' #Change colors with agruments, add lines at SNP 10 using ggplot functions.
-#' LD_pairwise_heatmap(stickLD, colors = c("green", "red"), title = "ASP group IX Pairwise LD") + geom_vline(xintercept = 10, color = "blue") + geom_hline(yintercept = 10, color = "blue")
+#' # produce plots for linkage group IX in the ASP and CLF populations.
+#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIX", c("ASP", "CLF"))
+#'
+#' # produce plots for every population for linkage group IV
+#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
+#'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "rsq", r = NULL,
                                      l.text = "rsq", viridis.option = "B",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
-  #Created in part by Nick Sard
   #==============sanity checks===========
   msg <- character()
 
@@ -342,35 +365,75 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   return(out)
 }
 
-#'tSNE from genetic data.
+#'PCA and tSNE plots from snpRdata.
 #'
-#'\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
+#'Generate a ggplot cluster plot based on PCA or the he Barnes-Hut simulation at
+#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Works by conversion to the
+#'"sn" format described in \code{\link{format_snps}} with interpolated missing
+#'genotypes.
 #'
-#'See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
+#'Cluster plots can be produced via either PCA or tSNE. The PCA point
+#'coordinates are calculated using \code{\link{prcomp}}. By default, the first
+#'two principal coordinates are plotted. A PC matrix will also be returned for
+#'easy plotting of other PCs. tSNE coordinates are calculated via
+#'\code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
+#'about this method. Stated simply, tSNE attempts to compress a
+#'multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
+#'information as possible. As such, a tSNE plot can be seen as a representation
+#'of many different PC axis compressed into a single two-dimensional plot. This
+#'compression process is stochastic, and so plots will vary somewhat between
+#'runs, and multiple runs are recommended.
 #'
-#'Description of x:
-#'    SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
+#'For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
+#'consulted.
 #'
-#'This function results from collaboration with Matt Thorstensen.
+#'Data points for individuals can be automatically colored by any sample-level
+#'facet categories. Facets should be provided as described in
+#'\code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
+#'automatically plotted simultaniously.
 #'
-#' @param x Input presence/absence data, as described in details.
-#' @param ecs Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.
-#' @param plot.vars FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.
-#' @param dims Integer, output dimensionality, default 2.
-#' @param initial_dims Integer, default 50. The number of dimensions retained in the initial PCA step.
-#' @param perplexity Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#' @param theta Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.
-#' @param iter Integer, default 5000. Number of tSNE iterations to perform.
-#' @param c.dup boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!
-#' @param mc Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?
-#' @param counts Numeric vector, default FALSE, containing the number of loci sequenced per individual.
-#' @param do.plot boolean, default TRUE. Should a plot be produced?
-#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
+#'@param x snpRdata object.
+#'@param facets character, default NULL. Categorical sample-level metadata
+#'  variables by which to color points. Up to two different sample-specific
+#'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
+#'@param plot.type character, default c("PCA", "tSNE"). Types of plots to be
+#'  produced, see description.
+#'@param check.duplicates logical, default FALSE. Checks for any duplicated
+#'  individuals, which will cause errors. Since these rarely exist and
+#'  drastically slow down function run-time, this defaults to FALSE.
+#'@param minimum_percent_coverage numeric, default FALSE. Proportion of samples
+#'  a SNP must be sequenced in to be used in generating plots.
+#'@param interpolation_method character, default "bernoulli". Interpolation
+#'  method to use for missing data. Options: \itemize{\item{bernoulli:
+#'  }{Interpolated via binomial draw for each allele against minor allele
+#'  frequency.} \item{af: }{Interpolated by inserting the expected number of
+#'  minor alleles at missing data points given loci minor allele frequencies.}}
+#'@param dims numeric, default 2. Output dimensionality, default 2.
+#'@param initial_dims numeric, default 50. The number of dimensions retained in
+#'  the initial PCA step.
+#'@param perplexity numeric, default FALSE. Perplexity parameter, by default
+#'  found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
+#'@param theta numeric, default 0. Theta parameter from
+#'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
+#'@param iter numeric, default 5000. Number of tSNE iterations to perform.
+#'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
 #'
-#' @return A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
+#'@return A list containing: \itemize{ \item{data: } Raw PCA and/or tSNE plot
+#'  data. \item{plots: } ggplot PCA and/or tSNE plots. } Each of these two list
+#'  may contain one or two objects, one for each PCA or tSNE plot requested,
+#'  named "pca" and "tsne", respectively.
+#'
+#'@author William Hemstrom
+#'@author Matt Thorstensen
+#'
+#'@references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}
+#'@seealso \code{\link[mmtsne]{mmtsne}}
+#'
+#'@export
 #'
 #' @examples
-#' tSNEfromPA(stickPA, 2, c.dup = TRUE)
+#' # plot colored by population
+#' plot_clusters(stickSNPs, "pop")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
@@ -447,7 +510,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   }
 
 
-  rm.snps <- ncol(sn)
+  rm.snps <- nrow(sn)
   if(rm.snps == 0){
     stop("No remaining SNPs after filtering.\n")
   }
@@ -461,8 +524,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   #=============prepare plot data=============
   plot_dats <- vector("list", length(plot_type))
   names(plot_dats) <- plot_type
-
-  browser()
 
   if("pca" %in% plot_type){
     cat("Preparing pca...\n")
@@ -490,7 +551,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   plots <- vector("list", length(plot_dats))
   names(plots) <- names(plot_dats)
   for(i in 1:length(plot_dats)){
-    browser()
     tpd <- plot_dats[[i]]
 
     #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!

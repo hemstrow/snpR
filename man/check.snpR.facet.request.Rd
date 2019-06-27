@@ -12,8 +12,8 @@ check.snpR.facet.request(x, facets, remove.type = "snp",
 
 \item{facets}{character. facets to check.}
 
-\item{remove.type}{character. "snp", "sample", "complex", "simple" or anything else,
-typically "none". Type of facet to remove.}
+\item{remove.type}{character. "snp", "sample", "complex", "simple" or anything
+else, typically "none". Type of facet to remove.}
 
 \item{return.type}{logical, default FALSE. If true, returns both facets and
 facet types ("snp", "sample", "complex", or ".base") as a length two list.}
@@ -21,11 +21,14 @@ facet types ("snp", "sample", "complex", or ".base") as a length two list.}
 \description{
 Given a snpRdata object, this function cleans up and determines the types of
 requested facets. Internal. If requested, can clean facet requests to purge a
-specific facet type (snp, sample, complex). Used in functions that run only
-on a specific type of facet.
+specific facet type (snp, sample, complex). Used in functions that run only on
+a specific type of facet.
 }
 \details{
 Facet designation of NULL or "all" follows the typical rules.
 
 Facets designated as described in \code{\link{Facets_in_snpR}}.
+}
+\author{
+William Hemstrom
 }

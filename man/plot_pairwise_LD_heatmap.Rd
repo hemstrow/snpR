@@ -10,36 +10,76 @@ plot_pairwise_LD_heatmap(x, facets = NULL, snp.subfacet = NULL,
   t.sizes = c(16, 13, 10, 12, 10), background = "white")
 }
 \arguments{
-\item{x}{Data, format like that given by LD_full_pairwise rsq and Dprime outputs. Column names must be snp positions, as must either the first column or row names. Alternatively, a named list of the several such objects to plot and their titles can be provided.}
+\item{x}{snpRdata object.}
 
-\item{r}{Region of the chromosome to subset and plot. Given in kb in the format numeric vector c(lower, upper).}
+\item{facets}{character, default NULL. Categorical metadata variables by which
+to break up plots. Must match facets for which LD data has been previously
+calculated, and only a single facet can be plotted at once. See
+\code{\link{Facets_in_snpR}} for more details.}
 
-\item{l.text}{Legend title.}
+\item{snp.subfacet}{character, default NULL. Specific snp-specific levels of
+the provided facet to plot. See examples.}
 
-\item{title}{Plot title.}
+\item{sample.subfacet}{character, default NULL. Specific sample-specific
+levels of the provided facet to plot. See examples.}
 
-\item{t.sizes}{Text sizes, numeric vector format c(title, legend.title, legend.ticks, axis, axis.ticks)}
+\item{LD_measure}{character, default rsq. LD metric to plot. Must be present
+in the calculated LD data.}
 
-\item{colors}{Colors to use in tiles, character vector format c("lower", "upper").}
+\item{r}{Numeric. Region of the chromosome to subset and plot. Given in kb in
+the format numeric vector c(lower, upper).}
+
+\item{l.text}{character, default "rsq". Legend title.}
+
+\item{viridis.option}{character, default B. Viridis color scale option to use.
+Other color scales may be subsituted by appending the scale_color_continuous
+and scale_fill_continuous ggplot functions to the produced plot using the
+'+' operator. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
+
+\item{title}{character. Plot title.}
+
+\item{t.sizes}{numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
+c(title, legend.title, legend.ticks, axis, axis.ticks).}
 }
 \value{
-A pairwise LD heatmap as a ggplot object. If multiple objects were provided to plot, these will be included as objects.
+A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
+ ggplot object. \item{dat: } Data used to generate the ggplot object. }
 }
 \description{
-\code{LD_pairwise_heatmap} prepares a ggplot2 heatmap from pairwise LD SNP data, in the format of that given by \code{\link{LD_full_pairwise}}. Should also work on pairwise FST data. Darker values are higher. Special thanks to Nicholas Sard for part of this code!
+Prepares a ggplot2 heatmap from pairwise linkage disequilibrium data stored in
+a snpRdata object.
 }
 \details{
-Since the output is a ggplot object, options can be added or changed by adding "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options are also built into this function as agruments, but can be overwritten freely.
+Since the output is a ggplot object, options can be added or changed by adding
+"+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options
+are also built into this function as agruments, but can be overwritten freely.
 
-Output from \code{\link{LD_full_pairwise}} runs directly or after saving and re-import without issue. Position data for the rows can be saved either as rownames or as the first column.
+Specific facets and facet levels can be requested as long as LD data for those
+facets has been previously calculated. Facets should be provided as described
+in \code{\link{Facets_in_snpR}}. Only one facet can be plotted at once. Plots
+for individual SNP or sample-specific facet levels for the specified facet can
+also be requested. See examples. For facets with many categories, this is
+strongly recommended, since plots with many facet levels become
+computationally challenging to produce and difficult to interpret. A facets
+argument of NULL will plot the base level facet, a facet argument of "all" is
+not accepted.
 
-This function was partially written by Nicholas Sard.
+Note that NA LD values will be colored white in the resulting plot.
 }
 \examples{
-#base plot
-LD_pairwise_heatmap(stickLD, title = "ASP group IX Pairwise LD")
+# get LD data
+dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
 
-#Change colors with agruments, add lines at SNP 10 using ggplot functions.
-LD_pairwise_heatmap(stickLD, colors = c("green", "red"), title = "ASP group IX Pairwise LD") + geom_vline(xintercept = 10, color = "blue") + geom_hline(yintercept = 10, color = "blue")
+# produce plots for linkage group IX in the ASP and CLF populations.
+plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIX", c("ASP", "CLF"))
 
+# produce plots for every population for linkage group IV
+plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
+
+
+}
+\author{
+William Hemstrom
+
+Nicholas Sard
 }

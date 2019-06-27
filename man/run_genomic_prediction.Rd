@@ -52,7 +52,7 @@ larger effect.
 
 Unlike most snpR functions, this function does not support facets, since each
 run can be very slow. Instead, an individual facet and facet level of
-interest should be selected with \code{\link{subset.snpR.data}}. See
+interest should be selected with \code{\link{subset_snpR_data}}. See
 examples.
 
 See documentation for \code{\link[BGLR]{BGLR}} for more details and for a

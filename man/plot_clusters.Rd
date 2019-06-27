@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_clusters}
 \alias{plot_clusters}
-\title{tSNE from genetic data.}
+\title{PCA and tSNE plots from snpRdata.}
 \usage{
 plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE"),
   check_duplicates = FALSE, minimum_percent_coverage = FALSE,
@@ -10,46 +10,88 @@ plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE"),
   perplexity = FALSE, theta = 0, iter = 1000, ...)
 }
 \arguments{
-\item{x}{Input presence/absence data, as described in details.}
+\item{x}{snpRdata object.}
 
-\item{dims}{Integer, output dimensionality, default 2.}
+\item{facets}{character, default NULL. Categorical sample-level metadata
+variables by which to color points. Up to two different sample-specific
+facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{initial_dims}{Integer, default 50. The number of dimensions retained in the initial PCA step.}
+\item{minimum_percent_coverage}{numeric, default FALSE. Proportion of samples
+a SNP must be sequenced in to be used in generating plots.}
 
-\item{perplexity}{Perplexity parameter, by default found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
+\item{interpolation_method}{character, default "bernoulli". Interpolation
+method to use for missing data. Options: \itemize{\item{bernoulli:
+}{Interpolated via binomial draw for each allele against minor allele
+frequency.} \item{af: }{Interpolated by inserting the expected number of
+minor alleles at missing data points given loci minor allele frequencies.}}}
 
-\item{theta}{Theta parameter from \code{\link[Rtsne]{Rtsne}}. Default 0, an exhaustive search.}
+\item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
-\item{iter}{Integer, default 5000. Number of tSNE iterations to perform.}
+\item{initial_dims}{numeric, default 50. The number of dimensions retained in
+the initial PCA step.}
+
+\item{perplexity}{numeric, default FALSE. Perplexity parameter, by default
+found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
+
+\item{theta}{numeric, default 0. Theta parameter from
+\code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.}
+
+\item{iter}{numeric, default 5000. Number of tSNE iterations to perform.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.}
 
-\item{ecs}{Numeric. The number of extra metadata columns at the start of the input. Must be more that two to avoid errors. I really should fix that at some point. Includes the "pop" collumn.}
+\item{plot.type}{character, default c("PCA", "tSNE"). Types of plots to be
+produced, see description.}
 
-\item{plot.vars}{FALSE or character vector, default "pop". If FALSE, a basic plot is produced. Up to two variables to be plotted with names corresponding to column names in x be given as a character vector.}
-
-\item{c.dup}{boolean, default FALSE. Should duplicate individuals be searched for and removed? This is very slow if the data set is large!}
-
-\item{mc}{Numeric or FALSE, default FALSE. Should poorly sequenced individuals be removed? If so, what is the minimum acceptable count of sequenced loci (as specificed in the vector provided to counts)?}
-
-\item{counts}{Numeric vector, default FALSE, containing the number of loci sequenced per individual.}
-
-\item{do.plot}{boolean, default TRUE. Should a plot be produced?}
+\item{check.duplicates}{logical, default FALSE. Checks for any duplicated
+individuals, which will cause errors. Since these rarely exist and
+drastically slow down function run-time, this defaults to FALSE.}
 }
 \value{
-A list containing the raw tSNE output and a tSNE plot in the form of a ggplot graphical object. The plot can be changed as usual with ggplot objects.
+A list containing: \itemize{ \item{data: } Raw PCA and/or tSNE plot
+ data. \item{plots: } ggplot PCA and/or tSNE plots. } Each of these two list
+ may contain one or two objects, one for each PCA or tSNE plot requested,
+ named "pca" and "tsne", respectively.
 }
 \description{
-\code{tSNEfromPA} creates a ggplot object tSNE from presence/absense allelic data using the Barnes-Hut simulation at theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. If individuals which were sequenced at too few loci are to be filtered out, both the mc and counts argument must be provided.
+Generate a ggplot cluster plot based on PCA or the he Barnes-Hut simulation at
+theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Works by conversion to the
+"sn" format described in \code{\link{format_snps}} with interpolated missing
+genotypes.
 }
 \details{
-See the documentaion for \code{\link[Rtsne]{Rtsne}} for details. Defaults match those of \code{\link[Rtsne]{Rtsne}}. Argument documentation taken from that function.
+Cluster plots can be produced via either PCA or tSNE. The PCA point
+coordinates are calculated using \code{\link{prcomp}}. By default, the first
+two principal coordinates are plotted. A PC matrix will also be returned for
+easy plotting of other PCs. tSNE coordinates are calculated via
+\code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
+about this method. Stated simply, tSNE attempts to compress a
+multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
+information as possible. As such, a tSNE plot can be seen as a representation
+of many different PC axis compressed into a single two-dimensional plot. This
+compression process is stochastic, and so plots will vary somewhat between
+runs, and multiple runs are recommended.
 
-Description of x:
-   SNP or other allelic data in presence/absence format, as given by \code{\link{format_snps}} option 7. An additional column of population IDs titled "pop" must also be provided.
+For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
+consulted.
 
-This function results from collaboration with Matt Thorstensen.
+Data points for individuals can be automatically colored by any sample-level
+facet categories. Facets should be provided as described in
+\code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
+automatically plotted simultaniously.
 }
 \examples{
-tSNEfromPA(stickPA, 2, c.dup = TRUE)
+# plot colored by population
+plot_clusters(stickSNPs, "pop")
+}
+\references{
+Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}
+}
+\seealso{
+\code{\link[mmtsne]{mmtsne}}
+}
+\author{
+William Hemstrom
+
+Matt Thorstensen
 }

@@ -18,7 +18,7 @@
 #'
 #' Unlike most snpR functions, this function does not support facets, since each
 #' run can be very slow. Instead, an individual facet and facet level of
-#' interest should be selected with \code{\link{subset.snpR.data}}. See
+#' interest should be selected with \code{\link{subset_snpR_data}}. See
 #' examples.
 #'
 #' See documentation for \code{\link[BGLR]{BGLR}} for more details and for a
@@ -113,7 +113,7 @@ run_genomic_prediction <- function(x, responce, iterations,
 #'
 #' Unlike most snpR functions, this function does not support facets, since each
 #' run can be very slow. Instead, an individual facet and facet level of
-#' interest should be selected with \code{\link{subset.snpR.data}}. See
+#' interest should be selected with \code{\link{subset_snpR_data}}. See
 #' examples.
 #'
 #' The portion of samples left out for cross-validation is defined by the
@@ -187,7 +187,7 @@ cross_validate_genomic_prediction <- function(x, responce, iterations,
 
 
   # run the model
-  capture.output(suppressWarnings(suppressMessages(sub.x <- subset.snpR.data(x, samps = model.samples))))
+  capture.output(suppressWarnings(suppressMessages(sub.x <- subset_snpR_data(x, samps = model.samples))))
   model <- run_genomic_prediction(sub.x, responce = responce, iterations =  iterations,
                                   burn_in = burn_in, thin = thin, model = model)
 

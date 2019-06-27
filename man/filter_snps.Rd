@@ -11,8 +11,8 @@ filter_snps(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 \arguments{
 \item{x}{snpRdata object.}
 
-\item{maf}{FALSE or numeric between 0 and 1, default FALSE. Minimum
-acceptable minor allele frequency}
+\item{maf}{FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable
+minor allele frequency}
 
 \item{hf_hets}{FALSE or numeric between 0 and 1, default FALSE. Maximum
 acceptable heterozygote frequency.}
@@ -29,31 +29,31 @@ be re_filtered after individuals are filtered?}
 \item{maf.facets}{FALSE or character, default FALSE. Sample-specific facets
 over which the maf filter can be checked.}
 
-\item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be
-removed?}
+\item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be removed?}
 
 \item{bi_al}{boolean, default TRUE. Should non-biallelic SNPs be removed?}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and
-  individuals not passing the filters removed.
+ individuals not passing the filters removed.
 }
 \description{
-\code{filter_snps} filters snpRdata objects to remove SNPs or individuals which fail
-to pass user defined thresholds for several statistics. Since this function removes
-all calculated statistics, etc. from the snpRdata object, this should usually be the first step
-in an analysis. See details for filters.
+\code{filter_snps} filters snpRdata objects to remove SNPs or individuals
+which fail to pass user defined thresholds for several statistics. Since this
+function removes all calculated statistics, etc. from the snpRdata object,
+this should usually be the first step in an analysis. See details for filters.
 }
 \details{
-Possible filters:
-\itemize{
-   \item{maf, minor allele frequency: }{removes SNPs where the minor allele frequency is too low. Can look for mafs below #'provided either globally or search each population individually.}
-   \item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed heterozygosity is too high.}
-   \item{min_ind, minimum individuals: }{removes SNPs that were genotyped in too few individuals.}
-   \item{min_loci, minimum loci: }{removes individuals sequenced at too few loci.}
-   \item{non_poly, non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true SNPs).}
-   \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than two observed alleles.}
-}
+Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
+where the minor allele frequency is too low. Can look for mafs below
+#'provided either globally or search each population individually.}
+\item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed
+heterozygosity is too high.} \item{min_ind, minimum individuals: }{removes
+SNPs that were genotyped in too few individuals.} \item{min_loci, minimum
+loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
+non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
+SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
+two observed alleles.} }
 
 Note that filtering out poorly sequenced individuals creates a possible
 conflict with the loci filters, since after individuals are removed, some loci
@@ -94,4 +94,7 @@ filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75
 # and a full re-run of loci filters after individual removal.
 filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
 
+}
+\author{
+William Hemstrom
 }

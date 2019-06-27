@@ -19,12 +19,26 @@ check.snpRdata <- function(object){
 
 
 
-#' Storage class for snpR data and calculated statistics.
+#'Storage class for snpR data and calculated statistics.
 #'
-#' \code{} creates and defines the snpRdata class to store both raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+#'\code{\link{import.snpR.data}} creates and defines the snpRdata class to store
+#'both raw genotype data, sample and locus specific metadata, useful data
+#'summaries, repeatedly internally used tables, calculated summary statistics,
+#'and smoothed statistic data.
 #'
-#' The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
-#' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+#'The snpRdata class is built to contain SNP genotype data for use by functions
+#'in the snpR package. It inherits from the S3 class data.frame, in which the
+#'genotypes are stored, and can be manipulated identically. It also stores
+#'sample and locus specific metadata, genomic summary information, and any
+#'results from most snpR functions. The raw data for each of these latter
+#'objects is accessable via the at operator. Genotypes are stored in the
+#'"character" format, as output by format_snps(). Missing data is noted with
+#'"NN".
+#'
+#'For more information, see \code{\link{import.snpR.data}}, the constructor
+#'function for this object class.
+#'
+#'@author William Hemstrom
 #'
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",

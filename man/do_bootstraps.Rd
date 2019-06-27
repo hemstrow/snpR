@@ -64,7 +64,7 @@ window averages can be weighted by the number of observations per SNP by
 setting the nk argument to TRUE, as is the default. For bootstraps, nk values
 are randomly drawn for each SNP in each window.
 
-Centroids for windows can either be centered around every SNP, or centered
+Possible centers for windows can either SNPs (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
 }

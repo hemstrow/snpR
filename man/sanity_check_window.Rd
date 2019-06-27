@@ -33,3 +33,6 @@ Internal function only. Since many window related functions have similar
 sanity checks, they have been integrated here. For examples, see use in
 functions like \code{\link{do_bootstraps}}.
 }
+\author{
+William Hemstrom
+}

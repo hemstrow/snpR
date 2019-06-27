@@ -28,7 +28,7 @@
 #'setting the nk argument to TRUE, as is the default. For bootstraps, nk values
 #'are randomly drawn for each SNP in each window.
 #'
-#'Centroids for windows can either be centered around every SNP, or centered
+#'Possible centers for windows can either SNPs (if no step size is provided), or
 #'every step kilobases from the 0 position of each snp level facet category
 #'(chromosome, etc.).
 #'
@@ -51,11 +51,9 @@
 #'  window.bootstraps slot.
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
-<<<<<<< HEAD
+
 #'@author William Hemstrom
 #'@export
-=======
->>>>>>> e8019e6da1968f390be2ded966067158a72b6004
 #'
 #' @examples
 #' # add statistics
