@@ -37,9 +37,10 @@
 #'  containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
 #'  for more information). \item{window.bootstraps: } data.frame/table
 #'  containing all calculated bootstraps for sliding window statistics.
-#'  \item{names: } column names for genotypes. \item{row.names: } row names for
-#'  genotypes. \item{.Data: } list of vectors containing raw genotype data.
-#'  \item{.S3Class: } notes the inherited S3 object class. }
+#'  \item{sn: } list containing "sn", sn formatted data, and "type" type of
+#'  interpolation. \item{names: } column names for genotypes. \item{row.names: }
+#'  row names for genotypes. \item{.Data: } list of vectors containing raw
+#'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
 #'
 #'  Note that most of these sockets are used primarily internally.
 #'
@@ -105,8 +106,11 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
            mDat = mDat,
            stats = fm,
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
+           sn <- list(),
            facets = ".base",
            facet.type = ".base")
+
+  x@sn <- list(sn = format_snps(x, "sn"), type = "bernoulli")
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Imput data will be filtered to remove non bi-allelic data.\n")
@@ -1103,8 +1107,9 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   facets = x@facets,
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
+                  sn = x@sn[x@snp.meta$.snp.id %in% snps,],
                   names = x@names,
-                  row.names = x@row.names[snps])
+                  row.names = x@row.names[snps],)
     warning("Any window stats will need to be recalculated.\n")
     return(x)
   }

@@ -48,7 +48,7 @@
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
-#' sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
+#' sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
 #' dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 #' ## run prediction
 #' gp <- run_genomic_prediction(dat, responce = "weight", iterations = 1000, burn_in = 100, thin = 10)
@@ -60,7 +60,18 @@ run_genomic_prediction <- function(x, responce, iterations,
                                    model = "BayesB"){
 
   # get a properly formatted input file
-  sn <- format_snps(x, "sn")
+  if(length(x@sn) != 0){
+    if(x@sn$type != "bernoulli"){
+      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
+      x@sn$type <- "bernoulli"
+    }
+  }
+  else{
+    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
+    x@sn$type <- "bernoulli"
+  }
+
+  sn <- x@sn$sn
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
 
   # prepare the BGLR input
@@ -193,7 +204,17 @@ cross_validate_genomic_prediction <- function(x, responce, iterations,
 
   # check accuracy
   cross.samples <- (1:ncol(x))[-sort(model.samples)]
-  whole.sn <- format_snps(x, "sn")
+  if(length(x@sn) != 0){
+    if(x@sn$type != "bernoulli"){
+      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
+      x@sn$type <- "bernoulli"
+    }
+  }
+  else{
+    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
+    x@sn$type <- "bernoulli"
+  }
+  whole.sn <- x@sn$sn
   whole.sn <- whole.sn[,-(1:(ncol(x@snp.meta) - 1))]
   whole.sn <- interpolate_sn(whole.sn)
   new.sn <- whole.sn[,cross.samples]

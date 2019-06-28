@@ -19,6 +19,7 @@ check.snpRdata <- function(object){
     all.colnames <- all.colnames[-.IDs]
   }
 
+  # check for duplicated or poorly named columns
   dups <- duplicated(all.colnames) | duplicated(all.colnames, fromLast = TRUE)
   bad.chars <- c("\\.", "\\~", " ")
   bad.chars <- paste(bad.chars, collapse = "|")
@@ -34,11 +35,25 @@ check.snpRdata <- function(object){
     errors <- c(errors, msg)
   }
 
-  bad.col.entries <- sum(c(unlist(lapply(object@snp.meta, grepl, pattern = bad.chars)),
-                           unlist(lapply(object@sample.meta, grepl, pattern = bad.chars))))
-  if(bad.col.entries > 0){
-    msg <- paste0("Some metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
-    errors <- c(errors, msg)
+  # check for bad entries in character columns (periods are fine in numeric!)
+  chr.cols.samp <- unlist(lapply(object@sample.meta, class))
+  chr.cols.samp <- chr.cols.samp[which(chr.cols.samp == "character")]
+  chr.cols.snp <- unlist(lapply(object@snp.meta, class))
+  chr.cols.snp <- chr.cols.snp[which(chr.cols.snp == "character")]
+
+  if(length(chr.cols.samp) > 0){
+    l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
+    if(sum(l1) > 0){
+      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
+      errors <- c(errors, msg)
+    }
+  }
+  if(length(chr.cols.snp) > 0){
+    l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
+    if(sum(l1) > 0){
+      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
+      errors <- c(errors, msg)
+    }
   }
 
   if(length(errors) == 0){return(TRUE)}
@@ -82,7 +97,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        pairwise.stats = "data.frame",
                                        pairwise.window.stats = "data.frame",
                                        pairwise.LD = "list",
-                                       window.bootstraps = "data.frame"),
+                                       window.bootstraps = "data.frame",
+                                       sn = "list"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
 

@@ -487,7 +487,20 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
 
   #=============prepare dataset===============
   cat("Formatting data...\n")
-  suppressWarnings(sn <- format_snps(x, "sn", interpolate = interpolation_method))
+
+  # check for matching sn plot:
+  if(length(x@sn) != 0){
+    if(x@sn$type != interpolation_method){
+      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+      x@sn$type <- interpolation_method
+    }
+  }
+  else{
+    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+    x@sn$type <- interpolation_method
+  }
+
+  sn <- x@sn$sn
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
   meta <- x@sample.meta
 
