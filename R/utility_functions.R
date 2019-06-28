@@ -319,10 +319,12 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     facets <- x@facets
   }
 
-  bad.facets <- which(!facets %in% x@facets)
-  if(length(bad.facets) > 0){
-    stop("No data statistics calculated for facets: ", paste0(facets[bad.facets], collapse = ", "), ".\n")
-  }
+  facets <- check.snpR.facet.request(x, facets, "none")
+  # bad.facets <- which(!facets %in% x@facets)
+  # if(length(bad.facets) > 0){
+  #   stop("No data statistics calculated for facets: ", paste0(facets[bad.facets], collapse = ", "), ".\n")
+  # }
+
 
   #=======subfunctions======
   extract.basic <- function(y, facets, type = "standard"){
@@ -1651,7 +1653,10 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                                                      sample.meta = x@sample.meta[-rejects,],
                                                      mDat = mDat)))
       cat("Re-calculating and adding facets.\n")
-      x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+      if(any(old.facets != ".base")){
+        x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+      }
+
       warning("Any calculated stats will be removed, since individuals were filtered out!\n")
     }
     return(list(x = x, rejects = rejects))
@@ -1677,6 +1682,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     x <- min_loci_filt()
     if(length(x$rejects) == 0){
       cat("No individuals removed.\n")
+      x <- x$x
     }
     else{
       x <- x$x
