@@ -1,7 +1,7 @@
 ---
 title: "Introduction to Basic SNP Analysis with snpR"
 author: "William Hemstrom"
-date: "February 14, 2019"
+date: "June 27, 2019"
 output: 
   rmarkdown::html_vignette:
     toc: TRUE
@@ -17,23 +17,104 @@ library(snpR); library(ggplot2)
 
 # snpR Introduction
 
-snpR is a SNP genomic analysis package that is designed to do a range of basic genomic analyses, such as calculate observed and expected heterozygosity, linkage disequilibrium, pairwise-Fst, and so on. As much as possible is written using well-commented efficient, vectorized basic R, so that each individual function can be easily examined by the user if wanted.
+snpR is a SNP genomic analysis package that is designed to do a range of basic genomic analyses, such as calculate observed and expected heterozygosity, linkage disequilibrium, pairwise-Fst, and so on. All functions are written to
+take similar arguments and interpret them in consistant ways. This is done through the use of the snpRdata object class, which all snpR functions take as their first argument. Nearly all functions are written to be overwrite safe:
+the object provided to the function should be overwritten by the output. Newly calculated statistics will simply be merged-in to the existing object.
+
+A fundamental feature of snpR is the use of *facets*. Facets define categorical metadata features of the data, and can reference either features describing individual SNPs (such as chromosome) or individual samples (such as population). Facets are used to automatically break apart input data to calculate statistics in intuitive ways, such as by calculating observed heterozygosity in each population. Since metadata is contained in the snpRdata object, the user will never need to manually subset or loop calculations across categories/levels of a facet.
 
 # Quick-start Guide
 
-Here, we will walk through a basic analysis of the example three-spined stickleback data included in this package. We will filter SNP data, make PCA and tSNE exploratory plots, calculate $\pi, observed heterozygosity, check for private alleles, calculate pairwise FST, gaussian smooth and plot these parameters, and then calculate pairwise LD in one population.
+Here, we will walk through a basic analysis of the example three-spined stickleback data included in this package. We will filter SNP data, make PCA and tSNE exploratory plots, calculate minor allele frequencies, $\pi, observed heterozygosity, see if SNPs are in HWE, check for private alleles, calculate pairwise FST, gaussian smooth and plot these parameters, and then calculate pairwise LD in two populations on one chromosome.
 
-## Input Data format
+## Data import
 
 snpR can take a variety of SNP data formats. The basic input format is a tab-delimited SNP dataset, where each row contains metadata and genotypes for a single SNP. Genotypes are noted with two characters, such as "GG" or "GA" for a G/G homozygote and a G/A heterozygote, respectively. The missing data format can be user-defined, but is "NN" by default. For example, see the stick_NN_input.txt distributed with this package (snpR/data/stick_NN_input.txt). Note that this is identical to the format output by, for example, the ANGSD software package. Ensure that genotypes are not stored as factors during import. The resulting data looks like:
 
 ```{r echo=FALSE}
-print(head(stickSNPs)[,1:6], row.names = F)
+print(head(stickFORMATs$NN)[,1:6], row.names = F)
 ```
 
-Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respecitively), and as a single numeric character (homozygotes are either 0 or 2, heterozygotes are 1). plink data format import is under development.
+Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respecitively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes). plink data format import is under development.
 
-Example data is stored in the stickSNPs object. snpR generally assumes that all SNP datasets have at least one column of metadata, and may break if this is not true.
+Data in the "NN" format, as shown above, can be imported directly into a snpRdata set alongside any corresponding metadata using import.snpR.data function:
+
+```{r}
+# some example data is present in stickRAW
+# the first three characters of the column names are the population, so let's grab that:
+# since the first three columns contain snp.metadata, we need to remove those!
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), stringsAsFactors = F)
+
+# grab our sample metadata
+snp_meta <- stickRAW[,1:3]
+
+# import, remember to remove metadata from the genotypes!
+my.dat <- import.snpR.data(stickRAW[,-c(1:3)], 
+                           snp.meta = snp_meta, 
+                           sample.meta = sample_meta)
+
+```
+Note that column names in the snp and sample metadata must be unique (no repeats across *both* metadatasets), and cannot contain '.', '~', or whitespace!
+
+
+Alternatively, we can use the format_snps function to import data if it is already in a different format. This function takes a few extra arguments. First, it takes the data and a note of the input format, then it needs information on the number of snp metadata columns, the missing data notation, and any sample metadata.
+
+```{r}
+# Import numeric formatted data.
+head(stickFORMATs$`0000`)[,1:6]
+
+# get sample metadata, as before.
+sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), stringsAsFactors = F)
+
+# import
+my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+#
+```
+
+The result will be the same!
+
+## snpRdata objects and facets
+
+### snpRdata objects
+snpRdata objects store a range of variables internally in order to minimize repeat computation of things like allele frequencies. Any caluculated statistics will also be stored into sockets. Internally stored data can be accessed via 'sockets' using the '@' operator. For example, to see a table of allele frequencies, the geno.tables socket can be accessed:
+
+```{r}
+head(my.dat@geno.tables$as)
+```
+
+For the most part, snpR is built so that the user never needs to directly access sockets. A list of sockets can be found in the documentation for import.snpR.data, accessed by help(import.snpR.data).
+
+Almost all snpR functions are built to allow overwriting for easy object management. Since calculated data is stored in sockets, snpR functions generally return the snpRdata object that was given to them, but with extra data merged in. For example, to calculate observed heterozygosity, the calc_ho function can be used:
+
+```{r}
+# calculate observed heterozygosity, overwritting the my.dat object
+my.dat <- calc_ho(my.dat)
+
+```
+
+Calculated statistics can be fetched using the get.snpR.stats function. Note that this function returns a data.frame, not a snpRdata object, and **should never be used to overwrite a snpRdata object!*
+
+```{r}
+# fetch calculated statistics
+ho <- get.snpR.stats(my.dat)
+head(ho)
+
+```
+
+
+### Facets
+
+Facets are a fundamental feature of snpR. Often, SNP data must be seperated by population/chromosome/family/year etc. before statistics are calculated. Additionally, many statistics, like Fst, need to be calculated *pairwise* by comparing each population to every other population. Facets allow you to easily do this without complicated data manipulation. 
+
+Facets are defined by reference to column names in either the snp or sample metadata that was provided when creating a snpRdata object. For example, the facet "pop" would split my.dat apart by the pop column in the sample metadata, whereas the facet "group" would split my.dat apart by the "group" column in the snp metadata.
+
+Facets can define more than one column at once, in which case the data is split by *both* columns! Within a single facet, column names are seperated by a '.'.  For example, if there was both a pop and fam (or family) column in the sample metadata, the facet "pop.fam" would split by both the pop and the fam column simultainously, so it would have categories like "popA.famB" for an individual from population A, family B. These "complex" facets can also note both SNP and sample-specific categories simultaniously, for example, "pop.group" would split the data by the pop column in the sample metadata and the group column in the SNP metadata simultaniously. The order of the categories given in a facet do not matter--"pop.group" will produce the same result as "group.pop".
+
+Most functions can also take several facets at once, given as a character vector. For example, to split by both population, then by population and group simultaniously, c("pop", "pop.group") could be given.
+
+A handful of functions only work with either SNP or sample specific facets, but this is fixed "under the hood." For example, since observed heterozygosity is calculated independantly of for each SNP, it makes no sense to calculate it split up by chromosome. Using the "pop.group" facet with calc_ho, therefore, will internally default to "pop".
+
+Most of the time, giving NULL to a facets argument will run the data without splitting it up at all. Resulting stats will be noted to belong to the ".base" facet, a special, internally used facet that implies no splitting! Giving "all" to a facets argument, on the other hand, will run the data splitting by all previously run facets!
 
 ## SNP filtering
 
@@ -41,189 +122,113 @@ The filter_snps function can be used to filter poorly sequenced individuals and 
 
 Here, we will filter out all loci with a minor allele frequency below 0.05 in all populations, loci with a heterozygote frequency above 0.6, that are not bi-allelic, that are non-polymorphic, or that are sequenced in less than half of the individuals. We will also remove all individuals that are genotyped at less than half of the remaining loci, then quickly re-check that all loci are still polymophic.
 
-In order to do any functions that require population information, we first need to make a table of population information:
-
-```{r}
-pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3)) # this produces a table of the number of individuals in each population. Individuals must be sorted in the order they are given in this table!
-
-pops
-
-
-```
-
-Now, we can run the filterin command.
 
 ```{r, results = "hide"}
-filt_snps <- filter_snps(x = stickSNPs,
-                         ecs = 3, # how many metadata columns are there?
+my.dat <- filter_snps(x = my.dat,
                          maf = 0.05, # what is the minimum minor allele frequency to keep?
                          hf_hets = 0.55, # what is the maximum heterozygote frequency to keep?
-                         min_ind =  (ncol(stickSNPs) - 3)/2, # remove all loci sequenced at less than half of the individuals.
+                         min_ind =  .5, # remove all loci sequenced at less than half of the individuals.
                          min_loci = .5, # remove all individuals sequenced at less than half of the loci
                          re_run = "partial", # tell filter_snps to recheck that all loci are polymorphic after removing individuals. Could set to "full" to re-check maf and heterozygote frequency, or FALSE to skip.
-                         pop = pops, # tell filter_snps that we want to keep all loci with a maf above 0.1 in at least one population.
+                         maf.facets = "pop", # we want to keep any SNPs that pass the maf filter in ANY population!
                          non_poly = T, # we want to remove non-polymorphic loci
-                         bi_al = T, # we want to remove non bi-allelic loci
-                         mDat = "NN") # missing genotypes are listed as "NN"
+                         bi_al = T) # we want to remove non bi-allelic loci") # missing genotypes are listed as "NN"
 ```
 
+Note that we use the facet notation defined above to define maf.facets.
 
 ## PCA and tSNE plots
 
-A common first analytical step for new data is to run a PCA to look for any evidence of population structure/sequencing errors. snpR has a function to do this in a streamlined way. We'll also make a t-stochastic neighbor embedding plot as well. This is a machine learning method that compresses more PCA axis onto a single two dimensional plot, and can be really nice for showing higher-order structure such as family groups in pedigree data.
-
-To do either of these, we need to first condense the data into a purely numeric form. snpR has support for either allele presence/absense (pa) or (upcoming) a relatedness matrix. First, we'll convert to pa:
-
-```{r, results="hide"}
-# Convert to allele presence/absence
-pa <- format_snps(filt_snps, ecs = 3, output = "pa") 
-```
-
-Which looks like this:
-
-```{r, echo=FALSE}
-head(pa)[,1:10]
-```
-
+A common first analytical step for new data is to run a PCA to look for any evidence of population structure/sequencing errors. snpR has a function to do this in a streamlined way. We'll also make a t-stochastic neighbor embedding (tSNE) plot as well. This is a machine learning method that compresses more PCA axis onto a single two dimensional plot, and can be really nice for showing higher-order structure such as family groups in pedigree data.
 
 Note that a PCA cannot be constructed with missing data, so we interploate with the average number of each allele across all individuals.
 
-Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). First, we'll bind a pop ID column to the pa dataset.
+Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that.
 
 ```{r}
-# add population info
-pa <- cbind(pop = substr(pa$samp, 1, 3), pa)
-
-head(pa)[,1:10]
-
+head(stickSNPs@sample.meta)
 ```
 
-Next, we'll use the PCAfromPA function to make a plot.
+To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!**
+
 
 ```{r}
-# make a PCA plot
-pca <- PCAfromPA(x = pa, ecs = 2, 
-                 plot.vars = "pop", # name of the columns to plot in different colors. Can give up to 2.
-                 c.dup = T, # should the dataset be checked for any duplicate individuals? Usually not needed, but a good check to run.
-                 do.plot = T)
-
-# view the plot
-pca$plot
+# generate both tSNE and PCA plots
+p <- plot_clusters(stickSNPs, facets = c("pop.fam"))
 ```
 
-
-Note that we can also filter out poorly sequenced individuals before plotting, since these will all end up grouping in the middle of the plot due to interpolation of their missing data. To do so, we first make a vector of the counts of sequenced loci per individual:
+To view the plots, we can call two objects under the "plots" element in the list that plot_clusters returned.
 
 ```{r}
-# make a vector of the counts of sequenced loci per individual
-counts <- colSums(ifelse(filt_snps[,-c(1:3)] == "NN", 0, 1))
+# View the PCA
+p$plots$pca
 
 ```
-
-Then use the PCAfromPA function to plot, with a few extra arguments to filter out poorly sequenced individuals.
 
 ```{r}
-p <- PCAfromPA(x = pa, ecs = 2, plot.vars = "pop", c.dup = T, 
-                 mc = 600, # minimum count of sequenced loci to plot
-                 counts = counts) # provide the vector of counts.
-
-# view the plot, should be the same!
-pca$plot
+# view the tSNE
+p$plots$tsne
 ```
 
+plot_clusters also returns the raw plot data under the data element.
 
-We can also do a tSNE plot. This function takes the same arguments, although you must also provide parameters for the tSNE algorithm. This requires the mmtsne and Rtsne packages. To do so, we use the tSNEfromPA() function.
+There are other parameters that can also be tweaked in the t-SNE function, such as perplexity and theta. For more information, check out the documentation for Rtsne::Rtsne.
 
-```{r, results="hide"}
-# do a t-SNE plot
+## Calculate minor allele frequencies, $\pi$, Ho, and check for private alleles and HWE.
 
-tsne <- tSNEfromPA(x = pa, ecs = 2, plot.vars = "pop", c.dup = T,
-                   initial_dims = 100, # how many initial PCA dimensions should the t-SNE consider?
-                   iter = 500) # how many optimization iterations should be run?
+Minor allele frequencies, $\pi$, Ho, the number of private alleles, and HWE divergence are easy to calculate with snpR. Each use a very similar function, which take identical arguments. Since each returns a copy of the input snpRdata object, but with new information merged in, we can safely overwrite the original object each time we use a function.
 
-```
-
-Which produces:
-
-```{r, echo=FALSE}
-tsne$plot
-```
-
-Note that this plot tends to split everything into two troups, which are probably male and female samples! There are other parameters that can also be tweaked in the t-SNE function, such as perplexity and theta. For more information, check out the documentation for Rtsne::Rtsne.
-
-The tSNEfromPA() function can also filter poorly sequenced individuals, using the same arugments as before.
-
-
-## Calculate $\pi$, Ho, and check for private alleles.
-
-$\pi$, Ho, and the number of private alleles are easy to calculate with snpR. In order to calculate $\pi$, we'll need to first conver to allele count format, which is the other main format used by snpR. This format is essentially identical to the format used by Bayescan and a few other pieces of software.
-
-```{r, results="hide"}
-# convert to ac. Note that we need to give it the pop information from earlier!
-ac <- format_snps(filt_snps, 3, output = "ac", pop = pops)
-```
-
-The result looks like this:
-
-```{r, echo=FALSE}
-# view:
-head(ac)
-
-```
-
-This format has SNP metadata, followed by the total count of sequenced alleles, the number of possible alleles (should be 2 for all loci!), and the count of each allele for each SNP in each population.
-
-From here, $\pi calculation is straightforward:
+Each function, like most functions, take a snpRdata object and facets as their first two arguments. Indeed, for most of these, that's all we need! Here, we'll use the my.dat object and calculate these stats splitting by group and pop.
 
 ```{r}
-# calculate pi
-pi <- calc_pi(ac, ecs = 3)
-
-# the result:
-head(pi)
+# calculate minor allele frequencies, pi, ho, check for private alleles and HWE.
+my.dat <- calc_maf(my.dat, "group.pop")
+my.dat <- calc_pi(my.dat, "group.pop")
+my.dat <- calc_ho(my.dat, "group.pop")
+my.dat <- calc_private(my.dat, "group.pop")
+my.dat <- calc_hwe(my.dat, "group.pop")
 
 ```
 
-This returns pi for each SNP/pop combination in the order given in ac. To calculate Ho, we use the usual character formatted data:
+We can then use get.snpR.stats to view the results!
 
 ```{r}
-# calculate Ho, note that we again provide pop info.
-ho <- calc_Ho(x = filt_snps, ecs = 3, pop = pops)
+stats <- get.snpR.stats(my.dat, "all") # using the "all" facet requests statistics for all facets that have been run.
 
-# the result:
-head(ho)
+head(stats)
 ```
+Note that the facet is listed as "pop", not "group.pop"! This is because each of these statistics are calculated SNP by SNP, and thus do not care about SNP-specific categories. As such, snpR automatically demotes them to the "pop" facet, since "group" is a SNP specific facet.
 
-This will tell us the observed heterozygosity at each SNP in each population. Checking for private alleles is equally straightforward.
-
+We can also calculate these statistics for a more complicated facet. For example, we could calculate ho using both population and family!
 ```{r}
-# check for private alleles, uses the ac format:
-pr.a <- check_private(x = ac, ecs = 3)
+my.dat2 <- calc_ho(stickSNPs, "pop.fam")
 
-# view the result:
-head(pr.a)
+stats <- get.snpR.stats(my.dat2, "pop.fam")
 
+head(stats)
 ```
-
-Any 1s indicate a private allele in the corresponding population in the corresponding locus. In this case, there are no private alleles, the populations are too recently diverged.
+Note that the facet is listed as fam.pop, not pop.fam. Facets are always internally sorted alphabetically. Facet levels are now noted as "A.ASP", for individuals in family A, population ASP.
 
 ## Pairwise Fst calculation
 
 snpR can calculate pairwise Fst using a few approaches. Here, we'll use Wier and Cockerham (1984)'s method to calculate pairwise Fst between each pair of populations for each SNP.
 
 ```{r}
-pairwise.fst <- calc_pairwise_Fst(x = ac, ecs = 3, do.nk = T, # should we also count up the number of sequenced individuals for each locus in each pair of populations?
-                                  method = "WC", # specifying that we want to use the Wier and Cockerham 1984 method.
-                                  char.dat = filt_snps, pop = pops, c.d.ecs = 3) # we can re-provide this info so that the function can call calc_Ho for us. Alternatively, we could bind a Ho column to the dataset, in which case this can be skipped.
-
-# View the Fst results:
-head(pairwise.fst$FST)
-
-# View the number of sequenced individuals per locus (nk) in each pair of populations
-head(pairwise.fst$nk)
+my.dat <- calc_pairwise_fst(my.dat, "pop.group")
 ```
 
-There are a handful of other Fst methods available in calc_pairwise_Fst. Check out the function documentation for details.
+To recover the data, we again use get.snpR.stats, but, since this Fst is a "pairwise" statistic, where each statistic is a contrast between two sample-specific facet categories, it is stored in a different socket in the snpRdata. As such, we specify that we are looking for a different kind of data.
+
+```{r}
+stats <- get.snpR.stats(my.dat, "pop.group", type = "pairwise")
+
+head(stats)
+```
+Note that the comparison for each Fst value is noted under the comparison column!
+
+A full description of the different types of data we can access with get.snpR.stats is available in the documentation for that function, accessed by help(get.snpR.stats)
+
+There are a handful of other Fst methods available in calc_pairwise_fst. Check out the function documentation(help(calc_pairwise_fst)) for details.
 
 ## Do Gaussian Smoothing
 
