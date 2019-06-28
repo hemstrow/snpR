@@ -468,7 +468,8 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
     msg <- c(msg,  paste0("Only sample level facets can be plotted. Facets ", paste0(bf, collapse = ", "), " refer to snp metadata."))
   }
   facets <- facets[[1]]
-
+  facets <- unlist(strsplit(facets, "(?<!^)\\.", perl = T))
+  facets <- check.snpR.facet.request(x, facets)
 
   plot_type <- tolower(plot_type)
   good_plot_types <- c("pca", "tsne")
@@ -550,6 +551,11 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   #=============make ggplots=====================
   plots <- vector("list", length(plot_dats))
   names(plots) <- names(plot_dats)
+
+  if(length(facets) > 2){
+    warning("Only up to two simultanious sample metadata columns can be plotted at once.\n")
+  }
+
   for(i in 1:length(plot_dats)){
     tpd <- plot_dats[[i]]
 
@@ -589,7 +595,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
     }
 
     ## for the second variable if defined
-    if(length(facets) == 2){
+    if(length(facets) > 1){
       if(is.numeric(v2)){
         out <- out + ggplot2::scale_fill_viridis_c(name = facets[2])
       }
