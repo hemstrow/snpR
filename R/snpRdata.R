@@ -13,6 +13,34 @@ check.snpRdata <- function(object){
     errors <- c(errors, msg)
   }
 
+  all.colnames <- c(colnames(object@sample.meta), colnames(object@snp.meta))
+  .IDs <- which(all.colnames %in% c(".snp.id", ".sample.id"))
+  if(length(.IDs) > 0){
+    all.colnames <- all.colnames[-.IDs]
+  }
+
+  dups <- duplicated(all.colnames) | duplicated(all.colnames, fromLast = TRUE)
+  bad.chars <- c("\\.", "\\~", " ")
+  bad.chars <- paste(bad.chars, collapse = "|")
+  p.char.matches <- grepl(bad.chars, all.colnames)
+
+  bad.colnames <- dups | p.char.matches | all.colnames == "all"
+
+  if(any(bad.colnames)){
+    bad.colnames <- which(bad.colnames)
+    msg <- paste0("Some unacceptable column names in snp or sample metadata. Column names must be unique and not contain either '.', '~', or whitespace, and cannot be 'all'. Bad column names: ",
+                   paste0(all.colnames[bad.colnames], collapse = ", "), ".\n")
+
+    errors <- c(errors, msg)
+  }
+
+  bad.col.entries <- sum(c(unlist(lapply(object@snp.meta, grepl, pattern = bad.chars)),
+                           unlist(lapply(object@sample.meta, grepl, pattern = bad.chars))))
+  if(bad.col.entries > 0){
+    msg <- paste0("Some metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
+    errors <- c(errors, msg)
+  }
+
   if(length(errors) == 0){return(TRUE)}
   else{return(errors)}
 }
