@@ -19,7 +19,6 @@ Imports:
     bigtabulate,
     data.table,
     doSNOW,
-    dplyr,
     matrixStats,
     ggplot2,
     plyr,
@@ -27,6 +26,7 @@ Imports:
 Depends:
     data.table,
     doParallel,
+    dplyr,
     foreach
 Suggests:
     BGLR,
