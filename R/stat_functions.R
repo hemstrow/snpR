@@ -989,7 +989,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
               which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
                       substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
 
+    new.var <- grep(dmDat, gl)
     ##remove any double heterozygotes
+    ghapmat2 <- ghapmat[,-new.var]
     ghapmat <- ghapmat[,-rgcs]
 
     ## Keming: make a ghapmat with the new variable instead of rgcs. This will be x in our multihaplotype estimation function
@@ -1171,6 +1173,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     ##         now, what want to do is take an argument (let's name it use.ME). If use.ME == TURE,
     ##         we want to call our ME function, get a hapmat out from it, and return this instead of the
     ##         hapmat that we calculated above.
+
+    if(use.ME){
+      #call our new haplotype function, x is ghapmat2, haptable is hapmat, sigma is sigma
+      # overwrite the hapmat object.
+    }
 
     #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
     #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
