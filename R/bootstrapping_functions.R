@@ -32,6 +32,11 @@
 #'every step kilobases from the 0 position of each snp level facet category
 #'(chromosome, etc.).
 #'
+#'
+#'If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
+#'bootstrapped null distribution of that statistic using an emperical continuous
+#'distribution function.
+#'
 #'@param x snpRdata object.
 #'@param facets character or NULL, default NULL. Categories by which to break up
 #'  bootstraps.
@@ -46,9 +51,17 @@
 #'  averages by the number of observations at those SNPs.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'
-#'@return A  snpRdata object with bootstrapped windows merged in to the
-#'  window.bootstraps slot.
+#'@param do.p logical, default TRUE. Determines if p-values should be calculated
+#'  for sliding windows.
+#'@param p.alt character, default "two-sided". Specifies the alternative
+#'  hypothesis to be used. Options: \itemize{ \item "less": probability that a
+#'  bootstrapped value is as small or smaller than observed. \item "greater":
+#'  probability that a bootstrapped value is as large or larger than observed.
+#'  \item "two-sided": probability that a bootstrapped value is as or more
+#'  extreme than observed. }
+#'@return A snpRdata object with bootstrapped windows merged in to the
+#'  window.bootstraps slot. If do.p is TRUE, it will also merge p values in for
+#'  bootstrapped statistics into the stats or window.stats sockets.
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 
@@ -60,19 +73,21 @@
 #' dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
 #' do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
 #'
-do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = T, par = FALSE){
+do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = T, par = FALSE, do.p = TRUE, p.alt = "two-sided"){
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
   #      be run simultainously, with no need to loop across facets.
   #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
   #      we need to do everything once for each unique snp level facet defined in the data.
 
   #================sanity checks================
+  o.facets <- facets
   facets <- check.snpR.facet.request(x, facets, "none")
 
   # figure out which stats we are using!
   pairwise.types <- c("fst")
   single.types <- c("pi", "ho", "pa", "pHWE")
   all.types <- c(pairwise.types, single.types)
+  o.stats <- statistics
   if(statistics == "all"){
     statistics <- all.types[which(all.types %in% c(colnames(x@stats), colnames(x@pairwise.stats)))]
   }
@@ -537,6 +552,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   col.ord <- c(1, 2, ncol(out), 3:(ncol(out) - 1))
   out <- out[,..col.ord]
   x@window.bootstraps <- rbind(x@window.bootstraps, out)
+
+  if(do.p){
+    x <- calc_p_from_bootstraps(x, facets, o.stats, alt = p.alt, par = par)
+  }
+
   return(x)
 }
 
@@ -679,6 +699,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   if(facets[1] != "all"){
 
     keep.rows <- logical(nrow(u.rows))
+    facets <- check.snpR.facet.request(x, facets, "none", T)
 
     # loop through each facet
     for(i in 1:length(facets[[1]])){

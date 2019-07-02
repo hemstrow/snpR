@@ -49,3 +49,6 @@ and thus ignore any snp meta data variables included in facets. Providing NULL o
 \seealso{
 calc_single_stats calc_pairwise_fst calc_smoothed_averages
 }
+\author{
+William Hemstrom
+}

@@ -368,9 +368,33 @@ Multiple levels can be requested by providing a vector of requested levels, for 
 
 Bootstraps for sliding windows can be easily calculated using the do_bootstraps function. This will create bootstrapped windows by taking real windows from the dataset and assigning random SNPs to each SNP in the window. In essence, this means that each window is a random genomic window with shuffled SNPs.
 
-This function can do multiple statistics at once. The random windows for each statistic will be identical to save computation, but this means that each statistic is not a truely independant from the others.
+This function can do multiple statistics at once. The random windows for each statistic will be identical to save computation, but this means that each statistic is not a truely independant from the others. By default, p-values for each window based on bootstraps will be calculated and merged in to that saved statistics.
 
 ```{r}
 my.dat <- do_bootstraps(my.dat, "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all")
+
+stats <- get.snpR.stats(my.dat, "group.pop", "single.window")
+head(stats)
+```
+
+P-values can also be calculated later using the calc_p_from_bootstraps function.
+
+## Easy mode
+
+Most of the statistics above can be calculated in one step!
+
+```{r, results='hide'}
+my.dat2 <- calc_basic_snp_stats(stickSNPs, "group.pop", sigma = 200, step = 50)
+
+```
+
+This will calculate pi, ho, HWE, mafs, private alleles, and pairwise fst, and calculate smoothed windows for these stats in one easy step!
+
+## Parallel
+
+Many functions can run in parallel with the par argument. This relies on the doSNOW parallel backend, and should run on either windows or linux.
+
+```{r, results='hide'}
+my.dat2 <- calc_basic_snp_stats(stickSNPs, "group.pop", sigma = 200, step = 50, par = 4)
 ```
 

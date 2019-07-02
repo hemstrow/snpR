@@ -5,7 +5,8 @@
 \title{Generate bootstrapped windowed statistics}
 \usage{
 do_bootstraps(x, facets = NULL, boots, sigma, step = NULL,
-  statistics = "all", nk = T, par = FALSE)
+  statistics = "all", nk = T, par = FALSE, do.p = TRUE,
+  p.alt = "two-sided")
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -27,12 +28,23 @@ averages by the number of observations at those SNPs.}
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
+\item{do.p}{logical, default TRUE. Determines if p-values should be calculated
+for sliding windows.}
+
+\item{p.alt}{character, default "two-sided". Specifies the alternative
+hypothesis to be used. Options: \itemize{ \item "less": probability that a
+bootstrapped value is as small or smaller than observed. \item "greater":
+probability that a bootstrapped value is as large or larger than observed.
+\item "two-sided": probability that a bootstrapped value is as or more
+extreme than observed. }}
+
 \item{statistic}{character. Designates the statistic(s) to smooth, typically
 "all", "single", or "pairwise". See details for options.}
 }
 \value{
-A  snpRdata object with bootstrapped windows merged in to the
- window.bootstraps slot.
+A snpRdata object with bootstrapped windows merged in to the
+ window.bootstraps slot. If do.p is TRUE, it will also merge p values in for
+ bootstrapped statistics into the stats or window.stats sockets.
 }
 \description{
 \code{do_bootstraps} creates a distribution of bootstrapped smoothed values
@@ -67,6 +79,10 @@ are randomly drawn for each SNP in each window.
 Possible centers for windows can either SNPs (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
+
+If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
+bootstrapped null distribution of that statistic using an emperical continuous
+distribution function.
 }
 \examples{
 # add statistics

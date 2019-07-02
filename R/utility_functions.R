@@ -106,11 +106,9 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
            mDat = mDat,
            stats = fm,
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
-           sn <- list(),
+           sn <- list(sn = NULL, type = NULL),
            facets = ".base",
            facet.type = ".base")
-
-  x@sn <- list(sn = format_snps(x, "sn"), type = "bernoulli")
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Imput data will be filtered to remove non bi-allelic data.\n")

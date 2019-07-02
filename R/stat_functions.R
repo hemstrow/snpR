@@ -2128,6 +2128,9 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 #'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
 #'  averages by the number of observations at those SNPs.
 #'
+#'@author William Hemstrom
+#'@export
+#'
 #'@seealso calc_single_stats calc_pairwise_fst calc_smoothed_averages
 #'@return A snpRdata object with all of the described statistics merged into the appropriate sockets.
 #'
