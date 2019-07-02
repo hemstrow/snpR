@@ -232,114 +232,145 @@ There are a handful of other Fst methods available in calc_pairwise_fst. Check o
 
 ## Do Gaussian Smoothing
 
-snpR has a tool to sliding window smooth parameters using a Gaussian kernal, splitting by any number of different variables. Here, we'll smooth $\pi, Ho, and pairwise FST, splitting by population. We'll weight each SNPs contribution to the window mean by their sequencing depth.
+snpR has a tool to sliding window smooth parameters using a Gaussian kernal, splitting by any number of different variables. Here, we'll smooth $\pi, Ho, and pairwise FST, splitting by population. In addition, we'll weight the contribution of each SNP to each window by the number of times that SNP was sequenced across individuals.
 
-This function can smooth multiple parameters at a time! We'll do FST and the other stats seperately, since they need to be weighted differently (since less genotypes are used to calculate each FST score--only those in the two pops being compared).
+To calculate sliding window averages, we need to define the sizes of the windows and the distance we slide between each. These are defined by the "sigma" and "step" arguments, respectively. Each window will include all SNPs within 3 x sigma of the window center, after which their contribution to the window average is small enough to be negligable. Both sigma and step are defined in *kilobases*.
 
-```{r, results="hide"}
-# collect pi, ho, and nk data.
-
-# first, we'll melt the observed heterozygosity data into long form
-mho <- reshape2::melt(ho, id.vars = colnames(ho)[1:3])
-colnames(mho)[4:5] <- c("pop", "Ho")
-
-# then we'll bind things together. Everything should be in the same order, but the data could be sorted or merged to make sure if wanted. nk  can be taken from our ac data:
-s.dat <- cbind(mho, pi = pi$pi, nk = ac$n_total)
+By default, snpR will calculate sliding window averages for all previously calculated stats. The "stats.type" argument can be used to limit this to just single or pairwise stats (pi, ho, etc or fst, respectively).
 
 
-# finally, we can smooth
-s_piho <- s_ave_multi(s.dat, parms = c("Ho", "pi"), # which variables to we smooth? 
-                    sigma = 200, # how big are our windows, in kb?
-                    ws = 50, # how much do we slide each window, in kb?
-                    nk = T, # are we weighting by nk?
-                    levs = c("group", "pop")) # which levels are we splitting the smoothing by?
+```{r, results='hide'}
+
+my.dat <- calc_smoothed_averages(my.dat, "pop.group",
+                                 sigma = 200, # using a window size of 200
+                                 step = 50) # using a step size of 50 between windows
+
 
 ```
 
-The resulting data.frame has the smoothed averages for both stats for each window.
+We can view the results with get.snpR.stats as usual! Since the results are a different kind of data, we view them with a different "type" argument. For the single (non-pairwise) stats, we can use the "single.window" type: 
 
 ```{r}
-head(s_piho)
+stats <- get.snpR.stats(my.dat, "pop.group", "single.window")
+
+head(stats)
+
 ```
 
-
-Next, we'll do FST:
-
-```{r, results="hide"}
-# First, melt the data down:
-
-mfst <- reshape2::melt(pairwise.fst$FST, id.vars = colnames(pairwise.fst$FST)[1:3])
-colnames(mfst)[4:5] <- c("pop", "FST")
-
-# next, melt the nk data down:
-mnk <- reshape2::melt(pairwise.fst$nk, id.vars = colnames(pairwise.fst$nk)[1:3])
-colnames(mnk)[4:5] <- c("pop", "nk")
-
-# bind them together:
-mfst <- cbind(mfst, nk = mnk$nk)
-
-# return pop to a character variable:
-mfst$pop <- as.character(mfst$pop)
-
-# and smooth
-s_FST <- s_ave_multi(mfst, parms = "FST", sigma = 200, ws = 50, nk = T, levs = c("group", "pop"))
-```
-
-The result has FST scores for each window for each pair of populations:
+And for the pairwise windows, we use "pairwise.window".
 
 ```{r}
-head(s_FST)
-```
+stats <- get.snpR.stats(my.dat, "pop.group", "pairwise.window")
 
+head(stats)
+
+```
 
 ## Plot the Smoothed Parameters
 
-Next, we want to plot these variables. We'll use the ggplot2 package, and start with Ho:
+Next, we want to plot these variables. We'll use the ggplot2 package, and start with pi:
 
 ```{r}
-# Plot Ho, pi works the same way!
-ggplot(s_piho, aes(x = position, y = smoothed_Ho, color = pop)) + geom_line() + theme_bw() +
-  facet_wrap(~group, scales = "free_x") # facet wrap on group to split by linkage group/chromosome.
+stats <- get.snpR.stats(my.dat, "pop.group", "single.window")
+
+# Plot pi, pi works the same way!
+ggplot(stats, aes(x = position, y = pi, color = subfacet)) + geom_line() + theme_bw() +
+  facet_wrap(~snp.subfacet, scales = "free_x") # facet wrap on group to split by linkage group/chromosome.
 ```
 
 Then we'll do FST, but restrict to one linkage group to save some space.
 
 ```{r}
 
-ggplot(s_FST[s_FST$group == "groupIX",], aes(x = position, y = smoothed_FST, color = pop)) + geom_line() + theme_bw()
+stats <- get.snpR.stats(my.dat, "pop.group", "pairwise.window")
+
+
+ggplot(stats[stats$snp.subfacet == "groupXIX",], aes(x = position, y = fst, color = subfacet)) + geom_line() + theme_bw()
 ```
 
-Note that these aren't particularly interesting plots in this case, since the dataset is very low SNP resolution!
+Note that these aren't particularly interesting plots in this case, since the dataset is very low SNP resolution.
 
 ## Calculate Pairwise LD
 
-Lastly, we'll calculate pairwise LD for one population. This will calculate the r2, Dprime, and a p-value for each pair of SNPs. We can specify that we want to split by linkage groups/chromosomes, as usual. By default, this will produce two outputs: a proximity table and a matrix of pairwise LD for each level for each statistic.
+Lastly, we'll calculate pairwise LD for one population. This will calculate the r2, Dprime, and a p-value for each pair of SNPs. We can specify that we want to split by linkage groups/chromosomes, as usual. This will produce two outputs: a proximity table and a matrix of pairwise LD for each level for each statistic.
+
+Since LD comparisons take a while, it can be worthwhile to run only a few different categories of a given facet. The snpR LD function can do this with the "subfacet" argument. This arugment takes a named list, where each entry contains the categories to run for a specific facet. For example:
 
 ```{r, results="hide"}
-# subset out the OPL data
-OPL <- cbind(filt_snps[,1:3], filt_snps[,grepl("OPL", colnames(filt_snps))])
+list(pop = "ASP", group = "groupIX")
 
-# run the LD function.
-LD <- LD_full_pairwise(OPL, ecs = 3, levels = "group")
 ```
-
-Note that the par argument can be used to run this in parallel via the doParallel and foreach packages. The proximity table can be used to make plots of proximity vs LD:
+would run the ASP population for the groupIX chromosome, whereas
 
 ```{r}
-# View the proximity table (using tail instead of head, since head has a bunch of rows with missing LD scores).
-tail(LD$prox)
+list(pop = c("SMR", "OPL"), group = c("groupIX", "groupIV"))
 
-ggplot(LD$prox, aes(x = proximity, y = rsq)) + geom_point() + theme_bw()
 ```
 
-The other output can be used to visualize LD on a per-LG basis, using a built in plotting function:
+would run the SMR and OPL populations for the group IX and IV chromosomes. We can use complex (multi-category) facets as normal, so
 
 ```{r}
-# plot LD across LG IX:
-LD_plot <- LD_pairwise_heatmap(LD$groupIX$rsq)
+list(fam.pop = "A.ASP")
+```
+would run only samples in family A and the ASP population.
 
-# View the result
-LD_plot$plot
+In this case, let's run the ASP and OPL populations for groupIX:
 
+```{r}
+my.dat <- calc_pairwise_ld(my.dat, facets = "group.pop", 
+                           subfacets =  list(pop = c("ASP", "OPL"), group = "groupIX"))
+
+```
+
+The results can be accessed as usual, although they are in a slightly different format!
+
+```{r}
+stats <- get.snpR.stats(my.dat, "group.pop", "LD")
+
+str(stat)
+```
+
+The results are a multi-level named list. The first level references "prox" and "matricies". "prox" is fairly straightforward:
+
+```{r}
+head(stats$prox)
+```
+
+Each row contains information on one single SNP-SNP comparison, with information on the group and population of the comparison, as well as the positions of the SNPs, their proximity to each other, and the LD statistics.
+
+The "matrices" object is another multi-level list. The first list level names the sample-specific facet levels, the second list level names any SNP specific facet levels, and the third list level contains the acutal LD matrices. For example:
+
+```{r}
+stats$matrices$ASP$groupIX$rsq[1:10,1:10]
+```
+
+would give us the rsq matrix for the ASP population on group IX.
+
+Heatmaps are a convienent way to visualize LD data. snpR contains a plotting utility to make ggplots for any calculated LD data.
+
+```{r}
+p <- plot_pairwise_LD_heatmap(my.dat, "group.pop")
+
+p$plot
+```
+
+Specific plots can be requested using the snp.subfacet and sample.subfacet arguments. These will plot only the specified levels of the sample and snp-specific parts of the requested facet. For example, to plot only the ASP population:
+
+```{r}
+p <- plot_pairwise_LD_heatmap(my.dat, "group.pop", sample.subfacet = "ASP")
+
+p$plot
+```
+
+Multiple levels can be requested by providing a vector of requested levels, for example c("ASP", "OPL"). See the documentation for plot_pairwise_LD_heatmap for more information!
+
+## Bootstraps
+
+Bootstraps for sliding windows can be easily calculated using the do_bootstraps function. This will create bootstrapped windows by taking real windows from the dataset and assigning random SNPs to each SNP in the window. In essence, this means that each window is a random genomic window with shuffled SNPs.
+
+This function can do multiple statistics at once. The random windows for each statistic will be identical to save computation, but this means that each statistic is not a truely independant from the others.
+
+```{r}
+my.dat <- do_bootstraps(my.dat, "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all")
 ```
 

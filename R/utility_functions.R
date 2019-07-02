@@ -323,6 +323,11 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     facets <- x@facets
   }
 
+  good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps")
+  if(!type %in% good.types){
+    stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
+  }
+
   facets <- check.snpR.facet.request(x, facets, "none")
   # bad.facets <- which(!facets %in% x@facets)
   # if(length(bad.facets) > 0){

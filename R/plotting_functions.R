@@ -46,6 +46,7 @@
 #'
 #'@author William Hemstrom
 #'@author Nicholas Sard
+#'@export
 #'
 #' @examples
 #' # get LD data

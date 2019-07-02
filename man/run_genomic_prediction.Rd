@@ -61,7 +61,7 @@ full list of references.
 \examples{
 # run and plot a basic prediction
 ## add some dummy phenotypic data.
-sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
+sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
 dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 ## run prediction
 gp <- run_genomic_prediction(dat, responce = "weight", iterations = 1000, burn_in = 100, thin = 10)

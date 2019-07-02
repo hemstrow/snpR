@@ -88,14 +88,14 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     stats.type <- "pairwise"
   }
   if(any(statistics %in% single.types)){
-    stats.type <- c(stats.type, "stats")
+    stats.type <- c(stats.type, "single")
   }
 
   # run basic sanity checks
   sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
 
   # get mafs if doing any normal stats. Can make this more effeicent by adding only where missing in the future.
-  if("stats" %in% stats.type & nk){
+  if("single" %in% stats.type & nk){
     x <- calc_maf(x, facets)
     x@stats$nk <- x@stats$maj.count + x@stats$min.count
   }
@@ -300,7 +300,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     stattype.meta <- character()
 
     # get nk info and cast each type
-    if("stats" %in% stats.type){
+    if("single" %in% stats.type){
       if(!data.table::is.data.table(stats)){
         stats <- data.table::as.data.table(stats)
       }
@@ -621,7 +621,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     if(any(colnames(y) == "stat")){
       matches <- (y$stat == statistic) & matches
     }
-    if(sum(matches) == 0){browser()}
     return(which(matches))
   }
 
@@ -711,7 +710,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   # initialize
   out <- vector("list", nrow(u.rows))
 
-  browser()
   # run the loop
   if(par == FALSE){
     for(q in 1:nrow(u.rows)){
@@ -752,7 +750,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   }
 
   #===========bind, cast, and merge===========
-  browser()
   # bind the result
   out <- data.table::rbindlist(out)
 

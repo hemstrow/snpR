@@ -426,6 +426,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
 #'@author William Hemstrom
+#'@export
 #'
 #' @examples
 #' calc_pairwise_fst <- function(stickSNPs, facets = "pop")
@@ -890,6 +891,9 @@ calc_private <- function(x, facets = NULL){
 #'@references Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
 #'  Evolution}
 #'@references Lewontin (1964). \emph{Genetics}
+#'
+#'@author William Hemstrom
+#'@export
 #'
 #' @examples
 #' #CLD
@@ -1892,6 +1896,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   #========================prepare and pass the primary function to apply.snpR.facets==================
   #subset data if requested:
   if(!(is.null(subfacets[1]))){
+    old.x <- x
     ssfacets <- names(subfacets)
 
     # check complex facets
@@ -1946,7 +1951,13 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
 
   # add to snpRdata object and return
-  out <- merge.snpR.stats(x, out, "LD")
+  if(exists("old.x")){
+    out <- merge.snpR.stats(old.x, out, "LD")
+
+  }
+  else{
+    out <- merge.snpR.stats(x, out, "LD")
+  }
   return(out)
 }
 

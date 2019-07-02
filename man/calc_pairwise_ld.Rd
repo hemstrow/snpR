@@ -91,3 +91,6 @@ Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
 
 Lewontin (1964). \emph{Genetics}
 }
+\author{
+William Hemstrom
+}

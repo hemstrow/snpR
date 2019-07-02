@@ -60,9 +60,10 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
  for more information). \item{window.bootstraps: } data.frame/table
  containing all calculated bootstraps for sliding window statistics.
- \item{names: } column names for genotypes. \item{row.names: } row names for
- genotypes. \item{.Data: } list of vectors containing raw genotype data.
- \item{.S3Class: } notes the inherited S3 object class. }
+ \item{sn: } list containing "sn", sn formatted data, and "type" type of
+ interpolation. \item{names: } column names for genotypes. \item{row.names: }
+ row names for genotypes. \item{.Data: } list of vectors containing raw
+ genotype data. \item{.S3Class: } notes the inherited S3 object class. }
 
  Note that most of these sockets are used primarily internally.
 
