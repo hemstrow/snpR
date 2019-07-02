@@ -34,27 +34,28 @@ check.snpRdata <- function(object){
 
     errors <- c(errors, msg)
   }
+  warning("Periods, tildas, or whitespace in meta data columns that are used as facets may cause errors!\n")
 
   # check for bad entries in character columns (periods are fine in numeric!)
-  chr.cols.samp <- unlist(lapply(object@sample.meta, class))
-  chr.cols.samp <- chr.cols.samp[which(chr.cols.samp == "character")]
-  chr.cols.snp <- unlist(lapply(object@snp.meta, class))
-  chr.cols.snp <- chr.cols.snp[which(chr.cols.snp == "character")]
-
-  if(length(chr.cols.samp) > 0){
-    l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
-    if(sum(l1) > 0){
-      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
-      errors <- c(errors, msg)
-    }
-  }
-  if(length(chr.cols.snp) > 0){
-    l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
-    if(sum(l1) > 0){
-      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
-      errors <- c(errors, msg)
-    }
-  }
+  # chr.cols.samp <- unlist(lapply(object@sample.meta, class))
+  # chr.cols.samp <- chr.cols.samp[which(chr.cols.samp == "character")]
+  # chr.cols.snp <- unlist(lapply(object@snp.meta, class))
+  # chr.cols.snp <- chr.cols.snp[which(chr.cols.snp == "character")]
+  #
+  # if(length(chr.cols.samp) > 0){
+  #   l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
+  #   if(sum(l1) > 0){
+  #     msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
+  #     errors <- c(errors, msg)
+  #   }
+  # }
+  # if(length(chr.cols.snp) > 0){
+  #   l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
+  #   if(sum(l1) > 0){
+  #     msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
+  #     errors <- c(errors, msg)
+  #   }
+  # }
 
   if(length(errors) == 0){return(TRUE)}
   else{return(errors)}
