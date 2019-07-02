@@ -92,6 +92,16 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
+  x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
+           facet.meta = data.frame(),
+           geno.tables = list(),
+           mDat = mDat,
+           stats = data.frame(),
+           snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
+           sn <- list(sn = NULL, type = NULL),
+           facets = ".base",
+           facet.type = ".base")
+
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
@@ -100,15 +110,8 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
 
   fm <- cbind(fm, snp.meta)
 
-  x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
-           facet.meta = fm,
-           geno.tables = gs,
-           mDat = mDat,
-           stats = fm,
-           snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
-           sn <- list(sn = NULL, type = NULL),
-           facets = ".base",
-           facet.type = ".base")
+  x@geno.tables <- gs
+  x@facet.meta <- fm
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Imput data will be filtered to remove non bi-allelic data.\n")
