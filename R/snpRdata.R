@@ -44,14 +44,14 @@ check.snpRdata <- function(object){
   if(length(chr.cols.samp) > 0){
     l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
     if(sum(l1) > 0){
-      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
+      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
       errors <- c(errors, msg)
     }
   }
   if(length(chr.cols.snp) > 0){
     l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
     if(sum(l1) > 0){
-      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\n")
+      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nTo fix, try using the gsub function!\n")
       errors <- c(errors, msg)
     }
   }
