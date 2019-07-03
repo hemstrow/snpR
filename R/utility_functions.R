@@ -112,6 +112,7 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
 
   x@geno.tables <- gs
   x@facet.meta <- fm
+  x@stats <- fm
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Imput data will be filtered to remove non bi-allelic data.\n")
@@ -1277,9 +1278,14 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
 #'
 tabulate_genotypes <- function(x, mDat, verbose = F){
 
-  # get a genotype table
+  # fix for if x is a vector (only one individual) and convert to data.table
+  if(!is.data.frame(x)){
+    x <- data.frame(samp = x)
+  }
   x <- data.table::setDT(x)
 
+
+  # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
   x <- data.table::melt(t(x)) # transpose and melt
 
@@ -1455,6 +1461,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   }
 
   if(!is.null(maf.facets[1])){
+    maf.facets <- check.snpR.facet.request(x, maf.facets, "none")
+
     # add any needed facets...
     miss.facets <- maf.facets[which(!(maf.facets %in% x@facets))]
     if(length(miss.facets) != 0){
@@ -1561,6 +1569,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
         maf.vio <- x@snp.meta$.snp.id[which(mafs)]
+        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+
+
         vio.snps[which(mafs)] <- T
       }
       else{
@@ -1637,17 +1648,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       ngs <- list(gs = ngs, as = nas, wm = nwm)
       rm(nas, nwm)
 
-      x <- snpRdata(.Data = x[-which(vio.snps),],
-                    sample.meta = x@sample.meta,
-                    snp.meta = x@snp.meta[-which(vio.snps),],
-                    facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                    geno.tables = ngs,
-                    ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                    window.stats = x@window.stats,
-                    facets = x@facets,
-                    facet.type = x@facet.type,
-                    row.names = x@row.names[-which(vio.snps)])
+      invisible(capture.output(x <- snpRdata(.Data = x[-which(vio.snps),],
+                                             sample.meta = x@sample.meta,
+                                             snp.meta = x@snp.meta[-which(vio.snps),],
+                                             facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                             geno.tables = ngs,
+                                             ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                             stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
+                                             window.stats = x@window.stats,
+                                             facets = x@facets,
+                                             facet.type = x@facet.type,
+                                             row.names = x@row.names[-which(vio.snps)])))
     }
     return(x)
   }
