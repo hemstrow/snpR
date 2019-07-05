@@ -89,6 +89,10 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
   }
 
+  # fix factors
+  sample.meta %>% mutate_if(is.factor, as.character) -> sample.meta
+  snp.meta %>% mutate_if(is.factor, as.character) -> snp.meta
+
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
@@ -263,6 +267,8 @@ add.facets.snpR.data <- function(x, facets = NULL){
     os <- rbind(os, sm)
   }
   x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
+
+  x@facet.meta %>% mutate_if(is.factor, as.character) -> x@facet.meta
 
   return(x)
 }
@@ -475,7 +481,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 #'  "stats". Type of statistic under to pull under the ps.pf.psf option.
 #'
 #'@author William Hemstrom
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all"){
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -528,6 +534,71 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
 
       # return
+      return(out)
+    }
+    else if(req == "cast.gs" | req == "cast.ac"){
+
+      # need to split by phenotype + facet
+      pheno.facets <- paste(facets, response, sep = ".")
+      pheno.facets <- check.snpR.facet.request(x, pheno.facets)
+      x <- add.facets.snpR.data(x, pheno.facets)
+      if(req == "cast.gs"){
+        gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
+      }
+      else{
+        gs <- data.table::as.data.table(cbind(x@facet.meta, x@ac[, c("ni1", "ni2")]))
+      }
+
+      # initialize outputs
+      comb <- vector("list", length = length(facets))
+
+      # get the input gs data. Split by facet, since we need to extract metadata differently for each.
+      for(i in 1:length(facets)){
+        tgs <- gs[gs$facet == pheno.facets[i],]
+
+        which.is.phenotype <- which(unlist(strsplit(pheno.facets[i], split = "(?<!^)\\.", perl = T)) == response)
+
+        # add phenotype and subfacet column
+        id <- strsplit(tgs$subfacet, split = "(?<!^)\\.", perl = T)
+        l <- length(id[[1]])
+        uid <- unlist(id)
+        p.vals <- seq(from = which.is.phenotype, to = length(uid), by = l)
+        subfacet <- lapply(id, FUN = function(x) x[-which.is.phenotype])
+        subfacet <- unlist(lapply(subfacet, FUN = paste, sep = "."))
+        tgs$subfacet <- subfacet
+        tgs$phenotype <- uid[p.vals]
+
+        # cast
+        if(req == "cast.gs"){
+          value.vars <- colnames(x@geno.tables$gs)
+        }
+        else{
+          value.vars <- c("ni1", "ni2")
+        }
+        comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
+        comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"))
+        comb[[i]]$facet <- facets[i]
+      }
+
+      comb <- rbindlist(comb)
+
+      mcols <- 1:ncol(x@facet.meta)
+      meta <- comb[,..mcols]
+      comb <- comb[,-..mcols]
+
+      # call function
+      out <- fun(comb, ...)
+      n.ord <- (1:ncol(meta))[-which(colnames(meta) == ".snp.id")]
+      n.ord <- c(n.ord, which(colnames(meta) == ".snp.id"))
+      meta <- meta[,..n.ord]
+      out <- cbind(meta, out)
+      if(req == "cast.gs"){
+        colnames(out)[ncol(out)] <- paste0("p_armitage_", response)
+      }
+      else{
+        colnames(out)[-c(1:ncol(meta))] <- paste0(colnames(out)[-c(1:ncol(meta))], "_", response)
+      }
+
       return(out)
     }
   }
@@ -1114,9 +1185,9 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   facets = x@facets,
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
-                  sn = x@sn[x@snp.meta$.snp.id %in% snps,],
+                  sn = data.frame(),
                   names = x@names,
-                  row.names = x@row.names[snps],)
+                  row.names = x@row.names[snps])
     warning("Any window stats will need to be recalculated.\n")
     return(x)
   }
