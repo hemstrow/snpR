@@ -564,7 +564,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         uid <- unlist(id)
         p.vals <- seq(from = which.is.phenotype, to = length(uid), by = l)
         subfacet <- lapply(id, FUN = function(x) x[-which.is.phenotype])
-        subfacet <- unlist(lapply(subfacet, FUN = paste, sep = "."))
+        subfacet <- unlist(lapply(subfacet, FUN = paste, collapse = "."))
         tgs$subfacet <- subfacet
         tgs$phenotype <- uid[p.vals]
 
