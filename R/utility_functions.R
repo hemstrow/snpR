@@ -3124,3 +3124,145 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 
   return(TRUE)
 }
+
+#' Checks for duplicated samples in snpRdata.
+#'
+#' Searches through a snpR dataset and, for every designated sample, determines
+#' the proportion of identical genotypes in every other sample. This function
+#' \emph{is not overwrite safe}.
+#'
+#' If an id column is specified, y should contain sample IDs matching those
+#' contained in that column. If not, y should contain sample indices instead.
+#' The proportion of identical genotypes between matching samples and all other
+#' samples are calculated. By default, every sample will be checked.
+#'
+#' @param x snpRdata object
+#' @param y numeric or character, default 1:ncol(x). Designates the sample
+#'   indices or IDs in x for which duplicates will be checked.
+#' @param id.col character, default NULL. Designates a column in the sample
+#'   metadata which contains sample IDs. If provided, y is assumed to contain
+#'   sample IDs uniquely matching those in the the sample ID column.
+#'
+#' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
+#'   the best match for each sample noted in y and the percentage of genotypes
+#'   identical between the two samples. \item{data: A list containing the match
+#'   proportion between each sample y and every sample in x, named for the
+#'   samples y.}}
+#'
+#' @author William Hemstrom
+#' @export
+#' @examples
+#' # check for duplicates with samples 1, 3, and 5
+#' check_duplicates(stickSNPs, c(1, 3, 5))
+#'
+#' # check duplicates using the .samp.id column as sample IDs
+#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id)
+check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
+  #============sanity checks============
+  msg <- character()
+  if(!is.null(id.col)){
+    if(length(id.col) != 1){
+      msg <- "Only one ID column may be provided."
+    }
+    if(!id.col %in% colnames(x@sample.meta)){
+      msg <- c(msg,
+               "ID column not found in sample metadata.")
+    }
+    else{
+      if(length(unique(x@sample.meta[,id.col])) != length(x@sample.meta[,id.col])){
+        msg <- c(msg,
+                 "Each entry in the ID column must be unique.")
+      }
+      bad.y <- which(!y %in% x@sample.meta[,id.col])
+      if(length(bad.y) > 0){
+        msg <- c(msg,
+                 paste0("Some samples in y not found in ID column: ", paste0(y[bad.y], collapse = ", "), "."))
+      }
+    }
+  }
+  else{
+    if(!is.numeric(y)){
+      msg <- c(msg,
+               "y must be numeric if no sample ID column provided.")
+    }
+    else{
+      if(any(y > ncol(x))){
+        msg <- c(msg,
+                 "All y values must be less than or equal to the number of samples in x.")
+      }
+    }
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+
+
+  #============run the duplicate check==========
+  # initialize
+  out <- vector("list", length(y))
+  names(out) <- y
+  out.best <- data.frame(sample = y, best_match = character(length(y)),
+                         percentage = numeric(length(y)), stringsAsFactors = F)
+
+  # do each comparison
+  for(i in 1:length(y)){
+
+    # pick out this value
+    if(!is.null(id.col)){
+      t.samp.id <- which(x@sample.meta[,id.col] == y[i])
+    }
+    else{
+      t.samp.id <- y[i]
+    }
+    if(length(t.samp.id) == 0){
+      out.best$matches[i] <- "bad.ID"
+      next()
+    }
+
+
+    #figure out which values are "NN"
+    t.samp <- x[,t.samp.id]
+    miss <- t.samp != "NN"
+
+    # finish initializing
+    out[[i]]$hits <- numeric(ncol(x))
+    if(!is.null(id.col)){
+      names(out[[i]]$hits) <- x@sample.meta[,id.col]
+    }
+    else{
+      names(out[[i]]$hits) <- 1:ncol(x)
+    }
+
+    # compare to every other sample. Because we don't count "NN" comparisons, we need to explicitly loop.
+    for(j in (1:ncol(x))){
+
+      # skip if a self comparison
+      if(j == t.samp.id){
+        out[[i]]$hits[j] <- 0
+        next()
+      }
+
+      # compare only loci non "NN" in both samples
+      c.samp <- x[,j]
+      c.miss <- c.samp != "NN"
+      u.miss <- which(c.miss & miss)
+
+      # check the proportion of identical genotypes
+      out[[i]]$hits[j] <- sum(t.samp[u.miss] == c.samp[u.miss])/length(u.miss)
+    }
+
+    # figure out and save data on the "best", or most identical, hit.
+    best <- which.max(out[[i]]$hits)
+    out[[i]]$best <- out[[i]]$hits[best]
+    names(out[[i]]$best) <- names(out[[i]]$hits)[best]
+
+    # save to output summary.
+    out.best$best_match[i] <- paste0(names(out[[i]]$best), collapse = ", ")
+    out.best$percentage[i] <- out[[i]]$best
+  }
+
+  # return
+  return(list(best_matches = out.best, data = out))
+
+}
