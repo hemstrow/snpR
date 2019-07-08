@@ -5,8 +5,8 @@
 #'these statistics all use only a single SNP at a time, they ignore any SNP
 #'specific facet levels.
 #'
-#'The data can be broken up categorically by sample metadata, as
-#'described in \code{\link{Facets_in_snpR}}.
+#'The data can be broken up categorically by sample metadata, as described in
+#'\code{\link{Facets_in_snpR}}.
 #'
 #'@section pi:
 #'
@@ -30,24 +30,21 @@
 #'@section HWE:
 #'
 #'  Calculates a p-value for the null hypothesis that a population is in HWE at
-#'  a given locus. Several methods available:
-#'  \itemize{
-#'    \item{"exact"} Exact test according to Wigginton, JE, Cutler, DJ,
-#'                 and Abecasis, GR (2005). Slightly slower.
-#'    \item{"chisq"} Chi-squared test. May produce poor results when sample
-#'                 sizes for any observed or expected genotypes are small.
-#'  }
+#'  a given locus. Several methods available: \itemize{ \item{"exact"} Exact
+#'  test according to Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005).
+#'  Slightly slower. \item{"chisq"} Chi-squared test. May produce poor results
+#'  when sample sizes for any observed or expected genotypes are small. }
 #'
-#'  For the exact test, code derived from \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
+#'  For the exact test, code derived from
+#'  \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param method character, default "exact". Defines the
-#'  method to use for calculating p-values for HWE divergence. Options: \itemize{
-#'    \item{exact: } Uses the exact test as described in Wigginton et al (2005).
-#'    \item{chisq: } Uses a chi-squared test.
-#'  }
-#'  See details
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param method character, default "exact". Defines the method to use for
+#'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
+#'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
+#'  Uses a chi-squared test. } See details
 #'
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf

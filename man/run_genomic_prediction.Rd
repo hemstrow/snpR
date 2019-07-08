@@ -4,13 +4,13 @@
 \alias{run_genomic_prediction}
 \title{Interface with BGLR to run genomic prediction with snpRdata objects.}
 \usage{
-run_genomic_prediction(x, responce, iterations, burn_in, thin,
+run_genomic_prediction(x, response, iterations, burn_in, thin,
   model = "BayesB")
 }
 \arguments{
 \item{x}{snpRdata object}
 
-\item{responce}{character. Name of the column containing the responce
+\item{response}{character. Name of the column containing the response
 variable of interest. Must match a column name in sample metadata.}
 
 \item{iterations}{numeric. Number of iterations to run the MCMC chain for.}
@@ -27,13 +27,13 @@ description for the ETA argument in \code{\link[BGLR]{BGLR}}.}
 \value{
 A list containing: \itemize{ \item{model: } The model output from
   BGLR. See \code{\link[BGLR]{BGLR}}. \item{h2: } Estimated heritability of
-  the responce variable. \item{transposed_interpolated_genotypes: }
+  the response variable. \item{transposed_interpolated_genotypes: }
   Transposed genotypes, the input for BGLR. \item{predictions: } A data.frame
   containing the provided phenotypes and the predicted Breeding Values (BVs)
   for those phenotypes. }
 }
 \description{
-Run genomic prediction given a single responce variable (usually a phenotype)
+Run genomic prediction given a single response variable (usually a phenotype)
 using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
 this returns the resulting model direcly, so overwrite with caution.
 }
@@ -64,7 +64,7 @@ full list of references.
 sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
 dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 ## run prediction
-gp <- run_genomic_prediction(dat, responce = "weight", iterations = 1000, burn_in = 100, thin = 10)
+gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
 with(gp$predictions, plot(phenotype, predicted_BV))
 

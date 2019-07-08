@@ -3140,14 +3140,14 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 #' @param y numeric or character, default 1:ncol(x). Designates the sample
 #'   indices or IDs in x for which duplicates will be checked.
 #' @param id.col character, default NULL. Designates a column in the sample
-#'   metadata which contains sample IDs. If provided, y is assumed to contain
-#'   sample IDs uniquely matching those in the the sample ID column.
+#' metadata which contains sample IDs. If provided, y is assumed to contain
+#' sample IDs uniquely matching those in the the sample ID column.
 #'
 #' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
 #'   the best match for each sample noted in y and the percentage of genotypes
-#'   identical between the two samples. \item{data: A list containing the match
-#'   proportion between each sample y and every sample in x, named for the
-#'   samples y.}}
+#'   identical between the two samples. \item{data: } A list containing the
+#'   match proportion between each sample y and every sample in x, named for the
+#'   samples y. }
 #'
 #' @author William Hemstrom
 #' @export
@@ -3156,7 +3156,7 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 #' check_duplicates(stickSNPs, c(1, 3, 5))
 #'
 #' # check duplicates using the .samp.id column as sample IDs
-#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id)
+#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id")
 check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   #============sanity checks============
   msg <- character()
@@ -3203,7 +3203,8 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   out <- vector("list", length(y))
   names(out) <- y
   out.best <- data.frame(sample = y, best_match = character(length(y)),
-                         percentage = numeric(length(y)), stringsAsFactors = F)
+                         percentage = numeric(length(y)),
+                         comparisons = numeric(length(y)), stringsAsFactors = F)
 
   # do each comparison
   for(i in 1:length(y)){
@@ -3223,16 +3224,18 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
     #figure out which values are "NN"
     t.samp <- x[,t.samp.id]
-    miss <- t.samp != "NN"
+    miss <- t.samp == "NN"
 
     # finish initializing
     out[[i]]$hits <- numeric(ncol(x))
+    out[[i]]$comparisons <- numeric(ncol(x))
     if(!is.null(id.col)){
       names(out[[i]]$hits) <- x@sample.meta[,id.col]
     }
     else{
       names(out[[i]]$hits) <- 1:ncol(x)
     }
+    names(out[[i]]$comparisons) <- names(out[[i]]$hits)
 
     # compare to every other sample. Because we don't count "NN" comparisons, we need to explicitly loop.
     for(j in (1:ncol(x))){
@@ -3240,16 +3243,19 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
       # skip if a self comparison
       if(j == t.samp.id){
         out[[i]]$hits[j] <- 0
+        out[[i]]$comparisons[j] <- 0
         next()
       }
 
       # compare only loci non "NN" in both samples
       c.samp <- x[,j]
-      c.miss <- c.samp != "NN"
-      u.miss <- which(c.miss & miss)
+      c.miss <- c.samp == "NN"
+      u.miss <- which(c.miss | miss)
 
       # check the proportion of identical genotypes
-      out[[i]]$hits[j] <- sum(t.samp[u.miss] == c.samp[u.miss])/length(u.miss)
+      valid.comps <- length(c.samp[-u.miss])
+      out[[i]]$hits[j] <- sum(t.samp[-u.miss] == c.samp[-u.miss])/valid.comps
+      out[[i]]$comparisons[j] <- valid.comps
     }
 
     # figure out and save data on the "best", or most identical, hit.
@@ -3260,6 +3266,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
     # save to output summary.
     out.best$best_match[i] <- paste0(names(out[[i]]$best), collapse = ", ")
     out.best$percentage[i] <- out[[i]]$best
+    out.best$comparisons[i] <- out[[i]]$comparisons[best]
   }
 
   # return

@@ -275,6 +275,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 #'
 #' @return A snpRdata object with the resulting association test results merged into the stats socket.
 #'
+#' @references Armitage (1955). Tests for Linear Trends in Proportions and Frequencies. \emph{Biometrics}.
+#'
 #' @examples
 #'   # add a dummy phenotype
 #'   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))

@@ -4,14 +4,14 @@
 \alias{cross_validate_genomic_prediction}
 \title{Run a single cross-validation with BGLR.}
 \usage{
-cross_validate_genomic_prediction(x, responce, iterations, burn_in, thin,
+cross_validate_genomic_prediction(x, response, iterations, burn_in, thin,
   cross_percentage = 0.9, model = "BayesB", cross_samples = NULL,
   plot = TRUE)
 }
 \arguments{
 \item{x}{snpRdata object}
 
-\item{responce}{character. Name of the column containing the responce
+\item{response}{character. Name of the column containing the response
 variable of interest. Must match a column name in sample metadata.}
 
 \item{iterations}{numeric. Number of iterations to run the MCMC chain for.}
@@ -45,7 +45,7 @@ A list containing: \itemize{ \item{model: } The results from
   predicted phenotypes/Breeding Values for the cross-validation samples. }
 }
 \description{
-Run genomic prediction given a single responce variable (usually a phenotype)
+Run genomic prediction given a single response variable (usually a phenotype)
 using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
 this returns the resulting model direcly, so overwrite with caution. This
 will leave a specified portion of the samples out when running the model,
@@ -87,7 +87,7 @@ full list of references.
 sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
 dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 ## run cross_validation
-cross_validate_genomic_prediction(dat, responce = "weight", iterations = 1000, burn_in = 100, thin = 10)
+cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 
 }
 \references{
