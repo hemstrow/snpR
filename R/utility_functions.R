@@ -540,7 +540,20 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
       # need to split by phenotype + facet
       pheno.facets <- paste(facets, response, sep = ".")
-      pheno.facets <- check.snpR.facet.request(x, pheno.facets)
+
+      ## remove any .base pheno facets, do these a bit differently
+      base.pheno.facets <- grep("^\\.base", pheno.facets)
+      if(length(base.pheno.facets) > 0){
+        if(length(base.pheno.facets) != length(pheno.facets)){
+          pheno.facets <- c(check.snpR.facet.request(x, pheno.facets[-base.pheno.facets]), response)
+        }
+        else{
+          pheno.facets <- response
+        }
+      }
+      else{
+        pheno.facets <- check.snpR.facet.request(x, pheno.facets)
+      }
       x <- add.facets.snpR.data(x, pheno.facets)
       if(req == "cast.gs"){
         gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
@@ -567,6 +580,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         subfacet <- unlist(lapply(subfacet, FUN = paste, collapse = "."))
         tgs$subfacet <- subfacet
         tgs$phenotype <- uid[p.vals]
+        tgs$facet.type <- check.snpR.facet.request(x, facets[i], "none", T)[[2]]
+
+        # fix for .base
+        tgs$subfacet[tgs$subfacet == ""] <- ".base"
 
         # cast
         if(req == "cast.gs"){
@@ -576,7 +593,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
           value.vars <- c("ni1", "ni2")
         }
         comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
-        comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"))
+        comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"), all.y = T)
         comb[[i]]$facet <- facets[i]
       }
 

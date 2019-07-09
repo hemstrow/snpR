@@ -23,25 +23,38 @@ Options: \itemize{ \item{armitage: } Armitage association test, based on
 Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
 Chi-squared test. } See description for more details.}
 
-\item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for the Armitage association method. See description for details.}
+\item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
+the Armitage association method. See description for details.}
 }
 \value{
-A snpRdata object with the resulting association test results merged into the stats socket.
+A snpRdata object with the resulting association test results merged
+  into the stats socket.
 }
 \description{
-Runs several different association tests on SNP data. The response variable must
-have only two different categories (as in case/control) tests. Support for more categories
-or continuous data will be added later. Tests may be broken up by sample-specific facets.
+Runs several different association tests on SNP data. The response variable
+must have only two different categories (as in case/control) tests. Support
+for more categories or continuous data will be added later. Tests may be
+broken up by sample-specific facets.
 }
 \details{
-Several methods can be used: Armitage, chi-squared, and odds ratio. For The Armitage approach
-weights should be provided to the "w" argument, which specifies the weight for each possible genotype
-(homozygote 1, heterozygote, homozygote 2). The default, c(0,1,2), specifies an addative model.
+Several methods can be used: Armitage, chi-squared, and odds ratio. For The
+Armitage approach weights should be provided to the "w" argument, which
+specifies the weight for each possible genotype (homozygote 1, heterozygote,
+homozygote 2). The default, c(0,1,2), specifies an addative model.
 
-Continuous or multi-category data is currently not supported, but is under development.
+Continuous or multi-category data is currently not supported, but is under
+development.
 
-Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and "all" facet specifications
-function as described.
+Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
+"all" facet specifications function as described.
+
+Note that if all individuals in one facet level have one of the two possible
+phenotypes, each association test will return NA or NaN. As a result, if the
+response variable overlaps perfectly with the facet variable, all results
+will be NA or NaN.
+
+If the chisq method is used, a column will also be returned that specifies
+which allele (major or minor) is associated with which phenotype.
 }
 \examples{
   # add a dummy phenotype
@@ -51,7 +64,8 @@ function as described.
 
 }
 \references{
-Armitage (1955). Tests for Linear Trends in Proportions and Frequencies. \emph{Biometrics}.
+Armitage (1955). Tests for Linear Trends in Proportions and
+  Frequencies. \emph{Biometrics}.
 }
 \author{
 William Hemstrom

@@ -240,18 +240,29 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 
 #' Run case/control association tests on SNP data.
 #'
-#' Runs several different association tests on SNP data. The response variable must
-#' have only two different categories (as in case/control) tests. Support for more categories
-#' or continuous data will be added later. Tests may be broken up by sample-specific facets.
+#' Runs several different association tests on SNP data. The response variable
+#' must have only two different categories (as in case/control) tests. Support
+#' for more categories or continuous data will be added later. Tests may be
+#' broken up by sample-specific facets.
 #'
-#' Several methods can be used: Armitage, chi-squared, and odds ratio. For The Armitage approach
-#' weights should be provided to the "w" argument, which specifies the weight for each possible genotype
-#' (homozygote 1, heterozygote, homozygote 2). The default, c(0,1,2), specifies an addative model.
+#' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
+#' Armitage approach weights should be provided to the "w" argument, which
+#' specifies the weight for each possible genotype (homozygote 1, heterozygote,
+#' homozygote 2). The default, c(0,1,2), specifies an addative model.
 #'
-#' Continuous or multi-category data is currently not supported, but is under development.
+#' Continuous or multi-category data is currently not supported, but is under
+#' development.
 #'
-#' Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and "all" facet specifications
-#' function as described.
+#' Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
+#' "all" facet specifications function as described.
+#'
+#' Note that if all individuals in one facet level have one of the two possible
+#' phenotypes, each association test will return NA or NaN. As a result, if the
+#' response variable overlaps perfectly with the facet variable, all results
+#' will be NA or NaN.
+#'
+#' If the chisq method is used, a column will also be returned that specifies
+#' which allele (major or minor) is associated with which phenotype.
 #'
 #'
 #'
@@ -266,16 +277,19 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 #'   Options: \itemize{ \item{armitage: } Armitage association test, based on
 #'   Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
 #'   Chi-squared test. } See description for more details.
-#' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for the Armitage association method. See description for details.
+#' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
+#'   the Armitage association method. See description for details.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
 #' @author Avani Chitre
 #' @export
 #'
-#' @return A snpRdata object with the resulting association test results merged into the stats socket.
+#' @return A snpRdata object with the resulting association test results merged
+#'   into the stats socket.
 #'
-#' @references Armitage (1955). Tests for Linear Trends in Proportions and Frequencies. \emph{Biometrics}.
+#' @references Armitage (1955). Tests for Linear Trends in Proportions and
+#'   Frequencies. \emph{Biometrics}.
 #'
 #' @examples
 #'   # add a dummy phenotype
@@ -334,7 +348,6 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
   #==============functions=============
 
   calc_armitage <- function(a, w){#where a is the matrix you want to run the test on, and w is the weights
-
     a <- as.matrix(a)
 
     # figure out "control" and "case" names
@@ -427,9 +440,18 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
       chi.c <- calc.chi(ec, c)
       chi.d <- calc.chi(ed, d)
 
+      # figure out which allele is more associated with the case
+      oms.a <- a - ea
+      oms.a <- sign(oms.a) # if positive, more ni1 with case than expected, so ni1 is associated with case.
+      oms.a[oms.a == 1] <- "major"
+      oms.a[oms.a == -1] <- "minor"
+      oms.a[oms.a == 0] <- NA
+      asso.allele <- paste0(oms.a, "_", gsub("^ni1_", "", colnames(cast_ac)[1]))
+
+
       chi.stat <- chi.a + chi.b + chi.c + chi.d
       chi.p <- pchisq(chi.stat, 1, lower.tail = F)
-      return(data.frame(chi_stat = chi.stat, chi_p = chi.p))
+      return(data.frame(chi_stat = chi.stat, chi_p = chi.p, associated_allele = asso.allele))
     }
   }
 
