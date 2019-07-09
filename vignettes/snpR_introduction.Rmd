@@ -236,7 +236,9 @@ snpR has a tool to sliding window smooth parameters using a Gaussian kernal, spl
 
 To calculate sliding window averages, we need to define the sizes of the windows and the distance we slide between each. These are defined by the "sigma" and "step" arguments, respectively. Each window will include all SNPs within 3 x sigma of the window center, after which their contribution to the window average is small enough to be negligable. Both sigma and step are defined in *kilobases*.
 
-By default, snpR will calculate sliding window averages for all previously calculated stats. The "stats.type" argument can be used to limit this to just single or pairwise stats (pi, ho, etc or fst, respectively).
+Note that snpR looks for a column titled "position" in the SNP metadata when smoothing. This column should contain the position of each SNP in bp on the scaffold/chromosome/etc.
+
+By default, snpR will calculate sliding window averages for all previously calculated stats. The "stats.type" argument can be used to limit this to just single (pi, ho, etc) or pairwise stats (fst). Note that individual stats cannot be specified, since the computational gain in running only one or two stats is minimal, so only the "pairwise", "single" or c("pairwise", "single") stats.type options are allowed.
 
 
 ```{r, results='hide'}

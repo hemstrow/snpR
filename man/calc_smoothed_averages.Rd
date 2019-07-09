@@ -22,29 +22,33 @@ between each window centroid. If NULL, windows are centered on each SNP.}
 \item{nk}{logical, default TRUE. If TRUE, weights SNP contribution to window
 averages by the number of observations at those SNPs.}
 
+\item{stats.type}{character, default c("single", "pairwise"). Designates the
+statistic(s) to smooth, either "single",  "pairwise", or c("single",
+"pairwise"). See details.}
+
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
-
-\item{statistic}{character. Designates the statistic(s) to smooth, typically
-"single", or "pairwise", or c("single", "pairwise"). See details for options.}
 }
 \value{
 snpRdata object with smoothed averages for any requested statistics merged into the window.stats or pairwise.window.stats slots.
 }
 \description{
-Calculates gaussian smoothed average values for statistics and the genomic position at which it was observed,
-splitting by any requested variables.
+Calculates gaussian smoothed average values for statistics and the genomic
+position at which it was observed, splitting by any requested variables.
 }
 \details{
-Averages for multiple statistics can be calculated at once. If the
-statistics argument is set to c("pairwise", "single"), all calculated stats will be run. If it
-is set to "single", then all non-pairwise statistics will be bootstrapped, if
-it is set to "pairwise", then all pairwise statistics will be bootstrapped.
-Inidividual statistics can also be requested by name ("pi", "ho", etc.).
+Averages for multiple statistics can be calculated at once. If the statistics
+argument is set to c("pairwise", "single"), all calculated stats will be run.
+If it is set to "single", then all non-pairwise statistics (pi, ho, maf, ect)
+will be bootstrapped, if it is set to "pairwise", then all pairwise statistics
+(fst) will be bootstrapped. Inidividual statistics currently cannot be
+requested by name, since the computational differences to add additional types
+is minimal.
 
 The data can be broken up categorically by snp or sample metadata, as
-described in \code{\link{Facets_in_snpR}}. Windows will only be calculated using only SNPs on the same level
-of any provided facets. NULL and "all" facets work as normally described in \code{\link{Facets_in_snpR}}.
+described in \code{\link{Facets_in_snpR}}. Windows will only be calculated
+using only SNPs on the same level of any provided facets. NULL and "all"
+facets work as normally described in \code{\link{Facets_in_snpR}}.
 
 As described in Hohelohe et al. (2010), the contribution of individual SNPs to
 window averages can be weighted by the number of observations per SNP by
@@ -55,11 +59,12 @@ Centers for windows can either every SNP (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
 
-The size of sliding windows are defined by the "sigma" argument. Note that this value,
-as well as that provided to the "step" arguement, are given in kilobases. Each window
-will include SNPs within 3*sigma kilobases from the window center. Past this point, the
-effect of each additional SNP on the window average would be very small, and so they are
-dropped for computational efficiency (see Hohenlohe (2010)).
+The size of sliding windows are defined by the "sigma" argument. Note that
+this value, as well as that provided to the "step" arguement, are given in
+kilobases. Each window will include SNPs within 3*sigma kilobases from the
+window center. Past this point, the effect of each additional SNP on the
+window average would be very small, and so they are dropped for computational
+efficiency (see Hohenlohe (2010)).
 }
 \examples{
 # add a few statistics
