@@ -1178,6 +1178,10 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     }
   }
 
+  # sort snps and samps according to sample/snp id
+  snps <- snps[order(x@snp.meta$.snp.id[snps])]
+  samps <- samps[order(x@sample.meta$.sample.id[samps])]
+
   # subset
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
@@ -1189,9 +1193,13 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     return(dat)
   }
   else{
-    x <- snpRdata(.Data = x[snps,],
+    # change snps and samps to snp and sample IDs
+    snps <- x@snp.meta$.snp.id[snps]
+    samps <- x@sample.meta$.sample.id[samps]
+
+    x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
                   sample.meta = x@sample.meta,
-                  snp.meta = x@snp.meta[snps,],
+                  snp.meta = x@snp.meta[which(x@snp.meta$.snp.id %in% snps),],
                   facet.meta = x@facet.meta[x@facet.meta$.snp.id %in% snps,],
                   mDat = x@mDat,
                   snp.form = x@snp.form,
@@ -1202,6 +1210,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   facets = x@facets,
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
+                  pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,],
                   sn = data.frame(),
                   names = x@names,
                   row.names = x@row.names[snps])
