@@ -1,35 +1,49 @@
-#convert stickSNPs into each output format for an example!
 
- pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
- l <- list(c(names(pops)), as.numeric(pops))
- f1 <- format_snps(stickSNPs, 3, "ac", pop = l)
+# generate example format data
+stickFORMATs <- list()
 
- #option 2:
- f2 <- format_snps(stickSNPs, 3, "genepop")
+#ac
+stickFORMATs[[1]] <- format_snps(stickSNPs, "ac", facets = "pop")
 
- #option 3, subsetting out 100 random alleles:
- f3 <- format_snps(stickSNPs, 3, "structure", n_samp = 1:100, pop = l)
+#genepop:
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "genepop")
 
- #option 4:
- f4 <- format_snps(stickSNPs, 3, "numeric")
+#STRUCTURE
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "structure")
 
- #option 5:
- f5 <- format_snps(stickSNPs, 3, "hapmap", pop = l)
+#fastSTRUCTURE
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "faststructure")
 
- #option 6:
- num <- format_snps(stickSNPs, 3, "numeric")
- f6 <- format_snps(num, 3, "character", input_form = "0000", miss = "00")
+#numeric:
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "0000")
 
- #option 7, SNP data:
- f7 <- format_snps(stickSNPs, 3, "pa")
+#hapmap for migrate-n:
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "hapmap", facets = "pop")
 
- #option 8:
- f8 <- format_snps(stickSNPs, 3, "rafm", pop = l)
+#character:
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "NN")
 
- #option 9:
- f9 <- format_snps(stickSNPs, 3, "faststructure", pop = l)
+#presence/absence, SNP data:
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "pa")
 
-stickFORMATs <- list(ac = f1 , genepop = f2, structure = f3, numeric = f4,
-                     hapmap = f5, character = f6, pa = f7, rafm = f8, faststructure = f9)
+#RAFM, taking only 100 random snps and seperating by pop
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "rafm", facets = "pop")
 
-devtools::use_data(stickFORMATs, overwrite = T)
+#dadi
+## add ref and anc snp meta data columns to stickSNPs
+dat <- as.data.frame(stickSNPs)
+dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(dat, "dadi", facets = "pop")
+
+#PLINK! format
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "plink")
+#from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
+
+#sn format, bernoulli interpolation
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "sn")
+
+# name them
+names(stickFORMATs) <- c("ac", "genepop", "structure", "faststructure", "0000", "hapmap", "NN", "pa", "rafm", "dadi", "plink", "sn")
+
+# save
+usethis::use_data(stickFORMATs, overwrite = TRUE)

@@ -2,74 +2,99 @@
 % Please edit documentation in R/utility_functions.R
 \name{filter_snps}
 \alias{filter_snps}
-\title{Filter SNP data.}
+\title{Filter SNPs in snpRdata objects.}
 \usage{
-filter_snps(x, ecs, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-  min_loci = FALSE, re_run = "partial", pop = FALSE,
-  non_poly = TRUE, bi_al = TRUE, mDat = "NN", in.tab = FALSE,
-  out.tab = FALSE)
+filter_snps(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
+  min_loci = FALSE, re_run = "partial", maf.facets = NULL,
+  non_poly = TRUE, bi_al = TRUE)
 }
 \arguments{
-\item{x}{data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.}
+\item{x}{snpRdata object.}
 
-\item{ecs}{Integer. Number of metadata columns at the start of x.}
+\item{maf}{FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable
+minor allele frequency}
 
-\item{maf}{FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency}
+\item{hf_hets}{FALSE or numeric between 0 and 1, default FALSE. Maximum
+acceptable heterozygote frequency.}
 
-\item{hf_hets}{FALSE or numeric between 0 and 1, default FALSE. Maximum acceptable heterozygote frequency.}
+\item{min_ind}{FALSE or integer, default FALSE. Minimum number of individuals
+in which a loci must be sequenced.}
 
-\item{min_ind}{FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced.}
+\item{min_loci}{FALSE or numeric between 0 and 1, default FALSE. Minimum
+proportion of SNPs an individual must be genotyped at.}
 
-\item{min_loci}{FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.}
+\item{re_run}{FALSE, "partial", or "full", default "partial". How should loci
+be re_filtered after individuals are filtered?}
 
-\item{re_run}{FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?}
-
-\item{pop}{FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.}
+\item{maf.facets}{FALSE or character, default FALSE. Sample-specific facets
+over which the maf filter can be checked.}
 
 \item{non_poly}{boolean, default TRUE. Should non-polymorphic loci be removed?}
 
 \item{bi_al}{boolean, default TRUE. Should non-biallelic SNPs be removed?}
-
-\item{mDat}{character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".}
-
-\item{in.tab.}{FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
-
-\item{out.tab.}{FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.}
 }
 \value{
-A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.
+A data.frame in the same format as the input, with SNPs and
+ individuals not passing the filters removed.
 }
 \description{
-\code{filter_snps} filters SNP data to remove loci which violate any of several assumptions and/or individuals which are sequenced at too few SNP loci.
+\code{filter_snps} filters snpRdata objects to remove SNPs or individuals
+which fail to pass user defined thresholds for several statistics. Since this
+function removes all calculated statistics, etc. from the snpRdata object,
+this should usually be the first step in an analysis. See details for filters.
 }
 \details{
-Description of x:
-   Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6.
+Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
+where the minor allele frequency is too low. Can look for mafs below
+#'provided either globally or search each population individually.}
+\item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed
+heterozygosity is too high.} \item{min_ind, minimum individuals: }{removes
+SNPs that were genotyped in too few individuals.} \item{min_loci, minimum
+loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
+non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
+SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
+two observed alleles.} }
 
-Possible filters:
-\itemize{
-   \item{maf, minor allele frequency: }{removes SNPs where the minor allele frequency is too low. Can look for mafs below #'provided either globally or search each population individually.}
-   \item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed heterozygosity is too high.}
-   \item{min_ind, minimum individuals: }{removes SNPs that were genotyped in too few individuals.}
-   \item{min_loci, minimum loci: }{removes individuals sequenced at too few loci.}
-   \item{non_poly, non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true SNPs).}
-   \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than two observed alleles.}
-}
+Note that filtering out poorly sequenced individuals creates a possible
+conflict with the loci filters, since after individuals are removed, some loci
+may no longer pass filters. For example, if a portion of individuals in one
+population all carry the only instances of a rare minor allele that still
+passes the maf threshold, removing those individuals may cause the loci to no
+longer be polymorphic in the sample.
 
-Note that filtering out poorly sequenced individuals creates a possible conflict with the loci filters, since after individuals are removed, some loci may no longer pass filters. For example, if a portion of individuals in one population all carry the only instances of a rare minor allele that still passes the maf threshold, removing those individuals may cause the loci to no longer be polymorphic in the sample.
+To counter this, the "re_run" argument can be used to pass the data through a
+second filtering step after individuals are removed. By default, the "partial"
+re-run option is used, which re-runs only the non-polymorphic filter (if it
+was originally set), since these may cause downstream analysis errors. The
+"full" option re-runs all set filters. Note that re-running any of these
+filters may cause individuals to fail the individual filter after loci
+removal, and so subsequent tertiary re-running of the individual filters,
+followed by the loci filters, and so on, could be justified. This function
+stops after the second loci re-filtering, since that step is likely to be the
+most important to prevent downstream analytical errors.
 
-To counter this, the "re_run" argument can be used to pass the data through a second filtering step after individuals are removed. By default, the "partial" re-run option is used, which re-runs only the non-polymorphic filter (if it was originally set), since these may cause downstream analysis errors. The "full" option re-runs all set filters. Note that re-running any of these filters may cause individuals to fail the individual filter after loci removal, and so subsequent tertiary re-running of the individual filters, followed by the loci filters, and so on, could be justified. This function stops after the second loci re-filtering, since that step is likely to be the most important to prevent downstream analytical errors.
-
-Via the "pop" argument, this function can filter by minor allele frequencies in either \emph{all} samples or \emph{in each population and the entire sample}. The latter should be used in instances where populaiton sizes are very different or there are \emph{many} populations, and thus common alleles of interest in one population might be otherwise filtered out. With very small populations, however, this may leave noise in the sample! In most cases, filtering the entire sample is sufficient.
+Via the "maf.filter" argument, this function can filter by minor allele
+frequencies in either \emph{all} samples or \emph{each level of a supplied
+sample specific facet and the entire dataset}. In the latter case, any SNPs
+that pass the maf filter in \emph{any} facet level are considered to pass the
+filter. The latter should be used in instances where populaiton sizes are very
+different or there are \emph{many} populations, and thus common alleles of
+interest in one population might be otherwise filtered out. With very small
+populations, however, this may leave noise in the sample! In most cases,
+filtering the entire dataset is sufficient. Facets should be provided as
+described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
-#Strict filtering for missing individuals and unsequenced loci with partial re-run:
-filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75)
+# Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
+# of 0.55, 250 minimum individuals, and at least 75\% of loci sequenced per
+# individual.
+filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75)
 
-#Strict maf filtering with pops.
-##prep pop info
-l <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-##filter
-filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
+# The same filters, but with minor allele frequency considered per-population
+# and a full re-run of loci filters after individual removal.
+filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
 
+}
+\author{
+William Hemstrom
 }

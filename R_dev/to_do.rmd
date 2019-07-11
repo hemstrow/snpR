@@ -1,0 +1,25 @@
+---
+title: "to do:"
+date: "6/3/2019"
+output: html_document
+---
+# Before 1.0 release:
+
+#### Make a function to make nice plots of smoothed statistics
+
+# New features and upgrades:
+
+#### Make a function to do manhattan plots. Keming is working on this.
+
+#### Make a function to calculate an SFS. Avani is working on this.
+
+* Should do either a raw frequency bin or do projection.
+
+#### Integrate new LD calculation methods.
+
+* Integrate Keming's haplotype likelihood function into the LD calculations as an option.
+
+* Integrate CLD into LD calculations. As an option, run ONLY these, since they are a lot faster (just a single cor() call!).
+
+#### Make a function to do nj trees
+* Relatedness matricies is a part of this. Maybe use RAFM.
