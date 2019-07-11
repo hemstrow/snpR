@@ -1339,7 +1339,7 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     return(list(unlist(facets), facet.types))
   }
   else{
-      return(unlist(facets))
+    return(unlist(facets))
 
   }
 }
@@ -2791,19 +2791,19 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # with morgans
     if(any(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))){
       bim <- data.frame(chr = x@snp.meta$group,
-                            rs = x@snp.meta$.snp.id,
-                            cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
-                            bp = x@snp.meta$position,
-                            a1 = a.names[,1],
-                            a2 = a.names[,2])
+                        rs = x@snp.meta$.snp.id,
+                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
+                        bp = x@snp.meta$position,
+                        a1 = a.names[,1],
+                        a2 = a.names[,2])
     }
     # without morgans
     else{
       bim <- data.frame(chr = x@snp.meta$group,
-                            rs = x@snp.meta$snp,
-                            bp = x@snp.meta$position,
-                            a1 = a.names[,1],
-                            a2 = a.names[,2])
+                        rs = x@snp.meta$snp,
+                        bp = x@snp.meta$position,
+                        a1 = a.names[,1],
+                        a2 = a.names[,2])
     }
 
     # recode chr
@@ -2985,7 +2985,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                    t2[seq(2,length(t2),2)],
                    collapse = "")
       writeLines(paste0("#!/bin/bash\n\n",
-        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
+                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
       warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
@@ -3153,7 +3153,7 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
     missing.stats <- which(!(stats %in% c(colnames(x@stats), colnames(x@pairwise.stats))))
     if(length(missing.stats) > 0){
       msg <- c(msg, paste0("Some statics are not acceptable found in the data: ", paste0(stats[missing.stats], collapse = " "),
-                            ". Please run these statistics for the supplied facets!"))
+                           ". Please run these statistics for the supplied facets!"))
     }
   }
 

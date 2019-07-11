@@ -723,6 +723,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     message("Returning list: first element is the snpRdata object now containing pairwise fst values, second is the average pairwise fst for all comparisons.\n")
     return(list(x, ave.fst))
   }
+  else{
+    return(x)
+  }
 
 
 }
@@ -1701,7 +1704,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                                      LD_func(x = x_storage, snp.list = t.comps,
                                              meta = meta_storage, mDat = mDat_storage,
                                              sr = T)
-                                     }
+                                   }
 
         #release cores
         parallel::stopCluster(cl)
