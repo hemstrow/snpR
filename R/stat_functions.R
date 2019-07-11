@@ -1704,7 +1704,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                                      LD_func(x = x_storage, snp.list = t.comps,
                                              meta = meta_storage, mDat = mDat_storage,
                                              sr = T)
-                                     }
+                                   }
 
         #release cores
         parallel::stopCluster(cl)
