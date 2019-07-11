@@ -249,27 +249,13 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
 
 #' Call a prepared colony infile.
-call_colony <- function(infile, colony_path = "./"){
-
-  # adjust inputs to fix hanging /
-  if(!grepl("/$", colony_path)){
-    colony_path <- paste0(colony_path, "/")
-  }
+call_colony <- function(infile, colony_path){
 
   # check system type
   sys.type <- Sys.info()["sysname"]
 
-  # name the program
-  if(sys.type == "Windows"){
-    colony_program <- "Colony2P.exe"
-  }
-  else{
-    colony_program <- "colony2s.ifort.out"
-  }
-
-
   # save the call
-  call <- paste0(colony_path, colony_program, " IFN:", infile)
+  call <- paste0(colony_path," IFN:", infile)
 
   # call
   if(sys.type == "Windows"){
@@ -325,7 +311,7 @@ parse_colony <- function(prefix, x, path = "./colony/"){
 #' will be stored in a colony folder created in the current working directory.
 #'
 #' @export
-run_colony <- function(x, colony_path = "./",  outfile = "colony_input", method = "FPLS", run_length = 2,
+run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS", run_length = 2,
                        sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                        nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
                        maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,
