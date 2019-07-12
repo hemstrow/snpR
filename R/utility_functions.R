@@ -149,7 +149,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     facet.list <- c(run.facets, strsplit(facets[comp.facets], split = "(?<!^)\\.", perl = T))
   }
   else{
-    facet.list <- list(facets)
+    facet.list <- as.list(facets)
   }
 
   #===========================sanity checks=========
@@ -206,7 +206,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
     sample.meta <- sample.meta[,sort(colnames(sample.meta))]
     if(!is.data.frame(sample.meta)){
-      sample.meta <- as.data.frame(sample.meta)
+      sample.meta <- as.data.frame(sample.meta, stringsAsFactors = F)
       colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
     }
     sample.opts <- unique(sample.meta)
@@ -236,6 +236,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
 
     #=========================sort, pack, and return==========
     # sort
+    x@facet.meta %>% mutate_if(is.factor, as.character) -> x@facet.meta
     x@facet.meta$.reorder <- 1:nrow(x@facet.meta)
     x@facet.meta <- dplyr::arrange(x@facet.meta, .snp.id, facet, subfacet)
     gs$gs <- gs$gs[x@facet.meta$.reorder,]
@@ -250,6 +251,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
   nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+  nac %>% mutate_if(is.factor, as.character) -> nac
   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
   x@ac <- nac[,-c(1:3)]
 
@@ -266,9 +268,10 @@ add.facets.snpR.data <- function(x, facets = NULL){
   else{
     os <- rbind(os, sm)
   }
+
+  os %>% mutate_if(is.factor, as.character) -> os
   x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
 
-  x@facet.meta %>% mutate_if(is.factor, as.character) -> x@facet.meta
 
   return(x)
 }
@@ -380,7 +383,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
       }
     }
 
-    return(as.data.frame(y[keep.rows, ..keep.cols]))
+    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = F))
   }
 
   extract.LD <- function(y, facets){
@@ -655,7 +658,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         # if this is a genepop fst output, we should expect a list of size two. Need to return the correct parts!
         if(length(out) == 2){
           suppressWarnings(out1 <- rbind(out1, cbind(data.table::as.data.table(x@snp.meta), facet = facets[i], data.table::as.data.table(out[[1]]))))
-          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]]))
+          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]], stringsAsFactors = F))
         }
       }
 
@@ -705,7 +708,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
           meta.to.use <- x@facet.meta
         }
         else if (source == "pairwise.stats"){
-          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")])
+          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")], stringsAsFactors = F)
           meta.to.use$subfacet <- meta.to.use$comparison
         }
 
@@ -722,14 +725,14 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
             sample.opts <- unique(t.sample.meta)
             t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
             if(is.null(nrow(sample.opts))){
-              sample.opts <- as.data.frame(sample.opts)
-              t.sample.meta <- as.data.frame(t.sample.meta)
+              sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+              t.sample.meta <- as.data.frame(t.sample.meta, stringsAsFactors = F)
             }
           }
           else{
             t.sample.facet <- ".base"
             t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
-            sample.opts <- data.frame(.base = ".base")
+            sample.opts <- data.frame(.base = ".base", stringsAsFactors = F)
           }
 
           # snp facets

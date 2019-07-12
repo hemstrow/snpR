@@ -700,7 +700,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
   method <- tolower(method)
 
-
   # call apply.snpR.facets, slightly different for each method, since they require different stuff.
   if(method == "genepop"){
     out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
