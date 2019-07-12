@@ -1,6 +1,6 @@
 
 #' Write an input for the COLONY pedigree assignment program.
-write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2,
+write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                                nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
                                maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,
@@ -84,6 +84,9 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
   #=====================reformat genotypes, write info on them==================
   colony_genotypes <- format_snps(x, "colony")
+  if(!is.null(sampleIDs)){
+    colony_genotypes[,1] <- x@sample.meta[,sampleIDs]
+  }
 
 
   # allele frequencies
@@ -249,6 +252,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
 
 #' Call a prepared colony infile.
+#' @export
 call_colony <- function(infile, colony_path){
 
   # check system type
@@ -278,6 +282,7 @@ call_colony <- function(infile, colony_path){
 }
 
 #' Parse colony data.
+#' @export
 parse_colony <- function(prefix, x, path = "./colony/"){
   #===============full and half sibs==============================
   # read in half and full sibs
