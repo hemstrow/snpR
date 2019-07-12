@@ -60,7 +60,7 @@
 #'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "rsq", r = NULL,
-                                     l.text = "rsq", viridis.option = "B",
+                                     l.text = "rsq", viridis.option = "inferno",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
   #==============sanity checks===========
@@ -633,3 +633,177 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
 }
 
 
+plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
+                           chr = "chr", bp = "position", snp = NULL,
+                           chr.subfacet = NULL, sample.subfacet = NULL,
+                           significant = NULL, suggestive = NULL,
+                           highlight = "significant",
+                           t.sizes = c(16, 12, 10), pval = FALSE, viridis.option = "plasma", viridis.hue = c(.2, 0.5),
+                           colors = c("black", "slategray3")){
+
+  #=============grab the desired stats=====================
+  #====if a snpRdata object========
+  if(class(x) == "snpRdata"){
+    if(plot_var %in% colnames(x@stats)){
+      if(window){
+        if(chr != "chr"){
+          warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
+        }
+        stats <- get.snpR.stats(x, facets = facets, type = "single.window")
+        chr <- "snp.subfacet"
+
+      }
+      else{
+        stats <- get.snpR.stats(x, facets = facets)
+      }
+    }
+    else if(plot_var %in% colnames(x@pairwise.stats)){
+      if(window){
+        if(chr != "chr"){
+          warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
+        }
+        stats <- get.snpR.stats(x, facets, "pairwise.window")
+      }
+      else{
+        stats <- get.snpR.stats(x, facets, "pairwise")
+      }
+    }
+
+    if(nrow(stats) == 0){
+      stop("No matching statistics.\n")
+    }
+  }
+
+  #====otherwise=====
+  else if(is.data.frame(x)){
+    stats <- x
+  }
+  else{
+    stop("x must be a data.frame or snpRdata object.\n")
+  }
+
+  #====clean up=====
+  browser()
+  # fix comparison column name
+  if(any(colnames(stats) == "comparison")){
+    colnames(stats)[which(colnames(stats) == "comparison")] <- "subfacet"
+  }
+
+
+  # remove unwanted snp or sample subfacets
+  if(!is.null(chr.subfacet)){
+    stats <- stats[which(stats[,chr] %in% chr.subfacet),]
+  }
+  if(!is.null(sample.subfacet)){
+    stats <- stats[which(stats$subfacet %in% sample.subfacet),]
+  }
+  if(nrow(stats) == 0){
+    stop("No matching statistics.\n")
+  }
+
+  #=============figure out adjusted positions on x axis================
+  # fetch chromosome info
+  if(is.factor(stats[,chr])){
+    stats[,chr] <- as.character(stats[,chr])
+  }
+
+  # get adjusted x axis positions and figure out where chromsome tick marks should be placed.
+  chr.info <- tapply(stats[,bp], stats[,chr], max) # chromosome lengths
+  chr.centers <- (chr.info - tapply(stats[,bp], stats[,chr], min))/2 # chromosome centers
+  chr.info <- cumsum(chr.info) # cumulative lengths
+  cum.bp <- c(0, chr.info[-length(chr.info)]) # correct cummulative lengths
+  names(cum.bp) <- names(chr.info) # rename
+  cum.chr.centers <- cum.bp + chr.centers # cumulative chromosome centers
+  stats$start <- cum.bp[match(stats[,chr], names(cum.bp))]
+  stats$cum.bp <- stats$start + stats[,bp]
+
+  #==============clean up column names==================
+  colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
+  colnames(stats)[which(colnames(stats) == chr)] <- "chr"
+
+  # snps to highlight
+  if(highlight != FALSE & !is.null(highlight) & !is.na(highlight)){
+    # unless the defaults are set...
+    if(!((highlight == "significant") & is.null(significant))){
+      do.highlight <- T
+
+      # using significant
+      if(highlight == "significant"){
+        if(pval){
+          stats$highlight <- ifelse(stats$pvar <= significant, 1, 0)
+        }
+        else{
+          stats$highlight <- ifelse(stats$pvar >= significant, 1, 0)
+        }
+      }
+      #using suggestive
+      else if(highlight == "suggestive"){
+        if(pval){
+          stats$highlight <- ifelse(stats$pvar <= suggestive, 1, 0)
+        }
+        else{
+          stats$highlight <- ifelse(stats$pvar >= suggestive, 1, 0)
+        }
+      }
+
+      # using a list of snps to highlight
+      else{
+        stats$highlight <- 0
+        stats$highlight[highlight] <- 1
+      }
+
+      # labels
+      if(is.null(snp)){
+        stats$highlight.label <- paste0(stats$chr, "_", stats[,bp])
+      }
+      else{
+        stats$highlight.label <- stats[,snp]
+      }
+    }
+    else{
+      do.highlight <- F
+    }
+  }
+
+  #============produce the plot========
+  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = chr)) +
+    ggplot2::geom_point() +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "none",
+                   axis.text.x = ggplot2::element_text(angle = 90, size = t.sizes[3], vjust = 0.5),
+                   panel.grid.major.x = ggplot2::element_blank(),
+                   panel.grid.minor.x = ggplot2::element_blank(),
+                   strip.background = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_text(size = t.sizes[3]),
+                   strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
+                   axis.title = ggplot2::element_text(size = t.sizes[2])) +
+    ggplot2::scale_x_continuous(label = names(cum.chr.centers), breaks = cum.chr.centers, minor_breaks = NULL) +
+    ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers))) +
+    ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
+
+  #=============adjust the plot========
+  if(length(unique(stats$subfacet) > 1)){
+    p <- p + ggplot2::facet_wrap(~subfacet)
+  }
+
+  add.palette <- viridis(3, option = viridis.option, begin = viridis.hue[1], end = viridis.hue[2])
+
+  # significant/suggestive lines
+  if(significant){
+    p <- p + ggplot2::geom_hline(yintercept = significant, color = add.palette[1])
+  }
+  if(suggestive){
+    p <- p + ggplot2::geom_hline(yintercept = suggestive, color = add.pallette[2])
+  }
+
+  # highlight
+  if(do.highlight){
+    p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
+                                       mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
+                                       force = 1.3)
+  }
+
+  print(p)
+
+  return(list(plot = p, data = stats))
+}
