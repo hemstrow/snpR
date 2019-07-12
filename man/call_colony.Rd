@@ -4,7 +4,7 @@
 \alias{call_colony}
 \title{Call a prepared colony infile.}
 \usage{
-call_colony(infile, colony_path = ".")
+call_colony(infile, colony_path)
 }
 \description{
 Call a prepared colony infile.
