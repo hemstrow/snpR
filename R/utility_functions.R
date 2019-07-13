@@ -350,7 +350,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   extract.basic <- function(y, facets, type = "standard"){
     if(type == "standard"){
       keep.rows <- which(y$facet %in% facets)
-      keep.cols <- which(!colnames(y) %in% c(".snp.id", "facet.type"))
+      keep.cols <- which(!colnames(y) %in% c("facet.type"))
     }
     else if(type == "window"){
       facets <- check.snpR.facet.request(x, facets, "none", T)
