@@ -2,22 +2,24 @@
 % Please edit documentation in R/smoothing_functions.R
 \name{gaussian_weight}
 \alias{gaussian_weight}
-\title{Gaussian weights.}
+\title{Calculate gaussian weights.}
 \usage{
 gaussian_weight(p, c, s)
 }
 \arguments{
-\item{p}{Position of value to smooth.}
+\item{p}{numeric. Position of value to smooth.}
 
-\item{c}{Position of center of window.}
+\item{c}{numeric. Position of center of window.}
 
-\item{s}{Sigma, scaling factor.}
+\item{s}{numeric. Sigma, scaling factor.}
 }
 \value{
 A numeric value, the relative weight of the point.
 }
 \description{
-\code{gaussian_weight} Function to get the gaussian weight of a statistic given its position relative to the center and scaling factor sigma. Used internally, probably shouldn't be called.
+Get the gaussian weight of a statistic given its position relative to the
+center and scaling factor sigma. Used internally, probably shouldn't be
+called.
 }
 \examples{
 gaussian_weight(10000, 10500, 1000)

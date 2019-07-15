@@ -13,18 +13,78 @@ check.snpRdata <- function(object){
     errors <- c(errors, msg)
   }
 
+  all.colnames <- c(colnames(object@sample.meta), colnames(object@snp.meta))
+  .IDs <- which(all.colnames %in% c(".snp.id", ".sample.id"))
+  if(length(.IDs) > 0){
+    all.colnames <- all.colnames[-.IDs]
+  }
+
+  # check for duplicated or poorly named columns
+  dups <- duplicated(all.colnames) | duplicated(all.colnames, fromLast = TRUE)
+  bad.chars <- c("\\.", "\\~", " ")
+  bad.chars <- paste(bad.chars, collapse = "|")
+  p.char.matches <- grepl(bad.chars, all.colnames)
+
+  bad.colnames <- dups | p.char.matches | all.colnames == "all"
+
+  if(any(bad.colnames)){
+    bad.colnames <- which(bad.colnames)
+    msg <- paste0("Some unacceptable column names in snp or sample metadata. Column names must be unique and not contain either '.', '~', or whitespace, and cannot be 'all'. Bad column names: ",
+                   paste0(all.colnames[bad.colnames], collapse = ", "), ".\n")
+
+    errors <- c(errors, msg)
+  }
+
+
+  warns <- character()
+  # check for bad entries in character columns (periods are fine in numeric!)
+  chr.cols.samp <- unlist(lapply(object@sample.meta, class))
+  chr.cols.samp <- chr.cols.samp[which(chr.cols.samp == "character")]
+  chr.cols.snp <- unlist(lapply(object@snp.meta, class))
+  chr.cols.snp <- chr.cols.snp[which(chr.cols.snp == "character")]
+
+  if(length(chr.cols.samp) > 0){
+    l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
+    if(sum(l1) > 0){
+      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\n")
+      warns <- c(warns, msg)
+    }
+  }
+  if(length(chr.cols.snp) > 0){
+    l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
+    if(sum(l1) > 0){
+      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\n")
+      warns <- c(warns, msg)
+    }
+  }
+  if(length(warns) > 0){warning(paste0(warns, collapse = "\n"))}
+
   if(length(errors) == 0){return(TRUE)}
   else{return(errors)}
 }
 
 
 
-#' Storage class for snpR data and calculated statistics.
+#'Storage class for snpR data and calculated statistics.
 #'
-#' \code{} creates and defines the snpRdata class to store both raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+#'\code{\link{import.snpR.data}} creates and defines the snpRdata class to store
+#'both raw genotype data, sample and locus specific metadata, useful data
+#'summaries, repeatedly internally used tables, calculated summary statistics,
+#'and smoothed statistic data.
 #'
-#' The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
-#' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+#'The snpRdata class is built to contain SNP genotype data for use by functions
+#'in the snpR package. It inherits from the S3 class data.frame, in which the
+#'genotypes are stored, and can be manipulated identically. It also stores
+#'sample and locus specific metadata, genomic summary information, and any
+#'results from most snpR functions. The raw data for each of these latter
+#'objects is accessable via the at operator. Genotypes are stored in the
+#'"character" format, as output by format_snps(). Missing data is noted with
+#'"NN".
+#'
+#'For more information, see \code{\link{import.snpR.data}}, the constructor
+#'function for this object class.
+#'
+#'@author William Hemstrom
 #'
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",
@@ -38,7 +98,10 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        stats = "data.frame",
                                        window.stats = "data.frame",
                                        pairwise.stats = "data.frame",
-                                       pairwise.LD = "list"),
+                                       pairwise.window.stats = "data.frame",
+                                       pairwise.LD = "list",
+                                       window.bootstraps = "data.frame",
+                                       sn = "list"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
 

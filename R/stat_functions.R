@@ -1,27 +1,128 @@
-#function to calc pi from data. should be in format with num alleles, total count of alleles,
-#and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
-#Returns a VECTOR of pi values.
-
-#'Calculate PI from SNP data.
+#'Calculate standard single-SNP genetic statistics
 #'
-#'\code{calc_pi} Calculates pi (genetic diversity/average number of pairwise differences) according to Hohenlohe et al. (2010) from SNP data. Returns a vector of pi values for each SNP as sorted in input.
+#'These functions calculate a basic genetic statistics from SNP data contained
+#'in snpRdata objects, splitting samples by any number of provided facets. Since
+#'these statistics all use only a single SNP at a time, they ignore any SNP
+#'specific facet levels.
 #'
-#'Description of x:
-#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Calculates pi for each row of data, and can therefore also contain a "pop" column and any other metadata columns such as SNP position.
+#'The data can be broken up categorically by sample metadata, as described in
+#'\code{\link{Facets_in_snpR}}.
 #'
-#' @param x Input SNP data, in allele count format as given by format_snps output option.
-#' @param ecs Numeric, number of metadata columns at the start of x to keep for output.
+#'@section pi:
 #'
-#' @return A vector of PI values, in the same order as the input SNPs.
+#'  Calculates pi (genetic diversity/average number of pairwise differences)
+#'  according to Hohenlohe et al. (2010).
+#'
+#'@section maf:
+#'
+#'  Calculates minor allele frequencies and note identities and counts of major
+#'  and minor alleles.
+#'
+#'@section ho:
+#'
+#'  Calculates observed heterozygosity.
+#'
+#'@section private alleles:
+#'
+#'  Determines if each SNP is a private allele across all levels in each sample
+#'  facet. Will return an error of no sample  facets are provided.
+#'
+#'@section HWE:
+#'
+#'  Calculates a p-value for the null hypothesis that a population is in HWE at
+#'  a given locus. Several methods available: \itemize{ \item{"exact"} Exact
+#'  test according to Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005).
+#'  Slightly slower. \item{"chisq"} Chi-squared test. May produce poor results
+#'  when sample sizes for any observed or expected genotypes are small. }
+#'
+#'  For the exact test, code derived from
+#'  \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
+#'
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param method character, default "exact". Defines the method to use for
+#'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
+#'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
+#'  Uses a chi-squared test. } See details
+#'
+#'
+#'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
+#'
+#'@return snpRdata object with requested stats merged into the stats socket
+#'
+#'@name calc_single_stats
+#'
+#'
+#'@author William Hemstrom
+#'
+#'@references Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American Journal of Human Genetics}
+#'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'
 #' @examples
-#' #get pop info, convert character data into the appropriate format, calculate pi, and add metadata.
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' ac <- format_snps(stickSNPs, 3, pop = l)
-#' pi <- calc_pi(ac)
-#' pi <- cbind(ac[,1:4], pi)
+#' # base facet
+#' x <- calc_pi(stickSNPs)
 #'
+#' # multiple facets
+#' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#'
+#' # HWE
+#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+NULL
+
+
+#'Facets in snpR
+#'
+#'Facets are used to describe the ways in which data should be broken down/split
+#'up for analysis.
+#'
+#'Facet designation follows a specific format. Facets are given as a character
+#'vector, where each entry designates one unique combination of levels over
+#'which to seperate the data. Levels within a facet are seperated by a '.'. Each
+#'facet can contain multiple snp and/or sample levels. Multiple facets can be
+#'run with a single line of code.
+#'
+#'For example, c("group.pop", "pop") would split the data first by both group
+#'and pop and then by pop alone. This will produce the same result as running
+#'the function with both "group.pop" and then again with "pop", although the
+#'former is typically more computationally efficient.
+#'
+#'If multiple sample or snp levels are provided in a single facet, the data is
+#'simultaniously broken up by \emph{both} levels. For example, the facet
+#'c("fam.pop") would break up the data provided in \code{\link{stickSNPs}} by
+#'both family and population, and would produce levels such as "ASP.A" for
+#'individuals in the ASP population and in family A.
+#'
+#'All listed facet levels must match column names in the snp of sample level
+#'facet data provided when constructing a snpRdata object with
+#'\code{\link{import.snpR.data}}. The order of the provided levels within each
+#'facet does not matter.
+#'
+#'In many cases, specifying "all" as a facet will calculate or return statistics
+#'for all previously run facets.
+#'
+#'The base facet--that is, the entire data with no categorical devisions--can be
+#'specified with ".base" and is typically the facet defaulted to when facets =
+#'NULL.
+#'
+#'
+#'See examples.
+#'
+#'@name Facets_in_snpR
+#'
+#' @examples
+#' # base facet
+#' x <- calc_pi(stickSNPs)
+#'
+#' # multiple facets
+#' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#'
+#' # HWE
+#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+NULL
+
+#'@export
+#'@describeIn calc_single_stats pi (average number of pairwise differences/expected heterozygosity)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -49,18 +150,8 @@ calc_pi <- function(x, facets = NULL){
 }
 
 
-#function to calc pi from data. should be in format with num alleles, total count of alleles,
-#and subsequent alleles counts in columns named "n_aleles", "n_total", and "ni1", "ni2", and so on (allele count/bayescan format, as given by format_snps option one).
-#Returns a VECTOR of pi values.
-
-#'Find minor and major allele frequencies.
-#'
-#'\code{calc_maf} determines the minor and major allele frequencies for snp data for each locus, splitting by any desired facets.
-#'
-#' @param x Input SNP data, a snpRdata object.
-#' @param facets Character vector, default NULL. Name of a given facet to calculate maf for. If NULL calculates for all facets in x.
-#'
-#' @return Adds minor and major allele frequency information to a snpRdata object, accessable under the "\\@min.maj".
+#'@export
+#'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
@@ -167,46 +258,54 @@ calc_maf <- function(x, facets = NULL){
   return(merge.snpR.stats(x, out))
 }
 
-#Calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Takes the bayescan/allele count format. Pi calculated as in hohenlohe 2010.
-#inputs: x: input data, first three columns are: snp ID, position, snp scaffold/lg/chr. Named required columns are "n_total", "ni1", and "ni2". Named column "pop" is optional, and will be returned in output if exists.
-#        ws: window size in kbp
-#        step: step size in kbp
-#        report: give progress every "report" windows.
-#output: A data frame where column one is group, two is position, three is Tajima's theta,
-#        four is Waterson's theta, and five is D. Note that both thetas are reported as a
-#        frequency (so the number per base). Full number per window is ws*theta.
-
 #'Tajima's D from SNP data.
 #'
-#'\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's D over a sliding window. Pi calculated as in Hohenlohe et al. 2010. Tajima's D is calculated using the formula from Tajima (1989) Statistical Method for Testing the Neutral Mutation Hypothesis by DNA Polymorphism.
+#'\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's
+#'D over a sliding window.
 #'
-#'Description of x:
-#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". Also needs a column containing the position of each SNP, in bp. This matches the allele count/bayescan format as given by format_snps option one.
+#'Tajima's D compares estimates of theta based on either the number of observed
+#'pairwise differences (Tajima's theta) and the number of substitutions vs
+#'expected total tree length (Waterson's Theta). Since low frequency minor
+#'variants contribute to these statistics and they rely on the ratio of the
+#'number of variants vs the number of sequenced non-polymorphic sites, this
+#'function should only be run on data that is \emph{unfiltered} aside from the
+#'removal of poorly sequenced bases, ect.
 #'
-#' @param x Input data, in allele count format as given by format_snps output option 1.
-#' @param ws The size of each window, in kb.
-#' @param step Lenght to slide between each window, in kb.
-#' @param report When reporting progress, how many windows should be calculated between each report?
+#'The data can be broken up categorically by either SNP and/or sample metadata,
+#'as described in \code{\link{Facets_in_snpR}}.
 #'
-#' @return Data frame containing metadata, Waterson's Theta, Tajima's Theta, and Tajima's D for each window.
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param sigma numeric. Sliding window size, in kilobases. Each window will
+#'  include all SNPs within 3*sigma kilobases.
+#'@param step numeric. Number of bases to move between each window, in
+#'  kilobases.
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
+#'
+#'@return snpRdata object, with Waterson's Theta, Tajima's Theta, and Tajima's D
+#'  for each window merged in to the window.stats slot.
 #'
 #' @examples
-#' #convert example data into the correct format and run splitting by groups and pops.
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ac <- format_snps(stickSNPs, 3, pop = pops)
-#' run_gp(ac, Tajimas_D, 200, 50)
+#' calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
 #'
-calc_tajimas_d <- function(x, facets, ws, step, par = F){
-  func <- function(ac, par, ws, step, report){
-    out <- data.frame(position = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), nsnps = numeric(0)) #initialize output
+#'@export
+#'@references Tajima, F. (1989). \emph{Genetics}
+#'@author William Hemstrom
+calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
+  sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+
+
+  func <- function(ac, par, sigma, step, report){
+    out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
-    ws <- 1000*ws
+    sigma <- 1000*sigma
     while (c <= lsp){
-      start <- c - ws #change window start
-      end <- c + ws #change window end
+      start <- c - sigma*3 #change window start
+      end <- c + sigma*3 #change window end
 
       #take all the snps in the window, calculate T's theta, W's theta, and T's D
       wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
@@ -246,9 +345,12 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
       out[i,"ws.theta"] <- ws.theta
       out[i,"ts.theta"] <- ts.theta
       out[i,"D"] <- D
-      out[i, "nsnps"] <- nrow(wsnps)
+      out[i, "n_snps"] <- nrow(wsnps)
       c <- c + step*1000
       i <- i + 1
+    }
+    if(nrow(out) > 0){
+      out$sigma <- sigma/1000
     }
     return(out)
   }
@@ -267,7 +369,7 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
                            fun = func,
                            case = "ps.pf.psf",
                            par = par,
-                           ws = ws,
+                           sigma = sigma,
                            step = step)
 
   return(merge.snpR.stats(x, out, type = "window.stats"))
@@ -275,54 +377,56 @@ calc_tajimas_d <- function(x, facets, ws, step, par = F){
 }
 
 
-#Calculates pairwise fst for each pair of populations according to hohenlohe (2010). Input format is
-#snp, position, group, pop, total allele count (total), number of alleles (num), ni1, ni2, and pi (diversity, from calc_pi).
-#Automatically sorts data by group, position, and population.
+
 
 #'Pairwise FST from SNP data.
 #'
-#'\code{calc_pairwise_Fst} calculates pairwise FST for each SNP for each possible pairwise combination of populations based on the methods in Wier and Cockerham 1984, Wier 1990, or Hohenlohe et al 2010. Can also return the total number of observed alleles at each SNP for each of these pairwise combinations.
+#'\code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
+#'possible pairwise combination of populations.
 #'
-#'Description of x:
-#'    Must contain colums containing the number of *unique* alleles, total count of alleles sequenced in all individuals, and subsequent alleles counts for each observed allele in columns named "n_alleles", "n_total", "ni1", and "ni2". This matches the allele count/bayescan format as given by format_snps option one. Should also contain columns titled "group", "position", and "pop", which contain the linkage group/chr, position in bp, and population ID for each SNP. Lastly, also needs a column containing pi (for Hohenlohe) or Ho (for WC or Wier) for each SNP, as given by calc_pi or calc_Ho, respectively.
+#'Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
+#'Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
+#'the genepop package (see references).
 #'
-#'Smoothing note:
-#'    To smooth the data resulting from this, simply convert to long format, name the column containing comparisons "pop", append a column with long format pairwise nk values if desired, and use run_gp. Conversion for the FST and nk data frames can be easily done with rehape2::melt, with all metadata columns given as id.vars, as in id.vars = c("snp", "group", "pop").#'
+#'If the genpop option is used, several intermediate files will be created in
+#'the current working directory, which are not cleaned automatically.
+#'\code{calc_pairwise_fst} will ask for permission to continue if these files
+#'already exist.
 #'
-#'Method Options:
-#'\itemize{
-#'    \item{"WC": }{Wier and Cockerham 1984.}
-#'    \item{"Wier": }{Wier 1990.}
-#'    \item{"Genepop": }{As used in genepop, Rousset 2008.}
-#'    \item{"Hohenlohe": }{Hohenlohe 2010.}
-#'}
+#'The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
+#'produce very similar results. Generally, either of the two former options are
+#'prefered for computational efficieny.
 #'
-#' @param x Input data frame, in allele count format as given by format_snps option "ac", with an additional column containing pi or Ho estimates.
-#' @param method Which FST estimator should be used?
+#'The data can be broken up categorically by either SNP and/or sample metadata,
+#'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
+#'statistic, at least a single sample level facet must be provided.
 #'
-#' @return If both do.nk is true and skip.FST is false, returns a list containing named data frames "FST" and "nk", which contain pairwise FST and nk values, respectively If only one output is requested, only that data frame is returned. If "Genepop" is chosen, returns a list with both a data.frame containing pairwise FST values and a vector of the overall weighted FST for each comparison.
+#'Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
+#'\item{"Wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
+#'2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
+#'
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param method character, default "WC". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
+#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'
+#'@return A snpRdata object with pairwise FST as well as the number of total
+#'  observations at each SNP in each comparison merged in to the pairwise.stats
+#'  socket.
+#'
+#'@references Wier and Cockerham (1984). \emph{Evolution}
+#'@references Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
+#'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
+#'@references Rousset (2008). \emph{Molecular Ecology Resources}
+#'
+#'@author William Hemstrom
+#'@export
+#'
 #' @examples
-#' #Wier and Cockerham
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ac <- format_snps(stickSNPs, 3, pop = l)
-#' Ho <- calc_Ho(stickSNPs, 3, pop = l)
-#' m_Ho <- melt(Ho, id.vars = c("group", "position", "snp"))
-#' ac$Ho <- m_Ho$value
-#' calc_pairwise_Fst(ac, 3, do.nk = T)
-#'
-#' #Wier and Cockerham without binding the Ho column manually:
-#' calc_pairwise_Fst(ac, 3, do.nk = T, char.dat = stickSNPs, pop = pops, c.d.ecs = 3)
-#'
-#'
-#' #genepop
-#' ##prepare pop list for both formatting and FST.
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' l <- list(c(names(pops)), as.numeric(pops))
-#' ##write the genepop file.
-#' format_snps(stickSNPs, 3, 2, outfile = "stickGENEP.txt", pop = l)
-#' ##calculate FST:
-#' FST <- calc_pairwise_Fst("stickGENEP.txt", method = "Genepop", pnames = l[[1]])
-
+#' calc_pairwise_fst <- function(stickSNPs, facets = "pop")
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
     if(method != "genepop"){
@@ -444,8 +548,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       # get nk values:
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
                                        .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
-                                       n_total = x@ac[x@facet.meta$facet == facets, "n_total"])
-      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "n_total")
+                                       nk = x@ac[x@facet.meta$facet == facets, "n_total"])
+      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
 
 
@@ -575,7 +679,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     # melt, cbind pnk
     suppressWarnings(out <- data.table::melt(out))
     colnames(out) <- c("comparison", "fst")
-    out$n_total <- pnk$ntotal
+    out$nk <- pnk$ntotal
 
     # return
     return(out)
@@ -596,7 +700,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
   method <- tolower(method)
 
-
   # call apply.snpR.facets, slightly different for each method, since they require different stuff.
   if(method == "genepop"){
     out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
@@ -612,7 +715,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
   }
 
-  # working here, just need to adjust merge.snpR.stats to work with pairwise stats.
+  # merge
   x <- merge.snpR.stats(x, out, type = "pairwise")
 
   if(method == "genepop"){
@@ -626,36 +729,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
 }
 
-#Calculates observed heterozygosity at a snp.
-#Inputs:  data: Input data. In numeric or NN character format, see format_snps output options 4 or 6.
-#               Nucleotides coded as 01 to 04 or A,T,C,G, respectively.
-#         ecs: Number of columns containing metadata.
-#         m.dat: Missing data indicator. Should be in the same format as data.
-#         pop: List with population information for individuals. Format is as produced by:
-#              list(c("North", "South", "East", "West"), c(10,20,30,40)). First vector is names of pops,
-#              second vector is the count of each pop. Input data MUST be in the same order as this list.
 
-#'Observed heterozygosity from SNP data.
-#'
-#'\code{calc_Ho} calculates observed heterozygosity at each SNP, potentially in many populations.
-#'
-#'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. If the data contains individuals from multiple populatoins, they must be in the same order as given to the pop agrument.
-#'
-#' @param x Input data, in "NN" or "0000" format, as given by format_snps output option 4 or 6.
-#' @param ecs Number of extra metadata columns at the start of x.
-#' @param m.dat Character variable matching the coding for missing *genotypes* in x (typically "NN" or "0000").
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @return Data frame containing metadata, and Ho for each population in named columns.
-#'
-#' @examples
-#' #no seperate pops:
-#' calc_Ho(stickSNPs, 3)
-#'
-#' #seperate pops
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' calc_Ho(stickSNPs, 3, pop = pops)
-#'
+
+#'@export
+#'@describeIn calc_single_stats observed heterozygosity
 calc_ho <- function(x, facets = NULL){
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
@@ -681,32 +758,8 @@ calc_ho <- function(x, facets = NULL){
   return(merge.snpR.stats(x, out))
 }
 
-#Checks for private alleles.
-#inputs: x: data, in allele count format such as that given by format_snps option 1. Expects
-#           columns named "pop", "ni1", and "ni2", which contain pop designations, allele one counts,
-#           and allele 2 counts.
-
-#'Private Alleles from SNP data.
-#'
-#'\code{check_private} checks for the presence of private alleles at any loci across multiple populations.
-#'
-#'Description of x:
-#'    Must contain colums containing columns containing the allele counts for each observed allele in columns named "ni1"" and "ni2". Also needs a column containing population IDs, in a column named "pop". Note that SNPs must be identically sorted in each pop, and sorted first by pop! For example, sorted by pop, group, position then position. Runs with output from format_snps output option 1.
-#'
-#' @param x Input data, in the format given by format_snps output option "ac". Must contain a column with pop info named "pop".
-#' @param ecs Numeric, number of metadata columns at the start of x to maintain for output.
-#'
-#' @return Data frame with no metadata but sorted identically to input noting if each (row) locus is private in each (column) population, coded as 1 if private, 0 if not.
-#'
-#' @examples
-#' #add a private allele for demonstration purposes.
-#' pall <- data.frame(snp = rep(10000, 6), position = rep(1, 6), group = rep("Dup", 6), pop = c("ASP", "CLF", "PAL", "OPL", "SMR", "UPD"), n_total = rep(100, 6), n_alleles = rep (2, 6), ni1 = c(rep(0, 5), 20), ni2 = c(rep(100, 5), 80))
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ac <- format_snps(stickSNPs, 3, pop = pops)
-#' ac <- rbind(ac, pall)
-#' ac <- dplyr::arrange(ac, pop, position, group)
-#' check_private(ac)
-#'
+#'@export
+#'@describeIn calc_single_stats find private alleles
 calc_private <- function(x, facets = NULL){
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
@@ -766,37 +819,89 @@ calc_private <- function(x, facets = NULL){
   x <- merge.snpR.stats(x, out)
 }
 
-#Calculates Dprime, rsq, and a p-value for LD for each pair of snps.
-#inputs: x: data, in either numeric or NN form. Must contain a column named "position", can contain a column named "group" and/or "pop"
-#        ecs: number of extra columns (headers) before the data in x
-#        prox_table: Should a proximity table be output?
-#        matrix_out: Should LD matrices be created?
-#        mDat: What is the missing data character? Expects marker for a single allele. ("N" or "01")
+# Keming: Edit this function to fully integrate the multihaplotype ME estimation function we worked on.
+#         Mostly this will be edits in the tabulate.haplotypes function, and you'll need to add the ME function
+#         under the subfunctions heading. Once it is done, load the package in with cntrl + L or devtools::load_all("."),
+#         then run calc_pairwise_LD(stickSNPs, facets = "group.pop", use.ME = TRUE).
+#         Try to fix errors with browser(), but no worries if we need to meet to work on it.
+#         Could try to update sanity checks if feeling motivated.
 
 #'Pairwise LD from SNP data.
 #'
-#'\code{LD_full_pairwise} calculates LD between each pair of SNPs. If called as is, assumes one linkage group/chromosome and one population!
+#'\code{LD_full_pairwise} calculates LD between each pair of SNPs.
 #'
-#'Matrix outputs are properly formated for LD_pairwise_heatmap.
+#'Calculates pairwise linkage disequilibrium between pairs of SNPs using several
+#'different methods. By default uses the Burrow's Composite Linkage
+#'Disequilibrium method.
 #'
-#'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6. Requires the column containing the position of the loci in base pairs be named "position". Note that this \emph{ignores populations}, split data into distinct populations before running.
+#'If cld is not "only", haplotypes are estimated either via direct count after
+#'removing all "0101" double heterozygote haplotypes (if use.ME is FALSE) or via
+#'the Minimization-Expectation method  described in Excoffier, L., and Slatkin,
+#'M. (1995). Note that while the latter method is likely more accurate, it can
+#'be \emph{very} slow and often produces qualitatively equivalent results, and
+#'so is not prefered during casual or preliminary analysis. Either method will
+#'calculate D', r-squared, and the p-value for that r-squared.
 #'
-#' @param x snpRdata object
-#' @param facets Facets to split by. Multi-level facets can be noted with a ".". "pop.family.chr", for example, will split by chr within each family and within each group/family level combo.
-#' @param subfacets Subsets the facet levels to run. Given as a named list: list(fam = A) will run only fam A, list(fam = c("A", "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A", pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop = "A.ASP") will run only samples in fam A and pop ASP.
-#' @param ss number of snps to subsample.
-#' @param par number of parallel cores to run
-#' @param sr should reports be supressed?
+#'Since this process involves many pairwise comparisons, it can be very slow.
 #'
-#' @return Matrices containing rsq, Dprime, and p values for each SNP vs every other SNP. Can also produce a proximity table, which contains the rsq, Dprime, and p value for each pairwise comparison and the distance between the SNPs in those comparisons. Returns matrices and prox table as sequential elements in a named list.
+#'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated
+#'very quickly via the \code{\link{cor}} function from base R.
+#'\code{LD_full_pairwise} will perform this method alongside the other methods
+#'if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+#'sufficient and much faster than the other methods. This is the default
+#'behavior.
+#'
+#'The data can be broken up categorically by either SNP and/or sample metadata,
+#'as described in \code{\link{Facets_in_snpR}}.
+#'
+#'Heatmaps of the resulting data can be easily plotted using
+#'\code{\link{plot_pairwise_LD_heatmap}}
+#'
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param subfacets character, default NULL. Subsets the facet levels to run.
+#'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
+#'  "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A",
+#'  pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop =
+#'  "A.ASP") will run only samples in fam A and pop ASP.
+#'@param ss numeric, default NULL. Number of snps to subsample.
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
+#'@param CLD TRUE, FALSE, or "only", default "only". Specifies if the CLD method
+#'  should be used either in addition to or instead of default methods. See
+#'  details.
+#'@param use.ME logical, default FALSE. Specifies if the
+#'  Minimization-Expectation haplotype estimation should be used. See details.
+#'@param sigma numeric, default 0.0001. If the ME method is used, specifies the
+#'  minimum difference required between steps before haplotype frequencies are
+#'  accepted.
+#'
+#'
+#'@return a snpRdata object with linkage results stored in the pairwise.LD slot.
+#'  Specifically, this slot will contain a list containing any LD matrices in a
+#'  nested list broken down facet then by facet levels and a data.frame
+#'  containing all pairwise comparisons, their metadata, and calculated
+#'  statistics in long format for easy plotting.
+#'
+#'@references Dimitri Zaykin (2004). \emph{Genetic Epidemiology}
+#'@references Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
+#'  Evolution}
+#'@references Lewontin (1964). \emph{Genetics}
+#'
+#'@author William Hemstrom
+#'@export
 #'
 #' @examples
-#' #returns prox table and LD matrices.
-#' LD_full_pairwise(stickSNPs[stickSNPs$group == "groupI",1:53], ecs = 3)
+#' #CLD
+#' calc_pairwise_ld(stickSNPs, facets = "group.pop")
 #'
+#' #standard haplotype frequency estimation
+#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+#'
+#' #ME haplotype estimation
+#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
-                             par = FALSE, sr = FALSE){
+                             par = FALSE, sr = FALSE, CLD = "only", use.ME = FALSE, sigma = 0.0001){
   #========================sanity checks=============
   #sanity checks:
   # subsampling
@@ -825,7 +930,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
   #========================sub-functions=============
   #function to do LD with SNPs
-  library(dplyr)
 
   # sub functions:
 
@@ -878,13 +982,19 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     gl <- colnames(ghapmat)
 
     ##remove anything with missing data and double hets
+    ## Keming: this line can be edited--remove the last which statement, save as a new variable which identifes
+    ##         columns containing missing data.
     rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
               grep(paste0(dmDat, "$"), gl), #missing second locus
               which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
                       substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
 
+    new.var <- grep(dmDat, gl)
     ##remove any double heterozygotes
+    ghapmat2 <- ghapmat[,-new.var]
     ghapmat <- ghapmat[,-rgcs]
+
+    ## Keming: make a ghapmat with the new variable instead of rgcs. This will be x in our multihaplotype estimation function
 
     #add a filler row for the last pairwise comparison to make life easier.
     if(length(y) == length(x)){
@@ -1058,6 +1168,16 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #  browser()
     #}
     hapmat <- matrix(hapmat, nrow(ghapmat), 4, byrow = T)
+
+    ## Keming: the hapmat variable is the second argument, haptable
+    ##         now, what want to do is take an argument (let's name it use.ME). If use.ME == TURE,
+    ##         we want to call our ME function, get a hapmat out from it, and return this instead of the
+    ##         hapmat that we calculated above.
+
+    if(use.ME){
+      #call our new haplotype function, x is ghapmat2, haptable is hapmat, sigma is sigma
+      # overwrite the hapmat object.
+    }
 
     #now just have the haplotypes. These will calculate D in the case of 1 or 0 missing haplotypes.
     #when there are three missing haplotypes, D will be 0. When there are 2, D will be 0 or 1.
@@ -1543,7 +1663,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         rproc <- ceiling(cumsum(as.numeric(comps.per.snp))/split) # which processor should each comparison be assigned to?
 
         #now need to start the parallel job:
-        library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
         doSNOW::registerDoSNOW(cl)
 
@@ -1584,7 +1703,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                                      LD_func(x = x_storage, snp.list = t.comps,
                                              meta = meta_storage, mDat = mDat_storage,
                                              sr = T)
-                                     }
+                                   }
 
         #release cores
         parallel::stopCluster(cl)
@@ -1624,7 +1743,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         ## decompose and return
         LD_mats <- decompose.LD.matrix(x, LD_mats, facets = facets, facet.types = facet.types)
-        out <- list(prox = prox, LD_mats = LD_matrices)
+        prox$sample.facet <- ".base"
+
+        out <- list(prox = prox, LD_matrices = LD_mats)
+
         return(out)
       }
 
@@ -1642,6 +1764,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         LD_mats[[1]][[1]] <- list(Dprime = out$Dprime, rsq = out$rsq, pval = out$pval)
 
         prox <- out$prox
+        prox$sample.facet <- ".base"
         out <- decompose.LD.matrix(x, LD_mats, facets, facet.types)
         out <- list(prox = prox, LD_matrices = out)
 
@@ -1717,7 +1840,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #in parallel
     else{
-      library(doParallel);library(foreach)
       cl <- snow::makeSOCKcluster(par)
       doSNOW::registerDoSNOW(cl)
 
@@ -1770,6 +1892,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   #========================prepare and pass the primary function to apply.snpR.facets==================
   #subset data if requested:
   if(!(is.null(subfacets[1]))){
+    old.x <- x
     ssfacets <- names(subfacets)
 
     # check complex facets
@@ -1796,7 +1919,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     # get subfacet types
     ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
 
-    invisible(capture.output(x <- subset.snpR.data(x,
+    invisible(capture.output(x <- subset_snpR_data(x,
                                                    facets = names(subfacets)[which(ssfacet.types == "sample")],
                                                    subfacets = subfacets[[which(ssfacet.types == "sample")]],
                                                    snp.facets = names(subfacets)[which(ssfacet.types == "snp")],
@@ -1813,7 +1936,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     #subset
-    x <- subset.snpR.data(x, ss)
+    x <- subset_snpR_data(x, ss)
   }
 
 
@@ -1824,24 +1947,21 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
 
   # add to snpRdata object and return
-  out <- merge.snpR.stats(x, out, "LD")
+  if(exists("old.x")){
+    out <- merge.snpR.stats(old.x, out, "LD")
+
+  }
+  else{
+    out <- merge.snpR.stats(x, out, "LD")
+  }
   return(out)
 }
 
 
 
 
-#'Calculate HWE divergence from SNP data.
-#'
-#'\code{calc_hwe} Calculates p-values for Hardy-Weinburg Equilibrium divergence from snp.R.data objects.
-#'
-#' @param x Input SNP data, in the snpRdata format.
-#' @param facets Facets to run. Non-sample level facets will be removed. Periods can be used to list complex facets, such as pop.fam to split by both pop and fam simultaniously.
-#'
-#' @return A snpRdata object with HWE data added.
-#'
-#' @examples
-#'
+#'@export
+#'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
 calc_hwe <- function(x, facets = NULL, method = "exact"){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
@@ -1951,6 +2071,11 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
       for(i in 1:nrow(gs)){
         out[i] <- exact.hwe(oqq[i], opp[i], o2pq[i])
       }
+
+      nas <- which(out == -1)
+      if(length(nas) > 1){
+        out[nas] <- NA
+      }
       return(out)
     }
   }
@@ -1967,5 +2092,104 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
   colnames(out)[ncol(out)] <- "pHWE"
   x <- merge.snpR.stats(x, out)
 
+  return(x)
+}
+
+#'Caluclate basic SNP statistics
+#'
+#'Automatically calculate most basic statistics from snpRdata. Calculates maf,
+#'pi, ho, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
+#'smoothing to produce per-window averages of all of these.
+#'
+#'The data can be broken up categorically by sample or SNP metadata, as
+#'described in \code{\link{Facets_in_snpR}}. Note that Fst and private allele
+#'calculations require a sample specific contrast (the pairwise part of pairwise
+#'Fst), and thus will not be calculated unless a facet with a sample meta data
+#'variable included is specified. The other stats, in contrast, are snp-specific
+#'and thus ignore any snp meta data variables included in facets. Providing NULL or
+#'"all" to the facets argument works as described in \code{\link{Facets_in_snpR}}.
+#'
+#'@param x snpRdata object.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param fst.method character, default "WC". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
+#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'@param sigma numeric. Designates the width of windows in kilobases. Full
+#'  window size is 6*sigma.
+#'@param step numeric or NULL, default NULL. Designates the number of kilobases
+#'  between each window centroid. If NULL, windows are centered on each SNP.
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
+#'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
+#'  averages by the number of observations at those SNPs.
+#'
+#'@author William Hemstrom
+#'@export
+#'
+#'@seealso calc_single_stats calc_pairwise_fst calc_smoothed_averages
+#'@return A snpRdata object with all of the described statistics merged into the appropriate sockets.
+#'
+calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = F, nk = TRUE){
+  #=========sanity checks=======
+  if(!is.null(facets[1])){
+    facet.types <- check.snpR.facet.request(x, facets, "none", T)
+    snp.facets <- which(facet.types[[2]] == "snp")
+  }
+
+  if(!is.null(sigma)){
+    if(is.null(facets[1])){
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
+    }
+    else if(any(facet.types[[2]] == "snp")){
+      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
+    }
+    else{
+      sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "single"), facets = facets)
+    }
+  }
+
+  #=========stats===============
+  # basic stats
+  x <- calc_maf(x, facets)
+  x <- calc_pi(x, facets)
+  x <- calc_hwe(x, facets)
+  x <- calc_ho(x, facets)
+  if(!is.null(facets[1])){
+    x <- calc_pairwise_fst(x, facets, method = fst.method)
+    x <- calc_private(x, facets)
+  }
+
+  # if a snp facet level is requested, run everything at the base level too.
+  if(length(snp.facets) > 0){
+    x <- calc_maf(x)
+    x <- calc_pi(x)
+    x <- calc_hwe(x)
+    x <- calc_ho(x)
+  }
+
+  #=========smoothing===========
+  if(!is.null(sigma)){
+
+    # if no facets, run only non-pairwise
+    if(is.null(facets[1])){
+      x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par, stats.type = "single")
+    }
+
+    # otherwise, need to run any snp facets with only single, everything else with pairwise.
+    else{
+      if(length(snp.facets) > 0){
+        x <- calc_smoothed_averages(x, facets[snp.facets], sigma, step, nk, par = par, stats.type = "single")
+        if(length(snp.facets) != length(facets)){
+          x <- calc_smoothed_averages(x, facets[-snp.facets], sigma, step, nk, par = par)
+        }
+      }
+      else{
+        x <- calc_smoothed_averages(x, facets, sigma, step, nk, par = par)
+      }
+    }
+  }
+
+  #=========return==============
   return(x)
 }

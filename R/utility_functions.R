@@ -1,11 +1,74 @@
-#' Import genotype and metadata into a snpRdata object.
+#'Import genotype and metadata into a snpRdata object.
 #'
-#' \code{import.snpR.data} converts genotype and meta data to the snpRdata class, which stores raw genotype data, sample and locus specific metadata, useful data summaries, repeatedly internally used tables, calculated summary statistics, and smoothed statistic data.
+#'\code{import.snpR.data} converts genotype and meta data to the snpRdata class,
+#'which stores raw genotype data, sample and locus specific metadata, useful
+#'data summaries, repeatedly internally used tables, calculated summary
+#'statistics, and smoothed statistic data.
 #'
-#' The snpRdata class is built to contain SNP genotype data for use by functions in the snpR package. It inherits from the S3 class data.frame, in which the genotypes are stored, and can be manipulated identically. It also stores sample and locus specific metadata, genomic summary information, and any results from most snpR functions. The raw data for each of these latter objects is accessable via the at operator.
-#' Genotypes are stored in the "character" format, as output by format_snps(). Missing data is noted with "NN".
+#'The snpRdata class is built to contain SNP genotype data for use by functions
+#'in the snpR package. It inherits from the S3 class data.frame, in which the
+#'genotypes are stored, and can be manipulated identically. It also stores
+#'sample and locus specific metadata, genomic summary information, and results
+#'from most snpR functions. Genotypes are stored in the "character" format, as
+#'output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
-import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
+#'@section Sockets:
+#'
+#'  Genotypes, metadata, and results are stored in sockets and directly
+#'  accessable with the 'at' symbol operator. Sockets are as follows:
+#'
+#'  \itemize{ \item{sample.meta: } sample metadata (population, family,
+#'  phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
+#'  linkage group, position, etc.). \item{facet.meta: } internal metadata used
+#'  to track facets that have been previously applied to the dataset.
+#'  \item{mDat: } missing data format. \item{snp.form: } number of characters
+#'  per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
+#'  allele counts (as), and missing data (wm). facet.meta contains the
+#'  corresponding metadata. \item{ac: } data in allele count format, used
+#'  internally. facet.meta contains corresponding metadata. \item{facets: }
+#'  vector of the facets that have been added to the data. \item{facet.type: }
+#'  classes of the added facets (snp, sample, complex, or .base). \item{stats: }
+#'  data.frame containing all calculated non-pairwise single-snp statistics and
+#'  metadata. \item{window.stats: } data.frame/table containing all non-pairwise
+#'  statistics calculated for sliding windows. \item{pairwise.stats: }
+#'  data.frame/table containing all pairwise (fst) single-snp statistics.
+#'  \item{pairwise.window.stats: } data.frame/table containing all pairwise
+#'  statistics calculated for sliding windows. \item{pairwise.LD: } nested list
+#'  containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
+#'  for more information). \item{window.bootstraps: } data.frame/table
+#'  containing all calculated bootstraps for sliding window statistics.
+#'  \item{sn: } list containing "sn", sn formatted data, and "type" type of
+#'  interpolation. \item{names: } column names for genotypes. \item{row.names: }
+#'  row names for genotypes. \item{.Data: } list of vectors containing raw
+#'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
+#'
+#'  Note that most of these sockets are used primarily internally.
+#'
+#'  All calculated data can be accessed using the \code{\link{get.snpR.stats}}
+#'  function. See documentaion.
+#'
+#'
+#'@param genotypes data.frame. Raw genotypes in a two-character format ("GG",
+#'  "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
+#'  columns.
+#'@param snp.meta data.frame. Metadata for each SNP, must have a number of rows
+#'  equal to the number of SNPs in the dataset.
+#'@param sample.meta data.frame. Metadata for each individual sample, must have
+#'  a number of rows equal to the number of samples in the dataset.
+#'@param mDat character, default "NN", matching the encoding of missing
+#'  \emph{genotypes} in the data provided to the genotypes argument.
+#'
+#'@examples
+#' # import example data as a snpRdata object
+#' # produces data identical to that contained in the stickSNPs example dataset.
+#' genos <- stickRAW[,-c(1:3)]
+#' snp_meta <- stickRAW[,1:3]
+#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+#' import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+#'
+#'@export
+#'@author William Hemstrom
+import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   # prepare things for addition to data
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
@@ -26,8 +89,22 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
   }
 
+  # fix factors
+  sample.meta %>% mutate_if(is.factor, as.character) -> sample.meta
+  snp.meta %>% mutate_if(is.factor, as.character) -> snp.meta
+
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
+
+  x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
+           facet.meta = data.frame(),
+           geno.tables = list(),
+           mDat = mDat,
+           stats = data.frame(),
+           snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
+           sn <- list(sn = NULL, type = NULL),
+           facets = ".base",
+           facet.type = ".base")
 
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
@@ -37,14 +114,9 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
 
   fm <- cbind(fm, snp.meta)
 
-  x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
-           facet.meta = fm,
-           geno.tables = gs,
-           mDat = mDat,
-           stats = fm,
-           snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
-           facets = ".base",
-           facet.type = ".base")
+  x@geno.tables <- gs
+  x@facet.meta <- fm
+  x@stats <- fm
 
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Imput data will be filtered to remove non bi-allelic data.\n")
@@ -57,8 +129,15 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat){
 }
 
 
-# function to add a new facet to snpRdata, generating gs, as, and wmat tables, and ac formatted data.
-# need to add the ac part.
+#'Add facets to snpRdata objects
+#'
+#'Adds facets to snpRdata objects, following the rules described in
+#'\code{\link{Facets_in_snpR}}. Internal, called by many other functions when
+#'facets are requested.
+#'
+#'@param x snpRdata object
+#'@param facets character. Facets to use.
+#'
 add.facets.snpR.data <- function(x, facets = NULL){
   if(is.null(facets[1])){return(x)}
   facets <- check.snpR.facet.request(x, facets)
@@ -70,7 +149,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     facet.list <- c(run.facets, strsplit(facets[comp.facets], split = "(?<!^)\\.", perl = T))
   }
   else{
-    facet.list <- list(facets)
+    facet.list <- as.list(facets)
   }
 
   #===========================sanity checks=========
@@ -127,7 +206,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
     sample.meta <- sample.meta[,sort(colnames(sample.meta))]
     if(!is.data.frame(sample.meta)){
-      sample.meta <- as.data.frame(sample.meta)
+      sample.meta <- as.data.frame(sample.meta, stringsAsFactors = F)
       colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
     }
     sample.opts <- unique(sample.meta)
@@ -157,6 +236,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
 
     #=========================sort, pack, and return==========
     # sort
+    x@facet.meta %>% mutate_if(is.factor, as.character) -> x@facet.meta
     x@facet.meta$.reorder <- 1:nrow(x@facet.meta)
     x@facet.meta <- dplyr::arrange(x@facet.meta, .snp.id, facet, subfacet)
     gs$gs <- gs$gs[x@facet.meta$.reorder,]
@@ -171,6 +251,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
   nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+  nac %>% mutate_if(is.factor, as.character) -> nac
   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
   x@ac <- nac[,-c(1:3)]
 
@@ -187,12 +268,21 @@ add.facets.snpR.data <- function(x, facets = NULL){
   else{
     os <- rbind(os, sm)
   }
+
+  os %>% mutate_if(is.factor, as.character) -> os
   x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
+
 
   return(x)
 }
 
-# function to list existing facets.
+#'Grab information of the facets present in snpRdata objects.
+#'
+#'Internal, grabs via reference to face.meta socket rather than the facets
+#'socket.
+#'
+#'@param x snpRdata object.
+#'
 find.snpR.facets <- function(x){
   facets <- vector("list", length(x@facets))
   names(facets) <- x@facets
@@ -202,8 +292,117 @@ find.snpR.facets <- function(x){
   return(facets)
 }
 
-# function to pull stats for a given facet
-get.snpR.stats <- function(x, facets = NULL){
+#'Pull calculated statistics from snpRdata objects.
+#'
+#'A convenience function that pulls statistics of any specified type at
+#'particular facets from a snpRdata object.
+#'
+#'Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets =
+#'"all", data for all facets, including the base facet, will be returned. By
+#'default, the base facet alone will be returned.
+#'
+#'Different types of statistics are retrieved via the following options under
+#'the "type" argument:
+#'
+#'\itemize{ \item{single: } non-pairwise, non-window statitics (pi, ho, ect.)
+#'\item{pairwise: } pairwise, non-window statistics (Fst). \item{single.window:
+#'} non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
+#'sliding window statistics. \item{LD: } linkage disequilibrium matrices and
+#'tables. \item{bootstraps: } bootstraps of window statistics. }
+#'
+#'@param x snpRdata object.
+#'@param facets character or NULL, default NULL. Facets for which to fetch data.
+#'@param type character, default "single". Type of statistics to pull, see
+#'  description.
+#'
+#'@export
+#'@author William Hemstrom
+#'
+#'@examples # generate some statistics
+#'dat <- calc_pi(stickSNPs, "group.pop")
+#'dat <- calc_pairwise_fst(stickSNPs, "group.pop")
+#'
+#'# fetch pi get.snpR.stats(stickSNPs, "group.pop") # fetch fst
+#'get.snpR.stats(stickSNPs, "group.pop", "pairwise")
+#'
+get.snpR.stats <- function(x, facets = NULL, type = "single"){
+  # sanity check
+  if(is.null(facets[1])){
+    facets <- ".base"
+  }
+  if(facets[1] == "all"){
+    facets <- x@facets
+  }
+
+  good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps")
+  if(!type %in% good.types){
+    stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
+  }
+
+  facets <- check.snpR.facet.request(x, facets, "none")
+  # bad.facets <- which(!facets %in% x@facets)
+  # if(length(bad.facets) > 0){
+  #   stop("No data statistics calculated for facets: ", paste0(facets[bad.facets], collapse = ", "), ".\n")
+  # }
+
+
+  #=======subfunctions======
+  extract.basic <- function(y, facets, type = "standard"){
+    if(type == "standard"){
+      keep.rows <- which(y$facet %in% facets)
+      keep.cols <- which(!colnames(y) %in% c("facet.type"))
+    }
+    else if(type == "window"){
+      facets <- check.snpR.facet.request(x, facets, "none", T)
+      keep.rows <- numeric()
+      keep.cols <- 1:ncol(y)
+
+      # for each facet, figure out which rows conform
+      for(i in 1:length(facets[[1]])){
+        if(facets[[2]][i] == "snp"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == facets[[1]][i] & y$facet == ".base"))
+        }
+        else if(facets[[2]][i] == "sample"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == facets[[1]][i]))
+        }
+        else if(facets[[2]][i] == ".base"){
+          keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
+        }
+        else{
+          tfacet <- unlist(strsplit(facets[[1]][i], "\\."))
+          tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
+
+          # need to paste together any snp or sample faces
+          sample.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "sample")], collapse = ".")
+          sample.facets <- check.snpR.facet.request(x, sample.facets)
+          snp.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "snp")], collapse = ".")
+          snp.facets <- check.snpR.facet.request(x, snp.facets, remove.type = "none")
+
+          keep.rows <- c(keep.rows, which(y$snp.facet == snp.facets & y$facet == sample.facets))
+        }
+      }
+    }
+
+    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = F))
+  }
+
+  extract.LD <- function(y, facets){
+    # get sample facets
+    samp.facets <- check.snpR.facet.request(x, facets)
+    if(length(samp.facets) != length(facets)){
+      samp.facets <- c(samp.facets, ".base")
+    }
+
+    # get prox
+    prox <- y$prox[y$prox$sample.facet %in% samp.facets,]
+
+    # get matrices
+    matrices <- y$LD_matrices[[which(names(y$LD_matrices) %in% facets)]]
+
+    return(list(prox = prox, matrices = matrices))
+  }
+
+  #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -213,37 +412,79 @@ get.snpR.stats <- function(x, facets = NULL){
     facets <- ".base"
   }
 
-  for(i in 1:length(facets)){
-    if(any(facets %in% colnames(x@snp.meta))){
-      if(any(facets %in% colnames(x@sample.meta))){
-        samp.facets <- which(facets %in% colnames(x@sample.meta))
-        facets <- facets[samp.facets]
-      }
-      else{
-        next() # snp level facet, skip.
-      }
+  facets <- check.snpR.facet.request(x, facets, "none")
+
+  #========extract data======
+  if(type == "single"){
+    facets <- check.snpR.facet.request(x, facets)
+    return(extract.basic(x@stats, facets))
+  }
+  else if(type == "pairwise"){
+    facets <- check.snpR.facet.request(x, facets)
+    base.facets <- which(facets == ".base")
+    if(length(base.facets) > 0){
+      stop("Cannot find pairwise statistics without any facets (facets = NULL or '.base').\n")
     }
+    return(extract.basic(x@pairwise.stats, facets))
+  }
+  else if(type == "single.window"){
+    return(extract.basic(x@window.stats, facets, "window"))
+  }
+  else if(type == "pairwise.window"){
+    return(extract.basic(x@pairwise.window.stats, facets, "window"))
+  }
+  else if(type == "LD"){
+    return(extract.LD(x@pairwise.LD, facets))
+  }
+  else if(type == "bootstraps"){
+    return(extract.basic(x@window.bootstraps, facets, "window"))
   }
 
-  keep.rows <- -which(colnames(x@stats) %in% c(".snp.id", "facet.type"))
-
-  return(as.data.frame(x@stats[x@stats$facet %in% facets, ..keep.rows]))
 }
 
-# function to apply a function across selected facets
-# req: which part of the snpR.data object is required and should be pulled out?
-#        gs: genotype tables
-#        ac: ac formatted data
-#        meta.gs: facet, .snp.id metadata cbound genotype tables.
-#        ac.stats: ac data cbound to stats
-#        meta.ac: ac data cbound to snp metadata
-# facets: if NULL, run without facets.
-# cases: ps: per snp.
-#        ps.pf: per snp, but split per facet (such as for private alleles, comparisons only exist within a facet!)
-#        facet.pairwise: pairwise between facets, ps otherwise.
-#        ps.pf.psf: per snp, but per both sample and snp facet.
-# fun: which function should be applied?
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all"){
+#'Apply functions across snpR facets.
+#'
+#'Internal function to apply functions across snpR data. Facet desicnations
+#'follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
+#'designations follow typical rules.
+#'
+#'This function should never be called externally. Raw statistics with metadata
+#'are returned and are not automatically merged into x.
+#'
+#'For examples, look at how this function is called in functions such as
+#'calc_pi, calc_pairwise_fst, ect.
+#'
+#'Options:
+#'
+#'req:
+#'
+#'\itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
+#'\item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
+#'\item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
+#'snp metadata }
+#'
+#'case:
+#'
+#'\itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
+#'per snp, but split per facet (such as for private alleles, comparisons only
+#'exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
+#'between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per snp,
+#'but per both sample and snp facet. }
+#'
+#'@param x snpRdata object
+#'@param facets character or NULL, default NULL. Facets to add.
+#'@param req character. Data type required by fun. See description.
+#'@param fun function. Function to apply to data.
+#'@param case character, default "ps". Type of statistic required by fun. See
+#'  description.
+#'@param par numeric or FALSE, default FALSE. Number of parallel computing cores
+#'  to use. Works for some cases/reqs.
+#'@param ... other arguments to be passed to fun.
+#'@param stats.type character, default "all". Other options "pairwise" or
+#'  "stats". Type of statistic under to pull under the ps.pf.psf option.
+#'
+#'@author William Hemstrom
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -298,6 +539,88 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       # return
       return(out)
     }
+    else if(req == "cast.gs" | req == "cast.ac"){
+
+      # need to split by phenotype + facet
+      pheno.facets <- paste(facets, response, sep = ".")
+
+      ## remove any .base pheno facets, do these a bit differently
+      base.pheno.facets <- grep("^\\.base", pheno.facets)
+      if(length(base.pheno.facets) > 0){
+        if(length(base.pheno.facets) != length(pheno.facets)){
+          pheno.facets <- c(check.snpR.facet.request(x, pheno.facets[-base.pheno.facets]), response)
+        }
+        else{
+          pheno.facets <- response
+        }
+      }
+      else{
+        pheno.facets <- check.snpR.facet.request(x, pheno.facets)
+      }
+      x <- add.facets.snpR.data(x, pheno.facets)
+      if(req == "cast.gs"){
+        gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
+      }
+      else{
+        gs <- data.table::as.data.table(cbind(x@facet.meta, x@ac[, c("ni1", "ni2")]))
+      }
+
+      # initialize outputs
+      comb <- vector("list", length = length(facets))
+
+      # get the input gs data. Split by facet, since we need to extract metadata differently for each.
+      for(i in 1:length(facets)){
+        tgs <- gs[gs$facet == pheno.facets[i],]
+
+        which.is.phenotype <- which(unlist(strsplit(pheno.facets[i], split = "(?<!^)\\.", perl = T)) == response)
+
+        # add phenotype and subfacet column
+        id <- strsplit(tgs$subfacet, split = "(?<!^)\\.", perl = T)
+        l <- length(id[[1]])
+        uid <- unlist(id)
+        p.vals <- seq(from = which.is.phenotype, to = length(uid), by = l)
+        subfacet <- lapply(id, FUN = function(x) x[-which.is.phenotype])
+        subfacet <- unlist(lapply(subfacet, FUN = paste, collapse = "."))
+        tgs$subfacet <- subfacet
+        tgs$phenotype <- uid[p.vals]
+        tgs$facet.type <- check.snpR.facet.request(x, facets[i], "none", T)[[2]]
+
+        # fix for .base
+        tgs$subfacet[tgs$subfacet == ""] <- ".base"
+
+        # cast
+        if(req == "cast.gs"){
+          value.vars <- colnames(x@geno.tables$gs)
+        }
+        else{
+          value.vars <- c("ni1", "ni2")
+        }
+        comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
+        comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"), all.y = T)
+        comb[[i]]$facet <- facets[i]
+      }
+
+      comb <- rbindlist(comb)
+
+      mcols <- 1:ncol(x@facet.meta)
+      meta <- comb[,..mcols]
+      comb <- comb[,-..mcols]
+
+      # call function
+      out <- fun(comb, ...)
+      n.ord <- (1:ncol(meta))[-which(colnames(meta) == ".snp.id")]
+      n.ord <- c(n.ord, which(colnames(meta) == ".snp.id"))
+      meta <- meta[,..n.ord]
+      out <- cbind(meta, out)
+      if(req == "cast.gs"){
+        colnames(out)[ncol(out)] <- paste0("p_armitage_", response)
+      }
+      else{
+        colnames(out)[-c(1:ncol(meta))] <- paste0(colnames(out)[-c(1:ncol(meta))], "_", response)
+      }
+
+      return(out)
+    }
   }
   else if(case == "ps.pf"){
     out <- data.frame() # initialize
@@ -335,7 +658,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         # if this is a genepop fst output, we should expect a list of size two. Need to return the correct parts!
         if(length(out) == 2){
           suppressWarnings(out1 <- rbind(out1, cbind(data.table::as.data.table(x@snp.meta), facet = facets[i], data.table::as.data.table(out[[1]]))))
-          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]]))
+          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]], stringsAsFactors = F))
         }
       }
 
@@ -372,10 +695,11 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
   }
   else if(case == "ps.pf.psf"){
     if(req == "meta.ac" | req == "pos.all.stats"){
-      browser()
       x@facet.meta$facet <- as.character(x@facet.meta$facet)
-      x@facet.meta$subfacet <- x@facet.meta$subfacet
+      x@facet.meta$subfacet <- as.character(x@facet.meta$subfacet)
 
+      # subfunctions:
+      ## a function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
       get.task.list <- function(x, facets, source = "stats"){
         facets <- check.snpR.facet.request(x, facets, "none", F)
         task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
@@ -384,7 +708,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
           meta.to.use <- x@facet.meta
         }
         else if (source == "pairwise.stats"){
-          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")])
+          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")], stringsAsFactors = F)
           meta.to.use$subfacet <- meta.to.use$comparison
         }
 
@@ -401,14 +725,14 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
             sample.opts <- unique(t.sample.meta)
             t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
             if(is.null(nrow(sample.opts))){
-              sample.opts <- as.data.frame(sample.opts)
-              t.sample.meta <- as.data.frame(t.sample.meta)
+              sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+              t.sample.meta <- as.data.frame(t.sample.meta, stringsAsFactors = F)
             }
           }
           else{
             t.sample.facet <- ".base"
             t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
-            sample.opts <- data.frame(.base = ".base")
+            sample.opts <- data.frame(.base = ".base", stringsAsFactors = F)
           }
 
           # snp facets
@@ -444,69 +768,119 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         return(task.list)
       }
 
+      ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
         if(par == FALSE){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
 
         # get comps and run
+        ## figure out which data rows contain matching sample facets
         sample.matches <- which(apply(meta[,1:2], 1, function(x) identical(as.character(x), as.character(task.list[q,1:2]))))
 
-        # snp comps
         snp.facets <- unlist(strsplit(task.list[q,3], "(?<!^)\\.", perl = T))
 
         if(snp.facets[1] != ".base"){
+          # figure out which data rows contain matching snp facets
           snp.cols <- meta[,snp.facets]
           snp.cols <- do.call(paste, as.data.frame(snp.cols))
           snp.matches <- which(snp.cols == task.list[q,4])
+
+          # get the intersect and return.
           run.lines <- intersect(snp.matches, sample.matches)
-          snp.res <- unlist(strsplit(task.list[q,4], " "))
+          snp.res <- gsub(" ", ".", task.list[q,4])
         }
         else{
           run.lines <- sample.matches
           snp.res <- ".base"
         }
 
+        # run the function and create a snp res metadata df to bind to the results.
+        assign("last.warning", NULL, envir = baseenv())
         res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
 
-        snp.res <- matrix(rep(snp.res, each = nrow(res)), nrow = nrow(res), ncol = length(snp.res))
-        colnames(snp.res) <- snp.facets
-
-        return(cbind(task.list[rep(q, nrow(res)),1:2],
-                     snp.res,
-                     res))
-
+        # return
+        if(nrow(res) == 1){
+          return(cbind.data.frame(as.data.frame(t(task.list[rep(q, nrow(res)),1:2])),
+                                  snp.facet = task.list[q,3],
+                                  snp.subfacet = snp.res,
+                                  res))
+        }
+        else{
+          return(cbind.data.frame(task.list[rep(q, nrow(res)),1:2],
+                                  snp.facet = rep(task.list[q,3], nrow(res)),
+                                  snp.subfacet = rep(snp.res, nrow(res)),
+                                  res))
+        }
       }
 
+
+      # get the statistics needed by the function and the task list. For now, expects only meta cbound to ac or snp-wise statistics.
       if(req == "meta.ac"){
         stats_to_use <- x@ac
         task.list <- get.task.list(x, facets)
+        meta.to.use <- x@facet.meta
       }
       else{
-        if(stats.type %in% c("all", "stats")){
+        if(stats.type == "stats"){
+
+          # task list for non-pairwise case
+          ## get the columns containing statistics
           pos.col <- which(colnames(x@stats) == "position")
           start.col <- which(colnames(x@stats) == ".snp.id") + 1
-          cols.to.use <- c(pos.col, start.col:ncol(x@stats))
-          stats_to_use <- x@stats[,..cols.to.use]
+          if(start.col > ncol(x@stats)){
+            stop("No per-snp stats have been calculated for this dataset.\n")
+          }
+          cols.to.use <- start.col:ncol(x@stats)
+          ## add nk and remove any non-numeric columns
+          nk <- matrixStats::rowSums2(x@geno.tables$as)
+          if(data.table::is.data.table(x@stats)){
+            stats_to_use <- cbind(nk = nk, x@stats[,..cols.to.use])
+          }
+          else{
+            stats_to_use <- cbind(nk = nk, x@stats[,cols.to.use])
+          }
+          numeric.cols <- which(sapply(stats_to_use, class) %in% c("numeric", "integer"))
+          ## save
+          stats_to_use <- stats_to_use[,..numeric.cols]
           task.list <- get.task.list(x, facets)
+          meta.to.use <- x@facet.meta
+
         }
         else{
+          # grab the correct data columns from the pairwise stats dataset, and reorder so nk is first
           pos.col <- which(colnames(x@pairwise.stats) == "position")
           start.col <- which(colnames(x@pairwise.stats) == "comparison") + 1
-          cols.to.use <- c(pos.col, start.col:ncol(x@pairwise.stats))
+          cols.to.use <- start.col:ncol(x@pairwise.stats)
           stats_to_use <- x@pairwise.stats[,..cols.to.use]
+          nk.col <- which(colnames(stats_to_use) == "nk")
+          n.col.ord <- c(nk.col, (1:ncol(stats_to_use))[-nk.col])
+          stats_to_use <- stats_to_use[,..n.col.ord]
           task.list <- get.task.list(x, facets, source = "pairwise.stats")
+
+          # re-order the meta and save
+          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")])
+          facet.cols <- which(colnames(meta.to.use) == "facet")
+          facet.cols <- c(facet.cols, which(colnames(meta.to.use) == "comparison"))
+          n.col.ord <- c(facet.cols, (1:ncol(meta.to.use))[-facet.cols])
+          if(data.table::is.data.table(meta.to.use)){
+            meta.to.use <- meta.to.use[,..n.col.ord]
+          }
+          else{
+            meta.to.use <- meta.to.use[,n.col.ord]
+          }
         }
       }
 
+
+      # run the looping function for each row of the task list
       if(par == FALSE){
         out <- vector("list", nrow(task.list))
         for(q in 1:nrow(task.list)){
-          out[[q]] <- run.one.loop(stats_to_use, x@facet.meta, task.list, q, FALSE)
+          out[[q]] <- run.one.loop(stats_to_use, meta.to.use, task.list, q, FALSE)
         }
       }
 
-      # run in parallel or not
+      ## same, but in parallel
       else{
-        library(doParallel);library(foreach)
         cl <- snow::makeSOCKcluster(par)
         doSNOW::registerDoSNOW(cl)
 
@@ -515,107 +889,167 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
         opts <- list(progress=progress)
 
-        # initialize and store things
-        meta_storage <- x@facet.meta
 
         cat("Begining run.\n")
 
         # run the LD calculations
-        out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                                .options.snow = opts) %dopar% {
-                                  run.one.loop(stats_to_use, meta_storage, task.list, q, TRUE)
-                                }
+        ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
+        suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
+                                                 .options.snow = opts, .export = "data.table") %dopar% {
+                                                   run.one.loop(stats_to_use, meta.to.use, task.list, q, TRUE)
+                                                 })
 
         #release cores
         parallel::stopCluster(cl)
         doSNOW::registerDoSNOW()
       }
 
+      # bind the results together.
       suppressWarnings(out <- dplyr::bind_rows(out))
-      if(any(colnames(out) == ".base")){
-        out <- out[,-which(colnames(out) == ".base")]
-      }
       colnames(out)[1:2] <- c("facet", "subfacet")
-      meta.cols <- c(1,2, which(colnames(out) %in% colnames(x@snp.meta)))
+      meta.cols <- c(1,2,3,4, which(colnames(out) %in% colnames(x@snp.meta)))
       meta <- out[,meta.cols]
       meta[is.na(meta)] <- ".base"
       out <- cbind(meta, out[,-meta.cols])
-      browser()
       return(out)
     }
   }
 }
 
-# merge newly calculated stats with a snpRdata object.
+#'Merge newly calculated stats into a snpRdata object.
+#'
+#'Internal function to quickly and accurately merge newly calculated statistics
+#'into a snpRdata object. This should never be called externally. Takes and
+#'returns the same snpRdata object, with new data.
+#'
+#'Mostly relies on the smart.merge subfunction, which must be edited with care
+#'and testing. LD merging is independant.
+#'
+#'Type options: stats, pairwise, window.stats, pairwise.window.stats, and LD,
+#'corresponding to slots of the snpRdata S4 object class.
+#'
+#'For examples, see functions that use merge.snpR.stats, such as calc_pi or
+#'calc_pairwise_ld.
+#'
+#'@param x snpRdata object
+#'@param stats data.frame/table/list. New data to be added to the existing
+#'  snpRdata object, x.
+#'@param type character, default "stats". The type of statistic to merge, see
+#'  list in description.
 merge.snpR.stats <- function(x, stats, type = "stats"){
+
+  # the merging function used for most cases.
+  #    n.s: new stats
+  #    o.s: old stats
+  #    meta.names: names of the metadata columns, usually everything up to .snp.id
+  #    starter.meta: any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
+  smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+    n.s <- data.table::as.data.table(n.s)
+    o.s <- data.table::as.data.table(o.s)
+    if(nrow(o.s) == 0){
+      return(n.s)
+    }
+
+    # figure out which columns contain metadata
+    meta.cols.n <- which(colnames(n.s) %in% meta.names)
+    meta.cols.n <- colnames(n.s)[meta.cols.n]
+    meta.cols.o <- which(colnames(o.s) %in% meta.names)
+    meta.cols.o <- colnames(o.s)[meta.cols.o]
+    meta.cols <- unique(c(meta.cols.n, meta.cols.o))
+
+    # add in any missing metadata columns to both o.s and n.s
+    new.meta <- meta.cols.n[which(!(meta.cols.n %in% meta.cols.o))]
+    if(length(new.meta) > 0){
+      fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
+      colnames(fill) <- new.meta
+      o.s <- cbind(o.s[,..starter.meta], fill, o.s[,-..starter.meta])
+    }
+    old.meta <- meta.cols.o[which(!(meta.cols.o %in% meta.cols.n))]
+    if(length(old.meta) > 0){
+      fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
+      colnames(fill) <- old.meta
+      n.s <- cbind(n.s[,..starter.meta], fill, n.s[,-..starter.meta])
+    }
+
+    ## make sure metadata columns are sorted identically
+    new.meta <- n.s[,..meta.cols]
+    n.ord <- match(colnames(new.meta), meta.cols)
+    new.meta <- new.meta[,..n.ord]
+    old.meta <- o.s[,..meta.cols]
+    o.ord <- match(colnames(old.meta), meta.cols)
+    old.meta <- old.meta[,..o.ord]
+    if(ncol(o.s) - length(old.meta) != 0){
+      o.s <- cbind(old.meta, o.s[,-..meta.cols])
+    }
+    if(ncol(n.s) - length(new.meta) != 0){
+      n.s <- cbind(new.meta, n.s[,-..meta.cols])
+    }
+
+    ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
+    m.s <- merge(o.s, n.s, by = meta.cols, all = T)
+    ### grab any columns that need to be fixed (end in .x or .y) and save any matching columns that are fine as is.
+    match.cols <- colnames(m.s)[which(colnames(m.s) %in% c(colnames(o.s), colnames(n.s)))]
+    stat.cols.to.fix <- m.s[,-..match.cols]
+    stat.cols.y <- grep("\\.y$", colnames(stat.cols.to.fix))
+    if(length(stat.cols.y) > 0){
+      # replace NAs in y with values from x. No reason to do the vice versa.
+      stat.cols.y <- as.matrix(stat.cols.to.fix[,..stat.cols.y])
+      stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
+      stat.cols.x <- as.matrix(stat.cols.to.fix[,..stat.cols.x])
+      NA.y <- is.na(stat.cols.y)
+      stat.cols.y[NA.y] <- stat.cols.x[NA.y]
+      colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))
+
+      # update m.s
+      m.s <- cbind(m.s[,..match.cols], stat.cols.y)
+
+
+      # fix column classes
+      for(j in 1:ncol(m.s)){
+        if(is.character(m.s[[j]]) & !(colnames(m.s)[j] %in% meta.names)){
+          set(m.s, j = j, value = tryCatch(as.numeric(m.s[[j]]), warning = function(x) m.s[[j]]))
+        }
+      }
+    }
+
+    # sort by .snp.id if that's a thing here.
+    if(any(colnames(m.s) == ".snp.id")){
+      if("subfacet" %in% colnames(m.s)){
+        m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
+      }
+      else{
+        m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
+      }
+    }
+    return(m.s)
+  }
+
   if(type == "stats"){
-    o.s <- data.table::as.data.table(x@stats)
-    n.s<- data.table::as.data.table(stats)
-    # if new stats, easy to merge
-    if(!all(colnames(n.s) %in% colnames(o.s))){
-      o.s <- merge(o.s, n.s,
-                       by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
-                       all = T, sort = F)
-      o.s <- data.table::setorder(o.s, .snp.id, facet, subfacet)
-    }
-
-    # otherwise need to overwrite
-    else{
-      add.rows <- which(o.s$facet %in% n.s$facet)
-      y <- o.s[add.rows,]
-
-      # sort identically
-      #y <- dplyr::arrange(y, .snp.id, facet, subfacet)
-      n.s <- data.table::setorder(n.s, .snp.id, facet, subfacet)
-      y[,which(colnames(y) %in% colnames(n.s))] <- n.s
-
-      #replace and add
-      o.s[add.rows,] <- y # add back
-    }
-
-    # sort and return
-    x@stats <- o.s
+    # merge and return
+    meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == ".snp.id"))], colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "facet.type")
+    n.s <- smart.merge(stats, x@stats, meta.cols, starter.meta)
+    x@stats <- n.s
   }
   else if(type == "pairwise"){
-    o.s <- data.table::as.data.table(x@pairwise.stats)
-    n.s <- data.table::as.data.table(stats)
-    # since pairwise.stats data.frames aren't automatically initizalized, need to add new rows if they don't already exist.
-    missing.rows <- which(!(paste0(n.s$facet, "__", n.s$comparison) %in% paste0(o.s$facet, "__", o.s$comparison)))
-    if(length(missing.rows) > 0){
-      new.rows <- n.s[,1:which(colnames(n.s) == "comparison")]
-      if(ncol(o.s) > ncol(new.rows)){
-        new.rows <- data.table::as.data.table(cbind(new.rows, matrix(NA, nrow = nrow(new.rows), ncol = (ncol(o.s) - ncol(new.rows)))))
-        colnames(new.rows) <- colnames(o.s)
-      }
-      o.s <- rbind(o.s, new.rows)
-      o.s <- data.table::setorder(o.s, .snp.id, facet, comparison)
-    }
-
-    # if new stats, easy to merge
-    if(!all(colnames(n.s) %in% colnames(o.s))){
-      o.s <- merge(o.s, n.s,
-                       by = colnames(o.s)[which(colnames(o.s) %in% colnames(n.s))], # note here that we are only merging by columns that already exist in both datasets
-                       all = T, sort = F)
-      o.s <- data.table::setorder(o.s, .snp.id, facet, comparison)
-    }
-
-    # otherwise need to overwrite
-    else{
-      add.rows <- which(o.s$facet %in% n.s$facet)
-      y <- o.s[add.rows,]
-
-      # sort identically
-      # y <- data.table::setorder(y, .snp.id, facet, comparison) # should already be sorted, and this can be slow.
-      n.s <- data.table::setorder(n.s, .snp.id, facet, comparison)
-      y[,which(colnames(y) %in% colnames(n.s))] <- n.s
-
-      #replace and add
-      o.s <- data.table::set(o.s, i = add.rows, j = 1:ncol(o.s), value = y)
-    }
-
-    # sort and return -- should be able to skip this.
-    # x@pairwise.stats <- data.table::setorder(o.s, .snp.id, facet, comparison)
-    x@pairwise.stats <- o.s
+    # merge and return
+    meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == "comparison"))], colnames(x@snp.meta))
+    starter.meta <- c("facet")
+    n.s <- smart.merge(stats, x@pairwise.stats, meta.cols, starter.meta)
+    x@pairwise.stats <- n.s
+  }
+  else if(type == "window.stats"){
+    # merge and return
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
+    n.s <- smart.merge(stats, x@window.stats, meta.cols, starter.meta)
+    x@window.stats <- n.s
+  }
+  else if(type == "pairwise.window.stats"){
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
+    n.s <- smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
+    x@pairwise.window.stats <- n.s
   }
   else if(type == "LD"){
 
@@ -649,63 +1083,56 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       }
     }
   }
-  else if(type == "window.stats"){
-    o.s <- data.table::as.data.table(x@window.stats)
-    if(nrow(o.s) == 0){
-      x@window.stats <- stats
-      return(x)
-    }
-    else{
-      n.s <- data.table::as.data.table(stats)
 
-      # column names with metadata
-      meta.cols.n <- which(colnames(n.s) %in% c("facet", "subfacet", colnames(x@snp.meta)))
-      meta.cols.n <- colnames(n.s)[meta.cols.n]
-      meta.cols.o <- which(colnames(o.s) %in% c("facet", "subfacet", colnames(x@snp.meta)))
-      meta.cols.o <- colnames(o.s)[meta.cols.o]
-      meta.cols <- unique(c(meta.cols.n, meta.cols.o))
-
-      # make sure the meta columns are congruent
-      new.meta <- meta.cols.n[which(!(meta.cols.n %in% meta.cols.o))]
-      if(length(new.meta) > 0){
-        fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
-        colnames(fill) <- new.meta
-        o.s <- cbind(o.s[,1:2], fill, o.s[,-c(1:2)])
-      }
-      old.meta <- meta.cols.n[which(!(meta.cols.o %in% meta.cols.n))]
-      if(length(old.meta) > 0){
-        fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
-        colnames(fill) <- old.meta
-        n.s <- cbind(n.s[,1:2], fill, n.s[,-c(1:2)])
-      }
-
-      # make sure metadata columns are sorted identically
-      new.meta <- n.s[,..meta.cols]
-      n.ord <- match(colnames(new.meta), meta.cols)
-      new.meta <- new.meta[,..n.ord]
-      old.meta <- o.s[,..meta.cols]
-      o.ord <- match(colnames(old.meta), meta.cols)
-      old.meta <- old.meta[,..o.ord]
-      o.s <- cbind(old.meta, o.s[,-..meta.cols])
-      n.s <- cbind(new.meta, n.s[,-..meta.cols])
-
-      # bind on any rows that are new in y
-      n.id <- do.call(paste, n.s[,..meta.cols])
-      o.id <- do.call(paste, o.s[,..meta.cols])
-      missing.rows <- which(!(n.id %in% o.id))
-
-      # once I add smoothing, I'll need to adjust this to account for new stats:
-      if(length(missing.rows) > 0){
-        o.s <- rbind(o.s, n.s[missing.rows,])
-      }
-      x@window.stats <- o.s
-    }
-  }
   return(x)
 }
 
-# subsets snpR data
-subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+#'Subset snpRdata objects
+#'
+#'Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
+#'Throws away as few calculated stats as possible.
+#'
+#'This function exists to intelligently subset snpRdata. While the typical
+#'bracket notation can be used to subset snpRdata, that method is inherited from
+#'the data.frame S3 object class for consistancy. As such, the result will be a
+#'data.frame, not a snpRdata object. This function keeps the data in a snpRdata
+#'object, and retains as much previously calculated data as possible.
+#'
+#'If \emph{samples} are removed, most statistics will be thrown away, since
+#'values like pi will change. In contrast, if \emph{snps} are removed, many
+#'statistics will simply be subset. LD, bootstraps, and window stats will
+#'\emph{always} be discarded, so overwrite with caution.
+#'
+#'Sample and snp facets to subset over can be provided. Facet levels to keep are
+#'provided in the corresponding subfacet arguments. Facets designated as
+#'described in \code{\link{Facets_in_snpR}}.
+#'
+#'@param x snpRdata object.
+#'@param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep.
+#'@param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
+#'  to samples to keep.
+#'@param facets character, default NULL. \emph{sample specific} facets over
+#'  which subsetting will occur.
+#'@param subfacets character, default NULL. Levels of the specified sample level
+#'  facet to keep. Samples in other levels will be removed.
+#'@param snp.facets characet, default NULL. \emph{snp specific} facets over
+#'  which subsetting will occur.
+#'@param snp.facets character, default NULL. Levels of the specified snp facets
+#'  to keep. SNPs in other levels will be removed.
+#'
+#'@export
+#'
+#' @examples
+#' # Keep only individuals in the ASP and PAL populations and on the LGIX or LGIV chromosome.
+#' subset_snpR_data(stickSNPs, facets = "pop", subfacets = c("ASP", "PAL"), snp.facets = "group", snp.subfacets = c("groupIX", "groupIV"))
+#'
+#' # Keep only individuals and SNPs 1 through 10
+#' subset_snpR_data(stickSNPs, snps = 1:10, samps = 1:10)
+#'
+#' # Keep SNPs 1:100, individuals in the ASP population
+#' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
+subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
   # if subfacets or snp.subfacets were selected, figure out which samples and loci to keep
   if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1])) | !(is.null(facets[1])) & !(is.null(subfacets[1]))){
 
@@ -754,6 +1181,10 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     }
   }
 
+  # sort snps and samps according to sample/snp id
+  snps <- snps[order(x@snp.meta$.snp.id[snps])]
+  samps <- samps[order(x@sample.meta$.sample.id[samps])]
+
   # subset
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
@@ -765,9 +1196,13 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     return(dat)
   }
   else{
-    x <- snpRdata(.Data = x[snps,],
+    # change snps and samps to snp and sample IDs
+    snps <- x@snp.meta$.snp.id[snps]
+    samps <- x@sample.meta$.sample.id[samps]
+
+    x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
                   sample.meta = x@sample.meta,
-                  snp.meta = x@snp.meta[snps,],
+                  snp.meta = x@snp.meta[which(x@snp.meta$.snp.id %in% snps),],
                   facet.meta = x@facet.meta[x@facet.meta$.snp.id %in% snps,],
                   mDat = x@mDat,
                   snp.form = x@snp.form,
@@ -778,6 +1213,8 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   facets = x@facets,
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
+                  pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,],
+                  sn = data.frame(),
                   names = x@names,
                   row.names = x@row.names[snps])
     warning("Any window stats will need to be recalculated.\n")
@@ -785,8 +1222,25 @@ subset.snpR.data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
   }
 }
 
-# checks requested facets, sorts, remove duplicates, and may remove a type of facet (usually snp based)
-# remove.types: snp, sample, complex (both), simple (only one type)
+#'Get details on and clean up facet arguments.
+#'
+#'Given a snpRdata object, this function cleans up and determines the types of
+#'requested facets. Internal. If requested, can clean facet requests to purge a
+#'specific facet type (snp, sample, complex). Used in functions that run only on
+#'a specific type of facet.
+#'
+#'Facet designation of NULL or "all" follows the typical rules.
+#'
+#'Facets designated as described in \code{\link{Facets_in_snpR}}.
+#'
+#'@param x snpRdata object to compare to
+#'@param facets character. facets to check.
+#'@param remove.type character. "snp", "sample", "complex", "simple" or anything
+#'  else, typically "none". Type of facet to remove.
+#'@param return.type logical, default FALSE. If true, returns both facets and
+#'  facet types ("snp", "sample", "complex", or ".base") as a length two list.
+#'
+#'@author William Hemstrom
 check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = F){
   if(any(facets == "all")){
     facets <- x@facets
@@ -879,6 +1333,14 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     facet.types <- facet.types[-which(to.remove)]
   }
 
+  # fix the facet type for .base
+  if(return.type){
+    base.facets <- which(facet.types == "")
+    if(length(base.facets) > 0){
+      facet.types[base.facets] <- ".base"
+    }
+  }
+
   # remove duplicates and return
   dups <- duplicated(facets)
   if(any(dups)){
@@ -889,31 +1351,41 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     return(list(unlist(facets), facet.types))
   }
   else{
-      return(unlist(facets))
+    return(unlist(facets))
 
   }
 }
 
-#' Tabulate allele and genotype counts at each locus.
+#'Tabulate allele and genotype counts at each locus.
 #'
-#' \code{tabulate_genotypes} creates matricies containing counts of observed alleles and genotypes at each locus.
+#'\code{tabulate_genotypes} creates matricies containing counts of observed
+#'alleles and genotypes at each locus.
 #'
-#' This function is pirmarily used interally in several other funcitons, but may occasionally be useful.
+#'This function is pirmarily used interally in several other funcitons.
 #'
-#' @param x Input genotype data, where columns are individuals and rows are snps. No metadata.
-#' @param mDat Character string. How are missing \emph{genotypes} noted?
-#' @param verbose Logical. Should the function report progress?
+#'@param x Input raw genotype data, where columns are individuals and rows are
+#'  snps. No metadata.
+#'@param mDat Character. How are missing \emph{genotypes} noted?
+#'@param verbose Logical. Should the function report progress?
 #'
-#' @return A list of matrices. gs is the genotype matrix, as is the allele matrix, and wm is the genotype matrix with missing genotypes.
+#'@return A list of matrices. gs is the genotype matrix, as is the allele
+#'  matrix, and wm is the genotype matrix with missing genotypes.
+#'
+#'@author William Hemstrom
 #'
 #' @examples
 #' tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
 #'
 tabulate_genotypes <- function(x, mDat, verbose = F){
 
-  # get a genotype table
+  # fix for if x is a vector (only one individual) and convert to data.table
+  if(!is.data.frame(x)){
+    x <- data.frame(samp = x)
+  }
   x <- data.table::setDT(x)
 
+
+  # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
   x <- data.table::melt(t(x)) # transpose and melt
 
@@ -937,7 +1409,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
       het <- b
-      amat[,..i] <- rowSums(tmat[,..het])
+      set(amat, j = i, value = rowSums(tmat[,..het]))
     }
     else{
       het <- b[b != hom]
@@ -958,54 +1430,87 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 }
 
 
-#'Filter SNP data.
+#'Filter SNPs in snpRdata objects.
 #'
-#'\code{filter_snps} filters SNP data to remove loci which violate any of several assumptions and/or individuals which are sequenced at too few SNP loci.
+#'\code{filter_snps} filters snpRdata objects to remove SNPs or individuals
+#'which fail to pass user defined thresholds for several statistics. Since this
+#'function removes all calculated statistics, etc. from the snpRdata object,
+#'this should usually be the first step in an analysis. See details for filters.
 #'
-#'Description of x:
-#'    Contains metadata in columns 1:ecs. Remainder of columns contain genotype calls for each individual. Each row is a different SNP, as given by format_snps output options 4 or 6.
 #'
-#'Possible filters:
-#'\itemize{
-#'    \item{maf, minor allele frequency: }{removes SNPs where the minor allele frequency is too low. Can look for mafs below #'provided either globally or search each population individually.}
-#'    \item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed heterozygosity is too high.}
-#'    \item{min_ind, minimum individuals: }{removes SNPs that were genotyped in too few individuals.}
-#'    \item{min_loci, minimum loci: }{removes individuals sequenced at too few loci.}
-#'    \item{non_poly, non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true SNPs).}
-#'    \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than two observed alleles.}
-#'}
 #'
-#'Note that filtering out poorly sequenced individuals creates a possible conflict with the loci filters, since after individuals are removed, some loci may no longer pass filters. For example, if a portion of individuals in one population all carry the only instances of a rare minor allele that still passes the maf threshold, removing those individuals may cause the loci to no longer be polymorphic in the sample.
+#'Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
+#'where the minor allele frequency is too low. Can look for mafs below
+#'#'provided either globally or search each population individually.}
+#'\item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed
+#'heterozygosity is too high.} \item{min_ind, minimum individuals: }{removes
+#'SNPs that were genotyped in too few individuals.} \item{min_loci, minimum
+#'loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
+#'non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
+#'SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
+#'two observed alleles.} }
 #'
-#'To counter this, the "re_run" argument can be used to pass the data through a second filtering step after individuals are removed. By default, the "partial" re-run option is used, which re-runs only the non-polymorphic filter (if it was originally set), since these may cause downstream analysis errors. The "full" option re-runs all set filters. Note that re-running any of these filters may cause individuals to fail the individual filter after loci removal, and so subsequent tertiary re-running of the individual filters, followed by the loci filters, and so on, could be justified. This function stops after the second loci re-filtering, since that step is likely to be the most important to prevent downstream analytical errors.
+#'Note that filtering out poorly sequenced individuals creates a possible
+#'conflict with the loci filters, since after individuals are removed, some loci
+#'may no longer pass filters. For example, if a portion of individuals in one
+#'population all carry the only instances of a rare minor allele that still
+#'passes the maf threshold, removing those individuals may cause the loci to no
+#'longer be polymorphic in the sample.
 #'
-#'Via the "pop" argument, this function can filter by minor allele frequencies in either \emph{all} samples or \emph{in each population and the entire sample}. The latter should be used in instances where populaiton sizes are very different or there are \emph{many} populations, and thus common alleles of interest in one population might be otherwise filtered out. With very small populations, however, this may leave noise in the sample! In most cases, filtering the entire sample is sufficient.
+#'To counter this, the "re_run" argument can be used to pass the data through a
+#'second filtering step after individuals are removed. By default, the "partial"
+#'re-run option is used, which re-runs only the non-polymorphic filter (if it
+#'was originally set), since these may cause downstream analysis errors. The
+#'"full" option re-runs all set filters. Note that re-running any of these
+#'filters may cause individuals to fail the individual filter after loci
+#'removal, and so subsequent tertiary re-running of the individual filters,
+#'followed by the loci filters, and so on, could be justified. This function
+#'stops after the second loci re-filtering, since that step is likely to be the
+#'most important to prevent downstream analytical errors.
 #'
-#' @param x data.frame. Input data, in the numeric or character format as given by format_snps options 4 or 6.
-#' @param ecs Integer. Number of metadata columns at the start of x.
-#' @param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable minor allele frequency
-#' @param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum acceptable heterozygote frequency.
-#' @param min_ind FALSE or integer, default FALSE. Minimum number of individuals in which a loci must be sequenced.
-#' @param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of SNPs an individual must be genotyped at.
-#' @param re_run FALSE, "partial", or "full", default "partial". How should loci be re_filtered after individuals are filtered?
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
-#' @param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
-#' @param mDat character variable, default "NN". Format of missing \emph{genotypes}. Overall data format is infered from this. Can be either "NN" or "0000".
-#' @param in.tab. FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
-#' @param out.tab. FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
+#'Via the "maf.filter" argument, this function can filter by minor allele
+#'frequencies in either \emph{all} samples or \emph{each level of a supplied
+#'sample specific facet and the entire dataset}. In the latter case, any SNPs
+#'that pass the maf filter in \emph{any} facet level are considered to pass the
+#'filter. The latter should be used in instances where populaiton sizes are very
+#'different or there are \emph{many} populations, and thus common alleles of
+#'interest in one population might be otherwise filtered out. With very small
+#'populations, however, this may leave noise in the sample! In most cases,
+#'filtering the entire dataset is sufficient. Facets should be provided as
+#'described in \code{\link{Facets_in_snpR}}.
 #'
-#' @return A data.frame in the same format as the input, with SNPs and individuals not passing the filters removed.
+#'
+#'@param x snpRdata object.
+#'@param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable
+#'  minor allele frequency
+#'@param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
+#'  acceptable heterozygote frequency.
+#'@param min_ind FALSE or integer, default FALSE. Minimum number of individuals
+#'  in which a loci must be sequenced.
+#'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
+#'  proportion of SNPs an individual must be genotyped at.
+#'@param re_run FALSE, "partial", or "full", default "partial". How should loci
+#'  be re_filtered after individuals are filtered?
+#'@param maf.facets FALSE or character, default FALSE. Sample-specific facets
+#'  over which the maf filter can be checked.
+#'@param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
+#'@param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
+#'
+#'@return A data.frame in the same format as the input, with SNPs and
+#'  individuals not passing the filters removed.
+#'
+#'@export
+#'@author William Hemstrom
 #'
 #' @examples
-#' #Strict filtering for missing individuals and unsequenced loci with partial re-run:
-#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75)
+#' # Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
+#' # of 0.55, 250 minimum individuals, and at least 75% of loci sequenced per
+#' # individual.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75)
 #'
-#' #Strict maf filtering with pops.
-#' ##prep pop info
-#' l <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' ##filter
-#' filter_snps(stickSNPs, 3, 0.05, 0.55, 250, .75, "full", pop = l)
+#' # The same filters, but with minor allele frequency considered per-population
+#' # and a full re-run of loci filters after individual removal.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
 #'
 filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf.facets = NULL,
@@ -1056,6 +1561,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   }
 
   if(!is.null(maf.facets[1])){
+    maf.facets <- check.snpR.facet.request(x, maf.facets, "none")
+
     # add any needed facets...
     miss.facets <- maf.facets[which(!(maf.facets %in% x@facets))]
     if(length(miss.facets) != 0){
@@ -1162,6 +1669,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
         maf.vio <- x@snp.meta$.snp.id[which(mafs)]
+        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+
+
         vio.snps[which(mafs)] <- T
       }
       else{
@@ -1238,17 +1748,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       ngs <- list(gs = ngs, as = nas, wm = nwm)
       rm(nas, nwm)
 
-      x <- snpRdata(.Data = x[-which(vio.snps),],
-                    sample.meta = x@sample.meta,
-                    snp.meta = x@snp.meta[-which(vio.snps),],
-                    facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                    geno.tables = ngs,
-                    ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                    window.stats = x@window.stats,
-                    facets = x@facets,
-                    facet.type = x@facet.type,
-                    row.names = x@row.names[-which(vio.snps)])
+      invisible(capture.output(x <- snpRdata(.Data = x[-which(vio.snps),],
+                                             sample.meta = x@sample.meta,
+                                             snp.meta = x@snp.meta[-which(vio.snps),],
+                                             facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                             geno.tables = ngs,
+                                             ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                             stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
+                                             window.stats = x@window.stats,
+                                             facets = x@facets,
+                                             facet.type = x@facet.type,
+                                             row.names = x@row.names[-which(vio.snps)])))
     }
     return(x)
   }
@@ -1265,7 +1775,10 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
                                                      sample.meta = x@sample.meta[-rejects,],
                                                      mDat = mDat)))
       cat("Re-calculating and adding facets.\n")
-      x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+      if(any(old.facets != ".base")){
+        x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+      }
+
       warning("Any calculated stats will be removed, since individuals were filtered out!\n")
     }
     return(list(x = x, rejects = rejects))
@@ -1291,6 +1804,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     x <- min_loci_filt()
     if(length(x$rejects) == 0){
       cat("No individuals removed.\n")
+      x <- x$x
     }
     else{
       x <- x$x
@@ -1319,120 +1833,195 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   return(x)
 }
 
-#'Re-format genomic data.
+#'Re-format SNP data.
 #'
-#'\code{format_snps} reformats SNP data into a range of different possible formats for use in snpR functions and elsewhere. Supports microsatellite data for conversion to a few formats as well.
+#'\code{format_snps} reformats SNP data into a range of different possible
+#'formats for use in snpR functions and elsewhere.
+#'
+#'While this function can accept a few non-snpRdata input formats, it will
+#'reformat to a snpRdata object internally. As such, it takes a facets argument
+#'that works identically to elsewhere in the package, as described in
+#'\code{\link{Facets_in_snpR}}. This argument is only used for output formats
+#'where facets are important, such as the genepop format. Additionally, this
+#'function can therefore be used as an alternative to
+#'\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
+#'
+#'If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
+#'metadata may either be provided in the first few columns of x, the number of
+#'which is designated by the input_meta_columns argument, or in a data.frame
+#'given as via the snp.meta argument. Sample metadata may be provided in a
+#'data.frame via the sample.meta argument.
+#'
+#'Output format options: \itemize{ \item{ac: }{allele count format, allele
+#'counts tabulated for all samples or within populations.} \item{genepop:
+#'}{genepop format, genotypes stored as four numeric characters (e.g. "0101",
+#'"0204"), transposed, and formatted for genepop. Rownames are individual IDs in
+#'genepop format, colnames are SNP ids, matching the first metadata column in
+#'input.} \item{structure: }{STRUCTURE format, two lines per individual: allele
+#'calls stored as single character numeric (e.g. "1", "2"). Allele calls per
+#'individual stored on two subsequent lines.} \item{0000: }{numeric genotype
+#'tab format, genotypes stored as four numeric characters (e.g. "0101",
+#'"0204").} \item{hapmap: }{Migrate-n hapmap, allele counts tabulated within
+#'populations, in migrate-n hapmap format. Since this migrate-n implementation
+#'is iffy, this probably shouldn't be used much.} \item{NN: }{character
+#'genotype tab format, genotypes stored as actual base calls (e.g. "AA", "CT").}
+#'\item{pa: }{allele presence/absence format, presence or absence of each
+#'possible allele at each possible genotype noted. Interpolation possible, with
+#'missing data substituted with allele freqency in all samples or each
+#'population.} \item{rafm: }{RAFM format, two allele calls at each locus stored
+#'in subsequent columns, e.g. locus1.1 locus1.2.} \item{faststructure:
+#'}{fastSTRCTURE format, identical to STRUCTURE format save with the addition of
+#'filler columns proceeding data such that exactly 6 columns proceed data. These
+#'columns can be filled with metadata if desired.} \item{dadi: }{dadi format SNP
+#'data format, requires two columns named "ref" and "anc" with the flanking
+#'bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
+#'\item{plink: }{PLINK! binary input format, requires columns named "group",
+#'"snp", and "position", and may contain a column named "cM", "cm", or
+#'"morgans", containing linkage group/chr, snp ID, position in bp, and distance
+#'in cM in order to create .bim extended map file.} \item{sn: }{Single character
+#'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
+#'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
+#''interpolate' argument.} \item{snpRdata: }{a snpRdata object.} }
+#'
+#'Note that for the "sn" format, the data can be interpolated to fill missing
+#'data points, which is useful for PCA, genomic prediction, tSNE, and other
+#'methods. To do so, specify interpolate = "af" to insert the expected number of
+#'minor alleles given SNP allele frequency or "bernoulli" to do binomial draws
+#'to determine the number of minor alleles at each missing data point, where the
+#'probability of drawing a minor allele is equal to the minor allele frequency.
+#'The expected number of minor alleles based on the later method is equal to the
+#'interpolated value from the former, but the later allows for multiple runs to
+#'determine the impact of stochastic draws and is generally prefered and
+#'required for some downstream analysis. It is therefore the default.
+#'
+#'Note also that for the plink format, a .bed binary file can be generated. If
+#'the "plink" option is selected and an outfile is designated, R will generate a
+#'".sh" shell file with the same name given in the outfile argument. Running
+#'this file will create a plink.bed file.
+#'
+#'Example datasets in each format are available in \code{\link{stickFORMATs}} in
+#'elements named for output options.
+#'
+#'Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
+#'default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
+#'"CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
+#'"0101", "0204").} \item{snp_tab: }{SNP genotypes stored with genotypes in each
+#'cell, but only a single nucleotide noted if homozygote and two nucleotides
+#'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
+#'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
+#'(heterozygous), or 2 (homozyogus allele 2).} }
 #'
 #'
-#'Format options:
-#'\itemize{
-#'    \item{ac: }{allele count format, allele counts tabulated for all samples or within populations.}
-#'    \item{genepop: }{genepop format, genotypes stored as four numeric characters (e.g. "0101", "0204"), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input.}
-#'    \item{structure: }{STRUCTURE format, two lines per individual: allele calls stored as single character numeric (e.g. "1", "2"). Allele calls per individual stored on two subsequent lines.}
-#'    \item{numeric: }{numeric genotype tab format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
-#'    \item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much.}
-#'    \item{character: }{character genotype tab format, genotypes stored as actual base calls (e.g. "AA", "CT").}
-#'    \item{pa: }{allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population.}
-#'    \item{rafm: }{RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2.}
-#'    \item{faststructure: }{fastSTRCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired.}
-#'    \item{dadi: }{dadi format SNP data format, requires two columns named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
-#'    \item{plink: }{PLINK! binary input format, requires columns named "group", "snp", and "position", and may contain a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file.}
-#'}
+#'@param x snpRdata object or data.frame. Input data, in any of the above listed
+#'  input formats.
+#'@param output Character, default "snpRdata". The desired output format. A
+#'  snpRdata object by default.
+#'@param facets Character or NULL, default NULL. Facets overwhich to break up
+#'  data for some output formats, following the format described in
+#'  \code{\link{Facets_in_snpR}}.
+#'@param n_samp Integer or numeric vector, default NA. For structure or RAFM outputs. How
+#'  many random loci should be selected? Can either be an integer or a numeric
+#'  vector of loci to use.
+#'@param interpolate Character or FALSE, default "bernoulli". If transforming to
+#'  "sn" format, notes the interpolation method to be used to fill missing data.
+#'  Options are "bernoulli", "af", or FALSE. See details.
+#'@param outfile character vector, default FALSE. If a filepath is provided, a
+#'  copy of the output will be saved to that location. For some output styles,
+#'  such as genepop, additional lines will be added to the output to allow them
+#'  to be immediately run on commonly used programs.
+#'@param ped data.frame default NULL. Optional argument for the "plink" output
+#'  format. A six column data frame containg Family ID, Individual ID, Paternal
+#'  ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
+#'  outputs will contain information contained in ped. See plink documentation
+#'  for more details.
+#'@param input_format Character, default NULL. Format of x, by default a
+#'  snpRdata object. See description for details.
+#'@param input_meta_columns Numeric, default NULL. If x is not a snpRdata
+#'  object, optionally specifies the number of metadata columns preceeding
+#'  genotypes in x. See details for more information.
+#'@param input_mDat Character, default "NN". If x is not a snpRdata object, the
+#'  coding for missing \emph{genotypes} in x (typically "NN" or "0000").
+#'@param sample.meta data.frame, default NULL. If x is not a snpRdata object,
+#'  optionally specifies a data.frame containing meta data for each sample. See
+#'  details for more information.
+#'@param snp.meta data.frame, default NULL. If x is not a snpRdata object,
+#'  optionally specifies a data.frame containing meta data for each SNP. See
+#'  details for more information.
 #'
-#'Example datasets in each format are available in \code{\link{stickFORMATs}} in elements named for output options.
+#'@return A data.frame or snpRdata object with data in the correct format. May
+#'  also write a file to the specified path.
 #'
-#'Input formats: For now, all input formats require at least two metadata columns.
-#'\itemize{
-#'    \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA", "CT").}
-#'    \item{0000: }{SNP genotypes stored as four numeric characters (e.g. "0101", "0204").}
-#'    \item{msat_2: }{Microsatellite genotypes stored as four numeric characters (e.g. "0101", "2740").}
-#'    \item{msat_3: }{Microsatellite genotypes stored as six numeric characters (e.g. "120123", "233235").}
-#'    \item{snp_tab: }{SNP genotypes stored with genotypes in each cell, but only a single nucleotide noted if homozygote and two nucleotides seperated by a space if heterozygote (e.g. "T", "T G").}
-#'    \item{sn: }{SNP genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).}
-#'}
+#'@export
 #'
-#'Currently, msat_2 and msat_3 only support conversion to output option 7. 2, 3, and 4 are forthcoming.
-#'
-#'
-#' @param x data.frame. Input data, in any of the above listed input formats.
-#' @param ecs Integer. Number of extra metadata columns at the start of x.
-#' @param output Character. Which of the output format should be used?
-#' @param input_form Character, default "NN". Which of the above input formats should be used (e.g. "NN", "msat_2")?
-#' @param mDat Character, default "NN". The coding for missing \emph{genotypes} in x (typically "NN" or "0000").
-#' @param pop FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @param FALSE or table, default FALSE. A table with population information for individuals. Individuals must be sorted in input data in the population order given in this table.
-#' @param n_samp Integer or numeric vector, default NA. For output option 3. How many random loci should be selected? Can either be an integer or a numeric vector of loci to use.
-#' @param interp_miss boolean, default TRUE. For output option 7. Should missing data be interpolated? Needed for PCA, ect.
-#' @param lnames character vector, default NULL. For output option 7, optional vector of locus names by which to name output columns. If not provided, will use 1:nrow(x).
-#' @param outfile character vector, default FALSE. If provided, the path to the output file to write to.
-#' @param ped data.frame, default NULL. If provided, the six column header for plink .ped files.
-#' @param in.tab FALSE or list. Option to provide tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
-#' @param out.tab FALSE or list. Option to return tables of snp and genotype counts at each loci, used in many reformatting and filtering steps. Used internally.
-#'
-#' @return A data.frame in the specified format.
+#'@author William Hemstrom
 #'
 #' @examples
-#' #allele count with pops:
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' format_snps(stickSNPs, 3, "ac", pop = pops)
+#' #import data to a snpRdata object
+#' ## get sample meta data
+#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = F)
+#' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+#'
+#' #allele count, seperated by the pop facet.
+#' format_snps(stickSNPs, "ac", facets = "pop")
 #'
 #' #genepop:
-#' format_snps(stickSNPs, 3, "genepop")
+#' format_snps(stickSNPs, "genepop")
 #'
 #' #STRUCTURE, subsetting out 100 random alleles:
-#' format_snps(stickSNPs, 3, "structure", n_samp = 100)
+#' format_snps(stickSNPs, "structure", n_samp = 100)
 #'
 #' #STRUCTURE, subseting out the first 100 alleles:
-#' format_snps(stickSNPs, 3, "structure", n_samp = 1:100)
+#' format_snps(stickSNPs, "structure", n_samp = 1:100)
 #'
 #' #fastSTRUCTURE
-#' format_snps(stickSNPs, 3, "faststructure")
+#' format_snps(stickSNPs, "faststructure")
 #'
 #' #numeric:
-#' format_snps(stickSNPs, 3, "numeric")
+#' format_snps(stickSNPs, "0000")
 #'
 #' #hapmap for migrate-n:
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' format_snps(stickSNPs, 3, "hapmap", pop = pops)
+#' format_snps(stickSNPs, "hapmap", facets = "pop")
 #'
 #' #character:
-#' num <- format_snps(stickSNPs, 3, 4)
-#' format_snps(num, 3, "character", input_form = "0000", miss = "00")
+#' format_snps(stickSNPs, "NN")
 #'
 #' #presence/absence, SNP data:
-#' format_snps(stickSNPs, 3, "pa")
+#' format_snps(stickSNPs, "pa")
 #'
-#' #presence/absence, 3 character microsat data (2 character is very similar):
-#' format_snps(sthMSATS[seq(1, 13, by = 4),], 3, "pa", input_form = "msat_3", miss = "000")
-#'
-#' #RAFM, taking only 100 random snps.
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' format_snps(stickSNPs, 3, "rafm", pop = pops, n_samp = 100)
+#' #RAFM, taking only 100 random snps and seperating by pop
+#' format_snps(stickSNPs, "rafm", facets = "pop", n_samp = 100)
 #'
 #' #dadi
-#' pops <- table(substr(colnames(stickSNPs[,4:ncol(stickSNPs)]), 1, 3))
-#' format_snps(cbind(ref = "ATA", anc = "ACT", stickSNPs), 5, "dadi", pop = pops)
+#' ## add ref and anc snp meta data columns to stickSNPs
+#' dat <- as.data.frame(stickSNPs)
+#' dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+#' format_snps(dat, "dadi", facets = "pop")
 #'
 #' #PLINK! format
-#' format_snps(stickSNPs, 3, "plink", outfile = "plink_out")
-#' #from command line, then run plink_out.sh to generate plink_out.bed.
+#' format_snps(stickSNPs, "plink", outfile = "plink_out")
+#' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
 #' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
-#' format_snps(stickSNPs, 3, "plink", outfile = "plink_out", ped = ped)
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
-format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
-                        interp_miss = T, outfile = FALSE,
+format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
+                        interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL){
 
   #======================sanity checks================
+  if(!is.null(input_format)){
+    if(tolower(input_format) == "snprdata"){input_format <- NULL}
+  }
   # check that a useable output format is given.
   output <- tolower(output) # convert to lower case.
+  if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
-                "rafm", "faststructure", "dadi", "plink", "sn", "snprdata")
+                "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
+                "colony")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -1445,10 +2034,12 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
   }
 
   # do checks, print info
-  facet.types <- x@facet.type[match(facets, x@facets)]
-  snp.facets <- which(facet.types == "snp")
-  both.facets <- which(facet.types == "both")
-  sample.facets <- which(facet.types == "sample")
+  if(is.null(input_format)){
+    facet.types <- x@facet.type[match(facets, x@facets)]
+    snp.facets <- which(facet.types == "snp")
+    both.facets <- which(facet.types == "both")
+    sample.facets <- which(facet.types == "sample")
+  }
 
   if(output == "ac"){
     cat("Converting to allele count format.\n")
@@ -1543,10 +2134,10 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     }
     if(!is.null(ped)){
       if(!is.data.frame(ped)){
-        stop("ped must be a six column data frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
+        stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
       if(ncol(ped) != 6 | nrow(ped) != ncol(data)){
-        stop("ped must be a six column data frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
+        stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }
     cat("Converting to PLINK! binary format.")
@@ -1572,10 +2163,13 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     if(all(is.null(snp.meta), is.null(input_meta_columns)) | is.null(input_mDat)){
       stop("sample meta, snp meta, and input metadata must be provided for conversion to snpRdata object.")
     }
-    else if(is.null(snp.meta) & ! is.null(input_meta_columns)){
+    else if(is.null(snp.meta) & !is.null(input_meta_columns)){
       cat("Using input metadata columns as snp meta.\n")
     }
     cat("Converting to snpRdata object.\n")
+  }
+  else if(output == "colony"){
+    cat("Converting to colony format.\n")
   }
 
   else{
@@ -1590,7 +2184,12 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       x <- x[,-c(1:input_meta_columns)]
     }
     else{
-      headers <- snp.meta
+      if(is.null(snp.meta)){
+        headers <- data.frame(snpID = 1:nrow(x))
+      }
+      else{
+        headers <- snp.meta
+      }
     }
     if(is.null(sample.meta)){
       sample.meta <- data.frame(ID = 1:ncol(x))
@@ -1699,7 +2298,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       x <- as.data.frame(xv, stringsAsFactors = F)
 
       if(output == "NN"){
-        rdata <- x #all done if just converting to NN
+        rdata <- as.data.frame(x) #all done if just converting to NN
       }
       else{
         x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
@@ -1708,9 +2307,6 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     if(input_format == "NN"){
       x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
-      if(output == "NN"){
-        rdata <- x
-      }
     }
 
     if(!is.null(facets)){
@@ -1719,6 +2315,9 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     # if this is the desired output, we're done.
     if(output == "snprdata"){
+      if(outfile != FALSE){
+        saveRDS(x, outfile)
+      }
       return(x)
     }
   }
@@ -1749,7 +2348,6 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
   }
 
   #======================do conversions===================================================================
-
   # add missing facets
   if(length(facets) == 0){facets <- NULL}
 
@@ -1798,6 +2396,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     #=========apply to requested facets=======
     # get missing maf info
+    no.stats.facets <- which(!(c(".base", facets) %in% unique(x@stats$facet)))
     if(!any(colnames(x@stats) == "maf")){
       if(identical(".base", facets)){
         x <- calc_maf(x, facets = c(facets))
@@ -1806,8 +2405,10 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
         x <- calc_maf(x, facets = c(".base", facets))
       }
     }
-    else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)]))){
-      miss.facets <- which(c(".base", facets) %in% unique(x@stats[is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)]),]$facet))
+    else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)])) | length(no.stats.facets) > 0){
+      tstats <- x@stats[x@stats$facet %in% c(".base", facets)]
+      miss.facets <- which(c(".base", facets) %in% unique(tstats[is.na(tstats$maf),]$facet))
+      miss.facets <- c(miss.facets, no.stats.facets)
       x <- calc_maf(x, facets = c(".base", facets)[miss.facets])
     }
 
@@ -1847,6 +2448,10 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     }
   }
 
+  if(output == "NN"){
+    rdata <- cbind(x@snp.meta, as.data.frame(x))
+    colnames(rdata)[1:ncol(x@snp.meta)] <- colnames(x@snp.meta)
+  }
 
 
   ##convert to genepop or numeric format (v)
@@ -1865,6 +2470,8 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     }
     else {#prepare numeric output, otherwise same format
       rdata <- as.data.frame(xv, stringsAsFactors = F)
+      rdata <- cbind(x@snp.meta, rdata)
+      colnames(rdata)[1:ncol(x@snp.meta)] <- colnames(x@snp.meta)
     }
   }
 
@@ -1876,11 +2483,11 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       cat("Subsetting ")
       if(length(n_samp) > 1){
         cat("designated SNPs.\n")
-        x <- subset.snpR.data(x, n_samp)
+        x <- subset_snpR_data(x, n_samp)
       }
       else{
         cat(n_samp, " random SNPs.\n")
-        x <- subset.snpR.data(x, sample(1:nrow(x)))
+        x <- subset_snpR_data(x, sample(1:nrow(x)))
       }
     }
 
@@ -1949,6 +2556,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
       #add subpop numbers, if given
       rdata <- cbind(x@sample.meta[,colnames(x@sample.meta) %in% facets],
                      as.data.frame(outm, stringsAsFactors = F))
+      colnames(rdata)[1:sum(colnames(x@sample.meta) %in% facets)] <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
     }
   }
 
@@ -2013,16 +2621,16 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
     amat <- pa_alleles(t(xv), 2, x@mDat)
 
-    if(interp_miss){
-      #average number observed in columns
-      cat("Interpolating missing data...\n")
-      afs <- colMeans(amat, TRUE)
-      temp <- which(is.na(amat))/nrow(amat)
-      fill_element <- floor(temp) + 1 #get the column for each missing data point
-      fill_element[which(temp %% 1 == 0)] <- fill_element[which(temp %% 1 == 0)] - 1 #correct for anything in the last row
-      amat[which(is.na(amat))] <- afs[fill_element] #fill with the appropriate allele frequency.
-    }
-    else{cat("Finished. Warning: Missing data counts are also stored!\n")}
+    # if(interp_miss){
+    #   #average number observed in columns
+    #   cat("Interpolating missing data...\n")
+    #   afs <- colMeans(amat, TRUE)
+    #   temp <- which(is.na(amat))/nrow(amat)
+    #   fill_element <- floor(temp) + 1 #get the column for each missing data point
+    #   fill_element[which(temp %% 1 == 0)] <- fill_element[which(temp %% 1 == 0)] - 1 #correct for anything in the last row
+    #   amat[which(is.na(amat))] <- afs[fill_element] #fill with the appropriate allele frequency.
+    # }
+    # else{cat("Finished. Warning: Missing data counts are also stored!\n")}
     amat <- cbind(samp = as.character(colnames(x)), as.data.frame(amat, stringsAsFactors = F))
     rdata <- amat
   }
@@ -2195,19 +2803,19 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     # with morgans
     if(any(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))){
       bim <- data.frame(chr = x@snp.meta$group,
-                            rs = x@snp.meta$.snp.id,
-                            cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
-                            bp = x@snp.meta$position,
-                            a1 = a.names[,1],
-                            a2 = a.names[,2])
+                        rs = x@snp.meta$.snp.id,
+                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
+                        bp = x@snp.meta$position,
+                        a1 = a.names[,1],
+                        a2 = a.names[,2])
     }
     # without morgans
     else{
       bim <- data.frame(chr = x@snp.meta$group,
-                            rs = x@snp.meta$snp,
-                            bp = x@snp.meta$position,
-                            a1 = a.names[,1],
-                            a2 = a.names[,2])
+                        rs = x@snp.meta$snp,
+                        bp = x@snp.meta$position,
+                        a1 = a.names[,1],
+                        a2 = a.names[,2])
     }
 
     # recode chr
@@ -2222,7 +2830,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 
 
   # single-character numeric format
-  if(output == "sn"){
+  if(output == "sn" | output == "colony"){
 
     # grab major/minor info via calc_maf, unless already calculated
     if(!any(colnames(x@stats) == "major")){
@@ -2243,9 +2851,55 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
     a2 <- a2 == rep(min, each = ncol(x))
 
     # collapse to output
-    rdata <- t(a1 + a2)
-    rdata[as.matrix(x) == x@mDat] <- NA
-    rdata <- cbind(x@snp.meta[,-which(colnames(x@snp.meta) == ".snp.id")], as.data.frame(rdata))
+    if(output == "sn"){
+      rdata <- t(a1 + a2)
+      rdata[as.matrix(x) == x@mDat] <- NA
+
+      # grab out metadata
+      meta <- x@snp.meta
+
+      # if interpolating and there are any bad loci with zero called genotypes, remove them
+      if(interpolate != FALSE){
+        bad.loci <- ifelse(is.na(rdata), 0, 1)
+        bad.loci <- which(rowSums(bad.loci) == 0)
+
+        if(length(bad.loci) > 0){
+          rdata <- rdata[-bad.loci,]
+          meta <- meta[-bad.loci,]
+          warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
+        }
+      }
+
+      # interpolate?
+      if(interpolate == "bernoulli"){
+        rdata <- interpolate_sn(rdata, "bernoulli")
+      }
+      else if(interpolate == "af"){
+        rdata <- interpolate_sn(rdata, "sn")
+      }
+
+      # bind and save
+      rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
+    }
+    else{
+      # convert a1 and a2 to the "1 2" format.
+      rdata <- paste0(as.numeric(a1) + 1, " ", as.numeric(a2) + 1)
+      rdata <- matrix(rdata, nrow = nrow(x), byrow = T)
+      rdata[as.matrix(x) == x@mDat] <- "0 0" # fix missing data
+      rdata <- t(rdata) # since rows are individuals in colony
+
+      # split into two columns
+      p1 <- substr(rdata, 1, 1) #split
+      p2 <- substr(rdata, 3, 3)
+      rdata <- cbind(p1, p2) # bind
+      ord <- cbind(1:ncol(p1), (ncol(p1) + 1):ncol(rdata)) # re-order
+      ord <- as.numeric(t(ord))
+      rdata <- rdata[,ord]
+      rdata <- matrix(as.numeric(rdata), nrow(rdata)) # put into numeric
+
+      # sample IDs
+      rdata <- cbind(colnames(x), as.data.frame(rdata))
+    }
   }
 
   #======================return the final product, printing an outfile if requested.=============
@@ -2343,7 +2997,7 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
                    t2[seq(2,length(t2),2)],
                    collapse = "")
       writeLines(paste0("#!/bin/bash\n\n",
-        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
+                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
       warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
@@ -2361,12 +3015,34 @@ format_snps <- function(x, output = "ac", facets = NULL, n_samp = NA,
 }
 
 
-# function to interpolate an sn formated dataset
+#'Interpolate sn formatted data.
+#'
+#'An internal function to interpolate sn formatted data using either the
+#'bernoulli or expected minor allele count approaches. Typically entirely
+#'internal, called via format_snps.
+#'
+#'Interpolating missing data in sn formatted data is useful for PCA, genomic
+#'prediction, tSNE, and other methods. Specify method = "af" to insert the
+#'expected number of minor alleles given SNP allele frequency or "bernoulli" to
+#'do binomial draws to determine the number of minor alleles at each missing
+#'data point, where the probability of drawing a minor allele is equal to the
+#'minor allele frequency. The expected number of minor alleles based on the
+#'later method is equal to the interpolated value from the former, but the later
+#'allows for multiple runs to determine the impact of stochastic draws and is
+#'generally prefered and required for some downstream analysis. It is therefore
+#'the default.
+#'
+#'@param sn data.frame. Input sn formatted data, as produced by
+#'  \code{\link{format_snps}}. Note that \code{\link{format_snps}} has an option
+#'  to automatically call this function during formatting.
+#'@param method character, default "bernoulli". Method to used for
+#'  interpolation, either bernoulli or af. See details.
+#'
+#'@author William Hemstrom
 interpolate_sn <- function(sn, method = "bernoulli"){
   if(!method %in% c("bernoulli", "af")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
   }
-
   # find allele frequencies
   sn <- as.matrix(sn)
   sn <- t(sn)
@@ -2386,7 +3062,268 @@ interpolate_sn <- function(sn, method = "bernoulli"){
     ndat <- af[NA.cols]
   }
 
-  # replace and return
+  # replace
   sn[NAs] <- ndat
+
+  # remove any columns (loci) with NO data and warn!
+  no_dat_loci <- which(is.na(af))
+
+  if(length(no_dat_loci) > 0){
+    sn <- sn[,-no_dat_loci]
+    warning("Some loci had no called genotypes and were removed: ", paste0(no_dat_loci, collapse = ", "), "\n")
+  }
+
   return(t(sn))
+}
+
+#'Do sanity checks for many window specific functions in snpR.
+#'
+#'Internal function only. Since many window related functions have similar
+#'sanity checks, they have been integrated here. For examples, see use in
+#'functions like \code{\link{do_bootstraps}}.
+#'
+#'@param x snpRdata object.
+#'@param sigma numeric. Window size, in kilobases.
+#'@param step numeric or NULL. Step size, in kilobases
+#'@param stats.type character, either "single" or "pairwise". The type of stats
+#'  being checked, see documentation for \code{\link{calc_smoothed_averages}}.
+#'@param nk Logical. Determines if nk values are to be used.
+#'@param facets character or NULL. Defines facets to run, following typical
+#'  rules as described in \code{\link{Facets_in_snpR}}.
+#'@param stats character or NULL, default NULL. Statistics (pi, etc.) used,
+#'  really only for bootstrapping.
+#'@param good.types character or NULL, default NULL. Good statistics, for use
+#'  with the stats arguement.
+#'
+#'@author William Hemstrom
+sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = NULL, good.types = NULL){
+  #================sanity checks=============
+  msg <- character()
+  warn.msg <- character()
+
+  #nk
+  if(!all(is.logical(nk) & length(nk) == 1)){
+    msg <- "nk must be TRUE or FALSE."
+  }
+
+  #smoothing method
+  good.methods <- c("single", "pairwise")
+  if(sum(good.methods %in% stats.type) < 1){
+    msg <- c(msg, paste0("No accepted stats types provided. Acceptable types:\n\t", paste0(good.methods, collapse = "\t")))
+  }
+  bad.stats <- which(!(stats.type %in% good.methods))
+  if(length(bad.stats) > 0){
+    msg <- c(msg, paste0("Unaccepted stats types provided:\n\t", paste0(stats.type[bad.stats], collapse = "\t")))
+  }
+
+  #sigma and ws
+  if(!is.null(step)){
+    if(!all(is.numeric(sigma), is.numeric(step), length(sigma) == 1, length(step) == 1)){
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
+    }
+    if(sigma >= 500 | sigma >= 500){
+      warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
+    }
+    else if(sigma <= 50){
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
+    }
+  }
+  else{
+    if(!all(is.numeric(sigma), length(sigma) == 1)){
+      msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
+    }
+    if(sigma >= 500){
+      warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
+    }
+    else if(sigma <= 50){
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
+    }
+  }
+
+  # position needs to be available
+  if(!any(colnames(x@snp.meta) == "position")){
+    msg <- c(msg, "No column named position found in snp metadata.")
+  }
+
+  # facets
+  if(is.null(facets[1]) & any(stats.type == "pairwise")){
+    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
+  }
+  facet.types <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  if(any(facet.types[[2]] == "snp") & any(stats.type == "pairwise")){
+    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
+  }
+
+  # statistics, really only for bootstrapping
+  if(!is.null(stats[1])){
+    bad.stats <- which(!(stats %in% good.types))
+    if(length(bad.stats) > 0){
+      msg <- c(msg, paste0("Some statics are not acceptable for bootstrapping: ", paste0(stats[bad.stats], collapse = " "),
+                           "Acceptable stats: ", paste0(good.types, collapse = " ")))
+    }
+
+    missing.stats <- which(!(stats %in% c(colnames(x@stats), colnames(x@pairwise.stats))))
+    if(length(missing.stats) > 0){
+      msg <- c(msg, paste0("Some statics are not acceptable found in the data: ", paste0(stats[missing.stats], collapse = " "),
+                           ". Please run these statistics for the supplied facets!"))
+    }
+  }
+
+  if(length(warn.msg) > 0){
+    warning(warn.msg)
+  }
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n  "))
+  }
+
+  return(TRUE)
+}
+
+#' Checks for duplicated samples in snpRdata.
+#'
+#' Searches through a snpR dataset and, for every designated sample, determines
+#' the proportion of identical genotypes in every other sample. This function
+#' \emph{is not overwrite safe}.
+#'
+#' If an id column is specified, y should contain sample IDs matching those
+#' contained in that column. If not, y should contain sample indices instead.
+#' The proportion of identical genotypes between matching samples and all other
+#' samples are calculated. By default, every sample will be checked.
+#'
+#' @param x snpRdata object
+#' @param y numeric or character, default 1:ncol(x). Designates the sample
+#'   indices or IDs in x for which duplicates will be checked.
+#' @param id.col character, default NULL. Designates a column in the sample
+#' metadata which contains sample IDs. If provided, y is assumed to contain
+#' sample IDs uniquely matching those in the the sample ID column.
+#'
+#' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
+#'   the best match for each sample noted in y and the percentage of genotypes
+#'   identical between the two samples. \item{data: } A list containing the
+#'   match proportion between each sample y and every sample in x, named for the
+#'   samples y. }
+#'
+#' @author William Hemstrom
+#' @export
+#' @examples
+#' # check for duplicates with samples 1, 3, and 5
+#' check_duplicates(stickSNPs, c(1, 3, 5))
+#'
+#' # check duplicates using the .samp.id column as sample IDs
+#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id")
+check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
+  #============sanity checks============
+  msg <- character()
+  if(!is.null(id.col)){
+    if(length(id.col) != 1){
+      msg <- "Only one ID column may be provided."
+    }
+    if(!id.col %in% colnames(x@sample.meta)){
+      msg <- c(msg,
+               "ID column not found in sample metadata.")
+    }
+    else{
+      if(length(unique(x@sample.meta[,id.col])) != length(x@sample.meta[,id.col])){
+        msg <- c(msg,
+                 "Each entry in the ID column must be unique.")
+      }
+      bad.y <- which(!y %in% x@sample.meta[,id.col])
+      if(length(bad.y) > 0){
+        msg <- c(msg,
+                 paste0("Some samples in y not found in ID column: ", paste0(y[bad.y], collapse = ", "), "."))
+      }
+    }
+  }
+  else{
+    if(!is.numeric(y)){
+      msg <- c(msg,
+               "y must be numeric if no sample ID column provided.")
+    }
+    else{
+      if(any(y > ncol(x))){
+        msg <- c(msg,
+                 "All y values must be less than or equal to the number of samples in x.")
+      }
+    }
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+
+
+  #============run the duplicate check==========
+  # initialize
+  out <- vector("list", length(y))
+  names(out) <- y
+  out.best <- data.frame(sample = y, best_match = character(length(y)),
+                         percentage = numeric(length(y)),
+                         comparisons = numeric(length(y)), stringsAsFactors = F)
+
+  # do each comparison
+  for(i in 1:length(y)){
+
+    # pick out this value
+    if(!is.null(id.col)){
+      t.samp.id <- which(x@sample.meta[,id.col] == y[i])
+    }
+    else{
+      t.samp.id <- y[i]
+    }
+    if(length(t.samp.id) == 0){
+      out.best$matches[i] <- "bad.ID"
+      next()
+    }
+
+
+    #figure out which values are "NN"
+    t.samp <- x[,t.samp.id]
+    miss <- t.samp == "NN"
+
+    # finish initializing
+    out[[i]]$hits <- numeric(ncol(x))
+    out[[i]]$comparisons <- numeric(ncol(x))
+    if(!is.null(id.col)){
+      names(out[[i]]$hits) <- x@sample.meta[,id.col]
+    }
+    else{
+      names(out[[i]]$hits) <- 1:ncol(x)
+    }
+    names(out[[i]]$comparisons) <- names(out[[i]]$hits)
+
+    # compare to every other sample. Because we don't count "NN" comparisons, we need to explicitly loop.
+    for(j in (1:ncol(x))){
+
+      # skip if a self comparison
+      if(j == t.samp.id){
+        out[[i]]$hits[j] <- 0
+        out[[i]]$comparisons[j] <- 0
+        next()
+      }
+
+      # compare only loci non "NN" in both samples
+      c.samp <- x[,j]
+      c.miss <- c.samp == "NN"
+      u.miss <- which(c.miss | miss)
+
+      # check the proportion of identical genotypes
+      valid.comps <- length(c.samp[-u.miss])
+      out[[i]]$hits[j] <- sum(t.samp[-u.miss] == c.samp[-u.miss])/valid.comps
+      out[[i]]$comparisons[j] <- valid.comps
+    }
+
+    # figure out and save data on the "best", or most identical, hit.
+    best <- which.max(out[[i]]$hits)
+    out[[i]]$best <- out[[i]]$hits[best]
+    names(out[[i]]$best) <- names(out[[i]]$hits)[best]
+
+    # save to output summary.
+    out.best$best_match[i] <- paste0(names(out[[i]]$best), collapse = ", ")
+    out.best$percentage[i] <- out[[i]]$best
+    out.best$comparisons[i] <- out[[i]]$comparisons[best]
+  }
+
+  # return
+  return(list(best_matches = out.best, data = out))
+
 }

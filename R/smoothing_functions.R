@@ -1,16 +1,18 @@
 #function for calculating gaussian weight of a point
 
-#'Gaussian weights.
+#'Calculate gaussian weights.
 #'
-#'\code{gaussian_weight} Function to get the gaussian weight of a statistic given its position relative to the center and scaling factor sigma. Used internally, probably shouldn't be called.
+#'Get the gaussian weight of a statistic given its position relative to the
+#'center and scaling factor sigma. Used internally, probably shouldn't be
+#'called.
 #'
-#' @param p Position of value to smooth.
-#' @param c Position of center of window.
-#' @param s Sigma, scaling factor.
+#'@param p numeric. Position of value to smooth.
+#'@param c numeric. Position of center of window.
+#'@param s numeric. Sigma, scaling factor.
 #'
-#' @return A numeric value, the relative weight of the point.
+#'@return A numeric value, the relative weight of the point.
 #'
-#' @keywords internal
+#'@keywords internal
 #'
 #' @examples
 #' gaussian_weight(10000, 10500, 1000)
@@ -18,120 +20,92 @@ gaussian_weight <- function(p, c, s) {
   exp(-(p-c)^2/(2*s^2))
 }
 
-#function to generate sliding averages based on gaussian weights of points around each point,
-#cut off at 3sigma where weight becomes very low. Sigma should be given in kbp, although input should be
-# in bp, in the second column of each row.
-
-#'Gaussian smooth statistics.
+#'Gaussian smooth statistics across sliding windows.
 #'
-#'Wrapper for \code{\link{s_ave_multi}} called with no levels to split by.
+#'Calculates gaussian smoothed average values for statistics and the genomic
+#'position at which it was observed, splitting by any requested variables.
 #'
-#' @param x Input SNP data frame.
-#' @param parameter Name of the statistic to smooth.
-#' @param sigma Smoothing statistic/window size, in kb.
-#' @param nk_weight Should statistic contribution to window mean be additionally scaled by column "nk"?
-#' @param fixed_window Should a window with a fixed slide distance be used? If so, provide window slide length in kb.
+#'Averages for multiple statistics can be calculated at once. If the statistics
+#'argument is set to c("pairwise", "single"), all calculated stats will be run.
+#'If it is set to "single", then all non-pairwise statistics (pi, ho, maf, ect)
+#'will be bootstrapped, if it is set to "pairwise", then all pairwise statistics
+#'(fst) will be bootstrapped. Inidividual statistics currently cannot be
+#'requested by name, since the computational differences to add additional types
+#'is minimal.
 #'
-#' @return If fixed_window == FALSE, returns the input data frame with an additional column containing smoothed average. Otherwise, returns a new data frame containing the position info for each window and smoothed value of the statistic at that window. Both outputs will also contain a column with the number of SNPs in each window.
+#'The data can be broken up categorically by snp or sample metadata, as
+#'described in \code{\link{Facets_in_snpR}}. Windows will only be calculated
+#'using only SNPs on the same level of any provided facets. NULL and "all"
+#'facets work as normally described in \code{\link{Facets_in_snpR}}.
 #'
-#' @examples
-#' #fixed slide window:
-#' smoothed_ave(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 200, TRUE, fixed_window = 50)
+#'As described in Hohelohe et al. (2010), the contribution of individual SNPs to
+#'window averages can be weighted by the number of observations per SNP by
+#'setting the nk argument to TRUE, as is the default. For bootstraps, nk values
+#'are randomly drawn for each SNP in each window.
 #'
-#' #windows centered on each snp
-#' smoothed_ave(randPI[randPI$pop == "A" & randPI$group == "chr1",], "pi", 200, TRUE)
+#'Centers for windows can either every SNP (if no step size is provided), or
+#'every step kilobases from the 0 position of each snp level facet category
+#'(chromosome, etc.).
 #'
-#' #wrapped in run_gp
-#' run_gp(randPI, smoothed_ave, parameter = "pi", sigma = 200, nk_weight = TRUE, fixed_window = 50)
+#'The size of sliding windows are defined by the "sigma" argument. Note that
+#'this value, as well as that provided to the "step" arguement, are given in
+#'kilobases. Each window will include SNPs within 3*sigma kilobases from the
+#'window center. Past this point, the effect of each additional SNP on the
+#'window average would be very small, and so they are dropped for computational
+#'efficiency (see Hohenlohe (2010)).
 #'
-smoothed_ave <- function(x, parameter, sigma, nk_weight = FALSE, fixed_window = NULL) {
-  out <- s_ave_multi(x, parameter, sigma, fixed_window, nk_weight, levs = NA)
-}
-
-
-
-#'Gaussian smooth multiple statistics
+#'@param x snpRdata object.
+#'@param facets character or NULL, default NULL. Categories by which to break up
+#'  windows.
+#'@param sigma numeric. Designates the width of windows in kilobases. Full
+#'  window size is 6*sigma.
+#'@param step numeric or NULL, default NULL. Designates the number of kilobases
+#'  between each window centroid. If NULL, windows are centered on each SNP.
+#'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
+#'  averages by the number of observations at those SNPs.
+#'@param stats.type character, default c("single", "pairwise"). Designates the
+#'  statistic(s) to smooth, either "single",  "pairwise", or c("single",
+#'  "pairwise"). See details.
+#'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
+#'  use for parallel processing.
 #'
-#'\code{sm_ave_multi} Calculates gaussian smoothed average values for statistics and the genomic position at which it was observed, splitting by any requested variables.
+#'@export
+#'@author William Hemstrom
 #'
-#'Description of x:
-#'    Requires columns titled columns titled "position", columns titled to match those in the "parms" argument, and those to match the "levs" argument if set. These contain positions in bp, the statistic to be smoothed for each SNP, and any variables to split the smoothing by (such as chromosome and population). If nk is TRUE, a column titled "nk" or "n_total" is required containing the weighting factor for smoothing, typically the number of observed alleles/sample size, "nk".
+#'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'
-#' @param x Input SNP data frame.
-#' @param parms Character vector. Names of the statistics to smooth.
-#' @param sigma Numeric value. Smoothing statistic/window size, in kb.
-#' @param ws Numeric value or NULL, default NULL. Window slide length. If NULL, uses every SNP as a window center.
-#' @param nk Boolean, default TRUE. Should statistic contribution to window mean be additionally scaled by column "nk"?
-#' @param levs Character vector or NA, default c('group', 'pop')). Names of the columns to split the data by for smoothing.
+#'@return snpRdata object with smoothed averages for any requested statistics merged into the window.stats or pairwise.window.stats slots.
 #'
-#' @return If fixed_window == FALSE, returns the input data frame with an additional column containing smoothed average. Otherwise, returns a new data frame containing the position info for each window and smoothed value of the statistic at that window. Both outputs will also contain a column with the number of SNPs in each window.
+#'@examples
+#'# add a few statistics
+#'dat <- calc_pi(stickSNPs, "group.pop")
+#'dat <- calc_ho(dat, "group.pop")
+#'dat <- calc_pairwise_fst(dat, "group.pop")
+#'# smooth with a fixed slide between window centers.
+#'dat <- calc_smoothed_averages(dat, "group.pop", sigma = 200, step = 50)
 #'
-#' @examples
-#' #data prep:
-#' t2 <- calc_pi(stickFORMATs$ac)
-#' t2 <- cbind(stickFORMATs$ac, pi = t2)
-#' t3 <- calc_Ho(stickFORMATs$character, 3, pop = l)
-#' t3 <- reshape2::melt(t3, id.vars = c("snp", "position", "group"))
-#' t2$ho <- t3$value
-#'
-#'
-#'
-#' #fixed slide window, splitting by pop and group, the defualt:
-#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE)
-#'
-#' #splitting by only pop.
-#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, "pop")
-#'
-#' #no splitting
-#' s_ave_multi(t2, c("pi", "ho"), 200, 150, TRUE, NA)
-#'
-calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.type = "all") {
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
   sig <- 1000*sigma
-  cat("Smoothing Parameters:\n\tsigma = ", sig, "\n\tWindow slide = ", ws*1000, "\n\t")
+  cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
-  #================sanity checks=============
-  #nk
-  if(!all(is.logical(nk) & length(nk) == 1)){
-    stop("nk must be TRUE or FALSE.")
-  }
-
-  #sigma and ws
-  if(!is.null(ws)){
-    if(!all(is.numeric(sigma), is.numeric(ws), length(sigma) == 1, length(ws) == 1)){
-      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
-    }
-    if(sigma >= 500 | ws >= 500){
-      warning("Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
-    }
-    else if(sig <= 100){
-      warning("Provided sigma is very small:", sig, "bp!")
-    }
-  }
-  else{
-    if(!all(is.numeric(sigma), length(sigma) == 1)){
-      stop("sigma must be a numeric vector of length 1. ws may be the same or NULL.")
-    }
-    if(sigma >= 500){
-      warning("Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
-    }
-    else if(sig <= 100){
-      warning("Provided sigma is very small:", sig, "bp!")
-    }
-  }
+  sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
 
   #================subfunction========
-  #funciton to do a sliding window analysis on a data set. Vectorized!:
+  # funciton to do a sliding window analysis on a data set.
   # x: a data frame containing one column with positions and one for each column to be smoothed
   # nk: logical, should nk wieghting be performed (usually yes)
   # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
-  func <- function(x, ws, sig, nk){
-    browser()
+  func <- function(x, step, sig, nk){
+    scols <- (which(colnames(x) == "nk") + 1):ncol(x)
+    un.genotyped <- which(x$nk== 0)
+    if(length(un.genotyped) > 0){
+      x <- x[-which(x$nk == 0),]
+
+    }
     if(nrow(x) <= 1){
-      ret <- rbind(rep(NA, length = 2 + length(parms)))
+      ret <- matrix(NA, 0, 5 + length(scols))
       ret <- as.data.frame(ret)
-      colnames(ret)[1] <- "position"
-      colnames(ret)[ncol(ret)] <- "n_snps"
-      colnames(ret)[2:(ncol(ret) - 1)] <- paste0("V", 1:(ncol(ret) - 2))
+      colnames(ret) <- c("position", "sigma", "n_snps", "step", "nk.status", colnames(x)[scols])
       return(ret)
     }
     #get window centers, starts, and stops:
@@ -140,8 +114,8 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
     pos <- as.numeric(pos)
 
     #window starts, stops, and ends
-    if(!is.null(ws)){
-      cs <- seq(0, max(pos), by = ws)
+    if(!is.null(step)){
+      cs <- seq(0, max(pos), by = step)
     }
     else{
       cs <- pos
@@ -165,13 +139,15 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
 
     #remove any windows with no SNPs
     gmat <- gmat[,n_snps != 0] #doing it this way allows for windows with SNPs but a stat value of 0.
+    cs <- cs[n_snps != 0]
     n_snps <- n_snps[n_snps != 0]
+
 
     #fix any NA values
     vals <- as.matrix(x[,scols])
     NAs <- which(is.na(vals))
     if(length(NAs) > 0){
-      vals[NAs] <- 0 #fix the NAs
+      vals[NAs] <- 0
     }
 
     #multiply by value of the statistics and nk if requested
@@ -182,9 +158,17 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
       if(length(NAs) > 0){
         nkv[NAs] <- 0 #make sure that these snps don't contribute to the weight!
       }
+
+      # fix any -1s (for ungenotyped stuff)
+      mdats <- which(nkv == -1)
+      if(any(mdats)){
+        nkv[mdats] <- 0
+      }
+
       #run
       win_vals <- t(gmat) %*% (vals*(x$nk - 1))
       win_scales <- t(gmat) %*% nkv
+
     }
     else{
       win_vals <- t(gmat) %*% vals
@@ -194,88 +178,68 @@ calc_smoothed_averages <- function(x, facets, sigma, ws = NULL, nk = TRUE, stat.
     #get the weighted value of the window
     win_stats <- win_vals/win_scales
 
-    #prepare metadata
-    if(!any(is.na(levs))){
-      if(nrow(win_stats) == 1){
-        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
-      }
-      else{
-        levs <- sort(levs)
-        meta <- as.character(x[1,levs])
-        meta <- rep(meta, length = nrow(win_vals)*length(meta))
-        meta <- matrix(meta, nrow = nrow(win_vals), byrow = TRUE)
-        colnames(meta) <- levs
-        meta <- as.data.frame(meta, stringsAsFactors = F)
-        ret <- cbind(meta, position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
-      }
+    #return
+    if(is.numeric(step)){
+      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step/1000, nk.status = nk, win_stats)
     }
     else{
-      if(nrow(win_stats) == 1){
-        ret <- as.data.frame(cbind(position = colnames(lmat), as.data.frame(win_stats), n_snps = n_snps))
-      }
-      else{
-        ret <- cbind(position = as.numeric(row.names(win_vals)), as.data.frame(win_stats), n_snps = n_snps)
-      }
+      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step, nk.status = nk, win_stats)
     }
-
-    #return
-    return(ret)
+    colnames(out)[-c(1:5)] <- colnames(x)[scols]
+    return(out)
   }
 
   #================smooth at proper levels========
   #which cols hold the stats of interest?
 
-  if(!is.null(ws)){ws <- ws*1000}
+  if(!is.null(step)){step <- step*1000}
 
-  cat("Smoothing...")
+  if("single" %in% stats.type){
+    cat("\nSmoothing single group stats...")
+    out <- apply.snpR.facets(x = x,
+                             facets = facets,
+                             req =  "pos.all.stats",
+                             fun = func,
+                             case =  "ps.pf.psf",
+                             par = par,
+                             step = step,
+                             sig = sig,
+                             stats.type = "stats",
+                             nk = nk)
 
+    x <- merge.snpR.stats(x, out, "window.stats")
 
-  out <- apply.snpR.facets(x = x,
-                           facets = facets,
-                           req =  "pos.all.stats",
-                           fun = func,
-                           case =  "ps.pf.psf",
-                           par = par,
-                           ws = ws,
-                           sigma = sigma,
-                           stat.type = stat.type,
-                           nk = nk)
-
-  #do the smoothing, could add a parallel option
-  # if(!any(is.na(levs))){
-  #   out <- plyr::ddply(
-  #     .data = x,
-  #     .variables = levs,
-  #     .fun = sw,
-  #     .progress = "text",
-  #     scols = scols, ws = ws, sig = sig, nk = nk
-  #   )
-  # }
-  # else{
-  #   out <- sw(x, scols, ws, sig, nk)
-  # }
-
-  #remove any empty facets.
-  nas <- ifelse(is.na(out), 1, 0)
-  nas <- rowSums(nas)
-  nas <- which(nas > 0)
-  if(length(nas) > 0){
-    out <- out[-nas,]
+    if("pairwise" %in% stats.type){
+      cat("\nSmoothing pairwise stats...")
+      out <- apply.snpR.facets(x = x,
+                               facets = facets,
+                               req =  "pos.all.stats",
+                               fun = func,
+                               case =  "ps.pf.psf",
+                               par = par,
+                               step = step,
+                               sig = sig,
+                               stats.type = "pairwise",
+                               nk = nk)
+      return(merge.snpR.stats(x, out, "pairwise.window.stats"))
+    }
+    else{
+      return(x)
+    }
   }
 
-  #put the correct names on the smoothed variables
-  if(!any(is.na(levs))){
-    out <- out[,c(levs, "position",
-                  sort(colnames(out)[grep("V", colnames(out))]), # sort the colnames that contain V1, ect.
-                  "n_snps")]
+  else{
+    cat("Smoothing pairwise stats...")
+    out <- apply.snpR.facets(x = x,
+                             facets = facets,
+                             req =  "pos.all.stats",
+                             fun = func,
+                             case =  "ps.pf.psf",
+                             par = par,
+                             step = step,
+                             sig = sig,
+                             stats.type = "pairwise",
+                             nk = nk)
+    return(merge.snpR.stats(x, out, "pairwise.window.stats"))
   }
-  colnames(out)[grep("V", colnames(out))] <- paste0("smoothed_", parms)
-
-  #shouldn't ever happen save when this is called with run_gp for backwards compatibility, but may as well include it.
-  if(nrow(out) == 0){
-    out[1,] <- rep(NA, ncol(out))
-  }
-
-  cat("Done!\n")
-  return(out)
 }
