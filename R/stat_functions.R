@@ -889,6 +889,7 @@ calc_private <- function(x, facets = NULL){
 #'@references Lewontin (1964). \emph{Genetics}
 #'
 #'@author William Hemstrom
+#'@author Keming Su
 #'@export
 #'
 #' @examples
@@ -944,6 +945,139 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     return(m2)
   }
 
+  # em haplotype estimation
+  multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001, check = FALSE){
+    if(check){browser()}
+
+    # find the double het. Should be able to use an approach like this when this gets extended to work with everything.
+    # cj values for each possible genotype:
+    s1 <- substr(colnames(x), 1, 1)
+    s2 <- substr(colnames(x), 2, 2)
+    s3 <- substr(colnames(x), 3, 3)
+    s4 <- substr(colnames(x), 4, 4)
+    het.1 <- s1 != s2
+    het.2 <- s3 != s4
+
+
+
+    # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambigious haplotype frequencies,
+    # then making a guess at the haplotype composition in the double heterozygote assuming that all possible haplotypes are equally likely
+    doub.het <- which(het.1 + het.2 == 2) # identify double heterozygotes
+
+    # if there are no double heterozygotes, we already no the haplotype frequencies, so we can just return those.
+    if(length(doub.het) == 0){
+      return(haptable/rowSums(haptable))
+    }
+
+
+    if(length(doub.het) != 1){
+      doub.het.sum <- rowSums(x[,doub.het])
+    }
+    else{
+      doub.het.sum <- x[,doub.het]
+    }
+
+    nhap.counts <- haptable # grab the haplotypes
+    ehap.counts <- nhap.counts + .5*doub.het.sum # assuming that both haplopairs are equaly likely in the double het
+    shap.freqs <- ehap.counts/rowSums(ehap.counts) # get the starting haplotype frequencies
+
+
+
+    # now that we have our starting conditions, we will do the EM loops.
+    # 1) First, we find out how many of each haplotype
+    # we expect to get from our double heterozygotes given the initial haplotype frequencies we guessed above.
+    # 2) Then, we use those expected frequencies to update our estimates of the haplotype frequencies.
+    # 3) repeat 1 and 2 until the difference between the haplotype frequencies between loop iterations is less than sigma.
+
+
+    # we'll use a while loop, which will run as long as the conditions are met. Note that this can freeze your computer if
+    # the conditions are NEVER met! Try just hitting the stop sign, if that doesn't work you'll need to restart Rstudio.
+
+    out <- matrix(NA, nrow(haptable), ncol = 4)
+    completed <- logical(nrow(haptable))
+
+    diff <- sigma + 1 # initialize the diff. Doesn't matter what it is as long as it's larger than sigma.
+    check <- 1
+
+    while(any(diff > sigma)){
+
+      if(is.null(nrow(shap.freqs))){
+        shap.freqs <- matrix(shap.freqs, 1)
+        x <- matrix(x, 1)
+        haptable <- matrix(haptable, 1)
+      }
+
+      # 1)
+      # expectation, which is that we are drawing haplotypes (aka alleles) from a pool of options. Follows HWE, essentially,
+      # but the "alleles" are actually haplotypes
+      op1.e <- (2*shap.freqs[,1]*shap.freqs[,4])/
+        ((2*shap.freqs[,1]*shap.freqs[,4])+(2*shap.freqs[,2]*shap.freqs[,3])) # percentage of AC/GG haplo pairs
+      op2.e <- 1 - op1.e
+
+      # maximization: given the expected haplotype frequencies, how many of each haplotype should we have? get new frequencies
+      n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambigious phenotypes again.
+      if(nrow(x) == 1){
+        n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(matrix(x[,doub.het], 1))*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
+        n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(matrix(x[,doub.het], 1))*op2.e*.5)
+      }
+      else{
+        n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (doub.het.sum*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
+        n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (doub.het.sum*op2.e*.5)
+      }
+      n1hap.freqs <- n1hap.freqs/rowSums(n1hap.freqs)
+
+      # for rows where we end up with NAs, just use the starting estimated haplotypes instead (we're done)
+      na.rows <- which(is.na(op1.e))
+      if(length(na.rows) > 0){
+        n1hap.freqs[na.rows,] <- shap.freqs[na.rows,]
+      }
+
+      # calculate the diff and update
+      diff <- rowSums(abs(n1hap.freqs - shap.freqs))
+      check <- check + 1
+
+      # save any completed results
+      done <- which(diff <= sigma)
+      if(length(done) > 0){
+        if(sum(completed) > 0){
+          if(nrow(n1hap.freqs) > 1){
+            out[-which(completed),][done,] <- n1hap.freqs[done,]
+          }
+          else{
+            out[-which(completed),] <- n1hap.freqs[done,]
+          }
+          completed[-which(completed)][done] <- T
+        }
+        else{
+          out[done,] <- n1hap.freqs[done,]
+          completed[done] <- T
+        }
+        n1hap.freqs <- n1hap.freqs[-done,]
+        shap.freqs <- n1hap.freqs
+        haptable <- haptable[-done,]
+        x <- x[-done,]
+        if(is.null(nrow(x))){
+          doub.het.sum <- sum(x[doub.het])
+        }
+        else if(length(doub.het) != 1){
+          doub.het.sum <- rowSums(x[,doub.het])
+        }
+        else{
+          doub.het.sum <- x[,doub.het]
+        }
+      }
+      else{
+        shap.freqs <- n1hap.freqs
+      }
+    }
+
+
+
+    # return the output
+    return(out)
+  }
+
+
   #goal: make a haplotype table, where each row is a comparison and each column is a haplotype count
   #to count haplotypes: Double heterozgote (AC CG) = mark neither.
   #                     Double homozygote (AA CC): mark two of the combination (A with C)
@@ -989,10 +1123,19 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
               which(substr(gl, 1, sform) != substr(gl, (sform + 1), (sform *2)) &
                       substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4))) #double het
 
-    new.var <- grep(dmDat, gl)
+
+    # a version for the em method
+    if(use.ME){
+      new.var <- grep(dmDat, gl)
+      if(is.null(nrow(ghapmat))){
+        ghapmat2 <- as.matrix(ghapmat, nrow = 1)[,-new.var]
+      }
+      ghapmat2 <- ghapmat[,-new.var]
+    }
+
     ##remove any double heterozygotes
-    ghapmat2 <- ghapmat[,-new.var]
     ghapmat <- ghapmat[,-rgcs]
+
 
     ## Keming: make a ghapmat with the new variable instead of rgcs. This will be x in our multihaplotype estimation function
 
@@ -1000,6 +1143,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(length(y) == length(x)){
       if(length(ghapmat) > 1){ #stop it from doing this if there is data for only one haplotype.
         ghapmat <- rbind(ghapmat, rep(c(10,0), 100)[1:length(ghapmat)])
+        if(use.ME){
+          ghapmat2 <- rbind(ghapmat2, rep(c(10,0), 100)[1:length(ghapmat2)])
+        }
       }
     }
 
@@ -1175,6 +1321,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     ##         hapmat that we calculated above.
 
     if(use.ME){
+      hapmat <- multi_haplotype_estimation(ghapmat2, haptable = hapmat, sigma = sigma)
+      hapmat <- hapmat*rowSums(ghapmat2) # convert back to numbers rather than frequencies.
       #call our new haplotype function, x is ghapmat2, haptable is hapmat, sigma is sigma
       # overwrite the hapmat object.
     }
@@ -1244,7 +1392,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         next()
       }
 
+
       haps <- tabulate_haplotypes(x[i,], x[snp.list$snps[[i]],], as, mDat, sform)
+
 
       #if we had only one haplotype or no haplotypes:
       if(is.na(haps[1])){
