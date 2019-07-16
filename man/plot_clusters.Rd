@@ -2,10 +2,11 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_clusters}
 \alias{plot_clusters}
-\title{PCA and tSNE plots from snpRdata.}
+\title{PCA, tSNE, and umap plots from snpRdata.}
 \usage{
-plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE"),
+plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"),
   check_duplicates = FALSE, minimum_percent_coverage = FALSE,
+  minimum_genotype_percentage = FALSE,
   interpolation_method = "bernoulli", dims = 2, initial_dims = 50,
   perplexity = FALSE, theta = 0, iter = 1000, ...)
 }
@@ -54,13 +55,14 @@ A list containing: \itemize{ \item{data: } Raw PCA and/or tSNE plot
  named "pca" and "tsne", respectively.
 }
 \description{
-Generate a ggplot cluster plot based on PCA or the he Barnes-Hut simulation at
-theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Works by conversion to the
-"sn" format described in \code{\link{format_snps}} with interpolated missing
-genotypes.
+Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
+theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
+Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
+Works by conversion to the "sn" format described in \code{\link{format_snps}}
+with interpolated missing genotypes.
 }
 \details{
-Cluster plots can be produced via either PCA or tSNE. The PCA point
+Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
 coordinates are calculated using \code{\link{prcomp}}. By default, the first
 two principal coordinates are plotted. A PC matrix will also be returned for
 easy plotting of other PCs. tSNE coordinates are calculated via
@@ -70,7 +72,8 @@ multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
 information as possible. As such, a tSNE plot can be seen as a representation
 of many different PC axis compressed into a single two-dimensional plot. This
 compression process is stochastic, and so plots will vary somewhat between
-runs, and multiple runs are recommended.
+runs, and multiple runs are recommended. umap coordinates are calculated via
+\code{\link[umap]{umap}}
 
 For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.

@@ -366,14 +366,15 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   return(out)
 }
 
-#'PCA and tSNE plots from snpRdata.
+#'PCA, tSNE, and umap plots from snpRdata.
 #'
-#'Generate a ggplot cluster plot based on PCA or the he Barnes-Hut simulation at
-#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}. Works by conversion to the
-#'"sn" format described in \code{\link{format_snps}} with interpolated missing
-#'genotypes.
+#'Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
+#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
+#'Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
+#'Works by conversion to the "sn" format described in \code{\link{format_snps}}
+#'with interpolated missing genotypes.
 #'
-#'Cluster plots can be produced via either PCA or tSNE. The PCA point
+#'Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
 #'coordinates are calculated using \code{\link{prcomp}}. By default, the first
 #'two principal coordinates are plotted. A PC matrix will also be returned for
 #'easy plotting of other PCs. tSNE coordinates are calculated via
@@ -383,10 +384,15 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'information as possible. As such, a tSNE plot can be seen as a representation
 #'of many different PC axis compressed into a single two-dimensional plot. This
 #'compression process is stochastic, and so plots will vary somewhat between
-#'runs, and multiple runs are recommended.
+#'runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
+#'coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
+#'results to a two dimensional visualization.
 #'
 #'For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
 #'consulted.
+#'
+#'Additional arguments to the UMAP can be also be provided. Additional information on these
+#'arguments can be found in \code{\link[umap]{umap.defaults}}.
 #'
 #'Data points for individuals can be automatically colored by any sample-level
 #'facet categories. Facets should be provided as described in
@@ -397,13 +403,15 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param facets character, default NULL. Categorical sample-level metadata
 #'  variables by which to color points. Up to two different sample-specific
 #'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#'@param plot.type character, default c("PCA", "tSNE"). Types of plots to be
-#'  produced, see description.
+#'@param plot.type character, default c("PCA", "tSNE", "umap"). Types of plots
+#'  to be produced, see description.
 #'@param check.duplicates logical, default FALSE. Checks for any duplicated
 #'  individuals, which will cause errors. Since these rarely exist and
 #'  drastically slow down function run-time, this defaults to FALSE.
 #'@param minimum_percent_coverage numeric, default FALSE. Proportion of samples
 #'  a SNP must be sequenced in to be used in generating plots.
+#'@param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
+#'  a sample must be sequenced at in order to be used in plots.
 #'@param interpolation_method character, default "bernoulli". Interpolation
 #'  method to use for missing data. Options: \itemize{\item{bernoulli:
 #'  }{Interpolated via binomial draw for each allele against minor allele
@@ -411,23 +419,27 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  minor alleles at missing data points given loci minor allele frequencies.}}
 #'@param dims numeric, default 2. Output dimensionality, default 2.
 #'@param initial_dims numeric, default 50. The number of dimensions retained in
-#'  the initial PCA step.
+#'  the initial PCA step during tSNE.
 #'@param perplexity numeric, default FALSE. Perplexity parameter, by default
 #'  found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
 #'@param theta numeric, default 0. Theta parameter from
 #'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
-#'@param iter numeric, default 5000. Number of tSNE iterations to perform.
-#'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.
+#'@param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
+#'  perform.
+#'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } Raw PCA and/or tSNE plot
-#'  data. \item{plots: } ggplot PCA and/or tSNE plots. } Each of these two list
-#'  may contain one or two objects, one for each PCA or tSNE plot requested,
-#'  named "pca" and "tsne", respectively.
+#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
+#'  data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of these two lists
+#'  may contain one, two, or three objects, one for each PCA, tSNE, or umap plot requested,
+#'  named "pca" and "tsne", and "umap", respectively.
 #'
 #'@author William Hemstrom
 #'@author Matt Thorstensen
 #'
-#'@references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}
+#'@references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
+#'@references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
+#'@references McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#'
 #'@seealso \code{\link[mmtsne]{mmtsne}}
 #'
 #'@export
@@ -435,8 +447,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @examples
 #' # plot colored by population
 #' plot_clusters(stickSNPs, "pop")
-plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check_duplicates = FALSE,
-                          minimum_percent_coverage = FALSE, interpolation_method = "bernoulli",
+plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
+                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
 
   #=============sanity checks============
@@ -473,7 +485,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   facets <- check.snpR.facet.request(x, facets)
 
   plot_type <- tolower(plot_type)
-  good_plot_types <- c("pca", "tsne")
+  good_plot_types <- c("pca", "tsne", "umap")
   if(any(!(plot_type %in% good_plot_types))){
     msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
   }
@@ -505,6 +517,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
   meta <- x@sample.meta
 
+  browser()
   # figure out which snps should be dropped due to low coverage
   if(minimum_percent_coverage != FALSE){
     counts <- rowSums(x@geno.tables$gs[x@facet.meta$subfacet == ".base",])
@@ -512,6 +525,17 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
     bad.loci <- which(counts <= minimum_percent_coverage)
     if(length(bad.loci) > 0){
       sn <- sn[-bad.loci,]
+    }
+  }
+
+  # figure out which samples should be dropped due to poor genotyping
+  if(minimum_genotype_percentage != FALSE){
+    counts <- colSums(ifelse(x == x@mDat, F, T))
+    counts <- counts/nrow(x)
+    bad.samples <- which(counts <= minimum_genotype_percentage)
+    if(length(bad.samples) > 0){
+      sn <- sn[,-bad.samples]
+      meta <- meta[-bad.samples,]
     }
   }
 
@@ -526,14 +550,18 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
 
 
   rm.snps <- nrow(sn)
+  rm.ind <- ncol(sn)
   if(rm.snps == 0){
     stop("No remaining SNPs after filtering.\n")
+  }
+  if(rm.ind == 0){
+    stop("No remaining samples after filtering.\n")
   }
   if(rm.snps < 20){
     warning("Few remaining SNPs after filtering! Remaining SNPs:", rm.snps, ".\n")
   }
 
-  cat("Plotting using", rm.snps, "loci.\n")
+  cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")
   sn <- t(sn)
 
   #=============prepare plot data=============
@@ -561,6 +589,13 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE"), check
                              verbose=TRUE, ...)
     colnames(tsne.out$Y) <- paste0("PC", 1:ncol(tsne.out$Y))
     plot_dats$tsne <- cbind(meta, as.data.frame(tsne.out$Y))
+  }
+  if("umap" %in% plot_type){
+    browser()
+    cat("Preparing umap...\n")
+    umap_r <- umap::umap(as.matrix(sn), n_epochs = iter, verbose = T, ...)
+    colnames(umap_r$layout) <- paste0("PC", 1:ncol(umap_r$layout))
+    plot_dats$umap <- cbind(meta, as.data.frame(umap_r$layout))
   }
   #=============make ggplots=====================
   plots <- vector("list", length(plot_dats))

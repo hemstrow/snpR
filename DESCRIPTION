@@ -38,6 +38,7 @@ Suggests:
     mmtsne,
     rmarkdown,
     Rtsne,
+    umap,
     viridis
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
