@@ -37,6 +37,7 @@ Suggests:
     knitr,
     mmtsne,
     rmarkdown,
+    readr,
     Rtsne,
     umap,
     viridis
