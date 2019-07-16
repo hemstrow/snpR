@@ -2996,8 +2996,22 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                    t2[seq(1,length(t2),2)],
                    t2[seq(2,length(t2),2)],
                    collapse = "")
-      writeLines(paste0("#!/bin/bash\n\n",
-                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
+
+
+      # system type
+      sys.type <- Sys.info()["sysname"]
+
+      # call
+      if(sys.type == "Windows"){
+        warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
+        writeLines(paste0("#!/bin/bash\n\n",
+                          "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
+      }
+      else{
+        call <- paste0("echo -n -e ", t2, " > ", outfile, ".bed")
+        system(call)
+      }
+
       warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
