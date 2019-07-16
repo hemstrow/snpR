@@ -283,7 +283,7 @@ call_colony <- function(infile, colony_path){
 
 #' Parse colony data.
 #' @export
-parse_colony <- function(prefix, x, path = "./colony/"){
+parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
   #===============full and half sibs==============================
   # read in half and full sibs
   fsd <- readr::read_csv(paste0(path, prefix, ".FullSibDyad"))
@@ -306,7 +306,22 @@ parse_colony <- function(prefix, x, path = "./colony/"){
   all_pairs <- merge(all_pairs, cdyads, by = c("Sample1", "Sample2"), all.x = T)
   all_pairs$type[which(is.na(all_pairs$type))] <- "none"
 
-  return(list(dyads = dyads, all_pairs = all_pairs))
+  #=============add male and female parent ID info to the sample meta===========
+  clusters <- readr::read_table2(paste0(path, prefix, ".BestCluster"))
+  colnames(clusters)[2] <- "ClusterProbability"
+  if(is.null(sampleIDs)){
+    x@sample.meta$.offspringID <- colnames(x)
+    x@sample.meta <- merge(x@sample.meta, clusters, by.x = ".offspringID", by.y = "OffspringID", sort = F)
+    x@sample.meta$.offspringID <- NULL
+  }
+  else{
+    x@sample.meta <- merge(x@sample.meta, clusters, by.x = sampleIDs, by.y = "OffspringID", sort = F)
+  }
+
+  .sidcol <- which(colnames(x@sample.meta) == ".sample.id")
+  x@sample.meta <- x@sample.meta[,c((1:ncol(x@sample.meta))[-.sidcol], .sidcol)]
+
+  return(list(x = x, dyads = dyads, all_pairs = all_pairs))
 }
 
 #' Create and infile, run, and gather some basic results using the COLONY parentage analysis program.
@@ -316,7 +331,7 @@ parse_colony <- function(prefix, x, path = "./colony/"){
 #' will be stored in a colony folder created in the current working directory.
 #'
 #' @export
-run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS", run_length = 2,
+run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                        sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                        nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
                        maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,
@@ -334,6 +349,7 @@ run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS
                      outfile = outfile,
                      method = method,
                      run_length = run_length,
+                     sampleIDs = sampleIDs,
                      sibship_prior = sibship_prior,
                      paternal_sib_size = paternal_sib_size,
                      maternal_sib_size = maternal_sib_size, nruns = nruns, seed = seed,
@@ -370,6 +386,7 @@ run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS
   # parse some basics
   return(parse_colony(prefix = outfile,
                       x = x,
-                      path = "./colony/"))
+                      path = "./colony/",
+                      sampleIDs = sampleIDs))
 
 }
