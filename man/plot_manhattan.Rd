@@ -7,7 +7,7 @@
 plot_manhattan(x, plot_var, window = FALSE, facets = NULL,
   chr = "chr", bp = "position", snp = NULL, chr.subfacet = NULL,
   sample.subfacet = NULL, significant = NULL, suggestive = NULL,
-  highlight = "significant", pval = FALSE, log.p = FALSE,
+  highlight = "significant", sig_below = FALSE, log.p = FALSE,
   viridis.option = "plasma", viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10), colors = c("black", "slategray3"))
 }
@@ -60,7 +60,7 @@ Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 above those respetive values will be highlighted. If a numeric vector, SNPs
 corresponding to vector entries will be highlighted. See details.}
 
-\item{pval}{logical, default FALSE. If TRUE, treats values lower than the
+\item{sig_below}{logical, default FALSE. If TRUE, treats values lower than the
 significance threshold as significant.}
 
 \item{log.p}{logical, default FALSE. If TRUE, plot variables and thresholds
@@ -130,7 +130,7 @@ x <- calc_basic_snp_stats(x, "pop.group", sigma = 200, step = 50)
 plot_manhattan(x, "pi", facets = "pop",
 chr = "group", chr.subfacet = c("groupIX", "groupIV"),
 sample.subfacet = c("ASP", "OPL", "SMR"),
-significant = 0.05, suggestive = 0.15, pval = T)
+significant = 0.05, suggestive = 0.15, sig_below = T)
 
 # plot FST for the ASP/PAL comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID

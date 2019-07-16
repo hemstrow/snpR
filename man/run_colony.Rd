@@ -5,9 +5,9 @@
 \title{Create and infile, run, and gather some basic results using the COLONY parentage analysis program.}
 \usage{
 run_colony(x, colony_path, outfile = "colony_input", method = "FPLS",
-  run_length = 2, sibship_prior = 0, paternal_sib_size = NULL,
-  maternal_sib_size = NULL, nruns = 1, seed = NULL,
-  maternal_genotypes = NULL, paternal_genotypes = NULL,
+  run_length = 2, sampleIDs = NULL, sibship_prior = 0,
+  paternal_sib_size = NULL, maternal_sib_size = NULL, nruns = 1,
+  seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
   maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,
   update_af = TRUE, dioecious = TRUE, inbreeding = TRUE,
   male_monogamous = FALSE, female_monogamous = FALSE,

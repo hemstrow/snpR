@@ -517,7 +517,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
   meta <- x@sample.meta
 
-  browser()
   # figure out which snps should be dropped due to low coverage
   if(minimum_percent_coverage != FALSE){
     counts <- rowSums(x@geno.tables$gs[x@facet.meta$subfacet == ".base",])
@@ -591,7 +590,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     plot_dats$tsne <- cbind(meta, as.data.frame(tsne.out$Y))
   }
   if("umap" %in% plot_type){
-    browser()
     cat("Preparing umap...\n")
     umap_r <- umap::umap(as.matrix(sn), n_epochs = iter, verbose = T, ...)
     colnames(umap_r$layout) <- paste0("PC", 1:ncol(umap_r$layout))
@@ -734,7 +732,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' @param suggestive numeric, default NULL. Value at which a line will be drawn
 #'   designating suggestive SNPs. If highlight = "suggestive", SNPs above this
 #'   level will also be labeled.
-#' @param pval logical, default FALSE. If TRUE, treats values lower than the
+#' @param sig_below logical, default FALSE. If TRUE, treats values lower than the
 #'   significance threshold as significant.
 #' @param log.p logical, default FALSE. If TRUE, plot variables and thresholds
 #'   will be transformed to -log.
@@ -771,7 +769,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' plot_manhattan(x, "pi", facets = "pop",
 #' chr = "group", chr.subfacet = c("groupIX", "groupIV"),
 #' sample.subfacet = c("ASP", "OPL", "SMR"),
-#' significant = 0.05, suggestive = 0.15, pval = T)
+#' significant = 0.05, suggestive = 0.15, sig_below = T)
 #'
 #' # plot FST for the ASP/PAL comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
@@ -799,7 +797,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
-                           pval = FALSE, log.p = FALSE,
+                           sig_below = FALSE, log.p = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3")){
 
@@ -906,7 +904,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
       # using significant
       if(highlight == "significant"){
-        if(pval){
+        if(sig_below){
           stats$highlight <- ifelse(stats$pvar <= significant, 1, 0)
         }
         else{
@@ -915,7 +913,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       }
       #using suggestive
       else if(highlight == "suggestive"){
-        if(pval){
+        if(sig_below){
           stats$highlight <- ifelse(stats$pvar <= suggestive, 1, 0)
         }
         else{

@@ -4,7 +4,7 @@
 \alias{parse_colony}
 \title{Parse colony data.}
 \usage{
-parse_colony(prefix, x, path = "./colony/")
+parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL)
 }
 \description{
 Parse colony data.

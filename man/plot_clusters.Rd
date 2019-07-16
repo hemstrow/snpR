@@ -20,6 +20,9 @@ facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 \item{minimum_percent_coverage}{numeric, default FALSE. Proportion of samples
 a SNP must be sequenced in to be used in generating plots.}
 
+\item{minimum_genotype_percentage}{numeric, default FALSE. Proportion of SNPs
+a sample must be sequenced at in order to be used in plots.}
+
 \item{interpolation_method}{character, default "bernoulli". Interpolation
 method to use for missing data. Options: \itemize{\item{bernoulli:
 }{Interpolated via binomial draw for each allele against minor allele
@@ -29,7 +32,7 @@ minor alleles at missing data points given loci minor allele frequencies.}}}
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
 \item{initial_dims}{numeric, default 50. The number of dimensions retained in
-the initial PCA step.}
+the initial PCA step during tSNE.}
 
 \item{perplexity}{numeric, default FALSE. Perplexity parameter, by default
 found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
@@ -37,22 +40,23 @@ found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 \item{theta}{numeric, default 0. Theta parameter from
 \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.}
 
-\item{iter}{numeric, default 5000. Number of tSNE iterations to perform.}
+\item{iter}{numeric, default 1000. Number of tSNE iterations/umap epochs to
+perform.}
 
-\item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}}.}
+\item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.}
 
-\item{plot.type}{character, default c("PCA", "tSNE"). Types of plots to be
-produced, see description.}
+\item{plot.type}{character, default c("PCA", "tSNE", "umap"). Types of plots
+to be produced, see description.}
 
 \item{check.duplicates}{logical, default FALSE. Checks for any duplicated
 individuals, which will cause errors. Since these rarely exist and
 drastically slow down function run-time, this defaults to FALSE.}
 }
 \value{
-A list containing: \itemize{ \item{data: } Raw PCA and/or tSNE plot
- data. \item{plots: } ggplot PCA and/or tSNE plots. } Each of these two list
- may contain one or two objects, one for each PCA or tSNE plot requested,
- named "pca" and "tsne", respectively.
+A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
+ data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of these two lists
+ may contain one, two, or three objects, one for each PCA, tSNE, or umap plot requested,
+ named "pca" and "tsne", and "umap", respectively.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
@@ -72,11 +76,15 @@ multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
 information as possible. As such, a tSNE plot can be seen as a representation
 of many different PC axis compressed into a single two-dimensional plot. This
 compression process is stochastic, and so plots will vary somewhat between
-runs, and multiple runs are recommended. umap coordinates are calculated via
-\code{\link[umap]{umap}}
+runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
+coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
+results to a two dimensional visualization.
 
 For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.
+
+Additional arguments to the UMAP can be also be provided. Additional information on these
+arguments can be found in \code{\link[umap]{umap.defaults}}.
 
 Data points for individuals can be automatically colored by any sample-level
 facet categories. Facets should be provided as described in
@@ -88,7 +96,11 @@ automatically plotted simultaniously.
 plot_clusters(stickSNPs, "pop")
 }
 \references{
-Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}
+Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
+
+Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
+
+McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}
