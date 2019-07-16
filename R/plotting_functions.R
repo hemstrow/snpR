@@ -489,9 +489,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
   if(any(!(plot_type %in% good_plot_types))){
     msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
   }
-  if(!(length(plot_type) %in% length(good_plot_types))){
-    msg <- c(msg, paste0("No more than", length(good_plot_types), "plots may be made at once."))
-  }
 
 
   if(length(msg) > 0){
