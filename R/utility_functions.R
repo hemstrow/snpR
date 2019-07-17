@@ -461,7 +461,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 #'\itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
 #'\item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
 #'\item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
-#'snp metadata }
+#'snp metadata. \item{snpRdata: } subset snpRdata object. }
 #'
 #'case:
 #'
@@ -484,7 +484,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 #'  "stats". Type of statistic under to pull under the ps.pf.psf option.
 #'
 #'@author William Hemstrom
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL){
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL, maf = FALSE){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -621,6 +621,57 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
       return(out)
     }
+    else if(req == "snpRdata"){
+      #==========subfunctions========
+      run.one.task <- function(opts, i){
+        if(opts[i,"t.snp.facet"] == ".base" & opts[i,"t.sample.facet"] == ".base"){
+          sub.x <- x
+        }
+        else if(opts[i,"t.snp.facet"] == ".base"){
+          suppressWarnings(invisible(capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
+        }
+        else{
+          suppressWarnings(invisible(capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
+                                                                              snp.facets = opts[i,3], snp.subfacets = opts[i,4]))))
+        }
+
+        suppressWarnings(invisible(capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
+        out <- fun(sub.x = sub.x, ...)
+        out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out)
+
+        return(out)
+      }
+      #==========run===============
+      # check facets
+      facets <- check.snpR.facet.request(x, facets)
+
+      # get options
+      opts <- get.task.list(x, facets)
+
+      # initialize out
+      out <- vector("list", nrow(opts))
+
+      # run in serial
+      if(par == FALSE){
+        for(i in 1:nrow(opts)){
+          out[[i]] <- run.one.task(opts, i)
+        }
+      }
+
+      # run in parallel
+
+      # combine
+      suppressWarnings(out <- dplyr::bind_rows(out))
+      id.col <- (which(colnames(out) == ".snp.id"))
+      colnames(out)[(id.col+1):ncol(out)] <- tolower(colnames(out)[(id.col+1):ncol(out)])
+      colnames(out)[(id.col+1):ncol(out)] <- paste0("gmmat_", colnames(out)[(id.col+1):ncol(out)], "_", response)
+      n.ord <- which(colnames(out) %in% c("major", "minor"))
+      n.ord <- c((1:ncol(out))[-n.ord], n.ord)
+      out <- out[,n.ord]
+
+      # return
+      return(out)
+    }
   }
   else if(case == "ps.pf"){
     out <- data.frame() # initialize
@@ -699,74 +750,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       x@facet.meta$subfacet <- as.character(x@facet.meta$subfacet)
 
       # subfunctions:
-      ## a function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
-      get.task.list <- function(x, facets, source = "stats"){
-        facets <- check.snpR.facet.request(x, facets, "none", F)
-        task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
-
-        if(source == "stats"){
-          meta.to.use <- x@facet.meta
-        }
-        else if (source == "pairwise.stats"){
-          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")], stringsAsFactors = F)
-          meta.to.use$subfacet <- meta.to.use$comparison
-        }
-
-        snp.facet.list <- vector("list", length = length(facets))
-        for(i in 1:length(facets)){
-          t.facet <- facets[i]
-          t.facet <- unlist(strsplit(t.facet, split = "(?<!^)\\.", perl = T))
-          t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
-
-          # sample facets
-          if(any(t.facet.type == "sample")){
-            t.sample.facet <- check.snpR.facet.request(x, facets[i], remove.type = "snp")
-            t.sample.meta <- meta.to.use[meta.to.use$facet == t.sample.facet, c("subfacet")]
-            sample.opts <- unique(t.sample.meta)
-            t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
-            if(is.null(nrow(sample.opts))){
-              sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
-              t.sample.meta <- as.data.frame(t.sample.meta, stringsAsFactors = F)
-            }
-          }
-          else{
-            t.sample.facet <- ".base"
-            t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
-            sample.opts <- data.frame(.base = ".base", stringsAsFactors = F)
-          }
-
-          # snp facets
-          if(any(t.facet.type == "snp")){
-            use.facet <- t.facet[t.facet.type == "snp"]
-            t.snp.meta <- meta.to.use[,use.facet]
-            snp.opts <- unique(t.snp.meta)
-            t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
-            if(is.null(nrow(snp.opts))){
-              snp.opts <- as.data.frame(snp.opts)
-              t.snp.meta <- as.data.frame(t.snp.meta)
-              colnames(snp.opts) <- t.facet[which(t.facet %in% colnames(meta.to.use))]
-              colnames(t.snp.meta) <- colnames(snp.opts)
-            }
-            else{
-              t.snp.meta <- t.snp.meta[,match(colnames(t.snp.meta), colnames(snp.opts))]
-            }
-          }
-          else{
-            t.snp.facet <- ".base"
-            t.snp.meta <- as.data.frame(rep(".base", nrow(meta.to.use)))
-            snp.opts <- data.frame(.base = ".base")
-          }
-          # get all of the possible factor/subfactor options and make the task list for this facet
-          all.opts.1 <- matrix(rep(as.matrix(sample.opts), each = nrow(snp.opts)), ncol = ncol(sample.opts))
-          all.opts.1 <- do.call(paste, as.data.frame(all.opts.1))
-          all.opts.2 <- matrix(rep(t(snp.opts), nrow(sample.opts)), ncol = ncol(snp.opts), byrow = TRUE)
-          all.opts.2 <- do.call(paste, as.data.frame(all.opts.2))
-          t.task.list <- cbind(t.sample.facet, all.opts.1, t.snp.facet, all.opts.2)
-          task.list <- rbind(task.list, t.task.list)
-        }
-
-        return(task.list)
-      }
 
       ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
@@ -3340,4 +3323,75 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   # return
   return(list(best_matches = out.best, data = out))
 
+}
+
+
+#' List unique tasks/options for facets.
+#' Internal function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
+get.task.list <- function(x, facets, source = "stats"){
+  facets <- check.snpR.facet.request(x, facets, "none", F)
+  task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
+
+  if(source == "stats"){
+    meta.to.use <- x@facet.meta
+  }
+  else if (source == "pairwise.stats"){
+    meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")], stringsAsFactors = F)
+    meta.to.use$subfacet <- meta.to.use$comparison
+  }
+
+  snp.facet.list <- vector("list", length = length(facets))
+  for(i in 1:length(facets)){
+    t.facet <- facets[i]
+    t.facet <- unlist(strsplit(t.facet, split = "(?<!^)\\.", perl = T))
+    t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
+
+    # sample facets
+    if(any(t.facet.type == "sample")){
+      t.sample.facet <- check.snpR.facet.request(x, facets[i], remove.type = "snp")
+      t.sample.meta <- meta.to.use[meta.to.use$facet == t.sample.facet, c("subfacet")]
+      sample.opts <- unique(t.sample.meta)
+      t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
+      if(is.null(nrow(sample.opts))){
+        sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+        t.sample.meta <- as.data.frame(t.sample.meta, stringsAsFactors = F)
+      }
+    }
+    else{
+      t.sample.facet <- ".base"
+      t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
+      sample.opts <- data.frame(.base = ".base", stringsAsFactors = F)
+    }
+
+    # snp facets
+    if(any(t.facet.type == "snp")){
+      use.facet <- t.facet[t.facet.type == "snp"]
+      t.snp.meta <- meta.to.use[,use.facet]
+      snp.opts <- unique(t.snp.meta)
+      t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
+      if(is.null(nrow(snp.opts))){
+        snp.opts <- as.data.frame(snp.opts)
+        t.snp.meta <- as.data.frame(t.snp.meta)
+        colnames(snp.opts) <- t.facet[which(t.facet %in% colnames(meta.to.use))]
+        colnames(t.snp.meta) <- colnames(snp.opts)
+      }
+      else{
+        t.snp.meta <- t.snp.meta[,match(colnames(t.snp.meta), colnames(snp.opts))]
+      }
+    }
+    else{
+      t.snp.facet <- ".base"
+      t.snp.meta <- as.data.frame(rep(".base", nrow(meta.to.use)))
+      snp.opts <- data.frame(.base = ".base")
+    }
+    # get all of the possible factor/subfactor options and make the task list for this facet
+    all.opts.1 <- matrix(rep(as.matrix(sample.opts), each = nrow(snp.opts)), ncol = ncol(sample.opts))
+    all.opts.1 <- do.call(paste, as.data.frame(all.opts.1))
+    all.opts.2 <- matrix(rep(t(snp.opts), nrow(sample.opts)), ncol = ncol(snp.opts), byrow = TRUE)
+    all.opts.2 <- do.call(paste, as.data.frame(all.opts.2))
+    t.task.list <- cbind(t.sample.facet, all.opts.1, t.snp.facet, all.opts.2)
+    task.list <- rbind(task.list, t.task.list)
+  }
+
+  return(task.list)
 }

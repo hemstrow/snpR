@@ -30,10 +30,12 @@ Depends:
     dplyr,
     foreach
 Suggests:
+    AGHmatrix,
     BGLR,
     BMS,
     genepop,
     ggrepel,
+    GMMAT,
     knitr,
     mmtsne,
     rmarkdown,

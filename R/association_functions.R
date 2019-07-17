@@ -77,6 +77,12 @@ run_genomic_prediction <- function(x, response, iterations,
   # prepare the BGLR input
   sn <- t(sn)
   phenotypes <- x@sample.meta[,response]
+  if(!is.numeric(phenotypes)){
+    phenotypes <- as.numeric(as.factor(phenotypes)) - 1
+    if(length(unique(phenotypes)) != 2){
+      stop("Only two unique phenotypes allowed if not quantitative.\n")
+    }
+  }
   colnames(sn) <- paste0("m", 1:ncol(sn)) # marker names
   rownames(sn) <- paste0("s", 1:nrow(sn)) # ind IDS
   ETA <- list(list(X = sn, model = "BayesB", saveEffects = T)) # need to adjust this when I get around to allowing for more complicated models
@@ -177,9 +183,20 @@ run_genomic_prediction <- function(x, response, iterations,
 #' ## run cross_validation
 #' cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #'
-cross_validate_genomic_prediction <- function(x, response, iterations,
-                                              burn_in, thin, cross_percentage = 0.9,
+cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
+                                              burn_in = 1000, thin = 100, cross_percentage = 0.9,
                                               model = "BayesB", cross_samples = NULL, plot = TRUE){
+
+  # check that the response is numeric
+  phenotypes <- x@sample.meta[,response]
+  if(!is.numeric(phenotypes)){
+    phenotypes <- as.numeric(as.factor(phenotypes)) - 1
+    if(length(unique(phenotypes)) != 2){
+      stop("Only two unique phenotypes allowed if not quantitative.\n")
+    }
+  }
+  x@sample.meta[,response] <- phenotypes
+
 
   # pick samples to make the model with
   if(is.numeric(cross_samples)){
@@ -238,19 +255,23 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 
 }
 
-#' Run case/control association tests on SNP data.
+#' Run case/control or quantitative association tests on SNP data.
 #'
 #' Runs several different association tests on SNP data. The response variable
-#' must have only two different categories (as in case/control) tests. Support
-#' for more categories or continuous data will be added later. Tests may be
+#' must have only two different categories (as in case/control) for most test types,
+#' although the "gmmat.score" method supports quantitative traits. Tests may be
 #' broken up by sample-specific facets.
 #'
 #' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 #' Armitage approach weights should be provided to the "w" argument, which
 #' specifies the weight for each possible genotype (homozygote 1, heterozygote,
-#' homozygote 2). The default, c(0,1,2), specifies an addative model.
+#' homozygote 2). The default, c(0,1,2), specifies an addative  The "gmmat.score"
+#' method uses the approach described in Chen et al. (2016) and implemented in
+#' the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
+#' For this method, a 'G' genetic relatedness matrix is first created using the
+#' \code{\link[AGHmatrix]{Gmatrix}} function according to Yang et al 2010.
 #'
-#' Continuous or multi-category data is currently not supported, but is under
+#' Multi-category data is currently not supported, but is under
 #' development.
 #'
 #' Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
@@ -273,12 +294,15 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 #' @param response character. Name of the column containing the response
 #'   variable of interest. Must match a column name in sample metadata. Response
 #'   must be categorical, with only two categories.
-#' @param method character, default "armitage". Specifies association method.
-#'   Options: \itemize{ \item{armitage: } Armitage association test, based on
+#' @param method character, default "gmmat.score". Specifies association method.
+#'   Options: \itemize{ \item{gmmat.score: }  Population/family structure corrected mlm approach, based on
+#'   Chen et al (2016). \item{armitage: } Armitage association test, based on
 #'   Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
 #'   Chi-squared test. } See description for more details.
 #' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
 #'   the Armitage association method. See description for details.
+#' @param charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.
+#' @param family.override character, default NULL.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
@@ -290,6 +314,10 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 #'
 #' @references Armitage (1955). Tests for Linear Trends in Proportions and
 #'   Frequencies. \emph{Biometrics}.
+#' @references Chen et al. (2016). Control for Population Structure and Relatedness for
+#'   Binary Traits in Genetic Association Studies via Logistic Mixed Models. \emph{American Journal of Human Genetics}.
+#' @references Yang et al. (2010). Common SNPs explain a large proportion of the heritability for human height.
+#'   \emph{Nature Genetics}.
 #'
 #' @examples
 #'   # add a dummy phenotype
@@ -297,7 +325,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations,
 #'   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 #'   calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
 #'
-calc_association <- function(x, facets = NULL, response, method = "armitage", w = c(0,1,2)){
+calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
+                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, maf = 0.05, par = FALSE, ...){
   #==============sanity checks===========
   # response
   msg <- character()
@@ -320,14 +349,10 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
                  paste0("Only two categories allowed for response variable for method: ", method, "."))
       }
     }
-    else{
-      msg <- c(msg,
-               paste0("Only two categories allowed for response variable for now."))
-    }
   )
 
   # method
-  good.methods <- c("armitage", "odds_ratio", "chisq")
+  good.methods <- c("armitage", "odds_ratio", "chisq", "gmmat.score")
   if(!method %in% good.methods){
     msg <- c(msg,
              paste0("Method not accepted. Accepted methods: ", paste0(good.methods, collapse = ", "), "."))
@@ -345,9 +370,40 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
     }
   }
 
+  # vars for gmmat
+  if(method == "gmmat.score"){
+    if(!is.null(sampleID)){
+      if(!sampleID %in% x@sample.meta){
+        msg <- c(msg,
+                 paste0("Sample ID column: ", sampleID, " not found in sample metadata."))
+      }
+    }
+
+    if(is.null(formula)){
+      formula <- paste0(response, " ~ 1")
+    }
+    else{
+      res <- try(formula(formula), silent = T)
+      if(class(res == "try-error")){
+        msg <- c(msg,
+                 "formula must be a valid formula. Type ?formula for help.\n")
+      }
+      else{
+        phen <- strsplit(formula, "~")
+        phen <- phen[[1]][1]
+        phen <- gsub(" ", "", phen)
+        if(phen != response){
+          msg <- c(msg,
+                   "The response variable in the provided formula must be the same as that provided to the response argument.\n")
+        }
+      }
+    }
+  }
+
+
   #==============functions=============
 
-  calc_armitage <- function(a, w){#where a is the matrix you want to run the test on, and w is the weights
+  calc_armitage <- function(a, w, ...){#where a is the matrix you want to run the test on, and w is the weights
     a <- as.matrix(a)
 
     # figure out "control" and "case" names
@@ -454,6 +510,69 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
       return(data.frame(chi_stat = chi.stat, chi_p = chi.p, associated_allele = asso.allele))
     }
   }
+  run_gmmat <- function(sub.x, form, iter, sampleID, family.override, ...){
+    # sn format
+    sn <- format_snps(sub.x, "sn", interpolate = FALSE)
+    sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
+
+    ## G matrix
+    G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang")
+    if(is.null(sampleID)){
+      sampleID <- ".sample.id"
+    }
+    colnames(G) <- sub.x@sample.meta[,sampleID]
+    rownames(G) <- sub.x@sample.meta[,sampleID]
+
+    ## input data
+    sub.x <- calc_maf(sub.x)
+    stats <- sub.x@stats[sub.x@stats$facet == ".base",]
+    asso.in <- cbind(stats$major, stats$minor, sub.x@snp.meta, sn)
+    colnames(asso.in)[1:2] <- c("major", "minor")
+    colnames(asso.in)[-c(1:(2 + ncol(sub.x@snp.meta)))] <- sub.x@sample.meta[,sampleID]
+    phenos <- sub.x@sample.meta
+
+    # set parameters
+    ## response
+    if(is.character(phenos[,response])){
+      phenos[,response] <- as.numeric(as.factor(phenos[,response])) - 1 # set the phenotype to 0,1,ect
+    }
+    ## family
+    if(family.override != FALSE){
+      family <- family.override
+    }
+    else{
+      if(length(unique(phenos[,response])) > 2){
+        family <- gaussian(link = "identity")
+      }
+      else if(length(unique(phenos[,response])) == 2){
+        family <- binomial(link = "logit")
+      }
+      else{
+        stop("Less than two unique phenotypes.\n")
+      }
+    }
+
+
+    # run null model
+    invisible(capture.output(mod <- GMMAT::glmmkin(fixed = formula,
+                                                   data = phenos,
+                                                   kins = G,
+                                                   id = sampleID,
+                                                   family = family)))
+
+    # run the test
+    nmeta.col <- 2 + ncol(sub.x@snp.meta)
+    write.table(asso.in, "asso_in.txt", sep = "\t", quote = F, col.names = F, row.names = F)
+    score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
+                                   "asso_out_score.txt",
+                                   infile.ncol.skip = nmeta.col,
+                                   infile.ncol.print = 1:nmeta.col,
+                                   infile.header.print = colnames(asso.in)[1:nmeta.col])
+    score.out <- read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
+
+    file.remove(c("asso_in.txt", "asso_out_score.txt"))
+    return(score.out)
+  }
 
   #==============run the function=========
   # check facets
@@ -467,6 +586,9 @@ calc_association <- function(x, facets = NULL, response, method = "armitage", w 
   }
   else if(method == "odds_ratio" | method == "chisq"){
     out <- apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
+  }
+  else if(method == "gmmat.score"){
+    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", maf = maf, fun = run_gmmat, response = response, form = formula, iter = iter, sampleID = sampleID, family.override = family.override, ...)
   }
 
   x <- merge.snpR.stats(x, out)
