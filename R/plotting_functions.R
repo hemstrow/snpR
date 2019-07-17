@@ -960,7 +960,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
 
   #=============adjust the plot========
-  if(length(unique(stats$subfacet) > 1)){
+  if(length(unique(as.character(stats$subfacet)) > 1)){
     p <- p + ggplot2::facet_wrap(~subfacet)
   }
 
@@ -980,8 +980,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                                        mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
                                        force = 1.3)
   }
-
-  print(p)
 
   return(list(plot = p, data = stats))
 }
