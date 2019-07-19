@@ -896,11 +896,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #=============snps to highlight=====================
   if(highlight[1] != FALSE & !is.null(highlight[1]) & !is.na(highlight[1])){
     # unless the defaults are set...
-    if(!((highlight == "significant") & is.null(significant))){
+    if(!((highlight[1] == "significant") & is.null(significant))){
       do.highlight <- T
 
       # using significant
-      if(highlight == "significant"){
+      if(highlight[1] == "significant"){
         if(sig_below){
           stats$highlight <- ifelse(stats$pvar <= significant, 1, 0)
         }
@@ -909,7 +909,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         }
       }
       #using suggestive
-      else if(highlight == "suggestive"){
+      else if(highlight[1] == "suggestive"){
         if(sig_below){
           stats$highlight <- ifelse(stats$pvar <= suggestive, 1, 0)
         }
