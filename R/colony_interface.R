@@ -249,6 +249,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
   #=================return to original wd===========
   setwd("..")
+  return(paste0("Colony input saved to: ./colony/", outfile, collapse = ""))
 }
 
 
