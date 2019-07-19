@@ -110,7 +110,8 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
 
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
                    subfacet = rep(".base", nrow(gs$gs)),
-                   facet.type = rep(".base", nrow(gs$gs)))
+                   facet.type = rep(".base", nrow(gs$gs)),
+                   stringsAsFactors = F)
 
   fm <- cbind(fm, snp.meta)
 
@@ -636,6 +637,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         }
 
         suppressWarnings(invisible(capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
+        browser()
         out <- fun(sub.x = sub.x, ...)
         out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out)
 
@@ -643,6 +645,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       }
       #==========run===============
       # check facets
+      browser()
       facets <- check.snpR.facet.request(x, facets)
 
       # get options
@@ -651,6 +654,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       # initialize out
       out <- vector("list", nrow(opts))
 
+      browser()
       # run in serial
       if(par == FALSE){
         for(i in 1:nrow(opts)){

@@ -5,7 +5,7 @@
 \title{Apply functions across snpR facets.}
 \usage{
 apply.snpR.facets(x, facets = NULL, req, fun, case = "ps", par = F,
-  ..., stats.type = "all", response = NULL)
+  ..., stats.type = "all", response = NULL, maf = FALSE)
 }
 \arguments{
 \item{x}{snpRdata object}
@@ -46,7 +46,7 @@ req:
 \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
 \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
 \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
-snp metadata }
+snp metadata. \item{snpRdata: } subset snpRdata object. }
 
 case:
 

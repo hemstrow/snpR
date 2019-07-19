@@ -4,9 +4,9 @@
 \alias{cross_validate_genomic_prediction}
 \title{Run a single cross-validation with BGLR.}
 \usage{
-cross_validate_genomic_prediction(x, response, iterations, burn_in, thin,
-  cross_percentage = 0.9, model = "BayesB", cross_samples = NULL,
-  plot = TRUE)
+cross_validate_genomic_prediction(x, response, iterations = 10000,
+  burn_in = 1000, thin = 100, cross_percentage = 0.9,
+  model = "BayesB", cross_samples = NULL, plot = TRUE)
 }
 \arguments{
 \item{x}{snpRdata object}

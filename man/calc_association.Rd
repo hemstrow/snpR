@@ -2,10 +2,11 @@
 % Please edit documentation in R/association_functions.R
 \name{calc_association}
 \alias{calc_association}
-\title{Run case/control association tests on SNP data.}
+\title{Run case/control or quantitative association tests on SNP data.}
 \usage{
-calc_association(x, facets = NULL, response, method = "armitage",
-  w = c(0, 1, 2))
+calc_association(x, facets = NULL, response, method = "gmmat.score",
+  w = c(0, 1, 2), formula = NULL, family.override = FALSE,
+  maxiter = 500, sampleID = NULL, maf = 0.05, par = FALSE, ...)
 }
 \arguments{
 \item{x}{snpRdata object}
@@ -18,13 +19,18 @@ details.}
 variable of interest. Must match a column name in sample metadata. Response
 must be categorical, with only two categories.}
 
-\item{method}{character, default "armitage". Specifies association method.
-Options: \itemize{ \item{armitage: } Armitage association test, based on
+\item{method}{character, default "gmmat.score". Specifies association method.
+Options: \itemize{ \item{gmmat.score: }  Population/family structure corrected mlm approach, based on
+Chen et al (2016). \item{armitage: } Armitage association test, based on
 Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
 Chi-squared test. } See description for more details.}
 
 \item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
 the Armitage association method. See description for details.}
+
+\item{family.override}{character, default NULL.}
+
+\item{charcter, }{default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.}
 }
 \value{
 A snpRdata object with the resulting association test results merged
@@ -32,17 +38,21 @@ A snpRdata object with the resulting association test results merged
 }
 \description{
 Runs several different association tests on SNP data. The response variable
-must have only two different categories (as in case/control) tests. Support
-for more categories or continuous data will be added later. Tests may be
+must have only two different categories (as in case/control) for most test types,
+although the "gmmat.score" method supports quantitative traits. Tests may be
 broken up by sample-specific facets.
 }
 \details{
 Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 Armitage approach weights should be provided to the "w" argument, which
 specifies the weight for each possible genotype (homozygote 1, heterozygote,
-homozygote 2). The default, c(0,1,2), specifies an addative model.
+homozygote 2). The default, c(0,1,2), specifies an addative  The "gmmat.score"
+method uses the approach described in Chen et al. (2016) and implemented in
+the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
+For this method, a 'G' genetic relatedness matrix is first created using the
+\code{\link[AGHmatrix]{Gmatrix}} function according to Yang et al 2010.
 
-Continuous or multi-category data is currently not supported, but is under
+Multi-category data is currently not supported, but is under
 development.
 
 Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
@@ -66,6 +76,12 @@ which allele (major or minor) is associated with which phenotype.
 \references{
 Armitage (1955). Tests for Linear Trends in Proportions and
   Frequencies. \emph{Biometrics}.
+
+Chen et al. (2016). Control for Population Structure and Relatedness for
+  Binary Traits in Genetic Association Studies via Logistic Mixed Models. \emph{American Journal of Human Genetics}.
+
+Yang et al. (2010). Common SNPs explain a large proportion of the heritability for human height.
+  \emph{Nature Genetics}.
 }
 \author{
 William Hemstrom
