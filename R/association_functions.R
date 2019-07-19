@@ -384,7 +384,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
     else{
       res <- try(formula(formula), silent = T)
-      if(class(res == "try-error")){
+      if(class(res) == "try-error"){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
@@ -396,6 +396,17 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
           msg <- c(msg,
                    "The response variable in the provided formula must be the same as that provided to the response argument.\n")
         }
+
+        # see which covariates we need
+        cvars <- terms(formula(formula))
+        cvars <- attr(cvars, "term.labels")
+        bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
+        if(length(bad.cvars) > 0){
+          msg <- c(msg,
+                   "Some covariates specified in formula not found in sample metadata: ", paste0(cvars[bad.cvars], collapse = ", "), ".\n")
+        }
+
+
       }
     }
   }
@@ -594,3 +605,93 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
   x <- merge.snpR.stats(x, out)
   return(x)
 }
+
+
+
+run_random_forest <- function(x, facets = NULL, response, formula = NULL,
+                              num.trees = 10000, mtry = NULL,
+                              importance = "impurity",
+                              interpolate = "bernoulli",
+                              cpar = FALSE, par = FALSE, ...){
+  run_ranger <- function(sub.x, ...){
+
+    #================grab data=====================
+    ## sn format
+    sn <- format_snps(sub.x, "sn", interpolate = interpolate)
+    sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
+    sn <- t(sn)
+
+    ## attach phenotype, anything else in the formula if given.
+    if(!is.null(formula)){
+      res <- try(formula(formula), silent = T)
+      if(class(res) == "try-error"){
+        msg <- c(msg,
+                 "formula must be a valid formula. Type ?formula for help.\n")
+      }
+      else{
+        phen <- strsplit(formula, "~")
+        phen <- phen[[1]][1]
+        phen <- gsub(" ", "", phen)
+        if(phen != response){
+          msg <- c(msg,
+                   "The response variable in the provided formula must be the same as that provided to the response argument.\n")
+        }
+
+        # see which covariates we need
+        cvars <- terms(formula(formula))
+        cvars <- attr(cvars, "term.labels")
+        bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
+        if(length(bad.cvars) > 0){
+          msg <- c(msg,
+                   "Some covariates specified in formula not found in sample metadata: ", paste0(cvars[bad.cvars], collapse = ", "), ".\n")
+        }
+
+        sn <- cbind(sub.x@sample.meta[,response], sub.x@sample.meta[,cvars], sn)
+
+      }
+    }
+    else{
+      sn <- cbind(sub.x@sample.meta[,response], sn)
+    }
+    colnames(sn)[1] <- response
+
+
+    #================run the model:=====================
+    if(is.null(formula)){
+      rout <- ranger::ranger(dependent.variable.name = response,
+                             data = sn,
+                             num.trees = num.trees,
+                             mtry = mtry,
+                             importance = importance)
+    }
+    else{
+      rout <- ranger::ranger(formula = formula,
+                             data = sn,
+                             num.trees = num.trees,
+                             mtry = mtry,
+                             importance = importance)
+    }
+
+    #===============make sense of output=================
+    imp.out <- cbind(sub.x@snp.meta, rout$variable.importance)
+    colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
+
+    pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
+                           stringsAsFactors = F)
+
+    return(list(effects = effects, predictions = pred.out, model = rout))
+  }
+
+
+  if(!all(facets %in% x@facets)){
+    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+  }
+
+  facets <- check.snpR.facet.request(x, facets)
+
+  out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response, formula = formula,
+                           num.trees = num.trees, mtry = mtry, importance = importance, interpolate = interpolate,  par = par, ...)
+
+  return(merge.snpR.stats(x, out))
+}
+
