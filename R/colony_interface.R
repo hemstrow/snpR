@@ -1,5 +1,6 @@
 
 #' Write an input for the COLONY pedigree assignment program.
+#' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                                nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
