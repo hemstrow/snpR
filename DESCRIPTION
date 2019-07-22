@@ -38,6 +38,7 @@ Suggests:
     GMMAT,
     knitr,
     mmtsne,
+    ranger,
     rmarkdown,
     readr,
     Rtsne,

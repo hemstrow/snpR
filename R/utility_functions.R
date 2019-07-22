@@ -637,44 +637,97 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
         }
 
         suppressWarnings(invisible(capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
-        browser()
-        out <- fun(sub.x = sub.x, ...)
-        out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out)
-
-        return(out)
+        out <- fun(sub.x = sub.x, opts.list = opts.list, ...)
+        if(!is.data.frame(out)){
+          out$importance <- cbind(facet = opts[i,1], subfacet = opts[i,2], out$importance)
+          return(out)
+        }
+        else{
+          out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out)
+          return(out)
+        }
       }
       #==========run===============
       # check facets
-      browser()
       facets <- check.snpR.facet.request(x, facets)
 
       # get options
-      opts <- get.task.list(x, facets)
-
-      # initialize out
-      out <- vector("list", nrow(opts))
-
+      opts.list <- get.task.list(x, facets)
       browser()
+
       # run in serial
-      if(par == FALSE){
-        for(i in 1:nrow(opts)){
-          out[[i]] <- run.one.task(opts, i)
+      if(par == FALSE | nrow(opts.list) == 1){
+
+        # initialize out
+        out <- vector("list", nrow(opts.list))
+
+        #run loop
+        for(i in 1:nrow(opts.list)){
+          out[[i]] <- run.one.task(opts.list, i)
         }
+      }
+      # run in parallel
+      else{
+        cl <- snow::makeSOCKcluster(par)
+        doSNOW::registerDoSNOW(cl)
+
+        #prepare reporting function
+        ntasks <- nrow(opts.list)
+        progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
+        opts <- list(progress=progress)
+
+
+        cat("Begining run.\n")
+
+        # run the LD calculations
+        ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
+        suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
+                                                 .options.snow = opts, .export = c("data.table"), .packages = "snpR") %dopar% {
+                                                   run.one.task(opts.list, q)
+                                                 })
+
+        #release cores
+        parallel::stopCluster(cl)
+        doSNOW::registerDoSNOW()
       }
 
       # run in parallel
 
       # combine
-      suppressWarnings(out <- dplyr::bind_rows(out))
-      id.col <- (which(colnames(out) == ".snp.id"))
-      colnames(out)[(id.col+1):ncol(out)] <- tolower(colnames(out)[(id.col+1):ncol(out)])
-      colnames(out)[(id.col+1):ncol(out)] <- paste0("gmmat_", colnames(out)[(id.col+1):ncol(out)], "_", response)
-      n.ord <- which(colnames(out) %in% c("major", "minor"))
-      n.ord <- c((1:ncol(out))[-n.ord], n.ord)
-      out <- out[,n.ord]
+      ## for rf
+      if(!is.data.frame(out[[1]])){
 
-      # return
-      return(out)
+        # initialize
+        bind_list <- vector("list", length(out))
+        nvec <- character(length(out))
+
+        # bind and grab names
+        for(i in 1:length(bind_list)){
+          bind_list[[i]] <- out[[i]]$importance
+          out[[i]] <- out[[i]][-1]
+          nvec[i] <- paste0(bind_list[[i]]$facet[1], "_", bind_list[[i]]$subfacet[1])
+        }
+        suppressWarnings(bind_list <- dplyr::bind_rows(bind_list))
+        names(out) <- nvec
+
+        # return
+        return(list(stats = bind_list, models = out))
+      }
+      ## for GMMAT
+      else{
+        suppressWarnings(out <- dplyr::bind_rows(out))
+        id.col <- (which(colnames(out) == ".snp.id"))
+        colnames(out)[(id.col+1):ncol(out)] <- tolower(colnames(out)[(id.col+1):ncol(out)])
+        colnames(out)[(id.col+1):ncol(out)] <- paste0("gmmat_", colnames(out)[(id.col+1):ncol(out)], "_", response)
+        n.ord <- which(colnames(out) %in% c("major", "minor"))
+        n.ord <- c((1:ncol(out))[-n.ord], n.ord)
+        out <- out[,n.ord]
+
+        # return
+        return(out)
+      }
+
+
     }
   }
   else if(case == "ps.pf"){

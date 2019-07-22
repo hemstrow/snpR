@@ -301,7 +301,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   Chi-squared test. } See description for more details.
 #' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
 #'   the Armitage association method. See description for details.
-#' @param charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.
+#' @param formula charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.
 #' @param family.override character, default NULL.
 #'
 #' @author William Hemstrom
@@ -607,13 +607,78 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 }
 
 
-
+#' Run a RANGER random forest using snpRdata for a given phenotype or model.
+#'
+#' Creates forest machine learning models using snpRdata objects via interface
+#' with \code{\link[ranger]{ranger}}. Models can be created either for a
+#' specific phenotype with no-covariates or using a formula which follows the
+#' basic format specified in \code{\link{formula}}.
+#'
+#' Random forest models can be created across multiple facets of the data at
+#' once following the typical snpR framework explained in
+#' \code{\link[snpR]{Facets_in_snpR}}. Since RF models are calculated without
+#' allowing for any SNP-specific categories (e.g. independent of chromosome
+#' etc.), any sample level facets provided will be ignored. As usual, if facets
+#' is set to NULL, an RF will be calculated for all samples without splitting
+#' across any sample metadata categories.
+#'
+#' Since the \code{\link[ranger]{ranger}} RF implementation can behave
+#' unexpectedly when given incomplete data, missing genotypes will be imputed.
+#' Imputation can occur either via the insertion of the average allele frequency
+#' or via binomial draws for the minor allele using the "af" or "bernoulli"
+#' options for the "interpolate" argument.
+#'
+#' Extra arguments can be passed to \code{\link[ranger]{ranger}}.
+#'
+#' For more detail on the random forest model and ranger arguments, see
+#' \code{\link[ranger]{ranger}}.
+#'
+#' @param x snpRdata object.
+#' @param facets character, default NULL. Categorical metadata variables by
+#'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
+#'   details.
+#' @param response character. Name of the column containing the response
+#'   variable of interest. Must match a column name in sample metadata. Response
+#'   must be categorical, with only two categories.
+#' @param formula charcter, default NULL. Model for the response variable, as
+#'   described in \code{\link[stats]{formula}}. If NULL, the model will be
+#'   equivalent to response ~ 1.
+#' @param num.trees numeric, default 10000. Number of trees to grow. Higher
+#'   numbers will increase model accuracy, but increase calculation time. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param mtry numeric, default is the square root of the number of SNPs. Number
+#'   of variables (SNPs) by which to split each node. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param importance character, default "impurity". The method by which SNP
+#'   importance is determined. Options: \itemize{\item{impurity}
+#'   \item{impurity_corrected} \item{permutation}}. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param interpolate character, default "bernoulli". Interpolation method for
+#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#' @param par numeric, default FALSE. Number of parallel computing cores to use
+#'   for computing RFs across multiple facet levels or within a single facet if
+#'   only a single category is run (either a one-category facet or no facet).
+#' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
+#'
+#' @return A list containing: \itemize{\item{data: } A snpRdata object with RF
+#'   importance values merged in to the stats slot. \item{models: } A named list
+#'   containing both the models and data.frames containing the predictions vs
+#'   observed phenotypes.}
+#'
+#' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
+#'   Implementation of Random Forests for High Dimensional Data in C++ and R.
+#'   \emph{Journal of Statistical Software}.
+#' @seealso \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.
+#'
+#' @author William Hemstrom
+#' @export
+#'
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity",
-                              interpolate = "bernoulli",
-                              cpar = FALSE, par = FALSE, ...){
-  run_ranger <- function(sub.x, ...){
+                              interpolate = "bernoulli", par = FALSE, ...){
+  run_ranger <- function(sub.x, opts.list, ...){
 
     #================grab data=====================
     ## sn format
@@ -657,19 +722,33 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
     #================run the model:=====================
+    # set par correctly, NULL if par is FALSE or we are looping through facet levels. Otherwise (.base and par provided), tpar = par.
+    if(par == FALSE){
+      tpar <- NULL
+    }
+    else{
+      if(nrow(opts.list) == 1){
+        tpar <- par
+      }
+      else{
+        tpar <- NULL
+      }
+    }
+
+    # run with or without formula
     if(is.null(formula)){
       rout <- ranger::ranger(dependent.variable.name = response,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance)
+                             importance = importance, num.threads = tpar, ...)
     }
     else{
       rout <- ranger::ranger(formula = formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance)
+                             importance = importance, num.threads = tpar, ...)
     }
 
     #===============make sense of output=================
@@ -679,7 +758,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
                            stringsAsFactors = F)
 
-    return(list(effects = effects, predictions = pred.out, model = rout))
+    return(list(importance = imp.out, predictions = pred.out, model = rout))
   }
 
 
@@ -692,6 +771,8 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response, formula = formula,
                            num.trees = num.trees, mtry = mtry, importance = importance, interpolate = interpolate,  par = par, ...)
 
-  return(merge.snpR.stats(x, out))
+  x <- merge.snpR.stats(x, out$stats)
+
+  return(list(data = x, models = out$models))
 }
 
