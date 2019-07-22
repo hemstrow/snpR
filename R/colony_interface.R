@@ -135,56 +135,68 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   else{
     write(genotyping_error, outfile, append = T, ncolumns = nrow(x), sep = " ")
   }
-
   # offspring genotypes
   write.table(colony_genotypes, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
 
   #===================maternal and paternal genotype things==============
   # number of male and female candidates, maternal and paternal inclusion probabilities in OMS and PMS
+
+  #there needs to be a newline between the offspring genotypes and the parent data #eg
+      # offspring genotype end
+      # "\n"
+      # 0 0 # M P
+      # 0 0 # M P
+      # "\n"
+    ## then a newline before first parental genotypes
+  write("\n", outfile, append = T) # adding a newline between offspring genotypes and parents
   par_nums <- numeric(2)
   if(class(paternal_genotypes) == "snpRdata"){
-    par_nums[1] <- nrow(paternal_genotypes)
+    par_nums[1] <- ncol(paternal_genotypes) #ncol not nrow!
   }
   else{
     paternal_inclusion_prob <- 0
   }
   if(class(maternal_genotypes) == "snpRdata"){
-    par_nums[2] <- nrow(maternal_genotypes)
+    par_nums[2] <- ncol(maternal_genotypes) #ncol not nrow!
   }
   else{
     maternal_inclusion_prob <- 0
   }
   write(c(paternal_inclusion_prob, maternal_inclusion_prob), outfile, append = T, sep = " ") # write inclusion probs
   write(par_nums, outfile, append = T, sep = " ") # OPS and OMS sample sizes
-
+  write("\n", outfile, append = T) #added newline after number parents and probs parents
   # paternal and maternal genotypes
   if(class(paternal_genotypes) == "snpRdata"){
     male_colony <- format_snps(paternal_genotypes, "colony")
     write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
+    write("\n", outfile, append = T) #added newline for separating genotypes
   }
+write("\n", outfile, append = T) #added newline
+
   if(class(maternal_genotypes) == "snpRdata"){
     female_colony <- format_snps(maternal_genotypes, "colony")
     write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
+    write("\n", outfile, append = T) #added newline for separating stuff
   }
 
-  # paternal dryads:
+  # paternal dyads:
   if(!is.null(known_paternal_dryads[1,1])){
     n_p_d <- nrow(known_paternal_dryads)
     write(c(n_p_d, known_paternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
     write.table(known_paternal_dryads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dryads. They should be a matrix or data frame, with the offspring ID in the first column and the paternal ID in the second
   }
   else{
-    write(c(0, 0), outfile, append =  T, sep = " ") # no dryads
+    write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
   }
 
-  # maternal dryads:
+  # maternal dyads:
   if(!is.null(known_maternal_dryads[1,1])){
     n_m_d <- nrow(known_maternal_dryads)
     write(c(n_m_d, known_maternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
     write.table(known_maternal_dryads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dryads. They should be a matrix or data frame, with the offspring ID in the first column and the maternal ID in the second
   }
   else{
-    write(c(0, 0), outfile, append =  T, sep = " ") # no dryads
+    write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
   }
 
   # known paternal sibships
