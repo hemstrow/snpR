@@ -143,13 +143,13 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   # number of male and female candidates, maternal and paternal inclusion probabilities in OMS and PMS
   par_nums <- numeric(2)
   if(class(paternal_genotypes) == "snpRdata"){
-    par_nums[1] <- nrow(paternal_genotypes)
+    par_nums[1] <- ncol(paternal_genotypes)
   }
   else{
     paternal_inclusion_prob <- 0
   }
   if(class(maternal_genotypes) == "snpRdata"){
-    par_nums[2] <- nrow(maternal_genotypes)
+    par_nums[2] <- ncol(maternal_genotypes)
   }
   else{
     maternal_inclusion_prob <- 0
