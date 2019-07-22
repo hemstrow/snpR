@@ -725,9 +725,10 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
       }
     }
     else{
-      sn <- cbind(sub.x@sample.meta[,response], sn)
+      sn <- cbind.data.frame(sub.x@sample.meta[,response], sn, stringsAsFactors = F)
     }
     colnames(sn)[1] <- response
+    sn[,1] <- as.factor(sn[,1])
 
 
     #================run the model:=====================
