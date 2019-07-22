@@ -733,6 +733,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'   significance threshold as significant.
 #' @param log.p logical, default FALSE. If TRUE, plot variables and thresholds
 #'   will be transformed to -log.
+#' @param abs logical, default FALSE. If TRUE, converts the plot variable to it's absolute value.
 #' @param highlight character, numeric, or FALSE, default "significant".
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 #'   above those respetive values will be highlighted. If a numeric vector, SNPs
@@ -794,7 +795,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
-                           sig_below = FALSE, log.p = FALSE,
+                           sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3")){
 
@@ -891,6 +892,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     if(!is.null(suggestive)){
       suggestive <- -log(suggestive)
     }
+  }
+
+  if(abs){
+    stats$pvar <- abs(stats$pvar)
   }
 
   #=============snps to highlight=====================

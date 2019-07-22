@@ -8,7 +8,7 @@ plot_manhattan(x, plot_var, window = FALSE, facets = NULL,
   chr = "chr", bp = "position", snp = NULL, chr.subfacet = NULL,
   sample.subfacet = NULL, significant = NULL, suggestive = NULL,
   highlight = "significant", sig_below = FALSE, log.p = FALSE,
-  viridis.option = "plasma", viridis.hue = c(0.2, 0.5),
+  abs = FALSE, viridis.option = "plasma", viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10), colors = c("black", "slategray3"))
 }
 \arguments{
@@ -65,6 +65,8 @@ significance threshold as significant.}
 
 \item{log.p}{logical, default FALSE. If TRUE, plot variables and thresholds
 will be transformed to -log.}
+
+\item{abs}{logical, default FALSE. If TRUE, converts the plot variable to it's absolute value.}
 
 \item{viridis.option}{character, default "plasma". Viridis color scale option
 to use for significance lines and SNP labels. See
