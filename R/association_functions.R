@@ -751,14 +751,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, ...)
+                             importance = importance, num.threads = tpar, verbose = T, ...)
     }
     else{
       rout <- ranger::ranger(formula = formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, ...)
+                             importance = importance, num.threads = tpar, verbose = T, ...)
     }
 
     #===============make sense of output=================
