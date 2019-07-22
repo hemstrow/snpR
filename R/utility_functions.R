@@ -485,7 +485,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 #'  "stats". Type of statistic under to pull under the ps.pf.psf option.
 #'
 #'@author William Hemstrom
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL, maf = FALSE){
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -653,7 +653,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
 
       # get options
       opts.list <- get.task.list(x, facets)
-      browser()
 
       # run in serial
       if(par == FALSE | nrow(opts.list) == 1){

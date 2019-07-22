@@ -639,7 +639,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   details.
 #' @param response character. Name of the column containing the response
 #'   variable of interest. Must match a column name in sample metadata. Response
-#'   must be categorical, with only two categories.
+#' must be categorical, with only two categories.
 #' @param formula charcter, default NULL. Model for the response variable, as
 #'   described in \code{\link[stats]{formula}}. If NULL, the model will be
 #'   equivalent to response ~ 1.
@@ -649,13 +649,18 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #' @param mtry numeric, default is the square root of the number of SNPs. Number
 #'   of variables (SNPs) by which to split each node. See
 #'   \code{\link[ranger]{ranger}} for details.
-#' @param importance character, default "impurity". The method by which SNP
-#'   importance is determined. Options: \itemize{\item{impurity}
-#'   \item{impurity_corrected} \item{permutation}}. See
-#'   \code{\link[ranger]{ranger}} for details.
+#' @param importance character, default "impurity_corrected". The method by
+#'   which SNP importance is determined. Options: \itemize{\item{impurity}
+#' \item{impurity_corrected} \item{permutation}}. See
+#' \code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
 #'   minor allele. \item{af: } insertion of the average allele frequency}.
+#' @param pvals logical, default TRUE. Determines if pvalues should be
+#'   calculated for importance values. If the response variable is quantitative,
+#'   no pvalues will be returned, since they must be calculated via permutation
+#'   and this is very slow. For details, see
+#'   \code{\link[ranger]{importance_pvalues}}.
 #' @param par numeric, default FALSE. Number of parallel computing cores to use
 #'   for computing RFs across multiple facet levels or within a single facet if
 #'   only a single category is run (either a one-category facet or no facet).
@@ -676,8 +681,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
-                              importance = "impurity",
-                              interpolate = "bernoulli", par = FALSE, ...){
+                              importance = "impurity_corrected",
+                              interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
   run_ranger <- function(sub.x, opts.list, ...){
 
     #================grab data=====================
@@ -711,7 +716,11 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                    "Some covariates specified in formula not found in sample metadata: ", paste0(cvars[bad.cvars], collapse = ", "), ".\n")
         }
 
+        ocn <- colnames(sn)
         sn <- cbind(sub.x@sample.meta[,response], sub.x@sample.meta[,cvars], sn)
+
+        # reset formula:
+        formula <- paste0(formula, paste0(ocn, collapse = " + "))
 
       }
     }
@@ -752,8 +761,24 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     }
 
     #===============make sense of output=================
+    # get p-values:
+    if(pvals){
+      if(length(unique(as.character(x@sample.meta[,response]))) == 2){
+        op <- ranger::importance_pvalues(rout, "janitza")[,2]
+      }
+      else{
+        warning("No p-values calcuated. P-value must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.")
+      }
+    }
+
+
+    # prepare objects for return
     imp.out <- cbind(sub.x@snp.meta, rout$variable.importance)
     colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
+    if(exists("op")){
+      imp.out <- cbind(imp.out, op)
+      colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance_pvals")
+    }
 
     pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
                            stringsAsFactors = F)
@@ -769,7 +794,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   facets <- check.snpR.facet.request(x, facets)
 
   out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response, formula = formula,
-                           num.trees = num.trees, mtry = mtry, importance = importance, interpolate = interpolate,  par = par, ...)
+                           interpolate = interpolate,  par = par, ...)
 
   x <- merge.snpR.stats(x, out$stats)
 

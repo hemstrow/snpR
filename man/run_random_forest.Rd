@@ -5,8 +5,8 @@
 \title{Run a RANGER random forest using snpRdata for a given phenotype or model.}
 \usage{
 run_random_forest(x, facets = NULL, response, formula = NULL,
-  num.trees = 10000, mtry = NULL, importance = "impurity",
-  interpolate = "bernoulli", par = FALSE, ...)
+  num.trees = 10000, mtry = NULL, importance = "impurity_corrected",
+  interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -16,7 +16,7 @@ which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 details.}
 
 \item{response}{character. Name of the column containing the response
-variable of interest. Must match a column name in sample metadata. Response
+  variable of interest. Must match a column name in sample metadata. Response
 must be categorical, with only two categories.}
 
 \item{formula}{charcter, default NULL. Model for the response variable, as
@@ -31,14 +31,20 @@ numbers will increase model accuracy, but increase calculation time. See
 of variables (SNPs) by which to split each node. See
 \code{\link[ranger]{ranger}} for details.}
 
-\item{importance}{character, default "impurity". The method by which SNP
-importance is determined. Options: \itemize{\item{impurity}
+\item{importance}{character, default "impurity_corrected". The method by
+  which SNP importance is determined. Options: \itemize{\item{impurity}
 \item{impurity_corrected} \item{permutation}}. See
 \code{\link[ranger]{ranger}} for details.}
 
 \item{interpolate}{character, default "bernoulli". Interpolation method for
 missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
 minor allele. \item{af: } insertion of the average allele frequency}.}
+
+\item{pvals}{logical, default TRUE. Determines if pvalues should be
+calculated for importance values. If the response variable is quantitative,
+no pvalues will be returned, since they must be calculated via permutation
+and this is very slow. For details, see
+\code{\link[ranger]{importance_pvalues}}.}
 
 \item{par}{numeric, default FALSE. Number of parallel computing cores to use
 for computing RFs across multiple facet levels or within a single facet if
