@@ -885,12 +885,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
   if(log.p){
-    stats$pvar <- -log(stats$pvar)
+    stats$pvar <- -log10(stats$pvar)
     if(!is.null(significant)){
-      significant <- -log(significant)
+      significant <- -log10(significant)
     }
     if(!is.null(suggestive)){
-      suggestive <- -log(suggestive)
+      suggestive <- -log10(suggestive)
     }
   }
 

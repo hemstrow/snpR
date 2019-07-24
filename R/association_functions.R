@@ -481,8 +481,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     #============odds ratio==========
     if(method == "odds_ratio"){
       s.e <- sqrt(1/a + 1/b + 1/c + 1/d)
-      odds <- log((a/b)/(c/d))
-      return(data.frame(log_odds_ratio = odds, se = log(s.e)))
+      odds <- log10((a/b)/(c/d))
+      return(data.frame(log_odds_ratio = odds, se = log10(s.e)))
     }
 
     #============chisq===============
@@ -630,6 +630,11 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' Extra arguments can be passed to \code{\link[ranger]{ranger}}.
 #'
+#' In general, random forest parameters should be tuned so as to reduce the out-of-bag error rates (OOB-ER).
+#' This value is visible in the returned object under the model lists. Simply calling a specific model will
+#' output the OOB-ER, and they are also stored under the 'prediction.error' name in the model. For details
+#' on tuning RF models, we recommend Goldstein et al. (2011).
+#'
 #' For more detail on the random forest model and ranger arguments, see
 #' \code{\link[ranger]{ranger}}.
 #'
@@ -668,12 +673,15 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' @return A list containing: \itemize{\item{data: } A snpRdata object with RF
 #'   importance values merged in to the stats slot. \item{models: } A named list
-#'   containing both the models and data.frames containing the predictions vs
-#'   observed phenotypes.}
+#' containing both the models and data.frames containing the predictions vs
+#' observed phenotypes.}
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.
 #'   \emph{Journal of Statistical Software}.
+#' @references Goldstein et al. (2011). Random forests for genetic association
+#'   studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
+#'
 #' @seealso \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.
 #'
 #' @author William Hemstrom
