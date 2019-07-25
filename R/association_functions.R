@@ -736,7 +736,10 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
       sn <- cbind.data.frame(sub.x@sample.meta[,response], sn, stringsAsFactors = F)
     }
     colnames(sn)[1] <- response
-    sn[,1] <- as.factor(sn[,1])
+    # convert to a factor if 2 categories or character.
+    if(length(unique(as.character(sn[,1]))) == 2 | is.character(sn[,1])){
+      sn[,1] <- as.factor(sn[,1])
+    }
 
 
     #================run the model:=====================
