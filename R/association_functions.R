@@ -400,7 +400,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
         # see which covariates we need
         cvars <- terms(formula(formula))
         cvars <- attr(cvars, "term.labels")
-        bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
+        bad.cvars <- which(!(cvars %in% colnames(x@sample.meta)))
         if(length(bad.cvars) > 0){
           msg <- c(msg,
                    "Some covariates specified in formula not found in sample metadata: ", paste0(cvars[bad.cvars], collapse = ", "), ".\n")
