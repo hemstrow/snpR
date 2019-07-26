@@ -72,7 +72,13 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   # prepare things for addition to data
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
-    genotypes <- genotypes[order(snp.meta$position),]
+    if(ncol(genotypes) == 1){
+      genotypes <- genotypes[order(snp.meta$position),]
+      genotypes <- as.data.frame(genotypes, stringsAsFactors = F)
+    }
+    else{
+      genotypes <- genotypes[order(snp.meta$position),]
+    }
     snp.meta <- dplyr::arrange(snp.meta, position)
   }
 
@@ -370,7 +376,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
           keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
         }
         else{
-          tfacet <- unlist(strsplit(facets[[1]][i], "\\."))
+          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = T))
           tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
 
           # need to paste together any snp or sample faces
@@ -1172,6 +1178,23 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #' # Keep SNPs 1:100, individuals in the ASP population
 #' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
 subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+
+  #=========subfunctions=========
+  fix.for.one.snp <- function(x){
+    if(nrow(x) == 1){
+      # fix geno tables
+      x@geno.tables <- lapply(x@geno.tables, FUN = function(y){
+        a <- matrix(y, nrow = 1)
+        colnames(a) <- names(y)
+        return(a)}
+      )
+    }
+
+    return(x)
+  }
+
+  #=========run subset===========
+
   # if subfacets or snp.subfacets were selected, figure out which samples and loci to keep
   if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1])) | !(is.null(facets[1])) & !(is.null(subfacets[1]))){
 
@@ -1180,10 +1203,10 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
       t.snp.meta <- x@snp.meta
 
       # check for and get info on complex facets
-      complex.snp.facets <- snp.facets[grep("\\.", snp.facets)]
+      complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
       if(length(complex.snp.facets) > 0){
         for(i in 1:length(complex.snp.facets)){
-          tfacets <- unlist(strsplit(complex.snp.facets[i], "\\."))
+          tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
           tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
           tcols <- tcols[,match(colnames(tcols), tfacets)]
           t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
@@ -1202,10 +1225,10 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
       t.samp.meta <- x@sample.meta
 
       # check for and get info on complex facets
-      complex.samp.facets <- facets[grep("\\.", facets)]
+      complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
       if(length(complex.samp.facets) > 0){
         for(i in 1:length(complex.samp.facets)){
-          tfacets <- unlist(strsplit(complex.samp.facets[i], "\\."))
+          tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
           tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
           tcols <- tcols[,match(colnames(tcols), tfacets)]
           t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
@@ -1227,10 +1250,16 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
   # subset
   if(!identical(samps, 1:ncol(x))){
     dat <- x[snps, samps]
+    if(length(samps) == 1){
+      dat <- as.data.frame(dat, stringsAsFactors = F)
+    }
     dat <- import.snpR.data(dat, snp.meta = x@snp.meta[snps,], sample.meta = x@sample.meta[samps,], mDat = x@mDat)
     if(any(x@facets != ".base")){
       dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
+
+    x <- fix.for.one.snp(x)
+
     warning("Since samples were subset, any stats will need to be recalculated.\n")
     return(dat)
   }
@@ -1238,6 +1267,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     # change snps and samps to snp and sample IDs
     snps <- x@snp.meta$.snp.id[snps]
     samps <- x@sample.meta$.sample.id[samps]
+
 
     x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
                   sample.meta = x@sample.meta,
@@ -1256,6 +1286,9 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   sn = data.frame(),
                   names = x@names,
                   row.names = x@row.names[snps])
+
+    x <- fix.for.one.snp(x)
+
     warning("Any window stats will need to be recalculated.\n")
     return(x)
   }
@@ -1627,6 +1660,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
   snp_form <- x@snp.form
   mDat <- x@mDat
 
+  # fix a table if it only has one loci
+  fix.one.loci <- function(x){
+    if(is.null(nrow(x))){
+      a <- matrix(x, nrow = 1)
+      colnames(a) <- names(x)
+      x <- a
+    }
+    return(x)
+  }
 
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
@@ -1634,8 +1676,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     vio.snps <- logical(nrow(x)) #vector to track status
 
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",]
+    amat <- fix.one.loci(amat)
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",]
+    gmat <- fix.one.loci(gmat)
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",]
+    wmat <- fix.one.loci(gmat)
 
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
@@ -1785,9 +1830,10 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       nas <- x@geno.tables$as[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
       nwm <- x@geno.tables$wm[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
       ngs <- list(gs = ngs, as = nas, wm = nwm)
+      ngs <- lapply(ngs, fix.one.loci)
       rm(nas, nwm)
 
-      invisible(capture.output(x <- snpRdata(.Data = x[-which(vio.snps),],
+      invisible(capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
                                              sample.meta = x@sample.meta,
                                              snp.meta = x@snp.meta[-which(vio.snps),],
                                              facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
@@ -1830,7 +1876,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     # run the filter
     x <- filt_by_loci()
 
-    if(nrow(x) == 1){
+    if(nrow(x) == 0 | is.null(nrow(x))){
       stop("No loci remain after filters.")
     }
 
