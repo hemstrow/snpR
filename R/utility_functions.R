@@ -1269,19 +1269,18 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     return(dat)
   }
   else{
-    # change snps and samps to snp and sample IDs
-    snps <- x@snp.meta$.snp.id[snps]
-    samps <- x@sample.meta$.sample.id[samps]
-
     if(length(x@sn) != 0){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps,]
-      sn <- cbind(dat@snp.meta[,-ncol(dat@snp.meta)], sn)
+      sn <- cbind(x@snp.meta[snps,-ncol(x@snp.meta)], sn)
       sn <- list(type = x@sn$type, sn = sn)
     }
     else{
       sn <- list()
     }
+
+    # change snps and samps to snp and sample IDs
+    snps <- x@snp.meta$.snp.id[snps]
 
     x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
                   sample.meta = x@sample.meta,
