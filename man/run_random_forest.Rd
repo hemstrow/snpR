@@ -55,8 +55,8 @@ only a single category is run (either a one-category facet or no facet).}
 \value{
 A list containing: \itemize{\item{data: } A snpRdata object with RF
   importance values merged in to the stats slot. \item{models: } A named list
-  containing both the models and data.frames containing the predictions vs
-  observed phenotypes.}
+containing both the models and data.frames containing the predictions vs
+observed phenotypes.}
 }
 \description{
 Creates forest machine learning models using snpRdata objects via interface
@@ -81,6 +81,11 @@ options for the "interpolate" argument.
 
 Extra arguments can be passed to \code{\link[ranger]{ranger}}.
 
+In general, random forest parameters should be tuned so as to reduce the out-of-bag error rates (OOB-ER).
+This value is visible in the returned object under the model lists. Simply calling a specific model will
+output the OOB-ER, and they are also stored under the 'prediction.error' name in the model. For details
+on tuning RF models, we recommend Goldstein et al. (2011).
+
 For more detail on the random forest model and ranger arguments, see
 \code{\link[ranger]{ranger}}.
 }
@@ -88,6 +93,9 @@ For more detail on the random forest model and ranger arguments, see
 Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
   Implementation of Random Forests for High Dimensional Data in C++ and R.
   \emph{Journal of Statistical Software}.
+
+Goldstein et al. (2011). Random forests for genetic association
+  studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
 }
 \seealso{
 \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.

@@ -825,10 +825,90 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 }
 
 
-# function to run:
-refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NULL, num.trees = 10000, trim_cuttoffs = NULL,
-                      trim = 0.5, par = FALSE,
-                      interpolate = "bernoulli", ...){
+#' Refine a random forest model via sequential removal of uninformative SNPs.
+#'
+#' Improves the prediction accuracy of a random forest model via iterative removal of
+#' uninformative SNPs. In each step, the SNPs with the lowest absolute value importance
+#' are removed from the model. Depending on the provided arguments, multiple trim percentages
+#' can be provided for different SNP number cuttoffs.
+#'
+#' Random Forest models can fail to predict well with "noisy" data, where most explanitory
+#' variables are uniformative. Since most whole-genome sequence data is like this, it can be
+#' useful to "trim" a data to remove uniformative snps. Since even models constructed
+#' on "noisy" data tend to pick out the most important SNPs with a decent degree of accuracy, an
+#' initial random forest model can be used to select SNPs to remove. Sequential removal of unimportant
+#' SNPs in this way can radically improve prediction accuracy, although SNP p-values stop being informative.
+#'
+#' Multiple trim levels can be specified, which will determine the percentage of SNPs removed according to
+#' different cuttoff levels of remaining SNPs. For example, providing trim levels of 0.9, 0.5, and 0.1 with
+#' cuttoffs of 1000 and 100 will trim 90% of SNPs untill 1000 remain, then trim 50% untill 100 remain, then
+#' trim 10% thereafter.
+#'
+#' If less trim levels are provided than needed for
+#' each cuttoff, a single SNP will be removed each step below the final cuttoff.
+#' For example, providing trim levels of 0.9 and 0.5 and cuttoffs of 1000 and 100 will trim
+#' 90% of SNPs untill 1000 remain, then 50% untill 100 remain, then one at a time.
+#'
+#' If the data contains informative SNPs, prediction accuracy should improve on average untill informative SNPs
+#' begin to be removed, at which point accuracy will decrease.
+#'
+#' mtry will be set to the number of SNPs in each run.
+#'
+#' As usual, facets can be requested. However, in this case, only a single facet and facet level (subfacet)
+#' may be provided at once, and must match a facet and level in the provided input model.
+#'
+#' @param rf The random forest model to be refined. List containg snpRdata object (named $data) and a \code{\link[ranger]{ranger}} model, named $models$x$model, where
+#'   x is the facet/subfacet. Identical to ojects created by \code{\link{run_random_forest}}.
+#' @param facets Character, default NULL. Facet to run. Only a single facet and facet level (subfacet)
+#' may be provided at once, and must match a facet and level in the provided input model. If NULL, runs the base level facet.
+#' @param subfacet Character, default NULL. Facet level (subfacet) to run. Only a single facet and facet level (subfacet)
+#' may be provided at once, and must match a facet and level in the provided input model. If NULL, runs the base level facet.
+#' @param formula charcter, default NULL. Model for the response variable, as
+#'   described in \code{\link[stats]{formula}}. If NULL, the model will be
+#'   equivalent to response ~ 1.
+#' @param num.trees numeric, default 10000. Number of trees to grow. Higher
+#'   numbers will increase model accuracy, but increase calculation time. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param trim numeric, default 0.5. Percentages of SNPs to be trimmed between model iterations. Multiple
+#'   trim levels can be provided corresponding to different trim cuttoffs. If less trim levels
+#'   are provided than needed to describe every trim_cuttoff interval, will trim a single SNP
+#'   below the final cuttoff. See details.
+#' @param trim_cuttoffs numeric, default NULL. Specifies the number of SNPs below which to change trim
+#'   percentages. If NULL, the default, trims at the given level untill 1 SNP remails. See details.
+#' @param importance character, default "impurity_corrected". The method by
+#'   which SNP importance is determined. Options: \itemize{\item{impurity}
+#' \item{impurity_corrected} \item{permutation}}. See
+#' \code{\link[ranger]{ranger}} for details.
+#' @param interpolate character, default "bernoulli". Interpolation method for
+#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#' @param par numeric, default FALSE. Number of parallel computing cores to use
+#'   for computing RFs across multiple facet levels or within a single facet if
+#'   only a single category is run (either a one-category facet or no facet).
+#' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
+#'
+#' @return A list containing: \itemize{\item{error_delta: } A data.frame noting the number of SNPs
+#' and corresponding prediction_error in each model iteration. \item{confusion_matrices: } An array containing
+#' confusion matrices for categorical responses. The third subscript denotes model iteration ('[,,1]' would reference
+#' model 1.) \item{best_model: } The model with the lowest prediction error from the provided dataset, in the format provided
+#' by \code{\link{run_random_forest}}}
+#'
+#' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
+#'   Implementation of Random Forests for High Dimensional Data in C++ and R.
+#'   \emph{Journal of Statistical Software}.
+#' @references Goldstein et al. (2011). Random forests for genetic association
+#'   studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
+#'
+#' @seealso \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.
+#' @seealso \code{\link{run_random_forest}}
+#'
+refine_rf <- function(rf, response, facets = NULL, subfacet = NULL,
+                      formula = NULL, num.trees = 10000,
+                      trim = 0.5, trim_cuttoffs = NULL,
+                      importance = "impurity_corrected",
+                      interpolate = "bernoulli",
+                      par = FALSE,
+                       ...){
   #==============sanity checks================
   msg <- character()
   if(length(facets) > 1){
@@ -847,6 +927,26 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
       msg <- c(msg, "If the base facet is requested, please provide an input rf result with only the base facet calculated.\n")
     }
   }
+
+  # trim checks:
+  ## if trim is null, start at a single snp per iteration.
+  if(is.null(trim[1])){
+    trim <- 0.5
+    trim_cuttoffs <- nrow(rf$data)
+  }
+  ## if trim_cuttoffs is null, just go until one snp left.
+  if(is.null(trim_cuttoffs)){
+    if(length(trim) > 1){
+      msg <- c(msg, "Only one trim level allowed when no trim_cuttoffs provided.\n")
+    }
+    trim_cuttoffs <- 1
+  }
+
+  if(length(trim) + 1 > length(trim_cuttoffs)){
+    msg <- c(msg, "Too many trim levels for the given cuttoffs. Only one more trim level may be given than cuttoffs.\n")
+  }
+
+
 
   #==============the actual refinement function==================
   run_refine <- function(rf, response, formula, num.trees, trim_cuttoffs, trim, search_cuttoff, par,
@@ -984,11 +1084,6 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
     # find the target column name
     tar.col <- paste0(response, "_RF_importance")
 
-    # fix the single run_cuttoff if NULL
-    if(is.null(trim_cuttoffs)){
-      trim_cuttoffs <- 1
-    }
-
     # if we are provided with less trim_cuttoffs than trim levels, we assume no single trimming
     if(length(trim_cuttoffs) < length(trim)){
       trim_single <- FALSE
@@ -1030,7 +1125,10 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
           "\n\tNumber of remaining SNPs: ", out[i,1], "\n\tBeginning rf...\n")
 
       # run rf
-      suppressWarnings(rf <- run_random_forest(x = input, response = response, formula = formula, num.trees = num.trees, mtry = nrow(input), par = par, pvals = FALSE, ...))
+      suppressWarnings(rf <- run_random_forest(x = input, response = response,
+                                               formula = formula, num.trees = num.trees,
+                                               mtry = nrow(input), par = par,  importance = importance,
+                                               pvals = FALSE, ...))
 
       # save outputs
       out[i,2] <- rf$models[[1]]$model$prediction.error
@@ -1054,7 +1152,7 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
       return(list(refined_model = rf, error_delta = out, confusion_matrices = conf.out, best_model = best.mod))
     }
     else{
-      return(list(refined_model = rf, error_delta = out, best_model = best.mod))
+      return(list(error_delta = out, best_model = best.mod))
 
     }
   }
