@@ -692,7 +692,6 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               importance = "impurity_corrected",
                               interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
   run_ranger <- function(sub.x, opts.list, ...){
-    browser()
 
     #================grab data=====================
     ## sn format
@@ -828,7 +827,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 # function to run:
 refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NULL, num.trees = 10000, trim_cuttoffs = NULL,
-                      trim = 0.5, search_cuttoff = NULL, par = FALSE,
+                      trim = 0.5, par = FALSE,
                       interpolate = "bernoulli", ...){
   #==============sanity checks================
   msg <- character()
@@ -1004,7 +1003,8 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
 
     #==========while loop================
     i <- 2
-    while(diff > 0 & nrow(rf$data) > 1){
+    continue <- T
+    while(continue == T){
 
       # if we somehow reach the end of the output storage, make it bigger!
       if(i == nrow(out)){
@@ -1020,6 +1020,9 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
 
       # subset
       suppressWarnings(input <- subset_snpR_data(rf$data, snps = best.imp))
+      if(nrow(input) == 1){
+        continue <- FALSE
+      }
 
       # report some things
       out[i,1] <- nrow(input)
@@ -1037,16 +1040,6 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
       if(out[i,2] < best.error){
         best.mod <- rf
         best.error <- out[i,2]
-      }
-
-      # set diff
-      diff <- out[i-1,2] - out[i,2]
-
-      if(!is.null(search_cuttoff) & diff <= 0){
-        if(out[i,1] > search_cuttoff){
-          diff<- 1
-          warning("Increase in prediction error, but search cuttoff number of SNPs not passed, continuing refinement.\n")
-        }
       }
 
       i <- i + 1
@@ -1068,7 +1061,6 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
 
   #==============prep============================================
   # strip down to the correct facet, doing  more sanity checks
-  browser()
   facets <- check.snpR.facet.request(rf$data, facets, "snp")
   o.facet <- facets
 
@@ -1132,14 +1124,21 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
   }
 
 
-  # add sn formatted data
-  browser()
-  sn <- format_snps(rf$data, "sn", interpolate = interpolate)
-  rf$data@sn <- list(type = interpolate, sn = sn)
+  # add sn formatted data if not present
+  if(length(rf$data@sn) != 0){
+    if(rf$data@sn$type != interpolate){
+      sn <- format_snps(rf$data, "sn", interpolate = interpolate)
+      rf$data@sn <- list(type = interpolate, sn = sn)
+
+    }
+  }
+  else{
+    sn <- format_snps(rf$data, "sn", interpolate = interpolate)
+    rf$data@sn <- list(type = interpolate, sn = sn)
+  }
 
   #==============run the refinement============
 
-  browser()
   out <- run_refine(rf, response = response,
                     formula = formula,
                     num.trees = num.trees,
@@ -1148,6 +1147,8 @@ refine_rf <- function(rf, facets = NULL, response, subfacet = NULL, formula = NU
                     search_cuttoff = search_cuttoff,
                     par = par,
                     ...)
+
+  return(out)
 }
 
 
