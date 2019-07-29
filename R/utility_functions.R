@@ -1258,7 +1258,12 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
       dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
 
-    x <- fix.for.one.snp(x)
+    if(length(x@sn) != 0){
+      sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
+      sn <- sn[snps, samps]
+      sn <- cbind(dat@snp.meta, sn)
+      dat@sn <- list(type = x@sn$type, sn)
+    }
 
     warning("Since samples were subset, any stats will need to be recalculated.\n")
     return(dat)
