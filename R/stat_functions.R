@@ -155,93 +155,50 @@ calc_pi <- function(x, facets = NULL){
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
   func <- function(gs, m.al){
-    as <- gs$as
-    majl <- rep(matrixStats::rowMaxs(as), each = ncol(as))
-    majl <- as == matrix(majl, ncol = ncol(as), byrow = T)
 
-    # set aside special cases
-    np <- which(rowSums(matrix(as.logical(as), nrow(as))) == 1) # non-polymorphic
-    eqf <- which(rowSums(majl) == 2) # two alleles of equal frequency
-    ns <- which(rowSums(as) == 0) # nothing sequenced
-    vio <- sort(c(np, eqf, ns)) # all
-    if(length(vio) != 0){
-      majl.s <- majl[vio,]
-      as.s <- as[vio,]
-      majl <- majl[-vio,]
-      as <- as[-vio,]
+    # major alleles via max.col
+    fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
+    lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
+
+    # minor alleles, via inversion, 0 replacement with -Inf, and max.col
+    inv.as <- gs$as * -1
+    inv.as[inv.as == 0] <- -Inf
+    fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
+    lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
+
+    # special cgs$ases
+    match.freq <- which(fmax != lmax) # maf = 0.5
+    unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
+    np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
+
+    # declair major and minor
+    major <- fmax
+    minor <- fmin
+    ## maf = 0.05
+    if(length(match.freq) != 0){
+      minor[match.freq] <- lmax[match.freq]
     }
-
-    # major and minor alleles for everything without issues
-    min <- which(t(as.logical(as) + majl) == 1)
-    min <- min %% ncol(majl)
-    min[min == 0] <- 4
-    maj <- which(t(majl)) %% ncol(majl)
-    maj[maj == 0] <- 4
-    maj <- colnames(as)[maj] # these are the major alleles
-    min <- colnames(as)[min] # these are the minor alleles
-
-    # fix for special cases
-    if(length(vio) != 0){
-      if(is.null(nrow(majl.s))){
-        majl.s <- matrix(majl.s, nrow = 1)
-        colnames(majl.s) <- colnames(gs$as)
-        as.s <- matrix(as.s, nrow = 1)
-        colnames(as.s) <- colnames(gs$as)
-      }
-      maj.s <- character(nrow(majl.s))
-      min.s <- maj.s
-
-      # non-poly
-      if(length(np) != 0){
-        wnp <- which(rowSums(matrix(as.logical(as.s), nrow(as.s))) == 1)
-        np.as <- as.s[wnp,]
-        np.maj <- which(as.logical(t(np.as))) %% ncol(majl)
-        np.maj[np.maj == 0] <- 4
-        np.maj <- colnames(as)[np.maj] # these are the major alleles
-        maj.s[wnp] <- np.maj
-        min.s[wnp] <- "N"
-      }
-
-      # equal frequencies
-      if(length(eqf) != 0){
-        weqf <- which(rowSums(majl.s) == 2)
-
-        eq.min <- which(t(majl.s[weqf,])) %% ncol(majl.s)
-        eq.maj <- eq.min[seq(1, length(eq.min), by = 2)]
-        eq.min <- eq.min[seq(2, length(eq.min), by = 2)]
-
-        eq.min[eq.min == 0] <- 4
-        eq.maj[eq.maj == 0] <- 4
-        maj.s[weqf] <- colnames(as.s)[eq.maj] # these are the major alleles
-        min.s[weqf] <- colnames(as.s)[eq.min] # these are the minor alleles
-      }
-
-      # not sequenced
-      if(length(ns) != 0){
-        wns <- which(rowSums(as.s) == 0)
-        maj.s[wns] <- m.al
-        min.s[wns] <- m.al
-      }
-
-      # add the major and minors for the special cases back in by binding and ordering
-      f.order <- order(c((1:nrow(gs$as))[-vio], vio)) # this gets the indices of the non-special cases, binds them to the indices of the special cases, and then gets the order to put them in.
-      maj <- c(maj, maj.s)
-      maj <- maj[f.order]
-      min <- c(min, min.s)
-      min <- min[f.order]
+    ## unsequenced
+    if(length(unseq) != 0){
+      major[unseq] <- "N"
+      minor[unseq] <- "N"
+    }
+    ## non-polymorphic
+    if(length(np) != 0){
+      minor[np] <- "N"
     }
 
     # grab the actual maf
-    maf <- 1 - matrixStats::rowMaxs(gs$as)/rowSums(gs$as)
+    maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
     maf[is.nan(maf)] <- 0
 
     # get the major and minor counts
-    # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
+    # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and egs$asy, gs$as long gs$as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
     maj.count <- round(rowSums(gs$as)*(1-maf))
     min.count <- round(rowSums(gs$as)*(maf))
 
     # return
-    return(data.frame(major = maj, minor = min, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
+    return(data.frame(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
   }
 
   # add any missing facets

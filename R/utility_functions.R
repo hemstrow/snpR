@@ -1261,8 +1261,8 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     if(length(x@sn) != 0){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps, samps]
-      sn <- cbind(dat@snp.meta, sn)
-      dat@sn <- list(type = x@sn$type, sn)
+      sn <- cbind(dat@snp.meta[,-ncol(dat@snp.meta)], sn)
+      dat@sn <- list(type = x@sn$type, sn = sn)
     }
 
     warning("Since samples were subset, any stats will need to be recalculated.\n")
@@ -1273,6 +1273,15 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     snps <- x@snp.meta$.snp.id[snps]
     samps <- x@sample.meta$.sample.id[samps]
 
+    if(length(x@sn) != 0){
+      sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
+      sn <- sn[snps,]
+      sn <- cbind(dat@snp.meta[,-ncol(dat@snp.meta)], sn)
+      sn <- list(type = x@sn$type, sn = sn)
+    }
+    else{
+      sn <- list()
+    }
 
     x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
                   sample.meta = x@sample.meta,
@@ -1288,11 +1297,13 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
                   pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,],
-                  sn = data.frame(),
+                  sn = sn,
                   names = x@names,
                   row.names = x@row.names[snps])
 
     x <- fix.for.one.snp(x)
+
+
 
     warning("Any window stats will need to be recalculated.\n")
     return(x)
@@ -1469,7 +1480,12 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
   gmat <- data.table::dcast(data.table::setDT(x), Var2 ~ value, value.var='value', length)
   gmat <- gmat[,-1]
   mis.cols <- -which(colnames(gmat) == mDat)
-  tmat <- gmat[,..mis.cols] # remove missing data
+  if(length(mis.cols) > 0){
+    tmat <- gmat[,..mis.cols] # remove missing data
+  }
+  else{
+    tmat <- gmat
+  }
 
   #get matrix of allele counts
   #initialize
@@ -2465,10 +2481,17 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # mis.al: missing allele coding
     get.ac <- function(x, maj, min, mis.al){
       # initialize:
-      out <- data.frame(n_total = numeric(nrow(x)),
-                        n_alleles = numeric(nrow(x)),
-                        ni1 = numeric(nrow(x)),
-                        ni2 = numeric(nrow(x)))
+      if(is.null(nrow(x))){
+        temp.x <- as.matrix(x)
+        colnames(temp.x) <- names(x)
+        x <- temp.x
+        rm(temp.x)
+      }
+
+      out <- data.frame(n_total = numeric(length(maj)),
+                        n_alleles = numeric(length(maj)),
+                        ni1 = numeric(length(maj)),
+                        ni2 = numeric(length(maj)))
 
 
       # get the column from as matching the target allele.
