@@ -1151,7 +1151,7 @@ refine_rf <- function(rf, response, facets = NULL, subfacet = NULL,
     out <- out[-empties,]
     if(exists("conf.out")){
       conf.out <- conf.out[,,-empties]
-      return(list(refined_model = rf, error_delta = out, confusion_matrices = conf.out, best_model = best.mod))
+      return(list(error_delta = out, confusion_matrices = conf.out, best_model = best.mod))
     }
     else{
       return(list(error_delta = out, best_model = best.mod))
