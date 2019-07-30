@@ -893,6 +893,8 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 #' model 1.) \item{best_model: } The model with the lowest prediction error from the provided dataset, in the format provided
 #' by \code{\link{run_random_forest}}}
 #'
+#' @export
+#'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.
 #'   \emph{Journal of Statistical Software}.
