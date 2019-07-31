@@ -334,7 +334,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Only one response variable permitted."))
   }
-  if(grepl("(?<!^)\\.", response)[1]){
+  if(grepl("(?<!^)\\.", response, perl = T)[1]){
     msg <- c(msg,
              paste0("Only one sample-specific category allowed (e.g. pop but not fam.pop)."))
   }
