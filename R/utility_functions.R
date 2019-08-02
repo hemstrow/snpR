@@ -2126,7 +2126,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
                 "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
-                "colony")
+                "colony","adegenet")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -2273,8 +2273,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     cat("Converting to snpRdata object.\n")
   }
+
   else if(output == "colony"){
     cat("Converting to colony format.\n")
+  }
+
+  else if(output == "adegenet"){
+    cat("Converting to adegenet genind object. SNP metadata will be discarded.\n")
   }
 
   else{
@@ -3014,6 +3019,24 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
   }
 
+  # adegenet
+  if(output == "adegenet"){
+    pop.col <- which(colnames(x@sample.meta) == "pop")
+    if(length(pop.col) > 0){
+      rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
+                                   NA.char = substr(x@mDat, 1, nchar(x@mDat)/2),
+                                   strata = x@sample.meta[,-ncol(x@sample.meta)],
+                                   loc.names = x@snp.meta$.snp.id,
+                                   pop = x@sample.meta$pop)
+    }
+    else{
+      rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
+                                   NA.char = substr(x@mDat, 1, nchar(x@mDat)/2),
+                                   strata = x@sample.meta[,-ncol(x@sample.meta)],
+                                   loc.names = x@snp.meta$.snp.id)
+    }
+  }
+
   #======================return the final product, printing an outfile if requested.=============
   if(outfile != FALSE){
     cat("Writing output file...\n")
@@ -3128,6 +3151,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(bim, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
+    }
+    else if(output == "adegenet"){
+      saveRDS(rdata, paste0(outfile, ".RDS"))
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
