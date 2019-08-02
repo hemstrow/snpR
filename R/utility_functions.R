@@ -2121,7 +2121,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(!is.null(input_format)){
     if(tolower(input_format) == "snprdata"){input_format <- NULL}
   }
-  # check that a useable output format is given.
+  # check that a useable output format is given. keming
   output <- tolower(output) # convert to lower case.
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
@@ -2281,6 +2281,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   else if(output == "adegenet"){
     cat("Converting to adegenet genind object. SNP metadata will be discarded.\n")
   }
+  # keming
 
   else{
     stop("Please specify output format.")
@@ -2474,7 +2475,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     facets <- ".base"
   }
 
-  #============convert to allele count, migrate-n, or dadi format. Migrate-n should ALWAYS have multiple pops (why else would you use it?)===============
+  # convert to allele count, migrate-n, or dadi format. Migrate-n should ALWAYS have multiple pops (why else would you use it?)
   if(output == "ac" | output == "hapmap" | output == "dadi"){
     if(output == "hapmap"){cat("WARNING: Data does not have header or pop spacer rows.\n")}
 
@@ -2573,6 +2574,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   ##convert to genepop or numeric format (v)
   if (output == "genepop" | output == "0000"){
+    # keming
     #vectorize and replace
     xv <- as.matrix(x)
     xv <- gsub("A", "01", xv)
@@ -2581,10 +2583,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     xv <- gsub("T", "04", xv)
     xv <- gsub(substr(x@mDat, 1, 2), "0000", xv)
 
+    # keming
     if(output == "genepop"){ #convert to genepop
       rdata <- as.data.frame(t(xv), stringsAsFactors = F) #remove extra columns and transpose data
       row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
     }
+    # else if(output == "baps"){}
     else {#prepare numeric output, otherwise same format
       rdata <- as.data.frame(xv, stringsAsFactors = F)
       rdata <- cbind(x@snp.meta, rdata)
@@ -3046,7 +3050,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
 
     # for genepop
-    if(output == "genepop"){
+    # keming
+    if(output == "genepop"){ #  if(output %in% c("genepop", "baps"))
+
       cat("\tPreparing genepop file...\n")
       # get list of snps
       llist <- paste0("SNP", "_", 1:ncol(rdata), ",")
@@ -3054,7 +3060,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       # write output
       cat(paste0(unlist(strsplit(outfile, split =  "(?<!^)\\.", perl = T))[1], "_genepop\n"), file = outfile)
-      cat(llist, "\nPOP\n", file = outfile, append = T)
+      cat(llist, "\nPOP\n", file = outfile, append = T) # keming, this is the line that writes the snps. Put a conditonal in to behave differently depending on if we are writing a genepop or a baps, and write a new line or two to write the snps in a column for baps.
 
       # write the tables, splitting by pop if requested:
       if(length(facets) > 0){
@@ -3089,6 +3095,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         data.table::fwrite(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
     }
+    # keming
     else if(output == "ac"){
       #write the raw output
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
