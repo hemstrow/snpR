@@ -2126,7 +2126,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
                 "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
-                "colony","adegenet")
+                "colony","adegenet", "fasta", "lea")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -2282,6 +2282,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     cat("Converting to adegenet genind object. SNP metadata will be discarded.\n")
   }
   # keming
+
+  else if(output == "fasta"){
+    cat("Converting to psuedo-fasta file. All snps will be treated as a single sequence.\nHeterozygotes will be randomly called as either the major or minor allele.\n")
+  }
+
+  else if(output == "lea"){
+    cat("Converting to LEA geno format. All metadata will be discarded.\n")
+  }
 
   else{
     stop("Please specify output format.")
@@ -2951,7 +2959,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
 
   # single-character numeric format
-  if(output == "sn" | output == "colony"){
+  if(output == "sn" | output == "colony" | output == "lea"){
 
     # grab major/minor info via calc_maf, unless already calculated
     if(!any(colnames(x@stats) == "major")){
@@ -2972,35 +2980,46 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     a2 <- a2 == rep(min, each = ncol(x))
 
     # collapse to output
-    if(output == "sn"){
+    if(output == "sn" | output == "lea"){
       rdata <- t(a1 + a2)
       rdata[as.matrix(x) == x@mDat] <- NA
 
-      # grab out metadata
-      meta <- x@snp.meta
 
-      # if interpolating and there are any bad loci with zero called genotypes, remove them
-      if(interpolate != FALSE){
-        bad.loci <- ifelse(is.na(rdata), 0, 1)
-        bad.loci <- which(rowSums(bad.loci) == 0)
+      # sn
+      if(output == "sn"){
 
-        if(length(bad.loci) > 0){
-          rdata <- rdata[-bad.loci,]
-          meta <- meta[-bad.loci,]
-          warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
+        # grab out metadata
+        meta <- x@snp.meta
+
+        # if interpolating and there are any bad loci with zero called genotypes, remove them
+        if(interpolate != FALSE){
+          bad.loci <- ifelse(is.na(rdata), 0, 1)
+          bad.loci <- which(rowSums(bad.loci) == 0)
+
+          if(length(bad.loci) > 0){
+            rdata <- rdata[-bad.loci,]
+            meta <- meta[-bad.loci,]
+            warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
+          }
         }
+
+        # interpolate?
+        if(interpolate == "bernoulli"){
+          rdata <- interpolate_sn(rdata, "bernoulli")
+        }
+        else if(interpolate == "af"){
+          rdata <- interpolate_sn(rdata, "sn")
+        }
+
+        # bind and save
+        rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
       }
 
-      # interpolate?
-      if(interpolate == "bernoulli"){
-        rdata <- interpolate_sn(rdata, "bernoulli")
+      # lea
+      else{
+        rdata <- 2 - rdata
+        rdata[is.na(rdata)] <- 9
       }
-      else if(interpolate == "af"){
-        rdata <- interpolate_sn(rdata, "sn")
-      }
-
-      # bind and save
-      rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
     }
     else{
       # convert a1 and a2 to the "1 2" format.
@@ -3026,19 +3045,69 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   # adegenet
   if(output == "adegenet"){
     pop.col <- which(colnames(x@sample.meta) == "pop")
+
+    if(ncol(x@sample.meta) > 1){
+      strata <- x@sample.meta[,-ncol(x@sample.meta)]
+      if(!is.data.frame(strata)){
+        strata <- as.data.frame(strata, stringsAsFactors = F)
+        colnames(strata) <- colnames(x@sample.meta)[-ncol(x@sample.meta)]
+        row.names(strata) <- colnames(x)
+      }
+      else{
+        strata <- NULL
+      }
+    }
+
     if(length(pop.col) > 0){
       rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
                                    NA.char = substr(x@mDat, 1, nchar(x@mDat)/2),
-                                   strata = x@sample.meta[,-ncol(x@sample.meta)],
+                                   strata = strata,
                                    loc.names = x@snp.meta$.snp.id,
                                    pop = x@sample.meta$pop)
     }
     else{
       rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
                                    NA.char = substr(x@mDat, 1, nchar(x@mDat)/2),
-                                   strata = x@sample.meta[,-ncol(x@sample.meta)],
+                                   strata = strata,
                                    loc.names = x@snp.meta$.snp.id)
     }
+  }
+
+  # fasta
+  if(output == "fasta"){
+
+    # first, need to randomly draw either a major or minor allele for the heterozygotes
+    sn <- format_snps(x, "sn", interpolate = FALSE)
+    sn <- sn[,-(1:(ncol(x@snp.meta) - 1))]
+    sn <- as.matrix(sn)
+    hets <- which(sn == 1)
+    nhets <- length(hets)
+    draws <- rbinom(nhets, 1, .5)
+    draws[draws == 1] <- 2
+    sn[hets] <- draws
+
+    # assign major or minor back
+    x <- calc_maf(x)
+    s <- get.snpR.stats(x)
+
+    # majors
+    sn[is.na(sn)] <- "N"
+    majs <- which(sn == 0)
+    rmajs <- majs %% nrow(sn)
+    rmajs[rmajs == 0] <- nrow(sn)
+    rmajs <- s$major[rmajs]
+    sn[majs] <- rmajs
+
+    # minors
+    mins <- which(sn == 2)
+    rmins <- mins %% nrow(sn)
+    rmins[rmins == 0] <- nrow(sn)
+    rmins <- s$minor[rmins]
+    sn[mins] <- rmins
+
+    # paste together by columns
+    rdat <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
+    names(rdat) <- colnames(sn)
   }
 
   #======================return the final product, printing an outfile if requested.=============
@@ -3161,6 +3230,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     else if(output == "adegenet"){
       saveRDS(rdata, paste0(outfile, ".RDS"))
+    }
+    else if(output == "fasta"){
+      writeobj <- c(rbind(paste0(">", names(rdat)), rdat))
+      writeLines(writeobj, outfile)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
