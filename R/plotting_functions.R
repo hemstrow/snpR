@@ -988,3 +988,89 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   return(list(plot = p, data = stats))
 }
+
+
+plot_assignment <- function(x, facet = NULL, k = 2, method = "snapclust",  qsort = T, clumpp = T,
+                            clump.opt = "large.K.greedy", ID = NULL, viridis.option = "viridis",
+                            t.sizes = c(12, 12, 12),
+                            clean.files = F, ...){
+
+  #===========prepare plot data===============
+  if(method == "snapclust"){
+    # format and run snapclust
+    x.g <- format_snps(x, "adegenet")
+    x.g <- snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
+
+    # extract plot data
+    extract.pdat <- function(y){
+      pdat <- y$proba
+      pdat<- as.data.frame(pdat, stringsAsFactors = F)
+      pdat <- cbind(pdat, x@sample.meta)
+      if(is.null(ID)){
+        pdat$ID <- colnames(x)
+      }
+      else{
+        pdat$ID <- x@sample.meta[,"ID"]
+      }
+      pdat <- reshape2::melt(pdat, id.vars = colnames(pdat)[-c(1:ncol(y$proba))])
+      colnames(pdat)[((ncol(pdat) - 1):ncol(pdat))] <- c("Cluster", "Percentage")
+      pdat$Cluster <- as.numeric(pdat$Cluster)
+      pdat$K <- ncol(y$proba)
+
+      return(pdat)
+    }
+
+    ## run function
+    pdat <- lapply(x.g$objects, extract.pdat)
+    pdat$Cluster <- as.factor(pdat$Cluster)
+    pdat$K <- as.factor(pdat$K)
+    levels(pdat$K) <- paste0("K = ", levels(pdat$K))
+
+    # combine plot data
+    suppressWarnings(pdat <- dplyr::bind_rows(pdat))
+
+    # plot k
+    K_selection <- x.g[[1]]
+    Kplot <- data.frame(K_selection, K = 1:k)
+    print(ggplot2::ggplot(Kplot, ggplot2::aes(x = Kplot[,1], y = K)) + geom_point() +
+            theme_bw() +
+            xlab(names(x.g)[1]))
+
+  }
+
+  #===========make plot==============
+  p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
+    ggplot2::facet_wrap(~K, ncol = 1, strip.position = "right") +
+    ggplot2::theme_bw() +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0.25, 0.5,0.75)) +
+    ggplot2::scale_color_viridis_d(option = viridis.option) +
+    ggplot2::scale_fill_viridis_d(option = viridis.option) +
+    ggplot2::ylab("Cluster Membership Proportion") +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, size = t.sizes[3]),
+                   strip.text = ggplot2::element_text(size = t.sizes[1]),
+                   axis.title = ggplot2::element_text(size = t.sizes[2]),
+                   strip.background = ggplot2::element_blank(),
+                   panel.grid = element_blank(),
+                   panel.spacing = ggplot2::unit(0, "lines"))
+
+  if(!is.null(facet[1])){
+    fmt <- table(x@sample.meta[,facet])
+    fmc <- cumsum(fmt)
+    fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
+    breaks <- unique(pdat$ID)[fm]
+
+    seps <- c(0, fmc) + 0.5
+    seps[1] <- -.5
+
+    p <- p +
+      ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "red", size = 1) +
+      ggplot2::xlab(label = facet[1])
+  }
+  else{
+    p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
+  }
+
+  return(list(plot = p, data = x.g, plot_data = pdat))
+}
