@@ -1035,7 +1035,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   to run the clustering/assignment algorithm. The values 2:k will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-#'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}.
+#'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
 #'   See \code{\link[LEA]{snmf}} or \code{\link[adegenet]{snapclust.choose.k}}
 #'   for details, respectively.
 #' @param reps numeric, default 1. The number of independent clustering
