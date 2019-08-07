@@ -989,23 +989,162 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   return(list(plot = p, data = stats))
 }
 
-
-plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
-                            qsort = "first", qsort_K = "last", clumpp = T,
-                            clump.opt = "greedy", ID = NULL, viridis.option = "viridis",
-                            t.sizes = c(12, 12, 12),
-                            clean.files = F, ...){
+#' Create STRUCTURE-like cluster plots
+#'
+#' Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
+#' an arbitrary 'k' number of clusters like those produced by the program
+#' STRUCTURE. Runs for each value of k between 2 and the given number.
+#'
+#' Individual cluster assignment probabilities can be calculated using several
+#' different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
+#' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
+#' These methods are not re-implemented in R, instead, this function calls the
+#' \code{\link[LEA]{snmf}} and \code{\link[adegenet]{snapclust.choose.k}}
+#' functions instead. Please cite the references noted in those functions if
+#' using this function. For snapclust, the "ward" method is used to initialize clusters
+#' if one rep is requested, otherwise the clusters are started randomly each rep. Other
+#' methods can be used by providing pop.ini as an additional agument as long as only one
+#' rep is requested.
+#'
+#' Multiple different runs can be conducted using the 'reps' argument, and the
+#' results can be combined for plotting across all of these reps using the
+#' clumpp option. This option calls the CLUMPP software package in order to
+#' combine proportion population membership across multiple runs via
+#' \code{\link[pophelper]{clumppExport}}. Again, please cite both CLUMPP and
+#' pophelper if using this option.
+#'
+#' Since CLUMPP is run independantly for each value of K, cluster identites
+#' often "flip" between K values. For example individuals that are grouped into
+#' cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
+#' cluster IDs are iteratively adjusted across K values by flipping IDs such
+#' that the euclidian distances between clusters at K and K - 1 are minimized.
+#' This tends to produce consistant cluster IDs across multiple runs of K.
+#'
+#' Individuals can be sorted into by membership proportion into different
+#' clusters within populations using the qsort option.
+#'
+#' Note that several files will be created in the working directory when using
+#' this function that are not automatically cleaned after use.
+#'
+#' @param x snpRdata object
+#' @param facet character, default NULL. If provided, individuals will not be
+#'   noted on the x axis. Instead, the levels of the facet will be noted. Only a
+#'   single, simple, sample specific facet may be provided. Individuals must be
+#'   sorted by this facet in x.
+#' @param k numeric, default 2. The maximum of k (number of clusters) for which
+#'   to run the clustering/assignment algorithm. The values 2:k will be run.
+#' @param method character, default "snmf". The clustering/assignment method to
+#'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
+#'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}.
+#'   See \code{\link[LEA]{snmf}} or \code{\link[adegenet]{snapclust.choose.k}}
+#'   for details, respectively.
+#' @param reps numeric, default 1. The number of independent clustering
+#'   repititions to run.
+#' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
+#'   number of iterations to run.
+#' @param qsort character, numeric, or FALSE, default "last". Determines if
+#'   individuals should be sorted (possibly within facet levels) by cluster
+#'   assignment proportion. If not FALSE, determines which cluster to use for
+#'   sorting (1:k). If "last" or "first" sorts by those clusters.
+#' @param qsort_K numeric or character, default "last". If qsorting is
+#'   performed, determines the reference k value by which individuals are
+#'   sorted. If "first" or "last", sorts by k = 2 or k = k, respectively.
+#' @param clumpp logical, default T. Specifies if CUMPP should be run to
+#'   collapse results across multiple reps. If FALSE, will use only the first
+#'   rep for plotting.
+#' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
+#'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
+#'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
+#'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
+#'   approach. } See CLUMPP documentation for details.
+#' @param ID character or NULL, default NULL. Designates a column in the sample
+#'   metadata containing sample IDs.
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
+#'   c(strip.title, axis, axis.ticks).
+#' @param ... additional arguments passed to either \code{\link[LEA]{snmf}} or
+#'   \code{\link[adegenet]{snapclust.choose.k}}.
+#'
+#' @export
+#' @author William Hemstrom
+#' @references Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.
+#'   (2014). Fast and Efficient Estimation of Individual Ancestry Coefficients.
+#'   \emph{Genetics}, 194(4): 973–983.
+#' @references Frichot, Eric, and Olivier François (2015). LEA: an R package for
+#'   landscape and ecological association studies. \emph{Methods in Ecology and
+#'   Evolution}, 6(8): 925-929.
+#' @references Beugin, M. P., Gayet, T., Pontier, D., Devillard, S., & Jombart,
+#'   T. (2018). A fast likelihood solution to the genetic clustering problem.
+#'   \emph{Methods in ecology and evolution}, 9(4), 1006-1016.
+#' @references Francis, R. M. (2017). pophelper: an R package and web app to
+#'   analyse and visualize population structure. \emph{Molecular ecology
+#'   resources}, 17(1), 27-32.
+#' @references Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster
+#'   matching and permutation program for dealing with label switching and
+#'   multimodality in analysis of population structure. \emph{Bioinformatics},
+#'   23(14), 1801-1806.
+#'
+#' @return A list containing: \itemize{\item{plot: } A ggplot object.
+#'   \item{data: } A nested list of the raw Q matrices, organized by K and then
+#'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
+#'   \item{K_plot: } A data.frame containing the value suggested for use in K
+#'   selection vs K value for the selected method.}
+#'
+plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
+                           qsort = "last", qsort_K = "last", clumpp = T,
+                           clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
+                           t.sizes = c(12, 12, 12), ...){
 
   #===========sanity checks===================
+  msg <- character()
   if(method == "snmf"){
     if(!("LEA" %in% rownames(installed.packages()))){
-      stop("The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
+      msg <- c(msg, "The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
     }
   }
 
   if(clumpp & reps == 1){
     clumpp <- FALSE
     warning("Since only one rep is requested, clumpp will not be run.\n")
+  }
+
+  if(clumpp){
+    if(!("pophelper" %in% rownames(installed.packages()))){
+      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
+    }
+    good.clumpp.opts <- c("fullsearch", "greedy", "large.k.greedy")
+    if(!clumpp.opt %in% good.clumpp.opts){
+      msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
+    }
+  }
+
+  good.methods <- c("snapclust", "snmf")
+  if(!method %in% good.methods){
+    msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
+  }
+
+  if(length(facet) > 1){
+    msg <- c(msg, "Only one facet may be plotted at once.\n")
+  }
+  if(!is.null(facet[[1]])){
+    fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+    if(any(fcheck[[2]] != "sample")){
+      msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
+    }
+    else{
+      # check that samples are properly sorted by population
+      cpop <- x@sample.meta[,facet]
+      cpop.f <- forcats::fct_inorder(cpop)
+      all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])
+      if(!all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])){
+        msg <- c(msg, paste0("Individual samples are not sorted by ", facet, "in input data.\n"))
+      }
+    }
+  }
+
+  if(length(msg) != 0){
+    stop(msg)
   }
 
   #===========sub-functions===================
@@ -1138,16 +1277,16 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
     # prepare files and run clumpp
     qfiles <- list.files(full.names = T, pattern = "qopt")
     qlist <- pophelper::readQ(qfiles)
-    if(clump.opt == "large.K.greedy"){
-      clump.opt <- 3
+    if(clumpp.opt == "large.K.greedy"){
+      clumpp.opt <- 3
     }
-    else if(clump.opt == "greedy"){
-      clump.opt <- 2
+    else if(clumpp.opt == "greedy"){
+      clumpp.opt <- 2
     }
     else{
-      clump.opt <- 1
+      clumpp.opt <- 1
     }
-    pophelper::clumppExport(qlist, useexe = T, parammode = clump.opt)
+    pophelper::clumppExport(qlist, useexe = T, parammode = clumpp.opt)
     pophelper::collectClumppOutput(filetype = "both")
 
     # import results
@@ -1159,7 +1298,12 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
 
     # sort by Q values if requested
     if(qsort != FALSE){
-      pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      if(!is.null(facet)){
+        pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      }
+      else{
+        pop <- as.data.frame(rep("pop1", nrow(x@sample.meta)), stringsAsFactors = F)
+      }
       ind_ord <- Q_sort(mq, pop, qsort, qsort_K)
     }
     else{
@@ -1178,7 +1322,7 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
   # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
   if(method == "snapclust"){
     # format and run snapclust
-    x.g <- format_snps(x, "adegenet")
+    invisible(capture.output(x.g <- format_snps(x, "adegenet")))
 
     # initialize
     qlist <- vector("list", length = k - 1)
@@ -1231,7 +1375,7 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
     if(file.exists("lea_input.geno")){
       file.remove("lea_input.geno")
     }
-    format_snps(x, "lea", outfile = "lea_input.geno")
+    invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
 
     # run the analysis
     snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
@@ -1298,7 +1442,12 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
 
     ## qsort
     if(qsort != FALSE){
-      pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      if(!is.null(facet)){
+        pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      }
+      else{
+        pop <- as.data.frame(rep("pop1", nrow(x@sample.meta)), stringsAsFactors = F)
+      }
       ind_ord <- Q_sort(tq, pop, qsort, qsort_K)
     }
     else{
@@ -1354,11 +1503,7 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, i
     p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
   }
 
-  #===========clean-up===============
-  browser()
-  if(clean.files){
 
-  }
 
   return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
 }

@@ -30,14 +30,18 @@ Depends:
     dplyr,
     foreach
 Suggests:
+    adegenet,
     AGHmatrix,
     BGLR,
     BMS,
+    forcats,
     genepop,
     ggrepel,
     GMMAT,
     knitr,
+    LEA,
     mmtsne,
+    pophelper,
     ranger,
     rmarkdown,
     readr,
