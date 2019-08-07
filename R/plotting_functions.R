@@ -990,53 +990,335 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 }
 
 
-plot_assignment <- function(x, facet = NULL, k = 2, method = "snapclust",  qsort = T, clumpp = T,
-                            clump.opt = "large.K.greedy", ID = NULL, viridis.option = "viridis",
+plot_assignment <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
+                            qsort = "first", qsort_K = "last", clumpp = T,
+                            clump.opt = "greedy", ID = NULL, viridis.option = "viridis",
                             t.sizes = c(12, 12, 12),
                             clean.files = F, ...){
 
-  #===========prepare plot data===============
+  #===========sanity checks===================
+  if(method == "snmf"){
+    if(!("LEA" %in% rownames(installed.packages()))){
+      stop("The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
+    }
+  }
+
+  if(clumpp & reps == 1){
+    clumpp <- FALSE
+    warning("Since only one rep is requested, clumpp will not be run.\n")
+  }
+
+  #===========sub-functions===================
+  # fix things so that the cluster ID is the same in all sets
+  fix_clust <- function(x){
+
+    #loop through each q object
+    for (i in 2:length(x)){
+      #see which columns in the previous run are the most similar to each column
+
+      #initialize mapping df
+      mdf <- data.frame(tcol = 1:ncol(x[[i]]), pcol = numeric(ncol(x[[i]])),
+                        ed = numeric(ncol(x[[i]])))
+
+      #loop through each column and find where to map it.
+      for (j in 1:ncol(x[[i]])){
+
+        #intialize euc distance vector
+        elist <- numeric(ncol(x[[i - 1]]))
+
+        #compare to each other col.
+        for(k in 1:ncol(x[[i-1]])){
+          #save euclidian dist
+          elist[k] <- sum((x[[i]][,j] - x[[i-1]][,k])^2, na.rm = T)
+        }
+
+        #save results
+        mdf[j,2] <- which.min(elist)
+        mdf[j,3] <- min(elist)
+      }
+
+      #reassign clusters in this qdf
+      ##which is the new cluster? Probably that with the most distance to any original clusters.
+      dups <- duplicated(mdf[,2]) | duplicated(mdf[,2], fromLast = T)
+      nc <- which.max(mdf[dups,3])
+      mdf[dups,2][nc] <- nrow(mdf)
+      mdf <- mdf[order(mdf[,2]),]
+
+      ##reasign clusters
+      tdf <- x[[i]]
+      tdf <- tdf[,mdf[,1]]
+
+      ##replace object in x with the re-arranged qfile.
+      colnames(tdf) <- colnames(x[[i]])
+      x[[i]] <- tdf
+    }
+
+    return(x)
+  }
+
+  # sort the individuals within each population based on the qvals
+  Q_sort <- function(x, pop, cluster = "first", q = "last"){
+
+    #get which pop to use
+    if(q == "last"){
+      q <- length(x)
+    }
+
+    #get order to stick individual in
+    lx <- x[[q]]
+    upops <- unique(pop)
+    lx$s <- 1:nrow(lx)
+
+    #get the sorting cluster priority:
+    if(cluster == "first"){
+      cseq <- (ncol(lx)-1):1
+    }
+    else if (cluster == "last"){
+      cseq <- 1:(ncol(lx)-1)
+    }
+    else if (is.numeric(cluster)){
+      if(length(cluster) == ncol(lx)){
+        cseq <- cluster
+      }
+      else{
+        if(length(cluster) < ncol(lx)){
+          cseq <- c((1:ncol(lx))[-which(1:ncol(lx) %in% cluster)], rev(cluster))
+        }
+        else{
+          stop("Cluster length is longer than number of clusters in x element q.\n")
+        }
+      }
+    }
+
+    for(i in 1:nrow(upops)){
+      tx <- lx[which(pop == upops[i,]),]
+      for(j in cseq){
+        tx <- tx[order(tx[,j]),]
+      }
+      lx[which(pop == upops[i,]),] <- tx
+    }
+
+    # return the order
+    return(lx$s)
+  }
+
+  # process 1 q result by adjusting column names and melting. Takes a single qlist dataframe/matrix
+  process_1_q <- function(tq, x){
+    colnames(tq) <- 1:ncol(tq)
+    tk <- ncol(tq)
+    tq <- cbind(tq, x@sample.meta)
+
+    if(is.null(ID)){
+      tq$ID <- colnames(x)
+    }
+    else{
+      tq$ID <- x@sample.meta[,"ID"]
+    }
+
+    tq <- reshape2::melt(tq, id.vars = colnames(tq)[-c(1:tk)])
+    colnames(tq)[((ncol(tq) - 1):ncol(tq))] <- c("Cluster", "Percentage")
+    tq$Cluster <- as.numeric(tq$Cluster)
+    tq$K <- tk
+
+    return(tq)
+  }
+
+  # write a list of q files to a directory with informative names for k and run
+  prep_clumpp <- function(x){
+    # make a directory and write the k files to it
+    for(i in 1:length(x)){
+      for(j in 1:reps){
+        write.table(x[[i]][[j]], paste0("K", ncol(x[[i]][[j]]), "r", j, "qopt"), sep = " ", quote = F, col.names = F, row.names = F)
+      }
+    }
+  }
+
+  # run clumpp on a directory of q files using pophelper. Import the results into a list of  processed q tables
+  run_clumpp <- function(){
+    # prepare files and run clumpp
+    qfiles <- list.files(full.names = T, pattern = "qopt")
+    qlist <- pophelper::readQ(qfiles)
+    if(clump.opt == "large.K.greedy"){
+      clump.opt <- 3
+    }
+    else if(clump.opt == "greedy"){
+      clump.opt <- 2
+    }
+    else{
+      clump.opt <- 1
+    }
+    pophelper::clumppExport(qlist, useexe = T, parammode = clump.opt)
+    pophelper::collectClumppOutput(filetype = "both")
+
+    # import results
+    mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
+
+    # fix cluster IDs to match
+    mq <- fix_clust(mq)
+    save.q <- mq
+
+    # sort by Q values if requested
+    if(qsort != FALSE){
+      pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      ind_ord <- Q_sort(mq, pop, qsort, qsort_K)
+    }
+    else{
+      ind_ord <- 1:nrow(mq[[1]])
+    }
+
+    # process into plottable form
+    for(i in 1:length(mq)){
+      mq[[i]] <- process_1_q(mq[[i]], x)
+    }
+
+    return(list(q = mq, ord = ind_ord, qlist = save.q))
+  }
+
+  #===========run the assignment/clustering method===============
+  # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
   if(method == "snapclust"){
     # format and run snapclust
     x.g <- format_snps(x, "adegenet")
-    x.g <- snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
 
-    # extract plot data
-    extract.pdat <- function(y){
-      pdat <- y$proba
-      pdat<- as.data.frame(pdat, stringsAsFactors = F)
-      pdat <- cbind(pdat, x@sample.meta)
-      if(is.null(ID)){
-        pdat$ID <- colnames(x)
+    # initialize
+    qlist <- vector("list", length = k - 1)
+    names(qlist) <- paste0("K_", 2:k)
+    for(i in 1:length(qlist)){
+      qlist[[i]] <- vector("list", length = reps)
+      names(qlist[[i]]) <- paste0("r_", 1:reps)
+    }
+    K_plot <- vector("list", length(rep))
+
+    # run once per rep
+    for(i in 1:reps){
+      if(reps == 1){
+        res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
       }
       else{
-        pdat$ID <- x@sample.meta[,"ID"]
+        res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, pop.ini = NULL, ...)
       }
-      pdat <- reshape2::melt(pdat, id.vars = colnames(pdat)[-c(1:ncol(y$proba))])
-      colnames(pdat)[((ncol(pdat) - 1):ncol(pdat))] <- c("Cluster", "Percentage")
-      pdat$Cluster <- as.numeric(pdat$Cluster)
-      pdat$K <- ncol(y$proba)
 
-      return(pdat)
+      for(j in 1:length(res$objects)){
+        qlist[[j]][[i]] <- res$objects[[j]]$proba
+
+        # fix instances where NaNs are likely actually 1s, based on https://github.com/thibautjombart/adegenet/issues/221
+        nas <- which(is.na(rowSums(qlist[[j]][[i]])))
+        if(length(nas) > 0){
+          fixable <- qlist[[j]][[i]][nas,]
+          fixable <- is.nan(fixable)
+          not.fixable1 <- which(rowSums(fixable) != 1) # rows with more than one na
+          not.fixable2 <- which(rowSums(qlist[[j]][[i]][nas,] == 0, na.rm = T) != ncol(qlist[[j]][[i]]) - 1) # rows where the other values aren't all zero
+          not.fixable <- union(not.fixable1, not.fixable2)
+          if(length(not.fixable) > 0){
+            if(length(not.fixable) != length(nas)){
+              qlist[[j]][[i]][nas,][-not.fixable,][is.nan(qlist[[j]][[i]][nas,][-not.fixable,])] <- 1
+            }
+          }
+          else{
+            qlist[[j]][[i]][nas,][fixable] <- 1
+          }
+        }
+      }
+      K_plot[[i]] <- data.frame(val = res[[1]], K = 1:k, rep = i, stringsAsFactors = F)
     }
 
-    ## run function
-    pdat <- lapply(x.g$objects, extract.pdat)
-    pdat$Cluster <- as.factor(pdat$Cluster)
-    pdat$K <- as.factor(pdat$K)
-    levels(pdat$K) <- paste0("K = ", levels(pdat$K))
+    # fix K plot
+    K_plot <- dplyr::bind_rows(K_plot)
+    colnames(K_plot)[1] <- names(res)[1]
+  }
+  else if(method == "snmf"){
+    # format data
+    if(file.exists("lea_input.geno")){
+      file.remove("lea_input.geno")
+    }
+    format_snps(x, "lea", outfile = "lea_input.geno")
 
-    # combine plot data
-    suppressWarnings(pdat <- dplyr::bind_rows(pdat))
+    # run the analysis
+    snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
 
-    # plot k
-    K_selection <- x.g[[1]]
-    Kplot <- data.frame(K_selection, K = 1:k)
-    print(ggplot2::ggplot(Kplot, ggplot2::aes(x = Kplot[,1], y = K)) + geom_point() +
-            theme_bw() +
-            xlab(names(x.g)[1]))
+    # read in
+    qlist <- vector("list", k - 1)
+    names(qlist) <-  paste0("K_", 2:k)
+    K_plot <- vector("list", k - 1)
+    for(i in 2:k){
+
+      # process each rep
+      qlist[[i - 1]] <- vector("list", reps)
+      names(qlist[[i - 1]]) <-  paste0("r_", 1:reps)
+      for(j in 1:reps){
+        qlist[[i - 1]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
+      }
+      K_plot[[i - 1]] <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, k), K = i)
+    }
+
+    # fix K plot
+    K_plot <- dplyr::bind_rows(K_plot)
+    colnames(K_plot)[1] <- "Cross.Entropy"
+  }
+
+  #===========run clumpp=========================================
+  if(clumpp){
+    if(!dir.exists("qfiles")){
+      dir.create("qfiles")
+    }
+    setwd("qfiles")
+
+    # prepare files
+    prep_clumpp(qlist)
+
+    # run clumpp
+    pdat <- run_clumpp()
+    setwd("..")
+
+    # concatenate results
+    ind_ord <- pdat$ord
+    cq <- pdat$qlist
+    pdat <- dplyr::bind_rows(pdat$q)
+
+    ## add the clumpp qlist
+    for(i in 1:length(qlist)){
+      qlist[[i]][["clumpp"]] <- cq[[i]]
+    }
 
   }
+  else{
+    if(reps != 1){
+      warning("Plotting only the first run.\n")
+    }
+
+    # grab just the first run
+    tq <- vector("list", length(qlist))
+    for(i in 1:length(tq)){
+      tq[[i]] <- qlist[[i]][[1]]
+    }
+
+    # process
+    ## fix cluster IDs to match
+    tq <- fix_clust(tq)
+
+    ## qsort
+    if(qsort != FALSE){
+      pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+      ind_ord <- Q_sort(tq, pop, qsort, qsort_K)
+    }
+    else{
+      ind_ord <- 1:nrow(tq[[1]])
+    }
+
+    ## process into plottable form
+    for(i in 1:length(tq)){
+      tq[[i]] <- process_1_q(tq[[i]], x)
+    }
+
+    ## concatenate
+    pdat <- dplyr::bind_rows(tq)
+  }
+
+  #===========final fixes to plot data=========
+  pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
+  pdat$K <- as.factor(pdat$K)
+  levels(pdat$K) <- paste0("K_", levels(pdat$K))
+  pdat$Cluster <- as.factor(pdat$Cluster)
 
   #===========make plot==============
   p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
@@ -1051,14 +1333,14 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snapclust",  qsort
                    strip.text = ggplot2::element_text(size = t.sizes[1]),
                    axis.title = ggplot2::element_text(size = t.sizes[2]),
                    strip.background = ggplot2::element_blank(),
-                   panel.grid = element_blank(),
-                   panel.spacing = ggplot2::unit(0, "lines"))
+                   panel.grid = ggplot2::element_blank(),
+                   panel.spacing = ggplot2::unit(0.1, "lines"))
 
   if(!is.null(facet[1])){
     fmt <- table(x@sample.meta[,facet])
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
-    breaks <- unique(pdat$ID)[fm]
+    breaks <- levels(pdat$ID)[fm]
 
     seps <- c(0, fmc) + 0.5
     seps[1] <- -.5
@@ -1072,5 +1354,11 @@ plot_assignment <- function(x, facet = NULL, k = 2, method = "snapclust",  qsort
     p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
   }
 
-  return(list(plot = p, data = x.g, plot_data = pdat))
+  #===========clean-up===============
+  browser()
+  if(clean.files){
+
+  }
+
+  return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
 }

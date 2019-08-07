@@ -3235,6 +3235,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       writeobj <- c(rbind(paste0(">", names(rdat)), rdat))
       writeLines(writeobj, outfile)
     }
+    else if(output == "lea"){
+      write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
+    }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
