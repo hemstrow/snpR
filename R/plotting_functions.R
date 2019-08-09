@@ -1098,12 +1098,78 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
 
   #===========sanity checks===================
   msg <- character()
+  provided_qlist <- FALSE
+
+  # check if this is with a snpRdata object or a qlist and do some other checks
+  if(!class(x) == "snpRdata"){
+    # file pattern
+    if(!is.list(x)){
+      if(is.character(x) & length(x) > 1){
+        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+      }
+      else if(!is.character(x)){
+        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+      }
+      else{
+        provided_qlist <- "parse"
+      }
+    }
+    # qlist, typical k then r format.
+    else{
+      provided_qlist <- TRUE
+      bad.list <- F
+
+      # check that list depth is 2
+      l1 <- lapply(x, is.list) # depth two?
+      if(!all(unlist(l1))){
+        bad.list <- T
+      }
+      else{
+        l2 <- logical(length(x)) # depth three?
+        for(i in 1:length(x)){
+          if(any(unlist(lapply(x[[i]], function(y) is.matrix(y) | is.data.frame(y))) == F)){
+            l2[i] <- T
+          }
+
+          # also check that this is k and then r (all qlists should have the same number of columns at the second level.)
+          else if(length(unique(lapply(x[[i]], ncol))) != 1){
+            bad.list <- T
+          }
+        }
+        if(any(l2)){
+          bad.list <- T
+        }
+      }
+      if(bad.list){
+        msg <- c(msg, "Provided qlist must be a two level list, sorted by k values then by run.\n")
+      }
+    }
+
+    if(!is.null(facet[1])){
+      if(!is.character(facet)){
+        msg <- c(msg, "For a provided qlist, facet must be a character vector containing sample metadata.\n")
+      }
+      if(provided_qlist == TRUE & bad.list == F){
+        if(length(facet) != nrow(qlist[[1]])){
+          msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
+        }
+      }
+      sample_meta <- data.frame(d = facet, stringsAsFactors = F)
+      facet <- deparse(substitute(facet))
+      colnames(sample_meta) <- facet
+    }
+  }
+
+
   if(method == "snmf"){
     if(!("LEA" %in% rownames(installed.packages()))){
       msg <- c(msg, "The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
     }
   }
 
+  if(provided_qlist == FALSE & reps == "all"){
+    msg <- c(msg, "reps = 'all' uninterpretable if a qlist is not provided.\n")
+  }
   if(clumpp & reps == 1){
     clumpp <- FALSE
     warning("Since only one rep is requested, clumpp will not be run.\n")
@@ -1118,30 +1184,41 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
     }
   }
-
-  good.methods <- c("snapclust", "snmf")
-  if(!method %in% good.methods){
-    msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
-  }
-
-  if(length(facet) > 1){
-    msg <- c(msg, "Only one facet may be plotted at once.\n")
-  }
-  if(!is.null(facet[[1]])){
-    fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
-    if(any(fcheck[[2]] != "sample")){
-      msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
+  else if(provided_qlist == "parse"){
+    if(!("pophelper" %in% rownames(installed.packages()))){
+      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
     }
-    else{
-      # check that samples are properly sorted by population
-      cpop <- x@sample.meta[,facet]
-      cpop.f <- forcats::fct_inorder(cpop)
-      all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])
-      if(!all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])){
-        msg <- c(msg, paste0("Individual samples are not sorted by ", facet, "in input data.\n"))
+  }
+
+  # checks for snpRdata objects only
+  if(provided_qlist == FALSE){
+    good.methods <- c("snapclust", "snmf")
+    if(!method %in% good.methods){
+      msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
+    }
+
+    if(length(facet) > 1){
+      msg <- c(msg, "Only one facet may be plotted at once.\n")
+    }
+    if(!is.null(facet[[1]])){
+      fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+      if(any(fcheck[[2]] != "sample")){
+        msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
+      }
+      else{
+        # check that samples are properly sorted by population
+        cpop <- x@sample.meta[,facet]
+        cpop.f <- forcats::fct_inorder(cpop)
+        all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])
+        if(!all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])){
+          msg <- c(msg, paste0("Individual samples are not sorted by ", facet, "in input data.\n"))
+        }
       }
     }
+
+    sample_meta <- x@sample.meta
   }
+
 
   if(length(msg) != 0){
     stop(msg)
@@ -1245,13 +1322,18 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   process_1_q <- function(tq, x){
     colnames(tq) <- 1:ncol(tq)
     tk <- ncol(tq)
-    tq <- cbind(tq, x@sample.meta)
+    tq <- cbind(tq, sample_meta)
 
     if(is.null(ID)){
-      tq$ID <- colnames(x)
+      if(is.null(colnames(x))){
+        tq$ID <- paste0("samp", 1:nrow(tq))
+      }
+      else{
+        tq$ID <- colnames(x)
+      }
     }
     else{
-      tq$ID <- x@sample.meta[,"ID"]
+      tq$ID <- sample_meta[,"ID"]
     }
 
     tq <- reshape2::melt(tq, id.vars = colnames(tq)[-c(1:tk)])
@@ -1273,9 +1355,9 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   }
 
   # run clumpp on a directory of q files using pophelper. Import the results into a list of  processed q tables
-  run_clumpp <- function(){
+  run_clumpp <- function(pattern = "qopt"){
     # prepare files and run clumpp
-    qfiles <- list.files(full.names = T, pattern = "qopt")
+    qfiles <- list.files(full.names = T, pattern = pattern)
     qlist <- pophelper::readQ(qfiles)
     if(clumpp.opt == "large.K.greedy"){
       clumpp.opt <- 3
@@ -1299,10 +1381,10 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
     # sort by Q values if requested
     if(qsort != FALSE){
       if(!is.null(facet)){
-        pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+        pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
       }
       else{
-        pop <- as.data.frame(rep("pop1", nrow(x@sample.meta)), stringsAsFactors = F)
+        pop <- as.data.frame(rep("pop1", nrow(sample_meta)), stringsAsFactors = F)
       }
       ind_ord <- Q_sort(mq, pop, qsort, qsort_K)
     }
@@ -1318,101 +1400,150 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
     return(list(q = mq, ord = ind_ord, qlist = save.q))
   }
 
+  # function to parse in q files, used only if clumpp not run and a file pattern is provided
+  parse_qfiles <- function(pattern){
+    # read in the files
+    qfiles <- list.files(full.names = T, pattern = "qopt")
+    qlist <- pophelper::readQ(qfiles)
+
+    # get k values
+    att <- lapply(qlist, attributes)
+    att <- unlist(lapply(att, function(x) x$k))
+
+    # inititalize
+    out_q <- vector("list", length = length(unique(att)))
+    names(out_q) <- paste0("K_", sort(unique(att)))
+
+    # for each k, load up each run
+    for(i in 1:length(unique(att))){
+
+      # find matching runs and initialize
+      tk <- sort(unique(att))[i]
+      hits <- which(att == tk)
+      out_q[[i]] <- vector("list", length(hits))
+      names(out_q[[i]]) <- paste0("r_", 1:length(hits))
+
+      # load
+      for(j in 1:length(hits)){
+        out_q[[i]][[j]] <- qlist[[hits[j]]]
+      }
+    }
+
+    return(out_q)
+  }
+
   #===========run the assignment/clustering method===============
   # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
-  if(method == "snapclust"){
-    # format and run snapclust
-    invisible(capture.output(x.g <- format_snps(x, "adegenet")))
+  if(provided_qlist == FALSE){
+    if(method == "snapclust"){
+      # format and run snapclust
+      invisible(capture.output(x.g <- format_snps(x, "adegenet")))
 
-    # initialize
-    qlist <- vector("list", length = k - 1)
-    names(qlist) <- paste0("K_", 2:k)
-    for(i in 1:length(qlist)){
-      qlist[[i]] <- vector("list", length = reps)
-      names(qlist[[i]]) <- paste0("r_", 1:reps)
-    }
-    K_plot <- vector("list", length(rep))
-
-    # run once per rep
-    for(i in 1:reps){
-      if(reps == 1){
-        res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
+      # initialize
+      qlist <- vector("list", length = k - 1)
+      names(qlist) <- paste0("K_", 2:k)
+      for(i in 1:length(qlist)){
+        qlist[[i]] <- vector("list", length = reps)
+        names(qlist[[i]]) <- paste0("r_", 1:reps)
       }
-      else{
-        res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, pop.ini = NULL, ...)
-      }
+      K_plot <- vector("list", length(rep))
 
-      for(j in 1:length(res$objects)){
-        qlist[[j]][[i]] <- res$objects[[j]]$proba
+      # run once per rep
+      for(i in 1:reps){
+        if(reps == 1){
+          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
+        }
+        else{
+          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, pop.ini = NULL, ...)
+        }
 
-        # fix instances where NaNs are likely actually 1s, based on https://github.com/thibautjombart/adegenet/issues/221
-        nas <- which(is.na(rowSums(qlist[[j]][[i]])))
-        if(length(nas) > 0){
-          fixable <- qlist[[j]][[i]][nas,]
-          fixable <- is.nan(fixable)
-          not.fixable1 <- which(rowSums(fixable) != 1) # rows with more than one na
-          not.fixable2 <- which(rowSums(qlist[[j]][[i]][nas,] == 0, na.rm = T) != ncol(qlist[[j]][[i]]) - 1) # rows where the other values aren't all zero
-          not.fixable <- union(not.fixable1, not.fixable2)
-          if(length(not.fixable) > 0){
-            if(length(not.fixable) != length(nas)){
-              qlist[[j]][[i]][nas,][-not.fixable,][is.nan(qlist[[j]][[i]][nas,][-not.fixable,])] <- 1
+        for(j in 1:length(res$objects)){
+          qlist[[j]][[i]] <- res$objects[[j]]$proba
+
+          # fix instances where NaNs are likely actually 1s, based on https://github.com/thibautjombart/adegenet/issues/221
+          nas <- which(is.na(rowSums(qlist[[j]][[i]])))
+          if(length(nas) > 0){
+            fixable <- qlist[[j]][[i]][nas,]
+            fixable <- is.nan(fixable)
+            not.fixable1 <- which(rowSums(fixable) != 1) # rows with more than one na
+            not.fixable2 <- which(rowSums(qlist[[j]][[i]][nas,] == 0, na.rm = T) != ncol(qlist[[j]][[i]]) - 1) # rows where the other values aren't all zero
+            not.fixable <- union(not.fixable1, not.fixable2)
+            if(length(not.fixable) > 0){
+              if(length(not.fixable) != length(nas)){
+                qlist[[j]][[i]][nas,][-not.fixable,][is.nan(qlist[[j]][[i]][nas,][-not.fixable,])] <- 1
+              }
+            }
+            else{
+              qlist[[j]][[i]][nas,][fixable] <- 1
             }
           }
-          else{
-            qlist[[j]][[i]][nas,][fixable] <- 1
-          }
         }
+        K_plot[[i]] <- data.frame(val = res[[1]], K = 1:k, rep = i, stringsAsFactors = F)
       }
-      K_plot[[i]] <- data.frame(val = res[[1]], K = 1:k, rep = i, stringsAsFactors = F)
+
+      # fix K plot
+      K_plot <- dplyr::bind_rows(K_plot)
+      colnames(K_plot)[1] <- names(res)[1]
     }
-
-    # fix K plot
-    K_plot <- dplyr::bind_rows(K_plot)
-    colnames(K_plot)[1] <- names(res)[1]
-  }
-  else if(method == "snmf"){
-    # format data
-    if(file.exists("lea_input.geno")){
-      file.remove("lea_input.geno")
-    }
-    invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
-
-    # run the analysis
-    snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
-
-    # read in
-    qlist <- vector("list", k - 1)
-    names(qlist) <-  paste0("K_", 2:k)
-    K_plot <- vector("list", k - 1)
-    for(i in 2:k){
-
-      # process each rep
-      qlist[[i - 1]] <- vector("list", reps)
-      names(qlist[[i - 1]]) <-  paste0("r_", 1:reps)
-      for(j in 1:reps){
-        qlist[[i - 1]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
+    else if(method == "snmf"){
+      # format data
+      if(file.exists("lea_input.geno")){
+        file.remove("lea_input.geno")
       }
-      K_plot[[i - 1]] <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, k), K = i)
-    }
+      invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
 
-    # fix K plot
-    K_plot <- dplyr::bind_rows(K_plot)
-    colnames(K_plot)[1] <- "Cross.Entropy"
+      # run the analysis
+      snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
+
+      # read in
+      qlist <- vector("list", k - 1)
+      names(qlist) <-  paste0("K_", 2:k)
+      K_plot <- vector("list", k - 1)
+      for(i in 2:k){
+
+        # process each rep
+        qlist[[i - 1]] <- vector("list", reps)
+        names(qlist[[i - 1]]) <-  paste0("r_", 1:reps)
+        for(j in 1:reps){
+          qlist[[i - 1]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
+        }
+        K_plot[[i - 1]] <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, k), K = i)
+      }
+
+      # fix K plot
+      K_plot <- dplyr::bind_rows(K_plot)
+      colnames(K_plot)[1] <- "Cross.Entropy"
+    }
   }
+  else if(provided_qlist == TRUE){
+    qlist <- x
+  }
+
+
 
   #===========run clumpp=========================================
   if(clumpp){
-    if(!dir.exists("qfiles")){
-      dir.create("qfiles")
+
+    if(provided_qlist != "parse"){
+      if(!dir.exists("qfiles")){
+        dir.create("qfiles")
+      }
+      setwd("qfiles")
+
+      # prepare files
+      prep_clumpp(qlist)
+
+      # run clumpp
+      pdat <- run_clumpp()
+      setwd("..")
     }
-    setwd("qfiles")
+    else{
+      pdat <- run_clumpp(pattern = x)
+    }
 
-    # prepare files
-    prep_clumpp(qlist)
 
-    # run clumpp
-    pdat <- run_clumpp()
-    setwd("..")
+
+
 
     # concatenate results
     ind_ord <- pdat$ord
@@ -1426,6 +1557,11 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
 
   }
   else{
+    # parse in if provided with a pattern
+    if(provided_qlist == "parse"){
+      qlist <- parse_qfiles(x)
+    }
+
     if(reps != 1){
       warning("Plotting only the first run.\n")
     }
@@ -1443,10 +1579,10 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
     ## qsort
     if(qsort != FALSE){
       if(!is.null(facet)){
-        pop <- as.data.frame(x@sample.meta[,facet], stringsAsFactors = F)
+        pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
       }
       else{
-        pop <- as.data.frame(rep("pop1", nrow(x@sample.meta)), stringsAsFactors = F)
+        pop <- as.data.frame(rep("pop1", nrow(sample_meta)), stringsAsFactors = F)
       }
       ind_ord <- Q_sort(tq, pop, qsort, qsort_K)
     }
@@ -1464,6 +1600,7 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   }
 
   #===========final fixes to plot data=========
+  browser()
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K_", levels(pdat$K))
@@ -1486,7 +1623,7 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
                    panel.spacing = ggplot2::unit(0.1, "lines"))
 
   if(!is.null(facet[1])){
-    fmt <- table(x@sample.meta[,facet])
+    fmt <- table(sample_meta[,facet])
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
     breaks <- levels(pdat$ID)[fm]
@@ -1504,6 +1641,12 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   }
 
 
+  if(exists("K_plot")){
+    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
+  }
+  else{
+    return(list(plot = p, data = qlist, plot_data = pdat))
+  }
 
-  return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
+
 }
