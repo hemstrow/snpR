@@ -4,18 +4,26 @@
 \alias{plot_structure}
 \title{Create STRUCTURE-like cluster plots}
 \usage{
-plot_structure(x, facet = NULL, k = 2, method = "snmf", reps = 1,
-  iterations = 1000, qsort = "last", qsort_K = "last", clumpp = T,
+plot_structure(x, facet = NULL, facet.order = NULL, k = 2,
+  method = "snmf", reps = 1, iterations = 1000, I = NULL,
+  qsort = "last", qsort_K = "last", clumpp = T,
   clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
   t.sizes = c(12, 12, 12), ...)
 }
 \arguments{
-\item{x}{snpRdata object}
+\item{x}{snpRdata object, list of Q matrices (sorted by K in the first level
+and run in the second), or a character string designating a pattern
+matching Q matrix files in the current working directories.}
 
 \item{facet}{character, default NULL. If provided, individuals will not be
 noted on the x axis. Instead, the levels of the facet will be noted. Only a
 single, simple, sample specific facet may be provided. Individuals must be
-sorted by this facet in x.}
+sorted by this facet in x. If Q matrices are provided (either directly or
+via file path), this should instead be a vector of group identities for
+each individual (populations, etc.).}
+
+\item{facet.order}{character, default NULL. Optional order in which the
+levels of the provided facet should appear on the plot, left to right.}
 
 \item{k}{numeric, default 2. The maximum of k (number of clusters) for which
 to run the clustering/assignment algorithm. The values 2:k will be run.}
@@ -31,6 +39,10 @@ repititions to run.}
 
 \item{iterations}{numeric or Inf, default 1000. For snapclust, the maximum
 number of iterations to run.}
+
+\item{I}{numeric or NULL, default NULL. For snmf, how many SNPs should be
+used to initialize the search? Initializing with a subset of the total SNPs
+can radically speed up computation time for large datasets.}
 
 \item{qsort}{character, numeric, or FALSE, default "last". Determines if
 individuals should be sorted (possibly within facet levels) by cluster
@@ -103,6 +115,17 @@ This tends to produce consistant cluster IDs across multiple runs of K.
 
 Individuals can be sorted into by membership proportion into different
 clusters within populations using the qsort option.
+
+Since the clustering and CLUMPP processes can be time consuming and outside
+tools (such as NGSadmix or fastSTRUCTURE) may be prefered, a nested list of Q
+matrices, sorted by K and then rep or a character string giving a pattern
+matching saved Q matrix files in the current working directory may provided
+directly instead of a snpRdata object. Note that the output for this
+funciton, if run on a snpRdata object, will return a properly formatted list
+of Q files (named 'data') in addition to the plot and plot data. This allows
+for the plot to be quickly re-constructed using different sorting parameters
+or facets. In these cases, the facet argument should instead be a vector of
+group identifications per individuals.
 
 Note that several files will be created in the working directory when using
 this function that are not automatically cleaned after use.

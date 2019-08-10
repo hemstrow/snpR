@@ -1023,14 +1023,31 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' Individuals can be sorted into by membership proportion into different
 #' clusters within populations using the qsort option.
 #'
+#' Since the clustering and CLUMPP processes can be time consuming and outside
+#' tools (such as NGSadmix or fastSTRUCTURE) may be prefered, a nested list of Q
+#' matrices, sorted by K and then rep or a character string giving a pattern
+#' matching saved Q matrix files in the current working directory may provided
+#' directly instead of a snpRdata object. Note that the output for this
+#' funciton, if run on a snpRdata object, will return a properly formatted list
+#' of Q files (named 'data') in addition to the plot and plot data. This allows
+#' for the plot to be quickly re-constructed using different sorting parameters
+#' or facets. In these cases, the facet argument should instead be a vector of
+#' group identifications per individuals.
+#'
 #' Note that several files will be created in the working directory when using
 #' this function that are not automatically cleaned after use.
 #'
-#' @param x snpRdata object
+#' @param x snpRdata object, list of Q matrices (sorted by K in the first level
+#'   and run in the second), or a character string designating a pattern
+#'   matching Q matrix files in the current working directories.
 #' @param facet character, default NULL. If provided, individuals will not be
 #'   noted on the x axis. Instead, the levels of the facet will be noted. Only a
 #'   single, simple, sample specific facet may be provided. Individuals must be
-#'   sorted by this facet in x.
+#'   sorted by this facet in x. If Q matrices are provided (either directly or
+#'   via file path), this should instead be a vector of group identities for
+#'   each individual (populations, etc.).
+#' @param facet.order character, default NULL. Optional order in which the
+#'   levels of the provided facet should appear on the plot, left to right.
 #' @param k numeric, default 2. The maximum of k (number of clusters) for which
 #'   to run the clustering/assignment algorithm. The values 2:k will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
@@ -1042,6 +1059,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   repititions to run.
 #' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
 #'   number of iterations to run.
+#' @param I numeric or NULL, default NULL. For snmf, how many SNPs should be
+#'   used to initialize the search? Initializing with a subset of the total SNPs
+#'   can radically speed up computation time for large datasets.
 #' @param qsort character, numeric, or FALSE, default "last". Determines if
 #'   individuals should be sorted (possibly within facet levels) by cluster
 #'   assignment proportion. If not FALSE, determines which cluster to use for
@@ -1091,8 +1111,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   \item{K_plot: } A data.frame containing the value suggested for use in K
 #'   selection vs K value for the selected method.}
 #'
-plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
-                           qsort = "last", qsort_K = "last", clumpp = T,
+plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
+                           I = NULL, qsort = "last", qsort_K = "last", clumpp = T,
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
                            t.sizes = c(12, 12, 12), ...){
 
@@ -1149,9 +1169,11 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       if(!is.character(facet)){
         msg <- c(msg, "For a provided qlist, facet must be a character vector containing sample metadata.\n")
       }
-      if(provided_qlist == TRUE & bad.list == F){
-        if(length(facet) != nrow(qlist[[1]])){
-          msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
+      if(provided_qlist == TRUE){
+        if(bad.list == F){
+          if(length(facet) != nrow(qlist[[1]])){
+            msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
+          }
         }
       }
       sample_meta <- data.frame(d = facet, stringsAsFactors = F)
@@ -1205,17 +1227,7 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       if(any(fcheck[[2]] != "sample")){
         msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
       }
-      else{
-        # check that samples are properly sorted by population
-        cpop <- x@sample.meta[,facet]
-        cpop.f <- forcats::fct_inorder(cpop)
-        all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])
-        if(!all(cpop.f == levels(cpop.f)[sort(as.numeric(cpop.f))])){
-          msg <- c(msg, paste0("Individual samples are not sorted by ", facet, "in input data.\n"))
-        }
-      }
     }
-
     sample_meta <- x@sample.meta
   }
 
@@ -1333,7 +1345,7 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       }
     }
     else{
-      tq$ID <- sample_meta[,"ID"]
+      tq$ID <- sample_meta[,ID]
     }
 
     tq <- reshape2::melt(tq, id.vars = colnames(tq)[-c(1:tk)])
@@ -1378,6 +1390,18 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
     mq <- fix_clust(mq)
     save.q <- mq
 
+    # sort by facet
+    if(!is.null(facet)){
+      if(!is.null(facet.order)){
+        qlist <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
+      }
+      else{
+        qlist <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
+      }
+      sample_meta <- qlist$meta
+      qlist <- qlist$qlist
+    }
+
     # sort by Q values if requested
     if(qsort != FALSE){
       if(!is.null(facet)){
@@ -1403,7 +1427,7 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   # function to parse in q files, used only if clumpp not run and a file pattern is provided
   parse_qfiles <- function(pattern){
     # read in the files
-    qfiles <- list.files(full.names = T, pattern = "qopt")
+    qfiles <- list.files(full.names = T, pattern = pattern)
     qlist <- pophelper::readQ(qfiles)
 
     # get k values
@@ -1430,6 +1454,24 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
     }
 
     return(out_q)
+  }
+
+  # function to sort each element of a qlist by a facet (population, ect). Needed because they must
+  # be ordered properly for qsorting to work correctly.
+  sort_by_pop_qfiles <- function(qlist, meta, pop.ord){
+    ord <- factor(meta[,facet], levels = pop.ord)
+    ord <- order(ord)
+
+    for(i in 1:length(qlist)){
+      for(j in 1:length(qlist[[i]])){
+        qlist[[i]][[j]] <- qlist[[i]][[j]][ord,]
+      }
+    }
+
+    nmeta <- as.data.frame(meta[ord,], stringsAsFactors = F)
+    colnames(nmeta) <- colnames(meta)
+
+    return(list(qlist = qlist, meta = nmeta))
   }
 
   #===========run the assignment/clustering method===============
@@ -1493,7 +1535,12 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
 
       # run the analysis
-      snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
+      if(!is.null(I)){
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", I = I, ...)
+      }
+      else{
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
+      }
 
       # read in
       qlist <- vector("list", k - 1)
@@ -1566,6 +1613,18 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
       warning("Plotting only the first run.\n")
     }
 
+    # sort by facet
+    if(!is.null(facet)){
+      if(!is.null(facet.order)){
+        qlist <- sort_by_pop_qfiles(qlist, sample_meta, facet.order)
+      }
+      else{
+        qlist <- sort_by_pop_qfiles(qlist, sample_meta, unique(sample_meta[,facet]))
+      }
+      sample_meta <- qlist$meta
+      qlist <- qlist$qlist
+    }
+
     # grab just the first run
     tq <- vector("list", length(qlist))
     for(i in 1:length(tq)){
@@ -1600,7 +1659,6 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
   }
 
   #===========final fixes to plot data=========
-  browser()
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K_", levels(pdat$K))
@@ -1623,7 +1681,9 @@ plot_structure <- function(x, facet = NULL, k = 2, method = "snmf", reps = 1, it
                    panel.spacing = ggplot2::unit(0.1, "lines"))
 
   if(!is.null(facet[1])){
-    fmt <- table(sample_meta[,facet])
+    pops <- unique(sample_meta[,facet])
+    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x))
+    names(fmt) <- pops
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
     breaks <- levels(pdat$ID)[fm]
