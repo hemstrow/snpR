@@ -1075,12 +1075,14 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
 #'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
-#'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
-#'   approach. } See CLUMPP documentation for details.
+#' datasets at high k values. \item{large.k.greedy: } A fast but less accurate
+#' approach. } See CLUMPP documentation for details.
 #' @param ID character or NULL, default NULL. Designates a column in the sample
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
 #' @param ... additional arguments passed to either \code{\link[LEA]{snmf}} or
@@ -1114,7 +1116,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
                            I = NULL, qsort = "last", qsort_K = "last", clumpp = T,
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
-                           t.sizes = c(12, 12, 12), ...){
+                           alt.palette = NULL, t.sizes = c(12, 12, 12), ...){
 
   #===========sanity checks===================
   msg <- character()
@@ -1231,6 +1233,35 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     sample_meta <- x@sample.meta
   }
 
+  # palette checks
+  if(!is.null(alt.palette[1])){
+
+    # is it long enough?
+    if(length(alt.palette) < k){
+      msg <- c(msg, "Provided alternative palette must contain at least as many colors
+               as the maximum k value.\n")
+    }
+
+    # is everything a valid color (can ggplot work with it)?
+    else{
+      alt.palette <- alt.palette[1:k]
+      tpd <- matrix(rnorm(k*2, 0, 1), k, 2)
+      tpd <- cbind(as.data.frame(tpd), col = 1:k)
+
+      color.check <- ggplot2::ggplot(tpd, ggplot2::aes(V1, V2, color = as.factor(col))) +
+        ggplot2::geom_point() + ggplot2::scale_color_manual(values = alt.palette)
+      tempfile <- tempfile()
+      tempfile <- paste0(tempfile, ".pdf")
+
+      suppressMessages(res <- try(ggplot2::ggsave(tempfile, color.check), silent = T))
+      invisible(capture.output(file.remove(tempfile)))
+      if("try-error" %in% class(res)){
+        msg <- c(msg, "Alt.palette contains non-color entries or otherwise fails to properly plot.\n")
+      }
+
+      rm(res, tpd, color.check)
+    }
+  }
 
   if(length(msg) != 0){
     stop(msg)
@@ -1670,8 +1701,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ggplot2::theme_bw() +
     ggplot2::geom_bar(stat = "identity") +
     ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0.25, 0.5,0.75)) +
-    ggplot2::scale_color_viridis_d(option = viridis.option) +
-    ggplot2::scale_fill_viridis_d(option = viridis.option) +
     ggplot2::ylab("Cluster Membership Proportion") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, size = t.sizes[3]),
                    strip.text = ggplot2::element_text(size = t.sizes[1]),
@@ -1680,6 +1709,17 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                    panel.grid = ggplot2::element_blank(),
                    panel.spacing = ggplot2::unit(0.1, "lines"))
 
+  # add palette
+  if(!is.null(alt.palette[1])){
+    p <- p + ggplot2::scale_color_manual(values = alt.palette) +
+      ggplot2::scale_fill_manual(values = alt.palette)
+  }
+  else{
+    p <- p + ggplot2::scale_color_viridis_d(option = viridis.option) +
+      ggplot2::scale_fill_viridis_d(option = viridis.option)
+  }
+
+  # add facets
   if(!is.null(facet[1])){
     pops <- unique(sample_meta[,facet])
     fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x))
@@ -1693,7 +1733,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
-      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "red", size = 1) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "white", size = 1) +
       ggplot2::xlab(label = facet[1])
   }
   else{

@@ -8,7 +8,7 @@ plot_structure(x, facet = NULL, facet.order = NULL, k = 2,
   method = "snmf", reps = 1, iterations = 1000, I = NULL,
   qsort = "last", qsort_K = "last", clumpp = T,
   clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
-  t.sizes = c(12, 12, 12), ...)
+  alt.palette = NULL, t.sizes = c(12, 12, 12), ...)
 }
 \arguments{
 \item{x}{snpRdata object, list of Q matrices (sorted by K in the first level
@@ -58,8 +58,8 @@ collapse results across multiple reps. If FALSE, will use only the first
 rep for plotting.}
 
 \item{clumpp.opt}{character, default "greedy". Designates the CLUMPP method
-to use. Options: \itemize{ \item{fullsearch: } Search all possible
-configurations. Slow. \item{greedy: } The standard approach. Slow for large
+  to use. Options: \itemize{ \item{fullsearch: } Search all possible
+  configurations. Slow. \item{greedy: } The standard approach. Slow for large
 datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 approach. } See CLUMPP documentation for details.}
 
@@ -68,6 +68,9 @@ metadata containing sample IDs.}
 
 \item{viridis.option}{character, default "viridis". Viridis color scale
 option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
+
+\item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
+to use instead of the viridis palette.}
 
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
 c(strip.title, axis, axis.ticks).}
