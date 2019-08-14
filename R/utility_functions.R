@@ -2052,6 +2052,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
 #'@param snp.meta data.frame, default NULL. If x is not a snpRdata object,
 #'  optionally specifies a data.frame containing meta data for each SNP. See
 #'  details for more information.
+#'@param chr.length numeric, default NULL. Chromosome lengths, for ms input files.
+#'  Note that a single value assumes that each chromosome is of equal length whereas
+#'  a vector of values assumes gives the length for each chromosome.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -2115,12 +2118,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
-                        sample.meta = NULL, snp.meta = NULL){
+                        sample.meta = NULL, snp.meta = NULL, chr.length = NULL){
 
   #======================sanity checks================
   if(!is.null(input_format)){
     if(tolower(input_format) == "snprdata"){input_format <- NULL}
   }
+
   # check that a useable output format is given. keming
   output <- tolower(output) # convert to lower case.
   if(output == "nn"){output <- "NN"}
@@ -2139,11 +2143,17 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
 
   # do checks, print info
-  if(is.null(input_format)){
+  if(is.null(input_format) & !is.null(facets[1])){
     facet.types <- x@facet.type[match(facets, x@facets)]
     snp.facets <- which(facet.types == "snp")
     both.facets <- which(facet.types == "both")
     sample.facets <- which(facet.types == "sample")
+  }
+  else{
+    both.facets <- character()
+    snp.facets <- both.facets
+    sample.facets <- both.facets
+    facet.types <- both.facets
   }
 
   if(output == "ac"){
@@ -2265,12 +2275,18 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(is.null(input_format)){
       stop("Data already in snpRdata object.\n")
     }
-    if(all(is.null(snp.meta), is.null(input_meta_columns)) | is.null(input_mDat)){
-      stop("sample meta, snp meta, and input metadata must be provided for conversion to snpRdata object.")
+    if(input_format != "ms"){
+      if(all(is.null(snp.meta), is.null(input_meta_columns)) | is.null(input_mDat)){
+        stop("sample meta, snp meta, and input missing data format must be provided for conversion to snpRdata object.")
+      }
+      else if(is.null(snp.meta) & !is.null(input_meta_columns)){
+        cat("Using input metadata columns as snp meta.\n")
+      }
     }
-    else if(is.null(snp.meta) & !is.null(input_meta_columns)){
-      cat("Using input metadata columns as snp meta.\n")
+    else if(is.null(input_mDat)){
+      input_mDat <- -1
     }
+
     cat("Converting to snpRdata object.\n")
   }
 
@@ -2298,6 +2314,47 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   #======================put data into snpRdata object if not in that format to start with================
   if(!is.null(input_format)){
     cat("Converting data to snpRdata, NN format.\n")
+
+    if(input_format == "ms"){
+      if(!is.null(snp.meta) | !is.null(input_meta_columns)){
+        input_meta_columns <- NULL
+        snp.meta <- NULL
+        warning("For ms inputs, provided snp.meta will be ignored and will be pulled from
+              input ms instead.\n")
+      }
+      if(is.null(sample.meta)){
+        stop("For ms input, please provide sample metadata.\n")
+      }
+      if(!is.numeric(chr.length)){
+        stop("For ms input, please provide either a single or a vector of chromosome lengths.\n")
+      }
+      if(!is.character(x)){
+        stop("For ms input, please provide a file path to the 'x' argument.\n")
+      }
+      else if(length(x) != 1){
+        stop("For ms input, please provide a file path to the 'x' argument.\n")
+      }
+      else if(!file.exists(x)){
+        stop("File provided to 'x' not found.\n")
+      }
+
+      convert_2_to_1_column <- function(x){
+        if(!is.matrix(x)){x <- as.matrix(x)}
+        ind.genos <- x[,seq(1,ncol(x), by = 2)] + x[,seq(2,ncol(x), by = 2)]
+        ind.genos <- matrix(ind.genos, ncol = ncol(x)/2) # rematrix and transpose!
+        return(ind.genos)
+      }
+
+      cat("Parsing ms file...")
+      x <- process_ms(x, chr.length)
+      snp.meta <- x$meta
+      x <- x$x
+      x <- convert_2_to_1_column(ms.in$x)
+      cat(" done.\n")
+
+      input_format <- "sn"
+    }
+
     if(!is.null(input_meta_columns)){
       headers <- x[,c(1:input_meta_columns)]
       x <- x[,-c(1:input_meta_columns)]
@@ -2350,9 +2407,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       cat("Imput format: sn\n")
       if(input_mDat %in% c(0:2)){
         stop("Missing data format must be other than 0, 1, or 2.\n")
-      }
-      if(nchar(input_mDat) != 1){
-        stop("Missing data format must be a single character.\n")
       }
       else{
         cat("Missing data format: ", input_mDat, "\n")
@@ -2413,7 +2467,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       xv[xv == 0] <- "AA"
       xv[xv == 1] <- "AC"
       xv[xv == 2] <- "CC"
-      xv[xv == mDat] <- "NN"
+      xv[xv == input_mDat] <- "NN"
       x <- as.data.frame(xv, stringsAsFactors = F)
 
       if(output == "NN"){
@@ -3633,3 +3687,65 @@ get.task.list <- function(x, facets, source = "stats"){
 
   return(task.list)
 }
+
+#' Internal to process a ms file
+#' @param x filepath to ms file
+#' @param chr.length length of the chromosome. If a single value, assumes all the same length.
+#'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
+process_ms <- function(x, chr.length){
+  infile <- x #infile
+  lines <- readLines(x)
+  lines <- lines[-which(lines == "")] #remove empty entries
+  lines <- lines[-c(1,2)] #remove header info
+  nss <- grep("segsites", lines) #get the number of segsites per chr
+  chrls <- gsub("segsites: ", "", lines[nss]) #parse this to get the lengths
+  chrls <- as.numeric(chrls)
+  lines <- lines[-nss] #remove the segsites lines
+  pos <- lines[grep("positions:", lines)] #find the positions
+  lines <- lines[-grep("positions:", lines)] #remove the position
+  div <- grep("//", lines) #find the seperators
+  gc <- div[2] - div[1] - 1 #find the number of gene copies per chr
+  if(is.na(gc)){gc <- length(lines) - 1} #if there's only one chr
+  dat <- lines[-div] #get the data only
+  dat <- strsplit(dat, "") #split the lines by individual snp calls
+  x <- matrix(NA, nrow = sum(chrls), ncol = gc) #prepare output
+  meta <- matrix(NA, nrow = sum(chrls), 2)
+
+  #process this into workable data
+  pchrls <- c(0, chrls)
+  pchrls <- cumsum(pchrls)
+
+  # check lengths input
+  if(length(chr.length) != 1){
+    if(length(chr.length) != length(chrls)){
+      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
+    }
+  }
+
+  for(i in 1:length(chrls)){
+    cat("\n\tChr ", i)
+    tg <- dat[(gc*(i-1) + 1):(gc*i)] #get only this data
+    tg <- unlist(tg) #unlist
+    tg <- matrix(as.numeric(tg), ncol = chrls[i], nrow = gc, byrow = T) #put into a matrix
+    tg <- t(tg) #transpose. rows are now snps, columns are gene copies
+    tpos <- unlist(strsplit(pos[i], " ")) #grap and process the positions
+    tpos <- tpos[-1]
+    meta[(pchrls[i] + 1):pchrls[i + 1],] <- cbind(paste0(rep("chr", length = nrow(tg)), i), tpos)
+    x[(pchrls[i] + 1):pchrls[i + 1],] <- tg #add data to output
+  }
+
+  meta <- as.data.frame(meta, stringsAsFactors = F)
+  meta[,2] <- as.numeric(meta[,2])
+  if(length(chr.length) == 1){
+    meta[,2] <- meta[,2] * chr.length
+  }
+  else{
+    meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
+  }
+
+  colnames(meta) <- c("group", "position")
+  colnames(x) <- paste0("gc_", 1:ncol(x))
+
+  return(list(x = x, meta = meta))
+}
+
