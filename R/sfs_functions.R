@@ -234,5 +234,16 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 }
 
 calc_directionality <- function(sfs){
+  # normalize, exluding fixed sites
+  sfs <- sfs[-1,-1] # remove fixed sites
+  sfs <- sfs/sum(sfs)
 
+  # get all of the allele frequencies in each cell
+  freqs.i <- (1:(nrow(sfs)))/(nrow(sfs))
+  freqs.j <- (1:(ncol(sfs)))/(ncol(sfs))
+
+  # do the math, this is equ 1b (i - j times sfs)
+  directionality <- sum(outer(freqs.i, freqs.j, "-") * sfs)
+
+  return(directionality)
 }
