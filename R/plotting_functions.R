@@ -1750,3 +1750,89 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
 
 }
+
+
+
+#' Plot 1 or 2d site frequency spectra.
+#'
+#' Plot 1 or 2d site frequency spectra such as those created by
+#' \code{\link{make_SFS}}. Plots are made using ggplot2, and can be freely
+#' modified as is usual for ggplot objects.
+#'
+#' The input SFS is either a 2d site frequency spectra stored in a matrix, with
+#' an additional "pops" attribute containing population IDs, such as c("POP1",
+#' "POP2"), where the first pop is the matrix columns and the second is the
+#' matrix rows, or a 1d site frequency spectra stored as a numeric vector with a
+#' similar pops attribute giving the population name. These objects can be
+#' produced from a dadi input file using \code{\link{make_SFS}}.
+#'
+#' @param sfs matrix or numeric. Either a 2d site frequency spectra stored in a
+#'   matrix, with an additional "pops" attribute containing population IDs, such
+#'   as c("POP1", "POP2"), where the first pop is the matrix columns and the
+#'   second is the matrix rows, or a 1d site frequency spectra stored as a
+#'   numeric vector with a similar pops attribute giving the population name.
+#'   These objects can be produced from a dadi input file using
+#'   \code{\link{make_SFS}}.
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
+#'   cell is log transformed.
+#'
+#' @return A ggplot2 plot object of the provided SFS.
+#'
+#' @export
+plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
+
+  # add colun names, row names, and melt
+  pops <- attr(sfs, "pop")
+  sfs <- as.data.frame(sfs)
+  if(length(pops) == 1){
+    sfs <- as.data.frame(t(sfs))
+  }
+  colnames(sfs) <- 0:(ncol(sfs) - 1)
+  sfs$count <- 0:(nrow(sfs) - 1)
+  sfs[1,1] <- NA # mask the first entry
+  msfs <- reshape2::melt(sfs, id.vars = "count")
+  colnames(msfs) <- c("p1", "p2", "N")
+  msfs$p1 <- as.integer(msfs$p1)
+  msfs$p2 <- as.integer(msfs$p2)
+
+
+
+  # plot
+  ## 2D
+  if(nrow(sfs) > 1){
+    if(log){
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = log10(N), color = log10(N)))
+    }
+    else{
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = N, color = N))
+    }
+
+    p <- p +
+      ggplot2::geom_tile() + ggplot2::theme_bw() +
+      ggplot2::scale_color_viridis_c(na.value = "white", option = viridis.option) +
+      ggplot2::scale_fill_viridis_c(na.value = "white", option = viridis.option) +
+      ggplot2::xlab(pops[1]) + ggplot2::ylab(pops[2]) +
+      ggplot2::scale_x_continuous(expand = c(0, 0)) +
+      ggplot2::scale_y_continuous(expand = c(0, 0))
+  }
+
+  ## 1D
+  else{
+    if(log){
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y = log(N)))
+    }
+    else{
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y= N))
+    }
+    p <- p +
+      ggplot2::geom_line() + ggplot2::theme_bw() +
+      ggplot2::xlab(pops[1])
+    ggplot2::scale_x_continuous(expand = c(0, 0))
+  }
+
+
+  return(p)
+}
+
