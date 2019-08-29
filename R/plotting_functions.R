@@ -426,6 +426,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
 #'@param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
 #'  perform.
+#'@param viridis.option character, default "viridis". Viridis color scale option
+#'   to use for significance lines and SNP labels. See
+#'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'@param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
 #'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
@@ -449,7 +454,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' plot_clusters(stickSNPs, "pop")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
-                          dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
+                          dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
+                          viridis.option = "viridis", alt.palette = NULL, ...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -632,20 +638,41 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     ## for the first variable
     # if the data is likely continuous:
     if(is.numeric(v1)){
-      out <- out + ggplot2::scale_color_viridis_c(name = facets[1])
+      if(is.null(alt.palette)){
+        out <- out + ggplot2::scale_color_viridis_c(name = facets[1], option = viridis.option)
+      }
+      else{
+        out <- out + ggplot2::scale_color_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[1])
+      }
     }
     else{
-      out <- out + ggplot2::scale_color_viridis_d(name = facets[1])
+      if(is.null(alt.palette)){
+        out <- out + ggplot2::scale_color_viridis_d(name = facets[1], option = viridis.option)
+      }
+      else{
+        out <- out + ggplot2::scale_color_manual(values = alt.palette, name = facets[1])
+      }
     }
 
     ## for the second variable if defined
     if(length(facets) > 1){
       if(is.numeric(v2)){
-        out <- out + ggplot2::scale_fill_viridis_c(name = facets[2])
+        if(is.null(alt.palette)){
+          out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+        }
+        else{
+          out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+        }
       }
       else{
-        out <- out + ggplot2::scale_fill_viridis_d(name = facets[2])
+        if(is.null(alt.palette)){
+          out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
+        }
+        else{
+          out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
+        }
       }
+
     }
 
     if(plot_type[i] == "pca"){
@@ -1773,7 +1800,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   numeric vector with a similar pops attribute giving the population name.
 #'   These objects can be produced from a dadi input file using
 #'   \code{\link{make_SFS}}.
-#' @param viridis.option character, default "viridis". Viridis color scale
+#' @param viridis.option character, default "inferno". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
 #' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
 #'   cell is log transformed.
@@ -1794,8 +1821,8 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   sfs[1,1] <- NA # mask the first entry
   msfs <- reshape2::melt(sfs, id.vars = "count")
   colnames(msfs) <- c("p1", "p2", "N")
-  msfs$p1 <- as.integer(msfs$p1)
-  msfs$p2 <- as.integer(msfs$p2)
+  msfs$p1 <- as.integer(as.character(msfs$p1))
+  msfs$p2 <- as.integer(as.character(msfs$p2))
 
 
 
@@ -1821,7 +1848,7 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   ## 1D
   else{
     if(log){
-      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y = log(N)))
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y = log10(N)))
     }
     else{
       p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y= N))

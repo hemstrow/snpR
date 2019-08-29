@@ -8,7 +8,8 @@ plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"),
   check_duplicates = FALSE, minimum_percent_coverage = FALSE,
   minimum_genotype_percentage = FALSE,
   interpolation_method = "bernoulli", dims = 2, initial_dims = 50,
-  perplexity = FALSE, theta = 0, iter = 1000, ...)
+  perplexity = FALSE, theta = 0, iter = 1000,
+  viridis.option = "viridis", alt.palette = NULL, ...)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -42,6 +43,13 @@ found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 
 \item{iter}{numeric, default 1000. Number of tSNE iterations/umap epochs to
 perform.}
+
+\item{viridis.option}{character, default "viridis". Viridis color scale option
+to use for significance lines and SNP labels. See
+\code{\link[ggplot2]{scale_colour_gradient}} for details.}
+
+\item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
+to use instead of the viridis palette.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.}
 

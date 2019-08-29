@@ -15,7 +15,7 @@ numeric vector with a similar pops attribute giving the population name.
 These objects can be produced from a dadi input file using
 \code{\link{make_SFS}}.}
 
-\item{viridis.option}{character, default "viridis". Viridis color scale
+\item{viridis.option}{character, default "inferno". Viridis color scale
 option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
 
 \item{log}{logical, default TRUE. If TRUE, the number of SNPs in each SFS
