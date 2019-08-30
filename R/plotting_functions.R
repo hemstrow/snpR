@@ -1076,7 +1076,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param facet.order character, default NULL. Optional order in which the
 #'   levels of the provided facet should appear on the plot, left to right.
 #' @param k numeric, default 2. The maximum of k (number of clusters) for which
-#'   to run the clustering/assignment algorithm. The values 2:k will be run.
+#' to run the clustering/assignment algorithm. The values 2:k will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
@@ -1089,6 +1089,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param I numeric or NULL, default NULL. For snmf, how many SNPs should be
 #'   used to initialize the search? Initializing with a subset of the total SNPs
 #'   can radically speed up computation time for large datasets.
+#' @param alpha numeric, default 10. For sNMF, determines the regularization
+#'   parameter. For small datasets, this can have a large effect, and should
+#'   probably be larger than the default. See documentation for
+#'   \code{\link[LEA]{snmf}}.
 #' @param qsort character, numeric, or FALSE, default "last". Determines if
 #'   individuals should be sorted (possibly within facet levels) by cluster
 #'   assignment proportion. If not FALSE, determines which cluster to use for
@@ -1102,8 +1106,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
 #'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
-#' datasets at high k values. \item{large.k.greedy: } A fast but less accurate
-#' approach. } See CLUMPP documentation for details.
+#'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
+#'   approach. } See CLUMPP documentation for details.
 #' @param ID character or NULL, default NULL. Designates a column in the sample
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
@@ -1141,7 +1145,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   selection vs K value for the selected method.}
 #'
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
-                           I = NULL, qsort = "last", qsort_K = "last", clumpp = T,
+                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T,
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), ...){
 
@@ -1521,8 +1525,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ord <- order(ord)
 
     for(i in 1:length(qlist)){
-      for(j in 1:length(qlist[[i]])){
-        qlist[[i]][[j]] <- qlist[[i]][[j]][ord,]
+      if(is.data.frame(qlist[[i]])){
+        qlist[[i]] <- qlist[[i]][ord,]
+      }
+      else{
+        for(j in 1:length(qlist[[i]])){
+          qlist[[i]][[j]] <- qlist[[i]][[j]][ord,]
+        }
       }
     }
 
@@ -1594,10 +1603,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
       # run the analysis
       if(!is.null(I)){
-        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", I = I, ...)
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, I = I, ...)
       }
       else{
-        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", ...)
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, ...)
       }
 
       # read in
@@ -1863,3 +1872,58 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   return(p)
 }
 
+plot_assignment_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
+                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05){
+  browser()
+  # generate plotting data.frame
+  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
+  colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
+  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K_", K),]
+  tpd <- tpd[,c(facet, "Cluster", "Percentage")]
+  tpd$Cluster <- as.numeric(tpd$Cluster)
+  anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)
+
+  ## check if we need to flip negative longitude scores
+  if(all(map$long >= 0)){
+    flip <- T
+  }
+  else{
+    flip <- F
+  }
+
+  for(i in 1:ncol(pop_coordinates)){
+    pie_dat[i,1] <- colnames(pop_coordinates)[i]
+    pie_dat[i,-1] <- c(pop_coordinates[1,i], pop_coordinates[2,i], anc[colnames(pop_coordinates)[i],])
+    if(pie_dat$long[i] < 0 & flip){
+      pie_dat$long[i] <- 360 + pie_dat$long[i]
+    }
+  }
+
+  # figure out the radius to use
+  lat_range <- range(pie_dat$lat)
+  long_range <- range(pie_dat$long)
+  r <- min(lat_range[2] - lat_range[1], long_range[2] - long_range[1])
+  r <- r*radius_scale
+
+  # make the plot
+  mp <- ggplot2::ggplot(map, ggplot2::aes(x = long, y = lat)) +
+    ggplot2::geom_map(map = map, ggplot2::aes(map_id = region), fill = "grey", color = "white") +
+    ggplot2::theme_bw() +
+    ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
+    ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r)) +
+    scatterpie::geom_scatterpie(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, r = r), cols = colnames(pie_dat)[4:ncol(pie_dat)]) +
+    ggplot2::theme(legend.title = ggplot2::element_blank()) +
+    ggplot2::xlab("Longitude") + ggplot2::ylab("Latitude")
+
+  if(!is.null(alt.palette)){
+    mp <- mp + ggplot2::scale_fill_manual(values = alt.palette)
+  }
+  else{
+    mp <- mp + ggplot2::scale_fill_viridis_d(option = viridis.option)
+  }
+  if(pop_names){
+    mp <- mp + ggplot2::geom_text(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop))
+  }
+
+  return(mp)
+}
