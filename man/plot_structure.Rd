@@ -6,7 +6,7 @@
 \usage{
 plot_structure(x, facet = NULL, facet.order = NULL, k = 2,
   method = "snmf", reps = 1, iterations = 1000, I = NULL,
-  qsort = "last", qsort_K = "last", clumpp = T,
+  alpha = 10, qsort = "last", qsort_K = "last", clumpp = T,
   clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
   alt.palette = NULL, t.sizes = c(12, 12, 12), ...)
 }
@@ -44,6 +44,11 @@ number of iterations to run.}
 used to initialize the search? Initializing with a subset of the total SNPs
 can radically speed up computation time for large datasets.}
 
+\item{alpha}{numeric, default 10. For sNMF, determines the regularization
+parameter. For small datasets, this can have a large effect, and should
+probably be larger than the default. See documentation for
+\code{\link[LEA]{snmf}}.}
+
 \item{qsort}{character, numeric, or FALSE, default "last". Determines if
 individuals should be sorted (possibly within facet levels) by cluster
 assignment proportion. If not FALSE, determines which cluster to use for
@@ -58,8 +63,8 @@ collapse results across multiple reps. If FALSE, will use only the first
 rep for plotting.}
 
 \item{clumpp.opt}{character, default "greedy". Designates the CLUMPP method
-  to use. Options: \itemize{ \item{fullsearch: } Search all possible
-  configurations. Slow. \item{greedy: } The standard approach. Slow for large
+to use. Options: \itemize{ \item{fullsearch: } Search all possible
+configurations. Slow. \item{greedy: } The standard approach. Slow for large
 datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 approach. } See CLUMPP documentation for details.}
 

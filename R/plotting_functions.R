@@ -1872,9 +1872,9 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   return(p)
 }
 
-plot_assignment_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
+#' @export
+plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
                                 pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05){
-  browser()
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
