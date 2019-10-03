@@ -3512,6 +3512,9 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
                "ID column not found in sample metadata.")
     }
     else{
+      if(identical(y, 1:ncol(x))){
+        y <- x@sample.meta[,id.col]
+      }
       if(length(unique(x@sample.meta[,id.col])) != length(x@sample.meta[,id.col])){
         msg <- c(msg,
                  "Each entry in the ID column must be unique.")
