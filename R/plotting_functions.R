@@ -164,12 +164,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   order_levels <- function(x){
     # convert positions to factors:
     ms <- unique(c(x$SNPa, x$SNPb))
-    ms <- sort(as.numeric(as.character(ms)))
-
-    # finish messing with site names
-    ms <- ms
-    ms <- sort(ms)
-    ms <- as.factor(ms)
+    ms <- as.factor(sort(as.numeric(as.character(ms))))
 
     # convert to factor
     x$SNPa <- as.factor(x$SNPa)
