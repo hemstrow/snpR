@@ -828,13 +828,22 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       facets <- check.snpR.facet.request(x, facets)
     }
     else{
+      if(chr != "chr"){
+        warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
+      }
+      if(!is.null(facets)){
+        pop.facets <- check.snpR.facet.request(x, facets, "sample")
+        facets <- paste0(facets, ".", chr)
+      }
+      else{
+        facets <- chr
+      }
+
       facets <- check.snpR.facet.request(x, facets, "none")
     }
     if(plot_var %in% colnames(x@stats)){
       if(window){
-        if(chr != "chr"){
-          warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
-        }
+
         stats <- get.snpR.stats(x, facets = facets, type = "single.window")
         chr <- "snp.subfacet"
 
