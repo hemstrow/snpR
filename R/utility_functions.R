@@ -1577,6 +1577,8 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #'  minor allele frequency
 #'@param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
+#'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE violation p-value below
+#'  this will be rejected.
 #'@param min_ind FALSE or integer, default FALSE. Minimum number of individuals
 #'  in which a loci must be sequenced.
 #'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
@@ -1604,7 +1606,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #' # and a full re-run of loci filters after individual removal.
 #' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf.facets = NULL,
                         non_poly = TRUE, bi_al = TRUE){
 
@@ -1827,7 +1829,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
     }
 
     #========hf_hets. Should only run if bi_al = TRUE.==========
-    # working here
     if(hf_hets){
       cat("Filtering high frequency heterozygote loci...\n")
 
@@ -1842,6 +1843,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
       vio.snps[which(het_f)] <- T
     }
 
+    #========HWE violation======================================
+    if(HWE){
+      cat("Filtering loci out of HWE...\n")
+      invisible(capture.output(x <- calc_hwe(x)))
+      phwe <- x@stats$pHWE[x@stats$facet == ".base"]
+      phwe <- which(phwe < HWE)
+      cat("\t", length(phwe), " bad loci\n")
+      vio.snps[phwe] <- T
+    }
 
     #==========remove violating loci==================
     if(any(vio.snps)){
