@@ -1621,12 +1621,27 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
   }
 
+  if(HWE){
+    if(!is.numeric(HWE)){
+      stop("HWE must be a numeric value.")
+    }
+    if(length(HWE) != 1){
+      stop("HWE must be a numeric vector of length 1.")
+    }
+    if(HWE <= 0 | HWE >= 1){
+      stop("HWE must be a value between 0 and 1.")
+    }
+  }
+
   if(hf_hets){
     if(!is.numeric(hf_hets)){
       stop("hf_hets must be a numeric value.")
     }
     if(length(hf_hets) != 1){
       stop("hf_hets must be a numeric vector of length 1.")
+    }
+    if(hf_hets <= 0 | hf_hets  >= 1){
+      stop("hf_hets must be a value between 0 and 1.")
     }
   }
 
