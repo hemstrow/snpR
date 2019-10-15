@@ -785,7 +785,7 @@ calc_private <- function(x, facets = NULL){
 
 #'Pairwise LD from SNP data.
 #'
-#'\code{LD_full_pairwise} calculates LD between each pair of SNPs.
+#'\code{calc_pairwise_ld} calculates LD between each pair of SNPs.
 #'
 #'Calculates pairwise linkage disequilibrium between pairs of SNPs using several
 #'different methods. By default uses the Burrow's Composite Linkage
@@ -1851,6 +1851,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         ## decompose and return
         LD_mats <- decompose.LD.matrix(x, LD_mats, facets = facets, facet.types = facet.types)
         prox$sample.facet <- ".base"
+        prox$sample.subfacet <- ".base"
 
         out <- list(prox = prox, LD_matrices = LD_mats)
 
@@ -1872,6 +1873,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         prox <- out$prox
         prox$sample.facet <- ".base"
+        prox$sample.subfacet <- ".base"
         out <- decompose.LD.matrix(x, LD_mats, facets, facet.types)
         out <- list(prox = prox, LD_matrices = out)
 
@@ -1929,7 +1931,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           out <- LD_func(x, meta = x@snp.meta, mDat = x@mDat, snp.list = comps[[i]][[j]], sr = sr)
           #report progress
           progress <- progress + 1
-          w_list$prox <- rbind(w_list$prox, cbind(out$prox, sample.facet = names(comps)[i]))
+          w_list$prox <- rbind(w_list$prox, cbind(out$prox, sample.facet = names(comps)[i], sample.subfacet = names(comps[[i]])[j]))
           w_list$LD_mats[[i]][[j]][[1]] <- out$Dprime
           w_list$LD_mats[[i]][[j]][[2]] <- out$rsq
           w_list$LD_mats[[i]][[j]][[3]] <- out$pval
@@ -1980,7 +1982,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       for(i in 1:ntasks){
         t.facet <- task_list[i,1]
         t.subfacet <- task_list[i,2]
-        w_list$prox <- rbind(w_list$prox, cbind(output[[i]]$prox, sample.facet = names(comps)[t.facet]))
+        w_list$prox <- rbind(w_list$prox, cbind(output[[i]]$prox, sample.facet = names(comps)[t.facet], sample.subfacet = names(comps[[t.facet]])[t.subfacet]))
         w_list$LD_mats[[t.facet]][[t.subfacet]]$Dprime <- output[[i]]$Dprime
         w_list$LD_mats[[t.facet]][[t.subfacet]]$rsq <- output[[i]]$rsq
         w_list$LD_mats[[t.facet]][[t.subfacet]]$pvalue <- output[[i]]$pval
