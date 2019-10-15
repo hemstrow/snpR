@@ -697,7 +697,18 @@ calc_ho <- function(x, facets = NULL){
     hets <- which(substr(genos, 1, 1) != substr(genos, 2,2))
 
     # calculate ho
-    ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
+    ## if only one heterozygote...
+    if(length(hets) == 1){
+      ho <- gs$gs[,hets]/rowSums(gs$gs)
+    }
+    ## if no heterozygotes
+    else if(length(hets) == 0){
+      ho <- rep(0, nrow(gs$gs))
+    }
+    ## normally
+    else{
+      ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
+    }
   }
 
   # add any missing facets

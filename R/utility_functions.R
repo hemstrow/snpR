@@ -2574,10 +2574,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     get.ac <- function(x, maj, min, mis.al){
       # initialize:
       if(is.null(nrow(x))){
-        temp.x <- as.matrix(x)
+        temp.x <- matrix(x, ncol = length(x))
         colnames(temp.x) <- names(x)
         x <- temp.x
-        rm(temp.x)
       }
 
       out <- data.frame(n_total = numeric(length(maj)),
