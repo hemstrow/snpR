@@ -233,6 +233,11 @@ add.facets.snpR.data <- function(x, facets = NULL){
       gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
       gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
       gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+      # fix NAs that show up when there are less called genotype options in one facet level than in all levels!
+      if(ncol(gs$gs) != ncol(tgs$gs)){
+        gs <- lapply(gs, function(x){x[is.na(x)] <- 0;x})
+      }
+
       x@facet.meta <- rbind(x@facet.meta,
                             cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
                                              subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
@@ -1496,7 +1501,6 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 
   #fill in
   for(i in 1:length(as)){
-    as[i]
     b <- grep(as[i], colnames(tmat))
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
