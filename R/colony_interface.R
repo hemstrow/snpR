@@ -91,19 +91,37 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
 
   # allele frequencies
-  write(as.numeric(known_af), outfile, append = T)
-  if(known_af){
-    write(rep(2, nrow(x)), outfile, append = T, sep = " ", ncolumns = nrow(x)) # number of alleles per locus, should all be two.
-
-    # afs
-    x <- calc_maf(x)
-    afs <- x@stats[x@stats$facet == ".base",]$maf
-    afs <- cbind(1-afs, afs)
-    for(i in 1:length(afs)){
+  ## if provided with minor allele frequencies
+  if(length(known_af) == nrow(x) & is.numeric(known_af)){
+    write(1, outfile, append = T)
+    maj <- 1 - known_af
+    afs <- cbind(maj, known_af)
+    for(i in 1:nrow(known_af)){
       write(1:2, outfile, sep = " ", append = T)
       write(afs[i,], outfile, append = T, sep = " ")
     }
   }
+  # otherwise, check the logical and calculate minor allele frequencies if true
+  else if(is.logical(known_af[1]) & length(known_af) == 1){
+    write(as.numeric(known_af), outfile, append = T)
+    if(known_af){
+      write(rep(2, nrow(x)), outfile, append = T, sep = " ", ncolumns = nrow(x)) # number of alleles per locus, should all be two.
+
+      # afs
+      x <- calc_maf(x)
+      afs <- x@stats[x@stats$facet == ".base",]$maf
+      afs <- cbind(1-afs, afs)
+      for(i in 1:nrow(afs)){
+        write(1:2, outfile, sep = " ", append = T)
+        write(afs[i,], outfile, append = T, sep = " ")
+      }
+    }
+  }
+  else{
+    file.remove(outfile)
+    stop("known_af must either be TRUE, FALSE, or a vector of minor allele frequencies.\n")
+  }
+
 
   write(nruns, outfile, append = T) # nruns
   write(run_length, outfile, append = T) # run length

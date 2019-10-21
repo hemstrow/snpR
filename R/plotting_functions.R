@@ -832,8 +832,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
       }
       if(!is.null(facets)){
-        pop.facets <- check.snpR.facet.request(x, facets, "sample")
-        facets <- paste0(facets, ".", chr)
+        pop.facets <- check.snpR.facet.request(x, facets, "snp")
+        facets <- paste0(pop.facets, ".", chr)
       }
       else{
         facets <- chr
