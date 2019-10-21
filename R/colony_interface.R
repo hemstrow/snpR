@@ -14,6 +14,7 @@
 #'   \item{"PLS": }{} }
 #' @param run_length numeric in 1:4, default 2. Length of run, short/medium/long/verylong.
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
+#' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require
 #' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
