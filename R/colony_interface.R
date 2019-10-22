@@ -15,7 +15,15 @@
 #' @param run_length numeric in 1:4, default 2. Length of run, short/medium/long/verylong.
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require
+#' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.
+#' @param  paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
+#' @param maternal_sibship_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
+#' @param nruns integer, default 1. A number of replicate runs for the dataset.
+#' @param  seed integer, default NULL. Supply a four digit seed (eg: 1234, 9876) as a starting point.
+#' @param maternal_genotypes snpRdata object containing maternal genotypes.
+#' @param paternal_genotypes snpRdata object containing paternal genotypes.
+#' @param maternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
+#' @param paternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
 #' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
