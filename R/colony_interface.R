@@ -19,7 +19,7 @@
 #' @param  paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
 #' @param maternal_sibship_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
 #' @param nruns integer, default 1. A number of replicate runs for the dataset.
-#' @param  seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
+#' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
 #' @param paternal_genotypes snpRdata object containing paternal genotypes.
 #' @param maternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
@@ -29,9 +29,16 @@
 #' @param inbreeding character, default TRUE. Should Colony assume inbreeding in the calculations?
 #' @param male_monogamous character, default FALSE. Should Colony assume males are monogamous?
 #' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
-#' @param  clone_inference character, default FALSE. Should Colony infer clones in the sample set?
+#' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
 #' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
+#' @param precision integer in c(1,2,3,), default 2. Low/Medium/High/Very High for calculating the max likelihood.
+#' @param dropout numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
+#' @param genotyping_error numeric in 0:1, default 0.01.Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
+#'
+#' @author William Hemstrom
+#' @author Melissa Jones
+#'
 #' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
@@ -40,7 +47,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                update_af = TRUE, dioecious = TRUE, inbreeding = TRUE, male_monogamous = FALSE,
                                female_monogamous = FALSE, clone_inference = FALSE, sibship_scaling = TRUE, known_af = FALSE,
                                precision = 2, dropout = 0.01, genotyping_error = 0.01,
-                               known_maternal_dryads = NULL, known_paternal_dryads = NULL,
+                               known_maternal_dyads = NULL, known_paternal_dyads = NULL,
                                known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                                known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
@@ -221,24 +228,24 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
   }
 
-  # paternal dryads:
-  if(!is.null(known_paternal_dryads[1,1])){
-    n_p_d <- nrow(known_paternal_dryads)
+  # paternal dyads:
+  if(!is.null(known_paternal_dyads[1,1])){
+    n_p_d <- nrow(known_paternal_dyads)
     write(c(n_p_d, known_paternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
-    write.table(known_paternal_dryads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dryads. They should be a matrix or data frame, with the offspring ID in the first column and the paternal ID in the second
+    write.table(known_paternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the paternal ID in the second
   }
   else{
-    write(c(0, 0), outfile, append =  T, sep = " ") # no dryads
+    write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
   }
 
-  # maternal dryads:
-  if(!is.null(known_maternal_dryads[1,1])){
-    n_m_d <- nrow(known_maternal_dryads)
+  # maternal dyads:
+  if(!is.null(known_maternal_dyads[1,1])){
+    n_m_d <- nrow(known_maternal_dyads)
     write(c(n_m_d, known_maternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
-    write.table(known_maternal_dryads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dryads. They should be a matrix or data frame, with the offspring ID in the first column and the maternal ID in the second
+    write.table(known_maternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the maternal ID in the second
   }
   else{
-    write(c(0, 0), outfile, append =  T, sep = " ") # no dryads
+    write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
   }
 
   # known paternal sibships
@@ -394,7 +401,7 @@ run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS
                        update_af = TRUE, dioecious = TRUE, inbreeding = TRUE, male_monogamous = FALSE,
                        female_monogamous = FALSE, clone_inference = FALSE, sibship_scaling = TRUE, known_af = FALSE,
                        precision = 2, dropout = 0.01, genotyping_error = 0.01,
-                       known_maternal_dryads = NULL, known_paternal_dryads = NULL,
+                       known_maternal_dyads = NULL, known_paternal_dyads = NULL,
                        known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                        known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                        maternal_exclusions = NULL, paternal_exclusions = NULL,
@@ -424,8 +431,8 @@ run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS
                      precision = precision,
                      dropout = dropout,
                      genotyping_error = genotyping_error,
-                     known_maternal_dryads = known_maternal_dryads,
-                     known_paternal_dryads = known_paternal_dryads,
+                     known_maternal_dyads = known_maternal_dyads,
+                     known_paternal_dyads = known_paternal_dyads,
                      known_maternal_max_mismatches = known_maternal_max_mismatches,
                      known_paternal_max_mismatches = known_paternal_max_mismatches,
                      known_maternal_sibships = known_maternal_sibships,
