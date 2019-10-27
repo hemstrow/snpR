@@ -70,6 +70,10 @@
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   # prepare things for addition to data
+  if(any(is.na(genotypes))){
+    stop("NA found in input genotypes. Often, this is in the last row or column.\n")
+  }
+
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
     if(ncol(genotypes) == 1){
