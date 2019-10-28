@@ -2313,3 +2313,29 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   #=========return==============
   return(x)
 }
+
+#' Calculate the ratio of heterozygous/homozygous sites per individual.
+#'
+#' Calculates the ratio of heterozygotes to homozygous sites across all SNPs within each individual.
+#' Facet support (for snp level facets) needs to be added, should be straightforward.
+#'
+#' @export
+calc_het_hom_ratio <- function(x){
+
+  # make x into a logical for heterozygous
+  xv <- as.matrix(x)
+  logix <- substr(xv, 1, 1) == substr(xv, 2, 2)
+  logix[xv == x@mDat] <- NA # NA when missing data!
+
+  # get counts of hets and homs, then ratio
+  hets <- matrixStats::colSums2(logix, na.rm = T) # number heterozygous sites
+  homs <- matrixStats::colSums2(!logix, na.rm = T) # number homozygous sites
+  ratio <- hets/homs
+
+
+  #============merge=========
+  stats <- cbind(facet = ".base", subfacet = ".base", x@sample.meta, 'het/hom' = ratio)
+  x <- merge.snpR.stats(x, stats, "sample.stats")
+
+  return(x)
+}

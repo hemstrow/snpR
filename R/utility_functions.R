@@ -1105,6 +1105,12 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     n.s <- smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
     x@pairwise.window.stats <- n.s
   }
+  else if(type == "sample.stats"){
+    meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
+    starter.meta <- c("facet", "subfacet")
+    n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
+    x@sample.stats <- n.s
+  }
   else if(type == "LD"){
 
     if(length(x@pairwise.LD) == 0){
