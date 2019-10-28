@@ -3049,9 +3049,23 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata <- list(ped = ped, bed = bed, map = map, bim = bim)
   }
 
+  # colony format for 01234
+  if(output == "colony"){
+    #gsub the values
+    rdata <- gsub(pattern = "N", replacement = "0", x = as.matrix(x))
+    rdata <- gsub(pattern = "A", replacement = "1", x = rdata)
+    rdata <- gsub(pattern = "C", replacement = "2", x = rdata)
+    rdata <- gsub(pattern = "G", replacement = "3", x = rdata)
+    rdata <- gsub(pattern = "T", replacement = "4", x = rdata)
+    rdata <- gsub(pattern = "^([0-4])([0-4])", replacement = "\\1 \\2", rdata)
+    # transpose
+    rdata <- t(rdata)
+    rdata <- cbind(colnames(x), as.data.frame(rdata))
+
+  }
 
   # single-character numeric format
-  if(output == "sn" | output == "colony" | output == "lea"){
+  if(output == "sn" | output == "lea"){
 
     # grab major/minor info via calc_maf, unless already calculated
     if(!any(colnames(x@stats) == "major")){
@@ -3071,66 +3085,44 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     a1 <- a1 == rep(min, each = ncol(x))
     a2 <- a2 == rep(min, each = ncol(x))
 
-    # collapse to output
-    if(output == "sn" | output == "lea"){
-      rdata <- t(a1 + a2)
-      rdata[as.matrix(x) == x@mDat] <- NA
+    rdata <- t(a1 + a2)
+    rdata[as.matrix(x) == x@mDat] <- NA
 
 
-      # sn
-      if(output == "sn"){
+    # sn
+    if(output == "sn"){
 
-        # grab out metadata
-        meta <- x@snp.meta
+      # grab out metadata
+      meta <- x@snp.meta
 
-        # if interpolating and there are any bad loci with zero called genotypes, remove them
-        if(interpolate != FALSE){
-          bad.loci <- ifelse(is.na(rdata), 0, 1)
-          bad.loci <- which(rowSums(bad.loci) == 0)
+      # if interpolating and there are any bad loci with zero called genotypes, remove them
+      if(interpolate != FALSE){
+        bad.loci <- ifelse(is.na(rdata), 0, 1)
+        bad.loci <- which(rowSums(bad.loci) == 0)
 
-          if(length(bad.loci) > 0){
-            rdata <- rdata[-bad.loci,]
-            meta <- meta[-bad.loci,]
-            warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
-          }
+        if(length(bad.loci) > 0){
+          rdata <- rdata[-bad.loci,]
+          meta <- meta[-bad.loci,]
+          warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
         }
-
-        # interpolate?
-        if(interpolate == "bernoulli"){
-          rdata <- interpolate_sn(rdata, "bernoulli")
-        }
-        else if(interpolate == "af"){
-          rdata <- interpolate_sn(rdata, "sn")
-        }
-
-        # bind and save
-        rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
       }
 
-      # lea
-      else{
-        rdata <- 2 - rdata
-        rdata[is.na(rdata)] <- 9
+      # interpolate?
+      if(interpolate == "bernoulli"){
+        rdata <- interpolate_sn(rdata, "bernoulli")
       }
+      else if(interpolate == "af"){
+        rdata <- interpolate_sn(rdata, "sn")
+      }
+
+      # bind and save
+      rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
     }
+
+    # lea
     else{
-      # convert a1 and a2 to the "1 2" format.
-      rdata <- paste0(as.numeric(a1) + 1, " ", as.numeric(a2) + 1)
-      rdata <- matrix(rdata, nrow = nrow(x), byrow = T)
-      rdata[as.matrix(x) == x@mDat] <- "0 0" # fix missing data
-      rdata <- t(rdata) # since rows are individuals in colony
-
-      # split into two columns
-      p1 <- substr(rdata, 1, 1) #split
-      p2 <- substr(rdata, 3, 3)
-      rdata <- cbind(p1, p2) # bind
-      ord <- cbind(1:ncol(p1), (ncol(p1) + 1):ncol(rdata)) # re-order
-      ord <- as.numeric(t(ord))
-      rdata <- rdata[,ord]
-      rdata <- matrix(as.numeric(rdata), nrow(rdata)) # put into numeric
-
-      # sample IDs
-      rdata <- cbind(colnames(x), as.data.frame(rdata))
+      rdata <- 2 - rdata
+      rdata[is.na(rdata)] <- 9
     }
   }
 
@@ -3329,6 +3321,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     else if(output == "lea"){
       write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
+    }
+    else if(output == "colony"){
+      data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = " ", row.names = F)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
