@@ -2337,7 +2337,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   func <- function(x, mDat){
     # make x into a logical for heterozygous
     xv <- as.matrix(x)
-    logix <- substr(xv, 1, 1) == substr(xv, 2, 2)
+    logix <- substr(xv, 1, 1) != substr(xv, 2, 2) # true if het
     logix[xv == mDat] <- NA # NA when missing data!
 
     # get counts of hets and homs, then ratio
