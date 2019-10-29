@@ -999,8 +999,15 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
     # run
     out <- vector("list", length(facets))
     for(i in 1:length(facets)){
-      out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
-      out[[i]] <- cbind(x@sample.meta, out[[i]])
+      if(facets[i] == ".base"){
+        out[[i]] <- cbind.data.frame(x@sample.meta, facet = ".base",
+                                     stat = fun(x, ...),
+                                     stringsAsFactors = F)
+      }
+      else{
+        out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
+        out[[i]] <- cbind(x@sample.meta, out[[i]])
+      }
     }
     suppressWarnings(out <- dplyr::bind_rows(out))
 
