@@ -968,6 +968,50 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       return(out)
     }
   }
+  else if(case == "per_sample"){
+
+    split_facets <- strsplit(facets, "(?<!^)\\.", perl = T)
+    names(split_facets) <- facets
+
+    # options across all facets
+    opts <- lapply(split_facets, function(y){
+      levs <- data.frame(unique(x@snp.meta[,which(colnames(x@snp.meta) %in% y)]))
+      if(ncol(levs) == 1){colnames(levs) <- y}
+      return(levs)
+      })
+
+    # loop function
+    loop.func <- function(x, opts, fname){
+      out <- vector("list", nrow(opts))
+      for(i in 1:nrow(opts)){
+        ident <- which(apply(x@snp.meta[,colnames(opts),drop = F], 1, function(x) identical(as.character(x), as.character(opts[i,]))))
+        if(length(ident) > 0){
+          genotypes <- x[ident,, drop = FALSE]
+          suppressWarnings(out[[i]] <- cbind.data.frame(facet = fname,
+                                                        opts[i,,drop = F],
+                                                        stat = fun(genotypes, ...),
+                                                        stringsAsFactors = F))
+        }
+      }
+      return(dplyr::bind_rows(out))
+    }
+
+    # run
+    out <- vector("list", length(facets))
+    for(i in 1:length(facets)){
+      out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
+      out[[i]] <- cbind(x@sample.meta, out[[i]])
+    }
+    suppressWarnings(out <- dplyr::bind_rows(out))
+
+    # re-order and fix NAs from missing stats
+    stat.col <- (which(colnames(out) == "stat"))
+    out <- out[,c((1:ncol(out))[-stat.col], stat.col)]
+    meta <- out[,-ncol(out)]
+    meta[is.na(meta)] <- ".base"
+    out[,1:(ncol(out) - 1)] <- meta
+    return(out)
+  }
 }
 
 #'Merge newly calculated stats into a snpRdata object.
@@ -1109,6 +1153,12 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
     starter.meta <- c("facet", "subfacet")
     n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
+
+    # fix NAs that result from adding new facets
+    meta.cols <- which(colnames(n.s) %in% colnames(x@snp.meta))
+    for (j in meta.cols){
+      set(n.s, which(is.na(n.s[[j]])), j , ".base")
+    }
     x@sample.stats <- n.s
   }
   else if(type == "LD"){

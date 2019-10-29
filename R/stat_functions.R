@@ -2317,25 +2317,43 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' Calculate the ratio of heterozygous/homozygous sites per individual.
 #'
 #' Calculates the ratio of heterozygotes to homozygous sites across all SNPs within each individual.
-#' Facet support (for snp level facets) needs to be added, should be straightforward.
 #'
+#' @param x snpRdata object
+#' @param facets facets over which to split snps within samples. Takes only SNP level facets. See \code{\link{Facets_in_snpR}} for details.
+#'
+#' @return A snpRdata object with heterozygote/homozygote ratios merged into the sample.stats slot.
+#'
+#' @author William Hemstrom
 #' @export
-calc_het_hom_ratio <- function(x){
+#'
+#' @examples
+#' # base facet
+#' x <- calc_het_hom_ratio(stickSNPs)
+#'
+#' # facet by chromosome
+#' x <- calc_het_hom_ratio(stickSNPs, "group")
+#'
+calc_het_hom_ratio <- function(x, facets = NULL){
+  func <- function(x, mDat){
+    # make x into a logical for heterozygous
+    xv <- as.matrix(x)
+    logix <- substr(xv, 1, 1) == substr(xv, 2, 2)
+    logix[xv == mDat] <- NA # NA when missing data!
 
-  # make x into a logical for heterozygous
-  xv <- as.matrix(x)
-  logix <- substr(xv, 1, 1) == substr(xv, 2, 2)
-  logix[xv == x@mDat] <- NA # NA when missing data!
+    # get counts of hets and homs, then ratio
+    hets <- matrixStats::colSums2(logix, na.rm = T) # number heterozygous sites
+    homs <- matrixStats::colSums2(!logix, na.rm = T) # number homozygous sites
+    ratio <- hets/homs
+    return(ratio)
+  }
 
-  # get counts of hets and homs, then ratio
-  hets <- matrixStats::colSums2(logix, na.rm = T) # number heterozygous sites
-  homs <- matrixStats::colSums2(!logix, na.rm = T) # number homozygous sites
-  ratio <- hets/homs
+  #============run for each facet================
+  # add any missing facets
+  facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
-
-  #============merge=========
-  stats <- cbind(facet = ".base", subfacet = ".base", x@sample.meta, 'het/hom' = ratio)
-  x <- merge.snpR.stats(x, stats, "sample.stats")
+  out <- apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
+  colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
+  x <- merge.snpR.stats(x, out, "sample.stats")
 
   return(x)
 }
