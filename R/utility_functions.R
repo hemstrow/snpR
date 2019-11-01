@@ -1967,7 +1967,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
   #funciton to filter by individuals.
   min_loci_filt <- function(){
     cat("Filtering out individuals sequenced in few kept loci...\n")
-    mcounts <- colSums(ifelse(x == mDat, 1, 0))
+    mcounts <- matrixStats::colSums2(ifelse(x == mDat, 1, 0))
     rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
     if(length(rejects) > 0){
       old.facets <- x@facets
