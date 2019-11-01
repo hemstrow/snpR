@@ -252,7 +252,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
 
     #=========================sort, pack, and return==========
     # sort
-    x@facet.meta %>% mutate_if(is.factor, as.character) -> x@facet.meta
+    x@facet.meta <- dplyr::mutate_if(.tbl = x@facet.meta, is.factor, as.character)
     x@facet.meta$.reorder <- 1:nrow(x@facet.meta)
     x@facet.meta <- dplyr::arrange(x@facet.meta, .snp.id, facet, subfacet)
     gs$gs <- gs$gs[x@facet.meta$.reorder,]
