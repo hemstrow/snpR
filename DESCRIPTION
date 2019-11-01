@@ -33,6 +33,7 @@ Suggests:
     adegenet,
     AGHmatrix,
     BGLR,
+    BiocManager,
     BMS,
     forcats,
     genepop,
