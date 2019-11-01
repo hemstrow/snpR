@@ -1546,9 +1546,9 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 
   # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
-  x <- data.table::melt(t(x)) # transpose and melt
+  x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
 
-  gmat <- data.table::dcast(data.table::setDT(x), Var2 ~ value, value.var='value', length)
+  gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
   gmat <- gmat[,-1]
   mis.cols <- -which(colnames(gmat) == mDat)
   if(length(mis.cols) > 0){
