@@ -100,8 +100,8 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   }
 
   # fix factors
-  sample.meta %>% mutate_if(is.factor, as.character) -> sample.meta
-  snp.meta %>% mutate_if(is.factor, as.character) -> snp.meta
+  sample.meta <- dplyr::mutate_if(.tbl = sample.meta, is.factor, as.character)
+  snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
 
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)

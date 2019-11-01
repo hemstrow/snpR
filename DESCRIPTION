@@ -17,8 +17,8 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     bigtabulate,
-    data.table,
     doSNOW,
+    dplyr,
     matrixStats,
     methods,
     ggplot2,
@@ -27,7 +27,6 @@ Imports:
 Depends:
     data.table,
     doParallel,
-    dplyr,
     foreach
 Suggests:
     adegenet,
