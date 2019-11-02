@@ -267,7 +267,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
   nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
-  nac %>% mutate_if(is.factor, as.character) -> nac
+  nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
   x@ac <- nac[,-c(1:3)]
 
@@ -285,7 +285,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     os <- rbind(os, sm)
   }
 
-  os %>% mutate_if(is.factor, as.character) -> os
+  os <- dplyr::mutate_if(.tbl = os, is.factor, as.character)
   x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
 
 
