@@ -1732,7 +1732,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   #===========final fixes to plot data=========
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
   pdat$K <- as.factor(pdat$K)
-  levels(pdat$K) <- paste0("K_", levels(pdat$K))
+  levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)
 
   #===========make plot==============
