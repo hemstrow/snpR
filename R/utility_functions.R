@@ -12,10 +12,10 @@
 #'from most snpR functions. Genotypes are stored in the "character" format, as
 #'output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
-#'@section Sockets:
+#'@section Slots:
 #'
-#'  Genotypes, metadata, and results are stored in sockets and directly
-#'  accessable with the 'at' symbol operator. Sockets are as follows:
+#'  Genotypes, metadata, and results are stored in slots and directly
+#'  accessable with the 'at' symbol operator. Slots are as follows:
 #'
 #'  \itemize{ \item{sample.meta: } sample metadata (population, family,
 #'  phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
@@ -42,7 +42,7 @@
 #'  row names for genotypes. \item{.Data: } list of vectors containing raw
 #'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
 #'
-#'  Note that most of these sockets are used primarily internally.
+#'  Note that most of these slots are used primarily internally.
 #'
 #'  All calculated data can be accessed using the \code{\link{get.snpR.stats}}
 #'  function. See documentaion.
