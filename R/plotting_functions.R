@@ -1882,7 +1882,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
-  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K_", K),]
+  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", K),]
   tpd <- tpd[,c(facet, "Cluster", "Percentage")]
   tpd$Cluster <- as.numeric(tpd$Cluster)
   anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)
@@ -1926,7 +1926,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
     mp <- mp + ggplot2::scale_fill_viridis_d(option = viridis.option)
   }
   if(pop_names){
-    mp <- mp + ggplot2::geom_text(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop))
+    mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), point.padding = r/1.5, max.iter = 10000, direction = "y")
   }
 
   return(mp)
