@@ -1926,6 +1926,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
     mp <- mp + ggplot2::scale_fill_viridis_d(option = viridis.option)
   }
   if(pop_names){
+
     mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), point.padding = r/1.5, max.iter = 10000, direction = "y")
   }
 
