@@ -23,7 +23,8 @@ Imports:
     methods,
     ggplot2,
     plyr,
-    reshape2
+    reshape2,
+    snow
 Depends:
     data.table,
     doParallel,
