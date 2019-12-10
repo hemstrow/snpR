@@ -892,10 +892,19 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(par > parallel::detectCores()){
       stop("Par must be equal to or less than the number of available cores.")
     }
-  }  #one more sanity check.
+  }
+
+  if(CLD != FALSE){
+    if(length(x@sn) == 0){
+      x@sn <- format_snps(x, "sn", interpolate = FALSE)
+    }
+  }
+
+  #one more sanity check.
   if(ss > nrow(x)){
     stop("Number of sites to subsample cannot be large than the number of provided sites.")
   }
+
 
   #========================sub-functions=============
   #function to do LD with SNPs
@@ -1304,6 +1313,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
   # LD sub function, called in func
   LD_func <- function(x, meta, mDat, snp.list, sr = FALSE){
+    browser()
     smDat <- substr(mDat, 1, nchar(mDat)/2)
 
     # subset the requested samps
@@ -1465,7 +1475,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
   # this function also does the composite LD calculations, since that's most efficiently done here for each subfacet level.
   determine.comparison.snps <- function(x, facets, facet.types){
+    browser()
 
+    make.CLD.mat <- function(x, snps.in.subfacet, samps.in.subfacet){
+      return(x@sn[snps.in.subfacet, samps.in.subfacet][,-(1:(ncol(x@snp.meta) - 1))])
+    }
 
     # sub-subfunctions to get the options for the snp and sample facets
     get.samp.opts <- function(x, t.facet){
@@ -1511,6 +1525,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(any(facet.types == "snp")){
       out <- c(out, list(.base = list(.base = list(snps = vector("list", nrow(x)), samps = 1:nrow(x@sample.meta)))))
     }
+    if(CLD != FALSE){
+      CLD.out <- out
+    }
 
     # loop through each facet, do different things depending on facet type
     for(i in 1:length(facets)){
@@ -1525,9 +1542,13 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       t.facet <- unlist(strsplit(facets[i], split = "(?<!^)\\.", perl = T))
 
       this.out <- out[[write.facet]]
+      if(CLD != FALSE){
+        this.CLD.out <- this.out
+      }
 
       # for sample only, need to loop through each sample level subfacet, then loop through all snps
       if(facet.types[i] == c("sample")){
+        browser()
 
         # get options
         opts <- get.samp.opts(x, t.facet)
@@ -1544,6 +1565,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           this.out <- vector("list", nrow(sample.opts))
           names(this.out) <- do.call(paste, as.data.frame(sample.opts))
         }
+        if(CLD != FALSE){
+          this.CLD.out <- this.out
+        }
 
         for(j in 1:nrow(sample.opts)){
 
@@ -1554,30 +1578,40 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
           if(is.null(this.subfacet)){
             samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
-            this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
-          }
-
-          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
-          for(k in 1:(nrow(x) - 1)){
-            c.comps <- this.subfacet$snps[[k]]
-            c.comps <- c(c.comps, (k + 1):nrow(x))
-            dups <- which(duplicated(c.comps))
-            if(length(dups) > 0){
-              this.subfacet$snps[[k]] <- c.comps[-dups]
-            }
-            else{
-              this.subfacet$snps[[k]] <- c.comps
+            if(CLD != "only"){
+              this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
             }
           }
 
-          # add back to this.out
-          this.out[[write.subfacet]] <- this.subfacet
+          if(CLD != FALSE){
+            this.CLD.out[[write.subfacet]] <- make.CLD.mat(x, 1:nrow(x), samps.in.subfacet)
+          }
+
+          if(CLD != "only"){
+            # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+            for(k in 1:(nrow(x) - 1)){
+              c.comps <- this.subfacet$snps[[k]]
+              c.comps <- c(c.comps, (k + 1):nrow(x))
+              dups <- which(duplicated(c.comps))
+              if(length(dups) > 0){
+                this.subfacet$snps[[k]] <- c.comps[-dups]
+              }
+              else{
+                this.subfacet$snps[[k]] <- c.comps
+              }
+            }
+
+            # add back to this.out
+            this.out[[write.subfacet]] <- this.subfacet
+          }
+
         }
 
       }
 
       # for snp only, need to loop through each snp level subfacet, then through all snps on that subfacet
       else if(facet.types[i] == "snp"){
+        browser()
         # get the subfacet options
         opts <- get.snp.opts(x, t.facet)
         snp.opts <- opts[[1]]
@@ -1617,6 +1651,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         if(is.null(this.out)){
           this.out <- vector("list", nrow(sample.opts))
           names(this.out) <- do.call(paste, as.data.frame(sample.opts))
+          if(CLD != FALSE){
+            this.CLD.out <- this.out
+          }
         }
 
 
@@ -1625,33 +1662,54 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
           # grab the subfacet level we are writing to.
           write.subfacet <-which(names(this.out) == paste(sample.opts[j,], collapse = " "))
+
           this.subfacet <- this.out[[write.subfacet]]
 
           if(is.null(this.subfacet)){
             samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
-            this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
+            if(CLD != "only"){
+              this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
+            }
           }
 
+          if(CLD != FALSE){
+            this.CLD.subfacet <- vector("list", nrow(snp.opts))
+            names(this.CLD.subfacet) <- snp.opts[,1]
+          }
+
+          # loop through each subfacet
           for(l in 1:nrow(snp.opts)){
             snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[l,]))))
 
             # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
             if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
-            for(k in 1:(length(snps.in.subfacet) - 1)){
-              c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
-              c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
-              dups <- which(duplicated(c.comps))
-              if(length(dups) > 0){
-                this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
-              }
-              else{
-                this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps
+
+            if(CLD != FALSE){
+              this.CLD.subfacet[[l]] <- make.CLD.mat(x, snps.in.subfacet, samps.in.subfacet)
+            }
+
+            if(CLD != "only"){
+              for(k in 1:(length(snps.in.subfacet) - 1)){
+                c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
+                c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
+                dups <- which(duplicated(c.comps))
+                if(length(dups) > 0){
+                  this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
+                }
+                else{
+                  this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps
+                }
               }
             }
           }
 
           # add back to this.out
-          this.out[[write.subfacet]] <- this.subfacet
+          if(CLD != FALSE){
+            this.CLD.out[[write.subfacet]] <- this.CLD.subfacet
+          }
+          if(CLD != "only"){
+            this.out[[write.subfacet]] <- this.subfacet
+          }
         }
       }
 
