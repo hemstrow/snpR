@@ -361,88 +361,88 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   return(out)
 }
 
-#'PCA, tSNE, and umap plots from snpRdata.
+#' PCA, tSNE, and umap plots from snpRdata.
 #'
-#'Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
-#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-#'Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
-#'Works by conversion to the "sn" format described in \code{\link{format_snps}}
-#'with interpolated missing genotypes.
+#' Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
+#' theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
+#' Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
+#' Works by conversion to the "sn" format described in \code{\link{format_snps}}
+#' with interpolated missing genotypes.
 #'
-#'Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
-#'coordinates are calculated using \code{\link{prcomp}}. By default, the first
-#'two principal coordinates are plotted. A PC matrix will also be returned for
-#'easy plotting of other PCs. tSNE coordinates are calculated via
-#'\code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
-#'about this method. Stated simply, tSNE attempts to compress a
-#'multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
-#'information as possible. As such, a tSNE plot can be seen as a representation
-#'of many different PC axis compressed into a single two-dimensional plot. This
-#'compression process is stochastic, and so plots will vary somewhat between
-#'runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
-#'coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
-#'results to a two dimensional visualization.
+#' Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
+#' coordinates are calculated using \code{\link{prcomp}}. By default, the first
+#' two principal coordinates are plotted. A PC matrix will also be returned for
+#' easy plotting of other PCs. tSNE coordinates are calculated via
+#' \code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
+#' about this method. Stated simply, tSNE attempts to compress a
+#' multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
+#' information as possible. As such, a tSNE plot can be seen as a representation
+#' of many different PC axis compressed into a single two-dimensional plot. This
+#' compression process is stochastic, and so plots will vary somewhat between
+#'  runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
+#' coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
+#' results to a two dimensional visualization.
 #'
-#'For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
-#'consulted.
+#' For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
+#' consulted.
 #'
-#'Additional arguments to the UMAP can be also be provided. Additional information on these
-#'arguments can be found in \code{\link[umap]{umap.defaults}}.
+#' Additional arguments to the UMAP can be also be provided. Additional information on these
+#' arguments can be found in \code{\link[umap]{umap.defaults}}.
 #'
-#'Data points for individuals can be automatically colored by any sample-level
-#'facet categories. Facets should be provided as described in
-#'\code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-#'automatically plotted simultaniously.
+#' Data points for individuals can be automatically colored by any sample-level
+#' facet categories. Facets should be provided as described in
+#' \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
+#' automatically plotted simultaniously.
 #'
-#'@param x snpRdata object.
-#'@param facets character, default NULL. Categorical sample-level metadata
-#'  variables by which to color points. Up to two different sample-specific
-#'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#'@param plot.type character, default c("PCA", "tSNE", "umap"). Types of plots
-#'  to be produced, see description.
-#'@param check.duplicates logical, default FALSE. Checks for any duplicated
-#'  individuals, which will cause errors. Since these rarely exist and
-#'  drastically slow down function run-time, this defaults to FALSE.
-#'@param minimum_percent_coverage numeric, default FALSE. Proportion of samples
-#'  a SNP must be sequenced in to be used in generating plots.
-#'@param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
-#'  a sample must be sequenced at in order to be used in plots.
-#'@param interpolation_method character, default "bernoulli". Interpolation
-#'  method to use for missing data. Options: \itemize{\item{bernoulli:
-#'  }{Interpolated via binomial draw for each allele against minor allele
-#'  frequency.} \item{af: }{Interpolated by inserting the expected number of
-#'  minor alleles at missing data points given loci minor allele frequencies.}}
-#'@param dims numeric, default 2. Output dimensionality, default 2.
-#'@param initial_dims numeric, default 50. The number of dimensions retained in
-#'  the initial PCA step during tSNE.
-#'@param perplexity numeric, default FALSE. Perplexity parameter, by default
-#'  found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#'@param theta numeric, default 0. Theta parameter from
-#'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
-#'@param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
-#'  perform.
-#'@param viridis.option character, default "viridis". Viridis color scale option
+#' @param x snpRdata object.
+#' @param facets character, default NULL. Categorical sample-level metadata
+#'   variables by which to color points. Up to two different sample-specific
+#'   facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
+#' @param plot.type character, default c("PCA", "tSNE", "umap"). Types of plots
+#'   to be produced, see description.
+#' @param check.duplicates logical, default FALSE. Checks for any duplicated
+#'   individuals, which will cause errors. Since these rarely exist and
+#'   drastically slow down function run-time, this defaults to FALSE.
+#' @param minimum_percent_coverage numeric, default FALSE. Proportion of samples
+#'   a SNP must be sequenced in to be used in generating plots.
+#' @param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
+#'   a sample must be sequenced at in order to be used in plots.
+#' @param interpolation_method character, default "bernoulli". Interpolation
+#'   method to use for missing data. Options: \itemize{\item{bernoulli:
+#'   }{Interpolated via binomial draw for each allele against minor allele
+#'   frequency.} \item{af: }{Interpolated by inserting the expected number of
+#'   minor alleles at missing data points given loci minor allele frequencies.}}
+#' @param dims numeric, default 2. Output dimensionality, default 2.
+#' @param initial_dims numeric, default 50. The number of dimensions retained in
+#'   the initial PCA step during tSNE.
+#' @param perplexity numeric, default FALSE. Perplexity parameter, by default
+#'   found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
+#' @param theta numeric, default 0. Theta parameter from
+#'   \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
+#' @param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
+#'   perform.
+#' @param viridis.option character, default "viridis". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
 #'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
-#'@param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
-#'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
+#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
+#' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
 #'  data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of these two lists
 #'  may contain one, two, or three objects, one for each PCA, tSNE, or umap plot requested,
 #'  named "pca" and "tsne", and "umap", respectively.
 #'
-#'@author William Hemstrom
-#'@author Matt Thorstensen
+#' @author William Hemstrom
+#' @author Matt Thorstensen
 #'
-#'@references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
-#'@references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
-#'@references McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
+#' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
+#' @references McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 #'
-#'@seealso \code{\link[mmtsne]{mmtsne}}
+#' @seealso \code{\link[mmtsne]{mmtsne}}
 #'
-#'@export
+#' @export
 #'
 #' @examples
 #' # plot colored by population
@@ -1878,7 +1878,7 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 
 #' @export
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
-                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05){
+                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
@@ -1927,7 +1927,8 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
   }
   if(pop_names){
     # add labels
-    mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), point.padding = r/1.5, max.iter = 10000, direction = "y")
+    #mp + ggplot2::geom_label(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale)
+    mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale, point.padding = r*point_padding_scale, max.iter = 10000)
   }
 
   return(mp)
