@@ -65,7 +65,11 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{dropout}{numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.}
 
-\item{genotyping_error}{numeric in 0:1, default 0.01.Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.}
+\item{genotyping_error}{numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.}
+
+\item{known_maternal_dyads}{character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.}
+
+\item{known_paternal_dyads}{character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.}
 
 \item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 
