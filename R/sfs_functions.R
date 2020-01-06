@@ -1,10 +1,51 @@
+#' Generate a 1-2d site frequency spectrum from a snpRdata object.
+#'
+#' Generates a 1 or 2 dimensional site frequency spectrum from a dadi input file
+#' using the projection methods and folding methods of Marth et al (2004) and
+#' Gutenkunst et al (2009). This code is essentially an R re-implementation of
+#' the SFS construction methods implemented in the program \emph{dadi} (see
+#' Gutenkunst et al (2009)).
+#'
+#' Site frequency spectrums are constructed using the projection methods
+#' detailed in Marth et al (2004) and the 2 dimensional expansion in Gutenkunst
+#' et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
+#' Either 1 or 2d SFSs can be constructed by providing a vector of population
+#' names and projection sizes.
+#'
+#' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
+#' @param pop.facet character. Name of the sample metadata column which specifies
+#'  the source population of individuals.
+#' @param pops character. A vector of population names of up to length 2
+#'   containing the names of populations for which the an SFS is to be created.
+#' @param projection numeric. A vector of sample sizes to project the SFS to, in
+#'   \emph{number of gene copies}. Sizes too large will result in a SFS
+#'   containing few or no SNPs.
+#' @param fold logical, default FALSE. Determines if the SFS should be folded or
+#'   left polarized.
+#'
+#' @references Gutenkunst et al (2009). Inferring the joint demographic history
+#'   of multiple populations from multidimensional SNP frequency data.
+#'   \emph{PLoS genetics}, 5(10), e1000695.
+#' @references Marth et al (2004). The allele frequency spectrum in genome-wide
+#'   human variation data reveals signals of differential demographic history in
+#'   three large world populations. \emph{Genetics}, 166(1), 351-372.
+#'
+#' @export
+#' @return A matrix or vector containing the site frequency spectrum with a
+#'   "pops" attribute containing population IDs, such as c("POP1", "POP2"). For
+#'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
+#'   rows.
+#'
 calc_SFS <- function(x, facet = "pop", pops, projection, fold = T){
+
+  # subset
+  x <- subset_snpR_data(x, facets = facet, subfacets = pops)
 
   # get dadi formatted data
   y <- format_snps(x, output = "dadi", facets = facet)
 
   # get sfs
-  sfs <- make_sfs(y, pops, projection, fold)
+  sfs <- make_SFS(y, pops, projection, fold)
 
   return(sfs)
 }
@@ -167,8 +208,11 @@ make_SFS <- function(x, pops, projection, fold = F){
   get_counts <- function(x, pops){
     # figure out which allele is the outgroup/derived in each row and figure out polarization status
     anc.als <- substr(x$anc, 2, 2)
+    ref.als <- substr(x$ref, 2, 2)
     polarized <- rep(T, nrow(x))
     polarized[anc.als == "N"] <- F
+    polarized[anc.als != x$Allele1 & anc.als != x$Allele2] <- F
+    polarized[ref.als != x$Allele1 & ref.als != x$Allele2] <- F
     anc.als[anc.als == "N"] <- x$Allele1[anc.als == "N"]
     which.derived <- rep(2, nrow(x))
     which.derived[anc.als == x$Allele2] <- 1
