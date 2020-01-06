@@ -84,7 +84,7 @@ multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
 information as possible. As such, a tSNE plot can be seen as a representation
 of many different PC axis compressed into a single two-dimensional plot. This
 compression process is stochastic, and so plots will vary somewhat between
-runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
+ runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
 coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
 results to a two dimensional visualization.
 
