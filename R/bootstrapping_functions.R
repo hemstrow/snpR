@@ -795,3 +795,51 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   return(x)
 }
 
+
+do_fst_permutations <- function(x, facets = NULL, boots, sites = "all", method = "per_site", sample_subfacet = NULL, par = FALSE){
+  #============subfunctions===============
+  # wrapper function to generate a psuedo dataset for given sites
+  generate_psuedo <- function(x, sites, boots){
+    y <- subset_snpR_data(x, snps = sites)
+
+    #=========shuffle boots times===========
+    ord <- numeric(ncol(y)*boots)
+    out <- as.data.frame(matrix(NA, nrow = boots*nrow(y), ncol = ncol(y)))
+    for(i in 1:boots){
+      tord <- sample(ncol(y), ncol(y))
+      ord[(((i-1)*ncol(y)) + 1):(i*ncol(y))] <- tord
+      out[(((i-1)*nrow(y)) + 1):(i*nrow(y)),] <- y[,tord]
+    }
+
+    #=========put into a snpRdata object, with a snp facet relating to the boot number============
+    # prepare snp meta, replicated for bootstraps
+    snp.meta <- y@snp.meta[rep(1:nrow(y@snp.meta), times = boots),-ncol(x@snp.meta)]
+    snp.meta$bootstrap <- rep(1:boots, each = nrow(y@snp.meta)) # add a column containing bootstrap meta
+
+    # prepare facet meta
+    fm <- y@facet.meta[y@facet.meta$facet == ".base",]
+    fm <- fm[rep(1:nrow(fm), times = boots),]
+
+    # add to snpRdata object, same sample meta
+    x <- snpRdata(.Data = out,
+                  sample.meta = x@sample.meta,
+                  snp.meta = cbind(snp.meta, .snp.id = 1:nrow(snp.meta)),
+                  facet.meta = data.frame(),
+                  geno.tables = ngs,
+                  ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                  stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
+                  window.stats = x@window.stats,
+                  facets = x@facets,
+                  facet.type = x@facet.type,
+                  row.names = x@row.names[-which(vio.snps)])
+
+
+    gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
+
+    fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
+                     subfacet = rep(".base", nrow(gs$gs)),
+                     facet.type = rep(".base", nrow(gs$gs)),
+                     stringsAsFactors = F)
+  }
+
+}
