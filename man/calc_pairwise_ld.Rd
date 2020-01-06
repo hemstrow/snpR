@@ -43,7 +43,7 @@ a snpRdata object with linkage results stored in the pairwise.LD slot.
  statistics in long format for easy plotting.
 }
 \description{
-\code{LD_full_pairwise} calculates LD between each pair of SNPs.
+\code{calc_pairwise_ld} calculates LD between each pair of SNPs.
 }
 \details{
 Calculates pairwise linkage disequilibrium between pairs of SNPs using several

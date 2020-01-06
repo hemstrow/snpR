@@ -17,27 +17,33 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     bigtabulate,
-    data.table,
     doSNOW,
+    dplyr,
     matrixStats,
     methods,
     ggplot2,
     plyr,
-    reshape2
+    reshape2,
+    snow
 Depends:
     data.table,
     doParallel,
-    dplyr,
     foreach
 Suggests:
+    adegenet,
     AGHmatrix,
     BGLR,
+    BiocManager,
     BMS,
+    forcats,
     genepop,
     ggrepel,
     GMMAT,
     knitr,
+    LEA,
     mmtsne,
+    pophelper,
+    ranger,
     rmarkdown,
     readr,
     Rtsne,

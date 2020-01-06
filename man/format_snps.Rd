@@ -7,7 +7,7 @@
 format_snps(x, output = "snpRdata", facets = NULL, n_samp = NA,
   interpolate = "bernoulli", outfile = FALSE, ped = NULL,
   input_format = NULL, input_meta_columns = NULL, input_mDat = NULL,
-  sample.meta = NULL, snp.meta = NULL)
+  sample.meta = NULL, snp.meta = NULL, chr.length = NULL)
 }
 \arguments{
 \item{x}{snpRdata object or data.frame. Input data, in any of the above listed
@@ -56,6 +56,10 @@ details for more information.}
 \item{snp.meta}{data.frame, default NULL. If x is not a snpRdata object,
 optionally specifies a data.frame containing meta data for each SNP. See
 details for more information.}
+
+\item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input files.
+Note that a single value assumes that each chromosome is of equal length whereas
+a vector of values assumes gives the length for each chromosome.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May

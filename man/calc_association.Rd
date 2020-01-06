@@ -28,9 +28,9 @@ Chi-squared test. } See description for more details.}
 \item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
 the Armitage association method. See description for details.}
 
-\item{family.override}{character, default NULL.}
+\item{formula}{charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.}
 
-\item{charcter, }{default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.}
+\item{family.override}{character, default NULL.}
 }
 \value{
 A snpRdata object with the resulting association test results merged

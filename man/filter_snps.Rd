@@ -4,9 +4,9 @@
 \alias{filter_snps}
 \title{Filter SNPs in snpRdata objects.}
 \usage{
-filter_snps(x, maf = FALSE, hf_hets = FALSE, min_ind = FALSE,
-  min_loci = FALSE, re_run = "partial", maf.facets = NULL,
-  non_poly = TRUE, bi_al = TRUE)
+filter_snps(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE,
+  min_ind = FALSE, min_loci = FALSE, re_run = "partial",
+  maf.facets = NULL, non_poly = TRUE, bi_al = TRUE)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -16,6 +16,9 @@ minor allele frequency}
 
 \item{hf_hets}{FALSE or numeric between 0 and 1, default FALSE. Maximum
 acceptable heterozygote frequency.}
+
+\item{HWE}{FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE violation p-value below
+this will be rejected.}
 
 \item{min_ind}{FALSE or integer, default FALSE. Minimum number of individuals
 in which a loci must be sequenced.}

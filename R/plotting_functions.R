@@ -164,12 +164,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   order_levels <- function(x){
     # convert positions to factors:
     ms <- unique(c(x$SNPa, x$SNPb))
-    ms <- sort(as.numeric(as.character(ms)))
-
-    # finish messing with site names
-    ms <- ms
-    ms <- sort(ms)
-    ms <- as.factor(ms)
+    ms <- as.factor(sort(as.numeric(as.character(ms))))
 
     # convert to factor
     x$SNPa <- as.factor(x$SNPa)
@@ -426,6 +421,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
 #'@param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
 #'  perform.
+#'@param viridis.option character, default "viridis". Viridis color scale option
+#'   to use for significance lines and SNP labels. See
+#'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'@param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
 #'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
@@ -449,7 +449,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' plot_clusters(stickSNPs, "pop")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
-                          dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000, ...){
+                          dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
+                          viridis.option = "viridis", alt.palette = NULL, ...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -632,20 +633,41 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     ## for the first variable
     # if the data is likely continuous:
     if(is.numeric(v1)){
-      out <- out + ggplot2::scale_color_viridis_c(name = facets[1])
+      if(is.null(alt.palette)){
+        out <- out + ggplot2::scale_color_viridis_c(name = facets[1], option = viridis.option)
+      }
+      else{
+        out <- out + ggplot2::scale_color_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[1])
+      }
     }
     else{
-      out <- out + ggplot2::scale_color_viridis_d(name = facets[1])
+      if(is.null(alt.palette)){
+        out <- out + ggplot2::scale_color_viridis_d(name = facets[1], option = viridis.option)
+      }
+      else{
+        out <- out + ggplot2::scale_color_manual(values = alt.palette, name = facets[1])
+      }
     }
 
     ## for the second variable if defined
     if(length(facets) > 1){
       if(is.numeric(v2)){
-        out <- out + ggplot2::scale_fill_viridis_c(name = facets[2])
+        if(is.null(alt.palette)){
+          out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+        }
+        else{
+          out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+        }
       }
       else{
-        out <- out + ggplot2::scale_fill_viridis_d(name = facets[2])
+        if(is.null(alt.palette)){
+          out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
+        }
+        else{
+          out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
+        }
       }
+
     }
 
     if(plot_type[i] == "pca"){
@@ -733,6 +755,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'   significance threshold as significant.
 #' @param log.p logical, default FALSE. If TRUE, plot variables and thresholds
 #'   will be transformed to -log.
+#' @param abs logical, default FALSE. If TRUE, converts the plot variable to it's absolute value.
 #' @param highlight character, numeric, or FALSE, default "significant".
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 #'   above those respetive values will be highlighted. If a numeric vector, SNPs
@@ -794,7 +817,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
-                           sig_below = FALSE, log.p = FALSE,
+                           sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3")){
 
@@ -805,13 +828,22 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       facets <- check.snpR.facet.request(x, facets)
     }
     else{
+      if(chr != "chr"){
+        warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
+      }
+      if(!is.null(facets)){
+        pop.facets <- check.snpR.facet.request(x, facets, "snp")
+        facets <- paste0(pop.facets, ".", chr)
+      }
+      else{
+        facets <- chr
+      }
+
       facets <- check.snpR.facet.request(x, facets, "none")
     }
     if(plot_var %in% colnames(x@stats)){
       if(window){
-        if(chr != "chr"){
-          warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
-        }
+
         stats <- get.snpR.stats(x, facets = facets, type = "single.window")
         chr <- "snp.subfacet"
 
@@ -884,13 +916,17 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
   if(log.p){
-    stats$pvar <- -log(stats$pvar)
+    stats$pvar <- -log10(stats$pvar)
     if(!is.null(significant)){
-      significant <- -log(significant)
+      significant <- -log10(significant)
     }
     if(!is.null(suggestive)){
-      suggestive <- -log(suggestive)
+      suggestive <- -log10(suggestive)
     }
+  }
+
+  if(abs){
+    stats$pvar <- abs(stats$pvar)
   }
 
   #=============snps to highlight=====================
@@ -982,4 +1018,917 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   return(list(plot = p, data = stats))
+}
+
+#' Create STRUCTURE-like cluster plots
+#'
+#' Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
+#' an arbitrary 'k' number of clusters like those produced by the program
+#' STRUCTURE. Runs for each value of k between 2 and the given number.
+#'
+#' Individual cluster assignment probabilities can be calculated using several
+#' different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
+#' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
+#' These methods are not re-implemented in R, instead, this function calls the
+#' \code{\link[LEA]{snmf}} and \code{\link[adegenet]{snapclust.choose.k}}
+#' functions instead. Please cite the references noted in those functions if
+#' using this function. For snapclust, the "ward" method is used to initialize clusters
+#' if one rep is requested, otherwise the clusters are started randomly each rep. Other
+#' methods can be used by providing pop.ini as an additional agument as long as only one
+#' rep is requested.
+#'
+#' Multiple different runs can be conducted using the 'reps' argument, and the
+#' results can be combined for plotting across all of these reps using the
+#' clumpp option. This option calls the CLUMPP software package in order to
+#' combine proportion population membership across multiple runs via
+#' \code{\link[pophelper]{clumppExport}}. Again, please cite both CLUMPP and
+#' pophelper if using this option.
+#'
+#' Since CLUMPP is run independantly for each value of K, cluster identites
+#' often "flip" between K values. For example individuals that are grouped into
+#' cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
+#' cluster IDs are iteratively adjusted across K values by flipping IDs such
+#' that the euclidian distances between clusters at K and K - 1 are minimized.
+#' This tends to produce consistant cluster IDs across multiple runs of K.
+#'
+#' Individuals can be sorted into by membership proportion into different
+#' clusters within populations using the qsort option.
+#'
+#' Since the clustering and CLUMPP processes can be time consuming and outside
+#' tools (such as NGSadmix or fastSTRUCTURE) may be prefered, a nested list of Q
+#' matrices, sorted by K and then rep or a character string giving a pattern
+#' matching saved Q matrix files in the current working directory may provided
+#' directly instead of a snpRdata object. Note that the output for this
+#' funciton, if run on a snpRdata object, will return a properly formatted list
+#' of Q files (named 'data') in addition to the plot and plot data. This allows
+#' for the plot to be quickly re-constructed using different sorting parameters
+#' or facets. In these cases, the facet argument should instead be a vector of
+#' group identifications per individuals.
+#'
+#' Note that several files will be created in the working directory when using
+#' this function that are not automatically cleaned after use.
+#'
+#' @param x snpRdata object, list of Q matrices (sorted by K in the first level
+#'   and run in the second), or a character string designating a pattern
+#'   matching Q matrix files in the current working directories.
+#' @param facet character, default NULL. If provided, individuals will not be
+#'   noted on the x axis. Instead, the levels of the facet will be noted. Only a
+#'   single, simple, sample specific facet may be provided. Individuals must be
+#'   sorted by this facet in x. If Q matrices are provided (either directly or
+#'   via file path), this should instead be a vector of group identities for
+#'   each individual (populations, etc.).
+#' @param facet.order character, default NULL. Optional order in which the
+#'   levels of the provided facet should appear on the plot, left to right.
+#' @param k numeric, default 2. The maximum of k (number of clusters) for which
+#' to run the clustering/assignment algorithm. The values 2:k will be run.
+#' @param method character, default "snmf". The clustering/assignment method to
+#'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
+#'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
+#'   See \code{\link[LEA]{snmf}} or \code{\link[adegenet]{snapclust.choose.k}}
+#'   for details, respectively.
+#' @param reps numeric, default 1. The number of independent clustering
+#'   repititions to run.
+#' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
+#'   number of iterations to run.
+#' @param I numeric or NULL, default NULL. For snmf, how many SNPs should be
+#'   used to initialize the search? Initializing with a subset of the total SNPs
+#'   can radically speed up computation time for large datasets.
+#' @param alpha numeric, default 10. For sNMF, determines the regularization
+#'   parameter. For small datasets, this can have a large effect, and should
+#'   probably be larger than the default. See documentation for
+#'   \code{\link[LEA]{snmf}}.
+#' @param qsort character, numeric, or FALSE, default "last". Determines if
+#'   individuals should be sorted (possibly within facet levels) by cluster
+#'   assignment proportion. If not FALSE, determines which cluster to use for
+#'   sorting (1:k). If "last" or "first" sorts by those clusters.
+#' @param qsort_K numeric or character, default "last". If qsorting is
+#'   performed, determines the reference k value by which individuals are
+#'   sorted. If "first" or "last", sorts by k = 2 or k = k, respectively.
+#' @param clumpp logical, default T. Specifies if CUMPP should be run to
+#'   collapse results across multiple reps. If FALSE, will use only the first
+#'   rep for plotting.
+#' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
+#'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
+#'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
+#'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
+#'   approach. } See CLUMPP documentation for details.
+#' @param ID character or NULL, default NULL. Designates a column in the sample
+#'   metadata containing sample IDs.
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
+#' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
+#'   c(strip.title, axis, axis.ticks).
+#' @param ... additional arguments passed to either \code{\link[LEA]{snmf}} or
+#'   \code{\link[adegenet]{snapclust.choose.k}}.
+#'
+#' @export
+#' @author William Hemstrom
+#' @references Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.
+#'   (2014). Fast and Efficient Estimation of Individual Ancestry Coefficients.
+#'   \emph{Genetics}, 194(4): 973–983.
+#' @references Frichot, Eric, and Olivier François (2015). LEA: an R package for
+#'   landscape and ecological association studies. \emph{Methods in Ecology and
+#'   Evolution}, 6(8): 925-929.
+#' @references Beugin, M. P., Gayet, T., Pontier, D., Devillard, S., & Jombart,
+#'   T. (2018). A fast likelihood solution to the genetic clustering problem.
+#'   \emph{Methods in ecology and evolution}, 9(4), 1006-1016.
+#' @references Francis, R. M. (2017). pophelper: an R package and web app to
+#'   analyse and visualize population structure. \emph{Molecular ecology
+#'   resources}, 17(1), 27-32.
+#' @references Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster
+#'   matching and permutation program for dealing with label switching and
+#'   multimodality in analysis of population structure. \emph{Bioinformatics},
+#'   23(14), 1801-1806.
+#'
+#' @return A list containing: \itemize{\item{plot: } A ggplot object.
+#'   \item{data: } A nested list of the raw Q matrices, organized by K and then
+#'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
+#'   \item{K_plot: } A data.frame containing the value suggested for use in K
+#'   selection vs K value for the selected method.}
+#'
+plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
+                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T,
+                           clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
+                           alt.palette = NULL, t.sizes = c(12, 12, 12), ...){
+
+  #===========sanity checks===================
+  msg <- character()
+  provided_qlist <- FALSE
+
+  # check if this is with a snpRdata object or a qlist and do some other checks
+  if(!class(x) == "snpRdata"){
+    # file pattern
+    if(!is.list(x)){
+      if(is.character(x) & length(x) > 1){
+        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+      }
+      else if(!is.character(x)){
+        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+      }
+      else{
+        provided_qlist <- "parse"
+      }
+    }
+    # qlist, typical k then r format.
+    else{
+      provided_qlist <- TRUE
+      bad.list <- F
+
+      # check that list depth is 2
+      l1 <- lapply(x, is.list) # depth two?
+      if(!all(unlist(l1))){
+        bad.list <- T
+      }
+      else{
+        l2 <- logical(length(x)) # depth three?
+        for(i in 1:length(x)){
+          if(any(unlist(lapply(x[[i]], function(y) is.matrix(y) | is.data.frame(y))) == F)){
+            l2[i] <- T
+          }
+
+          # also check that this is k and then r (all qlists should have the same number of columns at the second level.)
+          else if(length(unique(lapply(x[[i]], ncol))) != 1){
+            bad.list <- T
+          }
+        }
+        if(any(l2)){
+          bad.list <- T
+        }
+      }
+      if(bad.list){
+        msg <- c(msg, "Provided qlist must be a two level list, sorted by k values then by run.\n")
+      }
+    }
+
+    if(!is.null(facet[1])){
+      if(!is.character(facet)){
+        msg <- c(msg, "For a provided qlist, facet must be a character vector containing sample metadata.\n")
+      }
+      if(provided_qlist == TRUE){
+        if(bad.list == F){
+          if(length(facet) != nrow(qlist[[1]])){
+            msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
+          }
+        }
+      }
+      sample_meta <- data.frame(d = facet, stringsAsFactors = F)
+      facet <- deparse(substitute(facet))
+      colnames(sample_meta) <- facet
+    }
+  }
+
+
+  if(method == "snmf"){
+    if(!("LEA" %in% rownames(installed.packages()))){
+      msg <- c(msg, "The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
+    }
+  }
+
+  if(provided_qlist == FALSE & reps == "all"){
+    msg <- c(msg, "reps = 'all' uninterpretable if a qlist is not provided.\n")
+  }
+  if(clumpp & reps == 1){
+    clumpp <- FALSE
+    warning("Since only one rep is requested, clumpp will not be run.\n")
+  }
+
+  if(clumpp){
+    if(!("pophelper" %in% rownames(installed.packages()))){
+      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
+    }
+    good.clumpp.opts <- c("fullsearch", "greedy", "large.k.greedy")
+    if(!clumpp.opt %in% good.clumpp.opts){
+      msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
+    }
+  }
+  else if(provided_qlist == "parse"){
+    if(!("pophelper" %in% rownames(installed.packages()))){
+      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
+    }
+  }
+
+  # checks for snpRdata objects only
+  if(provided_qlist == FALSE){
+    good.methods <- c("snapclust", "snmf")
+    if(!method %in% good.methods){
+      msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
+    }
+
+    if(length(facet) > 1){
+      msg <- c(msg, "Only one facet may be plotted at once.\n")
+    }
+    if(!is.null(facet[[1]])){
+      fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+      if(any(fcheck[[2]] != "sample")){
+        msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
+      }
+    }
+    sample_meta <- x@sample.meta
+  }
+
+  # palette checks
+  if(!is.null(alt.palette[1])){
+
+    # is it long enough?
+    if(length(alt.palette) < k){
+      msg <- c(msg, "Provided alternative palette must contain at least as many colors
+               as the maximum k value.\n")
+    }
+
+    # is everything a valid color (can ggplot work with it)?
+    else{
+      alt.palette <- alt.palette[1:k]
+      tpd <- matrix(rnorm(k*2, 0, 1), k, 2)
+      tpd <- cbind(as.data.frame(tpd), col = 1:k)
+
+      color.check <- ggplot2::ggplot(tpd, ggplot2::aes(V1, V2, color = as.factor(col))) +
+        ggplot2::geom_point() + ggplot2::scale_color_manual(values = alt.palette)
+      tempfile <- tempfile()
+      tempfile <- paste0(tempfile, ".pdf")
+
+      suppressMessages(res <- try(ggplot2::ggsave(tempfile, color.check), silent = T))
+      invisible(capture.output(file.remove(tempfile)))
+      if("try-error" %in% class(res)){
+        msg <- c(msg, "Alt.palette contains non-color entries or otherwise fails to properly plot.\n")
+      }
+
+      rm(res, tpd, color.check)
+    }
+  }
+
+  if(length(msg) != 0){
+    stop(msg)
+  }
+
+  #===========sub-functions===================
+  # fix things so that the cluster ID is the same in all sets
+  fix_clust <- function(x){
+
+    #loop through each q object
+    for (i in 2:length(x)){
+      #see which columns in the previous run are the most similar to each column
+
+      #initialize mapping df
+      mdf <- data.frame(tcol = 1:ncol(x[[i]]), pcol = numeric(ncol(x[[i]])),
+                        ed = numeric(ncol(x[[i]])))
+
+      #loop through each column and find where to map it.
+      for (j in 1:ncol(x[[i]])){
+
+        #intialize euc distance vector
+        elist <- numeric(ncol(x[[i - 1]]))
+
+        #compare to each other col.
+        for(k in 1:ncol(x[[i-1]])){
+          #save euclidian dist
+          elist[k] <- sum((x[[i]][,j] - x[[i-1]][,k])^2, na.rm = T)
+        }
+
+        #save results
+        mdf[j,2] <- which.min(elist)
+        mdf[j,3] <- min(elist)
+      }
+
+      #reassign clusters in this qdf
+      ##which is the new cluster? Probably that with the most distance to any original clusters.
+      dups <- duplicated(mdf[,2]) | duplicated(mdf[,2], fromLast = T)
+      nc <- which.max(mdf[dups,3])
+      mdf[dups,2][nc] <- nrow(mdf)
+      mdf <- mdf[order(mdf[,2]),]
+
+      ##reasign clusters
+      tdf <- x[[i]]
+      tdf <- tdf[,mdf[,1]]
+
+      ##replace object in x with the re-arranged qfile.
+      colnames(tdf) <- colnames(x[[i]])
+      x[[i]] <- tdf
+    }
+
+    return(x)
+  }
+
+  # sort the individuals within each population based on the qvals
+  Q_sort <- function(x, pop, cluster = "first", q = "last"){
+
+    #get which pop to use
+    if(q == "last"){
+      q <- length(x)
+    }
+
+    #get order to stick individual in
+    lx <- x[[q]]
+    upops <- unique(pop)
+    lx$s <- 1:nrow(lx)
+
+    #get the sorting cluster priority:
+    if(cluster == "first"){
+      cseq <- (ncol(lx)-1):1
+    }
+    else if (cluster == "last"){
+      cseq <- 1:(ncol(lx)-1)
+    }
+    else if (is.numeric(cluster)){
+      if(length(cluster) == ncol(lx)){
+        cseq <- cluster
+      }
+      else{
+        if(length(cluster) < ncol(lx)){
+          cseq <- c((1:ncol(lx))[-which(1:ncol(lx) %in% cluster)], rev(cluster))
+        }
+        else{
+          stop("Cluster length is longer than number of clusters in x element q.\n")
+        }
+      }
+    }
+
+    for(i in 1:nrow(upops)){
+      tx <- lx[which(pop == upops[i,]),]
+      for(j in cseq){
+        tx <- tx[order(tx[,j]),]
+      }
+      lx[which(pop == upops[i,]),] <- tx
+    }
+
+    # return the order
+    return(lx$s)
+  }
+
+  # process 1 q result by adjusting column names and melting. Takes a single qlist dataframe/matrix
+  process_1_q <- function(tq, x){
+    colnames(tq) <- 1:ncol(tq)
+    tk <- ncol(tq)
+    tq <- cbind(tq, sample_meta)
+
+    if(is.null(ID)){
+      if(is.null(colnames(x))){
+        tq$ID <- paste0("samp", 1:nrow(tq))
+      }
+      else{
+        tq$ID <- colnames(x)
+      }
+    }
+    else{
+      tq$ID <- sample_meta[,ID]
+    }
+
+    tq <- reshape2::melt(tq, id.vars = colnames(tq)[-c(1:tk)])
+    colnames(tq)[((ncol(tq) - 1):ncol(tq))] <- c("Cluster", "Percentage")
+    tq$Cluster <- as.numeric(tq$Cluster)
+    tq$K <- tk
+
+    return(tq)
+  }
+
+  # write a list of q files to a directory with informative names for k and run
+  prep_clumpp <- function(x){
+    # make a directory and write the k files to it
+    for(i in 1:length(x)){
+      for(j in 1:reps){
+        write.table(x[[i]][[j]], paste0("K", ncol(x[[i]][[j]]), "r", j, "qopt"), sep = " ", quote = F, col.names = F, row.names = F)
+      }
+    }
+  }
+
+  # run clumpp on a directory of q files using pophelper. Import the results into a list of  processed q tables
+  run_clumpp <- function(pattern = "qopt"){
+    # prepare files and run clumpp
+    qfiles <- list.files(full.names = T, pattern = pattern)
+    qlist <- pophelper::readQ(qfiles)
+    if(clumpp.opt == "large.K.greedy"){
+      clumpp.opt <- 3
+    }
+    else if(clumpp.opt == "greedy"){
+      clumpp.opt <- 2
+    }
+    else{
+      clumpp.opt <- 1
+    }
+    pophelper::clumppExport(qlist, useexe = T, parammode = clumpp.opt)
+    pophelper::collectClumppOutput(filetype = "both")
+
+    # import results
+    mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
+
+    # fix cluster IDs to match
+    mq <- fix_clust(mq)
+    save.q <- mq
+
+    # sort by facet
+    if(!is.null(facet)){
+      if(!is.null(facet.order)){
+        qlist <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
+      }
+      else{
+        qlist <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
+      }
+      sample_meta <- qlist$meta
+      qlist <- qlist$qlist
+    }
+
+    # sort by Q values if requested
+    if(qsort != FALSE){
+      if(!is.null(facet)){
+        pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
+      }
+      else{
+        pop <- as.data.frame(rep("pop1", nrow(sample_meta)), stringsAsFactors = F)
+      }
+      ind_ord <- Q_sort(mq, pop, qsort, qsort_K)
+    }
+    else{
+      ind_ord <- 1:nrow(mq[[1]])
+    }
+
+    # process into plottable form
+    for(i in 1:length(mq)){
+      mq[[i]] <- process_1_q(mq[[i]], x)
+    }
+
+    return(list(q = mq, ord = ind_ord, qlist = save.q))
+  }
+
+  # function to parse in q files, used only if clumpp not run and a file pattern is provided
+  parse_qfiles <- function(pattern){
+    # read in the files
+    qfiles <- list.files(full.names = T, pattern = pattern)
+    qlist <- pophelper::readQ(qfiles)
+
+    # get k values
+    att <- lapply(qlist, attributes)
+    att <- unlist(lapply(att, function(x) x$k))
+
+    # inititalize
+    out_q <- vector("list", length = length(unique(att)))
+    names(out_q) <- paste0("K_", sort(unique(att)))
+
+    # for each k, load up each run
+    for(i in 1:length(unique(att))){
+
+      # find matching runs and initialize
+      tk <- sort(unique(att))[i]
+      hits <- which(att == tk)
+      out_q[[i]] <- vector("list", length(hits))
+      names(out_q[[i]]) <- paste0("r_", 1:length(hits))
+
+      # load
+      for(j in 1:length(hits)){
+        out_q[[i]][[j]] <- qlist[[hits[j]]]
+      }
+    }
+
+    return(out_q)
+  }
+
+  # function to sort each element of a qlist by a facet (population, ect). Needed because they must
+  # be ordered properly for qsorting to work correctly.
+  sort_by_pop_qfiles <- function(qlist, meta, pop.ord){
+    ord <- factor(meta[,facet], levels = pop.ord)
+    ord <- order(ord)
+
+    for(i in 1:length(qlist)){
+      if(is.data.frame(qlist[[i]])){
+        qlist[[i]] <- qlist[[i]][ord,]
+      }
+      else{
+        for(j in 1:length(qlist[[i]])){
+          qlist[[i]][[j]] <- qlist[[i]][[j]][ord,]
+        }
+      }
+    }
+
+    nmeta <- as.data.frame(meta[ord,], stringsAsFactors = F)
+    colnames(nmeta) <- colnames(meta)
+
+    return(list(qlist = qlist, meta = nmeta))
+  }
+
+  #===========run the assignment/clustering method===============
+  # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
+  if(provided_qlist == FALSE){
+    if(method == "snapclust"){
+      # format and run snapclust
+      invisible(capture.output(x.g <- format_snps(x, "adegenet")))
+
+      # initialize
+      qlist <- vector("list", length = k - 1)
+      names(qlist) <- paste0("K_", 2:k)
+      for(i in 1:length(qlist)){
+        qlist[[i]] <- vector("list", length = reps)
+        names(qlist[[i]]) <- paste0("r_", 1:reps)
+      }
+      K_plot <- vector("list", length(rep))
+
+      # run once per rep
+      for(i in 1:reps){
+        if(reps == 1){
+          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
+        }
+        else{
+          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, pop.ini = NULL, ...)
+        }
+
+        for(j in 1:length(res$objects)){
+          qlist[[j]][[i]] <- res$objects[[j]]$proba
+
+          # fix instances where NaNs are likely actually 1s, based on https://github.com/thibautjombart/adegenet/issues/221
+          nas <- which(is.na(rowSums(qlist[[j]][[i]])))
+          if(length(nas) > 0){
+            fixable <- qlist[[j]][[i]][nas,]
+            fixable <- is.nan(fixable)
+            not.fixable1 <- which(rowSums(fixable) != 1) # rows with more than one na
+            not.fixable2 <- which(rowSums(qlist[[j]][[i]][nas,] == 0, na.rm = T) != ncol(qlist[[j]][[i]]) - 1) # rows where the other values aren't all zero
+            not.fixable <- union(not.fixable1, not.fixable2)
+            if(length(not.fixable) > 0){
+              if(length(not.fixable) != length(nas)){
+                qlist[[j]][[i]][nas,][-not.fixable,][is.nan(qlist[[j]][[i]][nas,][-not.fixable,])] <- 1
+              }
+            }
+            else{
+              qlist[[j]][[i]][nas,][fixable] <- 1
+            }
+          }
+        }
+        K_plot[[i]] <- data.frame(val = res[[1]], K = 1:k, rep = i, stringsAsFactors = F)
+      }
+
+      # fix K plot
+      K_plot <- dplyr::bind_rows(K_plot)
+      colnames(K_plot)[1] <- names(res)[1]
+    }
+    else if(method == "snmf"){
+      # format data
+      if(file.exists("lea_input.geno")){
+        file.remove("lea_input.geno")
+      }
+      invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
+
+      # run the analysis
+      if(!is.null(I)){
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, I = I, ...)
+      }
+      else{
+        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, ...)
+      }
+
+      # read in
+      qlist <- vector("list", k - 1)
+      names(qlist) <-  paste0("K_", 2:k)
+      K_plot <- vector("list", k - 1)
+      for(i in 2:k){
+
+        # process each rep
+        qlist[[i - 1]] <- vector("list", reps)
+        names(qlist[[i - 1]]) <-  paste0("r_", 1:reps)
+        for(j in 1:reps){
+          qlist[[i - 1]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
+        }
+        K_plot[[i - 1]] <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, k), K = i)
+      }
+
+      # fix K plot
+      K_plot <- dplyr::bind_rows(K_plot)
+      colnames(K_plot)[1] <- "Cross.Entropy"
+    }
+  }
+  else if(provided_qlist == TRUE){
+    qlist <- x
+  }
+
+
+
+  #===========run clumpp=========================================
+  if(clumpp){
+
+    if(provided_qlist != "parse"){
+      if(!dir.exists("qfiles")){
+        dir.create("qfiles")
+      }
+      setwd("qfiles")
+
+      # prepare files
+      prep_clumpp(qlist)
+
+      # run clumpp
+      pdat <- run_clumpp()
+      setwd("..")
+    }
+    else{
+      pdat <- run_clumpp(pattern = x)
+    }
+
+
+
+
+
+    # concatenate results
+    ind_ord <- pdat$ord
+    cq <- pdat$qlist
+    pdat <- dplyr::bind_rows(pdat$q)
+
+    ## add the clumpp qlist
+    for(i in 1:length(qlist)){
+      qlist[[i]][["clumpp"]] <- cq[[i]]
+    }
+
+  }
+  else{
+    # parse in if provided with a pattern
+    if(provided_qlist == "parse"){
+      qlist <- parse_qfiles(x)
+    }
+
+    if(reps != 1){
+      warning("Plotting only the first run.\n")
+    }
+
+    # sort by facet
+    if(!is.null(facet)){
+      if(!is.null(facet.order)){
+        qlist <- sort_by_pop_qfiles(qlist, sample_meta, facet.order)
+      }
+      else{
+        qlist <- sort_by_pop_qfiles(qlist, sample_meta, unique(sample_meta[,facet]))
+      }
+      sample_meta <- qlist$meta
+      qlist <- qlist$qlist
+    }
+
+    # grab just the first run
+    tq <- vector("list", length(qlist))
+    for(i in 1:length(tq)){
+      tq[[i]] <- qlist[[i]][[1]]
+    }
+
+    # process
+    ## fix cluster IDs to match
+    tq <- fix_clust(tq)
+
+    ## qsort
+    if(qsort != FALSE){
+      if(!is.null(facet)){
+        pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
+      }
+      else{
+        pop <- as.data.frame(rep("pop1", nrow(sample_meta)), stringsAsFactors = F)
+      }
+      ind_ord <- Q_sort(tq, pop, qsort, qsort_K)
+    }
+    else{
+      ind_ord <- 1:nrow(tq[[1]])
+    }
+
+    ## process into plottable form
+    for(i in 1:length(tq)){
+      tq[[i]] <- process_1_q(tq[[i]], x)
+    }
+
+    ## concatenate
+    pdat <- dplyr::bind_rows(tq)
+  }
+
+  #===========final fixes to plot data=========
+  pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
+  pdat$K <- as.factor(pdat$K)
+  levels(pdat$K) <- paste0("K = ", levels(pdat$K))
+  pdat$Cluster <- as.factor(pdat$Cluster)
+
+  #===========make plot==============
+  p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
+    ggplot2::facet_wrap(~K, ncol = 1, strip.position = "right") +
+    ggplot2::theme_bw() +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0.25, 0.5,0.75)) +
+    ggplot2::ylab("Cluster Membership Proportion") +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, size = t.sizes[3]),
+                   strip.text = ggplot2::element_text(size = t.sizes[1]),
+                   axis.title = ggplot2::element_text(size = t.sizes[2]),
+                   strip.background = ggplot2::element_blank(),
+                   panel.grid = ggplot2::element_blank(),
+                   panel.spacing = ggplot2::unit(0.1, "lines"))
+
+  # add palette
+  if(!is.null(alt.palette[1])){
+    p <- p + ggplot2::scale_color_manual(values = alt.palette) +
+      ggplot2::scale_fill_manual(values = alt.palette)
+  }
+  else{
+    p <- p + ggplot2::scale_color_viridis_d(option = viridis.option) +
+      ggplot2::scale_fill_viridis_d(option = viridis.option)
+  }
+
+  # add facets
+  if(!is.null(facet[1])){
+    pops <- unique(sample_meta[,facet])
+    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x))
+    names(fmt) <- pops
+    fmc <- cumsum(fmt)
+    fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
+    breaks <- levels(pdat$ID)[fm]
+
+    seps <- c(0, fmc) + 0.5
+    seps[1] <- -.5
+
+    p <- p +
+      ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "white", size = 1) +
+      ggplot2::xlab(label = facet[1])
+  }
+  else{
+    p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
+  }
+
+
+  if(exists("K_plot")){
+    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
+  }
+  else{
+    return(list(plot = p, data = qlist, plot_data = pdat))
+  }
+
+
+}
+
+
+
+#' Plot 1 or 2d site frequency spectra.
+#'
+#' Plot 1 or 2d site frequency spectra such as those created by
+#' \code{\link{make_SFS}}. Plots are made using ggplot2, and can be freely
+#' modified as is usual for ggplot objects.
+#'
+#' The input SFS is either a 2d site frequency spectra stored in a matrix, with
+#' an additional "pops" attribute containing population IDs, such as c("POP1",
+#' "POP2"), where the first pop is the matrix columns and the second is the
+#' matrix rows, or a 1d site frequency spectra stored as a numeric vector with a
+#' similar pops attribute giving the population name. These objects can be
+#' produced from a dadi input file using \code{\link{make_SFS}}.
+#'
+#' @param sfs matrix or numeric. Either a 2d site frequency spectra stored in a
+#'   matrix, with an additional "pops" attribute containing population IDs, such
+#'   as c("POP1", "POP2"), where the first pop is the matrix columns and the
+#'   second is the matrix rows, or a 1d site frequency spectra stored as a
+#'   numeric vector with a similar pops attribute giving the population name.
+#'   These objects can be produced from a dadi input file using
+#'   \code{\link{make_SFS}}.
+#' @param viridis.option character, default "inferno". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
+#'   cell is log transformed.
+#'
+#' @return A ggplot2 plot object of the provided SFS.
+#'
+#' @export
+plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
+
+  # add colun names, row names, and melt
+  pops <- attr(sfs, "pop")
+  sfs <- as.data.frame(sfs)
+  if(length(pops) == 1){
+    sfs <- as.data.frame(t(sfs))
+  }
+  colnames(sfs) <- 0:(ncol(sfs) - 1)
+  sfs$count <- 0:(nrow(sfs) - 1)
+  sfs[1,1] <- NA # mask the first entry
+  msfs <- reshape2::melt(sfs, id.vars = "count")
+  colnames(msfs) <- c("p1", "p2", "N")
+  msfs$p1 <- as.integer(as.character(msfs$p1))
+  msfs$p2 <- as.integer(as.character(msfs$p2))
+
+
+
+  # plot
+  ## 2D
+  if(nrow(sfs) > 1){
+    if(log){
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = log10(N), color = log10(N)))
+    }
+    else{
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = N, color = N))
+    }
+
+    p <- p +
+      ggplot2::geom_tile() + ggplot2::theme_bw() +
+      ggplot2::scale_color_viridis_c(na.value = "white", option = viridis.option) +
+      ggplot2::scale_fill_viridis_c(na.value = "white", option = viridis.option) +
+      ggplot2::xlab(pops[1]) + ggplot2::ylab(pops[2]) +
+      ggplot2::scale_x_continuous(expand = c(0, 0)) +
+      ggplot2::scale_y_continuous(expand = c(0, 0))
+  }
+
+  ## 1D
+  else{
+    if(log){
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y = log10(N)))
+    }
+    else{
+      p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p2, y= N))
+    }
+    p <- p +
+      ggplot2::geom_line() + ggplot2::theme_bw() +
+      ggplot2::xlab(pops[1])
+    ggplot2::scale_x_continuous(expand = c(0, 0))
+  }
+
+
+  return(p)
+}
+
+#' @export
+plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
+                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05){
+  # generate plotting data.frame
+  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
+  colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
+  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", K),]
+  tpd <- tpd[,c(facet, "Cluster", "Percentage")]
+  tpd$Cluster <- as.numeric(tpd$Cluster)
+  anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)
+
+  ## check if we need to flip negative longitude scores
+  if(all(map$long >= 0)){
+    flip <- T
+  }
+  else{
+    flip <- F
+  }
+
+  for(i in 1:ncol(pop_coordinates)){
+    pie_dat[i,1] <- colnames(pop_coordinates)[i]
+    pie_dat[i,-1] <- c(pop_coordinates[1,i], pop_coordinates[2,i], anc[colnames(pop_coordinates)[i],])
+    if(pie_dat$long[i] < 0 & flip){
+      pie_dat$long[i] <- 360 + pie_dat$long[i]
+    }
+  }
+
+  # figure out the radius to use
+  lat_range <- range(pie_dat$lat)
+  long_range <- range(pie_dat$long)
+  r <- min(lat_range[2] - lat_range[1], long_range[2] - long_range[1])
+  r <- r*radius_scale
+
+  # make the plot
+  mp <- ggplot2::ggplot(map, ggplot2::aes(x = long, y = lat)) +
+    ggplot2::geom_map(map = map, ggplot2::aes(map_id = region), fill = "grey", color = "white") +
+    ggplot2::theme_bw() +
+    ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
+    ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r)) +
+    scatterpie::geom_scatterpie(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, r = r), cols = colnames(pie_dat)[4:ncol(pie_dat)]) +
+    ggplot2::theme(legend.title = ggplot2::element_blank()) +
+    ggplot2::xlab("Longitude") + ggplot2::ylab("Latitude")
+
+  if(!is.null(alt.palette)){
+    mp <- mp + ggplot2::scale_fill_manual(values = alt.palette)
+  }
+  else{
+    mp <- mp + ggplot2::scale_fill_viridis_d(option = viridis.option)
+  }
+  if(pop_names){
+    # add labels
+    mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), point.padding = r/1.5, max.iter = 10000, direction = "y")
+  }
+
+  return(mp)
 }
