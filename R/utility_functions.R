@@ -103,6 +103,16 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   sample.meta <- dplyr::mutate_if(.tbl = sample.meta, is.factor, as.character)
   snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
 
+  # warn if anything repeated across sample level factors
+  uniques <- lapply(sample.meta, unique)
+  uniques <- uniques[-which(names(uniques) == ".sample.id")]
+  uniques <- unlist(uniques)
+  if(any(duplicated(uniques))){
+    warning(cat("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
+                paste0(uniques[which(duplicated(uniques))], "\n")))
+  }
+
+
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
@@ -220,6 +230,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
       sample.meta <- as.data.frame(sample.meta, stringsAsFactors = F)
       colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
     }
+    sample.meta <- dplyr::mutate_all(sample.meta, as.character) # this fixes some really obscure bugs with integers in columns.
     sample.opts <- unique(sample.meta)
     if(!is.data.frame(sample.opts)){
       sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
