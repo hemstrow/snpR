@@ -2692,7 +2692,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
     }
     else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)])) | length(no.stats.facets) > 0){
-      tstats <- x@stats[x@stats$facet %in% c(".base", facets)]
+      tstats <- x@stats[x@stats$facet %in% c(".base", facets),]
       miss.facets <- which(c(".base", facets) %in% unique(tstats[is.na(tstats$maf),]$facet))
       miss.facets <- c(miss.facets, no.stats.facets)
       x <- calc_maf(x, facets = c(".base", facets)[miss.facets])
