@@ -162,6 +162,7 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
 add.facets.snpR.data <- function(x, facets = NULL){
   if(is.null(facets[1])){return(x)}
   facets <- check.snpR.facet.request(x, facets)
+  if(is.null(facets[1])){return(x)}
   #===========================turn into list========
   # need to fix any multivariate facets (those with a .)
   comp.facets <- grep("(?<!^)\\.", facets, perl = T)
@@ -1283,46 +1284,50 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 
     # if snp.subfacets are requested
     if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1]))){
-      t.snp.meta <- x@snp.meta
+      if(!(any(snp.subfacets == ".base"))){
+        t.snp.meta <- x@snp.meta
 
-      # check for and get info on complex facets
-      complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
-      if(length(complex.snp.facets) > 0){
-        for(i in 1:length(complex.snp.facets)){
-          tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
-          tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
-          tcols <- tcols[,match(colnames(tcols), tfacets)]
-          t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+        # check for and get info on complex facets
+        complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
+        if(length(complex.snp.facets) > 0){
+          for(i in 1:length(complex.snp.facets)){
+            tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
+            tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
+            tcols <- tcols[,match(colnames(tcols), tfacets)]
+            t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+          }
+          colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
         }
-        colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
-      }
 
-      # get the snps to keep
-      t.snp.meta <- t.snp.meta[,colnames(t.snp.meta) %in% snp.facets]
-      fsnps <- which(as.logical(rowSums(matrix(as.matrix(t.snp.meta) %in% snp.subfacets, nrow(x@snp.meta))))) # here's the snps to keep, those where at least one subfacet level is present in the provided snp.subfacets.
-      snps <- snps[snps %in% fsnps]
+        # get the snps to keep
+        t.snp.meta <- t.snp.meta[,colnames(t.snp.meta) %in% snp.facets]
+        fsnps <- which(as.logical(rowSums(matrix(as.matrix(t.snp.meta) %in% snp.subfacets, nrow(x@snp.meta))))) # here's the snps to keep, those where at least one subfacet level is present in the provided snp.subfacets.
+        snps <- snps[snps %in% fsnps]
+      }
     }
 
     # if sample subfacets are requested
     if(!(is.null(facets[1])) & !(is.null(subfacets[1]))){
-      t.samp.meta <- x@sample.meta
+      if(!any(subfacets == ".base")){
+        t.samp.meta <- x@sample.meta
 
-      # check for and get info on complex facets
-      complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
-      if(length(complex.samp.facets) > 0){
-        for(i in 1:length(complex.samp.facets)){
-          tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
-          tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
-          tcols <- tcols[,match(colnames(tcols), tfacets)]
-          t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+        # check for and get info on complex facets
+        complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
+        if(length(complex.samp.facets) > 0){
+          for(i in 1:length(complex.samp.facets)){
+            tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
+            tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
+            tcols <- tcols[,match(colnames(tcols), tfacets)]
+            t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+          }
+          colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
         }
-        colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
-      }
 
-      # get the samples to keep
-      t.samp.meta <- t.samp.meta[,colnames(t.samp.meta) %in% facets]
-      fsamps <- which(as.logical(rowSums(matrix(as.matrix(t.samp.meta) %in% subfacets, nrow(x@sample.meta))))) # here's the samples to keep, those where at least one subfacet level is present in the provided snp.subfacets.
-      samps <- samps[samps %in% fsamps]
+        # get the samples to keep
+        t.samp.meta <- t.samp.meta[,colnames(t.samp.meta) %in% facets]
+        fsamps <- which(as.logical(rowSums(matrix(as.matrix(t.samp.meta) %in% subfacets, nrow(x@sample.meta))))) # here's the samples to keep, those where at least one subfacet level is present in the provided sample subfacets.
+        samps <- samps[samps %in% fsamps]
+      }
     }
   }
 
