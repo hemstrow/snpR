@@ -2079,8 +2079,106 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   return(out)
 }
 
+calc_CLD <- function(x, facets = NULL, par){
+  browser()
+  #============subfunctions==============
+  do_CLD <- function(x, task){
+    # grab correct SNPs
+    suppressWarnings(x <- subset_snpR_data(x, facets = task[1],
+                                           subfacets = task[2],
+                                           snp.facets = task[3],
+                                           snp.subfacets = task[4]))
+    genos <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
+
+    # do the CLD calculation, add column/row names, NA out the lower triangle and diag
+    CLD <- cor(t(genos), use = "pairwise.complete.obs")
+    colnames(CLD) <- x@snp.meta$position
+    rownames(CLD) <- x@snp.meta$position
+    CLD[which(lower.tri(CLD))] <- NA
+    diag(CLD) <- NA
+
+    # melt and add metadata
+    prox <- cbind(as.data.table(x@snp.meta), as.data.table(CLD))
+    prox <- reshape2::melt(prox, id.vars = colnames(x@snp.meta))
+    prox <- cbind(prox, as.data.table(x@snp.meta[rep(1:nrow(x@snp.meta), each = nrow(x@snp.meta)),]))
+    prox <- prox[, -"variable"]
+    colnames(prox) <- c(paste0("s1_", colnames(x@snp.meta)), "CLD", paste0("s2_", colnames(x@snp.meta)))
+    prox <- na.omit(prox)
+    data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
+    data.table::set(prox, j = "sample.facet", value = task[1])
+    data.table::set(prox, j = "sample.subfacet", value = task[2])
+    setcolorder(prox, c(1:ncol(x@snp.meta),
+                        (ncol(x@snp.meta) + 2):(ncol(prox) - 3),
+                        ncol(prox) - 2,
+                        ncol(x@snp.meta) + 1,
+                        (ncol(prox) - 1):ncol(prox)))
+
+    return(list(prox = prox, LD_matrix = CLD))
+  }
+
+  #============run=======================
+  # get task list and do a conversion to sn
+  cat("Preparing data...\n")
+
+  suppressMessages(x <- add.facets.snpR.data(x, facets))
+  tasks <- get.task.list(x, facets)
+  x@sn$sn <- format_snps(x, "sn", interpolate = F)
+  x@sn$type <- "FALSE"
+
+  cat("Beginning LD calculation...\n")
+  # run the loop
+  if(par == F){
+
+    # initialize storage
+    matrix_storage <- vector("list", nrow(tasks))
+    prox_storage <- vector("list", nrow(tasks))
 
 
+    #loop through each set of facets
+    progress <- 1
+    for(i in 1:nrow(tasks)){
+      # run
+      cat("Task #:", progress, "of", nrow(tasks),
+          " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
+          " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
+      out <- do_CLD(x, tasks[i,])
+      progress <- progress + 1
+
+      # extract
+      matrix_storage[[i]] <- list(CLD = out$LD_matrix)
+      prox_storage[[i]] <- out$prox
+    }
+
+    # split apart matrices and decompose
+
+  }
+  else if(is.numeric(par)){
+    cat("Running in parallel.\n")
+
+    cl <- snow::makeSOCKcluster(par)
+    doSNOW::registerDoSNOW(cl)
+
+    #prepare reporting function
+    ntasks <- nrow(tasks)
+    progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
+    opts <- list(progress=progress)
+
+    #loop through each set of facets
+    output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
+                               .options.snow = opts, .export = c("do_CLD")) %dopar% {
+                                 do_CLD(x, tasks[i,])
+                               }
+
+    #release cores and clean up
+    parallel::stopCluster(cl)
+    doSNOW::registerDoSNOW()
+    gc();gc()
+
+    # split apart matrices and decompose
+
+  }
+
+}
 
 #'@export
 #'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
