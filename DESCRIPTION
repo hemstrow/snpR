@@ -24,7 +24,8 @@ Imports:
     ggplot2,
     plyr,
     reshape2,
-    snow
+    snow,
+    stringr
 Depends:
     data.table,
     doParallel,
