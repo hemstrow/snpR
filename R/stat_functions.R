@@ -916,8 +916,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
   # em haplotype estimation
-  multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001, check = FALSE){
-    if(check){browser()}
+  multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
 
     # find the double het. Should be able to use an approach like this when this gets extended to work with everything.
     # cj values for each possible genotype:
@@ -2012,6 +2011,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
   #========================prepare and pass the primary function to apply.snpR.facets==================
+  # add any missing facets
+  x <- add.facets.snpR.data(x, facets)
+
   #subset data if requested:
   if(!(is.null(subfacets[1]))){
     old.x <- x
@@ -2061,59 +2063,125 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     x <- subset_snpR_data(x, ss)
   }
 
+  # run non-CLD LD components:
+  if(CLD != "only"){
+    # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
+    facets_trad <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
 
-  # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+    # run the function
+    out <- func(x, facets = facets_trad, snp.facets = snp.facets, par = par, sr = sr)
 
-  # run the function
-  out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
+    # add to snpRdata object and return
+    if(exists("old.x")){
+      out <- merge.snpR.stats(old.x, out, "LD")
 
-  # add to snpRdata object and return
-  if(exists("old.x")){
-    out <- merge.snpR.stats(old.x, out, "LD")
-
+    }
+    else{
+      out <- merge.snpR.stats(x, out, "LD")
+    }
   }
-  else{
-    out <- merge.snpR.stats(x, out, "LD")
+  # run CLD components
+  if(CLD != F){
+    # run the function
+    out <- calc_CLD(x, facets, par)
+
+    # add to snpRdata object and return
+    if(CLD != "only"){
+      out <- merge.snpR.stats(x, out, "LD")
+    }
+    else{
+      if(exists("old.x")){
+        out <- merge.snpR.stats(old.x, out, "LD")
+
+      }
+      else{
+        out <- merge.snpR.stats(x, out, "LD")
+      }
+    }
   }
+
   return(out)
 }
 
-calc_CLD <- function(x, facets = NULL, par){
-  browser()
+# need to decompose outputs into an identical format to the other LD options, otherwise working and faster.
+calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
-  do_CLD <- function(x, task){
+  # calculate composite LD for a single facet of data.
+  do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
     # grab correct SNPs
-    suppressWarnings(x <- subset_snpR_data(x, facets = task[1],
-                                           subfacets = task[2],
-                                           snp.facets = task[3],
-                                           snp.subfacets = task[4]))
-    genos <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
 
     # do the CLD calculation, add column/row names, NA out the lower triangle and diag
-    CLD <- cor(t(genos), use = "pairwise.complete.obs")
-    colnames(CLD) <- x@snp.meta$position
-    rownames(CLD) <- x@snp.meta$position
+    suppressWarnings(CLD <- cor(t(genos), use = "pairwise.complete.obs"))
+    colnames(CLD) <- snp.meta$position
+    rownames(CLD) <- snp.meta$position
     CLD[which(lower.tri(CLD))] <- NA
     diag(CLD) <- NA
 
     # melt and add metadata
-    prox <- cbind(as.data.table(x@snp.meta), as.data.table(CLD))
-    prox <- reshape2::melt(prox, id.vars = colnames(x@snp.meta))
-    prox <- cbind(prox, as.data.table(x@snp.meta[rep(1:nrow(x@snp.meta), each = nrow(x@snp.meta)),]))
+    prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
+    prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
+    prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
     prox <- prox[, -"variable"]
-    colnames(prox) <- c(paste0("s1_", colnames(x@snp.meta)), "CLD", paste0("s2_", colnames(x@snp.meta)))
+    colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
     prox <- na.omit(prox)
     data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
-    data.table::set(prox, j = "sample.facet", value = task[1])
-    data.table::set(prox, j = "sample.subfacet", value = task[2])
-    setcolorder(prox, c(1:ncol(x@snp.meta),
-                        (ncol(x@snp.meta) + 2):(ncol(prox) - 3),
+    data.table::set(prox, j = "sample.facet", value = sample.facet)
+    data.table::set(prox, j = "sample.subfacet", value = sample.subfacet)
+    setcolorder(prox, c(1:ncol(snp.meta),
+                        (ncol(snp.meta) + 2):(ncol(prox) - 3),
                         ncol(prox) - 2,
-                        ncol(x@snp.meta) + 1,
+                        ncol(snp.meta) + 1,
                         (ncol(prox) - 1):ncol(prox)))
 
     return(list(prox = prox, LD_matrix = CLD))
+  }
+
+  # take an output lists of matrices and prox tables and sort and name them for merging.
+  decompose_outputs <- function(matrix_storage, prox_storage, tasks){
+    # figure out the facet names
+    facet.names <- paste(tasks[,1], tasks[,3], sep = ".")
+    facet.names <- gsub("\\.base", "", facet.names)
+    facet.names <- gsub("\\.\\.", "\\.", facet.names)
+    facet.names <- gsub("^\\.", "", facet.names)
+    for(i in 1:length(facet.names)){
+      facet.names[i] <- check.snpR.facet.request(x, facet.names[i], remove.type = "none")
+    }
+
+    # initialize
+    matrix_out <- vector("list", length(unique(facet.names)))
+    names(matrix_out) <- unique(facet.names)
+
+    # decompose each matrix
+    ## first, initialize storage with all of the correctly names slots
+    for(i in 1:length(unique(facet.names))){
+      # grab the tasks with this facet
+      these.tasks <- which(facet.names == unique(facet.names)[i])
+
+      # pop options in this facet
+      pops <- unique(tasks[these.tasks,2])
+      matrix_out[[i]] <- vector("list", length(pops))
+      names(matrix_out[[i]]) <- pops
+
+      # snp facet options in this facet
+      snp.levs <- unique(tasks[these.tasks,4])
+      for(j in 1:length(matrix_out[[i]])){
+        matrix_out[[i]][[j]] <- vector("list", length(snp.levs))
+        names(matrix_out[[i]][[j]]) <- snp.levs
+        for(k in 1:length(snp.levs)){
+          matrix_out[[i]][[j]][[k]] <- vector("list", 1)
+          names(matrix_out[[i]][[j]][[k]]) <- "CLD"
+        }
+      }
+    }
+    ## then fill
+    for(i in 1:nrow(tasks)){
+      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["CLD"]] <- matrix_storage[[i]][[1]]
+    }
+
+    # rbind the prox together
+    prox <- data.table::rbindlist(prox_storage)
+
+    return(list(prox = prox, LD_matrices = matrix_out))
   }
 
   #============run=======================
@@ -2135,38 +2203,84 @@ calc_CLD <- function(x, facets = NULL, par){
 
 
     #loop through each set of facets
-    progress <- 1
     for(i in 1:nrow(tasks)){
       # run
-      cat("Task #:", progress, "of", nrow(tasks),
+      cat("Task #:", i, "of", nrow(tasks),
           " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
           " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
-      out <- do_CLD(x, tasks[i,])
-      progress <- progress + 1
+
+      # can't integrate this part into do_CLD without screwing up the parallel due to s4 issues.
+      suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+                                             subfacets = tasks[i,2],
+                                             snp.facets = tasks[i,3],
+                                             snp.subfacets = tasks[i,4]))
+
+      out <- do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
 
       # extract
       matrix_storage[[i]] <- list(CLD = out$LD_matrix)
       prox_storage[[i]] <- out$prox
     }
 
-    # split apart matrices and decompose
+    # decompose
+    return(decompose_outputs(matrix_storage, prox_storage, tasks))
 
   }
   else if(is.numeric(par)){
-    cat("Running in parallel.\n")
+    cat("Running in parallel.\nSpliting up data...\n")
+
+    geno.storage <- vector("list", nrow(tasks))
+
+
+    # can't do this part in parallel due to s4 issues.
+    for(i in 1:nrow(tasks)){
+      cat("Task #:", i, "of", nrow(tasks),
+          " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
+          " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
+      capture.output(invisible(suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+                                                                      subfacets = tasks[i,2],
+                                                                      snp.facets = tasks[i,3],
+                                                                      snp.subfacets = tasks[i,4]))))
+
+      geno.storage[[i]] <- list(geno = y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], snp.meta = y@snp.meta)
+    }
 
     cl <- snow::makeSOCKcluster(par)
     doSNOW::registerDoSNOW(cl)
 
+    tasks <- as.data.frame(tasks, stringsAsFactors = F)
+    tasks$ord <- 1:nrow(tasks)
+    ptasks <- split(tasks, sample(1:par, nrow(tasks), replace=T))
+
     #prepare reporting function
-    ntasks <- nrow(tasks)
-    progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
+    ntasks <- length(ptasks)
+    progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
     opts <- list(progress=progress)
 
     #loop through each set of facets
-    output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
-                               .options.snow = opts, .export = c("do_CLD")) %dopar% {
-                                 do_CLD(x, tasks[i,])
+    output <- foreach::foreach(q = 1:ntasks,
+                               .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR", "data.table"),
+                               .inorder = TRUE,
+                               .options.snow = opts) %dopar% {
+
+                                 tasks <- ptasks[[q]]
+
+                                 matrix_storage <- vector("list", nrow(tasks))
+                                 prox_storage <- vector("list", nrow(tasks))
+
+                                 for(i in 1:nrow(tasks)){
+
+                                   # run
+                                   out <- do_CLD(genos = geno.storage[[tasks[i,"ord"]]]$geno,
+                                                 snp.meta = geno.storage[[tasks[i,"ord"]]]$snp.meta,
+                                                 sample.facet = tasks[i, 1], sample.subfacet = tasks[i, 2])
+
+                                   # extract
+                                   matrix_storage[[i]] <- list(CLD = out$LD_matrix)
+                                   prox_storage[[i]] <- out$prox
+                                 }
+
+                                 list(prox = prox_storage, matrix = matrix_storage)
                                }
 
     #release cores and clean up
@@ -2175,9 +2289,16 @@ calc_CLD <- function(x, facets = NULL, par){
     gc();gc()
 
     # split apart matrices and decompose
-
+    matrix_out <- vector("list", length = length(output))
+    prox <- vector("list", length = length(output))
+    for(i in 1:length(output)){
+      matrix_out[[i]] <- output[[i]][[seq(2, length(output[[i]]), by = 2)]]
+      prox[[i]] <- output[[i]][[seq(1, length(output[[i]]), by = 2)]]
+    }
+    prox <- unlist(prox, recursive = F)
+    matrix_out <- unlist(matrix_out, recursive = F)
+    return(decompose_outputs(matrix_out, prox, dplyr::bind_rows(ptasks)[,-5]))
   }
-
 }
 
 #'@export

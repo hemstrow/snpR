@@ -1187,29 +1187,14 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       return(x)
     }
     else{
-      # deal with prox
-      prox.check_x <- do.call(paste, as.data.frame(x@pairwise.LD$prox[,which(!colnames(x@pairwise.LD$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
-      prox.check_stats <- do.call(paste, as.data.frame(stats$prox[,which(!colnames(stats$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
-      prox.check <- which(!(prox.check_stats %in% prox.check_x))
-      if(length(prox.check) != 0){
-        x@pairwise.LD$prox <- rbind(x@pairwise.LD$prox, stats$prox[prox.check,])
-      }
+      # deal with prox table using smart.merge
+      start.meta <- colnames(stats$prox)[1:which(colnames(stats$prox) == "proximity")]
+      x@pairwise.LD$prox <- smart.merge(stats$prox, x@pairwise.LD$prox,
+                                        meta.names = c(start.meta, "sample.facet", "sample.subfacet"),
+                                        starter.meta = start.meta)
 
-      # deal with matrices. Overwrite any matrices that already exist and add any new ones.
-      facets <- names(x@pairwise.LD$LD_matrices)
-      overwrite.facets <- which(facets %in% names(stats$LD_matrices)) # which existing facets need to be overwritten?
-      add.facets <- which(!(names(stats$LD_matrices) %in% facets)) # which LD facets need to be added?
-
-      ## overwrite
-      if(length(overwrite.facets) != 0){
-        x@pairwise.LD$LD_matrices[overwrite.facets] <- stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)]
-        names(x@pairwise.LD$LD_matrices)[overwrite.facets] <- names(stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)])
-      }
-
-      ## add
-      if(length(add.facets) > 0){
-        x@pairwise.LD$LD_matrices <- c(x@pairwise.LD$LD_matrices, stats$LD_matrices[add.facets])
-      }
+      # Deal with matrices using the merge.lists utility in snpR.
+      x@pairwise.LD$LD_matrices <- merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
     }
   }
 
@@ -3728,7 +3713,11 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
 
 #' List unique tasks/options for facets.
-#' Internal function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
+#' Internal function to get a list of tasks to run (one task per unique
+#' sample/snp level facet!). The source arguement specifies what kind of
+#' statistics are being grabbed.
+#'
+#' @author William Hemstrom
 get.task.list <- function(x, facets, source = "stats"){
   facets <- check.snpR.facet.request(x, facets, "none", F)
   task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
@@ -3801,6 +3790,7 @@ get.task.list <- function(x, facets, source = "stats"){
 #' @param x filepath to ms file
 #' @param chr.length length of the chromosome. If a single value, assumes all the same length.
 #'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
+#' @author William Hemstrom
 process_ms <- function(x, chr.length){
   infile <- x #infile
   lines <- readLines(x)
@@ -3856,5 +3846,81 @@ process_ms <- function(x, chr.length){
   colnames(x) <- paste0("gc_", 1:ncol(x))
 
   return(list(x = x, meta = meta))
+}
+
+
+#' Merge lists element-to-element
+#'
+#' Merges list 1 into list 2, adding any elements without matching equivalents to list 2.
+#'
+#' Merges element to element. Elements in list 1 with matching elements in list 2 will be replaced.
+#'
+#' Do this by getting the names and "pathways" of all of the deepest level objects, then looping through
+#' list 2 data and adding from list 1 that isn't present at the same "pathway".
+#'
+#' @param list1 list. The first list. Elements with identical names at all levels in list 2 will be *replaced*.
+#' @param list2 list. The second list. Elements in list 2 with identical names found in list 1 will replace those elements.
+#'
+#' @author William Hemstrom
+merge.lists <- function(list1, list2){
+  # prunes and prepares data on the names and nest levels of a list
+  prune.names <- function(list){
+    ln <- capture.output(str(list))
+    ns <- character()
+    pn <- vector("list")
+    collapsed.names <- vector("list")
+
+    # get the levels of each name
+    lev <- gsub("\\$.+", "", ln[2:length(ln)])
+    lev <- stringr::str_count(lev, "\\.\\.")
+
+    # get the name at each level
+    clean.names <- stringr::str_extract(ln, "\\$.+:")
+    clean.names <- gsub("\\$", "", clean.names)
+    clean.names <- gsub(":", "", clean.names)
+    clean.names <- gsub("num \\[.+$", "", clean.names)
+    clean.names <- gsub("chr \\[.+$", "", clean.names)
+    clean.names <- gsub(" ", "", clean.names)
+    clean.names[clean.names == ""] <- NA
+    terminal <- which(clean.names %in% c("Dprime", "rsq", "pval", "CLD"))
+    cl <- numeric()
+    for(i in 2:length(ln)){
+      if(i %in% terminal){
+        pn[[length(pn) + 1]] <- c(ns, clean.names[i])
+        collapsed.names[[length(pn)]] <- paste(pn[[length(pn)]], collapse = "")
+        ns <- ns[1:(lev[i] - 1)]
+        cl <- c(cl, lev[i])
+      }
+      else{
+        if(!is.na(clean.names[i])){
+          if(lev[i] <= length(ns)){
+            ns[lev[i]] <- clean.names[i]
+          }
+          else{
+            ns <- c(ns, clean.names[i])
+          }
+        }
+      }
+    }
+
+    return(list(n = pn, l = lev, cn = unlist(collapsed.names)))
+  }
+
+
+  all.names.1 <- prune.names(list1)
+  all.names.2 <- prune.names(list2)
+  ## add anything present in 1 but not 2 to 2.
+  for(i in 1:length(all.names.1[[1]])){
+    # if not there, add to stats
+    if(!all.names.1$cn[i] %in% all.names.2$cn){
+      loc <- paste(paste0("[['", all.names.1$n[[i]], "']]"), collapse = "")
+      call <- paste0("list2",
+                     loc,
+                     " <- ",
+                     "list1", loc)
+      eval(parse(text=call))
+    }
+  }
+  return(list2)
 }
 
