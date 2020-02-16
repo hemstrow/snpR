@@ -59,7 +59,7 @@
 #' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
 #'
 #'
-plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "rsq", r = NULL,
+plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
                                      l.text = "rsq", viridis.option = "inferno",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
@@ -90,7 +90,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 
 
   # check LD measure
-  good.ld.measures <- c("rsq", "Dprime", "pval")
+  good.ld.measures <- c("rsq", "Dprime", "pval", "CLD")
   if(length(LD_measure) != 1){
     msg <- c(msg, "Only one LD measure may be plotted at once.")
   }
@@ -309,7 +309,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     LD_mats <- order_levels(data.table::rbindlist(LD_mat_list))
   }
   else{
-    LD_mats <- cbind(var = ".base", snp.subfacet = ".base", prep_hm_dat(x@pairwise.LD$LD_matrices[[".base"]][[".base"]][[LD_measure]], r))
+    LD_mats <- cbind(var = ".base", snp.subfacet = ".base", prep_hm_dat(x@pairwise.LD$LD_matrices[[".base"]][[".base"]][[".base"]][[LD_measure]], r))
 
     LD_mats <- order_levels(LD_mats)
   }

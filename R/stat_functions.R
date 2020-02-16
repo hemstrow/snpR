@@ -1670,7 +1670,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     for(i in 1:length(facets)){
       # if a sample of base facet, just return it, no need for changes
       if(facet.types[i] == "sample" | facet.types[i] == ".base"){
-        out[[i]] <- LD_matrix[[which(names(LD_matrix) == facets[i])]]
+        out[[".base"]][[".base"]] <- LD_matrix[[which(names(LD_matrix) == facets[i])]]
         names(out)[i] <- facets[i]
       }
 
@@ -2108,32 +2108,49 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
   # calculate composite LD for a single facet of data.
   do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
-    # grab correct SNPs
+    # function to melt and add metadata
+    melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
+      colnames(CLD) <- snp.meta$position
+      rownames(CLD) <- snp.meta$position
+      prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
+      prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
+      prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
+      prox <- prox[, -"variable"]
+      colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
+      prox <- na.omit(prox)
+      data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
+      data.table::set(prox, j = "sample.facet", value = sample.facet)
+      data.table::set(prox, j = "sample.subfacet", value = sample.subfacet)
+      setcolorder(prox, c(1:ncol(snp.meta),
+                          (ncol(snp.meta) + 2):(ncol(prox) - 3),
+                          ncol(prox) - 2,
+                          ncol(snp.meta) + 1,
+                          (ncol(prox) - 1):ncol(prox)))
+      return(prox)
+    }
 
     # do the CLD calculation, add column/row names, NA out the lower triangle and diag
-    suppressWarnings(CLD <- cor(t(genos), use = "pairwise.complete.obs"))
-    colnames(CLD) <- snp.meta$position
-    rownames(CLD) <- snp.meta$position
+    ## CLD
+    suppressWarnings(CLD <- cor(t(genos), use = "pairwise.complete.obs")^2)
+    ## matrix of complete case sample sizes
+    complete.cases.matrix <- !is.na(t(genos))
+    complete.cases.matrix <- crossprod(complete.cases.matrix)
+
+    # fill in NAs
     CLD[which(lower.tri(CLD))] <- NA
     diag(CLD) <- NA
+    complete.cases.matrix[is.na(CLD)] <- NA
 
-    # melt and add metadata
-    prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
-    prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
-    prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
-    prox <- prox[, -"variable"]
-    colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-    prox <- na.omit(prox)
-    data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
-    data.table::set(prox, j = "sample.facet", value = sample.facet)
-    data.table::set(prox, j = "sample.subfacet", value = sample.subfacet)
-    setcolorder(prox, c(1:ncol(snp.meta),
-                        (ncol(snp.meta) + 2):(ncol(prox) - 3),
-                        ncol(prox) - 2,
-                        ncol(snp.meta) + 1,
-                        (ncol(prox) - 1):ncol(prox)))
+    # add metadata and melt
+    prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
+    prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
+    colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
 
-    return(list(prox = prox, LD_matrix = CLD))
+    # merge
+    prox <- merge.data.table(prox, prox_S)
+
+
+    return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
   }
 
   # take an output lists of matrices and prox tables and sort and name them for merging.
@@ -2144,7 +2161,12 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
     facet.names <- gsub("\\.\\.", "\\.", facet.names)
     facet.names <- gsub("^\\.", "", facet.names)
     for(i in 1:length(facet.names)){
-      facet.names[i] <- check.snpR.facet.request(x, facet.names[i], remove.type = "none")
+      if(facet.names[1] != ""){
+        facet.names[i] <- check.snpR.facet.request(x, facet.names[i], remove.type = "none")
+      }
+      else{
+        facet.names[i] <- ".base"
+      }
     }
 
     # initialize
@@ -2168,14 +2190,15 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
         matrix_out[[i]][[j]] <- vector("list", length(snp.levs))
         names(matrix_out[[i]][[j]]) <- snp.levs
         for(k in 1:length(snp.levs)){
-          matrix_out[[i]][[j]][[k]] <- vector("list", 1)
-          names(matrix_out[[i]][[j]][[k]]) <- "CLD"
+          matrix_out[[i]][[j]][[k]] <- vector("list", 2)
+          names(matrix_out[[i]][[j]][[k]]) <- c("CLD", "S")
         }
       }
     }
     ## then fill
     for(i in 1:nrow(tasks)){
-      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["CLD"]] <- matrix_storage[[i]][[1]]
+      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["CLD"]] <- matrix_storage[[i]][["CLD"]]
+      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["S"]] <- matrix_storage[[i]][["S"]]
     }
 
     # rbind the prox together
@@ -2218,7 +2241,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
       out <- do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
 
       # extract
-      matrix_storage[[i]] <- list(CLD = out$LD_matrix)
+      matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
       prox_storage[[i]] <- out$prox
     }
 
@@ -2276,7 +2299,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
                                                  sample.facet = tasks[i, 1], sample.subfacet = tasks[i, 2])
 
                                    # extract
-                                   matrix_storage[[i]] <- list(CLD = out$LD_matrix)
+                                   matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
                                    prox_storage[[i]] <- out$prox
                                  }
 
@@ -2577,4 +2600,9 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   x <- merge.snpR.stats(x, out, "sample.stats")
 
   return(x)
+}
+
+calc_ne <- function(x, facets = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01)){
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
+  x <- add.facets.snpR.data(x, facets)
 }

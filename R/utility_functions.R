@@ -3862,7 +3862,7 @@ process_ms <- function(x, chr.length){
 #' @param list2 list. The second list. Elements in list 2 with identical names found in list 1 will replace those elements.
 #'
 #' @author William Hemstrom
-merge.lists <- function(list1, list2){
+merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
   # prunes and prepares data on the names and nest levels of a list
   prune.names <- function(list){
     ln <- capture.output(str(list))
@@ -3882,7 +3882,7 @@ merge.lists <- function(list1, list2){
     clean.names <- gsub("chr \\[.+$", "", clean.names)
     clean.names <- gsub(" ", "", clean.names)
     clean.names[clean.names == ""] <- NA
-    terminal <- which(clean.names %in% c("Dprime", "rsq", "pval", "CLD"))
+    terminal <- which(clean.names %in% possible_end_level_names)
     cl <- numeric()
     for(i in 2:length(ln)){
       if(i %in% terminal){
