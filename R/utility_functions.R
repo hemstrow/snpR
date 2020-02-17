@@ -3712,11 +3712,15 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 }
 
 
-#' List unique tasks/options for facets.
-#' Internal function to get a list of tasks to run (one task per unique
-#' sample/snp level facet!). The source arguement specifies what kind of
-#' statistics are being grabbed.
+#' List unique tasks/options for facets. Internal function to get a list of
+#' tasks to run (one task per unique sample/snp level facet!). The source
+#' arguement specifies what kind of statistics are being grabbed.
 #'
+#' @param x snpRdata
+#' @param facets Facets to generate tasks for
+#' @param source "stats" or "pairwise.stats", default "stats". Type of
+#'   comparison to get jobs for. Note that the latter only works if pairwise
+#'   stats have actually been calculated.
 #' @author William Hemstrom
 get.task.list <- function(x, facets, source = "stats"){
   facets <- check.snpR.facet.request(x, facets, "none", F)
