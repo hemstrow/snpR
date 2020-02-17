@@ -4,8 +4,14 @@
 \alias{run_genomic_prediction}
 \title{Interface with BGLR to run genomic prediction with snpRdata objects.}
 \usage{
-run_genomic_prediction(x, response, iterations, burn_in, thin,
-  model = "BayesB")
+run_genomic_prediction(
+  x,
+  response,
+  iterations,
+  burn_in,
+  thin,
+  model = "BayesB"
+)
 }
 \arguments{
 \item{x}{snpRdata object}

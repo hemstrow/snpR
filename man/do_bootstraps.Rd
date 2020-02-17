@@ -4,9 +4,18 @@
 \alias{do_bootstraps}
 \title{Generate bootstrapped windowed statistics}
 \usage{
-do_bootstraps(x, facets = NULL, boots, sigma, step = NULL,
-  statistics = "all", nk = T, par = FALSE, do.p = TRUE,
-  p.alt = "two-sided")
+do_bootstraps(
+  x,
+  facets = NULL,
+  boots,
+  sigma,
+  step = NULL,
+  statistics = "all",
+  nk = T,
+  par = FALSE,
+  do.p = TRUE,
+  p.alt = "two-sided"
+)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -79,6 +88,7 @@ are randomly drawn for each SNP in each window.
 Possible centers for windows can either SNPs (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
+
 
 If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
 bootstrapped null distribution of that statistic using an emperical continuous

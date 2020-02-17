@@ -4,10 +4,21 @@
 \alias{format_snps}
 \title{Re-format SNP data.}
 \usage{
-format_snps(x, output = "snpRdata", facets = NULL, n_samp = NA,
-  interpolate = "bernoulli", outfile = FALSE, ped = NULL,
-  input_format = NULL, input_meta_columns = NULL, input_mDat = NULL,
-  sample.meta = NULL, snp.meta = NULL, chr.length = NULL)
+format_snps(
+  x,
+  output = "snpRdata",
+  facets = NULL,
+  n_samp = NA,
+  interpolate = "bernoulli",
+  outfile = FALSE,
+  ped = NULL,
+  input_format = NULL,
+  input_meta_columns = NULL,
+  input_mDat = NULL,
+  sample.meta = NULL,
+  snp.meta = NULL,
+  chr.length = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object or data.frame. Input data, in any of the above listed

@@ -4,8 +4,13 @@
 \alias{calc_p_from_bootstraps}
 \title{Caculate p-values from bootstrapped distributions.}
 \usage{
-calc_p_from_bootstraps(x, facets = "all", statistics = "all",
-  alt = "two-sided", par = FALSE)
+calc_p_from_bootstraps(
+  x,
+  facets = "all",
+  statistics = "all",
+  alt = "two-sided",
+  par = FALSE
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

@@ -4,8 +4,16 @@
 \alias{sanity_check_window}
 \title{Do sanity checks for many window specific functions in snpR.}
 \usage{
-sanity_check_window(x, sigma, step, stats.type, nk, facets, stats = NULL,
-  good.types = NULL)
+sanity_check_window(
+  x,
+  sigma,
+  step,
+  stats.type,
+  nk,
+  facets,
+  stats = NULL,
+  good.types = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

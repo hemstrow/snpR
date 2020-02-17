@@ -2,12 +2,26 @@
 % Please edit documentation in R/utility_functions.R
 \name{get.task.list}
 \alias{get.task.list}
-\title{List unique tasks/options for facets.
-Internal function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.}
+\title{List unique tasks/options for facets. Internal function to get a list of
+tasks to run (one task per unique sample/snp level facet!). The source
+arguement specifies what kind of statistics are being grabbed.}
 \usage{
 get.task.list(x, facets, source = "stats")
 }
+\arguments{
+\item{x}{snpRdata}
+
+\item{facets}{Facets to generate tasks for}
+
+\item{source}{"stats" or "pairwise.stats", default "stats". Type of
+comparison to get jobs for. Note that the latter only works if pairwise
+stats have actually been calculated.}
+}
 \description{
-List unique tasks/options for facets.
-Internal function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
+List unique tasks/options for facets. Internal function to get a list of
+tasks to run (one task per unique sample/snp level facet!). The source
+arguement specifies what kind of statistics are being grabbed.
+}
+\author{
+William Hemstrom
 }

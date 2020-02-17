@@ -4,9 +4,20 @@
 \alias{calc_association}
 \title{Run case/control or quantitative association tests on SNP data.}
 \usage{
-calc_association(x, facets = NULL, response, method = "gmmat.score",
-  w = c(0, 1, 2), formula = NULL, family.override = FALSE,
-  maxiter = 500, sampleID = NULL, maf = 0.05, par = FALSE, ...)
+calc_association(
+  x,
+  facets = NULL,
+  response,
+  method = "gmmat.score",
+  w = c(0, 1, 2),
+  formula = NULL,
+  family.override = FALSE,
+  maxiter = 500,
+  sampleID = NULL,
+  Gmaf = 0,
+  par = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{snpRdata object}
@@ -31,6 +42,12 @@ the Armitage association method. See description for details.}
 \item{formula}{charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.}
 
 \item{family.override}{character, default NULL.}
+
+\item{Gmaf}{numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.}
+
+\item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use for computation.}
+
+\item{...}{Additional arguments passed to \code{\link[GMMAT]{glmm.score}}.}
 }
 \value{
 A snpRdata object with the resulting association test results merged

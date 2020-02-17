@@ -4,10 +4,20 @@
 \alias{refine_rf}
 \title{Refine a random forest model via sequential removal of uninformative SNPs.}
 \usage{
-refine_rf(rf, response, facets = NULL, subfacet = NULL,
-  formula = NULL, num.trees = 10000, trim = 0.5,
-  trim_cuttoffs = NULL, importance = "impurity_corrected",
-  interpolate = "bernoulli", par = FALSE, ...)
+refine_rf(
+  rf,
+  response,
+  facets = NULL,
+  subfacet = NULL,
+  formula = NULL,
+  num.trees = 10000,
+  trim = 0.5,
+  trim_cuttoffs = NULL,
+  importance = "impurity_corrected",
+  interpolate = "bernoulli",
+  par = FALSE,
+  ...
+)
 }
 \arguments{
 \item{rf}{The random forest model to be refined. List containg snpRdata object (named $data) and a \code{\link[ranger]{ranger}} model, named $models$x$model, where

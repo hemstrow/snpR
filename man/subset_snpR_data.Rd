@@ -4,9 +4,15 @@
 \alias{subset_snpR_data}
 \title{Subset snpRdata objects}
 \usage{
-subset_snpR_data(x, snps = 1:nrow(x), samps = 1:ncol(x),
-  facets = NULL, subfacets = NULL, snp.facets = NULL,
-  snp.subfacets = NULL)
+subset_snpR_data(
+  x,
+  snps = 1:nrow(x),
+  samps = 1:ncol(x),
+  facets = NULL,
+  subfacets = NULL,
+  snp.facets = NULL,
+  snp.subfacets = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -22,9 +28,6 @@ which subsetting will occur.}
 
 \item{subfacets}{character, default NULL. Levels of the specified sample level
 facet to keep. Samples in other levels will be removed.}
-
-\item{snp.facets}{characet, default NULL. \emph{snp specific} facets over
-which subsetting will occur.}
 
 \item{snp.facets}{character, default NULL. Levels of the specified snp facets
 to keep. SNPs in other levels will be removed.}

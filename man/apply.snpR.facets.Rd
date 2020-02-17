@@ -4,9 +4,19 @@
 \alias{apply.snpR.facets}
 \title{Apply functions across snpR facets.}
 \usage{
-apply.snpR.facets(x, facets = NULL, req, fun, case = "ps", par = F,
-  ..., stats.type = "all", response = NULL, maf = FALSE,
-  interpolate = NULL)
+apply.snpR.facets(
+  x,
+  facets = NULL,
+  req,
+  fun,
+  case = "ps",
+  par = F,
+  ...,
+  stats.type = "all",
+  response = NULL,
+  maf = FALSE,
+  interpolate = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object}

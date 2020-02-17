@@ -4,12 +4,23 @@
 \alias{plot_clusters}
 \title{PCA, tSNE, and umap plots from snpRdata.}
 \usage{
-plot_clusters(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"),
-  check_duplicates = FALSE, minimum_percent_coverage = FALSE,
+plot_clusters(
+  x,
+  facets = FALSE,
+  plot_type = c("PCA", "tSNE", "umap"),
+  check_duplicates = FALSE,
+  minimum_percent_coverage = FALSE,
   minimum_genotype_percentage = FALSE,
-  interpolation_method = "bernoulli", dims = 2, initial_dims = 50,
-  perplexity = FALSE, theta = 0, iter = 1000,
-  viridis.option = "viridis", alt.palette = NULL, ...)
+  interpolation_method = "bernoulli",
+  dims = 2,
+  initial_dims = 50,
+  perplexity = FALSE,
+  theta = 0,
+  iter = 1000,
+  viridis.option = "viridis",
+  alt.palette = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

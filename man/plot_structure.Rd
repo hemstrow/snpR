@@ -4,11 +4,26 @@
 \alias{plot_structure}
 \title{Create STRUCTURE-like cluster plots}
 \usage{
-plot_structure(x, facet = NULL, facet.order = NULL, k = 2,
-  method = "snmf", reps = 1, iterations = 1000, I = NULL,
-  alpha = 10, qsort = "last", qsort_K = "last", clumpp = T,
-  clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
-  alt.palette = NULL, t.sizes = c(12, 12, 12), ...)
+plot_structure(
+  x,
+  facet = NULL,
+  facet.order = NULL,
+  k = 2,
+  method = "snmf",
+  reps = 1,
+  iterations = 1000,
+  I = NULL,
+  alpha = 10,
+  qsort = "last",
+  qsort_K = "last",
+  clumpp = T,
+  clumpp.opt = "greedy",
+  ID = NULL,
+  viridis.option = "viridis",
+  alt.palette = NULL,
+  t.sizes = c(12, 12, 12),
+  ...
+)
 }
 \arguments{
 \item{x}{snpRdata object, list of Q matrices (sorted by K in the first level
