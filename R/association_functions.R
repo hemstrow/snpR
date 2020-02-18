@@ -305,7 +305,6 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' @param family.override character, default NULL.
 #' @param Gmaf numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.
 #' @param par numeric or FALSE, default FALSE. Number of parallel cores to use for computation.
-#' @param ... Additional arguments passed to \code{\link[GMMAT]{glmm.score}}.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
@@ -329,7 +328,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
 #'
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
-                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE, ...){
+                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
   #==============sanity checks===========
   # response
   msg <- character()
@@ -582,7 +581,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                                    "asso_out_score.txt",
                                    infile.ncol.skip = nmeta.col,
                                    infile.ncol.print = 1:nmeta.col,
-                                   infile.header.print = colnames(asso.in)[1:nmeta.col], ...)
+                                   infile.header.print = colnames(asso.in)[1:nmeta.col])
     score.out <- read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
     file.remove(c("asso_in.txt", "asso_out_score.txt"))
@@ -603,7 +602,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     out <- apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
   }
   else if(method == "gmmat.score"){
-    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override, ...)
+    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
   }
 
   x <- merge.snpR.stats(x, out)
