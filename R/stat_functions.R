@@ -2613,7 +2613,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 
 calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01), conf.level = 0.95,
                     par = FALSE, ...){
-  #==================subfuncitons================
+  #==================subfunctions================
   # Based on equations from Waples 2006/2016
   # calculate estimated weighted ne
   ## Based on code from the strataG package, itself based on code from R. Waples and W. Larsen.
@@ -2769,7 +2769,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0
     }
   }
   # check that we have all LD values for all chrs
-  if(!is.null(chr[1])){
+  if(!is.null(chr[1]) & length(x@pairwise.LD) != 0){
     # check that we have data for every chr of interest
     chr1 <- paste0("s1_", chr)
     chr2 <- paste0("s2_", chr)
