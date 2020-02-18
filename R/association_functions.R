@@ -344,14 +344,17 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Response variable must be present in sample metadata."))
   }
-  else(
+  else{
     if(length(unique(x@sample.meta[,response])) != 2){
       if(method %in% c("armitage", "odds_ratio", "chisq")){
         msg <- c(msg,
                  paste0("Only two categories allowed for response variable for method: ", method, "."))
       }
     }
-  )
+    if(any(is.na(x@sample.meta[,response]))){
+      msg <- c(msg, "Some NAs found in response. This can cause issues!")
+    }
+  }
 
   # method
   good.methods <- c("armitage", "odds_ratio", "chisq", "gmmat.score")
