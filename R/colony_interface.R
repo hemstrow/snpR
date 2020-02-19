@@ -22,10 +22,10 @@
 #' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
 #' @param paternal_genotypes snpRdata object containing paternal genotypes.
-#' @param maternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
-#' @param paternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
+#' @param maternal_inclusion_prob numeric in 0:1, default 0. Probability the mother is in the dataset ranging from 0 to 1.
+#' @param paternal_inclusion_prob numeric in 0:1, default 0. Probability the father is in the dataset ranging from 0 to 1.
 #' @param update_af character, default TRUE. Should Colony update the allele frequencies used in the calculations?
-#' @param dioecious character, default TRUE. Is this species diploid/dioecious?
+#' @param dioecious character, default TRUE. Is this species diploid/dioecious? FALSE = haploid/monoecious. Colony does not work with more ploidy.
 #' @param inbreeding character, default TRUE. Should Colony assume inbreeding in the calculations?
 #' @param male_monogamous character, default FALSE. Should Colony assume males are monogamous?
 #' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
