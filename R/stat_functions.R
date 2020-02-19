@@ -2611,6 +2611,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   return(x)
 }
 
+#' @export
 calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01), conf.level = 0.95,
                     par = FALSE, ...){
   #==================subfunctions================
