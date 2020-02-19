@@ -24,7 +24,8 @@ Imports:
     ggplot2,
     plyr,
     reshape2,
-    snow
+    snow,
+    stringr
 Depends:
     data.table,
     doParallel,
@@ -50,4 +51,4 @@ Suggests:
     umap,
     viridis
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

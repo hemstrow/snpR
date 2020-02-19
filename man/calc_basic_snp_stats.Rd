@@ -4,8 +4,15 @@
 \alias{calc_basic_snp_stats}
 \title{Caluclate basic SNP statistics}
 \usage{
-calc_basic_snp_stats(x, facets = NULL, fst.method = "WC",
-  sigma = NULL, step = NULL, par = F, nk = TRUE)
+calc_basic_snp_stats(
+  x,
+  facets = NULL,
+  fst.method = "WC",
+  sigma = NULL,
+  step = NULL,
+  par = F,
+  nk = TRUE
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

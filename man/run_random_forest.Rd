@@ -4,9 +4,19 @@
 \alias{run_random_forest}
 \title{Run a RANGER random forest using snpRdata for a given phenotype or model.}
 \usage{
-run_random_forest(x, facets = NULL, response, formula = NULL,
-  num.trees = 10000, mtry = NULL, importance = "impurity_corrected",
-  interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...)
+run_random_forest(
+  x,
+  facets = NULL,
+  response,
+  formula = NULL,
+  num.trees = 10000,
+  mtry = NULL,
+  importance = "impurity_corrected",
+  interpolate = "bernoulli",
+  pvals = TRUE,
+  par = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

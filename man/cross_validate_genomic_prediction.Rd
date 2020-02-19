@@ -4,9 +4,17 @@
 \alias{cross_validate_genomic_prediction}
 \title{Run a single cross-validation with BGLR.}
 \usage{
-cross_validate_genomic_prediction(x, response, iterations = 10000,
-  burn_in = 1000, thin = 100, cross_percentage = 0.9,
-  model = "BayesB", cross_samples = NULL, plot = TRUE)
+cross_validate_genomic_prediction(
+  x,
+  response,
+  iterations = 10000,
+  burn_in = 1000,
+  thin = 100,
+  cross_percentage = 0.9,
+  model = "BayesB",
+  cross_samples = NULL,
+  plot = TRUE
+)
 }
 \arguments{
 \item{x}{snpRdata object}
@@ -77,6 +85,7 @@ the remaining 10% will be used for cross-validation. Alternatively, if
 cross_samples are provided, the specifed samples (by column index) will be
 used used for cross validation instead. This may be useful for a systematic
 leave-one-out cross-validation.
+
 
 See documentation for \code{\link[BGLR]{BGLR}} for more details and for a
 full list of references.

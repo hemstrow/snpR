@@ -303,6 +303,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   the Armitage association method. See description for details.
 #' @param formula charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.
 #' @param family.override character, default NULL.
+#' @param Gmaf numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.
+#' @param par numeric or FALSE, default FALSE. Number of parallel cores to use for computation.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
@@ -326,7 +328,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
 #'
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
-                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, maf = 0.05, par = FALSE, ...){
+                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
   #==============sanity checks===========
   # response
   msg <- character()
@@ -342,14 +344,17 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Response variable must be present in sample metadata."))
   }
-  else(
+  else{
     if(length(unique(x@sample.meta[,response])) != 2){
       if(method %in% c("armitage", "odds_ratio", "chisq")){
         msg <- c(msg,
                  paste0("Only two categories allowed for response variable for method: ", method, "."))
       }
     }
-  )
+    if(any(is.na(x@sample.meta[,response]))){
+      msg <- c(msg, "Some NAs found in response. This can cause issues!")
+    }
+  }
 
   # method
   good.methods <- c("armitage", "odds_ratio", "chisq", "gmmat.score")
@@ -521,13 +526,13 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
       return(data.frame(chi_stat = chi.stat, chi_p = chi.p, associated_allele = asso.allele))
     }
   }
-  run_gmmat <- function(sub.x, form, iter, sampleID, family.override, ...){
+  run_gmmat <- function(sub.x, form, iter, sampleID, family.override, Gmaf, ...){
     # sn format
     sn <- format_snps(sub.x, "sn", interpolate = FALSE)
     sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
 
     ## G matrix
-    G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang")
+    G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang", maf = Gmaf)
     if(is.null(sampleID)){
       sampleID <- ".sample.id"
     }
@@ -569,7 +574,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                                                    data = phenos,
                                                    kins = G,
                                                    id = sampleID,
-                                                   family = family)))
+                                                   family = family,
+                                                   maxiter = iter)))
 
     # run the test
     nmeta.col <- 2 + ncol(sub.x@snp.meta)
@@ -599,7 +605,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     out <- apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
   }
   else if(method == "gmmat.score"){
-    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", maf = maf, fun = run_gmmat, response = response, form = formula, iter = iter, sampleID = sampleID, family.override = family.override, ...)
+    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
   }
 
   x <- merge.snpR.stats(x, out)

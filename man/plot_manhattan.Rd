@@ -4,12 +4,27 @@
 \alias{plot_manhattan}
 \title{Generate a manhattan plot from snpRdata or a data.frame.}
 \usage{
-plot_manhattan(x, plot_var, window = FALSE, facets = NULL,
-  chr = "chr", bp = "position", snp = NULL, chr.subfacet = NULL,
-  sample.subfacet = NULL, significant = NULL, suggestive = NULL,
-  highlight = "significant", sig_below = FALSE, log.p = FALSE,
-  abs = FALSE, viridis.option = "plasma", viridis.hue = c(0.2, 0.5),
-  t.sizes = c(16, 12, 10), colors = c("black", "slategray3"))
+plot_manhattan(
+  x,
+  plot_var,
+  window = FALSE,
+  facets = NULL,
+  chr = "chr",
+  bp = "position",
+  snp = NULL,
+  chr.subfacet = NULL,
+  sample.subfacet = NULL,
+  significant = NULL,
+  suggestive = NULL,
+  highlight = "significant",
+  sig_below = FALSE,
+  log.p = FALSE,
+  abs = FALSE,
+  viridis.option = "plasma",
+  viridis.hue = c(0.2, 0.5),
+  t.sizes = c(16, 12, 10),
+  colors = c("black", "slategray3")
+)
 }
 \arguments{
 \item{x}{snpRdata or data.frame object containing the data to be plotted.}

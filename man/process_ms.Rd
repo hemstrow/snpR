@@ -15,3 +15,6 @@ If a vector of the same length as number of chr, assumes those are the chr lengt
 \description{
 Internal to process a ms file
 }
+\author{
+William Hemstrom
+}

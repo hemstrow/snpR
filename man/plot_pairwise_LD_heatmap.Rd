@@ -4,10 +4,19 @@
 \alias{plot_pairwise_LD_heatmap}
 \title{Create a heatmap from pairwise linkage data.}
 \usage{
-plot_pairwise_LD_heatmap(x, facets = NULL, snp.subfacet = NULL,
-  sample.subfacet = NULL, LD_measure = "rsq", r = NULL,
-  l.text = "rsq", viridis.option = "inferno", title = NULL,
-  t.sizes = c(16, 13, 10, 12, 10), background = "white")
+plot_pairwise_LD_heatmap(
+  x,
+  facets = NULL,
+  snp.subfacet = NULL,
+  sample.subfacet = NULL,
+  LD_measure = "CLD",
+  r = NULL,
+  l.text = "rsq",
+  viridis.option = "inferno",
+  title = NULL,
+  t.sizes = c(16, 13, 10, 12, 10),
+  background = "white"
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

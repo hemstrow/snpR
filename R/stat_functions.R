@@ -916,8 +916,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
   # em haplotype estimation
-  multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001, check = FALSE){
-    if(check){browser()}
+  multi_haplotype_estimation <- function(x, haptable, sigma = 0.0001){
 
     # find the double het. Should be able to use an approach like this when this gets extended to work with everything.
     # cj values for each possible genotype:
@@ -1671,7 +1670,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     for(i in 1:length(facets)){
       # if a sample of base facet, just return it, no need for changes
       if(facet.types[i] == "sample" | facet.types[i] == ".base"){
-        out[[i]] <- LD_matrix[[which(names(LD_matrix) == facets[i])]]
+        out[[".base"]][[".base"]] <- LD_matrix[[which(names(LD_matrix) == facets[i])]]
         names(out)[i] <- facets[i]
       }
 
@@ -1794,7 +1793,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         # initialize and store things
         x_storage <- as.matrix(as.data.frame(x))
         na.test <- suppressWarnings(as.numeric(x_storage[1]))
-        #save the info as a bigmatrix if it can be safelx_storage converted to numeric. Usuallx_storage this is true for ms but not necissarilx_storage other data tx_storagepes.
+        #save the info as a bigmatrix if it can be safelx_storage converted to numeric. Usually this is true for ms but not necissarily other data types.
         if(!is.na(na.test)){
           if(as.numeric(x_storage[1]) == x_storage[1]){
             cat("Saving matrix as big.matrix object for quicker sharing.\n")
@@ -2012,6 +2011,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
 
   #========================prepare and pass the primary function to apply.snpR.facets==================
+  # add any missing facets
+  x <- add.facets.snpR.data(x, facets)
+
   #subset data if requested:
   if(!(is.null(subfacets[1]))){
     old.x <- x
@@ -2061,26 +2063,275 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     x <- subset_snpR_data(x, ss)
   }
 
+  # run non-CLD LD components:
+  if(CLD != "only"){
+    # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
+    facets_trad <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
 
-  # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+    # run the function
+    out <- func(x, facets = facets_trad, snp.facets = snp.facets, par = par, sr = sr)
 
-  # run the function
-  out <- func(x, facets = facets, snp.facets = snp.facets, par = par, sr = sr)
+    # add to snpRdata object and return
+    if(exists("old.x")){
+      out <- merge.snpR.stats(old.x, out, "LD")
 
-  # add to snpRdata object and return
-  if(exists("old.x")){
-    out <- merge.snpR.stats(old.x, out, "LD")
-
+    }
+    else{
+      out <- merge.snpR.stats(x, out, "LD")
+    }
   }
-  else{
-    out <- merge.snpR.stats(x, out, "LD")
+  # run CLD components
+  if(CLD != F){
+    # run the function
+    out <- calc_CLD(x, facets, par)
+
+    # add to snpRdata object and return
+    if(CLD != "only"){
+      out <- merge.snpR.stats(x, out, "LD")
+    }
+    else{
+      if(exists("old.x")){
+        out <- merge.snpR.stats(old.x, out, "LD")
+
+      }
+      else{
+        out <- merge.snpR.stats(x, out, "LD")
+      }
+    }
   }
+
   return(out)
 }
 
+# need to decompose outputs into an identical format to the other LD options, otherwise working and faster.
+calc_CLD <- function(x, facets = NULL, par = FALSE){
+  #============subfunctions==============
+  # calculate composite LD for a single facet of data.
+  do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
+    # function to melt and add metadata
+    melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
+      colnames(CLD) <- snp.meta$position
+      rownames(CLD) <- snp.meta$position
+      prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
+      prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
+      prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
+      prox <- prox[, -"variable"]
+      colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
+      prox <- na.omit(prox)
+      data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
+      data.table::set(prox, j = "sample.facet", value = sample.facet)
+      data.table::set(prox, j = "sample.subfacet", value = sample.subfacet)
+      setcolorder(prox, c(1:ncol(snp.meta),
+                          (ncol(snp.meta) + 2):(ncol(prox) - 3),
+                          ncol(prox) - 2,
+                          ncol(snp.meta) + 1,
+                          (ncol(prox) - 1):ncol(prox)))
+      return(prox)
+    }
+
+    # do the CLD calculation, add column/row names, NA out the lower triangle and diag
+    ## CLD
+    suppressWarnings(CLD <- cor(t(genos), use = "pairwise.complete.obs")^2)
+    ## matrix of complete case sample sizes
+    complete.cases.matrix <- !is.na(t(genos))
+    complete.cases.matrix <- crossprod(complete.cases.matrix)
+
+    # fill in NAs
+    CLD[which(lower.tri(CLD))] <- NA
+    diag(CLD) <- NA
+    complete.cases.matrix[is.na(CLD)] <- NA
+
+    # add metadata and melt
+    prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
+    prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
+    colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
+
+    # merge
+    prox <- merge.data.table(prox, prox_S)
 
 
+    return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
+  }
+
+  # take an output lists of matrices and prox tables and sort and name them for merging.
+  decompose_outputs <- function(matrix_storage, prox_storage, tasks){
+    # figure out the facet names
+    facet.names <- paste(tasks[,1], tasks[,3], sep = ".")
+    facet.names <- gsub("\\.base", "", facet.names)
+    facet.names <- gsub("\\.\\.", "\\.", facet.names)
+    facet.names <- gsub("^\\.", "", facet.names)
+    for(i in 1:length(facet.names)){
+      if(facet.names[1] != ""){
+        facet.names[i] <- check.snpR.facet.request(x, facet.names[i], remove.type = "none")
+      }
+      else{
+        facet.names[i] <- ".base"
+      }
+    }
+
+    # initialize
+    matrix_out <- vector("list", length(unique(facet.names)))
+    names(matrix_out) <- unique(facet.names)
+
+    # decompose each matrix
+    ## first, initialize storage with all of the correctly names slots
+    for(i in 1:length(unique(facet.names))){
+      # grab the tasks with this facet
+      these.tasks <- which(facet.names == unique(facet.names)[i])
+
+      # pop options in this facet
+      pops <- unique(tasks[these.tasks,2])
+      matrix_out[[i]] <- vector("list", length(pops))
+      names(matrix_out[[i]]) <- pops
+
+      # snp facet options in this facet
+      snp.levs <- unique(tasks[these.tasks,4])
+      for(j in 1:length(matrix_out[[i]])){
+        matrix_out[[i]][[j]] <- vector("list", length(snp.levs))
+        names(matrix_out[[i]][[j]]) <- snp.levs
+        for(k in 1:length(snp.levs)){
+          matrix_out[[i]][[j]][[k]] <- vector("list", 2)
+          names(matrix_out[[i]][[j]][[k]]) <- c("CLD", "S")
+        }
+      }
+    }
+    ## then fill
+    for(i in 1:nrow(tasks)){
+      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["CLD"]] <- matrix_storage[[i]][["CLD"]]
+      matrix_out[[facet.names[i]]][[tasks[i,2]]][[tasks[i,4]]][["S"]] <- matrix_storage[[i]][["S"]]
+    }
+
+    # rbind the prox together
+    prox <- data.table::rbindlist(prox_storage)
+
+    return(list(prox = prox, LD_matrices = matrix_out))
+  }
+
+  #============run=======================
+  # get task list and do a conversion to sn
+  cat("Preparing data...\n")
+
+  suppressMessages(x <- add.facets.snpR.data(x, facets))
+  tasks <- get.task.list(x, facets)
+  x@sn$sn <- format_snps(x, "sn", interpolate = F)
+  x@sn$type <- "FALSE"
+
+  cat("Beginning LD calculation...\n")
+  # run the loop
+  if(par == F){
+
+    # initialize storage
+    matrix_storage <- vector("list", nrow(tasks))
+    prox_storage <- vector("list", nrow(tasks))
+
+
+    #loop through each set of facets
+    for(i in 1:nrow(tasks)){
+      # run
+      cat("Task #:", i, "of", nrow(tasks),
+          " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
+          " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
+
+      # can't integrate this part into do_CLD without screwing up the parallel due to s4 issues.
+      suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+                                             subfacets = tasks[i,2],
+                                             snp.facets = tasks[i,3],
+                                             snp.subfacets = tasks[i,4]))
+
+      out <- do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
+
+      # extract
+      matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
+      prox_storage[[i]] <- out$prox
+    }
+
+    # decompose
+    return(decompose_outputs(matrix_storage, prox_storage, tasks))
+
+  }
+  else if(is.numeric(par)){
+    cat("Running in parallel.\nSpliting up data...\n")
+
+    geno.storage <- vector("list", nrow(tasks))
+
+
+    # can't do this part in parallel due to s4 issues.
+    for(i in 1:nrow(tasks)){
+      cat("Task #:", i, "of", nrow(tasks),
+          " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
+          " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
+      capture.output(invisible(suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+                                                                      subfacets = tasks[i,2],
+                                                                      snp.facets = tasks[i,3],
+                                                                      snp.subfacets = tasks[i,4]))))
+
+      geno.storage[[i]] <- list(geno = y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], snp.meta = y@snp.meta)
+    }
+
+    # split up
+    tasks <- as.data.frame(tasks, stringsAsFactors = F)
+    tasks$ord <- 1:nrow(tasks)
+    if(par < nrow(tasks)){
+      ptasks <- split(tasks, rep(1:par, length.out = nrow(tasks), each = ceiling(nrow(tasks)/par)))
+    }
+    else{
+      par <- nrow(tasks)
+      ptasks <- split(tasks, 1:par, drop = F)
+    }
+
+    cl <- snow::makeSOCKcluster(par)
+    doSNOW::registerDoSNOW(cl)
+
+
+
+    #prepare reporting function
+    ntasks <- length(ptasks)
+    progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+    opts <- list(progress=progress)
+
+    #loop through each set of facets
+    output <- foreach::foreach(q = 1:ntasks,
+                               .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR", "data.table"),
+                               .inorder = TRUE,
+                               .options.snow = opts) %dopar% {
+
+                                 tasks <- ptasks[[q]]
+
+                                 matrix_storage <- vector("list", nrow(tasks))
+                                 prox_storage <- vector("list", nrow(tasks))
+
+                                 for(i in 1:nrow(tasks)){
+
+                                   # run
+                                   out <- do_CLD(genos = geno.storage[[tasks[i,"ord"]]]$geno,
+                                                 snp.meta = geno.storage[[tasks[i,"ord"]]]$snp.meta,
+                                                 sample.facet = tasks[i, 1], sample.subfacet = tasks[i, 2])
+
+                                   # extract
+                                   matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
+                                   prox_storage[[i]] <- out$prox
+                                 }
+
+                                 list(prox = prox_storage, matrix = matrix_storage)
+                               }
+
+    #release cores and clean up
+    parallel::stopCluster(cl)
+    doSNOW::registerDoSNOW()
+    gc();gc()
+
+    # split apart matrices and decompose
+    matrix_out <- vector("list", length = length(output))
+    prox <- vector("list", length = length(output))
+    for(i in 1:length(output)){
+      matrix_out[[i]] <- output[[i]][[seq(2, length(output[[i]]), by = 2)]]
+      prox[[i]] <- output[[i]][[seq(1, length(output[[i]]), by = 2)]]
+    }
+    prox <- unlist(prox, recursive = F)
+    matrix_out <- unlist(matrix_out, recursive = F)
+    return(decompose_outputs(matrix_out, prox, dplyr::bind_rows(ptasks)[,-5]))
+  }
+}
 
 #'@export
 #'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
@@ -2358,4 +2609,256 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   x <- merge.snpR.stats(x, out, "sample.stats")
 
   return(x)
+}
+
+#' @export
+calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01), conf.level = 0.95,
+                    par = FALSE, ...){
+  #==================subfunctions================
+  # Based on equations from Waples 2006/2016
+  # calculate estimated weighted ne
+  ## Based on code from the strataG package, itself based on code from R. Waples and W. Larsen.
+  ## note: x is the prox list containing only the desired comparisons, generated by get_correct_prox below.
+  ne_func <- function(x, chr, mating, conf.level){
+
+    # ne funciton. Note that this is vectorized incase I decide to later return NE esitmates per loci pair!
+    cne <- function(CLD, S, mating){ ## random mating
+
+      lSCLD <- CLD[S >= 30]
+      sSCLD <- CLD[S < 30]
+      ne <- numeric(length(CLD))
+
+      if(mating == "random"){
+        # large S
+        if(length(lSCLD) > 0){
+          roots <- (1/9) - 2.76*lSCLD
+          roots[roots < 0] <- 0
+          ne[S >= 30] <- ((1/3) + sqrt(roots))/(2*lSCLD)
+        }
+
+        # small S
+        if(length(sSCLD) > 0){
+          roots <- (0.308^2) - 2.08*sSCLD
+          roots[roots < 0] <- 0
+          ne[S < 30] <- (0.308 + sqrt(roots))/(2*sSCLD)
+        }
+      }
+      else if(mating == "monogamy"){
+        # large S
+        if(length(lSCLD) > 0){
+          roots <- (4/9) - 7.2*lSCLD
+          roots[roots < 0] <- 0
+          ne[S >= 30] <- ((2/3) + sqrt(roots))/(2*lSCLD)
+        }
+        # small S
+        if(length(sSCLD) > 0){
+          roots <- (0.618^2) - 5.24*sSCLD
+          roots[roots < 0] <- 0
+          ne[S < 30] <- (0.618 + sqrt(roots))/(2*sSCLD)
+        }
+      }
+      return(ne)
+    }
+
+
+    # make sure we are only looking at LD between independant snps
+    if(!is.null(chr)){
+      chr1 <- paste0("s1_", chr)
+      chr2 <- paste0("s2_", chr)
+      x <- x[which(x[,..chr1] != x[,..chr2]),]
+    }
+
+    # Based on equations from Waples 2006/2016
+    # Based on code from the strataG package, itself based on code from R. Waples and W. Larsen.
+    ## calculate estimated weighted ne
+    S <- x$S
+    N <- nrow(x)
+    rsqE <- ifelse(S >= 30, (1/S) + (3.19/(S^2)), 0.0018 + (0.907/S) + (4.44/(S^2))) # table 1, waples and do 2008
+    CLD <- x$CLD * (S/(S - 1))^2 # sample size corrected LD, waples 2016
+    w <- S^2 # Eqn 1.4
+    m.rsq <- sum(w * CLD)/sum(w) # eq 1.5
+    dCLD <- CLD - rsqE # eq 1.6
+    dCLD.0 <- sum(dCLD * w)/sum(w) # eq 1.10
+    hmS <- N/sum(1/S) # harmonic mean of S
+    ne0 <- cne(dCLD.0, hmS, mating = mating) # initial Ne.0
+    wt <- (S^2)/((S + 3 * ne0)^2) # eq 1.11
+    dCLD <- sum(wt * dCLD) / sum(wt) # eq 1.12:
+    mE.rsq <- sum(w * rsqE) / sum(w) # mean expected r-squared
+    ne <- cne(dCLD, hmS, mating = mating) # calculate ne using the overall drift ne, harmonic mean S, and mating type.
+    ## confidence intervals
+    lci.p <- (1 - conf.level) / 2
+    uci.p <- 1 - lci.p
+    dCLD.lci <- m.rsq * N / qchisq(lci.p, N) - mE.rsq
+    dCLD.uci <- m.rsq * N / qchisq(uci.p, N) - mE.rsq
+    ne.lci <- cne(dCLD.lci, dCLD, mating)
+    ne.uci <- cne(dCLD.uci, dCLD, mating)
+
+
+    # fix infinite ne estimates and return
+    ne.vec <- c(ne, ne.lci, ne.uci)
+    if(any(ne.vec < 0)){
+      ne.vec[which(ne.vec < 0)] <- Inf
+    }
+    return(ne.vec)
+  }
+
+  # filter a prox list by maf and sample subfacet
+  get_correct_prox <- function(prox, stats, maf, sample.facet, sample.subfacet){
+    # filter by facet
+    good.snps <- prox[prox$sample.facet == sample.facet &
+                                      prox$sample.subfacet == sample.subfacet]
+
+    # get the mafs
+    all.mafs <- stats[stats$facet == sample.facet & stats$subfacet == sample.subfacet,]
+    mafs1 <- all.mafs[match(good.snps$s1_.snp.id, all.mafs$.snp.id),]$maf
+    mafs2 <- all.mafs[match(good.snps$s2_.snp.id, all.mafs$.snp.id),]$maf
+
+    # filter by maf and return
+    return(good.snps[which(mafs1 >= maf & mafs2 > maf),])
+  }
+
+  #=================prep=========================
+  # add any needed facets
+  facets <- check.snpR.facet.request(x, facets, remove.type = "snp") # don't need snp level facets here, doesn't make sense.
+  if(length(facets) == 1 & is.null(facets[1])){
+    facets <- ".base"
+  }
+  x <- add.facets.snpR.data(x, facets)
+  # update facets to include by-chromosome...
+  if(!is.null(chr[1])){
+    if(facets[1] != ".base"){
+      ldfacets <- paste(facets, chr, sep = ".")
+      ldfacets <- check.snpR.facet.request(x, ldfacets, "none")
+    }
+    else{
+      ld.facets <- check.snpR.facet.request(x, chr, "none")
+    }
+  }
+  else{
+    ldfacets <- facets
+  }
+
+  # determine if we need to calculate any LD values
+  need.calc.ld <- F
+  # if no calculated LD values
+  if(length(x@pairwise.LD) == 0){
+    need.calc.ld <- T
+  }
+  else{
+    # if not all facets calculated
+    if(!all(facets %in% x@pairwise.LD$prox$sample.facet)){
+      need.calc.ld <- T
+    }
+    else{
+      # if no CLD
+      if(!"CLD" %in% colnames(x@pairwise.LD$prox)){
+        need.calc.ld <- T
+      }
+      else{
+        # if CLD not calculated for THESE facets
+        opts <- length(unique(x@pairwise.LD$prox$sample.subfacet[x@pairwise.LD$prox$sample.facet %in% facets]))
+        na.ratio <- sum(is.na(x@pairwise.LD$prox$CLD[x@pairwise.LD$prox$sample.facet %in% facets]))/
+          sum(x@pairwise.LD$prox$sample.facet %in% facets)
+        if(na.ratio > (1/opts)*.1){
+          need.calc.ld <- T
+        }
+        # calculated for an inappropriate snp.level facet (aka by chr when we are using chr as the chromosome)
+        else if(!all(facets %in% names(x@pairwise.LD$LD_matrices))){
+          need.calc.ld <- T
+        }
+      }
+    }
+  }
+  # check that we have all LD values for all chrs
+  if(!is.null(chr[1]) & length(x@pairwise.LD) != 0){
+    # check that we have data for every chr of interest
+    chr1 <- paste0("s1_", chr)
+    chr2 <- paste0("s2_", chr)
+    prox.chr.opts <- unique(unlist(c(unique(x@pairwise.LD$prox[,..chr1]), unique(x@pairwise.LD$prox[,..chr2]))))
+    if(!all(prox.chr.opts %in% unique(x@snp.meta[,chr]))){
+      need.calc.ld <- T
+    }
+  }
+
+  # calculate LD if we need it
+  if(need.calc.ld){
+    cat("Calculating pairwise composite LD...\n")
+    x <- calc_pairwise_ld(x, facets, par = par, ...)
+  }
+
+  # calculate mafs
+  x <- calc_maf(x, facets)
+
+  #=================run the ne estimation================
+  task.list <- get.task.list(x, facets)
+  ne_out <- expand.grid(facet = task.list[,1], sample.subfacet = task.list[,2], pcrit = factor(c(0.05, 0.02, 0.01)))
+  ne_out <- unique(ne_out)
+  ne_out$ne <- NA
+  ne_out$ne.ci.lower <- NA
+  ne_out$ne.ci.upper <- NA
+  ne_out$pcrit <- as.numeric(as.character(ne_out$pcrit))
+
+  if(par == F){
+    for(i in 1:nrow(ne_out)){
+      cat("Task ", i, "of ", nrow(ne_out), ", sample facet:", as.character(ne_out$facet[i]),
+          ", sample subfacet: ", as.character(ne_out$sample.subfacet[i]),
+          ", pcrit:", ne_out$pcrit[i], ".\n")
+      tprox <- get_correct_prox(prox = x@pairwise.LD$prox,
+                                stats = x@stats,
+                                maf = ne_out$pcrit[i],
+                                sample.facet = ne_out$facet[i],
+                                sample.subfacet = ne_out$sample.subfacet[i])
+      ne_out[i,4:6] <- ne_func(tprox, chr, mating, conf.level)
+    }
+  }
+  else if(is.numeric(par)){
+
+    # split up
+    if(par < nrow(ne_out)){
+      ptasks <- split(ne_out, rep(1:par, length.out = nrow(ne_out), each = ceiling(nrow(ne_out)/par)))
+    }
+    else{
+      par <- nrow(ne_out)
+      ptasks <- split(ne_out, 1:par, drop = F)
+    }
+
+    cl <- snow::makeSOCKcluster(par)
+    doSNOW::registerDoSNOW(cl)
+
+    #prepare reporting function
+    ntasks <- length(ptasks)
+    progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+    opts <- list(progress=progress)
+    prox.storage <- x@pairwise.LD$prox
+    stats.storage <- x@stats
+
+    #loop through each set of facets
+    output <- foreach::foreach(q = 1:ntasks,
+                               .packages = c("reshape2", "snpR", "data.table"),
+                               .inorder = TRUE,
+                               .options.snow = opts) %dopar% {
+                                 ne_out <- ptasks[[q]]
+                                 for(i in 1:nrow(ne_out)){
+                                   tprox <- get_correct_prox(prox = prox.storage,
+                                                             stats = stats.storage,
+                                                             maf = ne_out$pcrit[i],
+                                                             sample.facet = ne_out$facet[i],
+                                                             sample.subfacet = ne_out$sample.subfacet[i])
+                                   ne_out[i,4:6] <- ne_func(tprox, chr, mating, conf.level)
+                                 }
+                                 ne_out
+                               }
+
+    #release cores and clean up
+    parallel::stopCluster(cl)
+    doSNOW::registerDoSNOW()
+    gc();gc()
+
+    # merge and arrange
+    ne_out <- data.table::rbindlist(output)
+    ne_out <- dplyr::arrange(ne_out, facet, pcrit, sample.subfacet)
+  }
+  else{stop("par must be FALSE or a numeric value designating the number of cores to run.\n")}
+
+  return(ne_out)
 }

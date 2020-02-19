@@ -4,20 +4,43 @@
 \alias{write_colony_input}
 \title{Write an input for the COLONY pedigree assignment program.}
 \usage{
-write_colony_input(x, outfile = "colony_input", method = "FPLS",
-  run_length = 2, sampleIDs = NULL, sibship_prior = 0,
-  paternal_sib_size = NULL, maternal_sib_size = NULL, nruns = 1,
-  seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
-  maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,
-  update_af = TRUE, dioecious = TRUE, inbreeding = TRUE,
-  male_monogamous = FALSE, female_monogamous = FALSE,
-  clone_inference = FALSE, sibship_scaling = TRUE, known_af = FALSE,
-  precision = 2, dropout = 0.01, genotyping_error = 0.01,
-  known_maternal_dyads = NULL, known_paternal_dyads = NULL,
-  known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
-  known_maternal_sibships = NULL, known_paternal_sibships = NULL,
-  maternal_exclusions = NULL, paternal_exclusions = NULL,
-  excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL)
+write_colony_input(
+  x,
+  outfile = "colony_input",
+  method = "FPLS",
+  run_length = 2,
+  sampleIDs = NULL,
+  sibship_prior = 0,
+  paternal_sib_size = NULL,
+  maternal_sib_size = NULL,
+  nruns = 1,
+  seed = NULL,
+  maternal_genotypes = NULL,
+  paternal_genotypes = NULL,
+  maternal_inclusion_prob = 0,
+  paternal_inclusion_prob = 0,
+  update_af = TRUE,
+  dioecious = TRUE,
+  inbreeding = TRUE,
+  male_monogamous = FALSE,
+  female_monogamous = FALSE,
+  clone_inference = FALSE,
+  sibship_scaling = TRUE,
+  known_af = FALSE,
+  precision = 2,
+  dropout = 0.01,
+  genotyping_error = 0.01,
+  known_maternal_dyads = NULL,
+  known_paternal_dyads = NULL,
+  known_maternal_max_mismatches = 0,
+  known_paternal_max_mismatches = 0,
+  known_maternal_sibships = NULL,
+  known_paternal_sibships = NULL,
+  maternal_exclusions = NULL,
+  paternal_exclusions = NULL,
+  excluded_maternal_siblings = NULL,
+  excluded_paternal_siblings = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object containing offspring genotypes.}
@@ -70,8 +93,6 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 \item{known_maternal_dyads}{character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.}
 
 \item{known_paternal_dyads}{character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.}
-
-\item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 
 \item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 

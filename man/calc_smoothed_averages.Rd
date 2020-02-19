@@ -4,8 +4,15 @@
 \alias{calc_smoothed_averages}
 \title{Gaussian smooth statistics across sliding windows.}
 \usage{
-calc_smoothed_averages(x, facets = NULL, sigma, step = NULL,
-  nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE)
+calc_smoothed_averages(
+  x,
+  facets = NULL,
+  sigma,
+  step = NULL,
+  nk = TRUE,
+  stats.type = c("single", "pairwise"),
+  par = FALSE
+)
 }
 \arguments{
 \item{x}{snpRdata object.}

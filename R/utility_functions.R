@@ -103,6 +103,16 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   sample.meta <- dplyr::mutate_if(.tbl = sample.meta, is.factor, as.character)
   snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
 
+  # warn if anything repeated across sample level factors
+  uniques <- lapply(sample.meta, unique)
+  uniques <- uniques[-which(names(uniques) == ".sample.id")]
+  uniques <- unlist(uniques)
+  if(any(duplicated(uniques))){
+    warning(cat("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
+                paste0(uniques[which(duplicated(uniques))], "\n")))
+  }
+
+
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
@@ -152,6 +162,7 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
 add.facets.snpR.data <- function(x, facets = NULL){
   if(is.null(facets[1])){return(x)}
   facets <- check.snpR.facet.request(x, facets)
+  if(is.null(facets[1])){return(x)}
   #===========================turn into list========
   # need to fix any multivariate facets (those with a .)
   comp.facets <- grep("(?<!^)\\.", facets, perl = T)
@@ -220,6 +231,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
       sample.meta <- as.data.frame(sample.meta, stringsAsFactors = F)
       colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
     }
+    sample.meta <- dplyr::mutate_all(sample.meta, as.character) # this fixes some really obscure bugs with integers in columns.
     sample.opts <- unique(sample.meta)
     if(!is.data.frame(sample.opts)){
       sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
@@ -1175,29 +1187,14 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       return(x)
     }
     else{
-      # deal with prox
-      prox.check_x <- do.call(paste, as.data.frame(x@pairwise.LD$prox[,which(!colnames(x@pairwise.LD$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
-      prox.check_stats <- do.call(paste, as.data.frame(stats$prox[,which(!colnames(stats$prox) %in% c("rsq", "proximity", "Dprime", "pval"))]))
-      prox.check <- which(!(prox.check_stats %in% prox.check_x))
-      if(length(prox.check) != 0){
-        x@pairwise.LD$prox <- rbind(x@pairwise.LD$prox, stats$prox[prox.check,])
-      }
+      # deal with prox table using smart.merge
+      start.meta <- colnames(stats$prox)[1:which(colnames(stats$prox) == "proximity")]
+      x@pairwise.LD$prox <- smart.merge(stats$prox, x@pairwise.LD$prox,
+                                        meta.names = c(start.meta, "sample.facet", "sample.subfacet"),
+                                        starter.meta = start.meta)
 
-      # deal with matrices. Overwrite any matrices that already exist and add any new ones.
-      facets <- names(x@pairwise.LD$LD_matrices)
-      overwrite.facets <- which(facets %in% names(stats$LD_matrices)) # which existing facets need to be overwritten?
-      add.facets <- which(!(names(stats$LD_matrices) %in% facets)) # which LD facets need to be added?
-
-      ## overwrite
-      if(length(overwrite.facets) != 0){
-        x@pairwise.LD$LD_matrices[overwrite.facets] <- stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)]
-        names(x@pairwise.LD$LD_matrices)[overwrite.facets] <- names(stats$LD_matrices[which(names(stats$LD_matrices) %in% facets)])
-      }
-
-      ## add
-      if(length(add.facets) > 0){
-        x@pairwise.LD$LD_matrices <- c(x@pairwise.LD$LD_matrices, stats$LD_matrices[add.facets])
-      }
+      # Deal with matrices using the merge.lists utility in snpR.
+      x@pairwise.LD$LD_matrices <- merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
     }
   }
 
@@ -1272,46 +1269,50 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 
     # if snp.subfacets are requested
     if(!(is.null(snp.facets[1])) & !(is.null(snp.subfacets[1]))){
-      t.snp.meta <- x@snp.meta
+      if(!(any(snp.subfacets == ".base"))){
+        t.snp.meta <- x@snp.meta
 
-      # check for and get info on complex facets
-      complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
-      if(length(complex.snp.facets) > 0){
-        for(i in 1:length(complex.snp.facets)){
-          tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
-          tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
-          tcols <- tcols[,match(colnames(tcols), tfacets)]
-          t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+        # check for and get info on complex facets
+        complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
+        if(length(complex.snp.facets) > 0){
+          for(i in 1:length(complex.snp.facets)){
+            tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
+            tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
+            tcols <- tcols[,match(colnames(tcols), tfacets)]
+            t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+          }
+          colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
         }
-        colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
-      }
 
-      # get the snps to keep
-      t.snp.meta <- t.snp.meta[,colnames(t.snp.meta) %in% snp.facets]
-      fsnps <- which(as.logical(rowSums(matrix(as.matrix(t.snp.meta) %in% snp.subfacets, nrow(x@snp.meta))))) # here's the snps to keep, those where at least one subfacet level is present in the provided snp.subfacets.
-      snps <- snps[snps %in% fsnps]
+        # get the snps to keep
+        t.snp.meta <- t.snp.meta[,colnames(t.snp.meta) %in% snp.facets]
+        fsnps <- which(as.logical(rowSums(matrix(as.matrix(t.snp.meta) %in% snp.subfacets, nrow(x@snp.meta))))) # here's the snps to keep, those where at least one subfacet level is present in the provided snp.subfacets.
+        snps <- snps[snps %in% fsnps]
+      }
     }
 
     # if sample subfacets are requested
     if(!(is.null(facets[1])) & !(is.null(subfacets[1]))){
-      t.samp.meta <- x@sample.meta
+      if(!any(subfacets == ".base")){
+        t.samp.meta <- x@sample.meta
 
-      # check for and get info on complex facets
-      complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
-      if(length(complex.samp.facets) > 0){
-        for(i in 1:length(complex.samp.facets)){
-          tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
-          tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
-          tcols <- tcols[,match(colnames(tcols), tfacets)]
-          t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+        # check for and get info on complex facets
+        complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
+        if(length(complex.samp.facets) > 0){
+          for(i in 1:length(complex.samp.facets)){
+            tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
+            tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
+            tcols <- tcols[,match(colnames(tcols), tfacets)]
+            t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+          }
+          colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
         }
-        colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
-      }
 
-      # get the samples to keep
-      t.samp.meta <- t.samp.meta[,colnames(t.samp.meta) %in% facets]
-      fsamps <- which(as.logical(rowSums(matrix(as.matrix(t.samp.meta) %in% subfacets, nrow(x@sample.meta))))) # here's the samples to keep, those where at least one subfacet level is present in the provided snp.subfacets.
-      samps <- samps[samps %in% fsamps]
+        # get the samples to keep
+        t.samp.meta <- t.samp.meta[,colnames(t.samp.meta) %in% facets]
+        fsamps <- which(as.logical(rowSums(matrix(as.matrix(t.samp.meta) %in% subfacets, nrow(x@sample.meta))))) # here's the samples to keep, those where at least one subfacet level is present in the provided sample subfacets.
+        samps <- samps[samps %in% fsamps]
+      }
     }
   }
 
@@ -2681,7 +2682,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
     }
     else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)])) | length(no.stats.facets) > 0){
-      tstats <- x@stats[x@stats$facet %in% c(".base", facets)]
+      tstats <- x@stats[x@stats$facet %in% c(".base", facets),]
       miss.facets <- which(c(".base", facets) %in% unique(tstats[is.na(tstats$maf),]$facet))
       miss.facets <- c(miss.facets, no.stats.facets)
       x <- calc_maf(x, facets = c(".base", facets)[miss.facets])
@@ -3354,17 +3355,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       sys.type <- Sys.info()["sysname"]
 
       # call
-      if(sys.type == "Windows"){
-        warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
-        writeLines(paste0("#!/bin/bash\n\n",
-                          "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
-      }
-      else{
-        call <- paste0("echo -n -e ", t2, " > ", outfile, ".bed")
-        system(call)
-      }
+      writeLines(paste0("#!/bin/bash\n\n",
+                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
 
-      warning(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
+      cat(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(bim, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
@@ -3711,8 +3705,16 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 }
 
 
-#' List unique tasks/options for facets.
-#' Internal function to get a list of tasks to run (one task per unique sample/snp level facet!). The source arguement specifies what kind of statistics are being grabbed.
+#' List unique tasks/options for facets. Internal function to get a list of
+#' tasks to run (one task per unique sample/snp level facet!). The source
+#' arguement specifies what kind of statistics are being grabbed.
+#'
+#' @param x snpRdata
+#' @param facets Facets to generate tasks for
+#' @param source "stats" or "pairwise.stats", default "stats". Type of
+#'   comparison to get jobs for. Note that the latter only works if pairwise
+#'   stats have actually been calculated.
+#' @author William Hemstrom
 get.task.list <- function(x, facets, source = "stats"){
   facets <- check.snpR.facet.request(x, facets, "none", F)
   task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
@@ -3785,6 +3787,7 @@ get.task.list <- function(x, facets, source = "stats"){
 #' @param x filepath to ms file
 #' @param chr.length length of the chromosome. If a single value, assumes all the same length.
 #'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
+#' @author William Hemstrom
 process_ms <- function(x, chr.length){
   infile <- x #infile
   lines <- readLines(x)
@@ -3840,5 +3843,81 @@ process_ms <- function(x, chr.length){
   colnames(x) <- paste0("gc_", 1:ncol(x))
 
   return(list(x = x, meta = meta))
+}
+
+
+#' Merge lists element-to-element
+#'
+#' Merges list 1 into list 2, adding any elements without matching equivalents to list 2.
+#'
+#' Merges element to element. Elements in list 1 with matching elements in list 2 will be replaced.
+#'
+#' Do this by getting the names and "pathways" of all of the deepest level objects, then looping through
+#' list 2 data and adding from list 1 that isn't present at the same "pathway".
+#'
+#' @param list1 list. The first list. Elements with identical names at all levels in list 2 will be *replaced*.
+#' @param list2 list. The second list. Elements in list 2 with identical names found in list 1 will replace those elements.
+#'
+#' @author William Hemstrom
+merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
+  # prunes and prepares data on the names and nest levels of a list
+  prune.names <- function(list){
+    ln <- capture.output(str(list))
+    ns <- character()
+    pn <- vector("list")
+    collapsed.names <- vector("list")
+
+    # get the levels of each name
+    lev <- gsub("\\$.+", "", ln[2:length(ln)])
+    lev <- stringr::str_count(lev, "\\.\\.")
+
+    # get the name at each level
+    clean.names <- stringr::str_extract(ln, "\\$.+:")
+    clean.names <- gsub("\\$", "", clean.names)
+    clean.names <- gsub(":", "", clean.names)
+    clean.names <- gsub("num \\[.+$", "", clean.names)
+    clean.names <- gsub("chr \\[.+$", "", clean.names)
+    clean.names <- gsub(" ", "", clean.names)
+    clean.names[clean.names == ""] <- NA
+    terminal <- which(clean.names %in% possible_end_level_names)
+    cl <- numeric()
+    for(i in 2:length(ln)){
+      if(i %in% terminal){
+        pn[[length(pn) + 1]] <- c(ns, clean.names[i])
+        collapsed.names[[length(pn)]] <- paste(pn[[length(pn)]], collapse = "")
+        ns <- ns[1:(lev[i] - 1)]
+        cl <- c(cl, lev[i])
+      }
+      else{
+        if(!is.na(clean.names[i])){
+          if(lev[i] <= length(ns)){
+            ns[lev[i]] <- clean.names[i]
+          }
+          else{
+            ns <- c(ns, clean.names[i])
+          }
+        }
+      }
+    }
+
+    return(list(n = pn, l = lev, cn = unlist(collapsed.names)))
+  }
+
+
+  all.names.1 <- prune.names(list1)
+  all.names.2 <- prune.names(list2)
+  ## add anything present in 1 but not 2 to 2.
+  for(i in 1:length(all.names.1[[1]])){
+    # if not there, add to stats
+    if(!all.names.1$cn[i] %in% all.names.2$cn){
+      loc <- paste(paste0("[['", all.names.1$n[[i]], "']]"), collapse = "")
+      call <- paste0("list2",
+                     loc,
+                     " <- ",
+                     "list1", loc)
+      eval(parse(text=call))
+    }
+  }
+  return(list2)
 }
 

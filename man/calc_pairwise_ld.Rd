@@ -4,9 +4,17 @@
 \alias{calc_pairwise_ld}
 \title{Pairwise LD from SNP data.}
 \usage{
-calc_pairwise_ld(x, facets = NULL, subfacets = NULL, ss = FALSE,
-  par = FALSE, sr = FALSE, CLD = "only", use.ME = FALSE,
-  sigma = 1e-04)
+calc_pairwise_ld(
+  x,
+  facets = NULL,
+  subfacets = NULL,
+  ss = FALSE,
+  par = FALSE,
+  sr = FALSE,
+  CLD = "only",
+  use.ME = FALSE,
+  sigma = 1e-04
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}

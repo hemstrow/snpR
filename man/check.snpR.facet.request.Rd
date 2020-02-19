@@ -4,8 +4,7 @@
 \alias{check.snpR.facet.request}
 \title{Get details on and clean up facet arguments.}
 \usage{
-check.snpR.facet.request(x, facets, remove.type = "snp",
-  return.type = F)
+check.snpR.facet.request(x, facets, remove.type = "snp", return.type = F)
 }
 \arguments{
 \item{x}{snpRdata object to compare to}
