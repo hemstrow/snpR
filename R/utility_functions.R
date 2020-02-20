@@ -3170,7 +3170,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         rdata <- interpolate_sn(rdata, "bernoulli")
       }
       else if(interpolate == "af"){
-        rdata <- interpolate_sn(rdata, "sn")
+        rdata <- interpolate_sn(rdata, "af")
       }
 
       # bind and save
