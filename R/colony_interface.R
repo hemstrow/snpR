@@ -12,7 +12,7 @@
 #' @param method character, default "FPLS". Pedigree reconstruction method.
 #'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}
 #'   \item{"PLS": }{} }
-#' @param run_length numeric in 1:4, default 2. Length of run, short/medium/long/verylong.
+#' @param run_length numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.
@@ -22,22 +22,22 @@
 #' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
 #' @param paternal_genotypes snpRdata object containing paternal genotypes.
-#' @param maternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
-#' @param paternal_inclusion_prob numeric, default 0. Probability ranging from 0 to 1.
+#' @param maternal_inclusion_prob numeric in 0:1, default 0. Probability the mother is in the dataset ranging from 0 to 1.
+#' @param paternal_inclusion_prob numeric in 0:1, default 0. Probability the father is in the dataset ranging from 0 to 1.
 #' @param update_af character, default TRUE. Should Colony update the allele frequencies used in the calculations?
-#' @param dioecious character, default TRUE. Is this species diploid/dioecious?
+#' @param dioecious character, default TRUE. Is this species diploid/dioecious? FALSE = haploid/monoecious. Colony does not work with more ploidy.
 #' @param inbreeding character, default TRUE. Should Colony assume inbreeding in the calculations?
 #' @param male_monogamous character, default FALSE. Should Colony assume males are monogamous?
 #' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
 #' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
 #' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
-#' @param precision integer in c(1,2,3,), default 2. Low/Medium/High/Very High for calculating the max likelihood.
+#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.
 #' @param dropout numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
 #' @param genotyping_error numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
 #' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
 #' @param known_paternal_dyads character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
-#'
+#' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
