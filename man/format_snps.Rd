@@ -4,21 +4,11 @@
 \alias{format_snps}
 \title{Re-format SNP data.}
 \usage{
-format_snps(
-  x,
-  output = "snpRdata",
-  facets = NULL,
-  n_samp = NA,
-  interpolate = "bernoulli",
-  outfile = FALSE,
-  ped = NULL,
-  input_format = NULL,
-  input_meta_columns = NULL,
-  input_mDat = NULL,
-  sample.meta = NULL,
-  snp.meta = NULL,
-  chr.length = NULL
-)
+format_snps(x, output = "snpRdata", facets = NULL, n_samp = NA,
+  interpolate = "bernoulli", outfile = FALSE, ped = NULL,
+  input_format = NULL, input_meta_columns = NULL, input_mDat = NULL,
+  sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
+  sample_id = NULL)
 }
 \arguments{
 \item{x}{snpRdata object or data.frame. Input data, in any of the above listed
@@ -113,7 +103,7 @@ possible allele at each possible genotype noted. Interpolation possible, with
 missing data substituted with allele freqency in all samples or each
 population.} \item{rafm: }{RAFM format, two allele calls at each locus stored
 in subsequent columns, e.g. locus1.1 locus1.2.} \item{faststructure:
-}{fastSTRCTURE format, identical to STRUCTURE format save with the addition of
+}{fastSTRUCTURE format, identical to STRUCTURE format save with the addition of
 filler columns proceeding data such that exactly 6 columns proceed data. These
 columns can be filled with metadata if desired.} \item{dadi: }{dadi format SNP
 data format, requires two columns named "ref" and "anc" with the flanking
@@ -124,7 +114,7 @@ bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
 in cM in order to create .bim extended map file.} \item{sn: }{Single character
 numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-'interpolate' argument.} \item{snpRdata: }{a snpRdata object.} }
+'interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{snpRdata: }{a snpRdata object.}}
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -205,7 +195,19 @@ ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:4
 format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #from command line, then run plink_out.sh to generate plink_out.bed.
 
+#Sequoia format
+b <- stickSNPs@sample.meta
+b$ID <- 1:nrow(b)
+b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
+b$BirthYear <- round(runif(n = nrow(b), 1,1))
+a <- stickSNPs
+a@sample.meta <- b
+a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
+test <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+
 }
 \author{
 William Hemstrom
+
+Melissa Jones
 }

@@ -42,8 +42,22 @@ stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "plink")
 #sn format, bernoulli interpolation
 stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "sn")
 
+#sequoia format
+b <- stickSNPs@sample.meta
+b$ID <- 1:nrow(b)
+b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
+b$BirthYear <- round(runif(n = nrow(b), 1,1))
+
+a <- stickSNPs
+a@sample.meta <- b
+a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
+
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+
+
+
 # name them
-names(stickFORMATs) <- c("ac", "genepop", "structure", "faststructure", "0000", "hapmap", "NN", "pa", "rafm", "dadi", "plink", "sn")
+names(stickFORMATs) <- c("ac", "genepop", "structure", "faststructure", "0000", "hapmap", "NN", "pa", "rafm", "dadi", "plink", "sn", "sequoia")
 
 # save
 usethis::use_data(stickFORMATs, overwrite = TRUE)

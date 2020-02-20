@@ -4,7 +4,7 @@
 \name{stickFORMATs}
 \alias{stickFORMATs}
 \title{List containing example data in all formats exportable by snpR.}
-\format{An object of class \code{list} of length 12.}
+\format{An object of class \code{list} of length 13.}
 \usage{
 stickFORMATs
 }

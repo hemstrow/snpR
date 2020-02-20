@@ -2072,7 +2072,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'missing data substituted with allele freqency in all samples or each
 #'population.} \item{rafm: }{RAFM format, two allele calls at each locus stored
 #'in subsequent columns, e.g. locus1.1 locus1.2.} \item{faststructure:
-#'}{fastSTRCTURE format, identical to STRUCTURE format save with the addition of
+#'}{fastSTRUCTURE format, identical to STRUCTURE format save with the addition of
 #'filler columns proceeding data such that exactly 6 columns proceed data. These
 #'columns can be filled with metadata if desired.} \item{dadi: }{dadi format SNP
 #'data format, requires two columns named "ref" and "anc" with the flanking
@@ -2083,7 +2083,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'in cM in order to create .bim extended map file.} \item{sn: }{Single character
 #'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-#''interpolate' argument.} \item{snpRdata: }{a snpRdata object.} }
+#''interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{snpRdata: }{a snpRdata object.}}
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -2159,6 +2159,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'@export
 #'
 #'@author William Hemstrom
+#'@author Melissa Jones
 #'
 #' @examples
 #' #import data to a snpRdata object
@@ -2211,11 +2212,22 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
+#' #Sequoia format
+#' b <- stickSNPs@sample.meta
+#' b$ID <- 1:nrow(b)
+#' b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
+#' b$BirthYear <- round(runif(n = nrow(b), 1,1))
+#' a <- stickSNPs
+#' a@sample.meta <- b
+#' a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
+#' test <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+#'
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
-                        sample.meta = NULL, snp.meta = NULL, chr.length = NULL){
+                        sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
+                        sample_id = NULL){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -2227,7 +2239,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
                 "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
-                "colony","adegenet", "fasta", "lea")
+                "colony","adegenet", "fasta", "lea", "sequoia")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -2402,6 +2414,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   else if(output == "lea"){
     cat("Converting to LEA geno format. All metadata will be discarded.\n")
+  }
+  else if(output == "sequoia"){
+    cat("Converting to Sequoia format.\n")
   }
 
   else{
@@ -3123,7 +3138,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
 
   # single-character numeric format
-  if(output == "sn" | output == "lea"){
+  if(output == "sn" | output == "lea" | output == "sequoia"){
 
     # grab major/minor info via calc_maf, unless already calculated
     if(!any(colnames(x@stats) == "major")){
@@ -3175,6 +3190,42 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       # bind and save
       rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
+    }
+
+    # sequoia
+    else if(output == "sequoia"){
+      rdata[is.na(rdata)] <- -9
+      rdata <- t(rdata)
+      rdata <- matrix(as.numeric(rdata), ncol = ncol(rdata))
+      if(is.character(sample_id)){
+        rownames(rdata) <- x@sample.meta[,sample_id]
+      }
+      colnames(rdata) <- 1:ncol(rdata)
+      #for lifehistory data input needs id, sex, year born
+      if(all(c("Sex", "BirthYear") %in% colnames(x@sample.meta))){
+        if(is.character(sample_id)){
+          ID <- x@sample.meta[,sample_id]
+        }
+        else if("ID" %in% colnames(x@sample.meta)){
+          ID <- x@sample.meta$ID
+        }
+        else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
+        #format sex for sequoia (1 = F,2 = M,3 = U,4 = H,NA)
+        sexes <- c("F", "M", "U", "H", "1", "2", "3", "4")
+        sex <- x@sample.meta$Sex
+        sex[which(!sex %in% sexes)] <- 3
+        sex[which(sex == "F")] <- 1
+        sex[which(sex == "M")] <- 2
+        sex[which(sex == "U")] <- 3
+        sex[which(sex == "H")] <- 4
+        #ACTUALLY MAKE THE TABLE
+        lhtable <- data.frame(ID=ID,
+                              Sex = as.numeric(sex),
+                              BirthYear = x@sample.meta$BirthYear,
+                              stringsAsFactors = F)
+        rdata = list(dat=as.matrix(rdata), lh=lhtable)
+      }
+      else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
     }
 
     # lea
@@ -3375,6 +3426,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     else if(output == "colony"){
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = " ", row.names = F)
+    }
+    else if(output == "sequoia"){
+      data.table::fwrite(rdata$dat, paste0("genos_", outfile), quote = FALSE, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(rdata$lh, paste0("lh_", outfile), quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
