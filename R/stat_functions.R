@@ -2611,6 +2611,63 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   return(x)
 }
 
+
+
+
+#' Caluclate effective population size.
+#'
+#' Calculates effective population size for any given sample-level facets via
+#' patterns of linkage disequlibrium using the methods employed in the *ldne*
+#' program, as described in Waples (2006) and Waples et al (2016).
+#'
+#' Since physical linkage can cause mis-estimation of Ne, an optional snp-level
+#' facet can be provided which designates chromosomes or linkage groups. Only
+#' pairwise LD values between SNPs on different facet levels will be used.
+#' Composite LD (CLD) is used as the LD metric, corrected for the sample sizes
+#' of the pairwise SNP-SNP comparisons. CLD can either be calculated beforehand
+#' using \code{\link{calc_pairwise_ld}} or is calculated automatically.
+#'
+#' Like most snpR funcitons, this function is overwrite safe, since one part of
+#' the returned list will contain the original dataset, possibly with added CLD
+#' values.
+#'
+#' @param x snpRdata object. The data for which Ne will be calculated.
+#' @param facets character, default NULL. Categorical metadata variables by
+#'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
+#'   details. Only sample specific categories are allowed, all others will be
+#'   removed. If NULL, Ne will be calculated for all samples.
+#' @param chr character, defualt NULL. An optional but recommended SNP specific
+#'   categorical metadata variable which designates chromosomes/linkage
+#'   groups/etc. Pairwise LD scores for SNPs with the same level of this
+#'   variable will be not be used to calculate Ne. Since physical linkage can
+#'   bias Ne estimtes, providing a value here is recommended.
+#' @param mating character, default "random". The mating system to use. Options:
+#'   \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogomous
+#'   mating. }
+#' @param pcrit numeric, default c(.05, .02, .01). Minimum minor allele
+#'   frequencies for which to calculate Ne. Rare alleles can bias esitmates, so
+#'   a range of values should be checked.
+#' @param conf.level numeric, defualt 0.95. Confidence levels for intervals.
+#' @param par numeric or FALSE, default FALSE. Determines if CLD and Ne values
+#'   be computed are parallel, and, if so, how many cores to use.
+#'
+#' @return A named list containing estimated Ne values (named "ne") and the
+#'   original provided data, possibly with additional LD values (named "x").
+#'
+#' @author William Hemstrom
+#' @export
+#'
+#' @references Waples RK, Larson WA, Waples RS. 2016 Estimating contemporary
+#'   effective population size in non-model species using linkage disequilibrium
+#'   across thousands of loci. Heredity (Edinb). 117, 233.
+#' @references Waples RS. 2006 A bias correction for estimates of effective
+#'   population size based on linkage disequilibrium at unlinked gene loci.
+#'   Conserv. Genet. 7, 167. (doi:10.1007/s10592-005-9100-y)
+#'
+#' @examples
+#' # calculate Ne, splitting by the chromosome equivalent ("group") for every population.
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
+#'
 #' @export
 calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01), conf.level = 0.95,
                     par = FALSE, ...){
@@ -2860,5 +2917,5 @@ calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0
   }
   else{stop("par must be FALSE or a numeric value designating the number of cores to run.\n")}
 
-  return(ne_out)
+  return(list(ne = ne_out, x = x))
 }
