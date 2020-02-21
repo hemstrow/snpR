@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-genome analysis tools for use with SNP data.
-Version: 1.0.0.0001
+Version: 1.0.1.0001
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Nick", "Sard", email = "sardnich@anr.msu.edu", role = "ctb"),
