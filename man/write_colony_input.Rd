@@ -52,7 +52,7 @@ path may be provided (e.g. "colony/colony_run_1.txt").}
 Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}
 \item{"PLS": }{} }}
 
-\item{run_length}{numeric in 1:4, default 2. Length of run, short/medium/long/verylong.}
+\item{run_length}{numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.}
 
 \item{sibship_prior}{numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.}
 
@@ -66,13 +66,13 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{paternal_genotypes}{snpRdata object containing paternal genotypes.}
 
-\item{maternal_inclusion_prob}{numeric, default 0. Probability ranging from 0 to 1.}
+\item{maternal_inclusion_prob}{numeric in 0:1, default 0. Probability the mother is in the dataset ranging from 0 to 1.}
 
-\item{paternal_inclusion_prob}{numeric, default 0. Probability ranging from 0 to 1.}
+\item{paternal_inclusion_prob}{numeric in 0:1, default 0. Probability the father is in the dataset ranging from 0 to 1.}
 
 \item{update_af}{character, default TRUE. Should Colony update the allele frequencies used in the calculations?}
 
-\item{dioecious}{character, default TRUE. Is this species diploid/dioecious?}
+\item{dioecious}{character, default TRUE. Is this species diploid/dioecious? FALSE = haploid/monoecious. Colony does not work with more ploidy.}
 
 \item{inbreeding}{character, default TRUE. Should Colony assume inbreeding in the calculations?}
 
@@ -84,7 +84,7 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{known_af}{character, default FALSE. If TRUE supply a vector of known allele frequencies.}
 
-\item{precision}{integer in c(1,2,3,), default 2. Low/Medium/High/Very High for calculating the max likelihood.}
+\item{precision}{integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.}
 
 \item{dropout}{numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.}
 
@@ -93,6 +93,8 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 \item{known_maternal_dyads}{character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.}
 
 \item{known_paternal_dyads}{character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.}
+
+\item{known_maternal_max_mismatches}{integer in c(0,1,2:nsample), default 0.}
 
 \item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 

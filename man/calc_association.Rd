@@ -15,8 +15,7 @@ calc_association(
   maxiter = 500,
   sampleID = NULL,
   Gmaf = 0,
-  par = FALSE,
-  ...
+  par = FALSE
 )
 }
 \arguments{
@@ -46,8 +45,6 @@ the Armitage association method. See description for details.}
 \item{Gmaf}{numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.}
 
 \item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use for computation.}
-
-\item{...}{Additional arguments passed to \code{\link[GMMAT]{glmm.score}}.}
 }
 \value{
 A snpRdata object with the resulting association test results merged
