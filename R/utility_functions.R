@@ -3408,7 +3408,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       # call
       writeLines(paste0("#!/bin/bash\n\n",
                         "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
-
       cat(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
