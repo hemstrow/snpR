@@ -1299,6 +1299,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
   }
 
+  if(is.null(facet[1])){qsort <- F}
+
   if(length(msg) != 0){
     stop(msg)
   }
@@ -1401,6 +1403,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   process_1_q <- function(tq, x){
     colnames(tq) <- 1:ncol(tq)
     tk <- ncol(tq)
+    if(!exists("sample_meta")){
+      sample_meta <- paste0("s", 1:nrow(tq))
+    }
     tq <- cbind(tq, sample_meta)
 
     if(is.null(ID)){
@@ -1670,6 +1675,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     pdat <- dplyr::bind_rows(pdat$q)
 
     ## add the clumpp qlist
+    if(!exists("qlist")){
+      qlist <- vector("list", length(cq))
+    }
     for(i in 1:length(qlist)){
       qlist[[i]][["clumpp"]] <- cq[[i]]
     }
