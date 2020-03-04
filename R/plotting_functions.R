@@ -1239,6 +1239,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
     }
     good.clumpp.opts <- c("fullsearch", "greedy", "large.k.greedy")
+    clumpp.opt <- tolower(clumpp.opt)
     if(!clumpp.opt %in% good.clumpp.opts){
       msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
     }
@@ -1437,7 +1438,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # prepare files and run clumpp
     qfiles <- list.files(full.names = T, pattern = pattern)
     qlist <- pophelper::readQ(qfiles)
-    if(clumpp.opt == "large.K.greedy"){
+    if(clumpp.opt == "large.k.greedy"){
       clumpp.opt <- 3
     }
     else if(clumpp.opt == "greedy"){
