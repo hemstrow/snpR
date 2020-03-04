@@ -1786,7 +1786,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       ggplot2::xlab(label = facet[1])
   }
   else{
-    p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
+    p <- p + ggplot2::scale_x_discrete(expand = c(0,0))
   }
 
 
