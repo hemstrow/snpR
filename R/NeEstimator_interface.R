@@ -214,6 +214,8 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   out <- as.data.frame(out)
   mc <- which(colnames(out) == "pcrit")
   out <- out[,c(1, mc, (2:ncol(out))[-(mc - 1)])]
+  out[out == "Infinite"] <- Inf
+  out[,-1] <- dplyr::mutate_all(out[,-1], as.numeric)
   return(out)
 
 }
