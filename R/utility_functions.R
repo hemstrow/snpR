@@ -3349,7 +3349,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         for (i in 1:(length(pop))){
           cat(pop[i], "\t")
           data.table::fwrite(rdata[pop.rows == pop[i],], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
-          cat("POP\n", file = outfile, append = T)
+          if(i != length(pop)){
+            cat("POP\n", file = outfile, append = T)
+          }
         }
         cat("\t Done.\n")
       }

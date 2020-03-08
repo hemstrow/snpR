@@ -23,6 +23,7 @@ Imports:
     methods,
     ggplot2,
     plyr,
+    purrr,
     reshape2,
     snow,
     stringr

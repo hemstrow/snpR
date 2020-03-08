@@ -265,7 +265,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 #' Armitage approach weights should be provided to the "w" argument, which
 #' specifies the weight for each possible genotype (homozygote 1, heterozygote,
-#' homozygote 2). The default, c(0,1,2), specifies an addative  The "gmmat.score"
+#' homozygote 2). The default, c(0,1,2), specifies an addative model. The "gmmat.score"
 #' method uses the approach described in Chen et al. (2016) and implemented in
 #' the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
 #' For this method, a 'G' genetic relatedness matrix is first created using the
@@ -413,6 +413,19 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
 
       }
+    }
+
+    if(!"GMMAT" %in% installed.packages()){
+      msg <- c(msg,
+               paste0("The gmmat.score method requires the GMMAT package. This can be installed via
+                      install.packages('GMMAT'), but requires the SeqVar and SeqVarTools bioconductor packages.
+                      These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
+                      If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
+    }
+    if(!"AGHmatrix" %in% installed.packages()){
+      msg <- c(msg,
+               paste0("The gmmat.score method requires the AGHmatrix package. This can be installed via
+                      install.packages('AGHmatrix')."))
     }
   }
 

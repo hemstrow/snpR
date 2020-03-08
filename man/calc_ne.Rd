@@ -8,11 +8,14 @@ calc_ne(
   x,
   facets = NULL,
   chr = NULL,
+  NeEstimator_path = "/usr/bin/Ne2-1.exe",
   mating = "random",
   pcrit = c(0.05, 0.02, 0.01),
-  conf.level = 0.95,
-  par = FALSE,
-  ...
+  methods = "LD",
+  temporal_methods = c("Pollak", "Nei", "Jorde"),
+  temporal_gens = NULL,
+  max_ind_per_pop = NULL,
+  outfile = "ne_out"
 )
 }
 \arguments{
@@ -29,6 +32,9 @@ groups/etc. Pairwise LD scores for SNPs with the same level of this
 variable will be not be used to calculate Ne. Since physical linkage can
 bias Ne estimtes, providing a value here is recommended.}
 
+\item{NeEstimator_path}{character, default "/usr/bin/Ne2-1.exe". Path to the
+NeEstimator executable.}
+
 \item{mating}{character, default "random". The mating system to use. Options:
 \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogomous
 mating. }}
@@ -37,10 +43,23 @@ mating. }}
 frequencies for which to calculate Ne. Rare alleles can bias esitmates, so
 a range of values should be checked.}
 
-\item{conf.level}{numeric, defualt 0.95. Confidence levels for intervals.}
+\item{methods}{character, default "LD". LD estimation methods to use.
+Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
+\item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}}
 
-\item{par}{numeric or FALSE, default FALSE. Determines if CLD and Ne values
-be computed are parallel, and, if so, how many cores to use.}
+\item{temporal_methods}{character, default c("Pollak", "Nei", "Jorde").
+Methods to use for the temporal methods. See defaults for options. Not
+currently supported.}
+
+\item{temporal_gens}{data.frame, default NULL. Work in progress, not
+currently supported.}
+
+\item{max_ind_per_pop}{numeric, default NULL. Maximum number of individuals
+to consider per population.}
+
+\item{outfile}{character, default "ne_out". Prefix for output files. Note
+that this function will return outputs, so there isn't a strong reason to
+check this.}
 }
 \value{
 A named list containing estimated Ne values (named "ne") and the
@@ -48,16 +67,17 @@ A named list containing estimated Ne values (named "ne") and the
 }
 \description{
 Calculates effective population size for any given sample-level facets via
-patterns of linkage disequlibrium using the methods employed in the *ldne*
-program, as described in Waples (2006) and Waples et al (2016).
+interface with the NeEstimator v2 program by Do et al. (2013).
 }
 \details{
 Since physical linkage can cause mis-estimation of Ne, an optional snp-level
 facet can be provided which designates chromosomes or linkage groups. Only
 pairwise LD values between SNPs on different facet levels will be used.
-Composite LD (CLD) is used as the LD metric, corrected for the sample sizes
-of the pairwise SNP-SNP comparisons. CLD can either be calculated beforehand
-using \code{\link{calc_pairwise_ld}} or is calculated automatically.
+
+Ne can be calculated via three different methods: \itemize{ \item{"LD"}
+Linkage Disequilibrium based estimation. \item{"Ht"} Heterozygote excess.
+\item{"Coan"} Coancestry based.} For details, please see the documentation
+for NeEstimator v2.
 
 Like most snpR funcitons, this function is overwrite safe, since one part of
 the returned list will contain the original dataset, possibly with added CLD
@@ -69,13 +89,10 @@ ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
 
 }
 \references{
-Waples RK, Larson WA, Waples RS. 2016 Estimating contemporary
-  effective population size in non-model species using linkage disequilibrium
-  across thousands of loci. Heredity (Edinb). 117, 233.
-
-Waples RS. 2006 A bias correction for estimates of effective
-  population size based on linkage disequilibrium at unlinked gene loci.
-  Conserv. Genet. 7, 167. (doi:10.1007/s10592-005-9100-y)
+Do C, Waples RS, Peel D, Macbeth GM, Tillett BJ, Ovenden JR. 2014
+  NeEstimator v2: re-implementation of software for the estimation of
+  contemporary effective population size (Ne) from genetic data. Mol. Ecol.
+  Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 }
 \author{
 William Hemstrom
