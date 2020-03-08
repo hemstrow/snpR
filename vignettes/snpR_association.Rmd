@@ -1,0 +1,91 @@
+---
+title: "Association testing with snpR"
+author: "William Hemstrom"
+date: "June 27, 2019"
+output: 
+  rmarkdown::html_vignette:
+    toc: TRUE
+vignette: >
+  %\VignetteIndexEntry{snpR_association}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r include=FALSE}
+library(snpR); library(ggplot2)
+```
+# Association Overview:
+Several different association testing methods are available with snpR. These fall into three general categories:
+
+1. Genome Wide Association Studies (GWAS), available via calc_association().
+2. Genomic Prediction, available via run_genomic_prediction().
+3. Random Forests, a machine learning approach available via run_random_forest().
+
+## GWAS
+
+snpR implements several different GWAS methods. Most of these specifically support case/control style two category phenotypes:
+
+* Armitage tests, based on Armitage (1955).
+* Odds Ratio tests.
+* Chi-squared tests.
+
+It also supports a mlm, family and population structure corrected method based on Chen et al (2016) via the GMMAT R package. This method supports quantitative or categorical phenotypes and is the default. However, it requires several dependancies that are not installed with snpR by default:
+
+* GMMAT, which requires the SeqVar and SeqVarTools dependancies.
+* AGHmatrix
+
+GMMAT and AGHmatrix are installed normally using install.packages(), but SeqVar and SeqVarTools are installed via BiocManager::install(c('SeqVar', 'SeqVarTools')). If BiocManager is not installed, it can be installed via install.packages().
+
+For the most part, running a GWAS with snpR uses the standard snpR syntax, explained in [the snpR introduction](snpR_introduction.html). However, for the GMMAT option, it also takes a formula and family argument using R's typical formula/distribution family notation. This allows GMMAT to use covariates when calculating associations. For details, see [GMMAT's vignette](https://cran.r-project.org/web/packages/GMMAT/vignettes/GMMAT.pdf).
+
+### Example:
+
+The syntax for running a GWAS with snpR is very similar to elsewhere in the package. First, a phenotype is needed.
+
+```{r}
+# create a dummy phenotype with the example data:
+sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("Case", "Control"), nrow(stickSNPs@sample.meta), T))
+
+# make some snpR data with these phenotypes
+x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+
+```
+
+The calc_association function can then be used to do the association test.
+
+```{r}
+# using the Armitage test without facets:
+x <- calc_association(x, # input data
+                      response = "phenotype", # response variable/phenotype of interest
+                      method = "armitage") # method
+
+get.snpR.stats(x)
+
+```
+
+If a family or population structure is present, the gmmat.score method should be used to correct for bias.
+
+```{r}
+x <- calc_association(x,
+                      response = "phenotype",
+                      method = "gmmat.score")
+
+get.snpR.stats(x)
+
+```
+
+If covariate are present, they can be incorporated with the gmmat.score method.
+
+```{r}
+
+x@sample.meta$weight <- rnorm(nrow(x@sample.meta), mean = 1, sd = .5)
+x <- calc_association(x,
+                      response = "phenotype",
+                      method = "gmmat.score", 
+                      formula = "phenotype ~ weight") # weight as a covariate
+
+get.snpR.stats(x)
+
+```
+
+## Genomic Prediction

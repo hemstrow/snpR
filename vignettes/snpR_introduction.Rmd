@@ -35,7 +35,7 @@ snpR can take a variety of SNP data formats. The basic input format is a tab-del
 print(head(stickFORMATs$NN)[,1:6], row.names = F)
 ```
 
-Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respecitively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes). plink data format import is under development.
+Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respecitively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes).
 
 Data in the "NN" format, as shown above, can be imported directly into a snpRdata set alongside any corresponding metadata using import.snpR.data function:
 
@@ -55,6 +55,8 @@ my.dat <- import.snpR.data(stickRAW[,-c(1:3)],
 
 ```
 Note that column names in the snp and sample metadata must be unique (no repeats across *both* metadatasets), and cannot contain '.', '~', or whitespace!
+
+Shared metadata levels across different columns (for example, if both a population and a family are both named "A") can also cause issues if statistics are calculated for both of the two categories.
 
 
 Alternatively, we can use the format_snps function to import data if it is already in a different format. This function takes a few extra arguments. First, it takes the data and a note of the input format, then it needs information on the number of snp metadata columns, the missing data notation, and any sample metadata.
@@ -76,15 +78,15 @@ The result will be the same!
 ## snpRdata objects and facets
 
 ### snpRdata objects
-snpRdata objects store a range of variables internally in order to minimize repeat computation of things like allele frequencies. Any caluculated statistics will also be stored into sockets. Internally stored data can be accessed via 'sockets' using the '@' operator. For example, to see a table of allele frequencies, the geno.tables socket can be accessed:
+snpRdata objects store a range of variables internally in order to minimize repeat computation of things like allele frequencies. Any caluculated statistics will also be stored into slots. Internally stored data can be accessed via 'slots' using the '@' operator. For example, to see a table of allele frequencies, the geno.tables slot can be accessed:
 
 ```{r}
 head(my.dat@geno.tables$as)
 ```
 
-For the most part, snpR is built so that the user never needs to directly access sockets. A list of sockets can be found in the documentation for import.snpR.data, accessed by help(import.snpR.data).
+For the most part, snpR is built so that the user never needs to directly access slots. A list of slots can be found in the documentation for import.snpR.data, accessed by help(import.snpR.data).
 
-Almost all snpR functions are built to allow overwriting for easy object management. Since calculated data is stored in sockets, snpR functions generally return the snpRdata object that was given to them, but with extra data merged in. For example, to calculate observed heterozygosity, the calc_ho function can be used:
+Almost all snpR functions are built to allow overwriting for easy object management. Since calculated data is stored in slots, snpR functions generally return the snpRdata object that was given to them, but with extra data merged in. For example, to calculate observed heterozygosity, the calc_ho function can be used:
 
 ```{r}
 # calculate observed heterozygosity, overwritting the my.dat object
@@ -120,7 +122,7 @@ Most of the time, giving NULL to a facets argument will run the data without spl
 
 The filter_snps function can be used to filter poorly sequenced individuals and loci, remove SNPs with a low minor allele frequency either overall or all populations, remove highly heterozygous SNPs (which are likely sourced from duplicated genomic regions), and remove non-biallelic SNPs.
 
-Here, we will filter out all loci with a minor allele frequency below 0.05 in all populations, loci with a heterozygote frequency above 0.6, that are not bi-allelic, that are non-polymorphic, or that are sequenced in less than half of the individuals. We will also remove all individuals that are genotyped at less than half of the remaining loci, then quickly re-check that all loci are still polymophic.
+Here, we will filter out all loci with a minor allele frequency below 0.05 in all populations, loci with a heterozygote frequency above 0.55, that are not bi-allelic, that are non-polymorphic, or that are sequenced in less than half of the individuals. We will also remove all individuals that are genotyped at less than half of the remaining loci, then quickly re-check that all loci are still polymophic.
 
 
 ```{r, results = "hide"}
@@ -217,7 +219,7 @@ snpR can calculate pairwise Fst using a few approaches. Here, we'll use Wier and
 my.dat <- calc_pairwise_fst(my.dat, "pop.group")
 ```
 
-To recover the data, we again use get.snpR.stats, but, since this Fst is a "pairwise" statistic, where each statistic is a contrast between two sample-specific facet categories, it is stored in a different socket in the snpRdata. As such, we specify that we are looking for a different kind of data.
+To recover the data, we again use get.snpR.stats, but, since this Fst is a "pairwise" statistic, where each statistic is a contrast between two sample-specific facet categories, it is stored in a different slot in the snpRdata. As such, we specify that we are looking for a different kind of data.
 
 ```{r}
 stats <- get.snpR.stats(my.dat, "pop.group", type = "pairwise")
@@ -366,6 +368,24 @@ p$plot
 
 Multiple levels can be requested by providing a vector of requested levels, for example c("ASP", "OPL"). See the documentation for plot_pairwise_LD_heatmap for more information!
 
+
+## Effective Population Size
+
+Drift effective population size (Ne) can be calculated from LD values using the same methods implemented in Robin Waples' ldne software package. Since LD values between physically linked SNPs will bias these estimates, snpR implements automatic filtering of pairwise LD values to remove comparisons on the same chromosome.
+
+```{r}
+
+ne <- calc_ne(mydat,
+              facets = "pop", # calculate Ne for each population
+              chr = "group", # the chr arugment names the column in the SNP metadata that contains chromosome IDs.
+              pcrit = c(.01, .05, .1), # minor allele frequency cut offs for Ne calcluation. Ne will be calculated at each level.
+              conf.level = 0.95) # confidence level for confidence intervals.
+
+ne$ne # the ne data. ne$x holds the input data with added LD values.
+
+```
+
+
 ## Bootstraps
 
 Bootstraps for sliding windows can be easily calculated using the do_bootstraps function. This will create bootstrapped windows by taking real windows from the dataset and assigning random SNPs to each SNP in the window. In essence, this means that each window is a random genomic window with shuffled SNPs.
@@ -399,4 +419,12 @@ Many functions can run in parallel with the par argument. This relies on the doS
 ```{r, results='hide'}
 my.dat2 <- calc_basic_snp_stats(stickSNPs, "group.pop", sigma = 200, step = 50, par = 4)
 ```
+
+# Other tools and vignettes:
+
+snpR has a a range of other tools for analyzing SNP data. For vignettes on these topics, click the links below:
+
+Association Testing
+
+Clustering and Association
 
