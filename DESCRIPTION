@@ -43,6 +43,7 @@ Suggests:
     GMMAT,
     knitr,
     LEA,
+    missMDA,
     mmtsne,
     pophelper,
     ranger,

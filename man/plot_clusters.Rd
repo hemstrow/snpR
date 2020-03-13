@@ -19,6 +19,8 @@ plot_clusters(
   iter = 1000,
   viridis.option = "viridis",
   alt.palette = NULL,
+  ncp = NULL,
+  ncp.max = 5,
   ...
 )
 }
@@ -61,6 +63,13 @@ to use for significance lines and SNP labels. See
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
+
+\item{ncp}{numeric or NULL, default NULL. Number of components to consider for iPCA sn format
+interpolations of missing data. If null, the optimum number will be estimated, with the
+maximum specified by ncp.max. This can be very slow.}
+
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
+the optimum number of components to use when interpolating sn data using the iPCA approach.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.}
 

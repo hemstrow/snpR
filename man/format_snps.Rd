@@ -18,7 +18,9 @@ format_snps(
   sample.meta = NULL,
   snp.meta = NULL,
   chr.length = NULL,
-  sample_id = NULL
+  sample_id = NULL,
+  ncp = 2,
+  ncp.max = 5
 )
 }
 \arguments{
@@ -72,6 +74,13 @@ details for more information.}
 \item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input files.
 Note that a single value assumes that each chromosome is of equal length whereas
 a vector of values assumes gives the length for each chromosome.}
+
+\item{ncp}{numeric or NULL, default 2. Number of components to consider for iPCA sn format
+interpolations of missing data. If null, the optimum number will be estimated, with the
+maximum specified by ncp.max. This can be very slow.}
+
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
+the optimum number of components to use when interpolating sn data using the iPCA approach.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
@@ -136,7 +145,14 @@ probability of drawing a minor allele is equal to the minor allele frequency.
 The expected number of minor alleles based on the later method is equal to the
 interpolated value from the former, but the later allows for multiple runs to
 determine the impact of stochastic draws and is generally prefered and
-required for some downstream analysis. It is therefore the default.
+required for some downstream analysis. It is therefore the default. As a slower
+but more accurate alternative to "af" interpolation, "iPCA" may be selected. This
+an iterative PCA approach to interpolate based on SNP/SNP covariance via
+\code{\link[missMDA{imputePCA}}. If the ncp arugment is not defined,
+the number of components used for interpolation will be estimated using
+\code{\link[missMDA{estim_ncpPCA}}. In this case, this method is much slower
+than the other methods, especially for large datasets. Setting an ncp of 2-5
+generally results in reasonable inpterpolations without the time constraint.
 
 Note also that for the plink format, a .bed binary file can be generated. If
 the "plink" option is selected and an outfile is designated, R will generate a

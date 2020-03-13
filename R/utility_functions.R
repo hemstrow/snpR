@@ -2094,7 +2094,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'The expected number of minor alleles based on the later method is equal to the
 #'interpolated value from the former, but the later allows for multiple runs to
 #'determine the impact of stochastic draws and is generally prefered and
-#'required for some downstream analysis. It is therefore the default.
+#'required for some downstream analysis. It is therefore the default. As a slower
+#'but more accurate alternative to "af" interpolation, "iPCA" may be selected. This
+#'an iterative PCA approach to interpolate based on SNP/SNP covariance via
+#'\code{\link[missMDA{imputePCA}}. If the ncp arugment is not defined,
+#'the number of components used for interpolation will be estimated using
+#'\code{\link[missMDA{estim_ncpPCA}}. In this case, this method is much slower
+#'than the other methods, especially for large datasets. Setting an ncp of 2-5
+#'generally results in reasonable inpterpolations without the time constraint.
 #'
 #'Note also that for the plink format, a .bed binary file can be generated. If
 #'the "plink" option is selected and an outfile is designated, R will generate a
@@ -2152,6 +2159,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'@param chr.length numeric, default NULL. Chromosome lengths, for ms input files.
 #'  Note that a single value assumes that each chromosome is of equal length whereas
 #'  a vector of values assumes gives the length for each chromosome.
+#'@param ncp numeric or NULL, default 2. Number of components to consider for iPCA sn format
+#'  interpolations of missing data. If null, the optimum number will be estimated, with the
+#'  maximum specified by ncp.max. This can be very slow.
+#'@param ncp.max numeric, default 5. Maximum number of components to check for when determining
+#'  the optimum number of components to use when interpolating sn data using the iPCA approach.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -2227,7 +2239,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        sample_id = NULL){
+                        sample_id = NULL, ncp = 2, ncp.max = 5){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -3187,6 +3199,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       else if(interpolate == "af"){
         rdata <- interpolate_sn(rdata, "af")
       }
+      else if(interpolate == "iPCA"){
+        rdata <- interpolate_sn(rdata, "iPCA", ncp = ncp, ncp.max = ncp.max)
+      }
 
       # bind and save
       rdata <- cbind(meta[,-which(colnames(meta) == ".snp.id")], as.data.frame(rdata))
@@ -3459,49 +3474,84 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #'later method is equal to the interpolated value from the former, but the later
 #'allows for multiple runs to determine the impact of stochastic draws and is
 #'generally prefered and required for some downstream analysis. It is therefore
-#'the default.
+#'the default. As a slower but more accurate alternative to "af" interpolation,
+#'"iPCA" may be selected. This an iterative PCA approach to interpolate based on
+#'SNP/SNP covariance via \code{\link[missMDA{imputePCA}}. If the ncp arugment is
+#'not defined, the number of components used for interpolation will be estimated
+#'using \code{\link[missMDA{estim_ncpPCA}}. In this case, this method is much
+#'slower than the other methods, especially for large datasets. Setting an ncp
+#'of 2-5 generally results in reasonable inpterpolations without the time
+#'constraint.
 #'
 #'@param sn data.frame. Input sn formatted data, as produced by
 #'  \code{\link{format_snps}}. Note that \code{\link{format_snps}} has an option
 #'  to automatically call this function during formatting.
 #'@param method character, default "bernoulli". Method to used for
 #'  interpolation, either bernoulli or af. See details.
+#'@param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
+#'  interpolations of missing data. If null, the optimum number will be estimated, with the
+#'  maximum specified by ncp.max. This can be very slow.
+#'@param ncp.max numeric, default 5. Maximum number of components to check for when determining
+#'  the optimum number of components to use when interpolating sn data using the iPCA approach.
 #'
 #'@author William Hemstrom
-interpolate_sn <- function(sn, method = "bernoulli"){
-  if(!method %in% c("bernoulli", "af")){
+interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
+  if(!method %in% c("bernoulli", "af", "iPCA")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
   }
-  # find allele frequencies
-  sn <- as.matrix(sn)
-  sn <- t(sn)
-  af <- colMeans(sn, na.rm = T) # this is the allele frequency of the "1" allele
 
-  # identify all of the NAs and the columns that they belong to
-  NAs <- which(is.na(sn)) # cells with NA
-  NA.cols <- floor(NAs/nrow(sn)) + 1 # figure out the column
-  adj <- which(NAs%%nrow(sn) == 0) # adjust for anything that sits in the last row, since it'll get assigned the wrong column
-  NA.cols[adj] <- NA.cols[adj] - 1
+  if(method %in% c("bernoulli", "af")){
+    # find allele frequencies
+    sn <- as.matrix(sn)
+    sn <- t(sn)
+    af <- colMeans(sn, na.rm = T) # this is the allele frequency of the "1" allele
 
-  # do interpolation for each missing data point
-  if(method == "bernoulli"){
-    ndat <- rbinom(length(NAs), 2, af[NA.cols])
+    # identify all of the NAs and the columns that they belong to
+    NAs <- which(is.na(sn)) # cells with NA
+    NA.cols <- floor(NAs/nrow(sn)) + 1 # figure out the column
+    adj <- which(NAs%%nrow(sn) == 0) # adjust for anything that sits in the last row, since it'll get assigned the wrong column
+    NA.cols[adj] <- NA.cols[adj] - 1
+
+    # do interpolation for each missing data point
+    if(method == "bernoulli"){
+      ndat <- rbinom(length(NAs), 2, af[NA.cols])
+    }
+    else if(method == "af"){
+      ndat <- af[NA.cols]
+    }
+
+    # replace
+    sn[NAs] <- ndat
+
+    # remove any columns (loci) with NO data and warn!
+    no_dat_loci <- which(is.na(af))
+
+    if(length(no_dat_loci) > 0){
+      sn <- sn[,-no_dat_loci]
+      warning("Some loci had no called genotypes and were removed: ", paste0(no_dat_loci, collapse = ", "), "\n")
+    }
   }
-  else if(method == "af"){
-    ndat <- af[NA.cols]
+  else if(method %in% c("iPCA")){
+    sn <- t(as.matrix(sn))
+
+    # remove any columns (loci) with NO data and warn!
+    no_dat_loci <- which(colSums(is.na(sn)) == nrow(sn))
+
+    if(length(no_dat_loci) > 0){
+      sn <- sn[,-no_dat_loci]
+      warning("Some loci had no called genotypes and were removed: ", paste0(no_dat_loci, collapse = ", "), "\n")
+    }
+
+
+    # determine optimal np from 0 - max.ncp
+    if(is.null(ncp)){
+      ncp <- missMDA::estim_ncpPCA(sn, ncp.max = ncp.max, method.cv = "Kfold")
+      cat("ncp scores:\n")
+      print(ncp$criterion)
+      ncp <- ncp$ncp
+    }
+    sn <- missMDA::imputePCA(sn, ncp)
   }
-
-  # replace
-  sn[NAs] <- ndat
-
-  # remove any columns (loci) with NO data and warn!
-  no_dat_loci <- which(is.na(af))
-
-  if(length(no_dat_loci) > 0){
-    sn <- sn[,-no_dat_loci]
-    warning("Some loci had no called genotypes and were removed: ", paste0(no_dat_loci, collapse = ", "), "\n")
-  }
-
   return(t(sn))
 }
 

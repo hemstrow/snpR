@@ -426,6 +426,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
+#' @param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
+#'   interpolations of missing data. If null, the optimum number will be estimated, with the
+#'   maximum specified by ncp.max. This can be very slow.
+#' @param ncp.max numeric, default 5. Maximum number of components to check for when determining
+#'   the optimum number of components to use when interpolating sn data using the iPCA approach.
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
 #' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
@@ -450,7 +455,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
-                          viridis.option = "viridis", alt.palette = NULL, ...){
+                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, ...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -502,12 +507,12 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
   # check for matching sn plot:
   if(length(x@sn) != 0){
     if(x@sn$type != interpolation_method){
-      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
       x@sn$type <- interpolation_method
     }
   }
   else{
-    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
     x@sn$type <- interpolation_method
   }
 
