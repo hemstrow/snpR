@@ -1361,6 +1361,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # sort the individuals within each population based on the qvals
   Q_sort <- function(x, pop, cluster = "first", q = "last"){
 
+
     #get which pop to use
     if(q == "last"){
       q <- length(x)
@@ -1469,14 +1470,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # sort by facet
     if(!is.null(facet)){
+
       if(!is.null(facet.order)){
-        qlist <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
+        mq <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
       }
       else{
-        qlist <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
+        mq <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
       }
-      sample_meta <- qlist$meta
-      qlist <- qlist$qlist
+      sample_meta <- mq$meta
+      mq <- mq$qlist
     }
 
     # sort by Q values if requested
@@ -1776,7 +1778,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # add facets
   if(!is.null(facet[1])){
     pops <- unique(sample_meta[,facet])
-    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x))
+    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
