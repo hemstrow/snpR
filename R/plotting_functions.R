@@ -1458,15 +1458,25 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     else{
       clumpp.opt <- 1
     }
+    ## grab only the correct k values:
+    ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
+    qlist <- qlist[which(ks <= k)]
+    ## run
     pophelper::clumppExport(qlist, useexe = T, parammode = clumpp.opt)
     pophelper::collectClumppOutput(filetype = "both")
 
     # import results
     mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
 
+    # get only the correct k values (in case this is re-running in a previous directory)
+    ks <- unlist(lapply(mq, function(x) attr(x, "k")))
+    mq <- mq[which(ks <= k)]
+
     # fix cluster IDs to match
     mq <- fix_clust(mq)
     save.q <- mq
+
+
 
     # sort by facet
     if(!is.null(facet)){
