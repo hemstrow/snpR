@@ -1406,10 +1406,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
   # process 1 q result by adjusting column names and melting. Takes a single qlist dataframe/matrix
-  process_1_q <- function(tq, x){
+  process_1_q <- function(tq, x, sample_meta = NULL){
     colnames(tq) <- 1:ncol(tq)
     tk <- ncol(tq)
-    if(!exists("sample_meta")){
+    if(is.null(sample_meta)){
       sample_meta <- paste0("s", 1:nrow(tq))
     }
     tq <- cbind(tq, sample_meta)
@@ -1507,7 +1507,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # process into plottable form
     for(i in 1:length(mq)){
-      mq[[i]] <- process_1_q(mq[[i]], x)
+      if(exists("sample_meta")){
+        mq[[i]] <- process_1_q(mq[[i]], x, sample_meta)
+      }
+      else{
+        mq[[i]] <- process_1_q(mq[[i]], x)
+      }
     }
 
     return(list(q = mq, ord = ind_ord, qlist = save.q))
