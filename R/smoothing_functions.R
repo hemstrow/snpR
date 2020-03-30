@@ -96,12 +96,17 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   # nk: logical, should nk wieghting be performed (usually yes)
   # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
   func <- function(x, step, sig, nk){
-    scols <- (which(colnames(x) == "nk") + 1):ncol(x)
-    un.genotyped <- which(x$nk== 0)
-    if(length(un.genotyped) > 0){
-      x <- x[-which(x$nk == 0),]
-
+    if(nk){
+      scols <- (which(colnames(x) == "nk") + 1):ncol(x)
+      un.genotyped <- which(x$nk== 0)
+      if(length(un.genotyped) > 0){
+        x <- x[-which(x$nk == 0),]
+      }
     }
+    else{
+      scols <- 2:ncol(x)
+    }
+
     if(nrow(x) <= 1){
       ret <- matrix(NA, 0, 5 + length(scols))
       ret <- as.data.frame(ret)
