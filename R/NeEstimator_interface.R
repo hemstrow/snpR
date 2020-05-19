@@ -13,6 +13,10 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
     setwd("NeEstimator")
   }
 
+  if(file.exists("snps.gen")){
+    file.remove("snps.gen")
+  }
+
   #=====================sanity checks============
   facets <- check.snpR.facet.request(x, facets)
 
@@ -59,20 +63,6 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
 
   if(length(msg) > 0){
     stop(paste(msg, collapse = "\n"))
-  }
-
-  # check if file exists
-  if(file.exists("info") | file.exists("option")){
-    cat("NeEstimator input files already exit. ")
-    resp <- "empty"
-    while(resp != "y" & resp != "n"){
-      cat("Overwrite? (y or n)\n")
-      resp <- readLines(n = 1)
-    }
-    if(resp == "n"){
-      setwd("..")
-      stop("Please move or rename existing input file in the colony directory")
-    }
   }
 
   #====================write the data==============
