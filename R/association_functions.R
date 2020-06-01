@@ -340,7 +340,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Only one sample-specific category allowed (e.g. pop but not fam.pop)."))
   }
-  if(!response[1] %in% x@sample.meta){
+  if(!response[1] %in% colnames(x@sample.meta)){
     msg <- c(msg,
              paste0("Response variable must be present in sample metadata."))
   }
@@ -428,7 +428,10 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                       install.packages('AGHmatrix')."))
     }
   }
-
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
 
   #==============functions=============
 
@@ -491,6 +494,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     return(pchisq(chi, 1, lower.tail = F))
   }
   odds.ratio.chisq <- function(cast_ac, method, ...){
+    browser()
     # odds ratio
     a <- cast_ac[[1]]
     b <- cast_ac[[2]]
