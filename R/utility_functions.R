@@ -2942,9 +2942,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
 
 
-  #PLINK formatt
+  #PLINK format
   if(output == "plink"){
-    #============convert the genotypes into a binary string==========
     #======================make a vector containing the bits for each genotype============
     # much easier with sn!
     if(exists("pl_0g_dat")){
@@ -3119,6 +3118,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     else{
       bim <- data.frame(chr = x@snp.meta$group,
                         rs = x@snp.meta$snp,
+                        cM = 0,
                         bp = x@snp.meta$position,
                         a1 = a.names[,1],
                         a2 = a.names[,2])
@@ -3128,10 +3128,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     bim$chr <- as.numeric(as.factor(bim$chr))
 
     # grab normal map file
-    map <- bim[,-c(ncol(bim)-1, ncol(bim))]
+    map <- bim[,1:4]
 
     # name output
-    rdata <- list(ped = ped, bed = bed, map = map, bim = bim)
+    rdata <- list(ped = ped, bed = bed, map = map, bim = bim, fam = fam)
   }
 
   # colony format for 01234
@@ -3427,6 +3427,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
       cat(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
+      data.table::fwrite(fam, paste0(outfile, ".fam"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(bim, paste0(outfile, ".bim"), quote = F, col.names = F, sep = "\t", row.names = F)
     }
