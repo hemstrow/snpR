@@ -154,64 +154,107 @@ calc_pi <- function(x, facets = NULL){
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
-  func <- function(gs, m.al){
-
-    # major alleles via max.col
-    fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
-    lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
-
-    # minor alleles, via inversion, 0 replacement with -Inf, and max.col
-    inv.as <- gs$as * -1
-    inv.as[inv.as == 0] <- -Inf
-    fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
-    lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
-
-    # special cgs$ases
-    match.freq <- which(fmax != lmax) # maf = 0.5
-    unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
-    np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
-
-    # declair major and minor
-    major <- fmax
-    minor <- fmin
-    ## maf = 0.05
-    if(length(match.freq) != 0){
-      minor[match.freq] <- lmax[match.freq]
+  func <- function(gs, m.al, ref = NULL){
+    
+    # for the base facet, determine the major and minor then calculate maf
+    if(is.null(ref)){
+      # major alleles via max.col
+      fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
+      lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
+      
+      # minor alleles, via inversion, 0 replacement with -Inf, and max.col
+      inv.as <- gs$as * -1
+      inv.as[inv.as == 0] <- -Inf
+      fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
+      lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
+      
+      # special cases
+      match.freq <- which(fmax != lmax) # maf = 0.5
+      unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
+      np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
+      
+      # declair major and minor
+      major <- fmax
+      minor <- fmin
+      ## maf = 0.05
+      if(length(match.freq) != 0){
+        minor[match.freq] <- lmax[match.freq]
+      }
+      ## unsequenced
+      if(length(unseq) != 0){
+        major[unseq] <- "N"
+        minor[unseq] <- "N"
+      }
+      ## non-polymorphic
+      if(length(np) != 0){
+        minor[np] <- "N"
+      }
+      
+      # grab the actual maf
+      maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
+      maf[is.nan(maf)] <- 0
+      
+      # get the major and minor counts
+      # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
+      maj.count <- round(rowSums(gs$as)*(1-maf))
+      min.count <- round(rowSums(gs$as)*(maf))
     }
-    ## unsequenced
-    if(length(unseq) != 0){
-      major[unseq] <- "N"
-      minor[unseq] <- "N"
+    
+    # for non-base facets, use the given major and minor to calculate maf
+    else{
+      
+      # use a data.table function to get the major allele counts
+      adt <- as.data.table(gs$as)
+      rep.factor <- nrow(gs$as)/nrow(ref)
+      major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
+      adt$major <-  major
+      adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
+      total.allele.count <- rowSums(adt[,1:4])
+      maf <- 1 - adt$maj_count/total.allele.count # get the maf
+      
+      # other things for return
+      minor <- rep(ref$minor, each = rep.factor)
+      maj.count <- adt$maj_count
+      min.count <- total.allele.count - maj.count
     }
-    ## non-polymorphic
-    if(length(np) != 0){
-      minor[np] <- "N"
-    }
-
-    # grab the actual maf
-    maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
-    maf[is.nan(maf)] <- 0
-
-    # get the major and minor counts
-    # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and egs$asy, gs$as long gs$as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
-    maj.count <- round(rowSums(gs$as)*(1-maf))
-    min.count <- round(rowSums(gs$as)*(maf))
-
+    
     # return
-    return(data.frame(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
+    return(data.table(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
   }
-
+  
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
     invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
-  out <- apply.snpR.facets(x,
-                           facets = facets,
-                           req = "gs",
-                           fun = func,
-                           case = "ps",
-                           m.al = substr(x@mDat,1, nchar(x@mDat)/2))
+  
+  if(facets[1] == ".base" & length(facets) == 1){
+    out <- apply.snpR.facets(x,
+                             facets = facets[1],
+                             req = "gs",
+                             fun = func,
+                             case = "ps",
+                             m.al = substr(x@mDat,1, nchar(x@mDat)/2))
+  }
+  else{
+    # calculate the base facet if not yet added
+    logi <- check_calced_stats(x, ".base", "maf")
+    if(!logi[[".base"]]["maf"]){
+      x <- calc_maf(x)
+    }
+    
+    major_minor_base <- get.snpR.stats(x)[,c("major", "minor")]
+    out <- apply.snpR.facets(x,
+                             facets = facets,
+                             req = "gs",
+                             fun = func,
+                             case = "ps",
+                             m.al = substr(x@mDat,1, nchar(x@mDat)/2),
+                             ref = major_minor_base)
+    
+  }
+  
+  x <- update_calced_stats(x, facets, "maf")
   return(merge.snpR.stats(x, out))
 }
 
@@ -2712,4 +2755,104 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                            snpRdat = x)
 
   return(list(ne = out, x = x))
+}
+
+calc_genetic_distances <- function(x, facets = NULL, method = "Edwards"){
+  #============sanity checks=========
+  msg <- character()
+  
+  good.methods <- c("Edwards")
+  if(!method %in% good.methods){
+    msg <- c(msg, paste0("Provided method not supported. Supported methods: ", paste0(good.methods, collapse = " ")))
+  }
+  
+  # get the allele frequencies if not already provided
+  if("snpRdata" %in% class(x)){
+    facets <- check.snpR.facet.request(x, facets, "none", T)
+    bads <- which(facets[[2]] == "snp")
+    
+    if(length(bads) != length(facets[[1]])){
+      if(length(bads) > 0){
+        warning(paste0("Some facets requested with no sample level for which no distances can be calculated: ",
+                       paste0(facets[[1]][bads], collapse = "\t")))
+        facets <- facets[[1]][-bads]
+      }
+      else{
+        facets <- facets[[1]]
+      }
+      x <- get_allele_frequencies(x, facets)
+    }
+    else{
+      msg <- c(msg, "No sample level facets provided, cannot calculate distances without sample facets.")
+    }
+  }
+  else{
+    wrn.removed <- character()
+    # check that there aren't any single sample level facets (.base, split by chromosome only, etc) requested
+    lfun <-function(y){
+      if(is.list(y)){
+        lapply(y, nrow)
+      }
+      else{nrow(y)}
+    }
+    
+    for(i in 1:length(x)){
+      check <- lapply(x[[i]], lfun)
+      check <- lapply(check, function(y) any(y == 1))
+      if(any(unlist(check))){
+        wrn.removed <- c(wrn.removed, paste0(ifelse(names(x)[i] == ".base", "", paste0(names(x)[i], ".")), 
+                                             names(x[[i]])[unlist(check)]))
+        x[[i]][which(unlist(check))] <- NULL
+      }
+    }
+    check2 <- lapply(x, length)
+    if(sum(check2 == 0) > 0){
+      if(all(check2 == 0)){
+        msg <- c(msg, "No sample level facets provided, cannot calculate distances without sample facets.")
+      }
+      else{
+        x[[which(check2 == 0)]] <- NULL
+        warning(paste0("Some facets in the provided allele frequency matrices were removed since they didn't compare groups of samples: ",
+                       paste0(wrn.removed, collapse = "\t"), "\n"))
+      }
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+  
+  #=============subfunctions=========
+  # dist subfunction
+  get_dist <- function(x, method){
+    if(method == "Edwards"){
+      nloc <- ncol(x)
+      x <- sqrt(as.matrix(x))
+      d <- x%*%t(x)
+      d <- 1 - (d / (nloc/2))
+      diag(d) <- 0
+      d <- sqrt(d)
+      d <- as.dist(d)
+    }
+    return(d)
+  }
+
+  
+  #=============run===============
+  out <- vector("list", length(x))
+  names(out) <- names(x)
+  # enter lapply hell--first level unlists once, second level runs the function if the values are matrices, unlists if not, third level can always run the function
+  # the nice thing with this is that it should keep all of the names from x natively!
+  out <- lapply(x, function(y){
+    lapply(y, function(z) {
+      if(class(z) == "matrix"){
+        get_dist(z, method = method)
+      }
+      else{
+        lapply(z, get_dist, method = method)
+      }
+    })
+  })
+  
+  return(out)
 }

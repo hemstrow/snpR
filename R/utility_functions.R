@@ -120,11 +120,13 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
            facet.meta = data.frame(),
            geno.tables = list(),
            mDat = mDat,
-           stats = data.frame(),
+           stats = data.table(),
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
            sn <- list(sn = NULL, type = NULL),
            facets = ".base",
-           facet.type = ".base")
+           facet.type = ".base",
+           calced_stats = list())
+  x@calced_stats$.base <- character()
 
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
 
@@ -143,6 +145,9 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   cat("Imput data will be filtered to remove non bi-allelic data.\n")
   invisible(capture.output(x <- filter_snps(x, non_poly = F)))
 
+  # add basic maf
+  invisible(capture.output(x <- calc_maf(x)))
+  
   # add ac
   invisible(capture.output(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")]))
 
@@ -298,7 +303,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   }
 
   os <- dplyr::mutate_if(.tbl = os, is.factor, as.character)
-  x@stats <- dplyr::arrange(os, .snp.id, facet, subfacet)
+  x@stats <- as.data.table(dplyr::arrange(os, .snp.id, facet, subfacet))
 
 
   return(x)
@@ -410,7 +415,6 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
         }
       }
     }
-
     return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = F))
   }
 
@@ -806,7 +810,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
     }
 
 
-    else if (req == "ac.stats"){
+    else if(req == "ac.stats"){
       out <- data.frame()
       # need to loop through each facet, since they are all internally compared!
       for(i in 1:length(facets)){
@@ -826,6 +830,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
       return(out)
 
     }
+    
   }
   else if(case == "ps.pf.psf"){
     if(req == "meta.ac" | req == "pos.all.stats"){
@@ -1031,6 +1036,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, 
     out[,1:(ncol(out) - 1)] <- meta
     return(out)
   }
+
 }
 
 #'Merge newly calculated stats into a snpRdata object.
@@ -2699,20 +2705,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #=========apply to requested facets=======
     # get missing maf info
-    no.stats.facets <- which(!(c(".base", facets) %in% unique(x@stats$facet)))
-    if(!any(colnames(x@stats) == "maf")){
-      if(identical(".base", facets)){
-        x <- calc_maf(x, facets = c(facets))
-      }
-      else{
-        x <- calc_maf(x, facets = c(".base", facets))
-      }
-    }
-    else if(any(is.na(x@stats$maf[x@stats$facet %in% c(".base", facets)])) | length(no.stats.facets) > 0){
-      tstats <- x@stats[x@stats$facet %in% c(".base", facets),]
-      miss.facets <- which(c(".base", facets) %in% unique(tstats[is.na(tstats$maf),]$facet))
-      miss.facets <- c(miss.facets, no.stats.facets)
-      x <- calc_maf(x, facets = c(".base", facets)[miss.facets])
+    mafs_to_calc <- check_calced_stats(x, unique(c(".base"), facets), "maf")
+    if(any(!unlist(mafs_to_calc))){
+      x <- calc_maf(x, names(mafs_to_calc[!which(unlist(mafs_to_calc))]))
     }
 
     # grab the major and minors for each snp in the analysis.
@@ -4028,3 +4023,155 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
   return(list2)
 }
 
+
+#' Fetch the allele frequencies for all SNPs for each level of each requested facet.
+#' 
+#' Fetch allele frequencies for all SNPs for each level of all the requested facets.
+#' Major and minor allele frequencies will be interleved, with the major allele first
+#' for each locus.
+#' 
+#' @param x snpRdata object
+#' @param facets character, default NULL. The facets for which to calculate allele frequencies.
+#'   See \code{\link{facets_in_snpR}} for details.
+#'
+#' @author William Hemstrom
+#' @export
+get_allele_frequencies <- function(x, facets = NULL){
+  #==================prep and sanity check==================
+  msg <- character()
+  
+  # check facets and get maf
+  facets <- check.snpR.facet.request(x, facets, "none", T)
+  facet_types <- facets[[2]]
+  facets <- facets[[1]]
+  needed.sample.facets <- check.snpR.facet.request(x, facets)
+  if(any(facet_types == "snp")){
+    needed.sample.facets <- c(needed.sample.facets, ".base")
+  }
+  ## add any missing maf data
+  missing_mafs <- check_calced_stats(x, needed.sample.facets, "maf")
+  if(any(!unlist(missing_mafs))){
+    x <- calc_maf(x, names(missing_mafs)[which(!unlist(missing_mafs))])
+  }
+  am <- get.snpR.stats(dat, needed.sample.facets)
+  
+  # grab column names
+  maj_min <- get.snpR.stats(dat)
+  maj_min <- paste0(rep(unique(maj_min$.snp.id), each = 2), "_",
+                    c(maj_min$major, maj_min$minor)[rep(1:nrow(maj_min), each = 2) + (0:1) * nrow(maj_min)])
+  
+  #==================run============
+  # intialize output
+  ## need to do calcs for each sample level facet only
+  sample_facet_freqs <- vector("list", length(needed.sample.facets))
+  names(sample_facet_freqs) <- needed.sample.facets
+  
+  ## output
+  out <- sample_facet_freqs
+  
+  # run for each facet
+  for(i in 1:length(sample_facet_freqs)){
+
+    # melt the allele frequencies down into a matrix:
+    tam <- data.table::dcast(as.data.table(am[which(am$facet == needed.sample.facets[i]),]), subfacet ~ .snp.id, value.var = "maf")
+    pops <- tam[,1]
+    tam <- tam[,-1]
+    amb <- 1 - tam
+    
+    # interleve major and minor frequencies and save
+    ord <- rep(1:ncol(tam), each = 2) + (0:1) * ncol(tam)
+    amc <- cbind(amb, tam)[,..ord]
+    colnames(amc) <- maj_min
+    amc <- as.data.frame(amc)
+    rownames(amc) <- unlist(pops)
+    
+    sample_facet_freqs[[i]] <- as.matrix(amc)
+  }
+  #==================break up for facets=========
+  for(i in 1:length(facets)){
+    # split up by snp levels if requested
+    if(facet_types[i] == "complex" | facet_types[i] == "snp"){
+      if(facet_types[i] == "snp"){
+        t.samp.facet <- ".base"
+      }
+      else{
+        t.samp.facet <- check.snpR.facet.request(x, facets[i], "snp")
+      }
+      t.snp.facet <- check.snpR.facet.request(x, facets[i], "sample")
+      snp.parts <- get.task.list(x, t.snp.facet)[,-c(1:2)]
+      
+      tout <- vector("list", length = nrow(snp.parts))
+      names(tout) <- snp.parts[,2]
+      for(j in 1:nrow(snp.parts)){
+        # these are the snpIDs that are a part of this facet level
+        include_snps <- unique(am$.snp.id[which(am[,snp.parts[j,1]] == snp.parts[j,2])])
+        
+        # grab just those snps
+        tout[[j]] <- sample_facet_freqs[[which(needed.sample.facets == t.samp.facet)]] # add everything
+        tout[[j]] <- tout[[j]][,which(as.numeric(gsub("_.+", "", colnames(tout[[j]]))) %in% include_snps), drop = F] # subset the requested snps only
+      }
+      # assign back, nesting with the snp facet name
+      tout <- list(tout)
+      names(tout) <- t.snp.facet
+      out[[which(needed.sample.facets == t.samp.facet)]] <- c(out[[which(needed.sample.facets == t.samp.facet)]],
+                                                              tout)
+    }
+    else{
+      if(is.null(check.snpR.facet.request(x, facets[i]))){
+        facets[i] <- ".base"
+      }
+      out[[which(needed.sample.facets == facets[i])]] <- list(.base = sample_facet_freqs[[which(needed.sample.facets == facets[i])]])
+    }
+  }
+  
+  return(out)
+}
+
+#' Update list of calculated stats for a vector of facet names
+#' 
+#' @param x snpRdata object to update
+#' @param facet character. Facets to update, see \code{\link{Facets_in_snpR}}
+#' @param stats character. Name of the facet to update as calculated.
+#' 
+#' @return A snpRdata object identical to x but with calced stats updated.
+#' 
+#' @author William Hemstrom
+update_calced_stats <- function(x, facets, stats){
+  for(i in 1:length(facets)){
+    
+    # add a storage vector for this facet if no stats have yet been added
+    if(!facets[i] %in% names(x@calced_stats)){
+      x@calced_stats <- c(x@calced_stats, list())
+      names(x@calced_stats[[length(x@calced_stats)]]) <- facets[i]
+    }
+    
+    # update list of calculated stats for this facet
+    x@calced_stats[[facets[i]]] <- unique(c(x@calced_stats[[facets[i]]], stats))
+  }
+  
+  return(x)
+}
+
+#' Check if a given stat or vector of stats have been calculated any number of
+#' facets.
+#'
+#' @param x snpRdata object to check
+#' @param facets character. See \code{\link{facets_in_snpR}}
+#' @param stats character. Names of stats to check.
+#'
+#' @return A named list with an entry for each facet containing a named logical
+#'   vector indicating if the provided stats have been calculated yet.
+#'
+#' @author William Hemstrom
+check_calced_stats <- function(x, facets, stats){
+  # init storage
+  out <- vector("list", length(facets))
+  names(out) <- facets
+  
+  # check each facet to see if requested stats are calculated
+  for(i in 1:length(facets)){
+    out[[i]] <- stats %in% x@calced_stats[[facets[i]]]
+    names(out[[i]]) <- stats
+  }
+  return(out)
+}
