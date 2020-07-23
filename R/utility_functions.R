@@ -4055,10 +4055,10 @@ get_allele_frequencies <- function(x, facets = NULL){
   if(any(!unlist(missing_mafs))){
     x <- calc_maf(x, names(missing_mafs)[which(!unlist(missing_mafs))])
   }
-  am <- get.snpR.stats(dat, needed.sample.facets)
+  am <- get.snpR.stats(x, needed.sample.facets)
   
   # grab column names
-  maj_min <- get.snpR.stats(dat)
+  maj_min <- get.snpR.stats(x)
   maj_min <- paste0(rep(unique(maj_min$.snp.id), each = 2), "_",
                     c(maj_min$major, maj_min$minor)[rep(1:nrow(maj_min), each = 2) + (0:1) * nrow(maj_min)])
   
@@ -4075,6 +4075,7 @@ get_allele_frequencies <- function(x, facets = NULL){
   for(i in 1:length(sample_facet_freqs)){
 
     # melt the allele frequencies down into a matrix:
+    browser()
     tam <- data.table::dcast(as.data.table(am[which(am$facet == needed.sample.facets[i]),]), subfacet ~ .snp.id, value.var = "maf")
     pops <- tam[,1]
     tam <- tam[,-1]
