@@ -2757,6 +2757,37 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   return(list(ne = out, x = x))
 }
 
+#' Caculate genetic distances between groups of samples.
+#'
+#' Calculates the genetic distances between any sample specific facets, broken
+#' apart by any requested snp level facets. For details on methods, see details.
+#' Note that this particular function is not overwrite-safe.
+#'
+#' Available methods: \itemize{\item{Edwards} Angular distance as described in
+#' Edwards 1971.}
+#'
+#' All methods first calculate allele frequency matrices using
+#' \code{\link{get_allele_frequencies}}, then use these matrices (hereafter x)
+#' to calculate genetic distance.
+#'
+#' Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
+#' <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
+#'
+#' @param x Either a snpRdata object or a nested, named list of allele
+#'   frequencies as produced by \code{\link{get_allele_frequencies}}.
+#' @param facets character or NULL, default NULL. Facets for which to calculate
+#'   genetic distances, as described in \code{\link{Facets_in_snpR}}. Note that
+#'   any solely snp specific facets will get dropped, since distances are
+#'   calculated between groups of samples.
+#' @param method character, default "Edwards". Name of the method to use.
+#'   Options: \itemize{\item{Edwards} Angular distance as described in Edwards
+#'   1971.} See details.
+#'   
+#' @return A named, nested list containing distance measures named according to facets and facet levels.
+#' @references Edwards, A. W. F. (1971). Distances between populations on the basis of gene frequencies. Biometrics, 873-881.
+#' 
+#' @author William Hemstrom
+#' @export
 calc_genetic_distances <- function(x, facets = NULL, method = "Edwards"){
   #============sanity checks=========
   msg <- character()
@@ -2828,13 +2859,13 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards"){
     if(method == "Edwards"){
       nloc <- ncol(x)
       x <- sqrt(as.matrix(x))
-      d <- x%*%t(x)
-      d <- 1 - (d / (nloc/2))
-      diag(d) <- 0
-      d <- sqrt(d)
-      d <- as.dist(d)
+      am <- x%*%t(x)
+      am <- 1 - (am / (nloc/2))
+      diag(am) <- 0
+      am <- sqrt(am)
+      am <- as.dist(am)
     }
-    return(d)
+    return(am)
   }
 
   

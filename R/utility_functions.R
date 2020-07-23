@@ -4028,12 +4028,14 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
 #' 
 #' Fetch allele frequencies for all SNPs for each level of all the requested facets.
 #' Major and minor allele frequencies will be interleved, with the major allele first
-#' for each locus.
+#' for each locus. Note that this particular function is not overwrite-safe.
 #' 
 #' @param x snpRdata object
 #' @param facets character, default NULL. The facets for which to calculate allele frequencies.
 #'   See \code{\link{facets_in_snpR}} for details.
 #'
+#' @return A named, nested list containing allele frequency matrices for each facet level for all requested facets.
+#' 
 #' @author William Hemstrom
 #' @export
 get_allele_frequencies <- function(x, facets = NULL){
