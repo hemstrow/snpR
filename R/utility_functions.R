@@ -188,7 +188,6 @@ add.facets.snpR.data <- function(x, facets = NULL){
   if(all(all.facets %in% x@facets)){return(x)}
   else if (any(all.facets %in% x@facets)){
     already.added <- all.facets[which(all.facets %in% x@facets)]
-    warning(paste0("Some facets already present in data:\n\t", paste0(already.added, collapse = "\n\t"), "\n"))
     facet.list <- facet.list[-which(all.facets %in% x@facets)]
   }
 

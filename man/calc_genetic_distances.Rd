@@ -38,6 +38,20 @@ to calculate genetic distance.
 Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
 <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
 }
+\examples{
+# by pop:
+calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards")
+
+# by group and pop
+calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
+
+# by pop and fam
+calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
+
+# via get_allele_frequencies
+calc_genetic_distances(get_allele_frequencies(stickSNPs, "pop"), method = "Edwards")
+
+}
 \references{
 Edwards, A. W. F. (1971). Distances between populations on the basis of gene frequencies. Biometrics, 873-881.
 }
