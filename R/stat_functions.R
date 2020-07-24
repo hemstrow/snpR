@@ -2761,21 +2761,19 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'
 #' Calculates the genetic distances between either individuals or the levels of
 #' any sample specific facets, broken apart by any requested snp level facets.
-#' For details on methods, see details. Note that this particular function is
-#' not overwrite-safe.
+#' For details on methods, see details.
 #'
 #' Available methods: \itemize{\item{Edwards} Angular distance as described in
 #' Edwards 1971.}
 #'
 #' All methods first calculate allele frequency matrices using
-#' \code{\link{get_allele_frequencies}}, then use these matrices (hereafter x)
-#' to calculate genetic distance.
+#' \code{\link{tabulate_allele_frequency_matrix}}, then use these matrices (hereafter
+#' x) to calculate genetic distance.
 #'
 #' Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
 #' <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
 #'
-#' @param x Either a snpRdata object or a nested, named list of allele
-#'   frequencies as produced by \code{\link{get_allele_frequencies}}.
+#' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to calculate
 #'   genetic distances, as described in \code{\link{Facets_in_snpR}}. If snp or
 #'   base level facets are requested, distances will be between individuals.
@@ -2787,8 +2785,9 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'   method, solely for individual/individual distances. Options detailed in
 #'   documentation for \code{\link{format_snps}}.
 #'
-#' @return A named, nested list containing distance measures named according to
-#'   facets and facet levels.
+#' @return An overwrite-safe snpRdata object with genetic distance information
+#'   (a named, nested list containing distance measures named according to
+#'   facets and facet levels) added.
 #' @references Edwards, A. W. F. (1971). Distances between populations on the
 #'   basis of gene frequencies. Biometrics, 873-881.
 #'
@@ -2797,20 +2796,20 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'
 #' @examples
 #' # by pop:
-#' calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards")
+#' y <- calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards"))
+#' get.snpR.stats(y, "pop", "genetic_distance")
+#'
+#' # by group and pop jointly
+#' y <- calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
+#' get.snpR.stats(y, "pop.group", "genetic_distance")
 #' 
-#' # by group and pop
-#' calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
-#' 
-#' # by pop and fam
-#' calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
-#' 
-#' # via get_allele_frequencies
-#' calc_genetic_distances(get_allele_frequencies(stickSNPs, "pop"), method = "Edwards")
+#' # by pop and fam seperately
+#' y <- calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
+#' get.snpR.stats(y, c("pop", "group"), "genetic_distance")
 #' 
 #' # individuals across all snps + plot
-#' p <- calc_genetic_distances(stickSNPs)
-#' hetamap(as.matrix(p$.base$.base))
+#' y <- calc_genetic_distances(stickSNPs)
+#' heatmap(as.matrix(get.snpR.stats(y, type = "genetic_distance")$.base$.base$Edwards))
 #' 
 calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpolate = "bernoulli"){
   #============sanity checks=========
@@ -2822,66 +2821,39 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   }
   
   # get the allele frequencies if not already provided
-  if("snpRdata" %in% class(x)){
-    facets <- check.snpR.facet.request(x, facets, "none", T)
-    snp_lev <- which(facets[[2]] == "snp" | facets[[2]] == ".base")
-    snp_facets <- facets[[1]][snp_lev]
-    
-    # pull out snp level facets, since these'll be done later.
-    if(length(snp_lev) != length(facets[[1]])){
-      if(length(snp_lev) > 0){
-        facets <- facets[[1]][-snp_lev]
-      }
-      else{
-        facets <- facets[[1]]
-      }
-      y <- x
-      x <- get_allele_frequencies(x, facets)
-      sample_facets_detected <- T
+  facets <- check.snpR.facet.request(x, facets, "none", T)
+  snp_lev <- which(facets[[2]] == "snp" | facets[[2]] == ".base")
+  snp_facets <- facets[[1]][snp_lev]
+  all_facets <- facets[[1]]
+  
+  # pull out snp level facets, since these'll be done later.
+  if(length(snp_lev) != length(facets[[1]])){
+    if(length(snp_lev) > 0){
+      facets <- facets[[1]][-snp_lev]
     }
     else{
-      y <- x
-      sample_facets_detected <- F
+      facets <- facets[[1]]
     }
-  }
-  else{
-    wrn.removed <- character()
-    # check that there aren't any single sample level facets (.base, split by chromosome only, etc) requested
-    lfun <-function(y){
-      if(is.list(y)){
-        lapply(y, nrow)
-      }
-      else{nrow(y)}
+    needed.facets <- check_calced_stats(x, facets, "allele_frequency_matrix")
+    needed.facets <- facets[which(!unlist(needed.facets))]
+    if(length(needed.facets) > 0){
+      x <- tabulate_allele_frequency_matrix(x, needed.facets)
     }
-    
-    for(i in 1:length(x)){
-      check <- lapply(x[[i]], lfun)
-      check <- lapply(check, function(y) any(y == 1))
-      if(any(unlist(check))){
-        wrn.removed <- c(wrn.removed, paste0(ifelse(names(x)[i] == ".base", "", paste0(names(x)[i], ".")), 
-                                             names(x[[i]])[unlist(check)]))
-        x[[i]][which(unlist(check))] <- NULL
-      }
-    }
-    check2 <- lapply(x, length)
-    if(sum(check2 == 0) > 0){
-      if(all(check2 == 0)){
-        msg <- c(msg, "No sample level facets in the provided allele frequency matrices. To calculate genetic distance between individual samples, please pass a snpRdata object instead.")
-      }
-      else{
-        x[[which(check2 == 0)]] <- NULL
-        warning(paste0("Some facets in the provided allele frequency matrices were removed since they didn't compare groups of samples: ",
-                       paste0(wrn.removed, collapse = "\t"), "\n"))
-      }
-    }
-    snp_facets <- character()
     sample_facets_detected <- T
   }
-  
+  else{
+    sample_facets_detected <- F
+  }
+
   if(length(msg) > 0){
     stop(paste0(msg, collapse = "\n"))
   }
   
+  # grab the data we are working with for sample specific facets
+  y <- x
+  if(sample_facets_detected){
+    x <- get.snpR.stats(y, facets, "allele_frequency_matrix")
+  }
   #=============subfunctions=========
   # dist subfunction
   get_dist <- function(x, method){
@@ -2894,6 +2866,8 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       am <- sqrt(am)
       am <- as.dist(am)
     }
+    am <- list(am)
+    names(am) <- method
     return(am)
   }
   
@@ -2928,7 +2902,9 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       if(snp_facets[i] == ".base"){
         out_snp[[i]] <- vector("list", 1)
         names(out_snp[[i]]) <- ".base"
-        out_snp[[i]][[1]] <- dist(t(sn))
+        out_snp[[i]][[1]] <- list(dist(t(sn)))
+        names(out_snp[[i]][[1]]) <- method
+        
       }
       else{
         # get tasks
@@ -2942,7 +2918,8 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
           t_snp_cols <- y@snp.meta[,snp_columns, drop = F]
           t_snp_indices <- do.call(paste, c(t_snp_cols, sep = "    "))
           t_snp_indices <- which(t_snp_indices %in% tasks[j,4])
-          out_snp[[i]][[j]] <- dist(t(sn[t_snp_indices,]))
+          out_snp[[i]][[j]] <- list(dist(t(sn[t_snp_indices,])))
+          names(out_snp[[i]][[j]]) <- method
         }
       }
       
@@ -2952,14 +2929,14 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   #============return=========
   if(exists("out") & exists("out_snp")){
     out <- c(out, out_snp)
-    return(out)
   }
-  else if(exists("out")){
-    return(out)
+  else if(exists("out_snp")){
+    out <- out_snp
   }
-  else{
-    return(out_snp)
-  }
+  
+  y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method))
+  return(merge.snpR.stats(y, out, "genetic_distances"))
+  
 }
 
 
@@ -2968,7 +2945,6 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   facets <- check.snpR.facet.request(x, facets, "none")
   x <- add.facets.snpR.data(x, facets)
   
-  # get distances unless provided
   gd <- calc_genetic_distances(x, facets)
   
   # get the geo dist matrices

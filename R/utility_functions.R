@@ -14,8 +14,8 @@
 #'
 #'@section Slots:
 #'
-#'  Genotypes, metadata, and results are stored in slots and directly
-#'  accessable with the 'at' symbol operator. Slots are as follows:
+#'  Genotypes, metadata, and results are stored in slots and directly accessable
+#'  with the 'at' symbol operator. Slots are as follows:
 #'
 #'  \itemize{ \item{sample.meta: } sample metadata (population, family,
 #'  phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
@@ -33,12 +33,17 @@
 #'  statistics calculated for sliding windows. \item{pairwise.stats: }
 #'  data.frame/table containing all pairwise (fst) single-snp statistics.
 #'  \item{pairwise.window.stats: } data.frame/table containing all pairwise
-#'  statistics calculated for sliding windows. \item{pairwise.LD: } nested list
-#'  containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
-#'  for more information). \item{window.bootstraps: } data.frame/table
-#'  containing all calculated bootstraps for sliding window statistics.
-#'  \item{sn: } list containing "sn", sn formatted data, and "type" type of
-#'  interpolation. \item{names: } column names for genotypes. \item{row.names: }
+#'  statistics calculated for sliding windows. \item{sample.stats: }
+#'  data.frame/table containing statistics caluclated for each individual
+#'  sample. \item{pairwise.LD: } nested list containing linkage disequilibrium
+#'  data (see \code{\link{calc_pairwise_ld}} for more information).
+#'  \item{window.bootstraps: } data.frame/table containing all calculated
+#'  bootstraps for sliding window statistics. \item{sn: } list containing "sn",
+#'  sn formatted data, and "type" type of interpolation. \item{calced_stats: }
+#'  Named list of named character vectors that tracks the calculated statistics
+#'  for each facet (see \code{\link{calc_genetic_distance}} for more
+#'  information). \item{genetic_distances: } nested list containing genetic
+#'  distance data. \item{names: } column names for genotypes. \item{row.names: }
 #'  row names for genotypes. \item{.Data: } list of vectors containing raw
 #'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
 #'
@@ -125,7 +130,9 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
            sn <- list(sn = NULL, type = NULL),
            facets = ".base",
            facet.type = ".base",
-           calced_stats = list())
+           calced_stats = list(),
+           allele_frequency_matrices = list(),
+           genetic_distances = list())
   x@calced_stats$.base <- character()
 
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
@@ -150,6 +157,7 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   
   # add ac
   invisible(capture.output(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")]))
+
 
   return(x)
 }
@@ -366,7 +374,8 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     facets <- x@facets
   }
 
-  good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps")
+  good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
+                  "allele_frequency_matrix")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -432,6 +441,8 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 
     return(list(prox = prox, matrices = matrices))
   }
+  
+  extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
 
   #========prep=============
   if(!is.null(facets)){
@@ -470,7 +481,12 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   else if(type == "bootstraps"){
     return(extract.basic(x@window.bootstraps, facets, "window"))
   }
-
+  else if(type == "genetic_distance"){
+    return(extract.gd.afm(x@genetic_distances, facets))
+  }
+  else if(type == "allele_frequency_matrix"){
+    return(extract.gd.afm(x@allele_frequency_matrices, facets))
+  }
 }
 
 #'Apply functions across snpR facets.
@@ -1145,6 +1161,48 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     }
     return(m.s)
   }
+  
+  # note: not my code, pulled from source in funciton
+  simple.merge.lists <- function(list1, list2){
+    # Combine lists 'list1' and 'list2', giving precedence to elements found in 'list2':
+    # that is, if $something is found in both 'list1' and 'list2',
+    # the new (output) list will have the same values as 'list2' in $something
+    
+    # Version 1.0 (August 2017)
+    #
+    # Function developed by
+    # Patrick Belisle
+    # Division of Clinical Epidemiology
+    # McGill University Hospital Center
+    # Montreal, Qc, Can
+    #
+    # patrick.belisle@rimuhc.ca
+    # http://www.medicine.mcgill.ca/epidemiology/Joseph/PBelisle/BetaParmsFromQuantiles.html
+    
+    
+    list1.names <- names(list1)
+    list2.names <- names(list2)
+    
+    new.list <- list1
+    
+    
+    tmp <- match(list2.names, list1.names)
+    w <- which(!is.na(tmp))
+    
+    if (length(w) > 0){
+      # take values from list2 in matching dimension names
+      tmp <- tmp[!is.na(tmp)]
+      new.list[[tmp]] <- list2[[w]]
+      
+      # append elements of 'list2' with unmatched names
+      new.list <- c(new.list, list2[-w])
+    }
+    else{
+      new.list <- c(new.list, list2)
+    }
+    
+    return(new.list)
+  }
 
   if(type == "stats"){
     # merge and return
@@ -1189,7 +1247,6 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 
     if(length(x@pairwise.LD) == 0){
       x@pairwise.LD <- stats
-      return(x)
     }
     else{
       # deal with prox table using smart.merge
@@ -1200,6 +1257,24 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 
       # Deal with matrices using the merge.lists utility in snpR.
       x@pairwise.LD$LD_matrices <- merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
+    }
+  }
+  else if(type == "genetic_distances"){
+    
+    if(length(x@genetic_distances) == 0){
+      x@genetic_distances <- stats
+    }
+    else{
+      x@genetic_distances <- simple.merge.lists(x@genetic_distances, stats)
+    }
+  }
+  else if(type == "allele_frequency_matrices"){
+
+    if(length(x@allele_frequency_matrices) == 0){
+      x@allele_frequency_matrices <- stats
+    }
+    else{
+      x@allele_frequency_matrices <- simple.merge.lists(x@allele_frequency_matrices, stats)
     }
   }
 
@@ -3964,6 +4039,7 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
   # prunes and prepares data on the names and nest levels of a list
   prune.names <- function(list){
     ln <- capture.output(str(list))
+    ln <- ln[which(!grepl("attr\\(\\*,", ln))]
     ns <- character()
     pn <- vector("list")
     collapsed.names <- vector("list")
@@ -3973,7 +4049,7 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
     lev <- stringr::str_count(lev, "\\.\\.")
 
     # get the name at each level
-    clean.names <- stringr::str_extract(ln, "\\$.+:")
+    clean.names <- stringr::str_extract(ln, "\\$[^:]*")
     clean.names <- gsub("\\$", "", clean.names)
     clean.names <- gsub(":", "", clean.names)
     clean.names <- gsub("num \\[.+$", "", clean.names)
@@ -4037,7 +4113,7 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
 #' 
 #' @author William Hemstrom
 #' @export
-get_allele_frequencies <- function(x, facets = NULL){
+tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   #==================prep and sanity check==================
   msg <- character()
   
@@ -4068,7 +4144,8 @@ get_allele_frequencies <- function(x, facets = NULL){
   names(sample_facet_freqs) <- needed.sample.facets
   
   ## output
-  out <- sample_facet_freqs
+  out <- vector("list", length = length(facets))
+  names(out) <- facets
   
   # run for each facet
   for(i in 1:length(sample_facet_freqs)){
@@ -4112,20 +4189,19 @@ get_allele_frequencies <- function(x, facets = NULL){
         tout[[j]] <- tout[[j]][,which(as.numeric(gsub("_.+", "", colnames(tout[[j]]))) %in% include_snps), drop = F] # subset the requested snps only
       }
       # assign back, nesting with the snp facet name
-      tout <- list(tout)
-      names(tout) <- t.snp.facet
-      out[[which(needed.sample.facets == t.samp.facet)]] <- c(out[[which(needed.sample.facets == t.samp.facet)]],
-                                                              tout)
+      out[[i]] <- tout
     }
     else{
       if(is.null(check.snpR.facet.request(x, facets[i]))){
         facets[i] <- ".base"
       }
-      out[[which(needed.sample.facets == facets[i])]] <- list(.base = sample_facet_freqs[[which(needed.sample.facets == facets[i])]])
+      out[[i]] <- list(.base = sample_facet_freqs[[which(needed.sample.facets == facets[i])]])
     }
   }
   
-  return(out)
+  #=================return============
+  x <- update_calced_stats(x, facets, "allele_frequency_matrix")
+  return(merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
 }
 
 #' Update list of calculated stats for a vector of facet names
@@ -4142,12 +4218,14 @@ update_calced_stats <- function(x, facets, stats){
     
     # add a storage vector for this facet if no stats have yet been added
     if(!facets[i] %in% names(x@calced_stats)){
-      x@calced_stats <- c(x@calced_stats, list())
-      names(x@calced_stats[[length(x@calced_stats)]]) <- facets[i]
+      x@calced_stats <- c(x@calced_stats, list(stats))
+      names(x@calced_stats)[length(x@calced_stats)] <- facets[i]
     }
     
     # update list of calculated stats for this facet
-    x@calced_stats[[facets[i]]] <- unique(c(x@calced_stats[[facets[i]]], stats))
+    else{
+      x@calced_stats[[facets[i]]] <- unique(c(x@calced_stats[[facets[i]]], stats))
+    }
   }
   
   return(x)

@@ -37,8 +37,8 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 \section{Slots}{
 
 
- Genotypes, metadata, and results are stored in slots and directly
- accessable with the 'at' symbol operator. Slots are as follows:
+ Genotypes, metadata, and results are stored in slots and directly accessable
+ with the 'at' symbol operator. Slots are as follows:
 
  \itemize{ \item{sample.meta: } sample metadata (population, family,
  phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
@@ -56,12 +56,17 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  statistics calculated for sliding windows. \item{pairwise.stats: }
  data.frame/table containing all pairwise (fst) single-snp statistics.
  \item{pairwise.window.stats: } data.frame/table containing all pairwise
- statistics calculated for sliding windows. \item{pairwise.LD: } nested list
- containing linkage disequilibrium data (see \code{\link{calc_pairwise_ld}}
- for more information). \item{window.bootstraps: } data.frame/table
- containing all calculated bootstraps for sliding window statistics.
- \item{sn: } list containing "sn", sn formatted data, and "type" type of
- interpolation. \item{names: } column names for genotypes. \item{row.names: }
+ statistics calculated for sliding windows. \item{sample.stats: }
+ data.frame/table containing statistics caluclated for each individual
+ sample. \item{pairwise.LD: } nested list containing linkage disequilibrium
+ data (see \code{\link{calc_pairwise_ld}} for more information).
+ \item{window.bootstraps: } data.frame/table containing all calculated
+ bootstraps for sliding window statistics. \item{sn: } list containing "sn",
+ sn formatted data, and "type" type of interpolation. \item{calced_stats: }
+ Named list of named character vectors that tracks the calculated statistics
+ for each facet (see \code{\link{calc_genetic_distance}} for more
+ information). \item{genetic_distances: } nested list containing genetic
+ distance data. \item{names: } column names for genotypes. \item{row.names: }
  row names for genotypes. \item{.Data: } list of vectors containing raw
  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
 
