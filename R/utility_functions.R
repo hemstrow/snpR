@@ -4151,6 +4151,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   for(i in 1:length(sample_facet_freqs)){
 
     # melt the allele frequencies down into a matrix:
+    browser()
     tam <- data.table::dcast(as.data.table(am[which(am$facet == needed.sample.facets[i]),]), subfacet ~ .snp.id, value.var = "maf")
     pops <- tam[,1]
     tam <- tam[,-1]
