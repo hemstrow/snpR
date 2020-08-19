@@ -105,7 +105,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        sn = "list",
                                        calced_stats = "list",
                                        allele_frequency_matrices = "list",
-                                       genetic_distances = "list"),
+                                       genetic_distances = "list",
+                                       other = "list"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
 

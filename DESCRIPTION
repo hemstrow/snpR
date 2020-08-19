@@ -32,6 +32,7 @@ Depends:
     doParallel,
     foreach
 Suggests:
+    ade4,
     adegenet,
     AGHmatrix,
     BGLR,
@@ -39,6 +40,7 @@ Suggests:
     BMS,
     forcats,
     genepop,
+    geosphere,
     ggrepel,
     GMMAT,
     knitr,

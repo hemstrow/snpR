@@ -2939,20 +2939,166 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   
 }
 
-
-calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards"){
+#' Calculate Isolation by Distance
+#'
+#' Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
+#' genetic distance between samples or sets of samples to the geographic
+#' distances between samples or sets of sapmles. IBD caluclated via a mantel
+#' test.
+#'
+#' Genetic distance is caluclated via \code{\link{calc_genetic_distances}}.
+#' Geographic distances are taken as-is for individual-individual comparisons
+#' and by finding the geographic mean of a group of samples when sample level
+#' facets are requested using the methods described by
+#' \code{\link[geosphere]{geomean}}. Note that this means that if many samples
+#' were collected from the same location, and those samples compose a single
+#' level of a facet, the mean sampling location will be that single location.
+#'
+#' IBD is caluclated by comparing geographic and genetic distances using a
+#' mantel test via \code{\link[ade4]{mantel.randtest}}.
+#'
+#' Note that geographic distance objects are also included in the returned
+#' values.
+#'
+#'
+#' @param x snpRdata object
+#' @param facets character, default NULL. Facets over which to calculate IBD, as
+#'   described in \code{\link{Facets_in_snpR}}.
+#' @param x_y character, default c("x", "y"). Names of the columns containing
+#'   geographic coordinates where samples were collected. There is no need to
+#'   specify projection formats.
+#' @param genetic_distance_method character, default "Edwards". The genetic
+#'   distance method to use, see \code{\link{calc_genetic_distances}}.
+#' @param ... Additional arguments passed to \code{\link[ade4]{mantel.randtest}}
+#'
+#' @return A snpRdata object with both geographic distance and IBD results
+#'   merged into existing data.
+#'
+#' @author William Hemstrom
+#' 
+#' @seealso \code{\link[ade4]{mantel.randtest}},
+#'   \code{\link{calc_genetic_distances}}
+#'
+#' @export
+#' 
+#' @examples # calculate ibd for several different facets
+#' y@sample.meta <- cbind(y@sample.meta, x = rnorm(ncol(y)), y = rnorm(ncol(y)))
+#' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
+#' res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results 
+#' res 
+#' plot(res$group.pop$groupV$Edwards) # plot perms vs observed
+#' 
+calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", ...){
+  #================sanity checks=============================================
+  msg <- character()
   
+  bad.xy <- which(!x_y %in% colnames(x@sample.meta))
+  if(length(bad.xy) > 0){
+    msg <- c(msg, paste0("Some coordinates (arument x_y) not found in sample metadata: ", paste(x_y[bad.xy])))
+  }
+  
+  pkg.check <- check.installed("geosphere")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  pkg.check <- check.installed("ade4")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+  
+  #================prep and get genetic dist matrices========================
   facets <- check.snpR.facet.request(x, facets, "none")
   x <- add.facets.snpR.data(x, facets)
   
-  gd <- calc_genetic_distances(x, facets)
+  # calc gds if needed and fetch
+  cs <- check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method))
+  missing <- which(!unlist(cs))
+  if(length(missing) > 0){
+    x <- calc_genetic_distances(x, names(cs)[missing])
+  }
+  gd <- get.snpR.stats(x, facets, "genetic_distance")
   
+  #===============fetch geo dist matrices=======================
   # get the geo dist matrices
-  geo_mats <- vector("list", length(gd))
-  names(geo_mats) <- names(gd)
-  for(i in 1:length(x)){
+  snp.levs <- check.snpR.facet.request(x, facets)
+  geo_mats <- vector("list", length(snp.levs))
+  names(geo_mats) <- snp.levs
+  
+  # get the geo matrices for each comparison. note that the same geo matrix is re-used across snp level facets.
+  for(i in 1:length(geo_mats)){
     # get the categories for this
-    categories <- get.task.list(x, names(geo_mats)[i])[,1:2]
+    categories <- get.task.list(x, names(geo_mats)[i])[,1:2, drop = F]
+    
+    # if the categories are all base, easy peasy
+    if(all(categories[,1] == ".base")){
+      geo_mats$.base[[genetic_distance_method]] <- dist(x@sample.meta[,x_y])
+    }
+    else{
+      # otherwise need to break it down by sample level facet
+      # find geographic mean coordiantes for each facet level
+      gmeans <- t(apply(categories, 1, function(row){
+        matches <- fetch.sample.meta.matching.task.list(x, row)
+        matches <- x@sample.meta[matches,]
+        matches <- matches[,x_y]
+        colnames(matches) <- c("x", "y")
+        geosphere::geomean(matches)
+      }))
+      rownames(gmeans) <- categories[,2]
+      
+      #get the distances
+      geo_mats[[categories[1,1]]][[genetic_distance_method]] <- dist(gmeans)
+    }
   }
   
+  #===============calculate IBD==================
+  ibd <- vector("list", length(gd))
+  names(ibd) <- names(gd)
+  # do the calcs: at each level, simply copy metadata in
+  for(i in 1:length(gd)){
+    ibd[[i]] <- vector("list", length(gd[[i]]))
+    names(ibd[[i]]) <- names(gd[[i]])
+    
+    
+    for(j in 1:length(gd[[i]])){
+      ibd[[i]][[j]] <- vector("list", length(gd[[i]][[j]]))
+      names(ibd[[i]][[j]]) <- names(gd[[i]][[j]])
+      
+      for(k in 1:length(gd[[i]][[j]])){
+        
+        tsampfacet <- check.snpR.facet.request(x, names(gd)[i])
+        
+        # quick check for NAs
+        if(any(is.na(gd[[i]][[j]][[k]]))){
+          # find bad entries
+          matgd <- as.matrix(gd[[i]][[j]][[k]])
+          bad.entries <- which(rowSums(is.na(matgd)) == ncol(matgd) - 1)
+          
+          # remove from gene dist
+          gd[[i]][[j]][[k]] <- as.dist(matgd[-bad.entries, -bad.entries])
+          
+          # remove from geo dist
+          matgeod <- as.matrix(geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]])
+          tgeodist<- as.dist(matgeod[-bad.entries, -bad.entries])
+          
+          warning("NAs detected in genetic distance data for facet: ", paste(names(gd)[i], names(gd[[i]])[j], names(gd[[i]][[j]])[k]),
+                  "\nlevels\t\n\t", paste0(row.names(matgeod)[bad.entries], collapse = "\n\t"))
+        }
+        else{
+          tgeodist <- geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]]
+        }
+        
+        ibd[[i]][[j]][[k]] <- ade4::mantel.randtest(gd[[i]][[j]][[k]], tgeodist, ...)
+        
+      }
+    }
+  }
+  
+  #===============return================================
+  x <- merge.snpR.stats(x, geo_mats, "geo_dists")
+  x <- merge.snpR.stats(x, ibd, "ibd")
+  x <- update_calced_stats(x, facets, c("geo_dist", "ibd"))
+  
+  return(x)
 }
