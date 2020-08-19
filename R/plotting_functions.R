@@ -496,6 +496,19 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
   }
 
+  if("umap" %in% plot_type){
+    pkg.check <- check.installed("umap")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  }
+  
+  if("tsne" %in% plot_type){
+    pkg.check <- check.installed("Rtsne")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+    
+    pkg.check <- check.installed("mmtsne")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  }
+  
 
   if(length(msg) > 0){
     stop(paste0(msg, collapse = "  \t"))
@@ -826,6 +839,14 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3")){
 
+  #=============sanity checks==============================
+  msg <- character()
+  pkg.check <- check.installed("ggrepel")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  if(length(msg) > 0){
+    stop(msg, collapse = "\n")
+  }
   #=============grab the desired stats=====================
   #====if a snpRdata object========
   if(class(x) == "snpRdata"){
@@ -1910,6 +1931,14 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' @export
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
                                 pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
+  #===================sanity checks=================
+  msg <- character()
+  pkg.check <- check.installed("scatterpie")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  if(length(msg) > 0){stop(msg, "\n")}
+  
+  #==================plot===========================
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
