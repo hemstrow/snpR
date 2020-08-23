@@ -2858,6 +2858,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   # dist subfunction
   get_dist <- function(x, method){
     if(method == "Edwards"){
+      x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
       nloc <- ncol(x)
       x <- sqrt(as.matrix(x))
       am <- x%*%t(x)
@@ -2966,7 +2967,8 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'   described in \code{\link{Facets_in_snpR}}.
 #' @param x_y character, default c("x", "y"). Names of the columns containing
 #'   geographic coordinates where samples were collected. There is no need to
-#'   specify projection formats.
+#'   specify projection formats. The first should be longitude, the second should
+#'   be latitude.
 #' @param genetic_distance_method character, default "Edwards". The genetic
 #'   distance method to use, see \code{\link{calc_genetic_distances}}.
 #' @param ... Additional arguments passed to \code{\link[ade4]{mantel.randtest}}
@@ -2995,6 +2997,10 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   bad.xy <- which(!x_y %in% colnames(x@sample.meta))
   if(length(bad.xy) > 0){
     msg <- c(msg, paste0("Some coordinates (arument x_y) not found in sample metadata: ", paste(x_y[bad.xy])))
+  }
+  
+  if(any(abs(x@sample.meta[,x_y[2]]) > 90)){
+    msg <- c(msg, "Latitude values greater 90 or less than -90 detected. Note that the first value in 'x_y' must specify longitude, the second must specify latitude!")
   }
   
   pkg.check <- check.installed("geosphere")

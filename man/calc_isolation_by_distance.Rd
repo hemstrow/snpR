@@ -20,7 +20,8 @@ described in \code{\link{Facets_in_snpR}}.}
 
 \item{x_y}{character, default c("x", "y"). Names of the columns containing
 geographic coordinates where samples were collected. There is no need to
-specify projection formats.}
+specify projection formats. The first should be longitude, the second should
+be latitude.}
 
 \item{genetic_distance_method}{character, default "Edwards". The genetic
 distance method to use, see \code{\link{calc_genetic_distances}}.}
