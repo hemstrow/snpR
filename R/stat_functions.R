@@ -449,6 +449,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     #===============genepop======================
     if(method == "genepop"){
       g.filename <- paste0("genepop.", facets, ".txt")
+      if(file.exists(g.filename)){
+        file.remove(g.filename)
+      }
       invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
       genepop::Fst(g.filename, pairs = TRUE)
 
