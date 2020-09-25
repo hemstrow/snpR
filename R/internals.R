@@ -129,6 +129,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
+  nac <- as.data.frame(nac)
   x@ac <- nac[,-c(1:3)]
   
   # add in dummy rows to stats
