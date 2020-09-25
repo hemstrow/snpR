@@ -159,7 +159,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     else if(length(grep("Ht", files[i]) != 0)){type <- "Ht"; skip <- 14}
 
     # read in the data
-    suppressWarnings(dat <- readr::read_table2(files[i], skip = skip, col_names = F))
+    suppressWarnings(dat <- as.data.frame(readr::read_table2(files[i], skip = skip, col_names = F)))
     dat <- dat[1:(nrow(dat) - 2),]
 
     # add column names, adjust data per type
