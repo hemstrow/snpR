@@ -436,7 +436,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
                         non_poly = TRUE, bi_al = TRUE){
 
   #==============do sanity checks====================
-
   if(maf){
     if(!is.numeric(maf)){
       stop("maf must be a numeric value.")
@@ -702,7 +701,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       ngs <- list(gs = ngs, as = nas, wm = nwm)
       ngs <- lapply(ngs, fix.one.loci)
       rm(nas, nwm)
-
       invisible(capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
                                              sample.meta = x@sample.meta,
                                              snp.meta = x@snp.meta[-which(vio.snps),],
@@ -714,6 +712,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
                                              facets = x@facets,
                                              facet.type = x@facet.type,
                                              row.names = x@row.names[-which(vio.snps)])))
+      x@stats <- data.table::as.data.table(x@stats) # I'm not sure why this is needed, since the object passed to the constructor function above is already a data.table...
     }
     return(x)
   }
