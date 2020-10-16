@@ -443,7 +443,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'
 #' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
 #' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
-#' @references McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#' @references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 #'
 #' @seealso \code{\link[mmtsne]{mmtsne}}
 #'
@@ -1774,7 +1774,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     ## process into plottable form
     for(i in 1:length(tq)){
-      tq[[i]] <- process_1_q(tq[[i]], x)
+      if(exists("sample_meta")){
+        tq[[i]] <- process_1_q(tq[[i]], x, sample_meta)
+        
+      }
+      else{
+        tq[[i]] <- process_1_q(tq[[i]], x)
+      }
     }
 
     ## concatenate
@@ -1822,7 +1828,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     seps <- c(0, fmc) + 0.5
     seps[1] <- -.5
-
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
       ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "white", size = 1) +
