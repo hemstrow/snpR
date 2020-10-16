@@ -4,12 +4,14 @@
 \alias{update_calced_stats}
 \title{Update list of calculated stats for a vector of facet names}
 \usage{
-update_calced_stats(x, facets, stats)
+update_calced_stats(x, facets, stats, remove.type = "none")
 }
 \arguments{
 \item{x}{snpRdata object to update}
 
 \item{stats}{character. Name of the facet to update as calculated.}
+
+\item{remove.type}{character, default none. If provided, will grab only the remove the requested facet type (omit the snp part, for example).}
 
 \item{facet}{character. Facets to update, see \code{\link{Facets_in_snpR}}}
 }

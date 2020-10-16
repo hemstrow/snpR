@@ -145,6 +145,7 @@ calc_pi <- function(x, facets = NULL){
   out <- apply.snpR.facets(x, facets, "ac", func, case = "ps")
   colnames(out)[ncol(out)] <- "pi"
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "pi", "snp")
 
   return(x)
 }
@@ -254,7 +255,7 @@ calc_maf <- function(x, facets = NULL){
     
   }
   
-  x <- update_calced_stats(x, facets, "maf")
+  x <- update_calced_stats(x, facets, "maf", "snp")
   return(merge.snpR.stats(x, out))
 }
 
@@ -529,6 +530,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
       # melt
       suppressMessages(out$loci <- reshape2::melt(out$loci))
+      if(ncol(out$loci) == 1){ # for cases where there are only two comparison groups
+        out$loci <- data.frame(comparison = paste0(pnames[1], "~", pnames[2]), fst = out$loci[,1])
+      }
       colnames(out$loci) <- c("comparison", "fst")
 
       # get nk values:
@@ -551,6 +555,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       }
 
       out$loci$n_total <- pnk$ntotal
+      if(length(out$overall) == 1){
+        names(out$overall) <- paste0(pnames[1], "~", pnames[2])
+      }
 
       # return, we're done.
       cat("Finished.\n")
@@ -693,16 +700,23 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     out <- out[[1]]
   }
   else if(method == "wc" | method == "wier"){
-    x <- calc_ho(x, facets)
+    need.ho <- which(!unlist(check_calced_stats(x, facets, "ho")))
+    if(length(need.ho) > 0){
+      x <- calc_ho(x, facets[need.ho])
+    }
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = method)
   }
   else if(method == "hohenlohe"){
-    x <- calc_pi(x, facets)
+    need.pi <- which(!unlist(check_calced_stats(x, facets, "pi")))
+    if(length(need.pi) > 0){
+      x <- calc_pi(x, facets[need.pi])
+    }
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
   }
 
   # merge
   x <- merge.snpR.stats(x, out, type = "pairwise")
+  x <- update_calced_stats(x, facets, "fst", "snp")
 
   if(method == "genepop"){
     message("Returning list: first element is the snpRdata object now containing pairwise fst values, second is the average pairwise fst for all comparisons.\n")
@@ -752,7 +766,10 @@ calc_ho <- function(x, facets = NULL){
                            fun = func,
                            case = "ps")
   colnames(out)[ncol(out)] <- "ho"
-  return(merge.snpR.stats(x, out))
+  
+  x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "ho", "snp")
+  return(x)
 }
 
 #'@export
@@ -814,6 +831,8 @@ calc_private <- function(x, facets = NULL){
   out <- apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
   colnames(out)[ncol(out)] <- "pa"
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "pa", "snp")
+  return(x)
 }
 
 # Keming: Edit this function to fully integrate the multihaplotype ME estimation function we worked on.
@@ -2437,8 +2456,8 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
     # get observed genotype counts
     het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
-    o2pq <- rowSums(gs[,het.col])
-    opp <- matrixStats::rowMaxs(gs[,-het.col])
+    o2pq <- rowSums(gs[,het.col, drop = F])
+    opp <- matrixStats::rowMaxs(gs[,-het.col, drop = F])
     oqq <- rowSums(gs) - o2pq - opp
 
     # if we are using a chisq test, easy and quick
@@ -2493,6 +2512,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
   out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
   colnames(out)[ncol(out)] <- "pHWE"
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "hwe", "snp")
 
   return(x)
 }

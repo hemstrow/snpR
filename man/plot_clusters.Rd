@@ -128,7 +128,7 @@ Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding usin
 
 Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
 
-McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}

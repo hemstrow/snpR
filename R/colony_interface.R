@@ -79,16 +79,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   #=====================sanity checks============
   # check if file exists
   if(file.exists(outfile)){
-    cat("COLONY input file", outfile,  "already exits. ")
-    resp <- "empty"
-    while(resp != "y" & resp != "n"){
-      cat("Overwrite? (y or n)\n")
-      resp <- readLines(n = 1)
-    }
-    if(resp == "n"){
-      setwd("..")
-      stop("Please move or rename existing input file in the colony directory")
-    }
+    file.remove(outfile)
   }
 
   #=====================write first stuff=============
@@ -356,7 +347,7 @@ call_colony <- function(infile, colony_path){
   if(!dir.exists("colony")){
     dir.create("colony")
   }
-
+  
   file.rename(files, paste0("./colony/", files))
 }
 

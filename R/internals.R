@@ -1782,11 +1782,14 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
 #' @param x snpRdata object to update
 #' @param facet character. Facets to update, see \code{\link{Facets_in_snpR}}
 #' @param stats character. Name of the facet to update as calculated.
+#' @param remove.type character, default none. If provided, will grab only the remove the requested facet type (omit the snp part, for example).
 #' 
 #' @return A snpRdata object identical to x but with calced stats updated.
 #' 
 #' @author William Hemstrom
-update_calced_stats <- function(x, facets, stats){
+update_calced_stats <- function(x, facets, stats, remove.type = "none"){
+  facets <- check.snpR.facet.request(x, facets, remove.type = remove.type)
+  
   for(i in 1:length(facets)){
     
     # add a storage vector for this facet if no stats have yet been added
