@@ -45,7 +45,8 @@
 #'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 #'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 #'  Uses a chi-squared test. } See details
-#'
+#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use.
+#'@param fwe_case character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
 #'
@@ -2383,7 +2384,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 
 #'@export
 #'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
-calc_hwe <- function(x, facets = NULL, method = "exact"){
+calc_hwe <- function(x, facets = NULL, method = "exact", 
+                     fwe_method = c("bonferroni", "holm", "BH", "BY"), 
+                     fwe_case = c("by_facet", "by_subfacet", "overall")){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
@@ -2482,7 +2485,6 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
       # calculate p-values
       out <- pchisq(chi, 2, lower.tail = FALSE)
-      return(out)
     }
 
     # otherwise we have to use the looped version:
@@ -2497,8 +2499,8 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
       if(length(nas) > 1){
         out[nas] <- NA
       }
-      return(out)
     }
+    return(out)
   }
 
   if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
@@ -2511,6 +2513,15 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
   out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
   colnames(out)[ncol(out)] <- "pHWE"
+  
+  # apply corrections
+  if(length(facets) == 1 & facets[1] == ".base"){
+    fwe_case <- "overall"
+  }
+  out <- fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
+  
+  
+  
   x <- merge.snpR.stats(x, out)
   x <- update_calced_stats(x, facets, "hwe", "snp")
 

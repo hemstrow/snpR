@@ -1857,3 +1857,84 @@ check.installed <- function(pkg, install.type = "basic"){
   }
   else{return(TRUE)}
 }
+
+#' Correct for multiple testing.
+#' @param p data.frame/data.table containing p values and any facets to split by
+#' @param pcol name of the column containing p values
+#' @param levs names of the columns containing facet info to split by
+#' @param methods methods to use
+#' @param case case (overall, within each subfacet, or within each facet) at which to apply corrections
+fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), methods = c("bonferroni", "holm", "BH", "BY"), 
+                           case = c("overall", "by_facet", "by_subfacet")){
+  browser()
+
+  if(is.null(ncol(p))){
+    case <- "overall"
+    p <- as.data.table(p)
+    colnames(p) <- "p"
+    pcol <- p
+  }
+  if(ncol(p) == 1){
+    case <- "overall"
+    pcol <- colnames(p)[1]
+  }
+  
+  # function to run on one set of p-values
+  do_correction <- function(tp, methods){
+    if(!is.null(ncol(tp))){
+      ord <- tp[["ord"]]
+      tp <- tp[[pcol]]
+    }
+    
+    # for the methods already implemented in R, really easy.
+    sig_tab <- sapply(methods, function(x) p.adjust(tp, x)) # run those methods
+    colnames(sig_tab) <- methods
+    sig_tab <- as.data.frame(sig_tab)
+    
+    if(exists("ord")){
+      sig_tab <- cbind(sig_tab, ord = ord)
+    }
+    return(sig_tab)
+  }
+  
+  p <- data.table::as.data.table(p)
+
+  # do the overall and or case by case
+  if("overall" %in% case){
+    p_overall <- p[[pcol]]
+    p_overall <- do_correction(p_overall, methods)
+    colnames(p_overall) <- paste0(pcol, "_overall_", colnames(p_overall))
+    out <- cbind(p, p_overall)
+  }
+  else{
+    out <- p
+  }
+  
+  # split up completely
+  if("by_subfacet" %in% case){
+    p$ord <- 1:nrow(p)
+    p_case <- p[,do_correction(.SD, methods), by = levs]
+    p_case <- p_case[order(p_case$ord),]
+    p_case$ord <- NULL
+    colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)] <- 
+      paste0(pcol, "_bysubfacet_", colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)])
+    keep.cols <- which(!colnames(p_case) %in% levs)
+    out <- cbind(out, p_case[,..keep.cols])
+  }
+  # split up, but only across facets (aka, split up the set run by pop and the set run by fam, but not within either)
+  if("by_facet" %in% case){
+    p$ord <- 1:nrow(p)
+    p_case <- p[,do_correction(.SD, methods), by = "facet"]
+    p_case <- p_case[order(p_case$ord),]
+    p_case$ord <- NULL
+    colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)] <- 
+      paste0(pcol, "_byfacet_", colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)])
+    keep.cols <- which(!colnames(p_case) %in% "facet")
+    out <- cbind(out, p_case[,..keep.cols])
+  }
+  
+  #return
+  return(out)
+}
+
+
