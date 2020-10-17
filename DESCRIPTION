@@ -53,6 +53,7 @@ Suggests:
     readr,
     Rtsne,
     umap,
-    viridis
+    viridis,
+    testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.0.2
