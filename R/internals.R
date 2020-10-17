@@ -1866,7 +1866,6 @@ check.installed <- function(pkg, install.type = "basic"){
 #' @param case case (overall, within each subfacet, or within each facet) at which to apply corrections
 fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), methods = c("bonferroni", "holm", "BH", "BY"), 
                            case = c("overall", "by_facet", "by_subfacet")){
-  browser()
 
   if(is.null(ncol(p))){
     case <- "overall"

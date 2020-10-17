@@ -2385,8 +2385,8 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 #'@export
 #'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
 calc_hwe <- function(x, facets = NULL, method = "exact", 
-                     fwe_method = c("bonferroni", "holm", "BH", "BY"), 
-                     fwe_case = c("by_facet", "by_subfacet", "overall")){
+                     fwe_method = "BY", 
+                     fwe_case = c("by_facet", "overall")){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
