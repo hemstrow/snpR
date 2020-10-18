@@ -227,7 +227,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating genotypes
   }
-write("\n", outfile, append = T) #added newline
+  write("\n", outfile, append = T) #added newline
 
   if(class(maternal_genotypes) == "snpRdata"){
     female_colony <- format_snps(maternal_genotypes, "colony")
