@@ -1955,14 +1955,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       rdata <- matrix(as.numeric(rdata), ncol = ncol(rdata))
       colnames(rdata) <- 1:ncol(rdata)
       #for lifehistory data input needs id, sex, year born
-      if(all(c("Sex", "BirthYear") %in% colnames(x@sample.meta))){
-        if(is.character(sample_id)){
-          ID <- x@sample.meta[,sample_id]
-        }
-        else if("ID" %in% colnames(x@sample.meta)){
-          ID <- x@sample.meta$ID
-        }
-        else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
+      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
+        ID <- x@sample.meta$ID
         #format sex for sequoia (1 = F,2 = M,3 = U,4 = H,NA)
         sexes <- c("F", "M", "U", "H", "1", "2", "3", "4")
         sex <- x@sample.meta$Sex
@@ -1977,9 +1971,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                               BirthYear = x@sample.meta$BirthYear,
                               stringsAsFactors = F)
         rdata <- as.data.frame(rdata)
-        if(is.character(sample_id)){
-          rownames(rdata) <- x@sample.meta[,sample_id]
-        }
+        rownames(rdata) <- ID
         rdata = list(dat=rdata, lh=lhtable)
       }
       else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
