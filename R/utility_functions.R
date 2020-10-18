@@ -1979,7 +1979,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                               Sex = as.numeric(sex),
                               BirthYear = x@sample.meta$BirthYear,
                               stringsAsFactors = F)
-        rdata = list(dat=as.matrix(rdata), lh=lhtable)
+        rdata = list(dat=rdata, lh=lhtable)
       }
       else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
     }
