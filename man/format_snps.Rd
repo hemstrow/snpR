@@ -18,7 +18,6 @@ format_snps(
   sample.meta = NULL,
   snp.meta = NULL,
   chr.length = NULL,
-  sample_id = NULL,
   ncp = 2,
   ncp.max = 5
 )
@@ -134,7 +133,7 @@ bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
 in cM in order to create .bim extended map file.} \item{sn: }{Single character
 numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-'interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{snpRdata: }{a snpRdata object.}}
+'interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{a .fasta file.} \item{snpRdata: }{a snpRdata object.}}
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -229,8 +228,8 @@ b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
 b$BirthYear <- round(runif(n = nrow(b), 1,1))
 a <- stickSNPs
 a@sample.meta <- b
-a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
-test <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+a@sample.meta$ID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
+test <- format_snps(x=a, output = "sequoia")
 
 }
 \author{

@@ -835,7 +835,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'in cM in order to create .bim extended map file.} \item{sn: }{Single character
 #'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-#''interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{snpRdata: }{a snpRdata object.}}
+#''interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{a .fasta file.} \item{snpRdata: }{a snpRdata object.}}
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -983,15 +983,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' b$BirthYear <- round(runif(n = nrow(b), 1,1))
 #' a <- stickSNPs
 #' a@sample.meta <- b
-#' a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
-#' test <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+#' a@sample.meta$ID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
+#' test <- format_snps(x=a, output = "sequoia")
 #'
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        sample_id = NULL, ncp = 2, ncp.max = 5){
+                        ncp = 2, ncp.max = 5){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -1970,7 +1970,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                               Sex = as.numeric(sex),
                               BirthYear = x@sample.meta$BirthYear,
                               stringsAsFactors = F)
-        rdata <- as.data.frame(rdata)
         rownames(rdata) <- ID
         rdata = list(dat=rdata, lh=lhtable)
       }

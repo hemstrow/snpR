@@ -21,8 +21,8 @@ calc_hwe(
   x,
   facets = NULL,
   method = "exact",
-  fwe_method = c("bonferroni", "holm", "BH", "BY"),
-  fwe_case = c("by_facet", "by_subfacet", "overall")
+  fwe_method = "BY",
+  fwe_case = c("by_facet", "overall")
 )
 }
 \arguments{
