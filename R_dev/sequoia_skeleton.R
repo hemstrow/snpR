@@ -8,8 +8,10 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run
     msg <- c(msg, "Parents must be run before pedigree construction!\n")
   }
 
-#  if(run_parents) #does not have a maxsib 0<25 error{
-  msg <- c(msg, "Must include MaxSibIter value greater than 0 and less than 25 for pedigree construction")
+  if(run_pedigree){
+    if(MaxSibIter <= 0 | MaxSibIter >= 25 ){ 
+    msg <- c(msg, "Must include MaxSibIter value greater than 0 and less than 25 for pedigree construction!\n")
+    }
   }
   
   if(length(msg) > 0){
