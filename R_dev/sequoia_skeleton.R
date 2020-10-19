@@ -1,3 +1,28 @@
+#' Run Sequoia with snpR 
+#' 
+#' \code{run_sequoia} a tool for parentage assignment and pedigree construction. snpR integrates a program and package written by Jisca Huisman \itemize{\item{paper: }{https://doi.org/10.1111/1755-0998.12665} \item{github page: }{https://github.com/JiscaH/sequoia}} 
+#' 
+#' Possible options: \itemize{ \item{facets: }{Specification for grouping of data for which analyses should be ran independently} \item{run_dupcheck: }{Sequoia function used to check for duplicate samples in the dataset. It is reccomended to drop duplicated samples from the analysis. } \item{run_parents: }{Sequoia function to assign parents. This runs quickly and is required before running the run_pedigree command. } \item{run_pedigree: }{Sequoia function to construct full pedigree for the sample set. Sibship clustering takes a lot of time. }}
+#' 
+#' Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.)
+#' 
+#'@param x snpRdata object.
+#'@param facets FALSE or character, default FALSE. Sample-specific facets over which the sequoia is called to run.
+#'@param run_dupcheck FALSE or TRUE, default FALSE. Should a duplicate check be run on this dataset?
+#'@param run_parents FALSE or TRUE, default FALSE. Should parentage assignments be run with the dataset?
+#'@param run_pedigree FALSE or TRUE, default FALSE. Should a pedigree be constructed with the dataset? Requires run_parents to have been completed first. 
+#'
+#'@return A dataframe for each facet specified with sequoia output summary information. 
+#'
+#'@export
+#'@author William Hemstrom
+#'@author Melissa Jones
+#'
+#'@examples
+
+
+
+
 run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run_pedigree = T, ...){
   #===================sanity checks===============
   check.installed("sequoia")
