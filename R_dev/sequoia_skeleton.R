@@ -19,11 +19,18 @@
 #'@author Melissa Jones
 #'
 #'@examples
+#'to follow an example using the stickSNPs example dataset you need to add some variables that don't exist in the actual dataset. 
+#'
+#' #' stk <- stickSNPs
+#' a <- 2013:2015 #create a vector of possible birthyears
+#' b <- c("M", "F", "U") #create a vector of possible sexes
+#' stk@sample.meta$BirthYear <- sample(x = a, size = nrow(stk@sample.meta), replace = T) #create birthyears
+#' stk@sample.meta$ID <- 1:nrow(stk@sample.meta) #create unique sampleID
+#' stk@sample.meta$Sex <- sample(x= b, size = nrow(stk@sample.meta), replace = T) # create sexes
+#' dup <- run_sequoia(x=stk, run_dupcheck =T)
 
 
-
-
-run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run_pedigree = T, ...){
+run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run_pedigree = T, pMaxSibIter = 10, ...){
   #===================sanity checks===============
   check.installed("sequoia")
   
@@ -34,7 +41,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run
   }
 
   if(run_pedigree){
-    if(MaxSibIter <= 0 | MaxSibIter >= 25 ){ 
+    if(MaxSibIter < 0 | MaxSibIter >= 25 ){ 
     msg <- c(msg, "Must include MaxSibIter value greater than 0 and less than 25 for pedigree construction!\n")
     }
   }
@@ -66,20 +73,20 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run
      
     # run sequoia
     if(run_dupcheck){
-      sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = -1)
+      sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = -1)
     }
     
     if(run_parents){
-    p <- sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = 0, ...)
+    p <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = 0, ...)
     }
     
     if(run_pedigree){
-      sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = p, MaxSibIter = 10, ...) #need to add so that someone can specify sibiter 0<25
-      # need to add prior seqlist from parentage (p?)
+      sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = p, MaxSibIter = pMaxSibIter, ...) 
     }
     
     tout <- sequoia(tdat, ...)
     out[[i]] <- tout
   
   return(out)
+  }
 }
