@@ -1756,7 +1756,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # process
     ## fix cluster IDs to match
-    tq <- fix_clust(tq)
+    if(length(tq) > 1){
+      tq <- fix_clust(tq)
+    }
 
     ## qsort
     if(qsort != FALSE){
