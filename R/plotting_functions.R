@@ -1006,7 +1006,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   #============produce the plot========
-  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = chr)) +
+  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
     ggplot2::geom_point() +
     ggplot2::theme_bw() +
     ggplot2::theme(legend.position = "none",
