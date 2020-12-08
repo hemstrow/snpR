@@ -289,7 +289,11 @@ calc_maf <- function(x, facets = NULL){
 #'  for each window merged in to the window.stats slot.
 #'
 #' @examples
+#' # broken by population, windows across linkage group
 #' calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' 
+#' # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
+#' calc_tajimas_d(stickSNPs, facets = "pop")
 #'
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}

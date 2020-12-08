@@ -98,13 +98,13 @@ described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
 # Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
-# of 0.55, 250 minimum individuals, and at least 75\% of loci sequenced per
+# of 0.55, 50\% minimum individuals, and at least 75\% of loci sequenced per
 # individual.
-filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75)
+filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75)
 
 # The same filters, but with minor allele frequency considered per-population
 # and a full re-run of loci filters after individual removal.
-filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 250, min_loci = .75, re_run = "full", maf.facets = "pop")
+filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75, re_run = "full", maf.facets = "pop")
 
 }
 \author{
