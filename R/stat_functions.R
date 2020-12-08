@@ -277,11 +277,11 @@ calc_maf <- function(x, facets = NULL){
 #'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param sigma numeric. Sliding window size, in kilobases. Each window will
-#'  include all SNPs within 3*sigma kilobases.
-#'@param step numeric. Number of bases to move between each window, in
-#'  kilobases.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level facets are provided, the calculated Tajima's D will be for the entire genome.
+#'@param sigma numeric, default NULL. Sliding window size, in kilobases. Each window will
+#'  include all SNPs within 3*sigma kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
+#'@param step numeric, default NULL. Number of bases to move between each window, in
+#'  kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'
@@ -294,8 +294,14 @@ calc_maf <- function(x, facets = NULL){
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
-calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
-  sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F){
+  if(!is.null(sigma) & is.null(step)){
+    sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+  }
+  else{
+    sigma <- NULL
+    step <- NULL
+  }
 
 
   func <- function(ac, par, sigma, step, report){
@@ -304,7 +310,19 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
-    sigma <- 1000*sigma
+
+    # if sigma is null, set to run everything in one window
+    if(is.null(sigma)){
+      sigma <- range(ac$position)
+      c <- mean(sigma)
+      step <- c + 1
+      sigma <- sigma[2] - sigma[1]
+    }
+    else{
+      sigma <- 1000*sigma
+    }
+    
+    # run the loop
     while (c <= lsp){
       start <- c - sigma*3 #change window start
       end <- c + sigma*3 #change window end
