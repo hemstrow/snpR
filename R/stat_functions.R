@@ -395,6 +395,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F)
                            par = par,
                            sigma = sigma,
                            step = step)
+  
+  x <- update_calced_stats(x, facets, "tajimas_D")
 
   return(merge.snpR.stats(x, out, type = "window.stats"))
 
@@ -757,6 +759,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 #'@export
 #'@describeIn calc_single_stats observed heterozygosity
 calc_ho <- function(x, facets = NULL){
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
     genos <- colnames(gs$gs)
@@ -2170,6 +2175,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       }
     }
   }
+  out <- update_calced_stats(out, facets, "LD")
 
   return(out)
 }
@@ -2418,6 +2424,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 calc_hwe <- function(x, facets = NULL, method = "exact", 
                      fwe_method = "BY", 
                      fwe_case = c("by_facet", "overall")){
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
@@ -2716,6 +2725,8 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   out <- apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
   colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
   x <- merge.snpR.stats(x, out, "sample.stats")
+  
+  x <- update_calced_stats(x, facets, "ho_he_ratio")
 
   return(x)
 }
@@ -3062,6 +3073,9 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #' 
 calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", ...){
   #================sanity checks=============================================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
   msg <- character()
   
   bad.xy <- which(!x_y %in% colnames(x@sample.meta))
