@@ -13,13 +13,15 @@
 #' names and projection sizes.
 #'
 #' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
-#' @param pop.facet character. Name of the sample metadata column which specifies
-#'  the source population of individuals.
-#' @param pops character. A vector of population names of up to length 2
+#' @param facet character, default NULL. Name of the sample metadata column which specifies
+#'  the source population of individuals. For now, allows only a single simple facet (one column).If NULL,
+#'  runs the entire dataset.
+#' @param pops character, default NULL. A vector of population names of up to length 2
 #'   containing the names of populations for which the an SFS is to be created.
+#'   If NULL, runs the entire dataset.
 #' @param projection numeric. A vector of sample sizes to project the SFS to, in
 #'   \emph{number of gene copies}. Sizes too large will result in a SFS
-#'   containing few or no SNPs.
+#'   containing few or no SNPs. Must match the length of the provided pops vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
 #'
@@ -35,16 +37,74 @@
 #'   "pops" attribute containing population IDs, such as c("POP1", "POP2"). For
 #'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
 #'   rows.
+#' 
+#' @author William Hemstrom
+#' 
+#' @examples
+#' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
+#' dat <- stickSNPs
+#' dat <- calc_maf(dat)
+#' dat@snp.meta$ref <- get.snpR.stats(dat)$major
+#' dat@snp.meta$anc <- get.snpR.stats(dat)$minor
+#' # run for two populations
+#' ## call calc_sfs()
+#' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
+#' ## plot
+#' plot_sfs(sfs)
+#' 
+#' # run for the overall dataset
+#' sfs <- calc_SFS(dat, c(100))
+#' ## plot
+#' plot_sfs(sfs)
+#' 
 #'
-calc_SFS <- function(x, facet = "pop", pops, projection, fold = T){
+calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = T){
+  #=============sanity checks=================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  msg <- character(0)
+  
+  if(is.null(pops) & !is.null(facet)){
+    msg <- c(msg, "Pops must be provided if a facet is designated.\n")
+  }
+  if(is.null(facet) & !is.null(pops)){
+    msg <- c(msg, "A facet must be provided if pops are designated.\n")
+  }
+  if(!is.null(facet)){
+    if(length(facet) > 1){
+      msg <- c(msg, "For now, only a single facet is allowed at a time.\n")
+    }
+    check_facet <- check.snpR.facet.request(x, facet, "none", T)
+    if(any(check_facet[[2]] != "sample")){
+      msg <- c(msg, "For now, only sample level facets are allowed.\n")
+    }
+    if(length(strsplit(facet, "(?<!^)\\.", perl = T)[[1]]) > 1){
+      msg <- c(msg, "For now, only facets referring to only one column of metadata are allowed.\n")
+    }
+  }
+  
+  if(!is.null(pops)){
+    if(length(pops) != length(projection)){
+      msg <- c(msg, "A projection size must be provided for every requested population of samples.\n")
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
 
+  #==============run=========================
   # subset
-  x <- subset_snpR_data(x, facets = facet, subfacets = pops)
+  if(!is.null(pops)){
+    x <- subset_snpR_data(x, facets = facet, subfacets = pops)
+  }
 
   # get dadi formatted data
   y <- format_snps(x, output = "dadi", facets = facet)
 
   # get sfs
+  if(is.null(pops)){pops <- ".base"}
   sfs <- make_SFS(y, pops, projection, fold)
 
   return(sfs)
@@ -117,6 +177,9 @@ make_SFS <- function(x, pops, projection, fold = F){
     msg <- c(msg, "Only one or two dimensional SFSs can be created.\n")
   }
 
+  if(length(msg) > 0){
+    stop(msg)
+  }
   #================subfunctions==========
   # function to fold an sfs
   fold_sfs <- function(sfs){
@@ -222,8 +285,9 @@ make_SFS <- function(x, pops, projection, fold = F){
 
     # write to output
     for(i in 1:length(pops)){
+      x <- data.table::as.data.table(x)
       dat.cols <- grep(pops[i], colnames(x))
-      tdat <- x[,dat.cols]
+      tdat <- x[,..dat.cols]
       tdat <- as.matrix(tdat)
       out[,1,i] <- rowSums(tdat) # total count
       t.index <- 2 * (1:nrow(tdat))

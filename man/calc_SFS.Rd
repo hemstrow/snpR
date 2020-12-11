@@ -4,23 +4,25 @@
 \alias{calc_SFS}
 \title{Generate a 1-2d site frequency spectrum from a snpRdata object.}
 \usage{
-calc_SFS(x, facet = "pop", pops, projection, fold = T)
+calc_SFS(x, facet = NULL, pops = NULL, projection, fold = T)
 }
 \arguments{
 \item{x}{snpRdata object. The SNP metadata must contain "ref" and "anc" data.}
 
-\item{pops}{character. A vector of population names of up to length 2
-containing the names of populations for which the an SFS is to be created.}
+\item{facet}{character, default NULL. Name of the sample metadata column which specifies
+the source population of individuals. For now, allows only a single simple facet (one column).If NULL,
+runs the entire dataset.}
+
+\item{pops}{character, default NULL. A vector of population names of up to length 2
+containing the names of populations for which the an SFS is to be created.
+If NULL, runs the entire dataset.}
 
 \item{projection}{numeric. A vector of sample sizes to project the SFS to, in
 \emph{number of gene copies}. Sizes too large will result in a SFS
-containing few or no SNPs.}
+containing few or no SNPs. Must match the length of the provided pops vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
 left polarized.}
-
-\item{pop.facet}{character. Name of the sample metadata column which specifies
-the source population of individuals.}
 }
 \value{
 A matrix or vector containing the site frequency spectrum with a
@@ -42,6 +44,25 @@ et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
 Either 1 or 2d SFSs can be constructed by providing a vector of population
 names and projection sizes.
 }
+\examples{
+# add the needed ref and anc columns, using the major and minor alleles (will fold later)
+dat <- stickSNPs
+dat <- calc_maf(dat)
+dat@snp.meta$ref <- get.snpR.stats(dat)$major
+dat@snp.meta$anc <- get.snpR.stats(dat)$minor
+# run for two populations
+## call calc_sfs()
+sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
+## plot
+plot_sfs(sfs)
+
+# run for the overall dataset
+sfs <- calc_SFS(dat, c(100))
+## plot
+plot_sfs(sfs)
+
+
+}
 \references{
 Gutenkunst et al (2009). Inferring the joint demographic history
   of multiple populations from multidimensional SNP frequency data.
@@ -50,4 +71,7 @@ Gutenkunst et al (2009). Inferring the joint demographic history
 Marth et al (2004). The allele frequency spectrum in genome-wide
   human variation data reveals signals of differential demographic history in
   three large world populations. \emph{Genetics}, 166(1), 351-372.
+}
+\author{
+William Hemstrom
 }
