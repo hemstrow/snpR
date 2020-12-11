@@ -201,7 +201,7 @@ find.snpR.facets <- function(x){
 #' sliding window statistics. \item{LD: } linkage disequilibrium matrices and
 #' tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
 #' \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-#' \item{ibd: } isolation by distance results. }
+#' \item{ibd: } isolation by distance results. \item{sample: } sample stats. }
 #'
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to fetch data.
@@ -232,7 +232,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -301,6 +301,12 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
+  extract.sample <- function(y, facets){
+    facets <- check.snpR.facet.request(x, facets, "sample")
+    keep.rows <- which(y$facet %in% facets)
+    return(y[keep.rows,])
+  }
+  
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -349,6 +355,9 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
   else if(type == "ibd"){
     return(extract.gd.afm(x@other$ibd, facets))
+  }
+  else if(type == "sample"){
+    return(extract.basic(x@sample.stats, facets))
   }
   
 }

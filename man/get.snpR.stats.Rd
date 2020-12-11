@@ -32,7 +32,7 @@ the "type" argument:
 sliding window statistics. \item{LD: } linkage disequilibrium matrices and
 tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
 \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-\item{ibd: } isolation by distance results. }
+\item{ibd: } isolation by distance results. \item{sample: } sample stats. }
 }
 \examples{
 # generate some statistics
