@@ -2683,9 +2683,13 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @examples
 #' # base facet
 #' x <- calc_het_hom_ratio(stickSNPs)
+#' get.snpR.stats(x, type = "sample")
 #'
 #' # facet by chromosome
 #' x <- calc_het_hom_ratio(stickSNPs, "group")
+#' get.snpR.stats(x, "group", type = "sample")
+#' 
+#' 
 #'
 calc_het_hom_ratio <- function(x, facets = NULL){
   func <- function(x, mDat){
@@ -2702,6 +2706,10 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   }
 
   #============run for each facet================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
@@ -2872,6 +2880,10 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpolate = "bernoulli"){
   #============sanity checks=========
   msg <- character()
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   good.methods <- c("Edwards")
   if(!method %in% good.methods){

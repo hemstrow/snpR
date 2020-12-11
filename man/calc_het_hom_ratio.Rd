@@ -20,9 +20,13 @@ Calculates the ratio of heterozygotes to homozygous sites across all SNPs within
 \examples{
 # base facet
 x <- calc_het_hom_ratio(stickSNPs)
+get.snpR.stats(x, type = "sample")
 
 # facet by chromosome
 x <- calc_het_hom_ratio(stickSNPs, "group")
+get.snpR.stats(x, "group", type = "sample")
+
+
 
 }
 \author{
