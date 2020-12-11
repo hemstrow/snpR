@@ -53,6 +53,13 @@ variable included is specified. The other stats, in contrast, are snp-specific
 and thus ignore any snp meta data variables included in facets. Providing NULL or
 "all" to the facets argument works as described in \code{\link{Facets_in_snpR}}.
 }
+\examples{
+x <- calc_basic_snp_stats(stickSNPs, c("pop"))
+get.snpR.stats(x, "pop") # view basic stats
+get.snpR.stats(x, "pop", type = "pairwise") # view fst
+
+
+}
 \seealso{
 calc_single_stats calc_pairwise_fst calc_smoothed_averages
 }

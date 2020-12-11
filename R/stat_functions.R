@@ -2174,7 +2174,16 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   return(out)
 }
 
-# need to decompose outputs into an identical format to the other LD options, otherwise working and faster.
+#' Calculate Burrow's composite LD. Internal.
+#' 
+#' Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the output needs to be
+#' in the same format as that function's and to support faceting without excessive recalculation.
+#' 
+#' @param x snpRdata object
+#' @param facets facets to run
+#' @param par number of parallel cores
+#' 
+#' @author William Hemstrom
 calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
   # calculate composite LD for a single facet of data.
@@ -2579,6 +2588,12 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
 #'  averages by the number of observations at those SNPs.
 #'
+#'@examples
+#'x <- calc_basic_snp_stats(stickSNPs, c("pop"))
+#'get.snpR.stats(x, "pop") # view basic stats
+#'get.snpR.stats(x, "pop", type = "pairwise") # view fst
+#'
+#'
 #'@author William Hemstrom
 #'@export
 #'
@@ -2587,6 +2602,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'
 calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = F, nk = TRUE){
   #=========sanity checks=======
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
   if(!is.null(facets[1])){
     facet.types <- check.snpR.facet.request(x, facets, "none", T)
     snp.facets <- which(facet.types[[2]] == "snp")
