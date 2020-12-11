@@ -11,6 +11,12 @@
 #' et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
 #' Either 1 or 2d SFSs can be constructed by providing a vector of population
 #' names and projection sizes.
+#' 
+#' Note that ref and anc columns are suggested in the SNP metadata, containing the derived and ancestral
+#' character states, respectively. These should contain three characters each: two flanking bases and the SNP.
+#' For example, for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected. Note that if these
+#' character states are not known, the minor and major alleles will be substituted. Unfolded spectra will
+#' be misleading in this case.
 #'
 #' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
 #' @param facet character, default NULL. Name of the sample metadata column which specifies
@@ -42,10 +48,9 @@
 #' 
 #' @examples
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
-#' dat <- stickSNPs
-#' dat <- calc_maf(dat)
-#' dat@snp.meta$ref <- get.snpR.stats(dat)$major
-#' dat@snp.meta$anc <- get.snpR.stats(dat)$minor
+#' dat <- calc_maf(stickSNPs)
+#' dat@snp.meta$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
+#' dat@snp.meta$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
 #' # run for two populations
 #' ## call calc_sfs()
 #' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
@@ -90,10 +95,25 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = T){
     }
   }
   
+  
+  if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
+    warning("ref and anc columns are suggested in snp metadata. See documentation for details. The major allele will be subsituted for the ancestral state.\n")
+    x@snp.meta$ref <- paste0("A", get.snpR.stats(x)$minor, "A")
+    x@snp.meta$anc <- paste0("A", get.snpR.stats(x)$major, "A")
+
+    if(fold == T){
+      warning("Without ancestral and derived character states, folded spectra will be misleading.\n")
+    }
+  }
+  else{
+    if(!all(sapply(c(x@snp.meta$ref, x@snp.meta$anc), nchar) == 3)){
+      msg <- c(msg, "All ref and anc entries must be exactly three characters long. See documentation for details.\n")
+    }
+  }
+
   if(length(msg) > 0){
     stop(msg)
   }
-
   #==============run=========================
   # subset
   if(!is.null(pops)){
@@ -269,6 +289,7 @@ make_SFS <- function(x, pops, projection, fold = F){
   # index lists the pop
   # input is a dadi formatted data.frame
   get_counts <- function(x, pops){
+    browser
     # figure out which allele is the outgroup/derived in each row and figure out polarization status
     anc.als <- substr(x$anc, 2, 2)
     ref.als <- substr(x$ref, 2, 2)
@@ -356,8 +377,9 @@ make_SFS <- function(x, pops, projection, fold = F){
 #' Calculate the directionality index from a 2d site frequency spectrum.
 #'
 #' Calculates the directionality index based on a 2d SFS according to Peter and
-#' Slatkin (2013). Input spectra can be created using the \code{\link{make_SFS}}
-#' function. Spectra must be not be folded
+#' Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
+#' function, using a provided snpRdata object, or passed from other programs. 
+#' \emph{Spectra must be not be folded}.
 #'
 #' Essentially, the directionality index measures the difference in derived
 #' allele frequency between two populations to determine the directionality of
@@ -367,17 +389,67 @@ make_SFS <- function(x, pops, projection, fold = F){
 #' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 #' details.
 #'
+#' @param x snpRdata object, default NULL. If provided, snpRdata from which to calculate a SFS. Ignored if a
+#'   sfs is provided directly.
 #' @param sfs numeric matrix. A 2d site frequency spectra stored in a matrix,
 #'   with an additional "pops" attribute containing population IDs, such as
 #'   c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 #'   the second to matrix rows. These objects can be produced from a dadi input
 #'   file using \code{\link{make_SFS}}.
+#' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
+#'   Ignored if a sfs is provided.
+#' @param pops character, default NULL. cPassed to \code{\link{calc_SFS}} -- see documentation there for details.
+#'   Ignored if a sfs is provided.
+#' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
+#'   Ignored if a sfs is provided.
 #'
 #' @export
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
 #'   from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 #'
-calc_directionality <- function(sfs){
+#' @return A numeric value giving the directionality with a "direction" attribute designating the direction between the two populations.
+#' @examples
+#' # directionality can be calculated without first calculating a SFS
+#' calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
+#' 
+#' #an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
+#' sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = F)
+#' calc_directionality(sfs = sfs)
+#'
+calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL){
+  #==========sanity checks=============
+  msg <- character(0)
+  if(!is.null(x)){
+    if(!is.null(sfs)){
+      x <- NULL
+      break
+    }
+    if(!is.snpRdata(x)){
+      msg <- c(msg, "x is not a snpRdata object.\n")
+    }
+    if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
+      msg <- c(msg, "facet, pops, and projection arguments must all be provided if an sfs is not.")
+    }
+    if(!is.null(pops)){
+      if(length(pops) != 2){
+        msg <- c(msg, "Exactly two pops must be listed.\n")
+      }
+    }
+  }
+  else{
+    if(is.null(sfs)){
+      msg <- c("A SFS must be provided if snpRdata is not.\n")
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  #===========prep if a SFS not provided===========
+  if(is.null(sfs)){
+    sfs <- calc_SFS(x, facet, pops, projection, fold = F)
+  }
+  
   # flip everthing, since i should be pop 1 and j should be pop 2, and the
   # matrix is set up so that rows are pop 1 and columns are pop 2. Transposing fixes it.
   pops <- attr(sfs, "pop")

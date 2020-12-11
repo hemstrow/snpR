@@ -1482,6 +1482,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                      Allele2 = x@stats[x@stats$facet == ".base", "minor"],
                      ni2[order(ni2$.snp.id), 3:ncol(ni2)],
                      x@snp.meta[,which(!(colnames(x@snp.meta) %in% c("ref", "anc", ".snp.id")))])
+      rdata <- as.data.frame(rdata)
+      colnames(rdata)[c(3,3 + length(3:ncol(ni1)) + 1)] <- c("Allele1", "Allele2")
+      
       if(length(facets) == 1 & facets[1] == ".base"){
         colnames(rdata)[c(4,6)] <- ".base"
       }

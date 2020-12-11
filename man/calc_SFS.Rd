@@ -43,13 +43,18 @@ detailed in Marth et al (2004) and the 2 dimensional expansion in Gutenkunst
 et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
 Either 1 or 2d SFSs can be constructed by providing a vector of population
 names and projection sizes.
+
+Note that ref and anc columns are suggested in the SNP metadata, containing the derived and ancestral
+character states, respectively. These should contain three characters each: two flanking bases and the SNP.
+For example, for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected. Note that if these
+character states are not known, the minor and major alleles will be substituted. Unfolded spectra will
+be misleading in this case.
 }
 \examples{
 # add the needed ref and anc columns, using the major and minor alleles (will fold later)
-dat <- stickSNPs
-dat <- calc_maf(dat)
-dat@snp.meta$ref <- get.snpR.stats(dat)$major
-dat@snp.meta$anc <- get.snpR.stats(dat)$minor
+dat <- calc_maf(stickSNPs)
+dat@snp.meta$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
+dat@snp.meta$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
 # run for two populations
 ## call calc_sfs()
 sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
