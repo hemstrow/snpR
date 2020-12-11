@@ -322,14 +322,19 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   \emph{Nature Genetics}.
 #'
 #' @examples
-#'   # add a dummy phenotype
+#'   # add a dummy phenotype and run an association test.
 #'   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))
 #'   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
-#'   calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+#'   x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+#'   get.snpR.stats(x, c("pop", "pop.fam"))
 #'
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
                              formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
   #==============sanity checks===========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
   # response
   msg <- character()
   if(length(response) != 1){

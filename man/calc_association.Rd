@@ -81,10 +81,11 @@ If the chisq method is used, a column will also be returned that specifies
 which allele (major or minor) is associated with which phenotype.
 }
 \examples{
-  # add a dummy phenotype
+  # add a dummy phenotype and run an association test.
   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))
   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
-  calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+  x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+  get.snpR.stats(x, c("pop", "pop.fam"))
 
 }
 \references{
