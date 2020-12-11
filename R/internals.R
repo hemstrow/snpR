@@ -1,3 +1,17 @@
+#' Check if an object is a snpRdata object.
+#' 
+#' Checks if an object is a snpRdata object.
+#' 
+#' @param x object to check
+#' @return Logical, TRUE if the object is a snpRdata object.
+#' 
+#' @author William Hemstrom
+#' 
+#' @export
+is.snpRdata <- function(x){
+  return("snpRdata" %in% class(x))
+}
+
 
 #'Add facets to snpRdata objects
 #'
@@ -206,6 +220,10 @@ find.snpR.facets <- function(x){
 #'
 get.snpR.stats <- function(x, facets = NULL, type = "single"){
   # sanity check
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
   if(is.null(facets[1])){
     facets <- ".base"
   }
