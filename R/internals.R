@@ -232,7 +232,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd", "sample")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -358,6 +358,9 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
   else if(type == "sample"){
     return(extract.basic(x@sample.stats, facets))
+  }
+  else if(type == "pop"){
+    return(extract.basic(x@pop.stats, facets))
   }
   
 }
@@ -1147,6 +1150,16 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     }
     else{
       x@other$geo_dists <- simple.merge.lists(x@other$geo_dists, stats)
+    }
+  }
+  else if(type == "pop"){
+    if(length(x@pop.stats) == 0){
+      x@pop.stats <- data.table::as.data.table(stats)
+    }
+    else{
+      meta.names <- colnames(stats, 1:2)
+      starter.meta <- meta.names
+      x@pop.stats <- smart.merge(x@pop.stats, stats, meta.names, starter.meta)
     }
   }
   

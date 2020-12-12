@@ -2796,7 +2796,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #'   Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 #'
 #' @examples
-#' # calculate Ne, splitting by the chromosome equivalent ("group") for every population.
+#' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
 #' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
 #'
 #' @export
@@ -2808,30 +2808,46 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     temporal_methods = c("Pollak", "Nei", "Jorde"),
                     temporal_gens = NULL, max_ind_per_pop = NULL,
                     outfile = "ne_out"){
+  #==============sanity checks and prep=================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facets <- check.snpR.facet.request(x, facets, remove.type = "snp")
+  
+  
+  #=============run====================================
+  out <- vector("list", length(facets))
+  for(i in 1:length(facets)){
+    # write inputs
+    write_neestimator_inputs(x = x,
+                             facets = facets[i],
+                             chr = chr,
+                             methods = methods,
+                             temporal_methods = temporal_methods,
+                             temporal_gens = temporal_gens,
+                             pcrit = pcrit,
+                             mating = mating,
+                             outfile = paste0(outfile, ".txt"),
+                             max_ind_per_pop = max_ind_per_pop)
+    
+    # run
+    run_neestimator(NeEstimator_path = NeEstimator_path,
+                    data_path = "NeEstimator/")
+    
+    # parse
+    out[[i]] <- parse_neestimator(path = "NeEstimator/",
+                                  pattern = outfile,
+                                  facets = facets[i],
+                                  snpRdat = x)
+  }
+  
+  names(out) <- facets
+  out <- dplyr::bind_rows(out, .id = "facet")
+  x <- merge.snpR.stats(x, out, "pop")
+  x <- update_calced_stats(x, facets, "ne")
 
-  # write inputs
-  write_neestimator_inputs(x = x,
-                           facets = facets,
-                           chr = chr,
-                           methods = methods,
-                           temporal_methods = temporal_methods,
-                           temporal_gens = temporal_gens,
-                           pcrit = pcrit,
-                           mating = mating,
-                           outfile = paste0(outfile, ".txt"),
-                           max_ind_per_pop = max_ind_per_pop)
-
-  # run
-  run_neestimator(NeEstimator_path = NeEstimator_path,
-                  data_path = "NeEstimator/")
-
-  # parse
-  out <- parse_neestimator(path = "NeEstimator/",
-                           pattern = outfile,
-                           facets = facets,
-                           snpRdat = x)
-
-  return(list(ne = out, x = x))
+  return(x)
 }
 
 #' Caculate genetic distances between individuals or groups of samples.

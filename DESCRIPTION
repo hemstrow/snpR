@@ -26,7 +26,8 @@ Imports:
     purrr,
     reshape2,
     snow,
-    stringr
+    stringr,
+    tidyr
 Depends:
     data.table,
     doParallel,

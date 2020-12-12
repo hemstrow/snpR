@@ -207,6 +207,11 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   out[out == "Infinite"] <- Inf
   out[,-1] <- dplyr::mutate_all(out[,-1], as.numeric)
   out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf
-  return(out)
+  
+  # cast such that pcrit for each pop is applied across columns
+  cout <- as.data.frame(tidyr::pivot_wider(out, id_cols = "pop", names_from = "pcrit", values_from = colnames(out)[-c(1:2)]))
+  
+  
+  return(cout)
 
 }
