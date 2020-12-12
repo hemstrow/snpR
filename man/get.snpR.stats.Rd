@@ -32,15 +32,17 @@ the "type" argument:
 sliding window statistics. \item{LD: } linkage disequilibrium matrices and
 tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
 \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-\item{ibd: } isolation by distance results. \item{sample: } sample stats. }
+\item{ibd: } isolation by distance results. \item{sample: } sample stats. \item{pop: } population sumamry statistics. }
 }
 \examples{
 # generate some statistics
 dat <- calc_pi(stickSNPs, "group.pop")
 dat <- calc_pairwise_fst(stickSNPs, "group.pop")
 
-# fetch pi get.snpR.stats(stickSNPs, "group.pop") # fetch fst
-get.snpR.stats(stickSNPs, "group.pop", "pairwise")
+# fetch pi
+get.snpR.stats(dat, "group.pop")
+# fetch fst
+get.snpR.stats(dat, "group.pop", "pairwise") 
 
 }
 \author{

@@ -614,6 +614,9 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'
 calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE){
   #==========sanity checks==========
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
   msg <- character()
 
   # check statistics

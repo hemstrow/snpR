@@ -201,7 +201,7 @@ find.snpR.facets <- function(x){
 #' sliding window statistics. \item{LD: } linkage disequilibrium matrices and
 #' tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
 #' \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-#' \item{ibd: } isolation by distance results. \item{sample: } sample stats. }
+#' \item{ibd: } isolation by distance results. \item{sample: } sample stats. \item{pop: } population sumamry statistics. }
 #'
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to fetch data.
@@ -215,8 +215,10 @@ find.snpR.facets <- function(x){
 #' dat <- calc_pi(stickSNPs, "group.pop")
 #' dat <- calc_pairwise_fst(stickSNPs, "group.pop")
 #'
-#' # fetch pi get.snpR.stats(stickSNPs, "group.pop") # fetch fst
-#' get.snpR.stats(stickSNPs, "group.pop", "pairwise")
+#' # fetch pi
+#' get.snpR.stats(dat, "group.pop")
+#' # fetch fst
+#' get.snpR.stats(dat, "group.pop", "pairwise") 
 #'
 get.snpR.stats <- function(x, facets = NULL, type = "single"){
   # sanity check

@@ -452,7 +452,14 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F)
 #'@export
 #'
 #' @examples
-#' calc_pairwise_fst <- function(stickSNPs, facets = "pop")
+#' # Using Wier and Cockerham 1984's method
+#' x <- calc_pairwise_fst(stickSNPs, "pop")
+#' get.snpR.stats(x, "pop", "pairwise")
+#' 
+#' # Using genepop, note that the overall value is part 2 of the returned list
+#' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
+#' get.snpR.stats(x[[1]], "pop", "pairwise")
+#' x[[2]] # overall fst
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
     if(method != "genepop"){
@@ -704,6 +711,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
 
   #============================sanity and facet checks========================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   if(any(x@ac$n_alleles > 2)){
     vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
     vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])

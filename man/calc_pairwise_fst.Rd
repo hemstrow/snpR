@@ -49,7 +49,14 @@ Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
 2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
 }
 \examples{
-calc_pairwise_fst <- function(stickSNPs, facets = "pop")
+# Using Wier and Cockerham 1984's method
+x <- calc_pairwise_fst(stickSNPs, "pop")
+get.snpR.stats(x, "pop", "pairwise")
+
+# Using genepop, note that the overall value is part 2 of the returned list
+x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
+get.snpR.stats(x[[1]], "pop", "pairwise")
+x[[2]] # overall fst
 }
 \references{
 Wier and Cockerham (1984). \emph{Evolution}
