@@ -874,12 +874,6 @@ calc_private <- function(x, facets = NULL){
   return(x)
 }
 
-# Keming: Edit this function to fully integrate the multihaplotype ME estimation function we worked on.
-#         Mostly this will be edits in the tabulate.haplotypes function, and you'll need to add the ME function
-#         under the subfunctions heading. Once it is done, load the package in with cntrl + L or devtools::load_all("."),
-#         then run calc_pairwise_LD(stickSNPs, facets = "group.pop", use.ME = TRUE).
-#         Try to fix errors with browser(), but no worries if we need to meet to work on it.
-#         Could try to update sanity checks if feeling motivated.
 
 #'Pairwise LD from SNP data.
 #'
@@ -949,16 +943,26 @@ calc_private <- function(x, facets = NULL){
 #'
 #' @examples
 #' #CLD
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop")
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
+#' get.snpR.stats(x, "group.pop", "LD")
 #'
 #' #standard haplotype frequency estimation
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+#' get.snpR.stats(x, "group.pop", "LD")
 #'
+#' \dontrun{
+#' ## not run, really slow
 #' #ME haplotype estimation
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+#' get.snpR.stats(x, "group.pop", "LD")
+#' }
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                              par = FALSE, sr = FALSE, CLD = "only", use.ME = FALSE, sigma = 0.0001){
   #========================sanity checks=============
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   #sanity checks:
   # subsampling
   if(is.numeric(ss) & ss <= 0){
