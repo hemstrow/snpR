@@ -301,16 +301,24 @@ calc_maf <- function(x, facets = NULL){
 #'
 #' @examples
 #' # broken by population, windows across linkage group
-#' calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' get.snpR.stats(x, "group.pop", "single.window")
 #' 
 #' # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
-#' calc_tajimas_d(stickSNPs, facets = "pop")
+#' # this will calculate overall tajima's D without a window for each population.
+#' x <- calc_tajimas_d(stickSNPs, facets = "pop")
+#' get.snpR.stats(x, "pop", "single.window")
+#' 
+#' # for the overall dataset, note that sigma and step are NULL
+#' # this will calculate overall tajima's D for each group/pop
+#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop")
+#' get.snpR.stats(x, "pop.group", "single.window")
 #'
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F){
-  if(!is.null(sigma) & is.null(step)){
+  if(!is.null(sigma) & !is.null(step)){
     sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
   }
   else{
