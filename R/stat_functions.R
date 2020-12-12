@@ -2748,10 +2748,6 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #' \item{"Coan"} Coancestry based.} For details, please see the documentation
 #' for NeEstimator v2.
 #'
-#' Like most snpR funcitons, this function is overwrite safe, since one part of
-#' the returned list will contain the original dataset, possibly with added CLD
-#' values.
-#'
 #' @param x snpRdata object. The data for which Ne will be calculated.
 #' @param facets character, default NULL. Categorical metadata variables by
 #'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
@@ -2796,8 +2792,11 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #'   Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 #'
 #' @examples
+#' \dontrun{
+#' # not run
 #' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
-#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation. 
+#' get.snpR.stats(ne, "pop", type = "pop")}
 #'
 #' @export
 calc_ne <- function(x, facets = NULL, chr = NULL,
