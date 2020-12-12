@@ -36,7 +36,7 @@ calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 Uses a chi-squared test. } See details}
 
-\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use.}
+\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.}
 
 \item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}}
 }

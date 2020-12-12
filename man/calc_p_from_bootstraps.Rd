@@ -9,7 +9,9 @@ calc_p_from_bootstraps(
   facets = "all",
   statistics = "all",
   alt = "two-sided",
-  par = FALSE
+  par = FALSE,
+  fwe_method = "BY",
+  fwe_case = c("by_facet", "overall")
 )
 }
 \arguments{
@@ -26,6 +28,10 @@ extreme than observed. }}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.}
+
+\item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}}
 }
 \value{
 snpRdata object, with p-values merged into the stats or pairwise.stats
@@ -53,9 +59,11 @@ for which a bootstrap null distribution has been generated will be run.
 }
 \examples{
 # add statistics and generate bootstraps
-dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
-dat <- do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
-calc_p_from_bootstraps(dat)
+x <- calc_basic_snp_stats(stickSNPs, c("group.pop"), sigma = 200, step = 150)
+x <- do_bootstraps(x, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+x <- calc_p_from_bootstraps(x)
+get.snpR.stats(x, "group.pop", "single.window") # pi, ho, etc
+get.snpR.stats(x, "group.pop", "pairwise.window") # fst
 
 
 }

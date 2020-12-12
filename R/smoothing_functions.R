@@ -78,13 +78,20 @@ gaussian_weight <- function(p, c, s) {
 #'
 #'@examples
 #'# add a few statistics
-#'dat <- calc_pi(stickSNPs, "group.pop")
-#'dat <- calc_ho(dat, "group.pop")
-#'dat <- calc_pairwise_fst(dat, "group.pop")
+#'x <- calc_pi(stickSNPs, "group.pop")
+#'x <- calc_ho(x, "group.pop")
+#'x <- calc_pairwise_fst(x, "group.pop")
 #'# smooth with a fixed slide between window centers.
-#'dat <- calc_smoothed_averages(dat, "group.pop", sigma = 200, step = 50)
+#'x <- calc_smoothed_averages(x, "group.pop", sigma = 200, step = 50)
+#'get.snpR.stats(x, "group.pop", "single.window") # pi, ho
+#'get.snpR.stats(x, "group.pop", "pairwise.window") # fst
 #'
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 

@@ -596,6 +596,9 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'  extreme than observed. }
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
+#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.
+#'@param fwe_case character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}
+#'
 #'
 #'@return snpRdata object, with p-values merged into the stats or pairwise.stats
 #'  sockets.
@@ -607,12 +610,16 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'
 #' @examples
 #' # add statistics and generate bootstraps
-#' dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
-#' dat <- do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
-#' calc_p_from_bootstraps(dat)
+#' x <- calc_basic_snp_stats(stickSNPs, c("group.pop"), sigma = 200, step = 150)
+#' x <- do_bootstraps(x, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+#' x <- calc_p_from_bootstraps(x)
+#' get.snpR.stats(x, "group.pop", "single.window") # pi, ho, etc
+#' get.snpR.stats(x, "group.pop", "pairwise.window") # fst
 #'
 #'
-calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE){
+calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE,
+                                   fwe_method = "BY", 
+                                   fwe_case = c("by_facet", "overall")){
   #==========sanity checks==========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -785,12 +792,25 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   if(any(out$stat == "fst")){
     cout <- data.table::dcast(out[which(out$stat == "fst"),], facet + subfacet + snp.facet + snp.subfacet + position + sigma + n_snps + step + nk.status ~ stat, value.var = "p")
     colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)] <- paste0("p_", colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)])
+    
+    # do fwe
+    cout <- fwe_correction(cout, levs = c("facet", "subfacet"), pcol = "p_fst", methods = fwe_method, case = fwe_case)
     x <- merge.snpR.stats(x, cout, type = "pairwise.window.stats")
   }
   if(any(out$stat != "fst")){
+
     s.stats <- which(out$stat != "fst")
     cout <- data.table::dcast(out[s.stats,], facet + subfacet + snp.facet + snp.subfacet + position + sigma + n_snps + step + nk.status ~ stat, value.var = "p")
     colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)] <- paste0("p_", colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)])
+    
+    # do fwe
+    p_cols <- colnames(cout)[grep("p_", colnames(cout))]
+    cout_comb <- vector("list", length(p_cols))
+    for(i in 1:length(p_cols)){
+      cout_comb[[i]] <- fwe_correction(cout, levs = c("facet", "subfacet"), pcol = p_cols[i], methods = fwe_method, case = fwe_case)
+    }
+    invisible(suppressMessages(cout <- purrr::reduce(cout_comb, dplyr::left_join)))
+    
     x <- merge.snpR.stats(x, cout, type = "window.stats")
   }
 
