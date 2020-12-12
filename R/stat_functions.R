@@ -63,12 +63,15 @@
 #' @examples
 #' # base facet
 #' x <- calc_pi(stickSNPs)
+#' get.snpR.stats(x)
 #'
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 #'
-#' # HWE
-#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+#' # HWE with family-wise error correction
+#' x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 NULL
 
 
@@ -114,12 +117,12 @@ NULL
 #' @examples
 #' # base facet
 #' x <- calc_pi(stickSNPs)
+#' get.snpR.stats(x)
 #'
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 #'
-#' # HWE
-#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
 NULL
 
 #'@export
@@ -136,6 +139,10 @@ calc_pi <- function(x, facets = NULL){
     #print(n2)
     p <- 1 - (binom_n1 + binom_n2)/binom_nt
   }
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
 
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
@@ -222,6 +229,10 @@ calc_maf <- function(x, facets = NULL){
     
     # return
     return(data.table(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
+  }
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
   }
   
   # add any missing facets
@@ -379,6 +390,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F)
     return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   # add any missing facets
   add.facets <- check.snpR.facet.request(x, facets)
@@ -770,9 +784,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 #'@export
 #'@describeIn calc_single_stats observed heterozygosity
 calc_ho <- function(x, facets = NULL){
-  if(!is.snpRdata(x)){
-    stop("x is not a snpRdata object.\n")
-  }
   func <- function(gs){
     #identify heterozygote rows in genotype matrix
     genos <- colnames(gs$gs)
@@ -791,6 +802,10 @@ calc_ho <- function(x, facets = NULL){
     else{
       ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
     }
+  }
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
   }
 
   # add any missing facets
@@ -860,6 +875,9 @@ calc_private <- function(x, facets = NULL){
     return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
@@ -2439,9 +2457,6 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 calc_hwe <- function(x, facets = NULL, method = "exact", 
                      fwe_method = "BY", 
                      fwe_case = c("by_facet", "overall")){
-  if(!is.snpRdata(x)){
-    stop("x is not a snpRdata object.\n")
-  }
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
@@ -2558,6 +2573,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
 
   # add any missing facets
