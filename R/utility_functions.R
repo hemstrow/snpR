@@ -12,6 +12,16 @@
 #'from most snpR functions. Genotypes are stored in the "character" format, as
 #'output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
+#'@section Conversions from other S4 objects:
+#'  
+#'  Supports automatic conversions from some other popular S4 object types. Options:
+#'  
+#'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
+#'  import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
+#'  Sample and snpIDs as well as, when possible, pop IDs will be taken from the genind object. This
+#'  data will be added too but will not replace data provided to the snp or sample.meta arguments. Note that only \emph{SNP}
+#'  data is currently allowed, data with more than two alleles for loci will return an error.}
+#'
 #'@section Slots:
 #'
 #'  Genotypes, metadata, and results are stored in slots and directly accessable
@@ -53,13 +63,13 @@
 #'  function. See documentaion.
 #'
 #'
-#'@param genotypes data.frame. Raw genotypes in a two-character format ("GG",
+#'@param genotypes data.frame or unique S4 from other packages. If a data.frame, raw genotypes in a two-character format ("GG",
 #'  "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
-#'  columns.
-#'@param snp.meta data.frame. Metadata for each SNP, must have a number of rows
-#'  equal to the number of SNPs in the dataset.
-#'@param sample.meta data.frame. Metadata for each individual sample, must have
-#'  a number of rows equal to the number of samples in the dataset.
+#'  columns. Otherwise, see documentation for allowed S4 objects.
+#'@param snp.meta data.frame, default NULL. Metadata for each SNP, must have a number of rows
+#'  equal to the number of SNPs in the dataset. If NULL, a single "snpID" column will be added.
+#'@param sample.meta data.frame, default NULL. Metadata for each individual sample, must have
+#'  a number of rows equal to the number of samples in the dataset. If NULL, a single "sampID" column will be added.
 #'@param mDat character, default "NN", matching the encoding of missing
 #'  \emph{genotypes} in the data provided to the genotypes argument.
 #'
@@ -71,9 +81,26 @@
 #' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
 #' import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
 #'
+#' # from an adegenet genind object
+#' ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
+#' import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
+#'
 #'@export
 #'@author William Hemstrom
-import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
+import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
+  #======special cases========
+  if("genind" %in% class(genotypes)){
+    return(genind.to.snpRdata(genotypes, snp.meta, sample.meta))
+  }
+  
+  #============sanity checks and prep========
+  if(is.null(snp.meta)){
+    snp.meta <- data.frame(snpID = paste0("snp", 1:nrow(genotypes)))
+  }
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = paste0("samp", 1:ncol(genotypes)))
+  }
+  
   # prepare things for addition to data
   if(any(is.na(genotypes))){
     stop("NA found in input genotypes. Often, this is in the last row or column.\n")
@@ -118,6 +145,7 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   }
 
 
+  #===========format and calculate some basics=========
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
@@ -161,7 +189,99 @@ import.snpR.data <- function(genotypes, snp.meta, sample.meta, mDat = "NN"){
   invisible(capture.output(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")]))
 
 
+  #========return=========
   return(x)
+}
+
+#' Convert genind object to snpRdata.
+#' 
+#' Convert genind object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genind object.
+#' 
+#' @param genind genind object.
+#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.
+#' @param sample.meta data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.
+#' 
+#' @author William Hemstrom
+genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
+  #========sanity checks=============
+  msg <- character(0)
+  
+  nal <- lapply(adegenet::alleles(genind), length) > 2
+  if(any(nal)){
+    msg <- c(msg, paste0("Some non-SNP alleles (>2 loci) detected in genind object: ",
+                         paste0(adegenet::locNames(genind)[which(nal)], collapse = ", "),
+                         "\nsnpR is designed to only work with SNP data.\n")
+    )
+  }
+  
+  if(!is.null(snp.meta)){
+    
+    if(nrow(snp.meta) != adegenet::nLoc(genind)){
+      snp.meta <- NULL
+      warning("Provided SNP metadata does not have the same number of rows as the number of loci in provided genind object, will be discarded.\n")
+    }
+  }
+  
+  if(!is.null(sample.meta)){
+    if(nrow(sample.meta) != adegenet::nInd(genind)){
+      sample.meta <- NULL
+      warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
+    }
+  }
+  
+  
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #==========pull out stuff for snpR=====
+  # genotypes
+  ## approach: figure out where we have homozygotes and fill new genotype calls with correct identity, then do hets and missing.
+  genotypes <- adegenet::tab(genind)
+  alleles <- adegenet::alleles(genind)
+  allele1ident <- rep(unlist(purrr::map(alleles, 1)), each = nrow(genotypes))
+  allele2ident <- rep(unlist(purrr::map(alleles, 2)), each = nrow(genotypes))
+  a1c <- genotypes[,seq(1, ncol(genotypes), by = 2)]
+  a2c <- genotypes[,seq(2, ncol(genotypes), by = 2)]
+  new.genotypes <- character(length(a1c))
+  
+  ## where we have a homozygote allele 1, fill
+  a1homs <- which(a1c == 2)
+  a2homs <- which(a2c == 2)
+  nas <- which(is.na(a1c))
+  not_hets <- union(union(a1homs, a2homs), nas)
+  new.genotypes[a1homs] <- paste0(allele1ident[a1homs], allele1ident[a1homs])
+  new.genotypes[a2homs] <- paste0(allele2ident[a2homs], allele2ident[a2homs])
+  new.genotypes[nas] <- "NN"
+  new.genotypes[-not_hets] <- paste0(allele1ident[-not_hets], allele2ident[-not_hets])
+  genotypes <- as.data.frame(t(matrix(new.genotypes, nrow(genotypes), ncol(genotypes)/2)), stringsAsFactors = F)
+  
+  
+  # snp metadata, needs to be provided, albeit we can add on snp names
+  if(is.null(snp.meta)){
+    snp.meta <- data.frame(snpID = adegenet::locNames(genind))
+  }
+  else if(!"snpID" %in% colnames(snp.meta)){
+    snp.meta$ID <- adegenet::locNames(genind)
+  }
+  
+  # sample metadata
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = adegenet::indNames(genind))
+    sample.meta$pop <- adegenet::pop(genind)
+  }
+  else{
+    if(!"sampID" %in% colnames(sample.meta)){
+      sample.meta$sampID <- adegenet::indNames(genind)
+    }
+    if(!"pop" %in% colnames(sample.meta)){
+      sample.meta$pop <- adegenet::pop(genind)
+    }
+  }
+  
+  #=======format and return=========
+  return(import.snpR.data(genotypes, snp.meta, sample.meta))
 }
 
 

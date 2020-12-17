@@ -4,18 +4,18 @@
 \alias{import.snpR.data}
 \title{Import genotype and metadata into a snpRdata object.}
 \usage{
-import.snpR.data(genotypes, snp.meta, sample.meta, mDat = "NN")
+import.snpR.data(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN")
 }
 \arguments{
-\item{genotypes}{data.frame. Raw genotypes in a two-character format ("GG",
+\item{genotypes}{data.frame or unique S4 from other packages. If a data.frame, raw genotypes in a two-character format ("GG",
 "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
-columns.}
+columns. Otherwise, see documentation for allowed S4 objects.}
 
-\item{snp.meta}{data.frame. Metadata for each SNP, must have a number of rows
-equal to the number of SNPs in the dataset.}
+\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, must have a number of rows
+equal to the number of SNPs in the dataset. If NULL, a single "snpID" column will be added.}
 
-\item{sample.meta}{data.frame. Metadata for each individual sample, must have
-a number of rows equal to the number of samples in the dataset.}
+\item{sample.meta}{data.frame, default NULL. Metadata for each individual sample, must have
+a number of rows equal to the number of samples in the dataset. If NULL, a single "sampID" column will be added.}
 
 \item{mDat}{character, default "NN", matching the encoding of missing
 \emph{genotypes} in the data provided to the genotypes argument.}
@@ -34,6 +34,18 @@ sample and locus specific metadata, genomic summary information, and results
 from most snpR functions. Genotypes are stored in the "character" format, as
 output by \code{\link{format_snps}}. Missing data is noted with "NN".
 }
+\section{Conversions from other S4 objects}{
+
+ 
+ Supports automatic conversions from some other popular S4 object types. Options:
+ 
+ \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
+ import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
+ Sample and snpIDs as well as, when possible, pop IDs will be taken from the genind object. This
+ data will be added too but will not replace data provided to the snp or sample.meta arguments. Note that only \emph{SNP}
+ data is currently allowed, data with more than two alleles for loci will return an error.}
+}
+
 \section{Slots}{
 
 
@@ -83,6 +95,10 @@ genos <- stickRAW[,-c(1:3)]
 snp_meta <- stickRAW[,1:3]
 sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
 import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+
+# from an adegenet genind object
+ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
+import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
 
 }
 \author{
