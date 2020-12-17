@@ -18,9 +18,12 @@
 #'  
 #'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
 #'  import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
-#'  Sample and snpIDs as well as, when possible, pop IDs will be taken from the genind object. This
-#'  data will be added too but will not replace data provided to the snp or sample.meta arguments. Note that only \emph{SNP}
-#'  data is currently allowed, data with more than two alleles for loci will return an error.}
+#'  Sample and SNP IDs as well as, when possible, pop IDs will be taken from the genind object. This
+#'  data will be added too but will not replace data provided to the SNP or sample.meta arguments. Note that only \emph{SNP}
+#'  data is currently allowed, data with more than two alleles for loci will return an error.
+#'  \item{genlight: } \code{\link[adegenet]{genlight}} objects from adegenet.
+#'  Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight object if possible.
+#'  This data will be added too but will not replace data provided to the SNP or sample.meta arguments.}
 #'
 #'@section Slots:
 #'
@@ -85,12 +88,33 @@
 #' ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
 #' import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
 #'
+#' # from an adegenet genlight object
+#' ## create a dummy dataset, add some metadata
+#' dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, prob=c(.25, .49, .25, .01), replace=TRUE))
+#' names(dat) <- paste("indiv", 1:length(dat))
+#' print(object.size(dat), unit="aut") # size of the original data
+#' genlight <- new("genlight", dat) # conversion
+#' newalleles <- character(adegenet::nLoc(genlight))
+#' for(i in 1:length(newalleles)){
+#'   newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+#' }
+#' adegenet::alleles(genlight) <- newalleles
+#' adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
+#' adegenet::position(genlight) <- sample(100000, 1000, F)
+#' adegenet::chr(genlight) <- sample(10, 1000, T)
+#' 
+#' ## run the conversion
+#' dat <- import.snpR.data(genlight)
+#'
 #'@export
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
   #======special cases========
   if("genind" %in% class(genotypes)){
     return(genind.to.snpRdata(genotypes, snp.meta, sample.meta))
+  }
+  if("genlight" %in% class(genotypes)){
+    return(genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
   }
   
   #============sanity checks and prep========
@@ -234,6 +258,9 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
     }
   }
   
+  if(adegenet::plody(genind) != 2){
+    msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
+  }
   
   
   if(length(msg) > 0){
@@ -289,6 +316,105 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(genotypes, snp.meta, sample.meta))
 }
 
+#' Convert genlight object to snpRdata.
+#' 
+#' Convert genlight object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genlight object.
+#' 
+#' @param genind genlight object.
+#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.
+#' @param sample.meta data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.
+#' 
+#' @author William Hemstrom
+genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
+  #========sanity checks=============
+  msg <- character(0)
+  
+  unique.alleles <- unique(adegenet::alleles(genlight))
+  unique.alleles <- unique(unlist(strsplit(unique.alleles, "/")))
+  unique.alleles <- toupper(unique.alleles)
+  if(any(!unique.alleles %in% c("A", "T", "C", "G"))){
+    msg <- c(msg, "Some invalid allele names in the provided genind object. For now, alleles must be named A, C, G, or T.\n Names can be updated with adegenet::alleles(genotypes) <- .\n")
+  }
+  
+  if(!is.null(snp.meta)){
+    if(nrow(snp.meta) != adegenet::nLoc(genlight)){
+      snp.meta <- NULL
+      warning("Provided SNP metadata does not have the same number of rows as the number of loci in provided genind object, will be discarded.\n")
+    }
+  }
+  
+  if(!is.null(sample.meta)){
+    if(nrow(sample.meta) != adegenet::nInd(genlight)){
+      sample.meta <- NULL
+      warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
+    }
+  }
+  
+  if(any(adegenet::ploidy(genlight) != 2)){
+    msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
+  }
+  
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #=========pull out parts for snpRdata========
+  # genotypes
+  ## get alleles at each locus
+  genotypes <- adegenet::tab(genlight, NA.method = "asis")
+  als <- adegenet::alleles(genlight)
+  a1s <- gsub("/.", "", als)
+  a1s <- rep(a1s, each = nrow(genotypes))
+  a2s <- gsub("./", "", als)
+  a2s <- rep(a2s, each = nrow(genotypes))
+  
+  ## fill in homs and hets with correct alleles.
+  hom_a1s <- which(genotypes == 0)
+  hets <- which(genotypes == 1)
+  hom_a2s <- which(genotypes == 2)
+  new_genos <- character(length(genotypes))
+  new_genos[hom_a1s] <- paste0(a1s[hom_a1s], a1s[hom_a1s])
+  new_genos[hets] <- paste0(a1s[hets], a2s[hets])
+  new_genos[hom_a2s] <- paste0(a2s[hom_a2s], a2s[hom_a2s])
+  new_genos[which(is.na(genotypes))] <- "NN"
+  new_genos <- toupper(new_genos)
+  genotypes <- data.frame(t(matrix(new_genos, nrow(genotypes), ncol(genotypes))), stringsAsFactors = F)
+  
+  
+  # snp metadata, whatever possible
+  if(is.null(snp.meta)){
+    snp.meta <- data.frame(snpID = adegenet::locNames(genlight))
+  }
+  have.meta.cols <- colnames(snp.meta)
+  
+  if(!"snpID" %in% have.meta.cols){
+    snp.meta$snpID <- adegenet::locNames(genlight)
+  }
+  
+  if(!"chr" %in% have.meta.cols){
+    snp.meta$chr <- adegenet::chr(genlight)
+  }
+  if(!"position" %in% have.meta.cols){
+    snp.meta$position <- adegenet::position(genlight)
+  }
+  
+  # sample metadata, whatever possible
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = adegenet::indNames(genlight))
+  }
+  have.meta.cols <- colnames(sample.meta)
+  
+  if(!"sampID" %in% have.meta.cols){
+    sample.meta$sampID <- adegenet::indNames(genlight)
+  }
+  if(!"pop" %in% have.meta.cols){
+    sample.meta$pop <- adegenet::pop(genlight)
+  }
+  
+  #=========format and return===========
+  return(import.snpR.data(genotypes, snp.meta, sample.meta, mDat = "NN"))
+}
 
 #'Subset snpRdata objects
 #'

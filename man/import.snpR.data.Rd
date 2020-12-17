@@ -41,9 +41,12 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  
  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
  import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
- Sample and snpIDs as well as, when possible, pop IDs will be taken from the genind object. This
- data will be added too but will not replace data provided to the snp or sample.meta arguments. Note that only \emph{SNP}
- data is currently allowed, data with more than two alleles for loci will return an error.}
+ Sample and SNP IDs as well as, when possible, pop IDs will be taken from the genind object. This
+ data will be added too but will not replace data provided to the SNP or sample.meta arguments. Note that only \emph{SNP}
+ data is currently allowed, data with more than two alleles for loci will return an error.
+ \item{genlight: } \code{\link[adegenet]{genlight}} objects from adegenet.
+ Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight object if possible.
+ This data will be added too but will not replace data provided to the SNP or sample.meta arguments.}
 }
 
 \section{Slots}{
@@ -99,6 +102,24 @@ import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "
 # from an adegenet genind object
 ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
 import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
+
+# from an adegenet genlight object
+## create a dummy dataset, add some metadata
+dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, prob=c(.25, .49, .25, .01), replace=TRUE))
+names(dat) <- paste("indiv", 1:length(dat))
+print(object.size(dat), unit="aut") # size of the original data
+genlight <- new("genlight", dat) # conversion
+newalleles <- character(adegenet::nLoc(genlight))
+for(i in 1:length(newalleles)){
+  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+}
+adegenet::alleles(genlight) <- newalleles
+adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
+adegenet::position(genlight) <- sample(100000, 1000, F)
+adegenet::chr(genlight) <- sample(10, 1000, T)
+
+## run the conversion
+dat <- import.snpR.data(genlight)
 
 }
 \author{
