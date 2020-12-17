@@ -205,13 +205,18 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks=============
   msg <- character(0)
-  
+
   nal <- lapply(adegenet::alleles(genind), length) > 2
   if(any(nal)){
     msg <- c(msg, paste0("Some non-SNP alleles (>2 loci) detected in genind object: ",
                          paste0(adegenet::locNames(genind)[which(nal)], collapse = ", "),
                          "\nsnpR is designed to only work with SNP data.\n")
     )
+  }
+  
+  unique.alleles <- unique(unlist(adegenet::alleles(genind)))
+  if(any(!unique.alleles %in% c("A", "T", "C", "G"))){
+    msg <- c(msg, "Some invalid allele names in the provided genind object. For now, alleles must be named A, C, G, or T.\n Names can be updated with adegenet::alleles(genotypes) <- .\n")
   }
   
   if(!is.null(snp.meta)){
