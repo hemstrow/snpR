@@ -422,17 +422,18 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
   if(!is.null(x)){
     if(!is.null(sfs)){
       x <- NULL
-      break
     }
-    if(!is.snpRdata(x)){
-      msg <- c(msg, "x is not a snpRdata object.\n")
-    }
-    if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
-      msg <- c(msg, "facet, pops, and projection arguments must all be provided if an sfs is not.")
-    }
-    if(!is.null(pops)){
-      if(length(pops) != 2){
-        msg <- c(msg, "Exactly two pops must be listed.\n")
+    else{
+      if(!is.snpRdata(x)){
+        msg <- c(msg, "x is not a snpRdata object.\n")
+      }
+      if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
+        msg <- c(msg, "facet, pops, and projection arguments must all be provided if an sfs is not.")
+      }
+      if(!is.null(pops)){
+        if(length(pops) != 2){
+          msg <- c(msg, "Exactly two pops must be listed.\n")
+        }
       }
     }
   }
