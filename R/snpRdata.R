@@ -6,14 +6,14 @@ check.snpRdata <- function(object){
   errors <- character()
 
   # check that there are the correct number of snp and sample metadata rows
-  if(nrow(object@snp.meta) != nrow(object)){
+  if(nrow(object@snp.meta) != nrow(genotypes(object))){
     msg <- paste0("Number of snps in metadata (", nrow(object@snp.meta),
-                  ") is not equal to the number of snps in data (", nrow(object), ").")
+                  ") is not equal to the number of snps in data (", nrow(genotypes(object)), ").")
     errors <- c(errors, msg)
   }
-  if(nrow(object@sample.meta) != ncol(object)){
+  if(nrow(object@sample.meta) != ncol(genotypes(object))){
     msg <- paste0("Number of samples in metadata (", nrow(object@sample.meta),
-                  ") is not equal to the number of samples in data (", ncol(object), ").")
+                  ") is not equal to the number of samples in data (",  ncol(genotypes(object)), ").")
     errors <- c(errors, msg)
   }
 
@@ -276,6 +276,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   # fix factors
   sample.meta <- dplyr::mutate_if(.tbl = sample.meta, is.factor, as.character)
   snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
+  genotypes <- dplyr::mutate_if(.tbl = genotypes, is.factor, as.character)
+  
   
   # warn if anything repeated across sample level factors
   uniques <- lapply(sample.meta, unique)
@@ -551,35 +553,42 @@ setMethod("show", "snpRdata", function(object) {
 # define nrow for snpRdata
 #' @export
 setMethod("nrow", "snpRdata", function(x) {
-  nrow(x@snp.meta)
+  nrow(snp.meta(x))
 })
 
 # define ncol  for snpRdata
 #' @export
 setMethod("ncol", "snpRdata", function(x) {
-  nrow(x@sample.meta)
+  nrow(sample.meta(x))
 })
 
 # define dim  for snpRdata
 #' @export
 setMethod("dim", "snpRdata", function(x) {
-  c(nrow(x@snp.meta), nrow(x@sample.meta))
+  c(nrow(x), ncol(x))
 })
 
-#' Get from or overwrite genotypes to a snpRdata object.
+#' Get from or overwrite components of a snpRdata object
 #' 
-#' Genotypes will be formatted with SNPs in rows and individuals in columns.
+#' Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta, or sample meta).
+#' If overwritten, any calculated stats will be removed, since their values may be dependant upon
+#' changes in metadata.
 #' 
 #' @param x snpRdata object to get genotype data from.
+#' @param value Genotypes, snp metadata, or sample metadata
 #' 
 #' @export
-#' @name genotypes
+#' @name extract_snpRdata
 #' 
 #' @example
 #' genotypes(stickSNPs)
+#' 
+#' snp.meta(stickSNPs)
+#' 
+#' sample.meta(stickSNPs)
 setGeneric("genotypes", function(x) standardGeneric("genotypes"))
 setMethod("genotypes", "snpRdata", function(x){
-  genos <- as.data.frame(x@.Data)
+  genos <- as.data.frame(x@.Data, stringsAsFactors = F)
   colnames(genos) <- x@names
   rownames(genos) <- x@row.names
   return(genos)
@@ -587,6 +596,27 @@ setMethod("genotypes", "snpRdata", function(x){
 
 
 #' @export
-#' @describeIn genotypes
+#' @describeIn extract_snpRdata
 setGeneric("genotypes<-", function(x, value) standardGeneric("genotypes<-"))
-setMethod("genotypes<-", "snpRdata", function(x, value) import.snpR.data(value, x@snp.meta, x@sample.meta))
+setMethod("genotypes<-", "snpRdata", function(x, value) import.snpR.data(value, snp.meta(x), sample.meta(x), mDat = x@mDat))
+
+#' @export
+#' @describeIn extract_snpRdata
+setGeneric("snp.meta", function(x, value) standardGeneric("snp.meta"))
+setMethod("snp.meta", "snpRdata", function(x, value) x@snp.meta)
+
+#' @export
+#' @describeIn extract_snpRdata
+setGeneric("snp.meta<-", function(x, value) standardGeneric("snp.meta<-"))
+setMethod("snp.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat))
+
+#' @export
+#' @describeIn extract_snpRdata
+setGeneric("sample.meta", function(x, value) standardGeneric("sample.meta"))
+setMethod("sample.meta", "snpRdata", function(x, value) x@sample.meta)
+
+#' @export
+#' @describeIn extract_snpRdata
+setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
+setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
+

@@ -318,11 +318,11 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 
   # subset
   if(!identical(samps, 1:ncol(x))){
-    dat <- x[snps, samps]
+    dat <- genotypes(x)[snps, samps]
     if(length(samps) == 1){
       dat <- as.data.frame(dat, stringsAsFactors = F)
     }
-    dat <- import.snpR.data(dat, snp.meta = x@snp.meta[snps,], sample.meta = x@sample.meta[samps,], mDat = x@mDat)
+    dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,], sample.meta = sample.meta(x)[samps,], mDat = x@mDat)
     if(any(x@facets != ".base")){
       dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
@@ -341,7 +341,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     if(length(x@sn) != 0){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps,]
-      sn <- cbind(x@snp.meta[snps,-ncol(x@snp.meta)], sn)
+      sn <- cbind(snp.meta(x)[snps,-ncol(x@snp.meta)], sn)
       sn <- list(type = x@sn$type, sn = sn)
     }
     else{
@@ -349,11 +349,11 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     }
 
     # change snps and samps to snp and sample IDs
-    snps <- x@snp.meta$.snp.id[snps]
+    snps <- snp.meta(x)$.snp.id[snps]
 
-    x <- snpRdata(.Data = x[which(x@snp.meta$.snp.id %in% snps),],
-                  sample.meta = x@sample.meta,
-                  snp.meta = x@snp.meta[which(x@snp.meta$.snp.id %in% snps),],
+    x <- snpRdata(.Data = genotypes(x)[which(snp.meta(x)$.snp.id %in% snps),],
+                  sample.meta = sample.meta(x),
+                  snp.meta = snp.meta(x)[which(snp.meta(x)$.snp.id %in% snps),],
                   facet.meta = x@facet.meta[x@facet.meta$.snp.id %in% snps,],
                   mDat = x@mDat,
                   snp.form = x@snp.form,
