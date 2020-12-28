@@ -527,13 +527,16 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 setMethod("show", "snpRdata", function(object) {
 
   calced_stats_print <- character(0)
-  for(i in 1:length(object@calced_stats)){
-    calced_stats_print <- c(calced_stats_print, "Facet: ", names(object@calced_stats)[i], "\n", paste0(object@calced_stats[[i]], collapse = ", "), "\n\n")
+  if(length(object@calced_stats) > 0){
+    for(i in 1:length(object@calced_stats)){
+      calced_stats_print <- c(calced_stats_print, "Facet: ", names(object@calced_stats)[i], "\n", paste0(object@calced_stats[[i]], collapse = ", "), "\n\n")
+    }
   }
+  
   
   mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
   
-  cat(is(object)[1], "with", nrow(object@snp.meta), "SNPs and", nrow(object@sample.meta), "samples.\n",
+  cat(is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
       "==============================================\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
@@ -551,22 +554,56 @@ setMethod("show", "snpRdata", function(object) {
 })
 
 # define nrow for snpRdata
+
+
+#' Get the number of snps in a snpRdata object.
+#' 
+#' @param x snpRdata object
+#' 
 #' @export
+setGeneric("nsnps", function(x, value) standardGeneric("nsnps"))
+setMethod("nsnps", "snpRdata", function(x) nrow(x))
+
+
+#' @export
+#' @describeIn nsnps identical to nrow
 setMethod("nrow", "snpRdata", function(x) {
   nrow(snp.meta(x))
 })
 
+
+
 # define ncol  for snpRdata
+
+#' Get the number of samples in a snpRdata object.
+#' 
+#' @param x snpRdata object
+#' 
 #' @export
+setGeneric("nsamps", function(x, value) standardGeneric("nsamps"))
+setMethod("nsamps", "snpRdata", function(x) ncol(x))
+
+
+
+#' @export
+#' @describeIn nsamps identical to ncol
 setMethod("ncol", "snpRdata", function(x) {
   nrow(sample.meta(x))
 })
+
+
+
+
 
 # define dim  for snpRdata
 #' @export
 setMethod("dim", "snpRdata", function(x) {
   c(nrow(x), ncol(x))
 })
+
+
+
+
 
 #' Get from or overwrite components of a snpRdata object
 #' 
@@ -580,12 +617,22 @@ setMethod("dim", "snpRdata", function(x) {
 #' @export
 #' @name extract_snpRdata
 #' 
-#' @example
-#' genotypes(stickSNPs)
+#' @examples
+#' # copy test data
+#' test <- stickSNPs
 #' 
-#' snp.meta(stickSNPs)
+#' # show genotypes
+#' genotypes(test)
 #' 
-#' sample.meta(stickSNPs)
+#' # show or overwrite snp meta
+#' snp.meta(test)
+#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), T), chr = sample(LETTERS[1:4], nrow(test), T))
+#' 
+#' #show or overwrite sample meta
+#' sample.meta(test)
+#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), T), pop = sample(LETTERS[5:8], ncol(test), T))
+#' 
+#'  @description view genotypes
 setGeneric("genotypes", function(x) standardGeneric("genotypes"))
 setMethod("genotypes", "snpRdata", function(x){
   genos <- as.data.frame(x@.Data, stringsAsFactors = F)
@@ -596,27 +643,27 @@ setMethod("genotypes", "snpRdata", function(x){
 
 
 #' @export
-#' @describeIn extract_snpRdata
+#' @describeIn extract_snpRdata set genotypes
 setGeneric("genotypes<-", function(x, value) standardGeneric("genotypes<-"))
 setMethod("genotypes<-", "snpRdata", function(x, value) import.snpR.data(value, snp.meta(x), sample.meta(x), mDat = x@mDat))
 
 #' @export
-#' @describeIn extract_snpRdata
+#' @describeIn extract_snpRdata view snp meta
 setGeneric("snp.meta", function(x, value) standardGeneric("snp.meta"))
 setMethod("snp.meta", "snpRdata", function(x, value) x@snp.meta)
 
 #' @export
-#' @describeIn extract_snpRdata
+#' @describeIn extract_snpRdata set snp meta
 setGeneric("snp.meta<-", function(x, value) standardGeneric("snp.meta<-"))
 setMethod("snp.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat))
 
 #' @export
-#' @describeIn extract_snpRdata
+#' @describeIn extract_snpRdata view sample meta
 setGeneric("sample.meta", function(x, value) standardGeneric("sample.meta"))
 setMethod("sample.meta", "snpRdata", function(x, value) x@sample.meta)
 
 #' @export
-#' @describeIn extract_snpRdata
+#' @describeIn extract_snpRdata set sample meta
 setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
 
