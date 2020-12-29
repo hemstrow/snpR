@@ -452,6 +452,9 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @examples
 #' # plot colored by population
 #' plot_clusters(stickSNPs, "pop")
+#' 
+#' # plot colored by population and family
+#' plot_clusters(stickSNPs, "pop", "umap")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
@@ -1935,7 +1938,33 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   return(p)
 }
 
+#' Plot STRUCTURE like results on a map.
+#' 
+#' Plots the mean cluster assignment for each population on a map using the scatterpie package.
+#' 
+#' @param assignments Structure like results, parsed in or generated via /code{link{plot_structure}}, which generates the needed plot data.
+#' @param K numeric. Value of K (number of clusters) to plot.
+#' @param facet character. The facet by which data is broken down in the passed assignments.
+#' @param pop_coordinates data.frame containing coordinates for each facet level. Column names are the facet levels, the first row is the latitude, the second is the longitude.
+#' @param map data.frame, default ggplot2::map_data("world2"). Map data, in a format like that produced by \code{\link[ggplot2]{map_data}} and thus interpretable by \code{\link[ggplot2]{geom_map}}.
+#' @param pop_names logical, default T. If true, facet level names will be displayed on the map.
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
+#' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.
+#' @param label_scale numeric, default 0.075 Factor by which to scale facet level names if plotted.
+#' @param point_padding_scale numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.
+#' 
 #' @export
+#' 
+#' @examples
+#' # plot clusters on map for the example data
+#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+#' lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+#' plot_structure_map(assignments, 2, "pop", lat_long, ggplot2::map_data("state", "oregon"), label_scale = 200) # plot
+#' 
+#' 
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
                                 pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
   #===================sanity checks=================

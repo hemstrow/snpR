@@ -122,6 +122,9 @@ automatically plotted simultaniously.
 \examples{
 # plot colored by population
 plot_clusters(stickSNPs, "pop")
+
+# plot colored by population and family
+plot_clusters(stickSNPs, "pop", "umap")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
