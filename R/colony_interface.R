@@ -401,7 +401,7 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
 #' will be stored in a colony folder created in the current working directory.
 #'
 #' @export
-run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
+run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                        sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                        nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
                        maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,

@@ -67,12 +67,12 @@ full list of references.
 \examples{
 # run and plot a basic prediction
 ## add some dummy phenotypic data.
-sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
-dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+dat <- stickSNPs
+sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 ## run prediction
 gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
-with(gp$predictions, plot(phenotype, predicted_BV))
+with(gp$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
 
 }
 \references{

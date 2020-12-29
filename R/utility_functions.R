@@ -1246,13 +1246,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("File provided to 'x' not found.\n")
       }
 
-      convert_2_to_1_column <- function(x){
-        if(!is.matrix(x)){x <- as.matrix(x)}
-        ind.genos <- x[,seq(1,ncol(x), by = 2)] + x[,seq(2,ncol(x), by = 2)]
-        ind.genos <- matrix(ind.genos, ncol = ncol(x)/2) # rematrix and transpose!
-        return(ind.genos)
-      }
-
       cat("Parsing ms file...")
       x <- process_ms(x, chr.length)
       snp.meta <- x$meta

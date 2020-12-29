@@ -48,18 +48,22 @@
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
-#' sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
-#' dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run prediction
 #' gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #' ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
-#' with(gp$predictions, plot(phenotype, predicted_BV))
+#' with(gp$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
 #'
 run_genomic_prediction <- function(x, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB"){
-
-  # get a properly formatted input file
+  #===============sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  #===============apply====================
   if(length(x@sn) != 0){
     if(x@sn$type != "bernoulli"){
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
@@ -70,10 +74,10 @@ run_genomic_prediction <- function(x, response, iterations,
     suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
     x@sn$type <- "bernoulli"
   }
-
+  
   sn <- x@sn$sn
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
-
+  
   # prepare the BGLR input
   sn <- t(sn)
   phenotypes <- x@sample.meta[,response]
@@ -86,9 +90,9 @@ run_genomic_prediction <- function(x, response, iterations,
   colnames(sn) <- paste0("m", 1:ncol(sn)) # marker names
   rownames(sn) <- paste0("s", 1:nrow(sn)) # ind IDS
   ETA <- list(list(X = sn, model = "BayesB", saveEffects = T)) # need to adjust this when I get around to allowing for more complicated models
-
+  
   BGLR_mod <- BGLR::BGLR(y = phenotypes, ETA = ETA, nIter = iterations + burn_in, burnIn = burn_in, thin = thin)
-
+  
   # grab h2 estimate
   B <- BGLR::readBinMat('ETA_1_b.bin')
   h2 <- rep(NA,nrow(B))
@@ -101,8 +105,9 @@ run_genomic_prediction <- function(x, response, iterations,
     h2[i] <- varU[i]/(varU[i] + varE[i])
   }
   h2 <- mean(h2)
-
+  
   pdat <- data.frame(phenotype = phenotypes, predicted_BV = sn%*%BGLR_mod$ETA[[1]]$b)
+  
 
   return(list(model = BGLR_mod, h2 = h2, transposed_interpolated_genotypes = sn, predictions = pdat))
 }
@@ -178,8 +183,8 @@ run_genomic_prediction <- function(x, response, iterations,
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
-#' sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
-#' dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run cross_validation
 #' cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #'
@@ -713,6 +718,18 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' @author William Hemstrom
 #' @export
+#' 
+#' @examples
+#' #' # run and plot a basic rf
+#' ## add some dummy phenotypic data.
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+#' ## run rf
+#' rf <- run_random_forest(dat, response = "weight")
+#' rf$models
+#' ## dummy phenotypes vs. predicted 
+#' with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
+#'
 #'
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,

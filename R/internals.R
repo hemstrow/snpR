@@ -1792,4 +1792,10 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
   return(out)
 }
 
-
+#' Tiny internal used when converting from a phased, transposed dataset (like from an MS output)
+convert_2_to_1_column <- function(x){
+  if(!is.matrix(x)){x <- as.matrix(x)}
+  ind.genos <- x[,seq(1,ncol(x), by = 2)] + x[,seq(2,ncol(x), by = 2)]
+  ind.genos <- matrix(ind.genos, ncol = ncol(x)/2) # rematrix and transpose!
+  return(ind.genos)
+}

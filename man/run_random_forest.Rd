@@ -99,6 +99,19 @@ on tuning RF models, we recommend Goldstein et al. (2011).
 For more detail on the random forest model and ranger arguments, see
 \code{\link[ranger]{ranger}}.
 }
+\examples{
+#' # run and plot a basic rf
+## add some dummy phenotypic data.
+dat <- stickSNPs
+sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+## run rf
+rf <- run_random_forest(dat, response = "weight")
+rf$models
+## dummy phenotypes vs. predicted 
+with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
+
+
+}
 \references{
 Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
   Implementation of Random Forests for High Dimensional Data in C++ and R.
