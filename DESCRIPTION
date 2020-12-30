@@ -52,6 +52,7 @@ Suggests:
     ranger,
     rmarkdown,
     readr,
+    remotes,
     Rtsne,
     umap,
     viridis,

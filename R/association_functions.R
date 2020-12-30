@@ -63,6 +63,8 @@ run_genomic_prediction <- function(x, response, iterations,
     stop("x must be a snpRdata object.\n")
   }
   
+  check.installed("BGLR")
+  
   #===============apply====================
   if(length(x@sn) != 0){
     if(x@sn$type != "bernoulli"){
@@ -191,6 +193,14 @@ run_genomic_prediction <- function(x, response, iterations,
 cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
                                               burn_in = 1000, thin = 100, cross_percentage = 0.9,
                                               model = "BayesB", cross_samples = NULL, plot = TRUE){
+  
+  #===============sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("BGLR")
+  #===============run======================
 
   # check that the response is numeric
   phenotypes <- x@sample.meta[,response]
@@ -426,16 +436,21 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
 
     if(!"GMMAT" %in% installed.packages()){
-      msg <- c(msg,
-               paste0("The gmmat.score method requires the GMMAT package. This can be installed via
-                      install.packages('GMMAT'), but requires the SeqVar and SeqVarTools bioconductor packages.
-                      These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
-                      If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
+      check.installed("SeqVar", "bioconductor")
+      check.installed("SeqVarTools", "bioconductor")
+      check.installed("GMMAT")
+      
+      # msg <- c(msg,
+      #          paste0("The gmmat.score method requires the GMMAT package. This can be installed via
+      #                 install.packages('GMMAT'), but requires the SeqVar and SeqVarTools bioconductor packages.
+      #                 These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
+      #                 If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
     }
     if(!"AGHmatrix" %in% installed.packages()){
-      msg <- c(msg,
-               paste0("The gmmat.score method requires the AGHmatrix package. This can be installed via
-                      install.packages('AGHmatrix')."))
+      check.installed("AGHmatrix")
+      # msg <- c(msg,
+      #          paste0("The gmmat.score method requires the AGHmatrix package. This can be installed via
+      #                 install.packages('AGHmatrix')."))
     }
   }
   
@@ -735,6 +750,15 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity_corrected",
                               interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
+  #=========sanity checks=======================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("ranger")
+  #==========run============
+  
+  
   run_ranger <- function(sub.x, opts.list, ...){
 
     #================grab data=====================

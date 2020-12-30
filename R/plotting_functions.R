@@ -512,6 +512,10 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   }
   
+  if(interpolation_method == "iPCA"){
+    check.installed("missMDA")
+  }
+  
 
   if(length(msg) > 0){
     stop(paste0(msg, collapse = "  \t"))
@@ -1186,6 +1190,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   msg <- character()
   provided_qlist <- FALSE
 
+  check.installed("pophelper", "github", "royfrancis/pophelper")
+  
   # check if this is with a snpRdata object or a qlist and do some other checks
   if(!class(x) == "snpRdata"){
     # file pattern
@@ -1249,12 +1255,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
 
-  if(method == "snmf"){
-    if(!("LEA" %in% rownames(installed.packages()))){
-      msg <- c(msg, "The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
-    }
-  }
-
   if(provided_qlist == FALSE & reps == "all"){
     msg <- c(msg, "reps = 'all' uninterpretable if a qlist is not provided.\n")
   }
@@ -1284,6 +1284,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     good.methods <- c("snapclust", "snmf")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
+    }
+    
+    if(method == "snmf"){
+      check.installed("LEA", "bioconductor")
+    }
+    if(method == "snapclust"){
+      check.installed("adegenet")
     }
 
     if(length(facet) > 1){

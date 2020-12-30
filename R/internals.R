@@ -1689,7 +1689,7 @@ check_calced_stats <- function(x, facets, stats){
 
 
 #' Utility to check if a required package is installed and install it if needed
-check.installed <- function(pkg, install.type = "basic"){
+check.installed <- function(pkg, install.type = "basic", source = NULL){
   if(!pkg %in% rownames(installed.packages())){
     say <- paste0("Package '", pkg, "' not found.")
     cat(say, "")
@@ -1707,6 +1707,18 @@ check.installed <- function(pkg, install.type = "basic"){
     else{
       if(install.type == "basic"){
         install.packages(pkg)
+      }
+      if(install.type == "bioconductor"){
+        if(!"BiocManager" %in% installed.packages()){
+          install.packages("BiocManager")
+        }
+        BiocManager::install(pkg)
+      }
+      if(install.type == "github"){
+        if(!"remotes" %in% installed.packages()){
+          install.packages("remotes")
+        }
+        remotes::install_github(source)
       }
       return(TRUE)
     }
