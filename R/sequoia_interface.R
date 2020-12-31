@@ -38,11 +38,9 @@
   #===================sanity checks===============
   
   # check that provided snpRdata objects are in the correct format
-  if(is.null(input_format)){
     if(class(x) != "snpRdata"){
       stop("x is not a snpRdata object.\n")
     }
-  }
   
   check.installed("sequoia")
   
