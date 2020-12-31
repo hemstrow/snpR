@@ -349,6 +349,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     }
 
     # change snps and samps to snp and sample IDs
+    keep.rows <- snps
     snps <- snp.meta(x)$.snp.id[snps]
 
     x <- snpRdata(.Data = genotypes(x)[which(snp.meta(x)$.snp.id %in% snps),],
@@ -367,7 +368,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
                   pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,],
                   sn = sn,
                   names = x@names,
-                  row.names = x@row.names[snps])
+                  row.names = x@row.names[keep.rows])
 
     x <- fix.for.one.snp(x)
 
@@ -1476,9 +1477,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #=========apply to requested facets=======
     # get missing maf info
-    mafs_to_calc <- check_calced_stats(x, unique(c(".base"), facets), "maf")
+    mafs_to_calc <- check_calced_stats(x, unique(c(".base", facets)), "maf")
     if(any(!unlist(mafs_to_calc))){
-      x <- calc_maf(x, names(mafs_to_calc[!which(unlist(mafs_to_calc))]))
+      x <- calc_maf(x, names(mafs_to_calc[which(!unlist(mafs_to_calc))]))
     }
 
     # grab the major and minors for each snp in the analysis.
