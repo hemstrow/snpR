@@ -55,7 +55,8 @@ values.
 }
 \examples{
 # calculate ibd for several different facets
-y@sample.meta <- cbind(y@sample.meta, x = rnorm(ncol(y)), y = rnorm(ncol(y)))
+y <- stickSNPs
+sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
 y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
 res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results 
 res 

@@ -16,7 +16,7 @@
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
 #' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.
-#' @param  paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
+#' @param paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
 #' @param maternal_sibship_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
 #' @param nruns integer, default 1. A number of replicate runs for the dataset.
 #' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
@@ -33,8 +33,8 @@
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
 #' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
 #' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.
-#' @param dropout numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
-#' @param genotyping_error numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
+#' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
+#' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
 #' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
 #' @param known_paternal_dyads character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
@@ -42,6 +42,7 @@
 #' @author William Hemstrom
 #' @author Melissa Jones
 #'
+#' @name colony_interface
 #' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
@@ -401,6 +402,7 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
 #' will be stored in a colony folder created in the current working directory.
 #'
 #' @export
+#' @describeIn colony_interface run colony on a snpRdata object, start to finish
 run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                        sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                        nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
