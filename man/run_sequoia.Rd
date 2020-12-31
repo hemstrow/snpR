@@ -31,7 +31,7 @@ run_sequoia(
 A dataframe for each facet specified with sequoia output summary information.
 }
 \description{
-\code{run_sequoia} a tool for parentage assignment and pedigree construction. snpR integrates a program and package written by Jisca Huisman \itemize{\item{paper: } https://doi.org/10.1111/1755-0998.12665 \item{github page: } https://github.com/JiscaH/sequoia}
+\code{run_sequoia} a tool for parentage assignment and pedigree construction. snpR integrates a program and package written by Jisca Huisman \itemize{\item{paper: } https://doi.org/10.1111/1755-0998.12665 \item{github page: } https://github.com/JiscaH/sequoia}. Note that this function \emph{is not overwrite safe!}
 }
 \details{
 Possible options: \itemize{ \item{facets: }{Specification for grouping of data for which analyses should be ran independently} \item{run_dupcheck: }{Sequoia function used to check for duplicate samples in the dataset. It is reccomended to drop duplicated samples from the analysis. } \item{run_parents: }{Sequoia function to assign parents. This runs quickly and is required before running the run_pedigree command. } \item{run_pedigree: }{Sequoia function to construct full pedigree for the sample set. Sibship clustering takes a lot of time. }}
