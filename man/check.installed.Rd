@@ -4,7 +4,7 @@
 \alias{check.installed}
 \title{Utility to check if a required package is installed and install it if needed}
 \usage{
-check.installed(pkg, install.type = "basic")
+check.installed(pkg, install.type = "basic", source = NULL)
 }
 \description{
 Utility to check if a required package is installed and install it if needed
