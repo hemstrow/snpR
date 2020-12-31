@@ -32,7 +32,7 @@
 #' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
 #' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
-#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.
+#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.
 #' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
 #' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
 #' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
@@ -57,9 +57,9 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
                                excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
 
-  if(known_af[1] != FALSE){
-    stop("known_af is not yet implemented.\n")
-  }
+  # if(known_af[1] != FALSE){
+  #   stop("known_af is not yet implemented.\n")
+  # }
   #=====================initialize===============
   # initialize storage directory
   if(!dir.exists("colony")){
@@ -125,7 +125,6 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(sampleIDs)){
     colony_genotypes[,1] <- x@sample.meta[,sampleIDs]
   }
-
   # allele frequencies
   ## if provided with minor allele frequencies
   if(length(known_af) == nrow(x) & is.numeric(known_af)){
@@ -148,7 +147,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
       x <- calc_maf(x)
       afs <- x@stats[x@stats$facet == ".base",]$maf
       afs <- cbind(1-afs, afs)
-      maj.min <- cbind(maj.ident, min.ident)
+#      maj.min <- cbind(maj.ident, min.ident) #what is the purpose of this line???
       for(i in 1:nrow(afs)){
         write(1:2, outfile, sep = " ", append = T)
         write(afs[i,], outfile, append = T, sep = " ")
