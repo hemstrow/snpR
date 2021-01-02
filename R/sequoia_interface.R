@@ -10,7 +10,10 @@
 #' @param facets FALSE or character, default FALSE. Sample-specific facets over which the sequoia is called to run.
 #' @param run_dupcheck FALSE or TRUE, default FALSE. Should a duplicate check be run on this dataset?
 #' @param run_parents FALSE or TRUE, default FALSE. Should parentage assignments be run with the dataset?
-#' @param run_pedigree FALSE or TRUE, default FALSE. Should a pedigree be constructed with the dataset? Requires run_parents to have been completed first. 
+#' @param run_pedigree FALSE or TRUE, default FALSE. Should a pedigree be constructed with the dataset? Requires run_parents to have been completed first. This step can take a very long time to complete.
+#' @param pMaxSibIter numeric in 1:25, default 10. Only specified for run_pedigree argument.
+#' @param min_maf numeric in 0.25:0.5, default 0.3. Sequoia requires high minor allele frequencies for parentage and pedigree construction.
+#' @param min_ind numeric in 0.5:1, default 0.5. Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia. Individuals with less than 50% called genotypes will also be automatically removed by Sequoia.
 #'
 #' @return A dataframe for each facet specified with sequoia output summary information. 
 #'
@@ -30,9 +33,15 @@
 
 
 
-run_sequoia <- function(x, facets = NULL, run_dupcheck = T, run_parents = T, run_pedigree = T, pMaxSibIter = 10, 
-                        min_maf = 0.3, min_ind = 0.5, ...){
+  run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, pMaxSibIter = 10, min_maf = 0.3, min_ind = 0.5, ...){
+  
   #===================sanity checks===============
+  
+  # check that provided snpRdata objects are in the correct format
+    if(class(x) != "snpRdata"){
+      stop("Not a snpRdata object.\n")
+    }
+  
   check.installed("sequoia")
   
   msg <- character(0)
