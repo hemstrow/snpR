@@ -31,7 +31,7 @@
 #' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
 #' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
-#' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
+#' @param known_af character, default FALSE. If TRUE snpR will calculate and supply mafs, else, supply a numeric vector containing the known maf for each locus.
 #' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.
 #' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
 #' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
@@ -64,9 +64,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
                                excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
 
-  # if(known_af[1] != FALSE){
-  #   stop("known_af is not yet implemented.\n")
-  # }
+
   #=====================initialize===============
   # initialize storage directory
   if(!dir.exists("colony")){
@@ -139,7 +137,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write(rep(2, nrow(x)), outfile, append = T, sep = " ", ncolumns = nrow(x)) # number of alleles per locus, should all be two.
     maj <- 1 - known_af
     afs <- cbind(maj, known_af)
-    for(i in 1:nrow(known_af)){
+    for(i in 1:length(known_af)){
       write(1:2, outfile, sep = " ", append = T)
       write(afs[i,], outfile, append = T, sep = " ")
     }
