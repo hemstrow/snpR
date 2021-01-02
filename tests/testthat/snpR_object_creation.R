@@ -41,7 +41,7 @@ test_that("AC table creation",{
   expect_equal(tdat@ac$n_total, rowSums(tdat@geno.tables$as)) # check minor by proxy
 })
 
-test_that("Stats table creation,"{
+test_that("Stats table creation", {
   expect_is(tdat@stats, "data.table")
   expect_true(all(c("maf", "major", "minor", "maj.count", "min.count") %in% colnames(tdat@stats))) # was maf added?
 })

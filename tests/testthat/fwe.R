@@ -16,6 +16,6 @@ test_that("BH",{
   expect_equal(check$p_overall_BH <= .05, c(rep(T, length = 10), rep(F, length(p) - 10)))
 })
 
-test_that("BY"{
+test_that("BY",{
   expect_equal(check$p_overall_BY <= .05, c(rep(T, length = 2), rep(F, length(p) - 2)))
 })
