@@ -858,7 +858,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         op <- ranger::importance_pvalues(rout, "janitza")[,2]
       }
       else{
-        warning("No p-values calcuated. P-value must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.")
+        warning("No p-values calcuated. P-values must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.\n")
       }
     }
 

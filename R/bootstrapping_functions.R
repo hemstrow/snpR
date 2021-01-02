@@ -759,21 +759,21 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     doSNOW::registerDoSNOW(cl)
 
     #prepare reporting function
-    ntasks <- nrow(u.list)
+    ntasks <- nrow(u.rows)
     progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
     opts <- list(progress=progress)
 
-    tout <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
-                             .options.snow = opts, .export = "data.table") %dopar% {
-                               get.one.pvalue(x, facet = u.rows$facet[q],
-                                              subfacet = u.rows$subfacet[q],
-                                              snp.facet = u.rows$snp.facet[q],
-                                              statistic = u.rows$stat[q],
-                                              nk = u.rows$nk[q],
-                                              step = u.rows$step[q],
-                                              sigma = u.rows$sigma[q],
-                                              alt = alt)
-                             }
+    out <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
+                            .options.snow = opts, .export = "data.table") %dopar% {
+                              get.one.pvalue(x, facet = u.rows$facet[q],
+                                             subfacet = u.rows$subfacet[q],
+                                             snp.facet = u.rows$snp.facet[q],
+                                             statistic = u.rows$stat[q],
+                                             nk = u.rows$nk[q],
+                                             step = u.rows$step[q],
+                                             sigma = u.rows$sigma[q],
+                                             alt = alt)
+                            }
 
     #release cores
     parallel::stopCluster(cl)

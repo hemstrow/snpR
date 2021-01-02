@@ -1219,6 +1219,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   else{
     stop("Please specify output format.")
   }
+  
+  if(interpolate == "iPCA"){
+    check.installed("missMDA")
+  }
 
   #======================put data into snpRdata object if not in that format to start with================
   if(!is.null(input_format)){
