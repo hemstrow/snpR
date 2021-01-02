@@ -1,23 +1,17 @@
 
 #' Write an input for the COLONY pedigree assignment program.
 #'
-#' Creates an input file in the format required for command-line usage of the
-#' COLONY pedigree program. Requires a snpRdata object containing offspring
-#' genotypes and can optionally take a snpRdata object containing maternal or
-#' paternal genotypes, or both.
+#' Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
 #'
 #' @param x snpRdata object containing offspring genotypes.
-#' @param outfile character, default "colony_input". Output file name. A file
-#'   path may be provided (e.g. "colony/colony_run_1.txt").
-#' @param method character, default "FPLS". Pedigree reconstruction method.
-#'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}
-#'   \item{"PLS": }{} }
+#' @param outfile character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").
+#' @param method character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
+#'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more computationally intensive and slow to run, especially with large complex datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less computationally intensive than FL.}}
 #' @param run_length numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.
+#' @param sibship_prior numeric in c(0, 1, 2, 3, 4), default 0. Strength the sibship size prior (no prior, weak, medium, strong, OR determine from known prior values). Values other than 0 require additional parameters. Option for supplying value of 4, currently not implemented in snpR. See Colony User Guide for more details. 
 #' @param paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
-#' @param maternal_sibship_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
+#' @param maternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
 #' @param nruns integer, default 1. A number of replicate runs for the dataset.
 #' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
@@ -35,16 +29,16 @@
 #' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.
 #' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
 #' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
-#' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
-#' @param known_paternal_dyads character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
+#' @param known_maternal_dyads character, default NULL. Supply matrix or dataframe with known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.  
+#' @param known_paternal_dyads character, default NULL. Supply matrix or dataframe with known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
 #' @param known_paternal_max_mismatches integer in c(0,1,2:nsample), default 0.
 #' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
 #' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
-#' @param maternal_exclusions character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
-#' @param paternal_exclusions character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
-#' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
-#' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
+#' @param maternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.
+#' @param paternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.
+#' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
+#' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
