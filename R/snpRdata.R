@@ -323,7 +323,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
-  cat("Imput data will be filtered to remove non bi-allelic data.\n")
+  cat("Input data will be filtered to remove non bi-allelic data.\n")
   invisible(capture.output(x <- filter_snps(x, non_poly = F)))
   
   # add basic maf

@@ -1310,7 +1310,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
     }
     else if(input_format == "sn"){
-      cat("Imput format: sn\n")
+      cat("Iput format: sn\n")
       if(input_mDat %in% c(0:2)){
         stop("Missing data format must be other than 0, 1, or 2.\n")
       }
