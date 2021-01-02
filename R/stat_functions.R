@@ -2377,7 +2377,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 
   }
   else if(is.numeric(par)){
-    cat("Running in parallel.\nSpliting up data...\n")
+    cat("Running in parallel.\nSplitting up data...\n")
 
     geno.storage <- vector("list", nrow(tasks))
 
