@@ -38,6 +38,13 @@
 #' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
 #' @param known_paternal_dyads character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
+#' @param known_paternal_max_mismatches integer in c(0,1,2:nsample), default 0.
+#' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+#' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+#' @param maternal_exclusions character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
+#' @param paternal_exclusions character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
+#' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
+#' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
@@ -279,7 +286,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(paternal_exclusions[1,1])){
     npe <- nrow(paternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males seperated by spaces.
+    write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -289,7 +296,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(maternal_exclusions[1,1])){
     npe <- nrow(maternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females seperated by spaces.
+    write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -299,7 +306,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(excluded_paternal_siblings[1,1])){
     n_eps <- nrow(excluded_paternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the exluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings seperated by spaces.
+    write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -309,7 +316,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(excluded_maternal_siblings[1,1])){
     n_eps <- nrow(excluded_maternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the exluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings seperated by spaces.
+    write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
