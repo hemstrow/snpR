@@ -49,8 +49,8 @@
 #' @examples
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 #' dat <- calc_maf(stickSNPs)
-#' dat@snp.meta$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
-#' dat@snp.meta$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
+#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
+#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
 #' # run for two populations
 #' ## call calc_sfs()
 #' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
@@ -58,7 +58,7 @@
 #' plot_sfs(sfs)
 #' 
 #' # run for the overall dataset
-#' sfs <- calc_SFS(dat, c(100))
+#' sfs <- calc_SFS(dat, projection = 100)
 #' ## plot
 #' plot_sfs(sfs)
 #' 
