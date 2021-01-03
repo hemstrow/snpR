@@ -61,12 +61,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
   #=====================initialize===============
   # initialize storage directory
-  if(!dir.exists("colony")){
-    dir.create("colony")
-    setwd("colony")
-  }
-  else{
-    setwd("colony")
+  if(basename(getwd()) != "colony"){
+    if(!dir.exists("colony")){
+      dir.create("colony")
+      setwd("colony")
+    }
+    else{
+      setwd("colony")
+    }
   }
 
   # write anything preliminary to output
@@ -131,10 +133,10 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write(rep(2, nrow(x)), outfile, append = T, sep = " ", ncolumns = nrow(x)) # number of alleles per locus, should all be two.
     maj <- 1 - known_af
     afs <- cbind(maj, known_af)
-    for(i in 1:length(known_af)){
-      write(1:2, outfile, sep = " ", append = T)
-      write(afs[i,], outfile, append = T, sep = " ")
-    }
+    afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
+    afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
+    afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
+    write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
   }
   # otherwise, check the logical and calculate minor allele frequencies if true
   else if(is.logical(known_af[1]) & length(known_af) == 1){
@@ -146,11 +148,10 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
       x <- calc_maf(x)
       afs <- x@stats[x@stats$facet == ".base",]$maf
       afs <- cbind(1-afs, afs)
-#      maj.min <- cbind(maj.ident, min.ident) #what is the purpose of this line???
-      for(i in 1:nrow(afs)){
-        write(1:2, outfile, sep = " ", append = T)
-        write(afs[i,], outfile, append = T, sep = " ")
-      }
+      afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
+      afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
+      afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
+      write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
     }
   }
   else{
