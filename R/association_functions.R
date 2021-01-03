@@ -48,18 +48,24 @@
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
-#' sample.meta <- cbind(weight = rnorm(ncol(stickSNPs)), stickSNPs@sample.meta)
-#' dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run prediction
 #' gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #' ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
-#' with(gp$predictions, plot(phenotype, predicted_BV))
+#' with(gp$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
 #'
 run_genomic_prediction <- function(x, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB"){
-
-  # get a properly formatted input file
+  #===============sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("BGLR")
+  
+  #===============apply====================
   if(length(x@sn) != 0){
     if(x@sn$type != "bernoulli"){
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
@@ -70,10 +76,10 @@ run_genomic_prediction <- function(x, response, iterations,
     suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
     x@sn$type <- "bernoulli"
   }
-
+  
   sn <- x@sn$sn
   sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
-
+  
   # prepare the BGLR input
   sn <- t(sn)
   phenotypes <- x@sample.meta[,response]
@@ -86,9 +92,9 @@ run_genomic_prediction <- function(x, response, iterations,
   colnames(sn) <- paste0("m", 1:ncol(sn)) # marker names
   rownames(sn) <- paste0("s", 1:nrow(sn)) # ind IDS
   ETA <- list(list(X = sn, model = "BayesB", saveEffects = T)) # need to adjust this when I get around to allowing for more complicated models
-
+  
   BGLR_mod <- BGLR::BGLR(y = phenotypes, ETA = ETA, nIter = iterations + burn_in, burnIn = burn_in, thin = thin)
-
+  
   # grab h2 estimate
   B <- BGLR::readBinMat('ETA_1_b.bin')
   h2 <- rep(NA,nrow(B))
@@ -101,8 +107,9 @@ run_genomic_prediction <- function(x, response, iterations,
     h2[i] <- varU[i]/(varU[i] + varE[i])
   }
   h2 <- mean(h2)
-
+  
   pdat <- data.frame(phenotype = phenotypes, predicted_BV = sn%*%BGLR_mod$ETA[[1]]$b)
+  
 
   return(list(model = BGLR_mod, h2 = h2, transposed_interpolated_genotypes = sn, predictions = pdat))
 }
@@ -178,14 +185,22 @@ run_genomic_prediction <- function(x, response, iterations,
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
-#' sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
-#' dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run cross_validation
 #' cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #'
 cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
                                               burn_in = 1000, thin = 100, cross_percentage = 0.9,
                                               model = "BayesB", cross_samples = NULL, plot = TRUE){
+  
+  #===============sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("BGLR")
+  #===============run======================
 
   # check that the response is numeric
   phenotypes <- x@sample.meta[,response]
@@ -265,7 +280,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 #' Armitage approach weights should be provided to the "w" argument, which
 #' specifies the weight for each possible genotype (homozygote 1, heterozygote,
-#' homozygote 2). The default, c(0,1,2), specifies an addative  The "gmmat.score"
+#' homozygote 2). The default, c(0,1,2), specifies an addative model. The "gmmat.score"
 #' method uses the approach described in Chen et al. (2016) and implemented in
 #' the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
 #' For this method, a 'G' genetic relatedness matrix is first created using the
@@ -322,14 +337,19 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   \emph{Nature Genetics}.
 #'
 #' @examples
-#'   # add a dummy phenotype
+#'   # add a dummy phenotype and run an association test.
 #'   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))
 #'   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
-#'   calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+#'   x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
+#'   get.snpR.stats(x, c("pop", "pop.fam"))
 #'
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
                              formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
   #==============sanity checks===========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
   # response
   msg <- character()
   if(length(response) != 1){
@@ -340,7 +360,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Only one sample-specific category allowed (e.g. pop but not fam.pop)."))
   }
-  if(!response[1] %in% x@sample.meta){
+  if(!response[1] %in% colnames(x@sample.meta)){
     msg <- c(msg,
              paste0("Response variable must be present in sample metadata."))
   }
@@ -414,8 +434,29 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
       }
     }
-  }
 
+    if(!"GMMAT" %in% installed.packages()){
+      check.installed("SeqVar", "bioconductor")
+      check.installed("SeqVarTools", "bioconductor")
+      check.installed("GMMAT")
+      
+      # msg <- c(msg,
+      #          paste0("The gmmat.score method requires the GMMAT package. This can be installed via
+      #                 install.packages('GMMAT'), but requires the SeqVar and SeqVarTools bioconductor packages.
+      #                 These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
+      #                 If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
+    }
+    if(!"AGHmatrix" %in% installed.packages()){
+      check.installed("AGHmatrix")
+      # msg <- c(msg,
+      #          paste0("The gmmat.score method requires the AGHmatrix package. This can be installed via
+      #                 install.packages('AGHmatrix')."))
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
 
   #==============functions=============
 
@@ -692,11 +733,32 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' @author William Hemstrom
 #' @export
+#' 
+#' @examples
+#' #' # run and plot a basic rf
+#' ## add some dummy phenotypic data.
+#' dat <- stickSNPs
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+#' ## run rf
+#' rf <- run_random_forest(dat, response = "weight")
+#' rf$models
+#' ## dummy phenotypes vs. predicted 
+#' with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
+#'
 #'
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity_corrected",
                               interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
+  #=========sanity checks=======================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("ranger")
+  #==========run============
+  
+  
   run_ranger <- function(sub.x, opts.list, ...){
 
     #================grab data=====================
@@ -796,7 +858,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         op <- ranger::importance_pvalues(rout, "janitza")[,2]
       }
       else{
-        warning("No p-values calcuated. P-value must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.")
+        warning("No p-values calcuated. P-values must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.\n")
       }
     }
 
@@ -898,8 +960,6 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 #' confusion matrices for categorical responses. The third subscript denotes model iteration ('[,,1]' would reference
 #' model 1.) \item{best_model: } The model with the lowest prediction error from the provided dataset, in the format provided
 #' by \code{\link{run_random_forest}}}
-#'
-#' @export
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.

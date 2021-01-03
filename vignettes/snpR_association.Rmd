@@ -1,0 +1,196 @@
+---
+title: "Association testing with snpR"
+author: "William Hemstrom"
+date: "June 27, 2019"
+output: 
+  rmarkdown::html_vignette:
+    toc: TRUE
+vignette: >
+  %\VignetteIndexEntry{Association testing with snpR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+library(snpR); library(ggplot2)
+```
+# Association Overview:
+Several different association testing methods are available with snpR. These fall into three general categories:
+
+1. Genome Wide Association Studies (GWAS), available via calc_association().
+2. Genomic Prediction, available via run_genomic_prediction().
+3. Random Forests, a machine learning approach available via run_random_forest().
+
+## GWAS
+
+snpR implements several different GWAS methods. Most of these specifically support case/control style two category phenotypes:
+
+* Armitage tests, based on Armitage (1955).
+* Odds Ratio tests.
+* Chi-squared tests.
+
+It also supports a mlm, family and population structure corrected method based on Chen et al (2016) via the GMMAT R package. This method supports quantitative or categorical phenotypes and is the default. However, it requires several dependancies that are not installed with snpR by default:
+
+* GMMAT, which requires the SeqVar and SeqVarTools dependancies.
+* AGHmatrix
+
+Running calc_association using the GMMAT option will automatically prompt the user to install these packages if they haven't been already.
+
+For the most part, running a GWAS with snpR uses the standard snpR syntax, explained in [the snpR introduction](snpR_introduction.html). However, for the GMMAT option, it also takes a formula and family argument using R's typical formula/distribution family notation. This allows GMMAT to use covariates when calculating associations. For details, see [GMMAT's vignette](https://cran.r-project.org/web/packages/GMMAT/vignettes/GMMAT.pdf).
+
+The syntax for running a GWAS with snpR is very similar to elsewhere in the package. First, a phenotype is needed. Here we will use a categorical phenotype, but a continuous one can be used instead.
+
+```{r}
+# create a dummy phenotype with the example data:
+x <- stickSNPs
+sample.meta(x) <- cbind(sample.meta(stickSNPs), phenotype = sample(c("Case", "Control"), nsamps(stickSNPs), T))
+
+```
+
+
+The calc_association function can then be used to do the association test.
+
+```{r}
+x <- calc_association(x,
+                      response = "phenotype",
+                      method = "gmmat.score")
+
+head(get.snpR.stats(x))
+
+```
+Note that the resulting p-values are stored in the gmmat_pval_phenotype column.
+
+If covariates are present, they can be incorporated by providing a formula.
+
+```{r}
+
+sample.meta(x)$weight <- rnorm(nsamps(x), mean = 1, sd = .5)
+x <- calc_association(x,
+                      response = "phenotype",
+                      method = "gmmat.score", 
+                      formula = "phenotype ~ weight") # weight as a covariate
+
+head(get.snpR.stats(x))
+
+```
+
+## Genomic Prediction
+
+Genomic prediction can be used to estimate individual breeding values (the additive genomic contribution to an individual's phenotype) by jointly considering the effects of all SNPs. Note that, unlike most snpR functions, genomic prediction results are not overwrite safe.
+
+Genomic prediction is implemented via the BGLR package. By default, snpR assumes a BayesB (zero inflated scaled-t) prior loci effect distribution. Other disributions can be specified using the model argument. Here we'll use the continuous "weight" as a phenotype instead, but a categorical phenotype can be used instead.
+
+```{r, results='hide', message=FALSE, warning=F}
+## run prediction
+gp <- run_genomic_prediction(x, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
+
+```
+
+Genomic prediction results include both the model returned by the BGLR function and some processed results.
+```{r}
+# the model is in the $model part. See BGLR documentation for details.
+# gp$model
+
+# predicted breeding values and observed phenotypes:
+head(gp$predictions)
+
+# estimated heritability
+gp$h2
+
+```
+
+Note that BGLR and other genomic prediction approaches can be prone to overfitting. For this example, there should be no causal correlation between the phenotypes and genotypes, since we randomly drew phenotypes for each individual. However, there is a correlation between the predicted breeding values and their phenotypes.
+
+```{r}
+with(gp$predictions, plot(phenotype, predicted_BV))
+```
+
+snpR includes a cross validation function to check the predictive power of a genomic prediction model by holding some portion of the inidividuals out when fitting the model, then doing a cross-evaluate by comparing the predicted breeding values of these individuals to their phenotypes.
+```{r, message=FALSE, warning=F}
+cross_gp <- cross_validate_genomic_prediction(x, "weight", iterations = 1000, burn_in = 100, thin = 10, cross_percentage = .9, plot = T)
+```
+
+The function automatically generates a plot of the cross evaluation as it runs if plot = TRUE, but one can be produced from the results as well.
+```{r}
+# plot
+with(cross_gp$comparison, plot(observed, predicted))
+
+# rsq of the cross-evaluation
+cross_gp$rsq
+```
+
+We can see that this doesn't cross evaluate well, as we should expect. If you would like to predict the breeding values of other individuals, the effects of each locus can be found in the model itself.
+```{r}
+# the effects of each locus, burried in the model.
+head(cross_gp$model$model$ETA[[1]]$b)
+```
+
+Note that BGLR does support covariates and more complicated models, but those aren't supported in snpR. To produce import data for BGLR, 0-1-2 numeric genotypes can be produced using format_snps. Interpolation of missing data is needed for BGLR, which is done via bernoulli sampling off of the allele frequencies by default.
+```{r}
+# sn format
+sn <- format_snps(x, output = "sn")
+head(sn)[,1:6]
+
+# transpose and subset for BGLR
+sn <- t(sn[,-c(1:3)])
+head(sn)[,1:6]
+```
+
+For details on how to run BGLR manually beyond this point, please see the BGLR documentation.
+
+## Random Forests
+
+Random Forests also jointly consider all of the effects of each locus to predict phenotypes, but do not use a strictly pre-defined model to do so. Predictions include can therefore include epistatic interactions and dominance as well. Like before, either a continuous or categorical phenotype can be used. snpR includes facet support for random forest construction following the usual rules, but we won't use that here.
+
+As with GMMAT GWAS, a formula can be provided to include covariates.
+
+```{r, warning=F, message=F}
+rf <- run_random_forest(x, response = "weight", num.trees = 1000)
+```
+
+Note that since Random Forests use internal held out data to check prediction accuracy, cross-evalution isn't strictly necissary. Pulling up the model summary will show the estimated prediction rsq.
+
+```{r}
+# see the model summary, note the low rsq.
+rf$models$.base_.base$model
+```
+
+We can see that the model does a poor job of predicting phenotypes from a plot as well.
+```{r}
+with(rf$models$.base_.base$predictions, plot(pheno, predicted))
+```
+
+The importance of each locus to the predictions can be examined as well.
+```{r}
+# plot importance per variable
+plot(rf$models$.base_.base$model$variable.importance)
+```
+
+# Plotting association results
+
+Manhattan plots can be generated both from association results calculated with snpR and from results from elsewhere.
+
+For snpRdata GWAS results, this is straitforward.
+
+```{r}
+colnames(get.snpR.stats(x)) # a reminder of the statistics we calculated earlier.
+p <- plot_manhattan(x, 
+               plot_var = "gmmat_pval_phenotype", # value to plot 
+               chr = "group", # specify the snp metadata column containing chr info
+               log.p = T) # plot the -log10 of the p-values
+
+p$plot
+```
+
+External data or results from Random Forests and Genomic Prediction can be plotted as well.
+
+```{r}
+# prepare data
+plot_dat <- data.frame(group = snp.meta(x)$group, position = snp.meta(x)$position, importance = rf$models$.base_.base$model$variable.importance)
+
+# plot
+p <- plot_manhattan(plot_dat, plot_var = "importance", chr = "group")
+p$plot
+
+```
+

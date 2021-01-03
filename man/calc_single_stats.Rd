@@ -17,7 +17,13 @@ calc_ho(x, facets = NULL)
 
 calc_private(x, facets = NULL)
 
-calc_hwe(x, facets = NULL, method = "exact")
+calc_hwe(
+  x,
+  facets = NULL,
+  method = "exact",
+  fwe_method = "BY",
+  fwe_case = c("by_facet", "overall")
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -29,6 +35,10 @@ analysis. See \code{\link{Facets_in_snpR}} for more details.}
 calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 Uses a chi-squared test. } See details}
+
+\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.}
+
+\item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}}
 }
 \value{
 snpRdata object with requested stats merged into the stats socket
@@ -99,12 +109,15 @@ The data can be broken up categorically by sample metadata, as described in
 \examples{
 # base facet
 x <- calc_pi(stickSNPs)
+get.snpR.stats(x)
 
 # multiple facets
 x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+get.snpR.stats(x, c("pop", "pop.fam"))
 
-# HWE
-x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+# HWE with family-wise error correction
+x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+get.snpR.stats(x, c("pop", "pop.fam"))
 }
 \references{
 Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American Journal of Human Genetics}

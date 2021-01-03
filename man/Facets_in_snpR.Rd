@@ -43,10 +43,10 @@ See examples.
 \examples{
 # base facet
 x <- calc_pi(stickSNPs)
+get.snpR.stats(x)
 
 # multiple facets
 x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+get.snpR.stats(x, c("pop", "pop.fam"))
 
-# HWE
-x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
 }

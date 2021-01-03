@@ -45,7 +45,8 @@
 #'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 #'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 #'  Uses a chi-squared test. } See details
-#'
+#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.
+#'@param fwe_case character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
 #'
@@ -62,12 +63,15 @@
 #' @examples
 #' # base facet
 #' x <- calc_pi(stickSNPs)
+#' get.snpR.stats(x)
 #'
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 #'
-#' # HWE
-#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+#' # HWE with family-wise error correction
+#' x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 NULL
 
 
@@ -113,12 +117,12 @@ NULL
 #' @examples
 #' # base facet
 #' x <- calc_pi(stickSNPs)
+#' get.snpR.stats(x)
 #'
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+#' get.snpR.stats(x, c("pop", "pop.fam"))
 #'
-#' # HWE
-#' x <- calc_HWE(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
 NULL
 
 #'@export
@@ -135,6 +139,10 @@ calc_pi <- function(x, facets = NULL){
     #print(n2)
     p <- 1 - (binom_n1 + binom_n2)/binom_nt
   }
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
 
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
@@ -145,6 +153,7 @@ calc_pi <- function(x, facets = NULL){
   out <- apply.snpR.facets(x, facets, "ac", func, case = "ps")
   colnames(out)[ncol(out)] <- "pi"
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "pi", "snp")
 
   return(x)
 }
@@ -154,64 +163,111 @@ calc_pi <- function(x, facets = NULL){
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
   # function to run on whatever desired facets:
-  func <- function(gs, m.al){
-
-    # major alleles via max.col
-    fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
-    lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
-
-    # minor alleles, via inversion, 0 replacement with -Inf, and max.col
-    inv.as <- gs$as * -1
-    inv.as[inv.as == 0] <- -Inf
-    fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
-    lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
-
-    # special cgs$ases
-    match.freq <- which(fmax != lmax) # maf = 0.5
-    unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
-    np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
-
-    # declair major and minor
-    major <- fmax
-    minor <- fmin
-    ## maf = 0.05
-    if(length(match.freq) != 0){
-      minor[match.freq] <- lmax[match.freq]
+  func <- function(gs, m.al, ref = NULL){
+    
+    # for the base facet, determine the major and minor then calculate maf
+    if(is.null(ref)){
+      # major alleles via max.col
+      fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
+      lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
+      
+      # minor alleles, via inversion, 0 replacement with -Inf, and max.col
+      inv.as <- gs$as * -1
+      inv.as[inv.as == 0] <- -Inf
+      fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
+      lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
+      
+      # special cases
+      match.freq <- which(fmax != lmax) # maf = 0.5
+      unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
+      np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
+      
+      # declair major and minor
+      major <- fmax
+      minor <- fmin
+      ## maf = 0.05
+      if(length(match.freq) != 0){
+        minor[match.freq] <- lmax[match.freq]
+      }
+      ## unsequenced
+      if(length(unseq) != 0){
+        major[unseq] <- "N"
+        minor[unseq] <- "N"
+      }
+      ## non-polymorphic
+      if(length(np) != 0){
+        minor[np] <- "N"
+      }
+      
+      # grab the actual maf
+      maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
+      maf[is.nan(maf)] <- 0
+      
+      # get the major and minor counts
+      # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
+      maj.count <- round(rowSums(gs$as)*(1-maf))
+      min.count <- round(rowSums(gs$as)*(maf))
     }
-    ## unsequenced
-    if(length(unseq) != 0){
-      major[unseq] <- "N"
-      minor[unseq] <- "N"
+    
+    # for non-base facets, use the given major and minor to calculate maf
+    else{
+      
+      # use a data.table function to get the major allele counts
+      adt <- as.data.table(gs$as)
+      rep.factor <- nrow(gs$as)/nrow(ref)
+      major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
+      adt$major <-  major
+      adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
+      total.allele.count <- rowSums(adt[,1:4])
+      maf <- 1 - adt$maj_count/total.allele.count # get the maf
+      
+      # other things for return
+      minor <- rep(ref$minor, each = rep.factor)
+      maj.count <- adt$maj_count
+      min.count <- total.allele.count - maj.count
     }
-    ## non-polymorphic
-    if(length(np) != 0){
-      minor[np] <- "N"
-    }
-
-    # grab the actual maf
-    maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
-    maf[is.nan(maf)] <- 0
-
-    # get the major and minor counts
-    # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and egs$asy, gs$as long gs$as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
-    maj.count <- round(rowSums(gs$as)*(1-maf))
-    min.count <- round(rowSums(gs$as)*(maf))
-
+    
     # return
-    return(data.frame(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
+    return(data.table(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
   }
-
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
     invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
-  out <- apply.snpR.facets(x,
-                           facets = facets,
-                           req = "gs",
-                           fun = func,
-                           case = "ps",
-                           m.al = substr(x@mDat,1, nchar(x@mDat)/2))
+  
+  if(facets[1] == ".base" & length(facets) == 1){
+    out <- apply.snpR.facets(x,
+                             facets = facets[1],
+                             req = "gs",
+                             fun = func,
+                             case = "ps",
+                             m.al = substr(x@mDat,1, nchar(x@mDat)/2))
+  }
+  else{
+    # calculate the base facet if not yet added
+    logi <- check_calced_stats(x, ".base", "maf")
+    if(!logi[[".base"]]["maf"]){
+      x <- calc_maf(x)
+    }
+    
+    major_minor_base <- get.snpR.stats(x)[,c("major", "minor")]
+    out <- apply.snpR.facets(x,
+                             facets = facets,
+                             req = "gs",
+                             fun = func,
+                             case = "ps",
+                             m.al = substr(x@mDat,1, nchar(x@mDat)/2),
+                             ref = major_minor_base)
+    
+  }
+  
+  x <- update_calced_stats(x, facets, "maf", "snp")
   return(merge.snpR.stats(x, out))
 }
 
@@ -232,11 +288,11 @@ calc_maf <- function(x, facets = NULL){
 #'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param sigma numeric. Sliding window size, in kilobases. Each window will
-#'  include all SNPs within 3*sigma kilobases.
-#'@param step numeric. Number of bases to move between each window, in
-#'  kilobases.
+#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level facets are provided, the calculated Tajima's D will be for the entire genome.
+#'@param sigma numeric, default NULL. Sliding window size, in kilobases. Each window will
+#'  include all SNPs within 3*sigma kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
+#'@param step numeric, default NULL. Number of bases to move between each window, in
+#'  kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'
@@ -244,13 +300,31 @@ calc_maf <- function(x, facets = NULL){
 #'  for each window merged in to the window.stats slot.
 #'
 #' @examples
-#' calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' # broken by population, windows across linkage group
+#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' get.snpR.stats(x, "group.pop", "single.window")
+#' 
+#' # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
+#' # this will calculate overall tajima's D without a window for each population.
+#' x <- calc_tajimas_d(stickSNPs, facets = "pop")
+#' get.snpR.stats(x, "pop", "single.window")
+#' 
+#' # for the overall dataset, note that sigma and step are NULL
+#' # this will calculate overall tajima's D for each group/pop
+#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop")
+#' get.snpR.stats(x, "pop.group", "single.window")
 #'
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
-calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
-  sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F){
+  if(!is.null(sigma) & !is.null(step)){
+    sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+  }
+  else{
+    sigma <- NULL
+    step <- NULL
+  }
 
 
   func <- function(ac, par, sigma, step, report){
@@ -259,7 +333,19 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
-    sigma <- 1000*sigma
+
+    # if sigma is null, set to run everything in one window
+    if(is.null(sigma)){
+      sigma <- range(ac$position)
+      c <- mean(sigma)
+      step <- c + 1
+      sigma <- sigma[2] - sigma[1]
+    }
+    else{
+      sigma <- 1000*sigma
+    }
+    
+    # run the loop
     while (c <= lsp){
       start <- c - sigma*3 #change window start
       end <- c + sigma*3 #change window end
@@ -312,6 +398,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
     return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   # add any missing facets
   add.facets <- check.snpR.facet.request(x, facets)
@@ -328,6 +417,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
                            par = par,
                            sigma = sigma,
                            step = step)
+  
+  x <- update_calced_stats(x, facets, "tajimas_D")
 
   return(merge.snpR.stats(x, out, type = "window.stats"))
 
@@ -383,7 +474,14 @@ calc_tajimas_d <- function(x, facets = NULL, sigma, step, par = F){
 #'@export
 #'
 #' @examples
-#' calc_pairwise_fst <- function(stickSNPs, facets = "pop")
+#' # Using Wier and Cockerham 1984's method
+#' x <- calc_pairwise_fst(stickSNPs, "pop")
+#' get.snpR.stats(x, "pop", "pairwise")
+#' 
+#' # Using genepop, note that the overall value is part 2 of the returned list
+#' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
+#' get.snpR.stats(x[[1]], "pop", "pairwise")
+#' x[[2]] # overall fst
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   func <- function(x, method, facets = NULL){
     if(method != "genepop"){
@@ -407,25 +505,11 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     if(method == "genepop"){
       g.filename <- paste0("genepop.", facets, ".txt")
       if(file.exists(g.filename)){
-        cat("Genepop input file", g.filename,  "already exits. ")
-        resp <- "empty"
-        while(resp != "y" & resp != "n"){
-          cat("Overwrite? (y or n)\n")
-          resp <- readLines(n = 1)
-        }
-        if(resp == "n"){
-          genepop::Fst(g.filename, pairs = TRUE)
-        }
-        else{
-          file.remove(g.filename)
-          invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
-          genepop::Fst(g.filename, pairs = TRUE)
-        }
+        file.remove(g.filename)
       }
-      else{
-        invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
-        genepop::Fst(g.filename, pairs = TRUE)
-      }
+      invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+      genepop::Fst(g.filename, pairs = TRUE)
+
 
 
 
@@ -500,6 +584,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
       # melt
       suppressMessages(out$loci <- reshape2::melt(out$loci))
+      if(ncol(out$loci) == 1){ # for cases where there are only two comparison groups
+        out$loci <- data.frame(comparison = paste0(pnames[1], "~", pnames[2]), fst = out$loci[,1])
+      }
       colnames(out$loci) <- c("comparison", "fst")
 
       # get nk values:
@@ -522,6 +609,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       }
 
       out$loci$n_total <- pnk$ntotal
+      if(length(out$overall) == 1){
+        names(out$overall) <- paste0(pnames[1], "~", pnames[2])
+      }
 
       # return, we're done.
       cat("Finished.\n")
@@ -643,6 +733,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
 
   #============================sanity and facet checks========================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   if(any(x@ac$n_alleles > 2)){
     vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
     vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
@@ -664,16 +758,23 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     out <- out[[1]]
   }
   else if(method == "wc" | method == "wier"){
-    x <- calc_ho(x, facets)
+    need.ho <- which(!unlist(check_calced_stats(x, facets, "ho")))
+    if(length(need.ho) > 0){
+      x <- calc_ho(x, facets[need.ho])
+    }
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = method)
   }
   else if(method == "hohenlohe"){
-    x <- calc_pi(x, facets)
+    need.pi <- which(!unlist(check_calced_stats(x, facets, "pi")))
+    if(length(need.pi) > 0){
+      x <- calc_pi(x, facets[need.pi])
+    }
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
   }
 
   # merge
   x <- merge.snpR.stats(x, out, type = "pairwise")
+  x <- update_calced_stats(x, facets, "fst", "snp")
 
   if(method == "genepop"){
     message("Returning list: first element is the snpRdata object now containing pairwise fst values, second is the average pairwise fst for all comparisons.\n")
@@ -710,6 +811,10 @@ calc_ho <- function(x, facets = NULL){
       ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
     }
   }
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
@@ -723,7 +828,10 @@ calc_ho <- function(x, facets = NULL){
                            fun = func,
                            case = "ps")
   colnames(out)[ncol(out)] <- "ho"
-  return(merge.snpR.stats(x, out))
+  
+  x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "ho", "snp")
+  return(x)
 }
 
 #'@export
@@ -775,6 +883,9 @@ calc_private <- function(x, facets = NULL){
     return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
 
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
@@ -785,14 +896,10 @@ calc_private <- function(x, facets = NULL){
   out <- apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
   colnames(out)[ncol(out)] <- "pa"
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "pa", "snp")
+  return(x)
 }
 
-# Keming: Edit this function to fully integrate the multihaplotype ME estimation function we worked on.
-#         Mostly this will be edits in the tabulate.haplotypes function, and you'll need to add the ME function
-#         under the subfunctions heading. Once it is done, load the package in with cntrl + L or devtools::load_all("."),
-#         then run calc_pairwise_LD(stickSNPs, facets = "group.pop", use.ME = TRUE).
-#         Try to fix errors with browser(), but no worries if we need to meet to work on it.
-#         Could try to update sanity checks if feeling motivated.
 
 #'Pairwise LD from SNP data.
 #'
@@ -862,16 +969,26 @@ calc_private <- function(x, facets = NULL){
 #'
 #' @examples
 #' #CLD
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop")
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
+#' get.snpR.stats(x, "group.pop", "LD")
 #'
 #' #standard haplotype frequency estimation
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+#' get.snpR.stats(x, "group.pop", "LD")
 #'
+#' \dontrun{
+#' ## not run, really slow
 #' #ME haplotype estimation
-#' calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+#' get.snpR.stats(x, "group.pop", "LD")
+#' }
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                              par = FALSE, sr = FALSE, CLD = "only", use.ME = FALSE, sigma = 0.0001){
   #========================sanity checks=============
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   #sanity checks:
   # subsampling
   if(is.numeric(ss) & ss <= 0){
@@ -2099,11 +2216,21 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       }
     }
   }
+  out <- update_calced_stats(out, facets, "LD")
 
   return(out)
 }
 
-# need to decompose outputs into an identical format to the other LD options, otherwise working and faster.
+#' Calculate Burrow's composite LD. Internal.
+#' 
+#' Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the output needs to be
+#' in the same format as that function's and to support faceting without excessive recalculation.
+#' 
+#' @param x snpRdata object
+#' @param facets facets to run
+#' @param par number of parallel cores
+#' 
+#' @author William Hemstrom
 calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
   # calculate composite LD for a single facet of data.
@@ -2250,7 +2377,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 
   }
   else if(is.numeric(par)){
-    cat("Running in parallel.\nSpliting up data...\n")
+    cat("Running in parallel.\nSplitting up data...\n")
 
     geno.storage <- vector("list", nrow(tasks))
 
@@ -2335,7 +2462,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 
 #'@export
 #'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
-calc_hwe <- function(x, facets = NULL, method = "exact"){
+calc_hwe <- function(x, facets = NULL, method = "exact", 
+                     fwe_method = "BY", 
+                     fwe_case = c("by_facet", "overall")){
   func <- function(gs, method){
     # exact test to use if there are too few observations in a cell
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
@@ -2408,8 +2537,8 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
     # get observed genotype counts
     het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
-    o2pq <- rowSums(gs[,het.col])
-    opp <- matrixStats::rowMaxs(gs[,-het.col])
+    o2pq <- rowSums(gs[,het.col, drop = F])
+    opp <- matrixStats::rowMaxs(gs[,-het.col, drop = F])
     oqq <- rowSums(gs) - o2pq - opp
 
     # if we are using a chisq test, easy and quick
@@ -2434,7 +2563,6 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
       # calculate p-values
       out <- pchisq(chi, 2, lower.tail = FALSE)
-      return(out)
     }
 
     # otherwise we have to use the looped version:
@@ -2449,10 +2577,14 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
       if(length(nas) > 1){
         out[nas] <- NA
       }
-      return(out)
     }
+    return(out)
   }
 
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
 
   # add any missing facets
@@ -2463,7 +2595,17 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 
   out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
   colnames(out)[ncol(out)] <- "pHWE"
+  
+  # apply corrections
+  if(length(facets) == 1 & facets[1] == ".base"){
+    fwe_case <- "overall"
+  }
+  out <- fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
+  
+  
+  
   x <- merge.snpR.stats(x, out)
+  x <- update_calced_stats(x, facets, "hwe", "snp")
 
   return(x)
 }
@@ -2497,6 +2639,12 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 #'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
 #'  averages by the number of observations at those SNPs.
 #'
+#'@examples
+#'x <- calc_basic_snp_stats(stickSNPs, c("pop"))
+#'get.snpR.stats(x, "pop") # view basic stats
+#'get.snpR.stats(x, "pop", type = "pairwise") # view fst
+#'
+#'
 #'@author William Hemstrom
 #'@export
 #'
@@ -2505,6 +2653,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact"){
 #'
 calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = F, nk = TRUE){
   #=========sanity checks=======
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
   if(!is.null(facets[1])){
     facet.types <- check.snpR.facet.request(x, facets, "none", T)
     snp.facets <- which(facet.types[[2]] == "snp")
@@ -2582,9 +2734,13 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @examples
 #' # base facet
 #' x <- calc_het_hom_ratio(stickSNPs)
+#' get.snpR.stats(x, type = "sample")
 #'
 #' # facet by chromosome
 #' x <- calc_het_hom_ratio(stickSNPs, "group")
+#' get.snpR.stats(x, "group", type = "sample")
+#' 
+#' 
 #'
 calc_het_hom_ratio <- function(x, facets = NULL){
   func <- function(x, mDat){
@@ -2601,12 +2757,18 @@ calc_het_hom_ratio <- function(x, facets = NULL){
   }
 
   #============run for each facet================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
 
   out <- apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
   colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
   x <- merge.snpR.stats(x, out, "sample.stats")
+  
+  x <- update_calced_stats(x, facets, "ho_he_ratio")
 
   return(x)
 }
@@ -2617,19 +2779,16 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #' Caluclate effective population size.
 #'
 #' Calculates effective population size for any given sample-level facets via
-#' patterns of linkage disequlibrium using the methods employed in the *ldne*
-#' program, as described in Waples (2006) and Waples et al (2016).
+#' interface with the NeEstimator v2 program by Do et al. (2013).
 #'
 #' Since physical linkage can cause mis-estimation of Ne, an optional snp-level
 #' facet can be provided which designates chromosomes or linkage groups. Only
 #' pairwise LD values between SNPs on different facet levels will be used.
-#' Composite LD (CLD) is used as the LD metric, corrected for the sample sizes
-#' of the pairwise SNP-SNP comparisons. CLD can either be calculated beforehand
-#' using \code{\link{calc_pairwise_ld}} or is calculated automatically.
 #'
-#' Like most snpR funcitons, this function is overwrite safe, since one part of
-#' the returned list will contain the original dataset, possibly with added CLD
-#' values.
+#' Ne can be calculated via three different methods: \itemize{ \item{"LD"}
+#' Linkage Disequilibrium based estimation. \item{"Ht"} Heterozygote excess.
+#' \item{"Coan"} Coancestry based.} For details, please see the documentation
+#' for NeEstimator v2.
 #'
 #' @param x snpRdata object. The data for which Ne will be calculated.
 #' @param facets character, default NULL. Categorical metadata variables by
@@ -2641,15 +2800,27 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #'   groups/etc. Pairwise LD scores for SNPs with the same level of this
 #'   variable will be not be used to calculate Ne. Since physical linkage can
 #'   bias Ne estimtes, providing a value here is recommended.
+#' @param NeEstimator_path character, default "/usr/bin/Ne2-1.exe". Path to the
+#'   NeEstimator executable.
 #' @param mating character, default "random". The mating system to use. Options:
 #'   \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogomous
 #'   mating. }
 #' @param pcrit numeric, default c(.05, .02, .01). Minimum minor allele
 #'   frequencies for which to calculate Ne. Rare alleles can bias esitmates, so
 #'   a range of values should be checked.
-#' @param conf.level numeric, defualt 0.95. Confidence levels for intervals.
-#' @param par numeric or FALSE, default FALSE. Determines if CLD and Ne values
-#'   be computed are parallel, and, if so, how many cores to use.
+#' @param methods character, default "LD". LD estimation methods to use.
+#'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
+#'   \item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}
+#' @param temporal_methods character, default c("Pollak", "Nei", "Jorde").
+#'   Methods to use for the temporal methods. See defaults for options. Not
+#'   currently supported.
+#' @param temporal_gens data.frame, default NULL. Work in progress, not
+#'   currently supported.
+#' @param max_ind_per_pop numeric, default NULL. Maximum number of individuals
+#'   to consider per population.
+#' @param outfile character, default "ne_out". Prefix for output files. Note
+#'   that this function will return outputs, so there isn't a strong reason to
+#'   check this.
 #'
 #' @return A named list containing estimated Ne values (named "ne") and the
 #'   original provided data, possibly with additional LD values (named "x").
@@ -2657,265 +2828,425 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #' @author William Hemstrom
 #' @export
 #'
-#' @references Waples RK, Larson WA, Waples RS. 2016 Estimating contemporary
-#'   effective population size in non-model species using linkage disequilibrium
-#'   across thousands of loci. Heredity (Edinb). 117, 233.
-#' @references Waples RS. 2006 A bias correction for estimates of effective
-#'   population size based on linkage disequilibrium at unlinked gene loci.
-#'   Conserv. Genet. 7, 167. (doi:10.1007/s10592-005-9100-y)
+#' @references Do C, Waples RS, Peel D, Macbeth GM, Tillett BJ, Ovenden JR. 2014
+#'   NeEstimator v2: re-implementation of software for the estimation of
+#'   contemporary effective population size (Ne) from genetic data. Mol. Ecol.
+#'   Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 #'
 #' @examples
-#' # calculate Ne, splitting by the chromosome equivalent ("group") for every population.
-#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
+#' \dontrun{
+#' # not run
+#' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation. 
+#' get.snpR.stats(ne, "pop", type = "pop")}
 #'
 #' @export
-calc_ne <- function(x, facets = NULL, chr = NULL, mating = "random", pcrit = c(0.05, 0.02, 0.01), conf.level = 0.95,
-                    par = FALSE, ...){
-  #==================subfunctions================
-  # Based on equations from Waples 2006/2016
-  # calculate estimated weighted ne
-  ## Based on code from the strataG package, itself based on code from R. Waples and W. Larsen.
-  ## note: x is the prox list containing only the desired comparisons, generated by get_correct_prox below.
-  ne_func <- function(x, chr, mating, conf.level){
+calc_ne <- function(x, facets = NULL, chr = NULL,
+                    NeEstimator_path = "/usr/bin/Ne2-1.exe",
+                    mating = "random",
+                    pcrit = c(0.05, 0.02, 0.01),
+                    methods = "LD",
+                    temporal_methods = c("Pollak", "Nei", "Jorde"),
+                    temporal_gens = NULL, max_ind_per_pop = NULL,
+                    outfile = "ne_out"){
+  #==============sanity checks and prep=================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facets <- check.snpR.facet.request(x, facets, remove.type = "snp")
+  
+  
+  #=============run====================================
+  out <- vector("list", length(facets))
+  for(i in 1:length(facets)){
+    # write inputs
+    write_neestimator_inputs(x = x,
+                             facets = facets[i],
+                             chr = chr,
+                             methods = methods,
+                             temporal_methods = temporal_methods,
+                             temporal_gens = temporal_gens,
+                             pcrit = pcrit,
+                             mating = mating,
+                             outfile = paste0(outfile, ".txt"),
+                             max_ind_per_pop = max_ind_per_pop)
+    
+    # run
+    run_neestimator(NeEstimator_path = NeEstimator_path,
+                    data_path = "NeEstimator/")
+    
+    # parse
+    out[[i]] <- parse_neestimator(path = "NeEstimator/",
+                                  pattern = outfile,
+                                  facets = facets[i],
+                                  snpRdat = x)
+  }
+  
+  names(out) <- facets
+  out <- dplyr::bind_rows(out, .id = "facet")
+  x <- merge.snpR.stats(x, out, "pop")
+  x <- update_calced_stats(x, facets, "ne")
 
-    # ne funciton. Note that this is vectorized incase I decide to later return NE esitmates per loci pair!
-    cne <- function(CLD, S, mating){ ## random mating
+  return(x)
+}
 
-      lSCLD <- CLD[S >= 30]
-      sSCLD <- CLD[S < 30]
-      ne <- numeric(length(CLD))
-
-      if(mating == "random"){
-        # large S
-        if(length(lSCLD) > 0){
-          roots <- (1/9) - 2.76*lSCLD
-          roots[roots < 0] <- 0
-          ne[S >= 30] <- ((1/3) + sqrt(roots))/(2*lSCLD)
-        }
-
-        # small S
-        if(length(sSCLD) > 0){
-          roots <- (0.308^2) - 2.08*sSCLD
-          roots[roots < 0] <- 0
-          ne[S < 30] <- (0.308 + sqrt(roots))/(2*sSCLD)
-        }
-      }
-      else if(mating == "monogamy"){
-        # large S
-        if(length(lSCLD) > 0){
-          roots <- (4/9) - 7.2*lSCLD
-          roots[roots < 0] <- 0
-          ne[S >= 30] <- ((2/3) + sqrt(roots))/(2*lSCLD)
-        }
-        # small S
-        if(length(sSCLD) > 0){
-          roots <- (0.618^2) - 5.24*sSCLD
-          roots[roots < 0] <- 0
-          ne[S < 30] <- (0.618 + sqrt(roots))/(2*sSCLD)
-        }
-      }
-      return(ne)
-    }
-
-
-    # make sure we are only looking at LD between independant snps
-    if(!is.null(chr)){
-      chr1 <- paste0("s1_", chr)
-      chr2 <- paste0("s2_", chr)
-      x <- x[which(x[,..chr1] != x[,..chr2]),]
-    }
-
-    # Based on equations from Waples 2006/2016
-    # Based on code from the strataG package, itself based on code from R. Waples and W. Larsen.
-    ## calculate estimated weighted ne
-    S <- x$S
-    N <- nrow(x)
-    rsqE <- ifelse(S >= 30, (1/S) + (3.19/(S^2)), 0.0018 + (0.907/S) + (4.44/(S^2))) # table 1, waples and do 2008
-    CLD <- x$CLD * (S/(S - 1))^2 # sample size corrected LD, waples 2016
-    w <- S^2 # Eqn 1.4
-    m.rsq <- sum(w * CLD)/sum(w) # eq 1.5
-    dCLD <- CLD - rsqE # eq 1.6
-    dCLD.0 <- sum(dCLD * w)/sum(w) # eq 1.10
-    hmS <- N/sum(1/S) # harmonic mean of S
-    ne0 <- cne(dCLD.0, hmS, mating = mating) # initial Ne.0
-    wt <- (S^2)/((S + 3 * ne0)^2) # eq 1.11
-    dCLD <- sum(wt * dCLD) / sum(wt) # eq 1.12:
-    mE.rsq <- sum(w * rsqE) / sum(w) # mean expected r-squared
-    ne <- cne(dCLD, hmS, mating = mating) # calculate ne using the overall drift ne, harmonic mean S, and mating type.
-    ## confidence intervals
-    lci.p <- (1 - conf.level) / 2
-    uci.p <- 1 - lci.p
-    dCLD.lci <- m.rsq * N / qchisq(lci.p, N) - mE.rsq
-    dCLD.uci <- m.rsq * N / qchisq(uci.p, N) - mE.rsq
-    ne.lci <- cne(dCLD.lci, dCLD, mating)
-    ne.uci <- cne(dCLD.uci, dCLD, mating)
-
-
-    # fix infinite ne estimates and return
-    ne.vec <- c(ne, ne.lci, ne.uci)
-    if(any(ne.vec < 0)){
-      ne.vec[which(ne.vec < 0)] <- Inf
-    }
-    return(ne.vec)
+#' Caculate genetic distances between individuals or groups of samples.
+#'
+#' Calculates the genetic distances between either individuals or the levels of
+#' any sample specific facets, broken apart by any requested snp level facets.
+#' For details on methods, see details.
+#'
+#' Available methods: \itemize{\item{Edwards} Angular distance as described in
+#' Edwards 1971.}
+#'
+#' All methods first calculate allele frequency matrices using
+#' \code{\link{tabulate_allele_frequency_matrix}}, then use these matrices (hereafter
+#' x) to calculate genetic distance.
+#'
+#' Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
+#' <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
+#'
+#' @param x snpRdata object.
+#' @param facets character or NULL, default NULL. Facets for which to calculate
+#'   genetic distances, as described in \code{\link{Facets_in_snpR}}. If snp or
+#'   base level facets are requested, distances will be between individuals.
+#'   Otherwise, distances will be between the levels of the sample facets.
+#' @param method character, default "Edwards". Name of the method to use.
+#'   Options: \itemize{\item{Edwards} Angular distance as described in Edwards
+#'   1971.} See details.
+#' @param interpolate character, default "bernoulli". Missing data interpolation
+#'   method, solely for individual/individual distances. Options detailed in
+#'   documentation for \code{\link{format_snps}}.
+#'
+#' @return An overwrite-safe snpRdata object with genetic distance information
+#'   (a named, nested list containing distance measures named according to
+#'   facets and facet levels) added.
+#' @references Edwards, A. W. F. (1971). Distances between populations on the
+#'   basis of gene frequencies. Biometrics, 873-881.
+#'
+#' @author William Hemstrom
+#' @export
+#'
+#' @examples
+#' # by pop:
+#' y <- calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards"))
+#' get.snpR.stats(y, "pop", "genetic_distance")
+#'
+#' # by group and pop jointly
+#' y <- calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
+#' get.snpR.stats(y, "pop.group", "genetic_distance")
+#' 
+#' # by pop and fam seperately
+#' y <- calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
+#' get.snpR.stats(y, c("pop", "group"), "genetic_distance")
+#' 
+#' # individuals across all snps + plot
+#' y <- calc_genetic_distances(stickSNPs)
+#' heatmap(as.matrix(get.snpR.stats(y, type = "genetic_distance")$.base$.base$Edwards))
+#' 
+calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpolate = "bernoulli"){
+  #============sanity checks=========
+  msg <- character()
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
   }
 
-  # filter a prox list by maf and sample subfacet
-  get_correct_prox <- function(prox, stats, maf, sample.facet, sample.subfacet){
-    # filter by facet
-    good.snps <- prox[prox$sample.facet == sample.facet &
-                                      prox$sample.subfacet == sample.subfacet]
-
-    # get the mafs
-    all.mafs <- stats[stats$facet == sample.facet & stats$subfacet == sample.subfacet,]
-    mafs1 <- all.mafs[match(good.snps$s1_.snp.id, all.mafs$.snp.id),]$maf
-    mafs2 <- all.mafs[match(good.snps$s2_.snp.id, all.mafs$.snp.id),]$maf
-
-    # filter by maf and return
-    return(good.snps[which(mafs1 >= maf & mafs2 > maf),])
+  good.methods <- c("Edwards")
+  if(!method %in% good.methods){
+    msg <- c(msg, paste0("Provided method not supported. Supported methods: ", paste0(good.methods, collapse = " ")))
   }
-
-  #=================prep=========================
-  # add any needed facets
-  facets <- check.snpR.facet.request(x, facets, remove.type = "snp") # don't need snp level facets here, doesn't make sense.
-  if(length(facets) == 1 & is.null(facets[1])){
-    facets <- ".base"
-  }
-  x <- add.facets.snpR.data(x, facets)
-  # update facets to include by-chromosome...
-  if(!is.null(chr[1])){
-    if(facets[1] != ".base"){
-      ldfacets <- paste(facets, chr, sep = ".")
-      ldfacets <- check.snpR.facet.request(x, ldfacets, "none")
-    }
-    else{
-      ld.facets <- check.snpR.facet.request(x, chr, "none")
-    }
-  }
-  else{
-    ldfacets <- facets
-  }
-
-  # determine if we need to calculate any LD values
-  need.calc.ld <- F
-  # if no calculated LD values
-  if(length(x@pairwise.LD) == 0){
-    need.calc.ld <- T
-  }
-  else{
-    # if not all facets calculated
-    if(!all(facets %in% x@pairwise.LD$prox$sample.facet)){
-      need.calc.ld <- T
+  
+  # get the allele frequencies if not already provided
+  facets <- check.snpR.facet.request(x, facets, "none", T)
+  snp_lev <- which(facets[[2]] == "snp" | facets[[2]] == ".base")
+  snp_facets <- facets[[1]][snp_lev]
+  all_facets <- facets[[1]]
+  
+  # pull out snp level facets, since these'll be done later.
+  if(length(snp_lev) != length(facets[[1]])){
+    if(length(snp_lev) > 0){
+      facets <- facets[[1]][-snp_lev]
     }
     else{
-      # if no CLD
-      if(!"CLD" %in% colnames(x@pairwise.LD$prox)){
-        need.calc.ld <- T
+      facets <- facets[[1]]
+    }
+    needed.facets <- check_calced_stats(x, facets, "allele_frequency_matrix")
+    needed.facets <- facets[which(!unlist(needed.facets))]
+    if(length(needed.facets) > 0){
+      x <- tabulate_allele_frequency_matrix(x, needed.facets)
+    }
+    sample_facets_detected <- T
+  }
+  else{
+    sample_facets_detected <- F
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+  
+  # grab the data we are working with for sample specific facets
+  y <- x
+  if(sample_facets_detected){
+    x <- get.snpR.stats(y, facets, "allele_frequency_matrix")
+  }
+  #=============subfunctions=========
+  # dist subfunction
+  get_dist <- function(x, method){
+    if(method == "Edwards"){
+      x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
+      nloc <- ncol(x)
+      x <- sqrt(as.matrix(x))
+      am <- x%*%t(x)
+      am <- 1 - (am / (nloc/2))
+      diag(am) <- 0
+      am <- sqrt(am)
+      am <- as.dist(am)
+    }
+    am <- list(am)
+    names(am) <- method
+    return(am)
+  }
+  
+  #=============run for facets with sample aggregation===============
+  if(sample_facets_detected){
+    out <- vector("list", length(x))
+    names(out) <- names(x)
+    # enter lapply hell--first level unlists once, second level runs the function if the values are matrices, unlists if not, third level can always run the function
+    # the nice thing with this is that it should keep all of the names from x natively!
+    out <- lapply(x, function(y){
+      lapply(y, function(z) {
+        if(class(z) == "matrix"){
+          get_dist(z, method = method)
+        }
+        else{
+          lapply(z, get_dist, method = method)
+        }
+      })
+    })
+  }
+  
+  #============run for facets without sample aggregation (snp or .base level)
+  if(length(snp_facets) > 0){
+    # intialize output and get sn
+    out_snp <- vector("list", length(snp_facets))
+    names(out_snp) <- snp_facets
+    sn <- format_snps(y, "sn", interpolate = interpolate)
+    sn <- sn[,-c(1:(ncol(y@snp.meta) - 1))]
+    
+    # for each snp facet...
+    for(i in 1:length(snp_facets)){
+      if(snp_facets[i] == ".base"){
+        out_snp[[i]] <- vector("list", 1)
+        names(out_snp[[i]]) <- ".base"
+        out_snp[[i]][[1]] <- list(dist(t(sn)))
+        names(out_snp[[i]][[1]]) <- method
+        
       }
       else{
-        # if CLD not calculated for THESE facets
-        opts <- length(unique(x@pairwise.LD$prox$sample.subfacet[x@pairwise.LD$prox$sample.facet %in% facets]))
-        na.ratio <- sum(is.na(x@pairwise.LD$prox$CLD[x@pairwise.LD$prox$sample.facet %in% facets]))/
-          sum(x@pairwise.LD$prox$sample.facet %in% facets)
-        if(na.ratio > (1/opts)*.1){
-          need.calc.ld <- T
+        # get tasks
+        tasks <- get.task.list(y, snp_facets[i])
+        out_snp[[i]] <- vector("list", nrow(tasks))
+        names(out_snp[[i]]) <- tasks[,4]
+        snp_columns <- unlist(strsplit(tasks[,3][1], "(?<!^)\\.", perl = T))
+        
+        # run the tasks
+        for(j in 1:nrow(tasks)){
+          t_snp_cols <- y@snp.meta[,snp_columns, drop = F]
+          t_snp_indices <- do.call(paste, c(t_snp_cols, sep = "    "))
+          t_snp_indices <- which(t_snp_indices %in% tasks[j,4])
+          out_snp[[i]][[j]] <- list(dist(t(sn[t_snp_indices,])))
+          names(out_snp[[i]][[j]]) <- method
         }
-        # calculated for an inappropriate snp.level facet (aka by chr when we are using chr as the chromosome)
-        else if(!all(facets %in% names(x@pairwise.LD$LD_matrices))){
-          need.calc.ld <- T
+      }
+      
+    }
+  }
+
+  #============return=========
+  if(exists("out") & exists("out_snp")){
+    out <- c(out, out_snp)
+  }
+  else if(exists("out_snp")){
+    out <- out_snp
+  }
+  
+  y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method))
+  return(merge.snpR.stats(y, out, "genetic_distances"))
+  
+}
+
+#' Calculate Isolation by Distance
+#'
+#' Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
+#' genetic distance between samples or sets of samples to the geographic
+#' distances between samples or sets of sapmles. IBD caluclated via a mantel
+#' test.
+#'
+#' Genetic distance is caluclated via \code{\link{calc_genetic_distances}}.
+#' Geographic distances are taken as-is for individual-individual comparisons
+#' and by finding the geographic mean of a group of samples when sample level
+#' facets are requested using the methods described by
+#' \code{\link[geosphere]{geomean}}. Note that this means that if many samples
+#' were collected from the same location, and those samples compose a single
+#' level of a facet, the mean sampling location will be that single location.
+#'
+#' IBD is caluclated by comparing geographic and genetic distances using a
+#' mantel test via \code{\link[ade4]{mantel.randtest}}.
+#'
+#' Note that geographic distance objects are also included in the returned
+#' values.
+#'
+#'
+#' @param x snpRdata object
+#' @param facets character, default NULL. Facets over which to calculate IBD, as
+#'   described in \code{\link{Facets_in_snpR}}.
+#' @param x_y character, default c("x", "y"). Names of the columns containing
+#'   geographic coordinates where samples were collected. There is no need to
+#'   specify projection formats. The first should be longitude, the second should
+#'   be latitude.
+#' @param genetic_distance_method character, default "Edwards". The genetic
+#'   distance method to use, see \code{\link{calc_genetic_distances}}.
+#' @param ... Additional arguments passed to \code{\link[ade4]{mantel.randtest}}
+#'
+#' @return A snpRdata object with both geographic distance and IBD results
+#'   merged into existing data.
+#'
+#' @author William Hemstrom
+#' 
+#' @seealso \code{\link[ade4]{mantel.randtest}},
+#'   \code{\link{calc_genetic_distances}}
+#'
+#' @export
+#' 
+#' @examples # calculate ibd for several different facets
+#' y <- stickSNPs
+#' sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
+#' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
+#' res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results 
+#' res 
+#' plot(res$group.pop$groupV$Edwards) # plot perms vs observed
+#' 
+calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", ...){
+  #================sanity checks=============================================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  msg <- character()
+  
+  bad.xy <- which(!x_y %in% colnames(x@sample.meta))
+  if(length(bad.xy) > 0){
+    msg <- c(msg, paste0("Some coordinates (arument x_y) not found in sample metadata: ", paste(x_y[bad.xy])))
+  }
+  
+  if(any(abs(x@sample.meta[,x_y[2]]) > 90)){
+    msg <- c(msg, "Latitude values greater 90 or less than -90 detected. Note that the first value in 'x_y' must specify longitude, the second must specify latitude!")
+  }
+  
+  pkg.check <- check.installed("geosphere")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  pkg.check <- check.installed("ade4")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+  
+  #================prep and get genetic dist matrices========================
+  facets <- check.snpR.facet.request(x, facets, "none")
+  x <- add.facets.snpR.data(x, facets)
+  
+  # calc gds if needed and fetch
+  cs <- check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method))
+  missing <- which(!unlist(cs))
+  if(length(missing) > 0){
+    x <- calc_genetic_distances(x, names(cs)[missing])
+  }
+  gd <- get.snpR.stats(x, facets, "genetic_distance")
+  
+  #===============fetch geo dist matrices=======================
+  # get the geo dist matrices
+  snp.levs <- check.snpR.facet.request(x, facets)
+  geo_mats <- vector("list", length(snp.levs))
+  names(geo_mats) <- snp.levs
+  
+  # get the geo matrices for each comparison. note that the same geo matrix is re-used across snp level facets.
+  for(i in 1:length(geo_mats)){
+    # get the categories for this
+    categories <- get.task.list(x, names(geo_mats)[i])[,1:2, drop = F]
+    
+    # if the categories are all base, easy peasy
+    if(all(categories[,1] == ".base")){
+      geo_mats$.base[[genetic_distance_method]] <- dist(x@sample.meta[,x_y])
+    }
+    else{
+      # otherwise need to break it down by sample level facet
+      # find geographic mean coordiantes for each facet level
+      gmeans <- t(apply(categories, 1, function(row){
+        matches <- fetch.sample.meta.matching.task.list(x, row)
+        matches <- x@sample.meta[matches,]
+        matches <- matches[,x_y]
+        colnames(matches) <- c("x", "y")
+        geosphere::geomean(matches)
+      }))
+      rownames(gmeans) <- categories[,2]
+      
+      #get the distances
+      geo_mats[[categories[1,1]]][[genetic_distance_method]] <- dist(gmeans)
+    }
+  }
+  
+  #===============calculate IBD==================
+  ibd <- vector("list", length(gd))
+  names(ibd) <- names(gd)
+  # do the calcs: at each level, simply copy metadata in
+  for(i in 1:length(gd)){
+    ibd[[i]] <- vector("list", length(gd[[i]]))
+    names(ibd[[i]]) <- names(gd[[i]])
+    
+    
+    for(j in 1:length(gd[[i]])){
+      ibd[[i]][[j]] <- vector("list", length(gd[[i]][[j]]))
+      names(ibd[[i]][[j]]) <- names(gd[[i]][[j]])
+      
+      for(k in 1:length(gd[[i]][[j]])){
+        
+        tsampfacet <- check.snpR.facet.request(x, names(gd)[i])
+        
+        # quick check for NAs
+        if(any(is.na(gd[[i]][[j]][[k]]))){
+          # find bad entries
+          matgd <- as.matrix(gd[[i]][[j]][[k]])
+          bad.entries <- which(rowSums(is.na(matgd)) == ncol(matgd) - 1)
+          
+          # remove from gene dist
+          gd[[i]][[j]][[k]] <- as.dist(matgd[-bad.entries, -bad.entries])
+          
+          # remove from geo dist
+          matgeod <- as.matrix(geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]])
+          tgeodist<- as.dist(matgeod[-bad.entries, -bad.entries])
+          
+          warning("NAs detected in genetic distance data for facet: ", paste(names(gd)[i], names(gd[[i]])[j], names(gd[[i]][[j]])[k]),
+                  "\nlevels\t\n\t", paste0(row.names(matgeod)[bad.entries], collapse = "\n\t"))
         }
+        else{
+          tgeodist <- geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]]
+        }
+        
+        ibd[[i]][[j]][[k]] <- ade4::mantel.randtest(gd[[i]][[j]][[k]], tgeodist, ...)
+        
       }
     }
   }
-  # check that we have all LD values for all chrs
-  if(!is.null(chr[1]) & length(x@pairwise.LD) != 0){
-    # check that we have data for every chr of interest
-    chr1 <- paste0("s1_", chr)
-    chr2 <- paste0("s2_", chr)
-    prox.chr.opts <- unique(unlist(c(unique(x@pairwise.LD$prox[,..chr1]), unique(x@pairwise.LD$prox[,..chr2]))))
-    if(!all(prox.chr.opts %in% unique(x@snp.meta[,chr]))){
-      need.calc.ld <- T
-    }
-  }
-
-  # calculate LD if we need it
-  if(need.calc.ld){
-    cat("Calculating pairwise composite LD...\n")
-    x <- calc_pairwise_ld(x, facets, par = par, ...)
-  }
-
-  # calculate mafs
-  x <- calc_maf(x, facets)
-
-  #=================run the ne estimation================
-  task.list <- get.task.list(x, facets)
-  ne_out <- expand.grid(facet = task.list[,1], sample.subfacet = task.list[,2], pcrit = factor(c(0.05, 0.02, 0.01)))
-  ne_out <- unique(ne_out)
-  ne_out$ne <- NA
-  ne_out$ne.ci.lower <- NA
-  ne_out$ne.ci.upper <- NA
-  ne_out$pcrit <- as.numeric(as.character(ne_out$pcrit))
-
-  if(par == F){
-    for(i in 1:nrow(ne_out)){
-      cat("Task ", i, "of ", nrow(ne_out), ", sample facet:", as.character(ne_out$facet[i]),
-          ", sample subfacet: ", as.character(ne_out$sample.subfacet[i]),
-          ", pcrit:", ne_out$pcrit[i], ".\n")
-      tprox <- get_correct_prox(prox = x@pairwise.LD$prox,
-                                stats = x@stats,
-                                maf = ne_out$pcrit[i],
-                                sample.facet = ne_out$facet[i],
-                                sample.subfacet = ne_out$sample.subfacet[i])
-      ne_out[i,4:6] <- ne_func(tprox, chr, mating, conf.level)
-    }
-  }
-  else if(is.numeric(par)){
-
-    # split up
-    if(par < nrow(ne_out)){
-      ptasks <- split(ne_out, rep(1:par, length.out = nrow(ne_out), each = ceiling(nrow(ne_out)/par)))
-    }
-    else{
-      par <- nrow(ne_out)
-      ptasks <- split(ne_out, 1:par, drop = F)
-    }
-
-    cl <- snow::makeSOCKcluster(par)
-    doSNOW::registerDoSNOW(cl)
-
-    #prepare reporting function
-    ntasks <- length(ptasks)
-    progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
-    opts <- list(progress=progress)
-    prox.storage <- x@pairwise.LD$prox
-    stats.storage <- x@stats
-
-    #loop through each set of facets
-    output <- foreach::foreach(q = 1:ntasks,
-                               .packages = c("reshape2", "snpR", "data.table"),
-                               .inorder = TRUE,
-                               .options.snow = opts) %dopar% {
-                                 ne_out <- ptasks[[q]]
-                                 for(i in 1:nrow(ne_out)){
-                                   tprox <- get_correct_prox(prox = prox.storage,
-                                                             stats = stats.storage,
-                                                             maf = ne_out$pcrit[i],
-                                                             sample.facet = ne_out$facet[i],
-                                                             sample.subfacet = ne_out$sample.subfacet[i])
-                                   ne_out[i,4:6] <- ne_func(tprox, chr, mating, conf.level)
-                                 }
-                                 ne_out
-                               }
-
-    #release cores and clean up
-    parallel::stopCluster(cl)
-    doSNOW::registerDoSNOW()
-    gc();gc()
-
-    # merge and arrange
-    ne_out <- data.table::rbindlist(output)
-    ne_out <- dplyr::arrange(ne_out, facet, pcrit, sample.subfacet)
-  }
-  else{stop("par must be FALSE or a numeric value designating the number of cores to run.\n")}
-
-  return(list(ne = ne_out, x = x))
+  
+  #===============return================================
+  x <- merge.snpR.stats(x, geo_mats, "geo_dists")
+  x <- merge.snpR.stats(x, ibd, "ibd")
+  x <- update_calced_stats(x, facets, c("geo_dist", "ibd"))
+  
+  return(x)
 }

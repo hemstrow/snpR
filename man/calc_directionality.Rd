@@ -4,19 +4,41 @@
 \alias{calc_directionality}
 \title{Calculate the directionality index from a 2d site frequency spectrum.}
 \usage{
-calc_directionality(sfs)
+calc_directionality(
+  x = NULL,
+  sfs = NULL,
+  facet = NULL,
+  pops = NULL,
+  projection = NULL
+)
 }
 \arguments{
+\item{x}{snpRdata object, default NULL. If provided, snpRdata from which to calculate a SFS. Ignored if a
+sfs is provided directly.}
+
 \item{sfs}{numeric matrix. A 2d site frequency spectra stored in a matrix,
 with an additional "pops" attribute containing population IDs, such as
 c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 the second to matrix rows. These objects can be produced from a dadi input
 file using \code{\link{make_SFS}}.}
+
+\item{facet}{character, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
+Ignored if a sfs is provided.}
+
+\item{pops}{character, default NULL. cPassed to \code{\link{calc_SFS}} -- see documentation there for details.
+Ignored if a sfs is provided.}
+
+\item{projection}{numeric, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
+Ignored if a sfs is provided.}
+}
+\value{
+A numeric value giving the directionality with a "direction" attribute designating the direction between the two populations.
 }
 \description{
 Calculates the directionality index based on a 2d SFS according to Peter and
-Slatkin (2013). Input spectra can be created using the \code{\link{make_SFS}}
-function. Spectra must be not be folded
+Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
+function, using a provided snpRdata object, or passed from other programs. 
+\emph{Spectra must be not be folded}.
 }
 \details{
 Essentially, the directionality index measures the difference in derived
@@ -26,6 +48,15 @@ sourced from but experienced more genetic drift than the "source" population,
 it should have relativley more high-frequency derived alleles \emph{after the
 removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 details.
+}
+\examples{
+# directionality can be calculated without first calculating a SFS
+calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
+
+#an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
+sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = F)
+calc_directionality(sfs = sfs)
+
 }
 \references{
 Peter, B. M., & Slatkin, M. (2013). Detecting range expansions

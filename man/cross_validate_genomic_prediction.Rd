@@ -93,8 +93,8 @@ full list of references.
 \examples{
 # run and plot a basic prediction
 ## add some dummy phenotypic data.
-sample.meta <- cbind(weight = rnorm(ncol(dat)), stickSNPs@sample.meta)
-dat <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
+dat <- stickSNPs
+sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 ## run cross_validation
 cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 

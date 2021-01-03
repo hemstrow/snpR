@@ -4,7 +4,9 @@
 \name{stickRAW}
 \alias{stickRAW}
 \title{Deschutes stickleback raw data.}
-\format{An object of class \code{data.frame} with 833 rows and 423 columns.}
+\format{
+An object of class \code{data.frame} with 833 rows and 423 columns.
+}
 \usage{
 stickRAW
 }

@@ -19,6 +19,8 @@ plot_clusters(
   iter = 1000,
   viridis.option = "viridis",
   alt.palette = NULL,
+  ncp = NULL,
+  ncp.max = 5,
   ...
 )
 }
@@ -61,6 +63,13 @@ to use for significance lines and SNP labels. See
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
+
+\item{ncp}{numeric or NULL, default NULL. Number of components to consider for iPCA sn format
+interpolations of missing data. If null, the optimum number will be estimated, with the
+maximum specified by ncp.max. This can be very slow.}
+
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
+the optimum number of components to use when interpolating sn data using the iPCA approach.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.}
 
@@ -113,13 +122,16 @@ automatically plotted simultaniously.
 \examples{
 # plot colored by population
 plot_clusters(stickSNPs, "pop")
+
+# plot colored by population and family
+plot_clusters(stickSNPs, "pop", "umap")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
 
 Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
 
-McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}

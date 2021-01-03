@@ -4,7 +4,9 @@
 \name{stickSNPs}
 \alias{stickSNPs}
 \title{Deschutes stickleback example snpRdata.}
-\format{An object of class \code{snpRdata} with 833 rows and 420 columns.}
+\format{
+An object of class \code{snpRdata} with 833 rows and 420 columns.
+}
 \usage{
 stickSNPs
 }

@@ -1,23 +1,18 @@
 
 #' Write an input for the COLONY pedigree assignment program.
 #'
-#' Creates an input file in the format required for command-line usage of the
-#' COLONY pedigree program. Requires a snpRdata object containing offspring
-#' genotypes and can optionally take a snpRdata object containing maternal or
-#' paternal genotypes, or both.
+#' Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
 #'
+#' This is still in development. The defaults and the most commonly used options have been tested and work, but some of the more eosteric options haven't been fully tested yet.
 #' @param x snpRdata object containing offspring genotypes.
-#' @param outfile character, default "colony_input". Output file name. A file
-#'   path may be provided (e.g. "colony/colony_run_1.txt").
-#' @param method character, default "FPLS". Pedigree reconstruction method.
-#'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}
-#'   \item{"PLS": }{} }
+#' @param outfile character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").
+#' @param method character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
+#'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more computationally intensive and slow to run, especially with large complex datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less computationally intensive than FL.}}
 #' @param run_length numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.
 #' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sibship_prior numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.
-#' @param  paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
-#' @param maternal_sibship_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
+#' @param sibship_prior numeric in c(0, 1, 2, 3, 4), default 0. Strength the sibship size prior (no prior, weak, medium, strong, OR determine from known prior values). Values other than 0 require additional parameters. Option for supplying value of 4, currently not implemented in snpR. See Colony User Guide for more details. 
+#' @param paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
+#' @param maternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
 #' @param nruns integer, default 1. A number of replicate runs for the dataset.
 #' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
@@ -31,17 +26,25 @@
 #' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
 #' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
 #' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
-#' @param known_af character, default FALSE. If TRUE supply a vector of known allele frequencies.
-#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.
-#' @param dropout numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
-#' @param genotyping_error numeric in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
-#' @param known_maternal_dyads character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.
-#' @param known_paternal_dyads character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
+#' @param known_af character, default FALSE. If TRUE snpR will calculate and supply mafs, else, supply a numeric vector containing the known maf for each locus.
+#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.
+#' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
+#' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
+#' @param known_maternal_dyads character, default NULL. Supply matrix or dataframe with known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.  
+#' @param known_paternal_dyads character, default NULL. Supply matrix or dataframe with known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
+#' @param known_paternal_max_mismatches integer in c(0,1,2:nsample), default 0.
+#' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+#' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+#' @param maternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.
+#' @param paternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.
+#' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
+#' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
 #'
+#' @name colony_interface
 #' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
@@ -56,17 +59,17 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
                                excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
 
-  if(known_af[1] != FALSE){
-    stop("known_af is not yet implemented.\n")
-  }
+
   #=====================initialize===============
   # initialize storage directory
-  if(!dir.exists("colony")){
-    dir.create("colony")
-    setwd("colony")
-  }
-  else{
-    setwd("colony")
+  if(basename(getwd()) != "colony"){
+    if(!dir.exists("colony")){
+      dir.create("colony")
+      setwd("colony")
+    }
+    else{
+      setwd("colony")
+    }
   }
 
   # write anything preliminary to output
@@ -79,16 +82,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   #=====================sanity checks============
   # check if file exists
   if(file.exists(outfile)){
-    cat("COLONY input file", outfile,  "already exits. ")
-    resp <- "empty"
-    while(resp != "y" & resp != "n"){
-      cat("Overwrite? (y or n)\n")
-      resp <- readLines(n = 1)
-    }
-    if(resp == "n"){
-      setwd("..")
-      stop("Please move or rename existing input file in the colony directory")
-    }
+    file.remove(outfile)
   }
 
   #=====================write first stuff=============
@@ -133,7 +127,6 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(sampleIDs)){
     colony_genotypes[,1] <- x@sample.meta[,sampleIDs]
   }
-
   # allele frequencies
   ## if provided with minor allele frequencies
   if(length(known_af) == nrow(x) & is.numeric(known_af)){
@@ -141,10 +134,10 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write(rep(2, nrow(x)), outfile, append = T, sep = " ", ncolumns = nrow(x)) # number of alleles per locus, should all be two.
     maj <- 1 - known_af
     afs <- cbind(maj, known_af)
-    for(i in 1:nrow(known_af)){
-      write(1:2, outfile, sep = " ", append = T)
-      write(afs[i,], outfile, append = T, sep = " ")
-    }
+    afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
+    afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
+    afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
+    write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
   }
   # otherwise, check the logical and calculate minor allele frequencies if true
   else if(is.logical(known_af[1]) & length(known_af) == 1){
@@ -156,11 +149,10 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
       x <- calc_maf(x)
       afs <- x@stats[x@stats$facet == ".base",]$maf
       afs <- cbind(1-afs, afs)
-      maj.min <- cbind(maj.ident, min.ident)
-      for(i in 1:nrow(afs)){
-        write(1:2, outfile, sep = " ", append = T)
-        write(afs[i,], outfile, append = T, sep = " ")
-      }
+      afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
+      afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
+      afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
+      write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
     }
   }
   else{
@@ -236,7 +228,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating genotypes
   }
-write("\n", outfile, append = T) #added newline
+  write("\n", outfile, append = T) #added newline
 
   if(class(maternal_genotypes) == "snpRdata"){
     female_colony <- format_snps(maternal_genotypes, "colony")
@@ -288,7 +280,7 @@ write("\n", outfile, append = T) #added newline
   if(!is.null(paternal_exclusions[1,1])){
     npe <- nrow(paternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males seperated by spaces.
+    write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -298,7 +290,7 @@ write("\n", outfile, append = T) #added newline
   if(!is.null(maternal_exclusions[1,1])){
     npe <- nrow(maternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females seperated by spaces.
+    write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -308,7 +300,7 @@ write("\n", outfile, append = T) #added newline
   if(!is.null(excluded_paternal_siblings[1,1])){
     n_eps <- nrow(excluded_paternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the exluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings seperated by spaces.
+    write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -318,7 +310,7 @@ write("\n", outfile, append = T) #added newline
   if(!is.null(excluded_maternal_siblings[1,1])){
     n_eps <- nrow(excluded_maternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the exluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings seperated by spaces.
+    write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -356,7 +348,7 @@ call_colony <- function(infile, colony_path){
   if(!dir.exists("colony")){
     dir.create("colony")
   }
-
+  
   file.rename(files, paste0("./colony/", files))
 }
 
@@ -410,7 +402,8 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
 #' will be stored in a colony folder created in the current working directory.
 #'
 #' @export
-run_colony <- function(x, colony_path,  outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
+#' @describeIn colony_interface run colony on a snpRdata object, start to finish
+run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                        sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                        nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
                        maternal_inclusion_prob = 0, paternal_inclusion_prob = 0,

@@ -83,13 +83,19 @@ Heatmaps of the resulting data can be easily plotted using
 }
 \examples{
 #CLD
-calc_pairwise_ld(stickSNPs, facets = "group.pop")
+x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
+get.snpR.stats(x, "group.pop", "LD")
 
 #standard haplotype frequency estimation
-calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+get.snpR.stats(x, "group.pop", "LD")
 
+\dontrun{
+## not run, really slow
 #ME haplotype estimation
-calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+get.snpR.stats(x, "group.pop", "LD")
+}
 }
 \references{
 Dimitri Zaykin (2004). \emph{Genetic Epidemiology}

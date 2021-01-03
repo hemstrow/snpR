@@ -426,6 +426,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
+#' @param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
+#'   interpolations of missing data. If null, the optimum number will be estimated, with the
+#'   maximum specified by ncp.max. This can be very slow.
+#' @param ncp.max numeric, default 5. Maximum number of components to check for when determining
+#'   the optimum number of components to use when interpolating sn data using the iPCA approach.
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
 #'
 #' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
@@ -438,7 +443,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'
 #' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
 #' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
-#' @references McInnes, L. & Healy (2018). JUMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#' @references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 #'
 #' @seealso \code{\link[mmtsne]{mmtsne}}
 #'
@@ -447,10 +452,13 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @examples
 #' # plot colored by population
 #' plot_clusters(stickSNPs, "pop")
+#' 
+#' # plot colored by population and family
+#' plot_clusters(stickSNPs, "pop", "umap")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
-                          viridis.option = "viridis", alt.palette = NULL, ...){
+                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, ...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -491,6 +499,23 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
   }
 
+  if("umap" %in% plot_type){
+    pkg.check <- check.installed("umap")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  }
+  
+  if("tsne" %in% plot_type){
+    pkg.check <- check.installed("Rtsne")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+    
+    pkg.check <- check.installed("mmtsne")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  }
+  
+  if(interpolation_method == "iPCA"){
+    check.installed("missMDA")
+  }
+  
 
   if(length(msg) > 0){
     stop(paste0(msg, collapse = "  \t"))
@@ -502,12 +527,12 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
   # check for matching sn plot:
   if(length(x@sn) != 0){
     if(x@sn$type != interpolation_method){
-      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
       x@sn$type <- interpolation_method
     }
   }
   else{
-    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method))
+    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
     x@sn$type <- interpolation_method
   }
 
@@ -821,6 +846,14 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3")){
 
+  #=============sanity checks==============================
+  msg <- character()
+  pkg.check <- check.installed("ggrepel")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  if(length(msg) > 0){
+    stop(msg, collapse = "\n")
+  }
   #=============grab the desired stats=====================
   #====if a snpRdata object========
   if(class(x) == "snpRdata"){
@@ -980,7 +1013,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   #============produce the plot========
-  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = chr)) +
+  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
     ggplot2::geom_point() +
     ggplot2::theme_bw() +
     ggplot2::theme(legend.position = "none",
@@ -1157,6 +1190,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   msg <- character()
   provided_qlist <- FALSE
 
+  check.installed("pophelper", "github", "royfrancis/pophelper")
+  
   # check if this is with a snpRdata object or a qlist and do some other checks
   if(!class(x) == "snpRdata"){
     # file pattern
@@ -1220,12 +1255,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
 
-  if(method == "snmf"){
-    if(!("LEA" %in% rownames(installed.packages()))){
-      msg <- c(msg, "The package LEA must be installed to run sNMF assignment. LEA can be installed via bioconductor with BiocManager::install('LEA')\n")
-    }
-  }
-
   if(provided_qlist == FALSE & reps == "all"){
     msg <- c(msg, "reps = 'all' uninterpretable if a qlist is not provided.\n")
   }
@@ -1239,6 +1268,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
     }
     good.clumpp.opts <- c("fullsearch", "greedy", "large.k.greedy")
+    clumpp.opt <- tolower(clumpp.opt)
     if(!clumpp.opt %in% good.clumpp.opts){
       msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
     }
@@ -1254,6 +1284,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     good.methods <- c("snapclust", "snmf")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
+    }
+    
+    if(method == "snmf"){
+      check.installed("LEA", "bioconductor")
+    }
+    if(method == "snapclust"){
+      check.installed("adegenet")
     }
 
     if(length(facet) > 1){
@@ -1297,6 +1334,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       rm(res, tpd, color.check)
     }
   }
+
+  if(is.null(facet[1])){qsort <- F}
 
   if(length(msg) != 0){
     stop(msg)
@@ -1353,6 +1392,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # sort the individuals within each population based on the qvals
   Q_sort <- function(x, pop, cluster = "first", q = "last"){
 
+
     #get which pop to use
     if(q == "last"){
       q <- length(x)
@@ -1397,9 +1437,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
   # process 1 q result by adjusting column names and melting. Takes a single qlist dataframe/matrix
-  process_1_q <- function(tq, x){
+  process_1_q <- function(tq, x, sample_meta = NULL){
     colnames(tq) <- 1:ncol(tq)
     tk <- ncol(tq)
+    if(is.null(sample_meta)){
+      sample_meta <- paste0("s", 1:nrow(tq))
+    }
     tq <- cbind(tq, sample_meta)
 
     if(is.null(ID)){
@@ -1437,7 +1480,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # prepare files and run clumpp
     qfiles <- list.files(full.names = T, pattern = pattern)
     qlist <- pophelper::readQ(qfiles)
-    if(clumpp.opt == "large.K.greedy"){
+    if(clumpp.opt == "large.k.greedy"){
       clumpp.opt <- 3
     }
     else if(clumpp.opt == "greedy"){
@@ -1446,26 +1489,37 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     else{
       clumpp.opt <- 1
     }
+    ## grab only the correct k values:
+    ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
+    qlist <- qlist[which(ks <= k)]
+    ## run
     pophelper::clumppExport(qlist, useexe = T, parammode = clumpp.opt)
     pophelper::collectClumppOutput(filetype = "both")
 
     # import results
     mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
 
+    # get only the correct k values (in case this is re-running in a previous directory)
+    ks <- unlist(lapply(mq, function(x) attr(x, "k")))
+    mq <- mq[which(ks <= k)]
+
     # fix cluster IDs to match
     mq <- fix_clust(mq)
     save.q <- mq
 
+
+
     # sort by facet
     if(!is.null(facet)){
+
       if(!is.null(facet.order)){
-        qlist <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
+        mq <- sort_by_pop_qfiles(mq, sample_meta, facet.order)
       }
       else{
-        qlist <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
+        mq <- sort_by_pop_qfiles(mq, sample_meta, unique(sample_meta[,facet]))
       }
-      sample_meta <- qlist$meta
-      qlist <- qlist$qlist
+      sample_meta <- mq$meta
+      mq <- mq$qlist
     }
 
     # sort by Q values if requested
@@ -1484,7 +1538,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # process into plottable form
     for(i in 1:length(mq)){
-      mq[[i]] <- process_1_q(mq[[i]], x)
+      if(exists("sample_meta")){
+        mq[[i]] <- process_1_q(mq[[i]], x, sample_meta)
+      }
+      else{
+        mq[[i]] <- process_1_q(mq[[i]], x)
+      }
     }
 
     return(list(q = mq, ord = ind_ord, qlist = save.q))
@@ -1669,6 +1728,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     pdat <- dplyr::bind_rows(pdat$q)
 
     ## add the clumpp qlist
+    if(!exists("qlist")){
+      qlist <- vector("list", length(cq))
+    }
     for(i in 1:length(qlist)){
       qlist[[i]][["clumpp"]] <- cq[[i]]
     }
@@ -1704,7 +1766,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # process
     ## fix cluster IDs to match
-    tq <- fix_clust(tq)
+    if(length(tq) > 1){
+      tq <- fix_clust(tq)
+    }
 
     ## qsort
     if(qsort != FALSE){
@@ -1722,7 +1786,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     ## process into plottable form
     for(i in 1:length(tq)){
-      tq[[i]] <- process_1_q(tq[[i]], x)
+      if(exists("sample_meta")){
+        tq[[i]] <- process_1_q(tq[[i]], x, sample_meta)
+        
+      }
+      else{
+        tq[[i]] <- process_1_q(tq[[i]], x)
+      }
     }
 
     ## concatenate
@@ -1762,7 +1832,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # add facets
   if(!is.null(facet[1])){
     pops <- unique(sample_meta[,facet])
-    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x))
+    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
@@ -1770,14 +1840,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     seps <- c(0, fmc) + 0.5
     seps[1] <- -.5
-
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
       ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "white", size = 1) +
       ggplot2::xlab(label = facet[1])
   }
   else{
-    p <- p + ggplot2::scale_x_continuous(expand = c(0,0))
+    p <- p + ggplot2::scale_x_discrete(expand = c(0,0))
   }
 
 
@@ -1876,9 +1945,43 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
   return(p)
 }
 
+#' Plot STRUCTURE like results on a map.
+#' 
+#' Plots the mean cluster assignment for each population on a map using the scatterpie package.
+#' 
+#' @param assignments Structure like results, parsed in or generated via /code{link{plot_structure}}, which generates the needed plot data.
+#' @param K numeric. Value of K (number of clusters) to plot.
+#' @param facet character. The facet by which data is broken down in the passed assignments.
+#' @param pop_coordinates data.frame containing coordinates for each facet level. Column names are the facet levels, the first row is the latitude, the second is the longitude.
+#' @param map data.frame, default ggplot2::map_data("world2"). Map data, in a format like that produced by \code{\link[ggplot2]{map_data}} and thus interpretable by \code{\link[ggplot2]{geom_map}}.
+#' @param pop_names logical, default T. If true, facet level names will be displayed on the map.
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'   to use instead of the viridis palette.
+#' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.
+#' @param label_scale numeric, default 0.075 Factor by which to scale facet level names if plotted.
+#' @param point_padding_scale numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.
+#' 
 #' @export
+#' 
+#' @examples
+#' # plot clusters on map for the example data
+#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+#' lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+#' plot_structure_map(assignments, 2, "pop", lat_long, ggplot2::map_data("state", "oregon"), label_scale = 200) # plot
+#' 
+#' 
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
                                 pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
+  #===================sanity checks=================
+  msg <- character()
+  pkg.check <- check.installed("scatterpie")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  if(length(msg) > 0){stop(msg, "\n")}
+  
+  #==================plot===========================
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
