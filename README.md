@@ -5,4 +5,8 @@ An R package for analyzing call SNP genotypes containing most basic stats includ
 
 snpR can be installed using the install_github functions from either the devtools or remotes packages:
 
-devtools::install_github("hemstrow/snpR")
+remotes::install_github("hemstrow/snpR")
+
+To install the vignettes, instead use:
+
+remotes::install_github("hemstrow/snpR", build_vignettes = T)
