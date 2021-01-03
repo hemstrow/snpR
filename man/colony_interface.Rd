@@ -86,18 +86,18 @@ run_colony(
 \arguments{
 \item{x}{snpRdata object containing offspring genotypes.}
 
-\item{outfile}{character, default "colony_input". Output file name. A file
-path may be provided (e.g. "colony/colony_run_1.txt").}
+\item{outfile}{character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").}
 
-\item{method}{character, default "FPLS". Pedigree reconstruction method.
-Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}
-\item{"PLS": }{} }}
+\item{method}{character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
+Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more computationally intensive and slow to run, especially with large complex datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less computationally intensive than FL.}}}
 
 \item{run_length}{numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.}
 
-\item{sibship_prior}{numeric in c(0, 0.25, 0.5, 1), default 0. Strength the sibship size prior (no prior, weak, medium, or strong). Values other than 0 require additional parameters.}
+\item{sibship_prior}{numeric in c(0, 1, 2, 3, 4), default 0. Strength the sibship size prior (no prior, weak, medium, strong, OR determine from known prior values). Values other than 0 require additional parameters. Option for supplying value of 4, currently not implemented in snpR. See Colony User Guide for more details.}
 
 \item{paternal_sib_size}{numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.}
+
+\item{maternal_sib_size}{numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.}
 
 \item{nruns}{integer, default 1. A number of replicate runs for the dataset.}
 
@@ -123,35 +123,47 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{sibship_scaling}{character, default TRUE. Should Colony scale sibling groups?}
 
-\item{known_af}{character, default FALSE. If TRUE supply a vector of known allele frequencies.}
+\item{known_af}{character, default FALSE. If TRUE snpR will calculate and supply mafs, else, supply a numeric vector containing the known maf for each locus.}
 
-\item{precision}{integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the max likelihood.}
+\item{precision}{integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.}
 
 \item{dropout}{numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.}
 
 \item{genotyping_error}{numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.}
 
-\item{known_maternal_dyads}{character, default NULL. Supply list of known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.}
+\item{known_maternal_dyads}{character, default NULL. Supply matrix or dataframe with known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.}
 
-\item{known_paternal_dyads}{character, default NULL. Supply list of known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.}
+\item{known_paternal_dyads}{character, default NULL. Supply matrix or dataframe with known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.}
 
 \item{known_maternal_max_mismatches}{integer in c(0,1,2:nsample), default 0.}
 
-\item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
+\item{known_paternal_max_mismatches}{integer in c(0,1,2:nsample), default 0.}
 
-\item{maternal_sibship_size}{numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.}
+\item{known_maternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.}
+
+\item{known_paternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.}
+
+\item{maternal_exclusions}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.}
+
+\item{paternal_exclusions}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.}
+
+\item{excluded_maternal_siblings}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.}
+
+\item{excluded_paternal_siblings}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.}
+
+\item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 
 \item{female_monagamous}{character, default FALSE. Should Colony assume females are monogamous?}
 }
 \description{
-Creates an input file in the format required for command-line usage of the
-COLONY pedigree program. Requires a snpRdata object containing offspring
-genotypes and can optionally take a snpRdata object containing maternal or
-paternal genotypes, or both.
+Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
 
 Create a COLONY infile using snpRdata sets containg offspring and possibly paternal genotypes given
 specified parameters. Requires that the COLONY program is installed locally. Input and output files
 will be stored in a colony folder created in the current working directory.
+}
+\details{
+This is still in development. The defaults and the most commonly used options have been tested and work, but some of the more eosteric options haven't been fully tested yet.
 }
 \section{Functions}{
 \itemize{

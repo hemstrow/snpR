@@ -3,6 +3,7 @@
 #'
 #' Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
 #'
+#' This is still in development. The defaults and the most commonly used options have been tested and work, but some of the more eosteric options haven't been fully tested yet.
 #' @param x snpRdata object containing offspring genotypes.
 #' @param outfile character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").
 #' @param method character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
