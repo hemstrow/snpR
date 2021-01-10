@@ -211,14 +211,15 @@ calc_maf <- function(x, facets = NULL){
     
     # for non-base facets, use the given major and minor to calculate maf
     else{
-      
+
       # use a data.table function to get the major allele counts
       adt <- as.data.table(gs$as)
       rep.factor <- nrow(gs$as)/nrow(ref)
       major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
       adt$major <-  major
       adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
-      total.allele.count <- rowSums(adt[,1:4])
+      ac.rows <- 1:(which(colnames(adt) == "major") - 1)
+      total.allele.count <- rowSums(adt[,..ac.rows])
       maf <- 1 - adt$maj_count/total.allele.count # get the maf
       
       # other things for return
