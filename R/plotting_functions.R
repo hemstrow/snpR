@@ -1493,7 +1493,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
     qlist <- qlist[which(ks <= k)]
     ## run
-    pophelper::clumppExport(qlist, useexe = T, parammode = clumpp.opt)
+    pophelper::clumppExport(qlist, parammode = clumpp.opt)
     pophelper::collectClumppOutput(filetype = "both")
 
     # import results
