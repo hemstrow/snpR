@@ -129,9 +129,9 @@ add.facets.snpR.data <- function(x, facets = NULL){
     x@facet.meta <- dplyr::mutate_if(.tbl = x@facet.meta, is.factor, as.character)
     x@facet.meta$.reorder <- 1:nrow(x@facet.meta)
     x@facet.meta <- dplyr::arrange(x@facet.meta, .snp.id, facet, subfacet)
-    gs$gs <- gs$gs[x@facet.meta$.reorder,]
-    gs$as <- gs$as[x@facet.meta$.reorder,]
-    gs$wm <- gs$wm[x@facet.meta$.reorder,]
+    gs$gs <- gs$gs[x@facet.meta$.reorder,, drop = F]
+    gs$as <- gs$as[x@facet.meta$.reorder,, drop = F]
+    gs$wm <- gs$wm[x@facet.meta$.reorder,, drop = F]
     x@facet.meta <- x@facet.meta[,-ncol(x@facet.meta)]
     
     # output

@@ -34,8 +34,8 @@
 #' @param known_paternal_dyads character, default NULL. Supply matrix or dataframe with known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
 #' @param known_paternal_max_mismatches integer in c(0,1,2:nsample), default 0.
-#' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
-#' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+#' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.
+#' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.
 #' @param maternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.
 #' @param paternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.
 #' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
@@ -46,6 +46,26 @@
 #'
 #' @name colony_interface
 #' @export
+#' 
+#' @examples 
+#' # A simple example for running all individuals in the snpR object as siblings in colony.
+#'  write_colony_input(x = stickSNPs, outfile = "stk.col")
+
+#' A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects. 
+#' a <- 2013:2015 #create a vector of possible birthyears
+#' b <- c("M", "F", "U") #create a vector of possible sexes
+#' stk <- stickSNPs
+#' sample.meta(stk)$BirthYear <- sample(x = a, size = nrow(stk@sample.meta), replace = T) #create birthyears
+#' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
+#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create sexes
+#' #generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
+#' sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
+#' dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
+#' off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
+#'  write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
+
+
+
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                                nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,

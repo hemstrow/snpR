@@ -211,14 +211,15 @@ calc_maf <- function(x, facets = NULL){
     
     # for non-base facets, use the given major and minor to calculate maf
     else{
-      
+
       # use a data.table function to get the major allele counts
       adt <- as.data.table(gs$as)
       rep.factor <- nrow(gs$as)/nrow(ref)
       major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
       adt$major <-  major
       adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
-      total.allele.count <- rowSums(adt[,1:4])
+      ac.rows <- 1:(which(colnames(adt) == "major") - 1)
+      total.allele.count <- rowSums(adt[,..ac.rows])
       maf <- 1 - adt$maj_count/total.allele.count # get the maf
       
       # other things for return
@@ -2235,19 +2236,19 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
   # calculate composite LD for a single facet of data.
   do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
-    # function to melt and add metadata
     melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
       colnames(CLD) <- snp.meta$position
       rownames(CLD) <- snp.meta$position
       prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
       prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
       prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
-      prox <- prox[, -"variable"]
+      prox <- prox[, -which(colnames(prox) == "variable")]
       colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
       prox <- na.omit(prox)
-      data.table::set(prox, j = "proximity", value = abs(prox$s1_position - prox$s2_position))
-      data.table::set(prox, j = "sample.facet", value = sample.facet)
-      data.table::set(prox, j = "sample.subfacet", value = sample.subfacet)
+      prox <- as.data.table(prox)
+      prox[,proximity := abs(s1_position - s2_position)]
+      prox[,sample.facet := sample.facet]
+      prox[,sample.subfacet := sample.subfacet]
       setcolorder(prox, c(1:ncol(snp.meta),
                           (ncol(snp.meta) + 2):(ncol(prox) - 3),
                           ncol(prox) - 2,
@@ -2364,9 +2365,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
                                              subfacets = tasks[i,2],
                                              snp.facets = tasks[i,3],
                                              snp.subfacets = tasks[i,4]))
-
+      
       out <- do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
-
+      
       # extract
       matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
       prox_storage[[i]] <- out$prox
