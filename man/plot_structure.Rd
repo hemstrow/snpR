@@ -17,6 +17,7 @@ plot_structure(
   qsort = "last",
   qsort_K = "last",
   clumpp = T,
+  clumpp_path = "/usr/bin/CLUMPP.exe",
   clumpp.opt = "greedy",
   ID = NULL,
   viridis.option = "viridis",
@@ -76,6 +77,8 @@ sorted. If "first" or "last", sorts by k = 2 or k = k, respectively.}
 \item{clumpp}{logical, default T. Specifies if CUMPP should be run to
 collapse results across multiple reps. If FALSE, will use only the first
 rep for plotting.}
+
+\item{clumpp_path}{character, default "/usr/bin/CLUMPP.exe". Path to the clumpp executable, required if clumpp = T.}
 
 \item{clumpp.opt}{character, default "greedy". Designates the CLUMPP method
 to use. Options: \itemize{ \item{fullsearch: } Search all possible
