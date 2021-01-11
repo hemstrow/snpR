@@ -1140,6 +1140,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param clumpp logical, default T. Specifies if CUMPP should be run to
 #'   collapse results across multiple reps. If FALSE, will use only the first
 #'   rep for plotting.
+#' @param clumpp_path character, default "/usr/bin/CLUMPP.exe". Path to the clumpp executable, required if clumpp = T.
 #' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
 #'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
@@ -1182,7 +1183,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   selection vs K value for the selected method.}
 #'
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
-                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T,
+                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), ...){
 
@@ -1271,6 +1272,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     clumpp.opt <- tolower(clumpp.opt)
     if(!clumpp.opt %in% good.clumpp.opts){
       msg <- c(msg, paste0("Unaccepted clumpp option. Accepted options: ", paste0(good.clumpp.opts, collapse = ", "), "\n"))
+    }
+    
+    if(!file.exists(clumpp_path)){
+      msg <- c(msg, paste0("Could not find clumpp executable at given clumpp_path.\n"))
     }
   }
   else if(provided_qlist == "parse"){
@@ -1493,8 +1498,16 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
     qlist <- qlist[which(ks <= k)]
     ## run
-    pophelper::clumppExport(qlist, parammode = clumpp.opt)
-    pophelper::collectClumppOutput(filetype = "both")
+    pophelper::clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
+    dirs <- list.files(".", "pop")
+    for(i in 1:length(dirs)){
+      file.copy(clumpp_path, paste0("./", dirs[i], "/"))
+      setwd(dirs[i])
+      system(basename(clumpp_path))
+      setwd("..")
+    }
+    pophelper::collectClumppOutput(filetype = "both", runsdir = getwd(), newdir = "pop-both")
+
 
     # import results
     mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
