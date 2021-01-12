@@ -1960,64 +1960,113 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 
 #' Plot STRUCTURE like results on a map.
 #' 
-#' Plots the mean cluster assignment for each population on a map using the scatterpie package.
+#' Plots the mean cluster assignment for each population on a map using the scatterpie package alongside
+#' any additional simple feature objects (\code{\link[sf]{sf}}). Assignments must be given in the format provided
+#' by \code{link{plot_structure}}.
 #' 
-#' @param assignments Structure like results, parsed in or generated via /code{link{plot_structure}}, which generates the needed plot data.
+#' Currently, this only works for simple, sample specific facets. Coordinates for pie charts should be provided
+#' as an \code{\link[sf]{sf}} object, where one column, named for the facet being plotted, provides the subfacet level names
+#' matching those in the assignments. Additional sf objects can be provided, which will also be plotted. Note that there is
+#' no need to standardize the CRS across the objects, since each will be transformed to match the sample coordinates.
+#' 
+#' @param assignments Structure like results, parsed in or generated via \code{link{plot_structure}}, which generates the needed plot data.
 #' @param K numeric. Value of K (number of clusters) to plot.
 #' @param facet character. The facet by which data is broken down in the passed assignments.
-#' @param pop_coordinates data.frame containing coordinates for each facet level. Column names are the facet levels, the first row is the latitude, the second is the longitude.
-#' @param map data.frame, default ggplot2::map_data("world2"). Map data, in a format like that produced by \code{\link[ggplot2]{map_data}} and thus interpretable by \code{\link[ggplot2]{geom_map}}.
+#' @param pop_coordinates sf object, see \code{\link[sf]{sf}}. sf object containing points/coordinates for each facet level. Must contain a column of data with population labels named identically to the provided facet (for example, named "pop" if "pop" is the provided facet.)
+#' @param sf list of sf objects, default NULL. Additional features to be plotted alongside points, such as rivers or county lines.
+#' @param sf_fill_colors character vector, default "viridis". A vector of colors to use to fill each polygon sf object. By default, uses the viridis palette with an alpha of 0.2.
+#' @param sf_line_colors character vector, default "viridis". A vector of colors to use to color lines in in each sf object. By default, uses the viridis palette with an alpha of 0.2.
 #' @param pop_names logical, default T. If true, facet level names will be displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
-#'   to use instead of the viridis palette.
+#'   to use instead of viridis palette  the pie charts.
 #' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.
 #' @param label_scale numeric, default 0.075 Factor by which to scale facet level names if plotted.
 #' @param point_padding_scale numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.
+#' @param crop logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.
 #' 
 #' @export
 #' 
 #' @examples
-#' # plot clusters on map for the example data
-#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+#' \dontrun{
+#' # get an sf of the sampling locations
 #' lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
-#' plot_structure_map(assignments, 2, "pop", lat_long, ggplot2::map_data("state", "oregon"), label_scale = 200) # plot
+#' lat_long <- t(lat_long)
+#' colnames(lat_long) <- c("lat", "long")
+#' lat_long <- as.data.frame(lat_long)
+#' lat_long$pop <- rownames(lat_long)
+#' psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
+#' psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 #' 
+#' # get the assignments
+#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
 #' 
-plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
-                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
+#' # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+#' background <- maps::map("state", "oregon")
+#' background <- sf::st_as_sf(background)
+#' 
+#' # make the plot
+#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2)
+#' }
+plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
+                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = F){
   #===================sanity checks=================
   msg <- character()
   pkg.check <- check.installed("scatterpie")
+  pkg.check <- check.installed("sf")
+  
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  
+  
+  if(!is.null(sf)){
+    use_crs <- sf::st_crs(pop_coordinates)
+    
+    # polygon palette
+    is.poly <- unlist(lapply(sf, function(x) grepl("POLYGON", sf::st_geometry_type(x)[1])))
+    poly.sum <- sum(is.poly)
+    if(poly.sum > 0){
+      if(sf_fill_colors == "viridis"){
+        poly_pal <- viridis::viridis(poly.sum, alpha = .2, option = viridis.option)
+      }
+      else{
+        if(length(sf_fill_colors) != poly.sum){
+          warning("The length of the provided fill colors is not the same as the number of polygon sf objects to be plotted, defaulting to viridis.\n")
+          poly_pal <- viridis::viridis(poly.sum, alpha = .2, option = viridis.option)
+        }
+        else{
+          poly_pal <- sf_fill_colors
+        }
+      }
+      used_poly_pall <- 0
+    }
+    
+    if(sf_line_colors == "viridis"){
+      sf_line_colors <- viridis::viridis(length(sf), option = viridis.option)
+    }
+    else{
+      if(length(sf_line_colors) != length(sf)){
+        warning("The length of the provided line colors is not the same as the number of sf objects to be plotted, defaulting to viridis.\n")
+        sf_line_colors <- viridis::viridis(length(sf), alpha = .2, option = viridis.option)
+      }
+    }
+  }
   
   if(length(msg) > 0){stop(msg, "\n")}
   
   #==================plot===========================
   # generate plotting data.frame
-  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
+  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,which(colnames(assignments$plot_data) == facet)])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
   tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", K),]
   tpd <- tpd[,c(facet, "Cluster", "Percentage")]
   tpd$Cluster <- as.numeric(tpd$Cluster)
   anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)
 
-  ## check if we need to flip negative longitude scores
-  if(all(map$long >= 0)){
-    flip <- T
-  }
-  else{
-    flip <- F
-  }
-
-  for(i in 1:ncol(pop_coordinates)){
-    pie_dat[i,1] <- colnames(pop_coordinates)[i]
-    pie_dat[i,-1] <- c(pop_coordinates[1,i], pop_coordinates[2,i], anc[colnames(pop_coordinates)[i],])
-    if(pie_dat$long[i] < 0 & flip){
-      pie_dat$long[i] <- 360 + pie_dat$long[i]
-    }
-  }
+  ## get the pie coordinates
+  pie_dat[,1] <- as.data.frame(pop_coordinates)[,facet]
+  pie_dat[,3:2] <- sf::st_coordinates(pop_coordinates)
+  pie_dat[,4:ncol(pie_dat)] <- anc[match(pie_dat[,1], row.names(anc)),]
 
   # figure out the radius to use
   lat_range <- range(pie_dat$lat)
@@ -2025,15 +2074,36 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
   r <- min(lat_range[2] - lat_range[1], long_range[2] - long_range[1])
   r <- r*radius_scale
 
+
   # make the plot
-  mp <- ggplot2::ggplot(map, ggplot2::aes(x = long, y = lat)) +
-    ggplot2::geom_map(map = map, ggplot2::aes(map_id = region), fill = "grey", color = "white") +
-    ggplot2::theme_bw() +
-    ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
-    ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r)) +
+  mp <- ggplot2::ggplot()
+  
+  # add sf overlay if requested.
+  if(!is.null(sf)){
+    for(i in 1:length(sf)){
+      sf[[i]] <- sf::st_transform(sf[[i]], use_crs)
+      if(is.poly[i]){
+        mp <- mp + ggplot2::geom_sf(data = sf[[i]], fill = poly_pal[used_poly_pall + 1], color = sf_line_colors[i])
+      }
+      else{
+        mp <- mp + ggplot2::geom_sf(data = sf[[i]], color = sf_line_colors[i])
+      }
+    }
+  }
+    
+  
+  # add the scatterpie
+  mp <- mp + ggplot2::theme_bw() +
     scatterpie::geom_scatterpie(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, r = r), cols = colnames(pie_dat)[4:ncol(pie_dat)]) +
     ggplot2::theme(legend.title = ggplot2::element_blank()) +
     ggplot2::xlab("Longitude") + ggplot2::ylab("Latitude")
+  
+  if(crop){
+    mp <- mp +
+      ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
+      ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r))
+    
+  }
 
   if(!is.null(alt.palette)){
     mp <- mp + ggplot2::scale_fill_manual(values = alt.palette)
@@ -2046,6 +2116,6 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
     #mp + ggplot2::geom_label(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale)
     mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale, point.padding = r*point_padding_scale, max.iter = 10000)
   }
-
+  
   return(mp)
 }

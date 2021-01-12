@@ -55,6 +55,7 @@ Suggests:
     readr,
     remotes,
     Rtsne,
+    sf,
     umap,
     viridis,
     testthat
