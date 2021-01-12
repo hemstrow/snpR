@@ -1985,7 +1985,7 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' plot_structure_map(assignments, 2, "pop", lat_long, ggplot2::map_data("state", "oregon"), label_scale = 200) # plot
 #' 
 #' 
-plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggplot2::map_data("world2"),
+plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = NULL,
                                 pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25){
   #===================sanity checks=================
   msg <- character()
@@ -1995,8 +1995,9 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
   if(length(msg) > 0){stop(msg, "\n")}
   
   #==================plot===========================
+  browser()
   # generate plotting data.frame
-  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,1])), ncol = 3 + K))
+  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,which(colnames(assignments$plot_data) == facet)])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
   tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", K),]
   tpd <- tpd[,c(facet, "Cluster", "Percentage")]
@@ -2025,15 +2026,24 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, map = ggp
   r <- min(lat_range[2] - lat_range[1], long_range[2] - long_range[1])
   r <- r*radius_scale
 
+
   # make the plot
-  mp <- ggplot2::ggplot(map, ggplot2::aes(x = long, y = lat)) +
-    ggplot2::geom_map(map = map, ggplot2::aes(map_id = region), fill = "grey", color = "white") +
-    ggplot2::theme_bw() +
+  if(!is.null(map)){
+    ## if we are provided a maps style simple map
+    mp <- ggplot2::ggplot(map, ggplot2::aes(x = long, y = lat)) +
+      ggplot2::geom_map(map = map, ggplot2::aes(map_id = region), fill = "grey", color = "white")
+  }
+  else{
+    mp <- ggplot2::ggplot()
+  }
+  
+  mp <- mp + ggplot2::theme_bw() +
     ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
     ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r)) +
     scatterpie::geom_scatterpie(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, r = r), cols = colnames(pie_dat)[4:ncol(pie_dat)]) +
     ggplot2::theme(legend.title = ggplot2::element_blank()) +
     ggplot2::xlab("Longitude") + ggplot2::ylab("Latitude")
+  
 
   if(!is.null(alt.palette)){
     mp <- mp + ggplot2::scale_fill_manual(values = alt.palette)
