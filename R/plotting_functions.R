@@ -2026,7 +2026,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
     is.poly <- unlist(lapply(sf, function(x) grepl("POLYGON", sf::st_geometry_type(x)[1])))
     poly.sum <- sum(is.poly)
     if(poly.sum > 0){
-      if(sf_fill_colors == "viridis"){
+      if(sf_fill_colors[1] == "viridis"){
         poly_pal <- viridis::viridis(poly.sum, alpha = .2, option = viridis.option)
       }
       else{
@@ -2041,7 +2041,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
       used_poly_pall <- 0
     }
     
-    if(sf_line_colors == "viridis"){
+    if(sf_line_colors[1] == "viridis"){
       sf_line_colors <- viridis::viridis(length(sf), option = viridis.option)
     }
     else{
@@ -2084,6 +2084,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
       sf[[i]] <- sf::st_transform(sf[[i]], use_crs)
       if(is.poly[i]){
         mp <- mp + ggplot2::geom_sf(data = sf[[i]], fill = poly_pal[used_poly_pall + 1], color = sf_line_colors[i])
+        used_poly_pall <- used_poly_pall + 1
       }
       else{
         mp <- mp + ggplot2::geom_sf(data = sf[[i]], color = sf_line_colors[i])
