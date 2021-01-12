@@ -9,25 +9,32 @@ plot_structure_map(
   K,
   facet,
   pop_coordinates,
-  map = ggplot2::map_data("world2"),
+  sf = NULL,
+  sf_fill_colors = "viridis",
+  sf_line_colors = "viridis",
   pop_names = T,
   viridis.option = "viridis",
   alt.palette = NULL,
   radius_scale = 0.05,
   label_scale = 0.75,
-  point_padding_scale = 0.25
+  point_padding_scale = 0.25,
+  crop = F
 )
 }
 \arguments{
-\item{assignments}{Structure like results, parsed in or generated via /code{link{plot_structure}}, which generates the needed plot data.}
+\item{assignments}{Structure like results, parsed in or generated via \code{link{plot_structure}}, which generates the needed plot data.}
 
 \item{K}{numeric. Value of K (number of clusters) to plot.}
 
 \item{facet}{character. The facet by which data is broken down in the passed assignments.}
 
-\item{pop_coordinates}{data.frame containing coordinates for each facet level. Column names are the facet levels, the first row is the latitude, the second is the longitude.}
+\item{pop_coordinates}{sf object, see \code{\link[sf]{sf}}. sf object containing points/coordinates for each facet level. Must contain a column of data with population labels named identically to the provided facet (for example, named "pop" if "pop" is the provided facet.)}
 
-\item{map}{data.frame, default ggplot2::map_data("world2"). Map data, in a format like that produced by \code{\link[ggplot2]{map_data}} and thus interpretable by \code{\link[ggplot2]{geom_map}}.}
+\item{sf}{list of sf objects, default NULL. Additional features to be plotted alongside points, such as rivers or county lines.}
+
+\item{sf_fill_colors}{character vector, default "viridis". A vector of colors to use to fill each polygon sf object. By default, uses the viridis palette with an alpha of 0.2.}
+
+\item{sf_line_colors}{character vector, default "viridis". A vector of colors to use to color lines in in each sf object. By default, uses the viridis palette with an alpha of 0.2.}
 
 \item{pop_names}{logical, default T. If true, facet level names will be displayed on the map.}
 
@@ -35,22 +42,46 @@ plot_structure_map(
 option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
-to use instead of the viridis palette.}
+to use instead of viridis palette  the pie charts.}
 
 \item{radius_scale}{numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.}
 
 \item{label_scale}{numeric, default 0.075 Factor by which to scale facet level names if plotted.}
 
 \item{point_padding_scale}{numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.}
+
+\item{crop}{logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.}
 }
 \description{
-Plots the mean cluster assignment for each population on a map using the scatterpie package.
+Plots the mean cluster assignment for each population on a map using the scatterpie package alongside
+any additional simple feature objects (\code{\link[sf]{sf}}). Assignments must be given in the format provided
+by \code{link{plot_structure}}.
+}
+\details{
+Currently, this only works for simple, sample specific facets. Coordinates for pie charts should be provided
+as an \code{\link[sf]{sf}} object, where one column, named for the facet being plotted, provides the subfacet level names
+matching those in the assignments. Additional sf objects can be provided, which will also be plotted. Note that there is
+no need to standardize the CRS across the objects, since each will be transformed to match the sample coordinates.
 }
 \examples{
-# plot clusters on map for the example data
-assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+\dontrun{
+# get an sf of the sampling locations
 lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
-plot_structure_map(assignments, 2, "pop", lat_long, ggplot2::map_data("state", "oregon"), label_scale = 200) # plot
+lat_long <- t(lat_long)
+colnames(lat_long) <- c("lat", "long")
+lat_long <- as.data.frame(lat_long)
+lat_long$pop <- rownames(lat_long)
+psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
+psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 
+# get the assignments
+assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
 
+# get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+background <- maps::map("state", "oregon")
+background <- sf::st_as_sf(background)
+
+# make the plot
+plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2)
+}
 }
