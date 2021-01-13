@@ -44,6 +44,7 @@ Suggests:
     genepop,
     geosphere,
     ggrepel,
+    ggsn,
     GMMAT,
     knitr,
     LEA,
