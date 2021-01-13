@@ -2125,7 +2125,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   
   # scale/compass
   if((!is.null(scale_bar) | !is.null(compass))){
-    if(!is.null(sf) | crop){
+    if(!is.null(sf) | crop){ 
       # make up a null sf object to set extent if needed
       y <- ggplot2::layer_scales(mp)$y$range$range
       x <- ggplot2::layer_scales(mp)$x$range$range
