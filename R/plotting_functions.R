@@ -1985,6 +1985,8 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' @param label_scale numeric, default 0.075 Factor by which to scale facet level names if plotted.
 #' @param point_padding_scale numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.
 #' @param crop logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.
+#' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km", transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a scale to the plot. If NULL, no scale added.
+#' @param compass list or NULL, list(symbol = 16). Arguments passed to \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass added.
 #' 
 #' @export
 #' 
@@ -2007,14 +2009,17 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' background <- sf::st_as_sf(background)
 #' 
 #' # make the plot
-#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2)
+#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 #' }
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
-                                pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = F){
+                               pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = F,
+                               scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
   #===================sanity checks=================
   msg <- character()
   pkg.check <- check.installed("scatterpie")
-  pkg.check <- check.installed("sf")
+  pkg.check <- c(pkg.check, check.installed("sf"))
+  if(!is.null(compass) | !is.null(scale_bar)){pkg.check <- c(pkg.check, check.installed("ggsn"))}
+  pkg.check <- c(pkg.check, check.installed("viridis"))
   
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
@@ -2054,7 +2059,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   
   if(length(msg) > 0){stop(msg, "\n")}
   
-  #==================plot===========================
+  #==================prep for plot ===========================
   # generate plotting data.frame
   pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,which(colnames(assignments$plot_data) == facet)])), ncol = 3 + K))
   colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
@@ -2075,7 +2080,7 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   r <- r*radius_scale
 
 
-  # make the plot
+  #============make the plot====================
   mp <- ggplot2::ggplot()
   
   # add sf overlay if requested.
@@ -2118,5 +2123,29 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
     mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale, point.padding = r*point_padding_scale, max.iter = 10000)
   }
   
+  # scale/compass
+  if((!is.null(scale_bar) | !is.null(compass))){
+    if(!is.null(sf) | crop){
+      # make up a null sf object to set extent if needed
+      y <- ggplot2::layer_scales(mp)$y$range$range
+      x <- ggplot2::layer_scales(mp)$x$range$range
+      dummy <- sf::st_as_sf(data.frame(x = x, y = y), coords = c("x", "y"))
+      dummy <- sf::`st_crs<-`(dummy, sf::st_crs(pop_coordinates))
+    }
+    else{
+      dummy <- pop_coordinates
+    }
+   
+    if(!is.null(scale_bar)){
+      scale_bar$data <- dummy
+      mp <- mp + do.call(ggsn::scalebar, args = scale_bar)
+    }
+    if(!is.null(compass)){
+      compass$data <- dummy
+      mp <- mp + do.call(ggsn::north, args = compass)
+    }
+  }
+  
+  # return
   return(mp)
 }
