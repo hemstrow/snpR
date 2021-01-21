@@ -3,7 +3,7 @@
 #' Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree construction tool.
 #' Note that this function \emph{is not overwrite safe!}.
 #' 
-#' This is an integration of the program and package written by Jisca Huisman \itemize{\item{paper: } https://doi.org/10.1111/1755-0998.12665 \item{github page: } https://github.com/JiscaH/sequoia}. 
+#' This is an integration of the program and package written by Jisca Huisman. 
 #' Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.) See documentation for \code{\link[sequoia]{sequioa}}.
 #' These can be passed to the pedigree and parentage reconstructions using the ... argument to run_sequioa.
 #' 
@@ -14,16 +14,15 @@
 #' @param run_pedigree FALSE or TRUE, default FALSE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.
 #' @param pMaxSibIter numeric in 1:25, default 10. Maximum iterations to run for sibship clustering. Only specified for run_pedigree argument.
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency cutoff for analysis. Sequoia requires high minor allele frequencies for parentage and pedigree construction, so it is not generally recommended to reduce this number.
-#' @param min_ind numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that Note that \emph{individuals} with less than 50% called genotypes will also be automatically removed by Sequoia!
+#' @param min_ind numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that \emph{individuals} with genotypes for less than half of the loci will be automatically removed by sequoia.
 #' @param ... Additional arguments passed to \code{\link[sequoia]{sequoia}} (during parentage and pedigree reconstruction).
 #'
 #' @return A data.frame for each facet specified with sequoia output summary information. 
 #'
 #' @export 
 #' @author William Hemstrom
-#' @author Melissa Jones
-#'
-#'
+#' @author Melissa Jones 
+#' 
 #' @references Huisman,J. (2017) Pedigree reconstruction from SNP data: parentage assignment, sibship clustering and beyond. Mol. Ecol. Resour., 17, 1009–1024.
 #' 
 #' @examples

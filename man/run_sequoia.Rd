@@ -31,7 +31,7 @@ run_sequoia(
 
 \item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency cutoff for analysis. Sequoia requires high minor allele frequencies for parentage and pedigree construction, so it is not generally recommended to reduce this number.}
 
-\item{min_ind}{numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that Note that \emph{individuals} with less than 50% called genotypes will also be automatically removed by Sequoia!}
+\item{min_ind}{numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that \emph{individuals} with genotypes for less than half of the loci will be automatically removed by sequoia.}
 
 \item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}} (during parentage and pedigree reconstruction).}
 }
@@ -43,7 +43,7 @@ Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree constr
 Note that this function \emph{is not overwrite safe!}.
 }
 \details{
-This is an integration of the program and package written by Jisca Huisman \itemize{\item{paper: } https://doi.org/10.1111/1755-0998.12665 \item{github page: } https://github.com/JiscaH/sequoia}. 
+This is an integration of the program and package written by Jisca Huisman. 
 Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.) See documentation for \code{\link[sequoia]{sequioa}}.
 These can be passed to the pedigree and parentage reconstructions using the ... argument to run_sequioa.
 }

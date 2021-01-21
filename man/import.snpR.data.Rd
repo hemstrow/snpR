@@ -157,8 +157,7 @@ adegenet::chr(genlight) <- sample(10, 1000, T)
 ## run the conversion
 dat <- import.snpR.data(genlight)
 
-\notrun{
-# NOT RUN
+\dontrun{
 # from a file:
 dat <- import.snpR.data("data/stick_NN_input.txt", drop = 1:3) # note that the drop argument is passed to data.table::fread!
 # if wanted, snp and sample metadata could be provided as usual.
