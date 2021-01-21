@@ -609,63 +609,7 @@ genotype_inversion <- function(data, SNP_list, Min_ref, Maj_ref, header_col_coun
 #the "stat" argument, which should be a character string. "boots" argument is the number of bootstraps
 #to do do get standard errors
 
-#'Weighted stat averages/SEs.
-#'
-#'\code{calc_weighted_stat} calculates a weighted average statistic and standard errors for a variable via the bootstrapping method described by Gatz and Smith (1995), The standard error of a weighted mean concentration—I. Bootstrapping vs other methods.
-#'
-#'Description of x:
-#'    Must contain colums containing the statistic of interest (such as pi from calc_pi), population ID, and the weights (such as the number of alleles sequenced, or the n_total column from in the allele count format) for each SNP. These columns must be named to match the stat argument, "pop", and either "n_total" or "nk", respectively.
-#'
-#' @param x Input statistic data.
-#' @param stat Name of the statistic for which to calculate a weighted mean and se.
-#' @param boots Number of bootstraps to perform to calcluate se. 30 is usually sufficient.
-#'
-#' @return A data frame with columns for the population ID, weighted mean, and weighted average.
-#'
-#' @examples
-#' calc_weighted_stat(randPI, "pi")
-#'
-calc_weighted_stat <- function(x, stat, boots = 30){
-  pops <- unique(x$pop)
-  out <- matrix(0, length(pops), 3)
-  out[,1] <- pops
-  get_wm <- function(y){
-    if(any(colnames(y) == "n_total")){
-      w <- y$n_total
-    }
-    else if(any(colnames(y) == "nk")){
-      w <- y$nk
-    }
-    else{
-      stop("No weighting column found. Weighting column must be named either nk or n_total.")
-    }
-    return(sum(w*y[,stat])/sum(w))
-  }
-  cat("working on pop:\n")
-  for(i in 1:length(pops)){
-    #mean
-    cat("\n\t", pops[i],"\n")
-    y <- x[x$pop == pops[i],]
-    y <- y[!is.na(y[,stat]),]
-    out[i,2] <- get_wm(y)
 
-
-    #se, via bootstrap.
-    n <- nrow(y)
-    bvals <- numeric(boots)
-    for(j in 1:boots){
-      if(j %% 10 == 0){cat("\t\tboot:", j, "\n")}
-      b <- y[sample(n, n, T),]
-      bvals[j] <- get_wm(b)
-    }
-    out[i,3] <- sd(bvals)
-  }
-  out <- as.data.frame(out)
-  colnames(out) <- c("pop", paste0(stat, "_wm"), paste0(stat,"_se"))
-  out[,2] <- as.numeric(as.character(out[,2]))
-  out[,3] <- as.numeric(as.character(out[,3]))
-  return(as.data.frame(out))
-}
 
 
 #estimate S in one generation

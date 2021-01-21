@@ -781,7 +781,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     if(nrow(o.s) == 0){
       return(n.s)
     }
-    
+
     # figure out which columns contain metadata
     meta.cols.n <- which(colnames(n.s) %in% meta.names)
     meta.cols.n <- colnames(n.s)[meta.cols.n]
@@ -973,7 +973,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       x@pop.stats <- data.table::as.data.table(stats)
     }
     else{
-      meta.names <- colnames(stats, 1:2)
+      meta.names <- c("facet", "subfacet")
       starter.meta <- meta.names
       x@pop.stats <- smart.merge(x@pop.stats, stats, meta.names, starter.meta)
     }
@@ -1612,6 +1612,7 @@ update_calced_stats <- function(x, facets, stats, remove.type = "none"){
 #'   vector indicating if the provided stats have been calculated yet.
 #'
 #' @author William Hemstrom
+
 check_calced_stats <- function(x, facets, stats){
   # init storage
   out <- vector("list", length(facets))
