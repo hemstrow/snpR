@@ -58,6 +58,7 @@ Suggests:
     Rtsne,
     sf,
     umap,
+    vcfR,
     viridis,
     testthat
 VignetteBuilder: knitr

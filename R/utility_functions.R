@@ -197,6 +197,167 @@ genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(genotypes, snp.meta, sample.meta, mDat = "NN"))
 }
 
+
+#' Internal to process a ms file
+#' @param x filepath to ms file
+#' @param chr.length length of the chromosome. If a single value, assumes all the same length.
+#'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
+#' @author William Hemstrom
+process_ms <- function(x, chr.length){
+  infile <- x #infile
+  lines <- readLines(x)
+  lines <- lines[-which(lines == "")] #remove empty entries
+  lines <- lines[-c(1,2)] #remove header info
+  nss <- grep("segsites", lines) #get the number of segsites per chr
+  chrls <- gsub("segsites: ", "", lines[nss]) #parse this to get the lengths
+  chrls <- as.numeric(chrls)
+  lines <- lines[-nss] #remove the segsites lines
+  pos <- lines[grep("positions:", lines)] #find the positions
+  lines <- lines[-grep("positions:", lines)] #remove the position
+  div <- grep("//", lines) #find the seperators
+  gc <- div[2] - div[1] - 1 #find the number of gene copies per chr
+  if(is.na(gc)){gc <- length(lines) - 1} #if there's only one chr
+  dat <- lines[-div] #get the data only
+  dat <- strsplit(dat, "") #split the lines by individual snp calls
+  x <- matrix(NA, nrow = sum(chrls), ncol = gc) #prepare output
+  meta <- matrix(NA, nrow = sum(chrls), 2)
+  
+  #process this into workable data
+  pchrls <- c(0, chrls)
+  pchrls <- cumsum(pchrls)
+  
+  # check lengths input
+  if(length(chr.length) != 1){
+    if(length(chr.length) != length(chrls)){
+      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
+    }
+  }
+  
+  for(i in 1:length(chrls)){
+    cat("\n\tChr ", i)
+    tg <- dat[(gc*(i-1) + 1):(gc*i)] #get only this data
+    tg <- unlist(tg) #unlist
+    tg <- matrix(as.numeric(tg), ncol = chrls[i], nrow = gc, byrow = T) #put into a matrix
+    tg <- t(tg) #transpose. rows are now snps, columns are gene copies
+    tpos <- unlist(strsplit(pos[i], " ")) #grap and process the positions
+    tpos <- tpos[-1]
+    meta[(pchrls[i] + 1):pchrls[i + 1],] <- cbind(paste0(rep("chr", length = nrow(tg)), i), tpos)
+    x[(pchrls[i] + 1):pchrls[i + 1],] <- tg #add data to output
+  }
+  
+  meta <- as.data.frame(meta, stringsAsFactors = F)
+  meta[,2] <- as.numeric(meta[,2])
+  if(length(chr.length) == 1){
+    meta[,2] <- meta[,2] * chr.length
+  }
+  else{
+    meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
+  }
+  
+  colnames(meta) <- c("group", "position")
+  colnames(x) <- paste0("gc_", 1:ncol(x))
+  
+  return(list(x = x, meta = meta))
+}
+
+#' Convert a vcf file/vcfR object into a snpRdata object
+#' 
+#' @param vcf_file character or vcfR object. Either a path to a vcf file or a vcfR object.
+#' @param snp.meta data.frame or null, default null. snp metadata, will overwrite data in vcf if provided.
+#' @param sample.meta data.frame or null, default null. sample metadata, will overwrite sample names in vcf if provided.
+#' 
+#' @author William Hemstrom
+process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
+  #========sanity checks, part 1=============
+  check.installed("vcfR")
+  
+  #========import data=======================
+  if(!"vcfR" %in% class(vcf_file)){
+    vcf <- vcfR::read.vcfR(vcf_file)
+  }
+  else{
+    vcf <- vcf_file
+    rm(vcf_file)
+  }
+  
+  #========sanity checks, part2==============
+  msg <- character(0)
+  warn <- character(0)
+  
+  # initialize bad loci storage
+  good.loci <- logical(vcfR::nrow(vcf))
+  good.loci <- !good.loci
+  
+  # check for lack of called genotypes
+  formats <- vcf@gt[,"FORMAT"]
+  no.genotypes <- which(!grepl("GT", formats))
+  if(length(no.genotypes) > 0){
+    warn <- c(warn, paste0(length(no.genotypes), " loci removed due to missing called genotypes.\n"))
+    good.loci[no.genotypes] <- F
+  }
+  rm(formats)
+  
+  # check for not snps
+  ref <- vcfR::getREF(vcf)
+  alt <- vcfR::getALT(vcf)
+  ok.alleles <- c(".", "A", "C", "G", "T")
+  bad.ref <- !ref %in% ok.alleles
+  bad.alt <- !alt %in% ok.alleles
+  bad.either <- which(bad.ref | bad.alt)
+  if(length(bad.either) > 1){
+    warn <- c(warn, paste0(length(bad.either), " loci removed due to improper alleles (not ., A, C, T, or G).\n"))
+    good.loci[bad.either] <- F
+  }
+  rm(ref, alt, ok.alleles, bad.ref, bad.alt, bad.either)
+  
+  # anything left?
+  if(sum(good.loci) == 0){
+    msg <- c(msg, "No loci remain after filtering.\n")
+  }
+  
+  # check metadata
+  if(!is.null(snp.meta)){
+    if(nrow(snp.meta) != vcfR::nrow(vcf)){
+      msg <- c(msg, "Number of rows in provided SNP meta not equal to number of SNPs in vcf.\n")
+    }
+  }
+  if(!is.null(sample.meta)){
+    if(nrow(sample.meta) != (ncol(vcf@gt)) - 1){
+      msg <- c(msg, "Number of rows in provided sample meta not equal to number of samples in vcf.\n")
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #==========convert================
+  # prep genotypes
+  genos <- vcfR::extract.gt(vcf, element = "GT", return.alleles = T,  IDtoRowNames = F)
+  genos <- genos[good.loci,]
+  genos <- gsub("\\|", "", genos)
+  genos <- gsub("\\/", "", genos)
+  genos[is.na(genos)] <- "NN"
+  
+  # prep metadata
+  if(is.null(snp.meta)){
+    snp.meta <- vcfR::getFIX(vcf)
+    snp.meta.col <- which(colnames(snp.meta) == "POS")
+    colnames(snp.meta)[snp.meta.col] <- "position" # fix this specifically, since many functions want this name
+    snp.meta.col <- which(colnames(snp.meta) == "POS")
+  }
+  snp.meta <- snp.meta[good.loci,]
+  
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = colnames(genos))
+  }
+  
+  # make the snpRdata object
+  return(import.snpR.data(as.data.frame(genos), 
+                          as.data.frame(snp.meta), 
+                          as.data.frame(sample.meta), "NN"))
+}
+
 #'Subset snpRdata objects
 #'
 #'Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
@@ -903,7 +1064,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'cell, but only a single nucleotide noted if homozygote and two nucleotides
 #'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-#'(heterozygous), or 2 (homozyogus allele 2).} }
+#'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output from
+#'the simulation program ms.}}
 #'
 #'
 #'@param x snpRdata object or data.frame. Input data, in any of the above listed
@@ -943,7 +1105,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  details for more information.
 #'@param chr.length numeric, default NULL. Chromosome lengths, for ms input files.
 #'  Note that a single value assumes that each chromosome is of equal length whereas
-#'  a vector of values assumes gives the length for each chromosome.
+#'  a vector of values gives the length for each chromosome in order.
 #'@param ncp numeric or NULL, default 2. Number of components to consider for iPCA sn format
 #'  interpolations of missing data. If null, the optimum number will be estimated, with the
 #'  maximum specified by ncp.max. This can be very slow.
