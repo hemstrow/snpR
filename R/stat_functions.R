@@ -2687,13 +2687,15 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   }
 
   # if a snp facet level is requested, run everything at the base level too.
-  if(length(snp.facets) > 0){
-    x <- calc_maf(x)
-    x <- calc_pi(x)
-    x <- calc_hwe(x)
-    x <- calc_ho(x)
+  if(!is.null(facets[1])){
+    if(length(snp.facets) > 0){
+      x <- calc_maf(x)
+      x <- calc_pi(x)
+      x <- calc_hwe(x)
+      x <- calc_ho(x)
+    }
   }
-
+  
   #=========smoothing===========
   if(!is.null(sigma)){
 
@@ -3251,3 +3253,9 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   
   return(x)
 }
+
+
+
+
+
+
