@@ -21,11 +21,11 @@ run_sequoia(
 
 \item{facets}{character, default NULL. Sample-specific facets over which the sequoia is called to run. See \code{\link{Facets_in_snpR}}.}
 
-\item{run_dupcheck}{FALSE or TRUE, default TRUE. Determines if a Sequoia function used to check for duplicate samples in the dataset should be run prior to further analysis. This is generally recommended.}
+\item{run_dupcheck}{FALSE or TRUE, default FALSE. Determines if a Sequoia function used to check for duplicate samples in the dataset should be run prior to further analysis. This is generally recommended.}
 
-\item{run_parents}{FALSE or TRUE, default TRUE. Determines if a Sequoia function to assign parents should be run. This runs quickly and is required before running the run_pedigree command.}
+\item{run_parents}{FALSE or TRUE, default FALSE. Determines if a Sequoia function to assign parents should be run. This runs quickly and is required before running the run_pedigree command.}
 
-\item{run_pedigree}{FALSE or TRUE, default TRUE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.}
+\item{run_pedigree}{FALSE or TRUE, default FALSE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.}
 
 \item{pMaxSibIter}{numeric in 1:25, default 10. Maximum iterations to run for sibship clustering. Only specified for run_pedigree argument.}
 

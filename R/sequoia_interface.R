@@ -9,9 +9,9 @@
 #' 
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Sample-specific facets over which the sequoia is called to run. See \code{\link{Facets_in_snpR}}.
-#' @param run_dupcheck FALSE or TRUE, default TRUE. Determines if a Sequoia function used to check for duplicate samples in the dataset should be run prior to further analysis. This is generally recommended. 
-#' @param run_parents FALSE or TRUE, default TRUE. Determines if a Sequoia function to assign parents should be run. This runs quickly and is required before running the run_pedigree command.
-#' @param run_pedigree FALSE or TRUE, default TRUE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.
+#' @param run_dupcheck FALSE or TRUE, default FALSE. Determines if a Sequoia function used to check for duplicate samples in the dataset should be run prior to further analysis. This is generally recommended. 
+#' @param run_parents FALSE or TRUE, default FALSE. Determines if a Sequoia function to assign parents should be run. This runs quickly and is required before running the run_pedigree command.
+#' @param run_pedigree FALSE or TRUE, default FALSE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.
 #' @param pMaxSibIter numeric in 1:25, default 10. Maximum iterations to run for sibship clustering. Only specified for run_pedigree argument.
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency cutoff for analysis. Sequoia requires high minor allele frequencies for parentage and pedigree construction, so it is not generally recommended to reduce this number.
 #' @param min_ind numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that Note that \emph{individuals} with less than 50% called genotypes will also be automatically removed by Sequoia!
