@@ -41,7 +41,7 @@ plot_structure_map(
 \item{pop_names}{logical, default T. If true, facet level names will be displayed on the map.}
 
 \item{viridis.option}{character, default "viridis". Viridis color scale
-option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
+option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of viridis palette  the pie charts.}

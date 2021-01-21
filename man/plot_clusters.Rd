@@ -59,7 +59,7 @@ perform.}
 
 \item{viridis.option}{character, default "viridis". Viridis color scale option
 to use for significance lines and SNP labels. See
-\code{\link[ggplot2]{scale_colour_gradient}} for details.}
+\code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}

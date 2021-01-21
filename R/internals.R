@@ -1605,7 +1605,7 @@ update_calced_stats <- function(x, facets, stats, remove.type = "none"){
 #' facets.
 #'
 #' @param x snpRdata object to check
-#' @param facets character. See \code{\link{facets_in_snpR}}
+#' @param facets character. See \code{\link{Facets_in_snpR}}
 #' @param stats character. Names of stats to check.
 #'
 #' @return A named list with an entry for each facet containing a named logical

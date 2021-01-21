@@ -4,7 +4,7 @@
 #' Note that this function \emph{is not overwrite safe!}.
 #' 
 #' This is an integration of the program and package written by Jisca Huisman. 
-#' Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.) See documentation for \code{\link[sequoia]{sequioa}}.
+#' Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.) See documentation for \code{\link[sequoia]{sequoia}}.
 #' These can be passed to the pedigree and parentage reconstructions using the ... argument to run_sequioa.
 #' 
 #' @param x snpRdata object.
