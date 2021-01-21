@@ -1029,7 +1029,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'in cM in order to create .bim extended map file.} \item{sn: }{Single character
 #'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-#''interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{a .fasta file.} \item{snpRdata: }{a snpRdata object.}}
+#''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a healthy serving of additional metadata but very little sample metadata.}
+#'\item{snpRdata: }{a snpRdata object.}
+#'}
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1111,6 +1113,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  maximum specified by ncp.max. This can be very slow.
 #'@param ncp.max numeric, default 5. Maximum number of components to check for when determining
 #'  the optimum number of components to use when interpolating sn data using the iPCA approach.
+#'@param chr character, default "chr". Name of column containing chromosome information, for VCF output.
+#'@param position character, default "position". Name of column containing position information, for VCF output.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1172,21 +1176,24 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
 #' #Sequoia format
-#' b <- stickSNPs@sample.meta
+#' b <- sample.meta(stickSNPs)
 #' b$ID <- 1:nrow(b)
 #' b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
 #' b$BirthYear <- round(runif(n = nrow(b), 1,1))
 #' a <- stickSNPs
-#' a@sample.meta <- b
-#' a@sample.meta$ID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
-#' test <- format_snps(x=a, output = "sequoia")
+#' b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$ID)
+#' sample.meta(a) <- b
+#' format_snps(x=a, output = "sequoia")
 #'
+#'
+#' # VCF format
+#' test <- format_snps(stickSNPs, "vcf", chr = "group")
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        ncp = 2, ncp.max = 5){
+                        ncp = 2, ncp.max = 5, chr = "chr", position = "position"){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -1198,7 +1205,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
                 "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
-                "colony","adegenet", "fasta", "lea", "sequoia")
+                "colony","adegenet", "fasta", "lea", "sequoia", "vcf")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -1357,25 +1364,30 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     cat("Converting to snpRdata object.\n")
   }
-
   else if(output == "colony"){
     cat("Converting to colony format.\n")
   }
-
   else if(output == "adegenet"){
     cat("Converting to adegenet genind object. SNP metadata will be discarded.\n")
   }
-  # keming
-
   else if(output == "fasta"){
     cat("Converting to psuedo-fasta file. All snps will be treated as a single sequence.\nHeterozygotes will be randomly called as either the major or minor allele.\n")
   }
-
   else if(output == "lea"){
     cat("Converting to LEA geno format. All metadata will be discarded.\n")
   }
   else if(output == "sequoia"){
     cat("Converting to Sequoia format.\n")
+  }
+  else if(output == "vcf"){
+    if(!position %in% colnames(snp.meta(x))){
+      stop(paste0("No column named matching position argument (", position, ") in SNP metadata. This is required for VCF output.\n"))
+    }
+    if(!chr %in% colnames(snp.meta(x))){
+      stop(paste0("No column named matching chr argument (", chr, ") in SNP metadata. This is required for VCF output.\n"))
+    }
+    
+    cat("Converting to VCF format.\n")
   }
 
   else{
@@ -2248,6 +2260,50 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdat <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
     names(rdat) <- colnames(sn)
   }
+  
+  # VCF
+  if(output == "vcf"){
+    # meta
+    vcf_meta <- c("##fileformat=VCFv4.0",
+      paste0("##fileDate=", gsub("-", "", Sys.Date())),
+     "##source=snpR",
+     '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+     '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+     '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'
+    )
+    
+    # meta columns
+    data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
+                            POS = snp.meta(x)[,position],
+                            REF = get.snpR.stats(x)$major,
+                            ALT = get.snpR.stats(x)$minor,
+                            QUAL = ".",
+                            FILTER = "PASS",
+                            INFO = paste0("NS=", get.snpR.stats(x)$maj.count + get.snpR.stats(x)$min.count,
+                                          ";AC=", get.snpR.stats(x)$min.count),
+                            FORMAT = "GT")
+    colnames(data_meta)[1] <- "#CHROM"
+    malt <- which(data_meta$ALT == "N")
+    mref <- which(data_meta$REF == "N")
+    if(length(malt) > 0){
+      data_meta$ALT[malt] <- "."
+    }
+    if(length(mref) > 0){
+      data_meta$REF[mref] <- "."
+    }
+    
+    # genotypes, use sn format intermediate
+    rdata <- format_snps(x, "sn", interpolate = F)[,-c(1:(ncol(snp.meta(x)) - 1))]
+    rdata <- as.matrix(rdata)
+    rdata[rdata == 0] <- "0/0"
+    rdata[rdata == 1] <- "0/1"
+    rdata[rdata == 2] <- "1/1"
+    rdata[is.na(rdata)] <- "./."
+    rdata <- as.data.frame(rdata)
+    rdata <- cbind(data_meta, rdata)
+    rdata <- list(meta = vcf_meta, genotypes = rdata)
+
+  }
 
   #======================return the final product, printing an outfile if requested.=============
   if(outfile != FALSE){
@@ -2257,8 +2313,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       facets <- facets[-which(facets == ".base")]
     }
 
-    # for genepop
-    # keming
     if(output == "genepop"){ #  if(output %in% c("genepop", "baps"))
 
       cat("\tPreparing genepop file...\n")
@@ -2305,7 +2359,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         data.table::fwrite(rdata, outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
       }
     }
-    # keming
     else if(output == "ac"){
       #write the raw output
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
@@ -2378,6 +2431,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     else if(output == "sequoia"){
       data.table::fwrite(rdata$dat, paste0("genos_", outfile), quote = FALSE, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(rdata$lh, paste0("lh_", outfile), quote = FALSE, col.names = T, sep = "\t", row.names = F)
+    }
+    else if(output == "vcf"){
+      writeLines(rdata$meta, outfile)
+      data.table::fwrite(rdata$genotypes, outfile, append = T, quote = F, sep = "\t", row.names = F, col.names = T)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
