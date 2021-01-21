@@ -18,7 +18,9 @@ plot_structure_map(
   radius_scale = 0.05,
   label_scale = 0.75,
   point_padding_scale = 0.25,
-  crop = F
+  crop = F,
+  scale_bar = list(dist = 4, dist_unit = "km", transform = T),
+  compass = list(symbol = 16)
 )
 }
 \arguments{
@@ -51,6 +53,10 @@ to use instead of viridis palette  the pie charts.}
 \item{point_padding_scale}{numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.}
 
 \item{crop}{logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.}
+
+\item{scale_bar}{list or NULL, default list(dist = 4, dist_unit = "km", transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a scale to the plot. If NULL, no scale added.}
+
+\item{compass}{list or NULL, list(symbol = 16). Arguments passed to \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass added.}
 }
 \description{
 Plots the mean cluster assignment for each population on a map using the scatterpie package alongside
@@ -82,6 +88,6 @@ background <- maps::map("state", "oregon")
 background <- sf::st_as_sf(background)
 
 # make the plot
-plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2)
+plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 }
 }

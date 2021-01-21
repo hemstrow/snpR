@@ -19,7 +19,9 @@ format_snps(
   snp.meta = NULL,
   chr.length = NULL,
   ncp = 2,
-  ncp.max = 5
+  ncp.max = 5,
+  chr = "chr",
+  position = "position"
 )
 }
 \arguments{
@@ -72,7 +74,7 @@ details for more information.}
 
 \item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input files.
 Note that a single value assumes that each chromosome is of equal length whereas
-a vector of values assumes gives the length for each chromosome.}
+a vector of values gives the length for each chromosome in order.}
 
 \item{ncp}{numeric or NULL, default 2. Number of components to consider for iPCA sn format
 interpolations of missing data. If null, the optimum number will be estimated, with the
@@ -80,6 +82,10 @@ maximum specified by ncp.max. This can be very slow.}
 
 \item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
 the optimum number of components to use when interpolating sn data using the iPCA approach.}
+
+\item{chr}{character, default "chr". Name of column containing chromosome information, for VCF output.}
+
+\item{position}{character, default "position". Name of column containing position information, for VCF output.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
@@ -133,7 +139,9 @@ bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
 in cM in order to create .bim extended map file.} \item{sn: }{Single character
 numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-'interpolate' argument.} \item{sequoia:}{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{a .fasta file.} \item{snpRdata: }{a snpRdata object.}}
+'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a healthy serving of additional metadata but very little sample metadata.}
+\item{snpRdata: }{a snpRdata object.}
+}
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -168,7 +176,8 @@ default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 cell, but only a single nucleotide noted if homozygote and two nucleotides
 seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-(heterozygous), or 2 (homozyogus allele 2).} }
+(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output from
+the simulation program ms.}}
 }
 \examples{
 #import data to a snpRdata object
@@ -222,15 +231,18 @@ format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #from command line, then run plink_out.sh to generate plink_out.bed.
 
 #Sequoia format
-b <- stickSNPs@sample.meta
+b <- sample.meta(stickSNPs)
 b$ID <- 1:nrow(b)
 b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
 b$BirthYear <- round(runif(n = nrow(b), 1,1))
 a <- stickSNPs
-a@sample.meta <- b
-a@sample.meta$ID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
-test <- format_snps(x=a, output = "sequoia")
+b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$ID)
+sample.meta(a) <- b
+format_snps(x=a, output = "sequoia")
 
+
+# VCF format
+test <- format_snps(stickSNPs, "vcf", chr = "group")
 }
 \author{
 William Hemstrom

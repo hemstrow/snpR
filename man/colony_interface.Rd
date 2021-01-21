@@ -3,8 +3,10 @@
 \name{colony_interface}
 \alias{colony_interface}
 \alias{write_colony_input}
+\alias{call_colony}
+\alias{parse_colony}
 \alias{run_colony}
-\title{Write an input for the COLONY pedigree assignment program.}
+\title{Interfaces with the COLONY pedigree assignment program.}
 \usage{
 write_colony_input(
   x,
@@ -43,6 +45,10 @@ write_colony_input(
   excluded_maternal_siblings = NULL,
   excluded_paternal_siblings = NULL
 )
+
+call_colony(infile, colony_path)
+
+parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL)
 
 run_colony(
   x,
@@ -84,7 +90,7 @@ run_colony(
 )
 }
 \arguments{
-\item{x}{snpRdata object containing offspring genotypes.}
+\item{x}{snpRdata object from which metadata for colony results can be found.}
 
 \item{outfile}{character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").}
 
@@ -139,9 +145,9 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{known_paternal_max_mismatches}{integer in c(0,1,2:nsample), default 0.}
 
-\item{known_maternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.}
+\item{known_maternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.}
 
-\item{known_paternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.}
+\item{known_paternal_sibships}{character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.}
 
 \item{maternal_exclusions}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.}
 
@@ -151,25 +157,78 @@ Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the 
 
 \item{excluded_paternal_siblings}{character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.}
 
+\item{infile}{character. Path to the pre-written colony input file to be run.}
+
+\item{colony_path}{character. Path to the colony executable.}
+
+\item{path}{character. Path to the directory containing colony results.}
+
 \item{sampleIDS}{character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!}
 
 \item{female_monagamous}{character, default FALSE. Should Colony assume females are monogamous?}
 }
 \description{
-Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
+Interfaces with the command-line version of the COLONY pedigree program. 
+Requires a snpRdata object containing offspring genotypes and can optionally take 
+snpRdata objects containing maternal or paternal genotypes, or both. No facet support.
 
 Create a COLONY infile using snpRdata sets containg offspring and possibly paternal genotypes given
 specified parameters. Requires that the COLONY program is installed locally. Input and output files
 will be stored in a colony folder created in the current working directory.
 }
 \details{
-This is still in development. The defaults and the most commonly used options have been tested and work, but some of the more eosteric options haven't been fully tested yet.
+Requires that the COLONY program is installed locally. Input and output files
+will be stored in a colony folder created in the current working directory. The functions
+documented here can write input files, call them using colony, and parse some parts of the results
+given the original snpRdata object. Note that no facet support is currently available here due to
+the complexity and number of possible input parameters that are difficult to handle across multiple
+facets and facet levels. Facet support for the basic, default operation with few additional options
+may be added in the future. For now, facets can be handled during parentage and pedigree creation
+in snpR using the \code{\link{run_sequoia}} function, which runs a notably simpler (with respect
+to implementation) pedigree toolkit.
+
+These functions includes many commonly used options but not all possible parameters 
+for colony inputs. See Colony User Guide for using extra features.
+
+This is still in development. The defaults and the most commonly used options have been tested and work well, but some of the more esoteric options haven't been fully tested yet.
 }
 \section{Functions}{
 \itemize{
+\item \code{write_colony_input}: Create a colony input file
+
+\item \code{call_colony}: Call a colony executable to run a prepared colony input file.
+
+\item \code{parse_colony}: Parse a previously run colony analysis.
+
 \item \code{run_colony}: run colony on a snpRdata object, start to finish
 }}
 
+\examples{
+# A simple example for running all individuals in the snpR object as siblings in colony.
+ write_colony_input(x = stickSNPs, outfile = "stk.col")
+A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects. 
+a <- 2013:2015 #create a vector of possible birthyears
+b <- c("M", "F", "U") #create a vector of possible sexes
+stk <- stickSNPs
+sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = T) #create birthyears
+sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
+sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create sexes
+#generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
+sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
+dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
+off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
+write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
+
+# running a simple model
+\dontrun{
+## intentionally shorter run, with a small subset of the samples
+test_dat <- subset_snpR_data(stickSNPs, facets = "pop", subfacets = "ASP")
+run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+}
+}
+\references{
+Jones,O.R. and Wang,J. (2010) COLONY: a program for parentage and sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10, 551–555.
+}
 \author{
 William Hemstrom
 

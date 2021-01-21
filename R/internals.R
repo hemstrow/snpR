@@ -1492,68 +1492,6 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
   return(matches)
 }
 
-#' Internal to process a ms file
-#' @param x filepath to ms file
-#' @param chr.length length of the chromosome. If a single value, assumes all the same length.
-#'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
-#' @author William Hemstrom
-process_ms <- function(x, chr.length){
-  infile <- x #infile
-  lines <- readLines(x)
-  lines <- lines[-which(lines == "")] #remove empty entries
-  lines <- lines[-c(1,2)] #remove header info
-  nss <- grep("segsites", lines) #get the number of segsites per chr
-  chrls <- gsub("segsites: ", "", lines[nss]) #parse this to get the lengths
-  chrls <- as.numeric(chrls)
-  lines <- lines[-nss] #remove the segsites lines
-  pos <- lines[grep("positions:", lines)] #find the positions
-  lines <- lines[-grep("positions:", lines)] #remove the position
-  div <- grep("//", lines) #find the seperators
-  gc <- div[2] - div[1] - 1 #find the number of gene copies per chr
-  if(is.na(gc)){gc <- length(lines) - 1} #if there's only one chr
-  dat <- lines[-div] #get the data only
-  dat <- strsplit(dat, "") #split the lines by individual snp calls
-  x <- matrix(NA, nrow = sum(chrls), ncol = gc) #prepare output
-  meta <- matrix(NA, nrow = sum(chrls), 2)
-  
-  #process this into workable data
-  pchrls <- c(0, chrls)
-  pchrls <- cumsum(pchrls)
-  
-  # check lengths input
-  if(length(chr.length) != 1){
-    if(length(chr.length) != length(chrls)){
-      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
-    }
-  }
-  
-  for(i in 1:length(chrls)){
-    cat("\n\tChr ", i)
-    tg <- dat[(gc*(i-1) + 1):(gc*i)] #get only this data
-    tg <- unlist(tg) #unlist
-    tg <- matrix(as.numeric(tg), ncol = chrls[i], nrow = gc, byrow = T) #put into a matrix
-    tg <- t(tg) #transpose. rows are now snps, columns are gene copies
-    tpos <- unlist(strsplit(pos[i], " ")) #grap and process the positions
-    tpos <- tpos[-1]
-    meta[(pchrls[i] + 1):pchrls[i + 1],] <- cbind(paste0(rep("chr", length = nrow(tg)), i), tpos)
-    x[(pchrls[i] + 1):pchrls[i + 1],] <- tg #add data to output
-  }
-  
-  meta <- as.data.frame(meta, stringsAsFactors = F)
-  meta[,2] <- as.numeric(meta[,2])
-  if(length(chr.length) == 1){
-    meta[,2] <- meta[,2] * chr.length
-  }
-  else{
-    meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
-  }
-  
-  colnames(meta) <- c("group", "position")
-  colnames(x) <- paste0("gc_", 1:ncol(x))
-  
-  return(list(x = x, meta = meta))
-}
-
 
 #' Merge lists element-to-element
 #'

@@ -1,9 +1,24 @@
 
-#' Write an input for the COLONY pedigree assignment program.
+#' Interfaces with the COLONY pedigree assignment program.
 #'
-#' Creates an input file in the format required for command-line usage of the COLONY pedigree program. Requires a snpRdata object containing offspring genotypes and can optionally take snpRdata objects containingmaternal or paternal genotypes, or both. This function includes many commonly used options but not all possible parameters for colony inputs. See Colony User Guide for using extra features.
+#' Interfaces with the command-line version of the COLONY pedigree program. 
+#' Requires a snpRdata object containing offspring genotypes and can optionally take 
+#' snpRdata objects containing maternal or paternal genotypes, or both. No facet support.
+#' 
+#' Requires that the COLONY program is installed locally. Input and output files
+#' will be stored in a colony folder created in the current working directory. The functions
+#' documented here can write input files, call them using colony, and parse some parts of the results
+#' given the original snpRdata object. Note that no facet support is currently available here due to
+#' the complexity and number of possible input parameters that are difficult to handle across multiple
+#' facets and facet levels. Facet support for the basic, default operation with few additional options
+#' may be added in the future. For now, facets can be handled during parentage and pedigree creation
+#' in snpR using the \code{\link{run_sequoia}} function, which runs a notably simpler (with respect
+#' to implementation) pedigree toolkit.
+#' 
+#' These functions includes many commonly used options but not all possible parameters 
+#' for colony inputs. See Colony User Guide for using extra features.
 #'
-#' This is still in development. The defaults and the most commonly used options have been tested and work, but some of the more eosteric options haven't been fully tested yet.
+#' This is still in development. The defaults and the most commonly used options have been tested and work well, but some of the more esoteric options haven't been fully tested yet.
 #' @param x snpRdata object containing offspring genotypes.
 #' @param outfile character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").
 #' @param method character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
@@ -40,12 +55,19 @@
 #' @param paternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.
 #' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
 #' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
+#' @param infile character. Path to the pre-written colony input file to be run.
+#' @param colony_path character. Path to the colony executable.
+#' @param path character. Path to the directory containing colony results.
+#' @param x snpRdata object from which metadata for colony results can be found.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
 #'
+#' @aliases write_colony_input call_colony parse_colony run_colony
+#'
 #' @name colony_interface
-#' @export
+#' 
+#' @references Jones,O.R. and Wang,J. (2010) COLONY: a program for parentage and sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10, 551–555.
 #' 
 #' @examples 
 #' # A simple example for running all individuals in the snpR object as siblings in colony.
@@ -55,17 +77,26 @@
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
-#' sample.meta(stk)$BirthYear <- sample(x = a, size = nrow(stk@sample.meta), replace = T) #create birthyears
+#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = T) #create birthyears
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create sexes
 #' #generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
 #' sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
 #' dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
 #' off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
-#'  write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
+#' write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
+#' 
+#' # running a simple model
+#' \dontrun{
+#' ## intentionally shorter run, with a small subset of the samples
+#' test_dat <- subset_snpR_data(stickSNPs, facets = "pop", subfacets = "ASP")
+#' run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+#' }
+NULL
 
 
-
+#' @describeIn colony_interface Create a colony input file
+#' @export
 write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run_length = 2, sampleIDs = NULL,
                                sibship_prior = 0, paternal_sib_size = NULL, maternal_sib_size = NULL,
                                nruns = 1, seed = NULL, maternal_genotypes = NULL, paternal_genotypes = NULL,
@@ -343,6 +374,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 
 
 #' Call a prepared colony infile.
+#' @describeIn colony_interface Call a colony executable to run a prepared colony input file.
 #' @export
 call_colony <- function(infile, colony_path){
 
@@ -373,6 +405,7 @@ call_colony <- function(infile, colony_path){
 }
 
 #' Parse colony data.
+#' @describeIn colony_interface Parse a previously run colony analysis.
 #' @export
 parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
   #===============full and half sibs==============================
@@ -381,8 +414,17 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
   if(file.exists(paste0(path, prefix, ".HalfSibDyad"))){
     hsd <- readr::read_csv(paste0(path, prefix, ".HalfSibDyad"))
     ## combine
-    dyads <- rbind(cbind(fsd, type = "FullSib", stringsAsFactors = F),
-                   cbind(hsd, type = "HalfSib", stringsAsFactors = F))
+    if(nrow(fsd) > 0 & nrow(hsd) > 0){
+      dyads <- rbind(cbind(fsd, type = "FullSib", stringsAsFactors = F),
+                     cbind(hsd, type = "HalfSib", stringsAsFactors = F))
+    }
+    else if(nrow(fsd) > 0){
+      dyads <- cbind(fsd, type = "FullSib", stringsAsFactors = F)
+    }
+    else if(nrow(hsd) > 0){
+      dyads <- cbind(hsd, type = "HalfSib", stringsAsFactors = F)
+    }
+    
   }
   else{
     dyads <- cbind(fsd, type = "FullSib", stringsAsFactors = F)
@@ -412,7 +454,7 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
   .sidcol <- which(colnames(x@sample.meta) == ".sample.id")
   x@sample.meta <- x@sample.meta[,c((1:ncol(x@sample.meta))[-.sidcol], .sidcol)]
 
-  return(list(x = x, dyads = dyads, all_pairs = all_pairs))
+  return(list(x = x, dyads = dyads, all_pairs = all_pairs, clusters = clusters))
 }
 
 #' Create and infile, run, and gather some basic results using the COLONY parentage analysis program.
@@ -435,6 +477,19 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
                        known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                        maternal_exclusions = NULL, paternal_exclusions = NULL,
                        excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
+  msg <- character(0)
+  if(!file.exists(colony_path)){
+    msg <- c(msg, "Cannot find colony executable.\n")
+  }
+  if(!is.snpRdata(x)){
+    msg <- c(msg, "x is not a snpRdata object.\n")
+  }
+  
+  check.installed("readr")
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
 
   # prep
   write_colony_input(x = x,

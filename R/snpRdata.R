@@ -130,6 +130,26 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'from most snpR functions. Genotypes are stored in the "character" format, as
 #'output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
+#'@section File import:
+#'  Supports automatic import of several types of files. Options:
+#'  
+#'  \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!
+#'  \item{.ms: } Files in the ms format, as provided by many commonly used simulation tools.
+#'  \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA",
+#'  "CT"). \item{0000: }SNP genotypes stored as four numeric characters (e.g.
+#'  "0101", "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each
+#'  cell, but only a single nucleotide noted if homozygote and two nucleotides
+#'  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
+#'  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
+#'  (heterozygous), or 2 (homozyogus allele 2).}
+#'  
+#'  Additional arguments can be provided to import.snpR.data that will be passed to \code{\link[data.table]{fread}}
+#'  when reading in genotype data.
+#'  
+#'  Sample and snp metadata can also be provided via file path, and will be read in using \code{\link[data.table]{fread}}
+#'  \emph{with the default settings}. If these settings are not correct, please read in the metadata manually
+#'  and provide to import.snpR.data.
+#'
 #'@section Conversions from other S4 objects:
 #'  
 #'  Supports automatic conversions from some other popular S4 object types. Options:
@@ -141,7 +161,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  data is currently allowed, data with more than two alleles for loci will return an error.
 #'  \item{genlight: } \code{\link[adegenet]{genlight}} objects from adegenet.
 #'  Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight object if possible.
-#'  This data will be added too but will not replace data provided to the SNP or sample.meta arguments.}
+#'  This data will be added too but will not replace data provided to the SNP or sample.meta arguments.
+#'  \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!}
 #'
 #'@section Slots:
 #'
@@ -181,18 +202,22 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  Note that most of these slots are used primarily internally.
 #'
 #'  All calculated data can be accessed using the \code{\link{get.snpR.stats}}
-#'  function. See documentaion.
+#'  function. See documentation.
 #'
 #'
-#'@param genotypes data.frame or unique S4 from other packages. If a data.frame, raw genotypes in a two-character format ("GG",
+#'@param genotypes data.frame, unique S4 from other packages, or filename. If a data.frame, raw genotypes in a two-character format ("GG",
 #'  "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
-#'  columns. Otherwise, see documentation for allowed S4 objects.
+#'  columns. Otherwise, see documentation for allowed S4 objects and files.
 #'@param snp.meta data.frame, default NULL. Metadata for each SNP, must have a number of rows
 #'  equal to the number of SNPs in the dataset. If NULL, a single "snpID" column will be added.
 #'@param sample.meta data.frame, default NULL. Metadata for each individual sample, must have
 #'  a number of rows equal to the number of samples in the dataset. If NULL, a single "sampID" column will be added.
 #'@param mDat character, default "NN", matching the encoding of missing
 #'  \emph{genotypes} in the data provided to the genotypes argument.
+#'@param chr.length numeric, default NULL. If a path to a .ms file is provided, specifies chromosome lengths.
+#'  Note that a single value assumes that each chromosome is of equal length whereas
+#'  a vector of values gives the length for each chromosome in order.
+#'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a \emph{genotype} file name is passed that is not a vcf or ms file.
 #'
 #'@examples
 #' # import example data as a snpRdata object
@@ -223,16 +248,96 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' 
 #' ## run the conversion
 #' dat <- import.snpR.data(genlight)
+#' 
+#' \dontrun{
+#' # from a file:
+#' dat <- import.snpR.data("data/stick_NN_input.txt", drop = 1:3) # note that the drop argument is passed to data.table::fread!
+#' # if wanted, snp and sample metadata could be provided as usual.
+#' }
 #'
 #'@export
 #'@author William Hemstrom
-import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
+import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
+                             ...){
   #======special cases========
+  # genotypes
   if("genind" %in% class(genotypes)){
     return(genind.to.snpRdata(genotypes, snp.meta, sample.meta))
   }
   if("genlight" %in% class(genotypes)){
     return(genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
+  }
+  if("vcfR" %in% class(genotypes)){
+    return(process_vcf(genotypes, snp.meta, sample.meta))
+  }
+  if(is.character(genotypes)){
+    if(file.exists(genotypes)){
+      # check for ms or vcf file
+      if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
+        return(process_vcf(genotypes, snp.meta, sample.meta))
+      }
+      else if(grepl("\\.ms$", genotypes)){
+        return(format_snps(genotypes, input_format = "ms", snp.meta = snp.meta, sample.meta = sample.meta, chr.length = chr.length))
+      }
+      
+      # other formats
+      else{
+        genotypes <- as.data.frame(data.table::fread(genotypes, ...))
+        
+        # NN, no need to do anything, just read in and proceed as normal.
+        if(genotypes[1,1] %in% 
+                 c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
+                   cat("Assuming data is in NN format.\n")
+        }
+        
+        # sn
+        else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
+          cat("Assuming single nucleotide format.\n")
+          return(format_snps(genotypes, input_format = "sn", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+        }
+        
+        # 0000
+        else if(genotypes[1,1] %in% 
+                c(apply(expand.grid(c("01", "02", "03", "04"), c("01", "02", "03", "04")), 1, paste, collapse=""), mDat)){
+          cat("Assuming 0000 format.\n")
+          return(format_snps(genotypes, input_format = "0000", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+        }
+        
+        # SNP_tab
+        else if(genotypes[1,1] %in% 
+                c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=" "), mDat, c("A", "T", "C", "G"))){
+          cat("Assuming snp_tab format.\n")
+          return(format_snps(genotypes, input_format = "snp_tab", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+        }
+        
+        #couldn't find a supported format
+        else{
+          good.formats <- c(".vcf", ".vcf.gz", ".ms", "NN", "0000", "sn", "snp_tab")
+          stop(paste0(c("Unsupported file format. Supported formats: ", good.formats, "\n"), collapse = " "))
+        }
+      }
+    }
+    else{
+      stop("File not found. Fix path or import manually and provide to import.snpR.data.\n")
+    }
+  }
+  
+  # sample and snp metadata
+  if(is.character(sample.meta)){
+    if(file.exists(sample.meta)){
+      sample.meta <- as.data.frame(data.table::fread(sample.meta))
+    }
+    else{
+      stop("Cannot locate sample.meta file.\n")
+    }
+  }
+  if(is.character(snp.meta)){
+    if(file.exists(snp.meta)){
+      snp.meta <- as.data.frame(data.table::fread(snp.meta))
+    }
+    else{
+      stop("Cannot locate snp.meta file.\n")
+    }
   }
   
   #============sanity checks and prep========
