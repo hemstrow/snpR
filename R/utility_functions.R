@@ -735,7 +735,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",]
     gmat <- fix.one.loci(gmat)
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",]
-    wmat <- fix.one.loci(gmat)
+    wmat <- fix.one.loci(wmat)
 
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
