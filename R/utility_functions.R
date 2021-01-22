@@ -782,6 +782,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       mi <- wmat[,colnames(wmat) == mDat]
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
       mi.vio <- x@snp.meta$.snp.id[which(mi)]
+      vio.snps[mi.vio] <- T
       cat(paste0("\t", length(mi.vio), " bad loci\n"))
     }
 
