@@ -10,7 +10,7 @@ tabulate_allele_frequency_matrix(x, facets = NULL)
 \item{x}{snpRdata object}
 
 \item{facets}{character, default NULL. The facets for which to calculate allele frequencies.
-See \code{\link{facets_in_snpR}} for details.}
+See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
 A named, nested list containing allele frequency matrices for each facet level for all requested facets.

@@ -43,7 +43,7 @@ the format numeric vector c(lower, upper).}
 \item{viridis.option}{character, default "inferno". Viridis color scale option to use.
 Other color scales may be subsituted by appending the scale_color_continuous
 and scale_fill_continuous ggplot functions to the produced plot using the
-'+' operator. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
+'+' operator. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{title}{character. Plot title.}
 

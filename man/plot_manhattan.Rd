@@ -85,7 +85,7 @@ will be transformed to -log.}
 
 \item{viridis.option}{character, default "plasma". Viridis color scale option
 to use for significance lines and SNP labels. See
-\code{\link[ggplot2]{scale_colour_gradient}} for details.}
+\code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{viridis.hue}{numeric, default c(0.2, 0.5). Two values between 0 and 1
 listing the hues at which to start and stop on the viridis palette defined

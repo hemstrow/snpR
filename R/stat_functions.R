@@ -2687,13 +2687,15 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   }
 
   # if a snp facet level is requested, run everything at the base level too.
-  if(length(snp.facets) > 0){
-    x <- calc_maf(x)
-    x <- calc_pi(x)
-    x <- calc_hwe(x)
-    x <- calc_ho(x)
+  if(!is.null(facets[1])){
+    if(length(snp.facets) > 0){
+      x <- calc_maf(x)
+      x <- calc_pi(x)
+      x <- calc_hwe(x)
+      x <- calc_ho(x)
+    }
   }
-
+  
   #=========smoothing===========
   if(!is.null(sigma)){
 
@@ -3251,3 +3253,103 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   
   return(x)
 }
+
+
+
+#' Calculate weighted averages of previously calculated genetic statistics.
+#'
+#' Calculates a weighted average for a statistic, weighted by the number of called genotypes at each locus.
+#' Works for single or pairwise statistics (pi, ho, fst, etc.). Automatically calculates weighted statistic for every
+#' previously calculated statistic.
+#' 
+#' Weights are calculated using the equation \deqn{ M_{s} = \frac{\sum_{i = 1}^{n} s_{i} * w_{i}}{\sum_{i = 1}^{n} w_{i}}}
+#' Where\eqn{n} is the number of SNPs, \eqn{s_{i}} is the value of the statistic in SNP \eqn{i}, and \eqn{w_{i}} is the number
+#' of times that SNP was genotyped. Note that this will correct for a range in sequencing depth within samples, but does not
+#' really correct for variance in sequencing depth between populations or other facet levels.
+#'
+#' @param x snpRdata object.
+#' @param facets character, default NULL. Facets for which to calculate weighted stats (broken down by category). See \code{\link{Facets_in_snpR}} for details.
+#' @param type character, default "single". Type of statistic to weight: \itemize{\item{single: } Statistics calculated in a single subfacet, such as pi. \item{pairwise: } Statistics calculated pairwise between subfacets, such as Fst. }
+#' 
+#' @return A snpR data object with weighted statistics merged in, accessable via \code{\link{get.snpR.stats}} using type = "pop".
+#'
+#' @export
+#' @examples
+#' # single
+#' x <- calc_basic_snp_stats(stickSNPs, "pop")
+#' x <- calc_weighted_stats(x, "pop")
+#' get.snpR.stats(x, "pop", "pop")
+#' 
+#' # pairwise
+#' x <- calc_weighted_stats(x, "pop", type = "pairwise") # fst calculated in last step
+#' get.snpR.stats(x, "pop", "pairwise")
+#'
+calc_weighted_stats <- function(x, facets = NULL, type = "single"){
+  #===========sanity checks===============
+  msg <- character(0)
+  if(!is.snpRdata(x)){
+    msg <- c(msg, "x is not a snpRdata object.\n")
+  }
+  
+  facets <- check.snpR.facet.request(x, facets, "snp")
+  
+  if(!type %in%  c("pairwise", "single")){
+    if(grepl("window", type)){
+      msg <- c(msg, "Type unsupported. Options: pairwise, single. Note that window stats do not need to be weighted manually, they are can be automatically weighted similarly using the nk = TRUE argument (the default).\n")
+    }
+    else{
+      msg <- c(msg, "Type unsupported. Options: pairwise, single.\n")
+    }
+  }
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #===========calculate weighted stats======
+  stats <- get.snpR.stats(x, facets, type)
+  # get weights and stats
+  if(type == "single"){
+    weights <- (stats$maj.count + stats$min.count)/2
+    stats_to_get <- stats[,-c(which(colnames(stats) %in% c("facet", "subfacet", colnames(x@snp.meta), "major", "minor", "maj.count", "min.count"))), drop = F]
+    group_key <- stats[,c("facet", "subfacet")]
+    groups <- paste0(stats$facet, "_", stats$subfacet)
+    if(ncol(stats_to_get) == 0){
+      stop("No calculated stats to weight.\n")
+    }
+  }
+  else{
+    weights <- stats$nk
+    cols <- (which(colnames(stats) == "comparison") + 1 ):ncol(stats)
+    cols <- cols[-which(colnames(stats)[cols] == "nk")]
+    stats_to_get <- stats[,cols, drop = F]
+    groups <- paste0(stats$facet, "_", stats$comparison)
+    group_key <- stats[,c("facet", "comparison")]
+    if(ncol(stats_to_get) == 0){
+      stop("No calculated stats to weight.\n")
+    }
+  }
+  
+  # calculate weighted means using equation sum(w*s)/sum(w)
+  weighted <- weights*stats_to_get
+  per_group_sums <- tapply(weights, groups, sum)
+  weighted <- as.data.table(weighted)
+  weighted$groups <- groups
+  means <- weighted[,lapply(.SD, sum, na.rm = T), by = groups] # lapply isn't ideal, but data.table is quite fast anyway. Could consider other options
+  data.table::set(means, j = 2:ncol(means), value =  means[,-1]/per_group_sums[match(means$groups, names(per_group_sums))])
+  
+  #===========merge and return================
+  # get the stats back in a format with facet and sub-facet, clean up, and return
+  stats <- merge(means, unique(cbind(group_key, groups)), by = "groups")
+  drop_col <- which(colnames(stats) == "groups")
+  stats <- stats[,-..drop_col]
+  new.ord <- c((ncol(stats) - (ncol(group_key) - 1)):ncol(stats), 1:(ncol(stats) - ncol(group_key)))
+  stats <- stats[,..new.ord]
+  colnames(stats)[(ncol(group_key) + 1): ncol(stats)] <- paste0("weighted_mean_", colnames(stats)[(ncol(group_key) + 1): ncol(stats)])
+  colnames(stats)[2] <- "subfacet"
+  
+  return(merge.snpR.stats(x, stats, type = "pop"))
+}
+
+
+
+

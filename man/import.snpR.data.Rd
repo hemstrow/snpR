@@ -115,7 +115,7 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  bootstraps for sliding window statistics. \item{sn: } list containing "sn",
  sn formatted data, and "type" type of interpolation. \item{calced_stats: }
  Named list of named character vectors that tracks the calculated statistics
- for each facet (see \code{\link{calc_genetic_distance}} for more
+ for each facet (see \code{\link{calc_genetic_distances}} for more
  information). \item{genetic_distances: } nested list containing genetic
  distance data. \item{names: } column names for genotypes. \item{row.names: }
  row names for genotypes. \item{.Data: } list of vectors containing raw

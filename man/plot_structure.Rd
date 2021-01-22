@@ -47,7 +47,7 @@ to run the clustering/assignment algorithm. The values 2:k will be run.}
 \item{method}{character, default "snmf". The clustering/assignment method to
 run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-See \code{\link[LEA]{snmf}} or \code{\link[adegenet]{snapclust.choose.k}}
+See \code{\link[LEA]{main_sNMF}} or \code{\link[adegenet]{snapclust.choose.k}}
 for details, respectively.}
 
 \item{reps}{numeric, default 1. The number of independent clustering
@@ -63,7 +63,7 @@ can radically speed up computation time for large datasets.}
 \item{alpha}{numeric, default 10. For sNMF, determines the regularization
 parameter. For small datasets, this can have a large effect, and should
 probably be larger than the default. See documentation for
-\code{\link[LEA]{snmf}}.}
+\code{\link[LEA]{main_sNMF}}.}
 
 \item{qsort}{character, numeric, or FALSE, default "last". Determines if
 individuals should be sorted (possibly within facet levels) by cluster
@@ -90,7 +90,7 @@ approach. } See CLUMPP documentation for details.}
 metadata containing sample IDs.}
 
 \item{viridis.option}{character, default "viridis". Viridis color scale
-option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.}
+option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
@@ -98,7 +98,7 @@ to use instead of the viridis palette.}
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
 c(strip.title, axis, axis.ticks).}
 
-\item{...}{additional arguments passed to either \code{\link[LEA]{snmf}} or
+\item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}} or
 \code{\link[adegenet]{snapclust.choose.k}}.}
 }
 \value{
@@ -118,11 +118,11 @@ Individual cluster assignment probabilities can be calculated using several
 different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
 These methods are not re-implemented in R, instead, this function calls the
-\code{\link[LEA]{snmf}} and \code{\link[adegenet]{snapclust.choose.k}}
+\code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
 functions instead. Please cite the references noted in those functions if
 using this function. For snapclust, the "ward" method is used to initialize clusters
 if one rep is requested, otherwise the clusters are started randomly each rep. Other
-methods can be used by providing pop.ini as an additional agument as long as only one
+methods can be used by providing pop.ini as an additional argument as long as only one
 rep is requested.
 
 Multiple different runs can be conducted using the 'reps' argument, and the

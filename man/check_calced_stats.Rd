@@ -10,7 +10,7 @@ check_calced_stats(x, facets, stats)
 \arguments{
 \item{x}{snpRdata object to check}
 
-\item{facets}{character. See \code{\link{facets_in_snpR}}}
+\item{facets}{character. See \code{\link{Facets_in_snpR}}}
 
 \item{stats}{character. Names of stats to check.}
 }

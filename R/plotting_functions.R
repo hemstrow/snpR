@@ -36,7 +36,7 @@
 #'@param viridis.option character, default "inferno". Viridis color scale option to use.
 #'  Other color scales may be subsituted by appending the scale_color_continuous
 #'  and scale_fill_continuous ggplot functions to the produced plot using the
-#'  '+' operator. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'  '+' operator. See \code{\link[ggplot2]{scale_gradient}} for details.
 #'@param title character. Plot title.
 #'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
@@ -423,7 +423,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'   perform.
 #' @param viridis.option character, default "viridis". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
-#'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'   \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
 #' @param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
@@ -787,7 +787,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'   corresponding to vector entries will be highlighted. See details.
 #' @param viridis.option character, default "plasma". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
-#'   \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'   \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param viridis.hue numeric, default c(0.2, 0.5). Two values between 0 and 1
 #'   listing the hues at which to start and stop on the viridis palette defined
 #'   by the viridis.option argument. Lower numbers are darker.
@@ -1063,11 +1063,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
 #' These methods are not re-implemented in R, instead, this function calls the
-#' \code{\link[LEA]{snmf}} and \code{\link[adegenet]{snapclust.choose.k}}
+#' \code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
 #' functions instead. Please cite the references noted in those functions if
 #' using this function. For snapclust, the "ward" method is used to initialize clusters
 #' if one rep is requested, otherwise the clusters are started randomly each rep. Other
-#' methods can be used by providing pop.ini as an additional agument as long as only one
+#' methods can be used by providing pop.ini as an additional argument as long as only one
 #' rep is requested.
 #'
 #' Multiple different runs can be conducted using the 'reps' argument, and the
@@ -1117,7 +1117,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-#'   See \code{\link[LEA]{snmf}} or \code{\link[adegenet]{snapclust.choose.k}}
+#'   See \code{\link[LEA]{main_sNMF}} or \code{\link[adegenet]{snapclust.choose.k}}
 #'   for details, respectively.
 #' @param reps numeric, default 1. The number of independent clustering
 #'   repititions to run.
@@ -1129,7 +1129,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param alpha numeric, default 10. For sNMF, determines the regularization
 #'   parameter. For small datasets, this can have a large effect, and should
 #'   probably be larger than the default. See documentation for
-#'   \code{\link[LEA]{snmf}}.
+#'   \code{\link[LEA]{main_sNMF}}.
 #' @param qsort character, numeric, or FALSE, default "last". Determines if
 #'   individuals should be sorted (possibly within facet levels) by cluster
 #'   assignment proportion. If not FALSE, determines which cluster to use for
@@ -1149,12 +1149,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param ID character or NULL, default NULL. Designates a column in the sample
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
-#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
-#' @param ... additional arguments passed to either \code{\link[LEA]{snmf}} or
+#' @param ... additional arguments passed to either \code{\link[LEA]{main_sNMF}} or
 #'   \code{\link[adegenet]{snapclust.choose.k}}.
 #'
 #' @export
@@ -1896,7 +1896,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   These objects can be produced from a dadi input file using
 #'   \code{\link{make_SFS}}.
 #' @param viridis.option character, default "inferno". Viridis color scale
-#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
 #'   cell is log transformed.
 #'
@@ -1978,7 +1978,7 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' @param sf_line_colors character vector, default "viridis". A vector of colors to use to color lines in in each sf object. By default, uses the viridis palette with an alpha of 0.2.
 #' @param pop_names logical, default T. If true, facet level names will be displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
-#'   option. See \code{\link[ggplot2]{scale_colour_gradient}} for details.
+#'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of viridis palette  the pie charts.
 #' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.

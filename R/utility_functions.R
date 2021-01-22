@@ -735,7 +735,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",]
     gmat <- fix.one.loci(gmat)
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",]
-    wmat <- fix.one.loci(gmat)
+    wmat <- fix.one.loci(wmat)
 
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
@@ -2610,7 +2610,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 #' 
 #' @param x snpRdata object
 #' @param facets character, default NULL. The facets for which to calculate allele frequencies.
-#'   See \code{\link{facets_in_snpR}} for details.
+#'   See \code{\link{Facets_in_snpR}} for details.
 #'
 #' @return A named, nested list containing allele frequency matrices for each facet level for all requested facets.
 #' 

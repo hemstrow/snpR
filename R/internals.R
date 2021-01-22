@@ -781,7 +781,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     if(nrow(o.s) == 0){
       return(n.s)
     }
-    
+
     # figure out which columns contain metadata
     meta.cols.n <- which(colnames(n.s) %in% meta.names)
     meta.cols.n <- colnames(n.s)[meta.cols.n]
@@ -973,7 +973,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       x@pop.stats <- data.table::as.data.table(stats)
     }
     else{
-      meta.names <- colnames(stats, 1:2)
+      meta.names <- c("facet", "subfacet")
       starter.meta <- meta.names
       x@pop.stats <- smart.merge(x@pop.stats, stats, meta.names, starter.meta)
     }
@@ -1605,13 +1605,14 @@ update_calced_stats <- function(x, facets, stats, remove.type = "none"){
 #' facets.
 #'
 #' @param x snpRdata object to check
-#' @param facets character. See \code{\link{facets_in_snpR}}
+#' @param facets character. See \code{\link{Facets_in_snpR}}
 #' @param stats character. Names of stats to check.
 #'
 #' @return A named list with an entry for each facet containing a named logical
 #'   vector indicating if the provided stats have been calculated yet.
 #'
 #' @author William Hemstrom
+
 check_calced_stats <- function(x, facets, stats){
   # init storage
   out <- vector("list", length(facets))
