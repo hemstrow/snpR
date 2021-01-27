@@ -109,7 +109,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   # run basic sanity checks
   sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
 
-  # get mafs if doing any normal stats. Can make this more effeicent by adding only where missing in the future.
+  # get mafs if doing any normal stats. Can make this more efficient by adding only where missing in the future.
   if("single" %in% stats.type & nk){
     x <- calc_maf(x, facets)
     x@stats$nk <- x@stats$maj.count + x@stats$min.count
