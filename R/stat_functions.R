@@ -2160,12 +2160,39 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     # get subfacet types
     ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
-
-    invisible(capture.output(x <- subset_snpR_data(x,
-                                                   facets = names(subfacets)[which(ssfacet.types == "sample")],
-                                                   subfacets = subfacets[[which(ssfacet.types == "sample")]],
-                                                   snp.facets = names(subfacets)[which(ssfacet.types == "snp")],
-                                                   snp.subfacets = subfacets[[which(ssfacet.types == "snp")]])))
+    filter_snp_facets <- F
+    filter_samp_facets <- F
+    
+    sample.facets <- names(subfacets)[which(ssfacet.types == "sample")]
+    if(length(sample.facets) > 0){
+      sample.subfacets <- subfacets[[which(ssfacet.types == "sample")]]
+      filter_samp_facets <- T
+    }
+    snp.facets <- names(subfacets)[which(ssfacet.types == "snp")]
+    if(length(snp.facets) > 0){
+      snp.subfacets <- subfacets[[which(ssfacet.types == "snp")]] 
+      filter_snp_facets <- T
+    }
+    
+    if(filter_samp_facets){
+      if(filter_snp_facets){
+        invisible(capture.output(x <- subset_snpR_data(x,
+                                                       facets = sample.facets,
+                                                       subfacets = sample.subfacets,
+                                                       snp.facets = snp.facets,
+                                                       snp.subfacets = snp.subfacets)))
+      }
+      else{
+        invisible(capture.output(x <- subset_snpR_data(x,
+                                                       facets = sample.facets,
+                                                       subfacets = sample.subfacets)))
+      }
+    }
+    else if(filter_snp_facets){
+      invisible(capture.output(x <- subset_snpR_data(x,
+                                                     snp.facets = snp.facets,
+                                                     snp.subfacets = snp.subfacets)))
+    }
   }
 
   if(is.numeric(ss)){
