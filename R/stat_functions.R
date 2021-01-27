@@ -933,7 +933,7 @@ calc_private <- function(x, facets = NULL){
 #'Heatmaps of the resulting data can be easily plotted using
 #'\code{\link{plot_pairwise_LD_heatmap}}
 #'
-#'@param x snpRdata. Input SNP data.
+#'@param x snpRdata. Input SNP data. Note that a SNP column containing snp position in base pairs named 'position' is required.
 #'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param subfacets character, default NULL. Subsets the facet levels to run.
 #'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
@@ -1013,6 +1013,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }  #one more sanity check.
   if(ss > nrow(x)){
     stop("Number of sites to subsample cannot be large than the number of provided sites.")
+  }
+  
+  if(!"position" %in% colnames(x@snp.meta)){
+    sotp("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
   }
 
   #========================sub-functions=============
