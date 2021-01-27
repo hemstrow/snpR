@@ -2264,8 +2264,6 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
   # calculate composite LD for a single facet of data.
   do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
     melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
-      colnames(CLD) <- snp.meta$position
-      rownames(CLD) <- snp.meta$position
       prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
       prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
       prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
@@ -2304,7 +2302,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
     # merge
     prox <- merge.data.table(prox, prox_S)
 
-
+    # add column/row names
+    colnames(CLD) <- snp.meta$position
+    rownames(CLD) <- snp.meta$position
     return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
   }
 
