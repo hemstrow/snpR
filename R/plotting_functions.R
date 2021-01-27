@@ -32,9 +32,9 @@
 #'  in the calculated LD data.
 #'@param r Numeric. Region of the chromosome to subset and plot. Given in kb in
 #'  the format numeric vector c(lower, upper).
-#'@param l.text character, default "rsq". Legend title.
+#'@param l.text character, default "CLD". Legend title.
 #'@param viridis.option character, default "inferno". Viridis color scale option to use.
-#'  Other color scales may be subsituted by appending the scale_color_continuous
+#'  Other color scales may be substituted by appending the scale_color_continuous
 #'  and scale_fill_continuous ggplot functions to the produced plot using the
 #'  '+' operator. See \code{\link[ggplot2]{scale_gradient}} for details.
 #'@param title character. Plot title.
@@ -60,7 +60,7 @@
 #'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
-                                     l.text = "rsq", viridis.option = "inferno",
+                                     l.text = "CLD", viridis.option = "inferno",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
   #==============sanity checks===========
