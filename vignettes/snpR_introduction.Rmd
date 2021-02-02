@@ -222,7 +222,7 @@ Note that a PCA cannot be constructed with missing data, so we interploate with 
 Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that.
 
 ```{r}
-head(stickSNPs@sample.meta)
+head(sample.meta(stickSNPs))
 ```
 
 To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!**
