@@ -3337,9 +3337,18 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   }
   
   #===========calculate weighted stats======
+  x <- add.facets.snpR.data(x, facets)
+  calced <- check_calced_stats(x, facets, "maf")
+  calcedb <- unlist(calced)
+  names(calcedb) <- names(calced)
+  if(sum(calcedb) != length(calcedb)){
+    x <- calc_maf(x, facets = names(calcedb)[which(!calcedb)])
+  }
+  
   stats <- get.snpR.stats(x, facets, type)
   # get weights and stats
   if(type == "single"){
+    
     weights <- (stats$maj.count + stats$min.count)/2
     stats_to_get <- stats[,-c(which(colnames(stats) %in% c("facet", "subfacet", colnames(x@snp.meta), "major", "minor", "maj.count", "min.count"))), drop = F]
     group_key <- stats[,c("facet", "subfacet")]
@@ -3362,7 +3371,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   
   # calculate weighted means using equation sum(w*s)/sum(w)
   weighted <- weights*stats_to_get
-  per_group_sums <- tapply(weights, groups, sum)
+  per_group_sums <- tapply(weights, groups, sum, na.rm = T)
   weighted <- as.data.table(weighted)
   weighted$groups <- groups
   means <- weighted[,lapply(.SD, sum, na.rm = T), by = groups] # lapply isn't ideal, but data.table is quite fast anyway. Could consider other options
