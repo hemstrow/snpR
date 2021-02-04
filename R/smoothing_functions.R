@@ -87,16 +87,31 @@ gaussian_weight <- function(p, c, s) {
 #'get.snpR.stats(x, "group.pop", "pairwise.window") # fst
 #'
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
+  #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
   
+  msg <- character(0)
+  if(any(!stats.type %in% c("single", "pairwise"))){
+    msg <- c(msg, "Unaccepted stats.type, only 'single' or 'pairwise' accepted.\n")
+  }
+  if("pairwise" %in% stats.type){
+    if(nrow(x@pairwise.stats) == 0){
+      msg <- c(msg, "No pairwise stats calculated.\n")
+    }
+  }
+
+  if(length(msg) > 0){
+    stop(msg)
+  }
   
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
   sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
-
+  
+  x <- add.facets.snpR.data(x, facets)
   #================subfunction========
   # funciton to do a sliding window analysis on a data set.
   # x: a data frame containing one column with positions and one for each column to be smoothed

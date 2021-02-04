@@ -933,7 +933,7 @@ calc_private <- function(x, facets = NULL){
 #'Heatmaps of the resulting data can be easily plotted using
 #'\code{\link{plot_pairwise_LD_heatmap}}
 #'
-#'@param x snpRdata. Input SNP data.
+#'@param x snpRdata. Input SNP data. Note that a SNP column containing snp position in base pairs named 'position' is required.
 #'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param subfacets character, default NULL. Subsets the facet levels to run.
 #'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
@@ -1013,6 +1013,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }  #one more sanity check.
   if(ss > nrow(x)){
     stop("Number of sites to subsample cannot be large than the number of provided sites.")
+  }
+  
+  if(!"position" %in% colnames(x@snp.meta)){
+    sotp("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
   }
 
   #========================sub-functions=============
@@ -2160,12 +2164,39 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     # get subfacet types
     ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
-
-    invisible(capture.output(x <- subset_snpR_data(x,
-                                                   facets = names(subfacets)[which(ssfacet.types == "sample")],
-                                                   subfacets = subfacets[[which(ssfacet.types == "sample")]],
-                                                   snp.facets = names(subfacets)[which(ssfacet.types == "snp")],
-                                                   snp.subfacets = subfacets[[which(ssfacet.types == "snp")]])))
+    filter_snp_facets <- F
+    filter_samp_facets <- F
+    
+    sample.facets <- names(subfacets)[which(ssfacet.types == "sample")]
+    if(length(sample.facets) > 0){
+      sample.subfacets <- subfacets[[which(ssfacet.types == "sample")]]
+      filter_samp_facets <- T
+    }
+    snp.facets <- names(subfacets)[which(ssfacet.types == "snp")]
+    if(length(snp.facets) > 0){
+      snp.subfacets <- subfacets[[which(ssfacet.types == "snp")]] 
+      filter_snp_facets <- T
+    }
+    
+    if(filter_samp_facets){
+      if(filter_snp_facets){
+        invisible(capture.output(x <- subset_snpR_data(x,
+                                                       facets = sample.facets,
+                                                       subfacets = sample.subfacets,
+                                                       snp.facets = snp.facets,
+                                                       snp.subfacets = snp.subfacets)))
+      }
+      else{
+        invisible(capture.output(x <- subset_snpR_data(x,
+                                                       facets = sample.facets,
+                                                       subfacets = sample.subfacets)))
+      }
+    }
+    else if(filter_snp_facets){
+      invisible(capture.output(x <- subset_snpR_data(x,
+                                                     snp.facets = snp.facets,
+                                                     snp.subfacets = snp.subfacets)))
+    }
   }
 
   if(is.numeric(ss)){
@@ -2237,8 +2268,6 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
   # calculate composite LD for a single facet of data.
   do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
     melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
-      colnames(CLD) <- snp.meta$position
-      rownames(CLD) <- snp.meta$position
       prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
       prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
       prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
@@ -2277,7 +2306,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
     # merge
     prox <- merge.data.table(prox, prox_S)
 
-
+    # add column/row names
+    colnames(CLD) <- snp.meta$position
+    rownames(CLD) <- snp.meta$position
     return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
   }
 
@@ -3306,9 +3337,18 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   }
   
   #===========calculate weighted stats======
+  x <- add.facets.snpR.data(x, facets)
+  calced <- check_calced_stats(x, facets, "maf")
+  calcedb <- unlist(calced)
+  names(calcedb) <- names(calced)
+  if(sum(calcedb) != length(calcedb)){
+    x <- calc_maf(x, facets = names(calcedb)[which(!calcedb)])
+  }
+  
   stats <- get.snpR.stats(x, facets, type)
   # get weights and stats
   if(type == "single"){
+    
     weights <- (stats$maj.count + stats$min.count)/2
     stats_to_get <- stats[,-c(which(colnames(stats) %in% c("facet", "subfacet", colnames(x@snp.meta), "major", "minor", "maj.count", "min.count"))), drop = F]
     group_key <- stats[,c("facet", "subfacet")]
@@ -3331,7 +3371,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   
   # calculate weighted means using equation sum(w*s)/sum(w)
   weighted <- weights*stats_to_get
-  per_group_sums <- tapply(weights, groups, sum)
+  per_group_sums <- tapply(weights, groups, sum, na.rm = T)
   weighted <- as.data.table(weighted)
   weighted$groups <- groups
   means <- weighted[,lapply(.SD, sum, na.rm = T), by = groups] # lapply isn't ideal, but data.table is quite fast anyway. Could consider other options
