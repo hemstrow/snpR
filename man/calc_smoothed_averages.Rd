@@ -37,7 +37,8 @@ statistic(s) to smooth, either "single",  "pairwise", or c("single",
 use for parallel processing.}
 }
 \value{
-snpRdata object with smoothed averages for any requested statistics merged into the window.stats or pairwise.window.stats slots.
+snpRdata object with smoothed averages for any requested statistics
+ merged into the window.stats or pairwise.window.stats slots.
 }
 \description{
 Calculates gaussian smoothed average values for statistics and the genomic

@@ -75,13 +75,14 @@ Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 above those respetive values will be highlighted. If a numeric vector, SNPs
 corresponding to vector entries will be highlighted. See details.}
 
-\item{sig_below}{logical, default FALSE. If TRUE, treats values lower than the
-significance threshold as significant.}
+\item{sig_below}{logical, default FALSE. If TRUE, treats values lower than
+the significance threshold as significant.}
 
 \item{log.p}{logical, default FALSE. If TRUE, plot variables and thresholds
 will be transformed to -log.}
 
-\item{abs}{logical, default FALSE. If TRUE, converts the plot variable to it's absolute value.}
+\item{abs}{logical, default FALSE. If TRUE, converts the plot variable to
+it's absolute value.}
 
 \item{viridis.option}{character, default "plasma". Viridis color scale option
 to use for significance lines and SNP labels. See

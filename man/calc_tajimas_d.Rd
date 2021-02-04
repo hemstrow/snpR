@@ -4,18 +4,24 @@
 \alias{calc_tajimas_d}
 \title{Tajima's D from SNP data.}
 \usage{
-calc_tajimas_d(x, facets = NULL, sigma = NULL, step = NULL, par = F)
+calc_tajimas_d(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
-\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level facets are provided, the calculated Tajima's D will be for the entire genome.}
+\item{facets}{character. Categorical metadata variables by which to break up
+analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level
+facets are provided, the calculated Tajima's D will be for the entire
+genome.}
 
-\item{sigma}{numeric, default NULL. Sliding window size, in kilobases. Each window will
-include all SNPs within 3*sigma kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).}
+\item{sigma}{numeric, default NULL. Sliding window size, in kilobases. Each
+window will include all SNPs within 3*sigma kilobases. If either sigma or
+step are NULL, the entire snp subfacet will be done at once (for example,
+the whole chromosome).}
 
-\item{step}{numeric, default NULL. Number of bases to move between each window, in
-kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).}
+\item{step}{numeric, default NULL. Number of bases to move between each
+window, in kilobases. If either sigma or step are NULL, the entire snp
+subfacet will be done at once (for example, the whole chromosome).}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
@@ -42,7 +48,7 @@ as described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
 # broken by population, windows across linkage group
-x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
 get.snpR.stats(x, "group.pop", "single.window")
 
 # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.

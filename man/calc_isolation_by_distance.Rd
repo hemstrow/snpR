@@ -20,8 +20,8 @@ described in \code{\link{Facets_in_snpR}}.}
 
 \item{x_y}{character, default c("x", "y"). Names of the columns containing
 geographic coordinates where samples were collected. There is no need to
-specify projection formats. The first should be longitude, the second should
-be latitude.}
+specify projection formats. The first should be longitude, the second
+should be latitude.}
 
 \item{genetic_distance_method}{character, default "Edwards". The genetic
 distance method to use, see \code{\link{calc_genetic_distances}}.}
@@ -58,8 +58,8 @@ values.
 y <- stickSNPs
 sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
 y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
-res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results 
-res 
+res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results
+res
 plot(res$group.pop$groupV$Edwards) # plot perms vs observed
 
 }

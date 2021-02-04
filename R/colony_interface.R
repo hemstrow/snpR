@@ -1,64 +1,123 @@
 
 #' Interfaces with the COLONY pedigree assignment program.
 #'
-#' Interfaces with the command-line version of the COLONY pedigree program. 
-#' Requires a snpRdata object containing offspring genotypes and can optionally take 
-#' snpRdata objects containing maternal or paternal genotypes, or both. No facet support.
-#' 
-#' Requires that the COLONY program is installed locally. Input and output files
-#' will be stored in a colony folder created in the current working directory. The functions
-#' documented here can write input files, call them using colony, and parse some parts of the results
-#' given the original snpRdata object. Note that no facet support is currently available here due to
-#' the complexity and number of possible input parameters that are difficult to handle across multiple
-#' facets and facet levels. Facet support for the basic, default operation with few additional options
-#' may be added in the future. For now, facets can be handled during parentage and pedigree creation
-#' in snpR using the \code{\link{run_sequoia}} function, which runs a notably simpler (with respect
-#' to implementation) pedigree toolkit.
-#' 
-#' These functions includes many commonly used options but not all possible parameters 
-#' for colony inputs. See Colony User Guide for using extra features.
+#' Interfaces with the command-line version of the COLONY pedigree program.
+#' Requires a snpRdata object containing offspring genotypes and can optionally
+#' take snpRdata objects containing maternal or paternal genotypes, or both. No
+#' facet support.
 #'
-#' This is still in development. The defaults and the most commonly used options have been tested and work well, but some of the more esoteric options haven't been fully tested yet.
+#' Requires that the COLONY program is installed locally. Input and output files
+#' will be stored in a colony folder created in the current working directory.
+#' The functions documented here can write input files, call them using colony,
+#' and parse some parts of the results given the original snpRdata object. Note
+#' that no facet support is currently available here due to the complexity and
+#' number of possible input parameters that are difficult to handle across
+#' multiple facets and facet levels. Facet support for the basic, default
+#' operation with few additional options may be added in the future. For now,
+#' facets can be handled during parentage and pedigree creation in snpR using
+#' the \code{\link{run_sequoia}} function, which runs a notably simpler (with
+#' respect to implementation) pedigree toolkit.
+#'
+#' These functions includes many commonly used options but not all possible
+#' parameters for colony inputs. See Colony User Guide for using extra features.
+#'
+#' This is still in development. The defaults and the most commonly used options
+#' have been tested and work well, but some of the more esoteric options haven't
+#' been fully tested yet.
 #' @param x snpRdata object containing offspring genotypes.
-#' @param outfile character, default "colony_input". Output file name. A file path may be provided (e.g. "colony/colony_run_1.txt").
-#' @param method character, default "FPLS". Pedigree reconstruction method. For more details see the Colony User Guide.
-#'   Options: \itemize{\item{"FLPS": }{Pure pairwise likelihood method, combines the full likelihood and pairwise likelihood methods. A good compromise between speed and accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more computationally intensive and slow to run, especially with large complex datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less computationally intensive than FL.}}
-#' @param run_length numeric in c(1,2,3,4), default 2. Length of run: short/medium/long/verylong.
-#' @param sampleIDS character, default NULL. Name of a column in the sample metadata that designates sample identifications/"names". Each name must be unique!
-#' @param sibship_prior numeric in c(0, 1, 2, 3, 4), default 0. Strength the sibship size prior (no prior, weak, medium, strong, OR determine from known prior values). Values other than 0 require additional parameters. Option for supplying value of 4, currently not implemented in snpR. See Colony User Guide for more details. 
-#' @param paternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same father. If this value is not zero, then you must include a file with the known paternal sibship/paternity.
-#' @param maternal_sib_size numeric, default NULL. Minimum value is 0. The number of offspring in the candidate pool that are known to share the same mother. If this value is not zero, then you must include a file with the known paternal sibship/maternity.
+#' @param outfile character, default "colony_input". Output file name. A file
+#'   path may be provided (e.g. "colony/colony_run_1.txt").
+#' @param method character, default "FPLS". Pedigree reconstruction method. For
+#'   more details see the Colony User Guide. Options: \itemize{\item{"FLPS":
+#'   }{Pure pairwise likelihood method, combines the full likelihood and
+#'   pairwise likelihood methods. A good compromise between speed and
+#'   accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more
+#'   computationally intensive and slow to run, especially with large complex
+#'   datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
+#'   computationally intensive than FL.}}
+#' @param run_length numeric in c(1,2,3,4), default 2. Length of run:
+#'   short/medium/long/verylong.
+#' @param sampleIDs character, default NULL. Name of a column in the sample
+#'   metadata that designates sample identifications/"names". Each name must be
+#'   unique!
+#' @param sibship_prior numeric in c(0, 1, 2, 3, 4), default 0. Strength the
+#'   sibship size prior (no prior, weak, medium, strong, OR determine from known
+#'   prior values). Values other than 0 require additional parameters. Option
+#'   for supplying value of 4, currently not implemented in snpR. See Colony
+#'   User Guide for more details.
+#' @param paternal_sib_size numeric, default NULL. Minimum value is 0. The
+#'   number of offspring in the candidate pool that are known to share the same
+#'   father. If this value is not zero, then you must include a file with the
+#'   known paternal sibship/paternity.
+#' @param maternal_sib_size numeric, default NULL. Minimum value is 0. The
+#'   number of offspring in the candidate pool that are known to share the same
+#'   mother. If this value is not zero, then you must include a file with the
+#'   known paternal sibship/maternity.
 #' @param nruns integer, default 1. A number of replicate runs for the dataset.
-#' @param seed integer, default NULL. Supply a four digit integer (eg: 1234, 9876) as a starting point for the algorithm.
+#' @param seed integer, default NULL. Supply a four digit integer (eg: 1234,
+#'   9876) as a starting point for the algorithm.
 #' @param maternal_genotypes snpRdata object containing maternal genotypes.
 #' @param paternal_genotypes snpRdata object containing paternal genotypes.
-#' @param maternal_inclusion_prob numeric in 0:1, default 0. Probability the mother is in the dataset ranging from 0 to 1.
-#' @param paternal_inclusion_prob numeric in 0:1, default 0. Probability the father is in the dataset ranging from 0 to 1.
-#' @param update_af character, default TRUE. Should Colony update the allele frequencies used in the calculations?
-#' @param dioecious character, default TRUE. Is this species diploid/dioecious? FALSE = haploid/monoecious. Colony does not work with more ploidy.
-#' @param inbreeding character, default TRUE. Should Colony assume inbreeding in the calculations?
-#' @param male_monogamous character, default FALSE. Should Colony assume males are monogamous?
-#' @param female_monagamous character, default FALSE. Should Colony assume females are monogamous?
-#' @param clone_inference character, default FALSE. Should Colony infer clones in the sample set?
-#' @param sibship_scaling character, default TRUE. Should Colony scale sibling groups?
-#' @param known_af character, default FALSE. If TRUE snpR will calculate and supply mafs, else, supply a numeric vector containing the known maf for each locus.
-#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High for calculating the maximum likelihood.
-#' @param dropout numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the allelic droput rate for each marker.
-#' @param genotyping_error numeric vector where each value is in 0:1, default 0.01. Supply a flatrate value for all markers, or a vector corresponding to the genotyping error rate for each marker.
-#' @param known_maternal_dyads character, default NULL. Supply matrix or dataframe with known maternal-offspring dyads. Offspring ID in column 1, Maternal ID in column 2.  
-#' @param known_paternal_dyads character, default NULL. Supply matrix or dataframe with known paternal-offspring dyads. Offspring ID in column 1, Paternal ID in column 2.
+#' @param maternal_inclusion_prob numeric in 0:1, default 0. Probability the
+#'   mother is in the dataset ranging from 0 to 1.
+#' @param paternal_inclusion_prob numeric in 0:1, default 0. Probability the
+#'   father is in the dataset ranging from 0 to 1.
+#' @param update_af character, default TRUE. Should Colony update the allele
+#'   frequencies used in the calculations?
+#' @param dioecious character, default TRUE. Is this species diploid/dioecious?
+#'   FALSE = haploid/monoecious. Colony does not work with more ploidy.
+#' @param inbreeding character, default TRUE. Should Colony assume inbreeding in
+#'   the calculations?
+#' @param male_monogamous character, default FALSE. Should Colony assume males
+#'   are monogamous?
+#' @param female_monogamous character, default FALSE. Should Colony assume
+#'   females are monogamous?
+#' @param clone_inference character, default FALSE. Should Colony infer clones
+#'   in the sample set?
+#' @param sibship_scaling character, default TRUE. Should Colony scale sibling
+#'   groups?
+#' @param known_af character, default FALSE. If TRUE snpR will calculate and
+#'   supply mafs, else, supply a numeric vector containing the known maf for
+#'   each locus.
+#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High
+#'   for calculating the maximum likelihood.
+#' @param dropout numeric vector where each value is in 0:1, default 0.01.
+#'   Supply a flatrate value for all markers, or a vector corresponding to the
+#'   allelic droput rate for each marker.
+#' @param genotyping_error numeric vector where each value is in 0:1, default
+#'   0.01. Supply a flatrate value for all markers, or a vector corresponding to
+#'   the genotyping error rate for each marker.
+#' @param known_maternal_dyads character, default NULL. Supply matrix or
+#'   dataframe with known maternal-offspring dyads. Offspring ID in column 1,
+#'   Maternal ID in column 2.
+#' @param known_paternal_dyads character, default NULL. Supply matrix or
+#'   dataframe with known paternal-offspring dyads. Offspring ID in column 1,
+#'   Paternal ID in column 2.
 #' @param known_maternal_max_mismatches integer in c(0,1,2:nsample), default 0.
 #' @param known_paternal_max_mismatches integer in c(0,1,2:nsample), default 0.
-#' @param known_maternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.
-#' @param known_paternal_sibships character, default NULL. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs separated by spaces.
-#' @param maternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded females, column 3 the IDs of excluded females separated by spaces.
-#' @param paternal_exclusions character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded males, column 3 the IDs of excluded males separated by spaces.
-#' @param excluded_maternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
-#' @param excluded_paternal_siblings character, default NULL. Data.frame or matrix with column 1 the offspring ID, column 2 the number of excluded siblings, column 3 the IDs of excluded siblings separated by spaces.
+#' @param known_maternal_sibships character, default NULL. Data frame or matrix
+#'   with sibship size followed by single column containing all of the sibling
+#'   IDs separated by spaces.
+#' @param known_paternal_sibships character, default NULL. Data frame or matrix
+#'   with sibship size followed by single column containing all of the sibling
+#'   IDs separated by spaces.
+#' @param maternal_exclusions character, default NULL. Data.frame or matrix with
+#'   column 1 the offspring ID, column 2 the number of excluded females, column
+#'   3 the IDs of excluded females separated by spaces.
+#' @param paternal_exclusions character, default NULL. Data.frame or matrix with
+#'   column 1 the offspring ID, column 2 the number of excluded males, column 3
+#'   the IDs of excluded males separated by spaces.
+#' @param excluded_maternal_siblings character, default NULL. Data.frame or
+#'   matrix with column 1 the offspring ID, column 2 the number of excluded
+#'   siblings, column 3 the IDs of excluded siblings separated by spaces.
+#' @param excluded_paternal_siblings character, default NULL. Data.frame or
+#'   matrix with column 1 the offspring ID, column 2 the number of excluded
+#'   siblings, column 3 the IDs of excluded siblings separated by spaces.
 #' @param infile character. Path to the pre-written colony input file to be run.
 #' @param colony_path character. Path to the colony executable.
 #' @param path character. Path to the directory containing colony results.
 #' @param x snpRdata object from which metadata for colony results can be found.
+#' @param prefix character. The prefix for the colony files to be parsed.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
@@ -66,14 +125,16 @@
 #' @aliases write_colony_input call_colony parse_colony run_colony
 #'
 #' @name colony_interface
-#' 
-#' @references Jones,O.R. and Wang,J. (2010) COLONY: a program for parentage and sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10, 551–555.
-#' 
-#' @examples 
+#'
+#' @references Jones,O.R. and Wang,J. (2010) COLONY: a program for parentage and
+#'   sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10,
+#'   551–555.
+#'
+#' @examples
 #' # A simple example for running all individuals in the snpR object as siblings in colony.
-#'  write_colony_input(x = stickSNPs, outfile = "stk.col")
-
-#' A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects. 
+#' write_colony_input(x = stickSNPs, outfile = "stk.col")
+#'
+#' # A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
@@ -85,7 +146,7 @@
 #' dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
 #' off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
 #' write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
-#' 
+#'
 #' # running a simple model
 #' \dontrun{
 #' ## intentionally shorter run, with a small subset of the samples

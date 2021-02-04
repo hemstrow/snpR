@@ -14,8 +14,9 @@ calc_CLD(x, facets = NULL, par = FALSE)
 \item{par}{number of parallel cores}
 }
 \description{
-Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the output needs to be
-in the same format as that function's and to support faceting without excessive recalculation.
+Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the
+output needs to be in the same format as that function's and to support
+faceting without excessive recalculation.
 }
 \author{
 William Hemstrom

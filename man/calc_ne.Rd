@@ -2,7 +2,7 @@
 % Please edit documentation in R/stat_functions.R
 \name{calc_ne}
 \alias{calc_ne}
-\title{Caluclate effective population size.}
+\title{Calculate effective population size.}
 \usage{
 calc_ne(
   x,
@@ -26,7 +26,7 @@ which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 details. Only sample specific categories are allowed, all others will be
 removed. If NULL, Ne will be calculated for all samples.}
 
-\item{chr}{character, defualt NULL. An optional but recommended SNP specific
+\item{chr}{character, default NULL. An optional but recommended SNP specific
 categorical metadata variable which designates chromosomes/linkage
 groups/etc. Pairwise LD scores for SNPs with the same level of this
 variable will be not be used to calculate Ne. Since physical linkage can
@@ -36,11 +36,11 @@ bias Ne estimtes, providing a value here is recommended.}
 NeEstimator executable.}
 
 \item{mating}{character, default "random". The mating system to use. Options:
-\itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogomous
+\itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogamous
 mating. }}
 
 \item{pcrit}{numeric, default c(.05, .02, .01). Minimum minor allele
-frequencies for which to calculate Ne. Rare alleles can bias esitmates, so
+frequencies for which to calculate Ne. Rare alleles can bias estimates, so
 a range of values should be checked.}
 
 \item{methods}{character, default "LD". LD estimation methods to use.
@@ -83,7 +83,7 @@ for NeEstimator v2.
 \dontrun{
 # not run
 # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
-ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation. 
+ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation.
 get.snpR.stats(ne, "pop", type = "pop")}
 
 }

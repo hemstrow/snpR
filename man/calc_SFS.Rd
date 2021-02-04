@@ -4,22 +4,23 @@
 \alias{calc_SFS}
 \title{Generate a 1-2d site frequency spectrum from a snpRdata object.}
 \usage{
-calc_SFS(x, facet = NULL, pops = NULL, projection, fold = T)
+calc_SFS(x, facet = NULL, pops = NULL, projection, fold = TRUE)
 }
 \arguments{
 \item{x}{snpRdata object. The SNP metadata must contain "ref" and "anc" data.}
 
-\item{facet}{character, default NULL. Name of the sample metadata column which specifies
-the source population of individuals. For now, allows only a single simple facet (one column).If NULL,
-runs the entire dataset.}
+\item{facet}{character, default NULL. Name of the sample metadata column
+which specifies the source population of individuals. For now, allows only
+a single simple facet (one column).If NULL, runs the entire dataset.}
 
-\item{pops}{character, default NULL. A vector of population names of up to length 2
-containing the names of populations for which the an SFS is to be created.
-If NULL, runs the entire dataset.}
+\item{pops}{character, default NULL. A vector of population names of up to
+length 2 containing the names of populations for which the an SFS is to be
+created. If NULL, runs the entire dataset.}
 
 \item{projection}{numeric. A vector of sample sizes to project the SFS to, in
 \emph{number of gene copies}. Sizes too large will result in a SFS
-containing few or no SNPs. Must match the length of the provided pops vector.}
+containing few or no SNPs. Must match the length of the provided pops
+vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
 left polarized.}
@@ -44,11 +45,13 @@ et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
 Either 1 or 2d SFSs can be constructed by providing a vector of population
 names and projection sizes.
 
-Note that ref and anc columns are suggested in the SNP metadata, containing the derived and ancestral
-character states, respectively. These should contain three characters each: two flanking bases and the SNP.
-For example, for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected. Note that if these
-character states are not known, the minor and major alleles will be substituted. Unfolded spectra will
-be misleading in this case.
+Note that ref and anc columns are suggested in the SNP metadata, containing
+the derived and ancestral character states, respectively. These should
+contain three characters each: two flanking bases and the SNP. For example,
+for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected.
+Note that if these character states are not known, the minor and major
+alleles will be substituted. Unfolded spectra will be misleading in this
+case.
 }
 \examples{
 # add the needed ref and anc columns, using the major and minor alleles (will fold later)

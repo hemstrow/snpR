@@ -6,6 +6,16 @@
 \usage{
 check.installed(pkg, install.type = "basic", source = NULL)
 }
+\arguments{
+\item{pkg}{character, name of the package to check.}
+
+\item{install.type}{character, default "basic". Where should the package be
+sourced from? Options: "basic": CRAN, "github": github, "bioconductor":
+bioconductor.}
+
+\item{source}{character, default NULL. If install.type = 'github', gives the
+source from which to install.}
+}
 \description{
 Utility to check if a required package is installed and install it if needed
 }

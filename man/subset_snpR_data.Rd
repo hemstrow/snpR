@@ -29,7 +29,10 @@ which subsetting will occur.}
 \item{subfacets}{character, default NULL. Levels of the specified sample level
 facet to keep. Samples in other levels will be removed.}
 
-\item{snp.facets}{character, default NULL. Levels of the specified snp facets
+\item{snp.facets}{characet, default NULL. \emph{snp specific} facets over
+which subsetting will occur.}
+
+\item{snp.subfacets}{character, default NULL. Levels of the specified snp facets
 to keep. SNPs in other levels will be removed.}
 }
 \description{

@@ -11,7 +11,7 @@ do_bootstraps(
   sigma,
   step = NULL,
   statistics = "all",
-  nk = T,
+  nk = TRUE,
   par = FALSE,
   do.p = TRUE,
   p.alt = "two-sided"
@@ -31,6 +31,9 @@ window size is 6*sigma.}
 \item{step}{numeric or NULL, default NULL. Designates the number of kilobases
 between each window centroid. If NULL, windows are centered on each SNP.}
 
+\item{statistics}{character. Designates the statistic(s) to smooth, typically
+"all", "single", or "pairwise". See details for options.}
+
 \item{nk}{logical, default TRUE. If TRUE, weights SNP contribution to window
 averages by the number of observations at those SNPs.}
 
@@ -46,9 +49,6 @@ bootstrapped value is as small or smaller than observed. \item "greater":
 probability that a bootstrapped value is as large or larger than observed.
 \item "two-sided": probability that a bootstrapped value is as or more
 extreme than observed. }}
-
-\item{statistic}{character. Designates the statistic(s) to smooth, typically
-"all", "single", or "pairwise". See details for options.}
 }
 \value{
 A snpRdata object with bootstrapped windows merged in to the

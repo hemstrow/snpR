@@ -9,7 +9,8 @@ get.snpR.stats(x, facets = NULL, type = "single")
 \arguments{
 \item{x}{snpRdata object.}
 
-\item{facets}{character or NULL, default NULL. Facets for which to fetch data.}
+\item{facets}{character or NULL, default NULL. Facets for which to fetch
+data.}
 
 \item{type}{character, default "single". Type of statistics to pull, see
 description.}
@@ -19,8 +20,8 @@ A convenience function that pulls statistics of any specified type at
 particular facets from a snpRdata object.
 }
 \details{
-Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets =
-"all", data for all facets, including the base facet, will be returned. By
+Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets
+= "all", data for all facets, including the base facet, will be returned. By
 default, the base facet alone will be returned.
 
 Different types of statistics are retrieved via the following options under
@@ -30,9 +31,11 @@ the "type" argument:
 \item{pairwise: } pairwise, non-window statistics (Fst). \item{single.window:
 } non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
 sliding window statistics. \item{LD: } linkage disequilibrium matrices and
-tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
-\item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-\item{ibd: } isolation by distance results. \item{sample: } sample stats. \item{pop: } population sumamry statistics. }
+tables. \item{bootstraps: } bootstraps of window statistics.
+\item{genetic_distance: } genetic distances \item{allele_frequency_matrix: }
+allele frequency matrices. \item{geo_dist: } geographic distances. \item{ibd:
+} isolation by distance results. \item{sample: } sample stats. \item{pop: }
+population sumamry statistics. }
 }
 \examples{
 # generate some statistics
@@ -42,7 +45,7 @@ dat <- calc_pairwise_fst(stickSNPs, "group.pop")
 # fetch pi
 get.snpR.stats(dat, "group.pop")
 # fetch fst
-get.snpR.stats(dat, "group.pop", "pairwise") 
+get.snpR.stats(dat, "group.pop", "pairwise")
 
 }
 \author{

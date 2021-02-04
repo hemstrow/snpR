@@ -9,8 +9,9 @@ process_ms(x, chr.length)
 \arguments{
 \item{x}{filepath to ms file}
 
-\item{chr.length}{length of the chromosome. If a single value, assumes all the same length.
-If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.}
+\item{chr.length}{length of the chromosome. If a single value, assumes all
+the same length. If a vector of the same length as number of chr, assumes
+those are the chr lengths in order of apperance in ms file.}
 }
 \description{
 Internal to process a ms file

@@ -21,7 +21,8 @@ fwe_correction(
 
 \item{methods}{methods to use}
 
-\item{case}{case (overall, within each subfacet, or within each facet) at which to apply corrections}
+\item{case}{case (overall, within each subfacet, or within each facet) at
+which to apply corrections}
 }
 \description{
 Correct for multiple testing.

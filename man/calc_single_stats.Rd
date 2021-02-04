@@ -36,9 +36,16 @@ calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 Uses a chi-squared test. } See details}
 
-\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.}
+\item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type
+of Family-Wise Error correction (mulitple testing correction) to use. For
+details and options, see \code{\link{p.adjust}}.}
 
-\item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}}
+\item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall").
+How should Family-Wise Error correction (multiple testing correction) be
+applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
+pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
+each subfacet is treated as a seperate set of tests. \item{"overall":} All
+tests are treated as a set.}}
 }
 \value{
 snpRdata object with requested stats merged into the stats socket
@@ -120,7 +127,8 @@ x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
 get.snpR.stats(x, c("pop", "pop.fam"))
 }
 \references{
-Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American Journal of Human Genetics}
+Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American
+ Journal of Human Genetics}
 
 Hohenlohe et al. (2010). \emph{PLOS Genetics}
 }

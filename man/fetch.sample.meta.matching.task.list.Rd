@@ -6,6 +6,12 @@
 \usage{
 fetch.sample.meta.matching.task.list(x, task.list.row)
 }
+\arguments{
+\item{x}{snpRdata object to check}
+
+\item{task.list.row}{A row of an object created by
+\code{\link{get.task.list}} to look up info about.}
+}
 \description{
 Internal to find which sample metadata rows match a row from a task list.
 }

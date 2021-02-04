@@ -45,8 +45,15 @@
 #'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 #'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 #'  Uses a chi-squared test. } See details
-#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type of Family-Wise Error correction (mulitple testing correction) to use. For details and options, see \code{\link{p.adjust}}.
-#'@param fwe_case character, default c("by_facet", "by_subfacet", "overall"). How should Family-Wise Error correction (multiple testing correction) be applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of each subfacet is treated as a seperate set of tests. \item{"overall":} All tests are treated as a set.}
+#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type
+#'  of Family-Wise Error correction (mulitple testing correction) to use. For
+#'  details and options, see \code{\link{p.adjust}}.
+#'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
+#'  How should Family-Wise Error correction (multiple testing correction) be
+#'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
+#'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
+#'  each subfacet is treated as a seperate set of tests. \item{"overall":} All
+#'  tests are treated as a set.}
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
 #'
@@ -57,7 +64,8 @@
 #'
 #'@author William Hemstrom
 #'
-#'@references Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American Journal of Human Genetics}
+#'@references Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American
+#'  Journal of Human Genetics}
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'
 #' @examples
@@ -289,11 +297,17 @@ calc_maf <- function(x, facets = NULL){
 #'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata. Input SNP data.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level facets are provided, the calculated Tajima's D will be for the entire genome.
-#'@param sigma numeric, default NULL. Sliding window size, in kilobases. Each window will
-#'  include all SNPs within 3*sigma kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
-#'@param step numeric, default NULL. Number of bases to move between each window, in
-#'  kilobases. If either sigma or step are NULL, the entire snp subfacet will be done at once (for example, the whole chromosome).
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details. If no snp level
+#'  facets are provided, the calculated Tajima's D will be for the entire
+#'  genome.
+#'@param sigma numeric, default NULL. Sliding window size, in kilobases. Each
+#'  window will include all SNPs within 3*sigma kilobases. If either sigma or
+#'  step are NULL, the entire snp subfacet will be done at once (for example,
+#'  the whole chromosome).
+#'@param step numeric, default NULL. Number of bases to move between each
+#'  window, in kilobases. If either sigma or step are NULL, the entire snp
+#'  subfacet will be done at once (for example, the whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'
@@ -302,14 +316,14 @@ calc_maf <- function(x, facets = NULL){
 #'
 #' @examples
 #' # broken by population, windows across linkage group
-#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = F)
+#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
 #' get.snpR.stats(x, "group.pop", "single.window")
-#' 
+#'
 #' # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
 #' # this will calculate overall tajima's D without a window for each population.
 #' x <- calc_tajimas_d(stickSNPs, facets = "pop")
 #' get.snpR.stats(x, "pop", "single.window")
-#' 
+#'
 #' # for the overall dataset, note that sigma and step are NULL
 #' # this will calculate overall tajima's D for each group/pop
 #' x <- calc_tajimas_d(stickSNPs, facets = "group.pop")
@@ -318,7 +332,7 @@ calc_maf <- function(x, facets = NULL){
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
-calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F){
+calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE){
   if(!is.null(sigma) & !is.null(step)){
     sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
   }
@@ -478,7 +492,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = F)
 #' # Using Wier and Cockerham 1984's method
 #' x <- calc_pairwise_fst(stickSNPs, "pop")
 #' get.snpR.stats(x, "pop", "pairwise")
-#' 
+#'
 #' # Using genepop, note that the overall value is part 2 of the returned list
 #' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
 #' get.snpR.stats(x[[1]], "pop", "pairwise")
@@ -508,6 +522,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
       if(file.exists(g.filename)){
         file.remove(g.filename)
       }
+      init.files <- list.files()
       invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
       genepop::Fst(g.filename, pairs = TRUE)
 
@@ -614,8 +629,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         names(out$overall) <- paste0(pnames[1], "~", pnames[2])
       }
 
-      # return, we're done.
+      # clean and return, we're done.
       cat("Finished.\n")
+      fin.files <- list.files()
+      file.remove(fin.files[which(!fin.files %in% init.files)])
       return(out)
     }
 
@@ -933,8 +950,10 @@ calc_private <- function(x, facets = NULL){
 #'Heatmaps of the resulting data can be easily plotted using
 #'\code{\link{plot_pairwise_LD_heatmap}}
 #'
-#'@param x snpRdata. Input SNP data. Note that a SNP column containing snp position in base pairs named 'position' is required.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param x snpRdata. Input SNP data. Note that a SNP column containing snp
+#'  position in base pairs named 'position' is required.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param subfacets character, default NULL. Subsets the facet levels to run.
 #'  Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
 #'  "B"), chr = 1) will run only fams A and B on chromosome 1. list(fam = "A",
@@ -943,6 +962,8 @@ calc_private <- function(x, facets = NULL){
 #'@param ss numeric, default NULL. Number of snps to subsample.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
+#'@param sr logical, default FALSE. If TRUE, detailed progress reports for each
+#'  subfacet will be reported.
 #'@param CLD TRUE, FALSE, or "only", default "only". Specifies if the CLD method
 #'  should be used either in addition to or instead of default methods. See
 #'  details.
@@ -1016,7 +1037,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
   
   if(!"position" %in% colnames(x@snp.meta)){
-    sotp("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
+    stop("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
   }
 
   #========================sub-functions=============
@@ -2254,14 +2275,15 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 }
 
 #' Calculate Burrow's composite LD. Internal.
-#' 
-#' Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the output needs to be
-#' in the same format as that function's and to support faceting without excessive recalculation.
-#' 
+#'
+#' Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the
+#' output needs to be in the same format as that function's and to support
+#' faceting without excessive recalculation.
+#'
 #' @param x snpRdata object
 #' @param facets facets to run
 #' @param par number of parallel cores
-#' 
+#'
 #' @author William Hemstrom
 calc_CLD <- function(x, facets = NULL, par = FALSE){
   #============subfunctions==============
@@ -2653,11 +2675,13 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'calculations require a sample specific contrast (the pairwise part of pairwise
 #'Fst), and thus will not be calculated unless a facet with a sample meta data
 #'variable included is specified. The other stats, in contrast, are snp-specific
-#'and thus ignore any snp meta data variables included in facets. Providing NULL or
-#'"all" to the facets argument works as described in \code{\link{Facets_in_snpR}}.
+#'and thus ignore any snp meta data variables included in facets. Providing NULL
+#'or "all" to the facets argument works as described in
+#'\code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata object.
-#'@param facets character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param fst.method character, default "WC". Defines the FST estimator to use.
 #'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
 #'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
@@ -2681,9 +2705,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'@export
 #'
 #'@seealso calc_single_stats calc_pairwise_fst calc_smoothed_averages
-#'@return A snpRdata object with all of the described statistics merged into the appropriate sockets.
-#'
-calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = F, nk = TRUE){
+#'@return A snpRdata object with all of the described statistics merged into the
+#'  appropriate sockets.
+#'  
+calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NULL, step = NULL, par = FALSE, nk = TRUE){
   #=========sanity checks=======
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -2755,12 +2780,15 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 
 #' Calculate the ratio of heterozygous/homozygous sites per individual.
 #'
-#' Calculates the ratio of heterozygotes to homozygous sites across all SNPs within each individual.
+#' Calculates the ratio of heterozygotes to homozygous sites across all SNPs
+#' within each individual.
 #'
 #' @param x snpRdata object
-#' @param facets facets over which to split snps within samples. Takes only SNP level facets. See \code{\link{Facets_in_snpR}} for details.
+#' @param facets facets over which to split snps within samples. Takes only SNP
+#'   level facets. See \code{\link{Facets_in_snpR}} for details.
 #'
-#' @return A snpRdata object with heterozygote/homozygote ratios merged into the sample.stats slot.
+#' @return A snpRdata object with heterozygote/homozygote ratios merged into the
+#'   sample.stats slot.
 #'
 #' @author William Hemstrom
 #' @export
@@ -2773,9 +2801,9 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' # facet by chromosome
 #' x <- calc_het_hom_ratio(stickSNPs, "group")
 #' get.snpR.stats(x, "group", type = "sample")
-#' 
-#' 
 #'
+#'
+#' 
 calc_het_hom_ratio <- function(x, facets = NULL){
   func <- function(x, mDat){
     # make x into a logical for heterozygous
@@ -2810,7 +2838,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 
 
 
-#' Caluclate effective population size.
+#' Calculate effective population size.
 #'
 #' Calculates effective population size for any given sample-level facets via
 #' interface with the NeEstimator v2 program by Do et al. (2013).
@@ -2829,7 +2857,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 #'   details. Only sample specific categories are allowed, all others will be
 #'   removed. If NULL, Ne will be calculated for all samples.
-#' @param chr character, defualt NULL. An optional but recommended SNP specific
+#' @param chr character, default NULL. An optional but recommended SNP specific
 #'   categorical metadata variable which designates chromosomes/linkage
 #'   groups/etc. Pairwise LD scores for SNPs with the same level of this
 #'   variable will be not be used to calculate Ne. Since physical linkage can
@@ -2837,10 +2865,10 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #' @param NeEstimator_path character, default "/usr/bin/Ne2-1.exe". Path to the
 #'   NeEstimator executable.
 #' @param mating character, default "random". The mating system to use. Options:
-#'   \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogomous
+#'   \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogamous
 #'   mating. }
 #' @param pcrit numeric, default c(.05, .02, .01). Minimum minor allele
-#'   frequencies for which to calculate Ne. Rare alleles can bias esitmates, so
+#'   frequencies for which to calculate Ne. Rare alleles can bias estimates, so
 #'   a range of values should be checked.
 #' @param methods character, default "LD". LD estimation methods to use.
 #'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
@@ -2871,9 +2899,9 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #' \dontrun{
 #' # not run
 #' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
-#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation. 
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation.
 #' get.snpR.stats(ne, "pop", type = "pop")}
-#'
+#' 
 #' @export
 calc_ne <- function(x, facets = NULL, chr = NULL,
                     NeEstimator_path = "/usr/bin/Ne2-1.exe",
@@ -2925,7 +2953,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   return(x)
 }
 
-#' Caculate genetic distances between individuals or groups of samples.
+#' Calculate genetic distances between individuals or groups of samples.
 #'
 #' Calculates the genetic distances between either individuals or the levels of
 #' any sample specific facets, broken apart by any requested snp level facets.
@@ -2935,8 +2963,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' Edwards 1971.}
 #'
 #' All methods first calculate allele frequency matrices using
-#' \code{\link{tabulate_allele_frequency_matrix}}, then use these matrices (hereafter
-#' x) to calculate genetic distance.
+#' \code{\link{tabulate_allele_frequency_matrix}}, then use these matrices
+#' (hereafter x) to calculate genetic distance.
 #'
 #' Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
 #' <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
@@ -2964,17 +2992,17 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'
 #' @examples
 #' # by pop:
-#' y <- calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards"))
+#' y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 #' get.snpR.stats(y, "pop", "genetic_distance")
 #'
 #' # by group and pop jointly
-#' y <- calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
+#' y <- calc_genetic_distances(stickSNPs, facets = "pop.group", method = "Edwards")
 #' get.snpR.stats(y, "pop.group", "genetic_distance")
-#' 
+#'
 #' # by pop and fam seperately
-#' y <- calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
+#' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), method = "Edwards")
 #' get.snpR.stats(y, c("pop", "group"), "genetic_distance")
-#' 
+#'
 #' # individuals across all snps + plot
 #' y <- calc_genetic_distances(stickSNPs)
 #' heatmap(as.matrix(get.snpR.stats(y, type = "genetic_distance")$.base$.base$Edwards))
@@ -3052,7 +3080,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     # the nice thing with this is that it should keep all of the names from x natively!
     out <- lapply(x, function(y){
       lapply(y, function(z) {
-        if(class(z) == "matrix"){
+        if("matrix" %in% class(z)){
           get_dist(z, method = method)
         }
         else{
@@ -3139,8 +3167,8 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'   described in \code{\link{Facets_in_snpR}}.
 #' @param x_y character, default c("x", "y"). Names of the columns containing
 #'   geographic coordinates where samples were collected. There is no need to
-#'   specify projection formats. The first should be longitude, the second should
-#'   be latitude.
+#'   specify projection formats. The first should be longitude, the second
+#'   should be latitude.
 #' @param genetic_distance_method character, default "Edwards". The genetic
 #'   distance method to use, see \code{\link{calc_genetic_distances}}.
 #' @param ... Additional arguments passed to \code{\link[ade4]{mantel.randtest}}
@@ -3149,18 +3177,18 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'   merged into existing data.
 #'
 #' @author William Hemstrom
-#' 
+#'
 #' @seealso \code{\link[ade4]{mantel.randtest}},
 #'   \code{\link{calc_genetic_distances}}
 #'
 #' @export
-#' 
+#'
 #' @examples # calculate ibd for several different facets
 #' y <- stickSNPs
 #' sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
 #' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
-#' res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results 
-#' res 
+#' res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results
+#' res
 #' plot(res$group.pop$groupV$Edwards) # plot perms vs observed
 #' 
 calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", ...){
@@ -3289,20 +3317,30 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
 
 #' Calculate weighted averages of previously calculated genetic statistics.
 #'
-#' Calculates a weighted average for a statistic, weighted by the number of called genotypes at each locus.
-#' Works for single or pairwise statistics (pi, ho, fst, etc.). Automatically calculates weighted statistic for every
+#' Calculates a weighted average for a statistic, weighted by the number of
+#' called genotypes at each locus. Works for single or pairwise statistics (pi,
+#' ho, fst, etc.). Automatically calculates weighted statistic for every
 #' previously calculated statistic.
-#' 
-#' Weights are calculated using the equation \deqn{ M_{s} = \frac{\sum_{i = 1}^{n} s_{i} * w_{i}}{\sum_{i = 1}^{n} w_{i}}}
-#' Where\eqn{n} is the number of SNPs, \eqn{s_{i}} is the value of the statistic in SNP \eqn{i}, and \eqn{w_{i}} is the number
-#' of times that SNP was genotyped. Note that this will correct for a range in sequencing depth within samples, but does not
-#' really correct for variance in sequencing depth between populations or other facet levels.
+#'
+#' Weights are calculated using the equation \deqn{ M_{s} = \frac{\sum_{i =
+#' 1}^{n} s_{i} * w_{i}}{\sum_{i = 1}^{n} w_{i}}} Where\eqn{n} is the number of
+#' SNPs, \eqn{s_{i}} is the value of the statistic in SNP \eqn{i}, and
+#' \eqn{w_{i}} is the number of times that SNP was genotyped. Note that this
+#' will correct for a range in sequencing depth within samples, but does not
+#' really correct for variance in sequencing depth between populations or other
+#' facet levels.
 #'
 #' @param x snpRdata object.
-#' @param facets character, default NULL. Facets for which to calculate weighted stats (broken down by category). See \code{\link{Facets_in_snpR}} for details.
-#' @param type character, default "single". Type of statistic to weight: \itemize{\item{single: } Statistics calculated in a single subfacet, such as pi. \item{pairwise: } Statistics calculated pairwise between subfacets, such as Fst. }
-#' 
-#' @return A snpR data object with weighted statistics merged in, accessable via \code{\link{get.snpR.stats}} using type = "pop".
+#' @param facets character, default NULL. Facets for which to calculate weighted
+#'   stats (broken down by category). See \code{\link{Facets_in_snpR}} for
+#'   details.
+#' @param type character, default "single". Type of statistic to weight:
+#'   \itemize{\item{single: } Statistics calculated in a single subfacet, such
+#'   as pi. \item{pairwise: } Statistics calculated pairwise between subfacets,
+#'   such as Fst. }
+#'
+#' @return A snpR data object with weighted statistics merged in, accessable via
+#'   \code{\link{get.snpR.stats}} using type = "pop".
 #'
 #' @export
 #' @examples
@@ -3310,11 +3348,11 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
 #' x <- calc_basic_snp_stats(stickSNPs, "pop")
 #' x <- calc_weighted_stats(x, "pop")
 #' get.snpR.stats(x, "pop", "pop")
-#' 
+#'
 #' # pairwise
 #' x <- calc_weighted_stats(x, "pop", type = "pairwise") # fst calculated in last step
 #' get.snpR.stats(x, "pop", "pairwise")
-#'
+#' 
 calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   #===========sanity checks===============
   msg <- character(0)

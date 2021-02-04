@@ -17,9 +17,11 @@ calc_pairwise_ld(
 )
 }
 \arguments{
-\item{x}{snpRdata. Input SNP data.}
+\item{x}{snpRdata. Input SNP data. Note that a SNP column containing snp
+position in base pairs named 'position' is required.}
 
-\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
+\item{facets}{character. Categorical metadata variables by which to break up
+analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{subfacets}{character, default NULL. Subsets the facet levels to run.
 Given as a named list: list(fam = A) will run only fam A, list(fam = c("A",
@@ -31,6 +33,9 @@ pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop =
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{sr}{logical, default FALSE. If TRUE, detailed progress reports for each
+subfacet will be reported.}
 
 \item{CLD}{TRUE, FALSE, or "only", default "only". Specifies if the CLD method
 should be used either in addition to or instead of default methods. See

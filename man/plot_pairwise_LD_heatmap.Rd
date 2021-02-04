@@ -40,15 +40,18 @@ the format numeric vector c(lower, upper).}
 
 \item{l.text}{character, default "CLD". Legend title.}
 
-\item{viridis.option}{character, default "inferno". Viridis color scale option to use.
-Other color scales may be substituted by appending the scale_color_continuous
-and scale_fill_continuous ggplot functions to the produced plot using the
-'+' operator. See \code{\link[ggplot2]{scale_gradient}} for details.}
+\item{viridis.option}{character, default "inferno". Viridis color scale option
+to use. Other color scales may be substituted by appending the
+scale_color_continuous and scale_fill_continuous ggplot functions to the
+produced plot using the '+' operator. See
+\code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{title}{character. Plot title.}
 
 \item{t.sizes}{numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 c(title, legend.title, legend.ticks, axis, axis.ticks).}
+
+\item{background}{character, default "white". Background color for plot.}
 }
 \value{
 A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a

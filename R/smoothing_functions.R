@@ -74,7 +74,8 @@ gaussian_weight <- function(p, c, s) {
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'
-#'@return snpRdata object with smoothed averages for any requested statistics merged into the window.stats or pairwise.window.stats slots.
+#'@return snpRdata object with smoothed averages for any requested statistics
+#'  merged into the window.stats or pairwise.window.stats slots.
 #'
 #'@examples
 #'# add a few statistics

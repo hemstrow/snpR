@@ -9,12 +9,15 @@ genind.to.snpRdata(genind, snp.meta = NULL, sample.meta = NULL)
 \arguments{
 \item{genind}{genind object.}
 
-\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.}
+\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, IDs from
+genind may be added.}
 
-\item{sample.meta}{data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.}
+\item{sample.meta}{data.frame, default NULL. Metadata for each individual
+sample, IDs and pops from genind may be added.}
 }
 \description{
-Convert genind object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genind object.
+Convert genind object to snpRdata. Internal, called by import.snpR.data when
+provided a adegenet genind object.
 }
 \author{
 William Hemstrom

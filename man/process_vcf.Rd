@@ -7,11 +7,14 @@
 process_vcf(vcf_file, snp.meta = NULL, sample.meta = NULL)
 }
 \arguments{
-\item{vcf_file}{character or vcfR object. Either a path to a vcf file or a vcfR object.}
+\item{vcf_file}{character or vcfR object. Either a path to a vcf file or a
+vcfR object.}
 
-\item{snp.meta}{data.frame or null, default null. snp metadata, will overwrite data in vcf if provided.}
+\item{snp.meta}{data.frame or null, default null. snp metadata, will
+overwrite data in vcf if provided.}
 
-\item{sample.meta}{data.frame or null, default null. sample metadata, will overwrite sample names in vcf if provided.}
+\item{sample.meta}{data.frame or null, default null. sample metadata, will
+overwrite sample names in vcf if provided.}
 }
 \description{
 Convert a vcf file/vcfR object into a snpRdata object

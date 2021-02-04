@@ -4,7 +4,7 @@
 \alias{make_SFS}
 \title{Generate a 1-2d site frequency spectrum from a dadi input file.}
 \usage{
-make_SFS(x, pops, projection, fold = F)
+make_SFS(x, pops, projection, fold = FALSE)
 }
 \arguments{
 \item{x}{character or data.frame. Either a path to a dadi formatted input

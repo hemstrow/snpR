@@ -30,21 +30,32 @@ variable of interest. Must match a column name in sample metadata. Response
 must be categorical, with only two categories.}
 
 \item{method}{character, default "gmmat.score". Specifies association method.
-Options: \itemize{ \item{gmmat.score: }  Population/family structure corrected mlm approach, based on
-Chen et al (2016). \item{armitage: } Armitage association test, based on
-Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
-Chi-squared test. } See description for more details.}
+Options: \itemize{ \item{gmmat.score: }  Population/family structure
+corrected mlm approach, based on Chen et al (2016). \item{armitage: }
+Armitage association test, based on Armitage (1955). \item{odds_ratio: }
+Log odds ratio test. \item{chisq: } Chi-squared test. } See description for
+more details.}
 
 \item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
 the Armitage association method. See description for details.}
 
-\item{formula}{charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.}
+\item{formula}{charcter, default set to response ~ 1. Null formula for the
+response variable, as described in \code{\link[stats]{formula}}.}
 
 \item{family.override}{character, default NULL.}
 
-\item{Gmaf}{numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.}
+\item{maxiter}{numeric, default 500. Maximum iterations to use when fitting
+the glmm when using the gmmat.score option.}
 
-\item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use for computation.}
+\item{sampleID}{character, default NULL. Optional, the name of a column in
+the sample metadata to use as a sampleID when using the gmmat.score option.}
+
+\item{Gmaf}{numeric, default NULL. If using the "GMMAT" option, can provide
+and optional minor allele frequency filter used when constructing the
+relatedness matrix.}
+
+\item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use
+for computation.}
 }
 \value{
 A snpRdata object with the resulting association test results merged
@@ -52,22 +63,22 @@ A snpRdata object with the resulting association test results merged
 }
 \description{
 Runs several different association tests on SNP data. The response variable
-must have only two different categories (as in case/control) for most test types,
-although the "gmmat.score" method supports quantitative traits. Tests may be
-broken up by sample-specific facets.
+must have only two different categories (as in case/control) for most test
+types, although the "gmmat.score" method supports quantitative traits. Tests
+may be broken up by sample-specific facets.
 }
 \details{
 Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 Armitage approach weights should be provided to the "w" argument, which
 specifies the weight for each possible genotype (homozygote 1, heterozygote,
-homozygote 2). The default, c(0,1,2), specifies an addative model. The "gmmat.score"
-method uses the approach described in Chen et al. (2016) and implemented in
-the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
-For this method, a 'G' genetic relatedness matrix is first created using the
+homozygote 2). The default, c(0,1,2), specifies an addative model. The
+"gmmat.score" method uses the approach described in Chen et al. (2016) and
+implemented in the \code{\link[GMMAT]{glmmkin}} and
+\code{\link[GMMAT]{glmm.score}} functions. For this method, a 'G' genetic
+relatedness matrix is first created using the
 \code{\link[AGHmatrix]{Gmatrix}} function according to Yang et al 2010.
 
-Multi-category data is currently not supported, but is under
-development.
+Multi-category data is currently not supported, but is under development.
 
 Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
 "all" facet specifications function as described.
@@ -82,7 +93,7 @@ which allele (major or minor) is associated with which phenotype.
 }
 \examples{
   # add a dummy phenotype and run an association test.
-  sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))
+  sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), TRUE))
   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
   x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
   get.snpR.stats(x, c("pop", "pop.fam"))
@@ -92,11 +103,12 @@ which allele (major or minor) is associated with which phenotype.
 Armitage (1955). Tests for Linear Trends in Proportions and
   Frequencies. \emph{Biometrics}.
 
-Chen et al. (2016). Control for Population Structure and Relatedness for
-  Binary Traits in Genetic Association Studies via Logistic Mixed Models. \emph{American Journal of Human Genetics}.
+Chen et al. (2016). Control for Population Structure and
+  Relatedness for Binary Traits in Genetic Association Studies via Logistic
+  Mixed Models. \emph{American Journal of Human Genetics}.
 
-Yang et al. (2010). Common SNPs explain a large proportion of the heritability for human height.
-  \emph{Nature Genetics}.
+Yang et al. (2010). Common SNPs explain a large proportion of the
+  heritability for human height. \emph{Nature Genetics}.
 }
 \author{
 William Hemstrom
