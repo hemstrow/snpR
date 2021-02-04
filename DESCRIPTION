@@ -17,9 +17,13 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
+    bigmemory,
     bigtabulate,
+    data.table,
+    doParallel,
     doSNOW,
     dplyr,
+    foreach,
     matrixStats,
     methods,
     ggplot2,
@@ -57,6 +61,8 @@ Suggests:
     readr,
     remotes,
     Rtsne,
+    scatterpie,
+    sequoia,
     sf,
     umap,
     vcfR,

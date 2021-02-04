@@ -138,9 +138,9 @@
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
-#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = T) #create birthyears
+#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create sexes
+#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' #generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
 #' sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
 #' dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))

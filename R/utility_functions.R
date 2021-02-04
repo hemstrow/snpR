@@ -42,7 +42,7 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
     }
   }
   
-  if(adegenet::plody(genind) != 2){
+  if(adegenet::ploidy(genind) != 2){
     msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
   }
   
