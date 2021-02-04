@@ -48,6 +48,7 @@ Suggests:
     GMMAT,
     knitr,
     LEA,
+    markdown,
     missMDA,
     mmtsne,
     pophelper,
