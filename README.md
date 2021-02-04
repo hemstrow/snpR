@@ -10,3 +10,9 @@ remotes::install_github("hemstrow/snpR")
 To install the vignettes, instead use:
 
 remotes::install_github("hemstrow/snpR", build_vignettes = T)
+
+for Linux, or
+
+remotes::install_github("hemstrow/snpR", ref = "dev", build_vignettes = T, build_opts = c("--no-resave-data", "--no-manual"))
+
+for Windows
