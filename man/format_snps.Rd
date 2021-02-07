@@ -35,9 +35,9 @@ snpRdata object by default.}
 data for some output formats, following the format described in
 \code{\link{Facets_in_snpR}}.}
 
-\item{n_samp}{Integer or numeric vector, default NA. For structure or RAFM outputs. How
-many random loci should be selected? Can either be an integer or a numeric
-vector of loci to use.}
+\item{n_samp}{Integer or numeric vector, default NA. For structure or RAFM
+outputs. How many random loci should be selected? Can either be an integer
+or a numeric vector of loci to use.}
 
 \item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
 "sn" format, notes the interpolation method to be used to fill missing data.
@@ -72,20 +72,25 @@ details for more information.}
 optionally specifies a data.frame containing meta data for each SNP. See
 details for more information.}
 
-\item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input files.
-Note that a single value assumes that each chromosome is of equal length whereas
-a vector of values gives the length for each chromosome in order.}
+\item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input
+files. Note that a single value assumes that each chromosome is of equal
+length whereas a vector of values gives the length for each chromosome in
+order.}
 
-\item{ncp}{numeric or NULL, default 2. Number of components to consider for iPCA sn format
-interpolations of missing data. If null, the optimum number will be estimated, with the
-maximum specified by ncp.max. This can be very slow.}
+\item{ncp}{numeric or NULL, default 2. Number of components to consider for
+iPCA sn format interpolations of missing data. If null, the optimum number
+will be estimated, with the maximum specified by ncp.max. This can be very
+slow.}
 
-\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
-the optimum number of components to use when interpolating sn data using the iPCA approach.}
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for
+when determining the optimum number of components to use when interpolating
+sn data using the iPCA approach.}
 
-\item{chr}{character, default "chr". Name of column containing chromosome information, for VCF output.}
+\item{chr}{character, default "chr". Name of column containing chromosome
+information, for VCF output.}
 
-\item{position}{character, default "position". Name of column containing position information, for VCF output.}
+\item{position}{character, default "position". Name of column containing
+position information, for VCF output.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
@@ -117,31 +122,35 @@ counts tabulated for all samples or within populations.} \item{genepop:
 genepop format, colnames are SNP ids, matching the first metadata column in
 input.} \item{structure: }{STRUCTURE format, two lines per individual: allele
 calls stored as single character numeric (e.g. "1", "2"). Allele calls per
-individual stored on two subsequent lines.} \item{0000: }{numeric genotype
-tab format, genotypes stored as four numeric characters (e.g. "0101",
-"0204").} \item{hapmap: }{Migrate-n hapmap, allele counts tabulated within
-populations, in migrate-n hapmap format. Since this migrate-n implementation
-is iffy, this probably shouldn't be used much.} \item{NN: }{character
-genotype tab format, genotypes stored as actual base calls (e.g. "AA", "CT").}
-\item{pa: }{allele presence/absence format, presence or absence of each
-possible allele at each possible genotype noted. Interpolation possible, with
-missing data substituted with allele freqency in all samples or each
-population.} \item{rafm: }{RAFM format, two allele calls at each locus stored
-in subsequent columns, e.g. locus1.1 locus1.2.} \item{faststructure:
-}{fastSTRUCTURE format, identical to STRUCTURE format save with the addition of
-filler columns proceeding data such that exactly 6 columns proceed data. These
-columns can be filled with metadata if desired.} \item{dadi: }{dadi format SNP
-data format, requires two columns named "ref" and "anc" with the flanking
-bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
-\item{plink: }{PLINK! binary input format, requires columns named "group",
-"snp", and "position", and may contain a column named "cM", "cm", or
-"morgans", containing linkage group/chr, snp ID, position in bp, and distance
-in cM in order to create .bim extended map file.} \item{sn: }{Single character
-numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
-0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a healthy serving of additional metadata but very little sample metadata.}
-\item{snpRdata: }{a snpRdata object.}
-}
+individual stored on two subsequent lines.} \item{0000: }{numeric genotype tab
+format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
+\item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations,
+in migrate-n hapmap format. Since this migrate-n implementation is iffy, this
+probably shouldn't be used much.} \item{NN: }{character genotype tab format,
+genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
+presence/absence format, presence or absence of each possible allele at each
+possible genotype noted. Interpolation possible, with missing data substituted
+with allele freqency in all samples or each population.} \item{rafm: }{RAFM
+format, two allele calls at each locus stored in subsequent columns, e.g.
+locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
+STRUCTURE format save with the addition of filler columns proceeding data such
+that exactly 6 columns proceed data. These columns can be filled with metadata
+if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
+named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
+the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
+format, requires columns named "group", "snp", and "position", and may contain
+a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
+position in bp, and distance in cM in order to create .bim extended map file.}
+\item{sn: }{Single character numeric format. Each genotype will be listed as
+0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
+remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
+format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
+Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
+For more information see sequoia documentation.} \item{fasta: }{fasta sequence
+format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
+other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
+missing values), with a healthy serving of additional metadata but very little
+sample metadata.} \item{snpRdata: }{a snpRdata object.} }
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -152,14 +161,15 @@ probability of drawing a minor allele is equal to the minor allele frequency.
 The expected number of minor alleles based on the later method is equal to the
 interpolated value from the former, but the later allows for multiple runs to
 determine the impact of stochastic draws and is generally prefered and
-required for some downstream analysis. It is therefore the default. As a slower
-but more accurate alternative to "af" interpolation, "iPCA" may be selected. This
-an iterative PCA approach to interpolate based on SNP/SNP covariance via
-\code{\link[missMDA]{imputePCA}}. If the ncp arugment is not defined,
-the number of components used for interpolation will be estimated using
-\code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much slower
-than the other methods, especially for large datasets. Setting an ncp of 2-5
-generally results in reasonable inpterpolations without the time constraint.
+required for some downstream analysis. It is therefore the default. As a
+slower but more accurate alternative to "af" interpolation, "iPCA" may be
+selected. This an iterative PCA approach to interpolate based on SNP/SNP
+covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is not
+defined, the number of components used for interpolation will be estimated
+using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+slower than the other methods, especially for large datasets. Setting an ncp
+of 2-5 generally results in reasonable inpterpolations without the time
+constraint.
 
 Note also that for the plink format, a .bed binary file can be generated. If
 the "plink" option is selected and an outfile is designated, R will generate a
@@ -176,13 +186,13 @@ default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 cell, but only a single nucleotide noted if homozygote and two nucleotides
 seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output from
-the simulation program ms.}}
+(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
+from the simulation program ms.}}
 }
 \examples{
 #import data to a snpRdata object
 ## get sample meta data
-sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
 format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
 
 #allele count, seperated by the pop facet.
@@ -226,7 +236,7 @@ format_snps(stickSNPs, "plink", outfile = "plink_out")
 #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 
 #PLINK! format with provided ped
-ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
+ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #from command line, then run plink_out.sh to generate plink_out.bed.
 

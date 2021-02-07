@@ -2,6 +2,7 @@
 % Please edit documentation in R/snpRdata.R
 \name{extract_snpRdata}
 \alias{extract_snpRdata}
+\alias{genotypes}
 \alias{genotypes<-}
 \alias{snp.meta}
 \alias{snp.meta<-}
@@ -27,12 +28,14 @@ sample.meta(x) <- value
 \item{value}{Genotypes, snp metadata, or sample metadata}
 }
 \description{
-Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta, or sample meta).
-If overwritten, any calculated stats will be removed, since their values may be dependant upon
-changes in metadata.
+Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta,
+or sample meta). If overwritten, any calculated stats will be removed, since
+their values may be dependant upon changes in metadata.
 }
 \section{Functions}{
 \itemize{
+\item \code{genotypes}: view genotypes
+
 \item \code{genotypes<-}: set genotypes
 
 \item \code{snp.meta}: view snp meta
@@ -53,11 +56,9 @@ genotypes(test)
 
 # show or overwrite snp meta
 snp.meta(test)
-snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), T), chr = sample(LETTERS[1:4], nrow(test), T))
+snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
 
 #show or overwrite sample meta
 sample.meta(test)
-sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), T), pop = sample(LETTERS[5:8], ncol(test), T))
-
- @description view genotypes
+sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
 }

@@ -1,12 +1,12 @@
 #' Check if an object is a snpRdata object.
-#' 
+#'
 #' Checks if an object is a snpRdata object.
-#' 
+#'
 #' @param x object to check
 #' @return Logical, TRUE if the object is a snpRdata object.
-#' 
+#'
 #' @author William Hemstrom
-#' 
+#'
 #' @export
 is.snpRdata <- function(x){
   return("snpRdata" %in% class(x))
@@ -173,7 +173,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
 #'socket.
 #'
 #'@param x snpRdata object.
-#'
+#'  
 find.snpR.facets <- function(x){
   facets <- vector("list", length(x@facets))
   names(facets) <- x@facets
@@ -223,9 +223,14 @@ find.snpR.facets <- function(x){
 #'@param ... other arguments to be passed to fun.
 #'@param stats.type character, default "all". Other options "pairwise" or
 #'  "stats". Type of statistic under to pull under the ps.pf.psf option.
+#'@param response character, default NULL. Possible response variable name
+#'  passed to specific functions.
+#'@param maf numeric, defualt NULL. Possible maf, passed to some functions.
+#'@param interpolate character, default NULL. Possible interpolation option,
+#'  passed to some functions.
 #'
 #'@author William Hemstrom
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = F, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
+apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -1001,9 +1006,11 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #'  else, typically "none". Type of facet to remove.
 #'@param return.type logical, default FALSE. If true, returns both facets and
 #'  facet types ("snp", "sample", "complex", or ".base") as a length two list.
+#'@param fill_with_base logical, default TRUE. If true, fills the returned facets
+#'  with .base if nothing is left after facets are removed. Otherwise returns null in this case.
 #'
 #'@author William Hemstrom
-check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = F){
+check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE){
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -1094,6 +1101,20 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     facets <- facets[-which(to.remove)]
     facet.types <- facet.types[-which(to.remove)]
   }
+  
+  # fix if we've removed everything, return the base facet if fill_with_base is TRUE
+  if(fill_with_base){
+    if(length(facets) == 0){
+      facets <- ".base"
+      if(return.type){
+        return(list(facets, ".base"))
+      }
+      else{
+        return(".base")
+      }
+    }
+  }
+  
   
   # fix the facet type for .base
   if(return.type){
@@ -1215,11 +1236,11 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #'generally prefered and required for some downstream analysis. It is therefore
 #'the default. As a slower but more accurate alternative to "af" interpolation,
 #'"iPCA" may be selected. This an iterative PCA approach to interpolate based on
-#'SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is
-#'not defined, the number of components used for interpolation will be estimated
-#'using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
-#'slower than the other methods, especially for large datasets. Setting an ncp
-#'of 2-5 generally results in reasonable inpterpolations without the time
+#'SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment
+#'is not defined, the number of components used for interpolation will be
+#'estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method
+#'is much slower than the other methods, especially for large datasets. Setting
+#'an ncp of 2-5 generally results in reasonable inpterpolations without the time
 #'constraint.
 #'
 #'@param sn data.frame. Input sn formatted data, as produced by
@@ -1227,11 +1248,13 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #'  to automatically call this function during formatting.
 #'@param method character, default "bernoulli". Method to used for
 #'  interpolation, either bernoulli or af. See details.
-#'@param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
-#'  interpolations of missing data. If null, the optimum number will be estimated, with the
-#'  maximum specified by ncp.max. This can be very slow.
-#'@param ncp.max numeric, default 5. Maximum number of components to check for when determining
-#'  the optimum number of components to use when interpolating sn data using the iPCA approach.
+#'@param ncp numeric or NULL, default NULL. Number of components to consider for
+#'  iPCA sn format interpolations of missing data. If null, the optimum number
+#'  will be estimated, with the maximum specified by ncp.max. This can be very
+#'  slow.
+#'@param ncp.max numeric, default 5. Maximum number of components to check for
+#'  when determining the optimum number of components to use when interpolating
+#'  sn data using the iPCA approach.
 #'
 #'@author William Hemstrom
 interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
@@ -1478,6 +1501,9 @@ get.task.list <- function(x, facets, source = "stats"){
 }
 
 #' Internal to find which sample metadata rows match a row from a task list.
+#' @param x snpRdata object to check
+#' @param task.list.row A row of an object created by
+#'   \code{\link{get.task.list}} to look up info about.
 fetch.sample.meta.matching.task.list <- function(x, task.list.row){
   task.list.row <- unlist(task.list.row) # in case it is passed with drop = F for some reason
   
@@ -1495,15 +1521,22 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
 
 #' Merge lists element-to-element
 #'
-#' Merges list 1 into list 2, adding any elements without matching equivalents to list 2.
+#' Merges list 1 into list 2, adding any elements without matching equivalents
+#' to list 2.
 #'
-#' Merges element to element. Elements in list 1 with matching elements in list 2 will be replaced.
+#' Merges element to element. Elements in list 1 with matching elements in list
+#' 2 will be replaced.
 #'
-#' Do this by getting the names and "pathways" of all of the deepest level objects, then looping through
-#' list 2 data and adding from list 1 that isn't present at the same "pathway".
+#' Do this by getting the names and "pathways" of all of the deepest level
+#' objects, then looping through list 2 data and adding from list 1 that isn't
+#' present at the same "pathway".
 #'
-#' @param list1 list. The first list. Elements with identical names at all levels in list 2 will be *replaced*.
-#' @param list2 list. The second list. Elements in list 2 with identical names found in list 1 will replace those elements.
+#' @param list1 list. The first list. Elements with identical names at all
+#'   levels in list 2 will be *replaced*.
+#' @param list2 list. The second list. Elements in list 2 with identical names
+#'   found in list 1 will replace those elements.
+#' @param possible_end_level_names vector of possible stopping point names
+#'   (bottom level)
 #'
 #' @author William Hemstrom
 merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
@@ -1572,14 +1605,15 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
 
 
 #' Update list of calculated stats for a vector of facet names
-#' 
+#'
 #' @param x snpRdata object to update
-#' @param facet character. Facets to update, see \code{\link{Facets_in_snpR}}
+#' @param facets character. Facets to update, see \code{\link{Facets_in_snpR}}
 #' @param stats character. Name of the facet to update as calculated.
-#' @param remove.type character, default none. If provided, will grab only the remove the requested facet type (omit the snp part, for example).
-#' 
+#' @param remove.type character, default none. If provided, will grab only the
+#'   remove the requested facet type (omit the snp part, for example).
+#'
 #' @return A snpRdata object identical to x but with calced stats updated.
-#' 
+#'
 #' @author William Hemstrom
 update_calced_stats <- function(x, facets, stats, remove.type = "none"){
   facets <- check.snpR.facet.request(x, facets, remove.type = remove.type)
@@ -1612,7 +1646,6 @@ update_calced_stats <- function(x, facets, stats, remove.type = "none"){
 #'   vector indicating if the provided stats have been calculated yet.
 #'
 #' @author William Hemstrom
-
 check_calced_stats <- function(x, facets, stats){
   # init storage
   out <- vector("list", length(facets))
@@ -1628,6 +1661,12 @@ check_calced_stats <- function(x, facets, stats){
 
 
 #' Utility to check if a required package is installed and install it if needed
+#' @param pkg character, name of the package to check.
+#' @param install.type character, default "basic". Where should the package be
+#'   sourced from? Options: "basic": CRAN, "github": github, "bioconductor":
+#'   bioconductor.
+#' @param source character, default NULL. If install.type = 'github', gives the
+#'   source from which to install.
 check.installed <- function(pkg, install.type = "basic", source = NULL){
   if(!pkg %in% rownames(installed.packages())){
     say <- paste0("Package '", pkg, "' not found.")
@@ -1670,7 +1709,8 @@ check.installed <- function(pkg, install.type = "basic", source = NULL){
 #' @param pcol name of the column containing p values
 #' @param levs names of the columns containing facet info to split by
 #' @param methods methods to use
-#' @param case case (overall, within each subfacet, or within each facet) at which to apply corrections
+#' @param case case (overall, within each subfacet, or within each facet) at
+#'   which to apply corrections
 fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), methods = c("bonferroni", "holm", "BH", "BY"), 
                            case = c("overall", "by_facet", "by_subfacet")){
 
@@ -1743,7 +1783,9 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
   return(out)
 }
 
-#' Tiny internal used when converting from a phased, transposed dataset (like from an MS output)
+#' Tiny internal used when converting from a phased, transposed dataset (like
+#' from an MS output)
+#' @param x input matrix
 convert_2_to_1_column <- function(x){
   if(!is.matrix(x)){x <- as.matrix(x)}
   ind.genos <- x[,seq(1,ncol(x), by = 2)] + x[,seq(2,ncol(x), by = 2)]

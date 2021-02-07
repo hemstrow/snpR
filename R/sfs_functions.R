@@ -11,23 +11,26 @@
 #' et al (2009). Folding methods are also taken from Gutenkunst et al (2009).
 #' Either 1 or 2d SFSs can be constructed by providing a vector of population
 #' names and projection sizes.
-#' 
-#' Note that ref and anc columns are suggested in the SNP metadata, containing the derived and ancestral
-#' character states, respectively. These should contain three characters each: two flanking bases and the SNP.
-#' For example, for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected. Note that if these
-#' character states are not known, the minor and major alleles will be substituted. Unfolded spectra will
-#' be misleading in this case.
+#'
+#' Note that ref and anc columns are suggested in the SNP metadata, containing
+#' the derived and ancestral character states, respectively. These should
+#' contain three characters each: two flanking bases and the SNP. For example,
+#' for an A/C SNP flanked by a G and a T, "GCT" and "GAT" would be expected.
+#' Note that if these character states are not known, the minor and major
+#' alleles will be substituted. Unfolded spectra will be misleading in this
+#' case.
 #'
 #' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
-#' @param facet character, default NULL. Name of the sample metadata column which specifies
-#'  the source population of individuals. For now, allows only a single simple facet (one column).If NULL,
-#'  runs the entire dataset.
-#' @param pops character, default NULL. A vector of population names of up to length 2
-#'   containing the names of populations for which the an SFS is to be created.
-#'   If NULL, runs the entire dataset.
+#' @param facet character, default NULL. Name of the sample metadata column
+#'   which specifies the source population of individuals. For now, allows only
+#'   a single simple facet (one column).If NULL, runs the entire dataset.
+#' @param pops character, default NULL. A vector of population names of up to
+#'   length 2 containing the names of populations for which the an SFS is to be
+#'   created. If NULL, runs the entire dataset.
 #' @param projection numeric. A vector of sample sizes to project the SFS to, in
 #'   \emph{number of gene copies}. Sizes too large will result in a SFS
-#'   containing few or no SNPs. Must match the length of the provided pops vector.
+#'   containing few or no SNPs. Must match the length of the provided pops
+#'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
 #'
@@ -43,9 +46,9 @@
 #'   "pops" attribute containing population IDs, such as c("POP1", "POP2"). For
 #'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
 #'   rows.
-#' 
+#'
 #' @author William Hemstrom
-#' 
+#'
 #' @examples
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 #' dat <- calc_maf(stickSNPs)
@@ -56,14 +59,14 @@
 #' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
 #' ## plot
 #' plot_sfs(sfs)
-#' 
+#'
 #' # run for the overall dataset
 #' sfs <- calc_SFS(dat, projection = 100)
 #' ## plot
 #' plot_sfs(sfs)
-#' 
 #'
-calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = T){
+#' 
+calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   #=============sanity checks=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -170,8 +173,8 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = T){
 #'   "pops" attribute containing population IDs, such as c("POP1", "POP2"). For
 #'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
 #'   rows.
-#'
-make_SFS <- function(x, pops, projection, fold = F){
+#'   
+make_SFS <- function(x, pops, projection, fold = FALSE){
   #================sanity checks=========
   msg <- character()
   if(!is.data.frame(x)){
@@ -378,7 +381,7 @@ make_SFS <- function(x, pops, projection, fold = F){
 #'
 #' Calculates the directionality index based on a 2d SFS according to Peter and
 #' Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
-#' function, using a provided snpRdata object, or passed from other programs. 
+#' function, using a provided snpRdata object, or passed from other programs.
 #' \emph{Spectra must be not be folded}.
 #'
 #' Essentially, the directionality index measures the difference in derived
@@ -389,33 +392,34 @@ make_SFS <- function(x, pops, projection, fold = F){
 #' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 #' details.
 #'
-#' @param x snpRdata object, default NULL. If provided, snpRdata from which to calculate a SFS. Ignored if a
-#'   sfs is provided directly.
+#' @param x snpRdata object, default NULL. If provided, snpRdata from which to
+#'   calculate a SFS. Ignored if a sfs is provided directly.
 #' @param sfs numeric matrix. A 2d site frequency spectra stored in a matrix,
 #'   with an additional "pops" attribute containing population IDs, such as
 #'   c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 #'   the second to matrix rows. These objects can be produced from a dadi input
 #'   file using \code{\link{make_SFS}}.
-#' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
-#'   Ignored if a sfs is provided.
-#' @param pops character, default NULL. cPassed to \code{\link{calc_SFS}} -- see documentation there for details.
-#'   Ignored if a sfs is provided.
-#' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} -- see documentation there for details.
-#'   Ignored if a sfs is provided.
+#' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see
+#'   documentation there for details. Ignored if a sfs is provided.
+#' @param pops character, default NULL. cPassed to \code{\link{calc_SFS}} -- see
+#'   documentation there for details. Ignored if a sfs is provided.
+#' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} --
+#'   see documentation there for details. Ignored if a sfs is provided.
 #'
 #' @export
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
 #'   from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 #'
-#' @return A numeric value giving the directionality with a "direction" attribute designating the direction between the two populations.
+#' @return A numeric value giving the directionality with a "direction"
+#'   attribute designating the direction between the two populations.
 #' @examples
 #' # directionality can be calculated without first calculating a SFS
 #' calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
-#' 
-#' #an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
-#' sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = F)
-#' calc_directionality(sfs = sfs)
 #'
+#' #an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
+#' sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
+#' calc_directionality(sfs = sfs)
+#' 
 calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL){
   #==========sanity checks=============
   msg <- character(0)

@@ -26,8 +26,7 @@ which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 details.}
 
 \item{response}{character. Name of the column containing the response
-  variable of interest. Must match a column name in sample metadata. Response
-must be categorical, with only two categories.}
+variable of interest. Must match a column name in sample metadata.}
 
 \item{formula}{charcter, default NULL. Model for the response variable, as
 described in \code{\link[stats]{formula}}. If NULL, the model will be
@@ -42,7 +41,7 @@ of variables (SNPs) by which to split each node. See
 \code{\link[ranger]{ranger}} for details.}
 
 \item{importance}{character, default "impurity_corrected". The method by
-  which SNP importance is determined. Options: \itemize{\item{impurity}
+which SNP importance is determined. Options: \itemize{\item{impurity}
 \item{impurity_corrected} \item{permutation}}. See
 \code{\link[ranger]{ranger}} for details.}
 
@@ -65,8 +64,8 @@ only a single category is run (either a one-category facet or no facet).}
 \value{
 A list containing: \itemize{\item{data: } A snpRdata object with RF
   importance values merged in to the stats slot. \item{models: } A named list
-containing both the models and data.frames containing the predictions vs
-observed phenotypes.}
+  containing both the models and data.frames containing the predictions vs
+  observed phenotypes.}
 }
 \description{
 Creates forest machine learning models using snpRdata objects via interface
@@ -91,10 +90,11 @@ options for the "interpolate" argument.
 
 Extra arguments can be passed to \code{\link[ranger]{ranger}}.
 
-In general, random forest parameters should be tuned so as to reduce the out-of-bag error rates (OOB-ER).
-This value is visible in the returned object under the model lists. Simply calling a specific model will
-output the OOB-ER, and they are also stored under the 'prediction.error' name in the model. For details
-on tuning RF models, we recommend Goldstein et al. (2011).
+In general, random forest parameters should be tuned so as to reduce the
+out-of-bag error rates (OOB-ER). This value is visible in the returned object
+under the model lists. Simply calling a specific model will output the
+OOB-ER, and they are also stored under the 'prediction.error' name in the
+model. For details on tuning RF models, we recommend Goldstein et al. (2011).
 
 For more detail on the random forest model and ranger arguments, see
 \code{\link[ranger]{ranger}}.
@@ -107,7 +107,7 @@ sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs
 ## run rf
 rf <- run_random_forest(dat, response = "weight")
 rf$models
-## dummy phenotypes vs. predicted 
+## dummy phenotypes vs. predicted
 with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
 
 

@@ -18,27 +18,38 @@ plot_structure_map(
   radius_scale = 0.05,
   label_scale = 0.75,
   point_padding_scale = 0.25,
-  crop = F,
+  crop = FALSE,
   scale_bar = list(dist = 4, dist_unit = "km", transform = T),
   compass = list(symbol = 16)
 )
 }
 \arguments{
-\item{assignments}{Structure like results, parsed in or generated via \code{link{plot_structure}}, which generates the needed plot data.}
+\item{assignments}{Structure like results, parsed in or generated via
+\code{link{plot_structure}}, which generates the needed plot data.}
 
 \item{K}{numeric. Value of K (number of clusters) to plot.}
 
-\item{facet}{character. The facet by which data is broken down in the passed assignments.}
+\item{facet}{character. The facet by which data is broken down in the passed
+assignments.}
 
-\item{pop_coordinates}{sf object, see \code{\link[sf]{sf}}. sf object containing points/coordinates for each facet level. Must contain a column of data with population labels named identically to the provided facet (for example, named "pop" if "pop" is the provided facet.)}
+\item{pop_coordinates}{sf object, see \code{\link[sf]{sf}}. sf object
+containing points/coordinates for each facet level. Must contain a column
+of data with population labels named identically to the provided facet (for
+example, named "pop" if "pop" is the provided facet.)}
 
-\item{sf}{list of sf objects, default NULL. Additional features to be plotted alongside points, such as rivers or county lines.}
+\item{sf}{list of sf objects, default NULL. Additional features to be plotted
+alongside points, such as rivers or county lines.}
 
-\item{sf_fill_colors}{character vector, default "viridis". A vector of colors to use to fill each polygon sf object. By default, uses the viridis palette with an alpha of 0.2.}
+\item{sf_fill_colors}{character vector, default "viridis". A vector of colors
+to use to fill each polygon sf object. By default, uses the viridis palette
+with an alpha of 0.2.}
 
-\item{sf_line_colors}{character vector, default "viridis". A vector of colors to use to color lines in in each sf object. By default, uses the viridis palette with an alpha of 0.2.}
+\item{sf_line_colors}{character vector, default "viridis". A vector of colors
+to use to color lines in in each sf object. By default, uses the viridis
+palette with an alpha of 0.2.}
 
-\item{pop_names}{logical, default T. If true, facet level names will be displayed on the map.}
+\item{pop_names}{logical, default T. If true, facet level names will be
+displayed on the map.}
 
 \item{viridis.option}{character, default "viridis". Viridis color scale
 option. See \code{\link[ggplot2]{scale_gradient}} for details.}
@@ -46,28 +57,41 @@ option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of viridis palette  the pie charts.}
 
-\item{radius_scale}{numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.}
+\item{radius_scale}{numeric 0-1, default 0.05. Scale for pie chart radii as a
+proportion of the total map space.}
 
-\item{label_scale}{numeric, default 0.075 Factor by which to scale facet level names if plotted.}
+\item{label_scale}{numeric, default 0.075 Factor by which to scale facet
+level names if plotted.}
 
-\item{point_padding_scale}{numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.}
+\item{point_padding_scale}{numeric, default 0.25. Factor by which to scale
+buffers between pie charts and facet level names if plotted.}
 
-\item{crop}{logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.}
+\item{crop}{logical, default F. If TRUE, will will crop the plot around the
+sample points. If false will show the full extent of the data, often set by
+any additional sf objects being plotted.}
 
-\item{scale_bar}{list or NULL, default list(dist = 4, dist_unit = "km", transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a scale to the plot. If NULL, no scale added.}
+\item{scale_bar}{list or NULL, default list(dist = 4, dist_unit = "km",
+transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a
+scale to the plot. If NULL, no scale added.}
 
-\item{compass}{list or NULL, list(symbol = 16). Arguments passed to \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass added.}
+\item{compass}{list or NULL, list(symbol = 16). Arguments passed to
+\code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
+added.}
 }
 \description{
-Plots the mean cluster assignment for each population on a map using the scatterpie package alongside
-any additional simple feature objects (\code{\link[sf]{sf}}). Assignments must be given in the format provided
-by \code{link{plot_structure}}.
+Plots the mean cluster assignment for each population on a map using the
+scatterpie package alongside any additional simple feature objects
+(\code{\link[sf]{sf}}). Assignments must be given in the format provided by
+\code{link{plot_structure}}.
 }
 \details{
-Currently, this only works for simple, sample specific facets. Coordinates for pie charts should be provided
-as an \code{\link[sf]{sf}} object, where one column, named for the facet being plotted, provides the subfacet level names
-matching those in the assignments. Additional sf objects can be provided, which will also be plotted. Note that there is
-no need to standardize the CRS across the objects, since each will be transformed to match the sample coordinates.
+Currently, this only works for simple, sample specific facets. Coordinates
+for pie charts should be provided as an \code{\link[sf]{sf}} object, where
+one column, named for the facet being plotted, provides the subfacet level
+names matching those in the assignments. Additional sf objects can be
+provided, which will also be plotted. Note that there is no need to
+standardize the CRS across the objects, since each will be transformed to
+match the sample coordinates.
 }
 \examples{
 \dontrun{

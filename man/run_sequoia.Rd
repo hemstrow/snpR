@@ -19,36 +19,56 @@ run_sequoia(
 \arguments{
 \item{x}{snpRdata object.}
 
-\item{facets}{character, default NULL. Sample-specific facets over which the sequoia is called to run. See \code{\link{Facets_in_snpR}}.}
+\item{facets}{character, default NULL. Sample-specific facets over which the
+sequoia is called to run. See \code{\link{Facets_in_snpR}}.}
 
-\item{run_dupcheck}{FALSE or TRUE, default FALSE. Determines if a Sequoia function used to check for duplicate samples in the dataset should be run prior to further analysis. This is generally recommended.}
+\item{run_dupcheck}{FALSE or TRUE, default FALSE. Determines if a Sequoia
+function used to check for duplicate samples in the dataset should be run
+prior to further analysis. This is generally recommended.}
 
-\item{run_parents}{FALSE or TRUE, default FALSE. Determines if a Sequoia function to assign parents should be run. This runs quickly and is required before running the run_pedigree command.}
+\item{run_parents}{FALSE or TRUE, default FALSE. Determines if a Sequoia
+function to assign parents should be run. This runs quickly and is required
+before running the run_pedigree command.}
 
-\item{run_pedigree}{FALSE or TRUE, default FALSE. Determines if a Sequoia function to construct full pedigree for the sample set should be run. This can take a while, since sibship clustering takes a lot of time for larger datasets.}
+\item{run_pedigree}{FALSE or TRUE, default FALSE. Determines if a Sequoia
+function to construct full pedigree for the sample set should be run. This
+can take a while, since sibship clustering takes a lot of time for larger
+datasets.}
 
-\item{pMaxSibIter}{numeric in 1:25, default 10. Maximum iterations to run for sibship clustering. Only specified for run_pedigree argument.}
+\item{pMaxSibIter}{numeric in 1:25, default 10. Maximum iterations to run for
+sibship clustering. Only specified for run_pedigree argument.}
 
-\item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency cutoff for analysis. Sequoia requires high minor allele frequencies for parentage and pedigree construction, so it is not generally recommended to reduce this number.}
+\item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency
+cutoff for analysis. Sequoia requires high minor allele frequencies for
+parentage and pedigree construction, so it is not generally recommended to
+reduce this number.}
 
-\item{min_ind}{numeric in 0.5:1, default 0.5. Removes loci sequenced in less than this proportion of individuals. Note that \emph{individuals} with genotypes for less than half of the loci will be automatically removed by sequoia.}
+\item{min_ind}{numeric in 0.5:1, default 0.5. Removes loci sequenced in less
+than this proportion of individuals. Note that \emph{individuals} with
+genotypes for less than half of the loci will be automatically removed by
+sequoia.}
 
-\item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}} (during parentage and pedigree reconstruction).}
+\item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}}
+(during parentage and pedigree reconstruction).}
 }
 \value{
-A data.frame for each facet specified with sequoia output summary information.
+A data.frame for each facet specified with sequoia output summary
+  information.
 }
 \description{
-Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree construction tool.
-Note that this function \emph{is not overwrite safe!}.
+Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
+construction tool. Note that this function \emph{is not overwrite safe!}.
 }
 \details{
-This is an integration of the program and package written by Jisca Huisman. 
-Note that there are many more Sequoia specific arguments that can be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel, etc.) See documentation for \code{\link[sequoia]{sequoia}}.
-These can be passed to the pedigree and parentage reconstructions using the ... argument to run_sequioa.
+This is an integration of the program and package written by Jisca Huisman.
+Note that there are many more Sequoia specific arguments that can be added to
+change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
+etc.) See documentation for \code{\link[sequoia]{sequoia}}. These can be
+passed to the pedigree and parentage reconstructions using the ... argument
+to run_sequioa.
 }
 \examples{
-# to follow an example using the stickSNPs example dataset you need to add some variables that don't exist in the actual dataset. 
+# to follow an example using the stickSNPs example dataset you need to add some variables that don't exist in the actual dataset.
 a <- 2013:2015 #create a vector of possible birthyears
 b <- c("M", "F", "U") #create a vector of possible sexes
 stk <- stickSNPs
@@ -58,7 +78,9 @@ sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create s
 dup <- run_sequoia(x = stk, run_dupcheck = T, run_parents = F, run_pedigree = F)
 }
 \references{
-Huisman,J. (2017) Pedigree reconstruction from SNP data: parentage assignment, sibship clustering and beyond. Mol. Ecol. Resour., 17, 1009–1024.
+Huisman,J. (2017) Pedigree reconstruction from SNP data:
+  parentage assignment, sibship clustering and beyond. Mol. Ecol. Resour.,
+  17, 1009–1024.
 }
 \author{
 William Hemstrom

@@ -14,12 +14,14 @@ to automatically call this function during formatting.}
 \item{method}{character, default "bernoulli". Method to used for
 interpolation, either bernoulli or af. See details.}
 
-\item{ncp}{numeric or NULL, default NULL. Number of components to consider for iPCA sn format
-interpolations of missing data. If null, the optimum number will be estimated, with the
-maximum specified by ncp.max. This can be very slow.}
+\item{ncp}{numeric or NULL, default NULL. Number of components to consider for
+iPCA sn format interpolations of missing data. If null, the optimum number
+will be estimated, with the maximum specified by ncp.max. This can be very
+slow.}
 
-\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
-the optimum number of components to use when interpolating sn data using the iPCA approach.}
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for
+when determining the optimum number of components to use when interpolating
+sn data using the iPCA approach.}
 }
 \description{
 An internal function to interpolate sn formatted data using either the
@@ -38,11 +40,11 @@ allows for multiple runs to determine the impact of stochastic draws and is
 generally prefered and required for some downstream analysis. It is therefore
 the default. As a slower but more accurate alternative to "af" interpolation,
 "iPCA" may be selected. This an iterative PCA approach to interpolate based on
-SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is
-not defined, the number of components used for interpolation will be estimated
-using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
-slower than the other methods, especially for large datasets. Setting an ncp
-of 2-5 generally results in reasonable inpterpolations without the time
+SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment
+is not defined, the number of components used for interpolation will be
+estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method
+is much slower than the other methods, especially for large datasets. Setting
+an ncp of 2-5 generally results in reasonable inpterpolations without the time
 constraint.
 }
 \author{

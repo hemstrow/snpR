@@ -54,7 +54,7 @@
 #' gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 #' ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
 #' with(gp$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
-#'
+#' 
 run_genomic_prediction <- function(x, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB"){
@@ -189,7 +189,7 @@ run_genomic_prediction <- function(x, response, iterations,
 #' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run cross_validation
 #' cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
-#'
+#' 
 cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
                                               burn_in = 1000, thin = 100, cross_percentage = 0.9,
                                               model = "BayesB", cross_samples = NULL, plot = TRUE){
@@ -273,21 +273,21 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' Run case/control or quantitative association tests on SNP data.
 #'
 #' Runs several different association tests on SNP data. The response variable
-#' must have only two different categories (as in case/control) for most test types,
-#' although the "gmmat.score" method supports quantitative traits. Tests may be
-#' broken up by sample-specific facets.
+#' must have only two different categories (as in case/control) for most test
+#' types, although the "gmmat.score" method supports quantitative traits. Tests
+#' may be broken up by sample-specific facets.
 #'
 #' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 #' Armitage approach weights should be provided to the "w" argument, which
 #' specifies the weight for each possible genotype (homozygote 1, heterozygote,
-#' homozygote 2). The default, c(0,1,2), specifies an addative model. The "gmmat.score"
-#' method uses the approach described in Chen et al. (2016) and implemented in
-#' the \code{\link[GMMAT]{glmmkin}} and \code{\link[GMMAT]{glmm.score}} functions.
-#' For this method, a 'G' genetic relatedness matrix is first created using the
+#' homozygote 2). The default, c(0,1,2), specifies an addative model. The
+#' "gmmat.score" method uses the approach described in Chen et al. (2016) and
+#' implemented in the \code{\link[GMMAT]{glmmkin}} and
+#' \code{\link[GMMAT]{glmm.score}} functions. For this method, a 'G' genetic
+#' relatedness matrix is first created using the
 #' \code{\link[AGHmatrix]{Gmatrix}} function according to Yang et al 2010.
 #'
-#' Multi-category data is currently not supported, but is under
-#' development.
+#' Multi-category data is currently not supported, but is under development.
 #'
 #' Facets are specified as described in \code{\link{Facets_in_snpR}}. NULL and
 #' "all" facet specifications function as described.
@@ -310,16 +310,25 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   variable of interest. Must match a column name in sample metadata. Response
 #'   must be categorical, with only two categories.
 #' @param method character, default "gmmat.score". Specifies association method.
-#'   Options: \itemize{ \item{gmmat.score: }  Population/family structure corrected mlm approach, based on
-#'   Chen et al (2016). \item{armitage: } Armitage association test, based on
-#'   Armitage (1955). \item{odds_ratio: } Log odds ratio test. \item{chisq: }
-#'   Chi-squared test. } See description for more details.
+#'   Options: \itemize{ \item{gmmat.score: }  Population/family structure
+#'   corrected mlm approach, based on Chen et al (2016). \item{armitage: }
+#'   Armitage association test, based on Armitage (1955). \item{odds_ratio: }
+#'   Log odds ratio test. \item{chisq: } Chi-squared test. } See description for
+#'   more details.
 #' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
 #'   the Armitage association method. See description for details.
-#' @param formula charcter, default set to response ~ 1. Null formula for the response variable, as described in \code{\link[stats]{formula}}.
+#' @param formula charcter, default set to response ~ 1. Null formula for the
+#'   response variable, as described in \code{\link[stats]{formula}}.
 #' @param family.override character, default NULL.
-#' @param Gmaf numeric, default NULL. If using the "GMMAT" option, can provide and optional minor allele frequency filter used when constructing the relatedness matrix.
-#' @param par numeric or FALSE, default FALSE. Number of parallel cores to use for computation.
+#' @param maxiter numeric, default 500. Maximum iterations to use when fitting
+#'   the glmm when using the gmmat.score option.
+#' @param sampleID character, default NULL. Optional, the name of a column in
+#'   the sample metadata to use as a sampleID when using the gmmat.score option.
+#' @param Gmaf numeric, default NULL. If using the "GMMAT" option, can provide
+#'   and optional minor allele frequency filter used when constructing the
+#'   relatedness matrix.
+#' @param par numeric or FALSE, default FALSE. Number of parallel cores to use
+#'   for computation.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
@@ -331,18 +340,19 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'
 #' @references Armitage (1955). Tests for Linear Trends in Proportions and
 #'   Frequencies. \emph{Biometrics}.
-#' @references Chen et al. (2016). Control for Population Structure and Relatedness for
-#'   Binary Traits in Genetic Association Studies via Logistic Mixed Models. \emph{American Journal of Human Genetics}.
-#' @references Yang et al. (2010). Common SNPs explain a large proportion of the heritability for human height.
-#'   \emph{Nature Genetics}.
+#' @references Chen et al. (2016). Control for Population Structure and
+#'   Relatedness for Binary Traits in Genetic Association Studies via Logistic
+#'   Mixed Models. \emph{American Journal of Human Genetics}.
+#' @references Yang et al. (2010). Common SNPs explain a large proportion of the
+#'   heritability for human height. \emph{Nature Genetics}.
 #'
 #' @examples
 #'   # add a dummy phenotype and run an association test.
-#'   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), T))
+#'   sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), TRUE))
 #'   x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
 #'   x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
 #'   get.snpR.stats(x, c("pop", "pop.fam"))
-#'
+#' 
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
                              formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
   #==============sanity checks===========
@@ -677,10 +687,11 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' Extra arguments can be passed to \code{\link[ranger]{ranger}}.
 #'
-#' In general, random forest parameters should be tuned so as to reduce the out-of-bag error rates (OOB-ER).
-#' This value is visible in the returned object under the model lists. Simply calling a specific model will
-#' output the OOB-ER, and they are also stored under the 'prediction.error' name in the model. For details
-#' on tuning RF models, we recommend Goldstein et al. (2011).
+#' In general, random forest parameters should be tuned so as to reduce the
+#' out-of-bag error rates (OOB-ER). This value is visible in the returned object
+#' under the model lists. Simply calling a specific model will output the
+#' OOB-ER, and they are also stored under the 'prediction.error' name in the
+#' model. For details on tuning RF models, we recommend Goldstein et al. (2011).
 #'
 #' For more detail on the random forest model and ranger arguments, see
 #' \code{\link[ranger]{ranger}}.
@@ -690,8 +701,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 #'   details.
 #' @param response character. Name of the column containing the response
-#'   variable of interest. Must match a column name in sample metadata. Response
-#' must be categorical, with only two categories.
+#'   variable of interest. Must match a column name in sample metadata.
 #' @param formula charcter, default NULL. Model for the response variable, as
 #'   described in \code{\link[stats]{formula}}. If NULL, the model will be
 #'   equivalent to response ~ 1.
@@ -703,8 +713,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   \code{\link[ranger]{ranger}} for details.
 #' @param importance character, default "impurity_corrected". The method by
 #'   which SNP importance is determined. Options: \itemize{\item{impurity}
-#' \item{impurity_corrected} \item{permutation}}. See
-#' \code{\link[ranger]{ranger}} for details.
+#'   \item{impurity_corrected} \item{permutation}}. See
+#'   \code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
 #'   minor allele. \item{af: } insertion of the average allele frequency}.
@@ -720,8 +730,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' @return A list containing: \itemize{\item{data: } A snpRdata object with RF
 #'   importance values merged in to the stats slot. \item{models: } A named list
-#' containing both the models and data.frames containing the predictions vs
-#' observed phenotypes.}
+#'   containing both the models and data.frames containing the predictions vs
+#'   observed phenotypes.}
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.
@@ -733,7 +743,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' @author William Hemstrom
 #' @export
-#' 
+#'
 #' @examples
 #' #' # run and plot a basic rf
 #' ## add some dummy phenotypic data.
@@ -742,7 +752,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #' ## run rf
 #' rf <- run_random_forest(dat, response = "weight")
 #' rf$models
-#' ## dummy phenotypes vs. predicted 
+#' ## dummy phenotypes vs. predicted
 #' with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
 #'
 #'
@@ -895,58 +905,74 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 #' Refine a random forest model via sequential removal of uninformative SNPs.
 #'
-#' Improves the prediction accuracy of a random forest model via iterative removal of
-#' uninformative SNPs. In each step, the SNPs with the lowest absolute value importance
-#' are removed from the model. Depending on the provided arguments, multiple trim percentages
-#' can be provided for different SNP number cuttoffs.
+#' Improves the prediction accuracy of a random forest model via iterative
+#' removal of uninformative SNPs. In each step, the SNPs with the lowest
+#' absolute value importance are removed from the model. Depending on the
+#' provided arguments, multiple trim percentages can be provided for different
+#' SNP number cuttoffs.
 #'
-#' Random Forest models can fail to predict well with "noisy" data, where most explanitory
-#' variables are uniformative. Since most whole-genome sequence data is like this, it can be
-#' useful to "trim" a data to remove uniformative snps. Since even models constructed
-#' on "noisy" data tend to pick out the most important SNPs with a decent degree of accuracy, an
-#' initial random forest model can be used to select SNPs to remove. Sequential removal of unimportant
-#' SNPs in this way can radically improve prediction accuracy, although SNP p-values stop being informative.
+#' Random Forest models can fail to predict well with "noisy" data, where most
+#' explanitory variables are uniformative. Since most whole-genome sequence data
+#' is like this, it can be useful to "trim" a data to remove uniformative snps.
+#' Since even models constructed on "noisy" data tend to pick out the most
+#' important SNPs with a decent degree of accuracy, an initial random forest
+#' model can be used to select SNPs to remove. Sequential removal of unimportant
+#' SNPs in this way can radically improve prediction accuracy, although SNP
+#' p-values stop being informative.
 #'
-#' Multiple trim levels can be specified, which will determine the percentage of SNPs removed according to
-#' different cuttoff levels of remaining SNPs. For example, providing trim levels of 0.9, 0.5, and 0.1 with
-#' cuttoffs of 1000 and 100 will trim 90% of SNPs untill 1000 remain, then trim 50% untill 100 remain, then
-#' trim 10% thereafter.
+#' Multiple trim levels can be specified, which will determine the percentage of
+#' SNPs removed according to different cuttoff levels of remaining SNPs. For
+#' example, providing trim levels of 0.9, 0.5, and 0.1 with cuttoffs of 1000 and
+#' 100 will trim 90% of SNPs untill 1000 remain, then trim 50% untill 100
+#' remain, then trim 10% thereafter.
 #'
-#' If less trim levels are provided than needed for
-#' each cuttoff, a single SNP will be removed each step below the final cuttoff.
-#' For example, providing trim levels of 0.9 and 0.5 and cuttoffs of 1000 and 100 will trim
-#' 90% of SNPs untill 1000 remain, then 50% untill 100 remain, then one at a time.
+#' If less trim levels are provided than needed for each cuttoff, a single SNP
+#' will be removed each step below the final cuttoff. For example, providing
+#' trim levels of 0.9 and 0.5 and cuttoffs of 1000 and 100 will trim 90% of SNPs
+#' untill 1000 remain, then 50% untill 100 remain, then one at a time.
 #'
-#' If the data contains informative SNPs, prediction accuracy should improve on average untill informative SNPs
-#' begin to be removed, at which point accuracy will decrease.
+#' If the data contains informative SNPs, prediction accuracy should improve on
+#' average untill informative SNPs begin to be removed, at which point accuracy
+#' will decrease.
 #'
 #' mtry will be set to the number of SNPs in each run.
 #'
-#' As usual, facets can be requested. However, in this case, only a single facet and facet level (subfacet)
-#' may be provided at once, and must match a facet and level in the provided input model.
+#' As usual, facets can be requested. However, in this case, only a single facet
+#' and facet level (subfacet) may be provided at once, and must match a facet
+#' and level in the provided input model.
 #'
-#' @param rf The random forest model to be refined. List containg snpRdata object (named $data) and a \code{\link[ranger]{ranger}} model, named $models$x$model, where
-#'   x is the facet/subfacet. Identical to ojects created by \code{\link{run_random_forest}}.
-#' @param facets Character, default NULL. Facet to run. Only a single facet and facet level (subfacet)
-#' may be provided at once, and must match a facet and level in the provided input model. If NULL, runs the base level facet.
-#' @param subfacet Character, default NULL. Facet level (subfacet) to run. Only a single facet and facet level (subfacet)
-#' may be provided at once, and must match a facet and level in the provided input model. If NULL, runs the base level facet.
+#' @param rf The random forest model to be refined. List containg snpRdata
+#'   object (named $data) and a \code{\link[ranger]{ranger}} model, named
+#'   $models$x$model, where x is the facet/subfacet. Identical to ojects created
+#'   by \code{\link{run_random_forest}}.
+#'@param response character. Name of the column containing the response
+#'   variable of interest. Must match a column name in sample metadata. Response
+#'   must be categorical, with only two categories.
+#' @param facets Character, default NULL. Facet to run. Only a single facet and
+#'   facet level (subfacet) may be provided at once, and must match a facet and
+#'   level in the provided input model. If NULL, runs the base level facet.
+#' @param subfacet Character, default NULL. Facet level (subfacet) to run. Only
+#'   a single facet and facet level (subfacet) may be provided at once, and must
+#'   match a facet and level in the provided input model. If NULL, runs the base
+#'   level facet.
 #' @param formula charcter, default NULL. Model for the response variable, as
 #'   described in \code{\link[stats]{formula}}. If NULL, the model will be
 #'   equivalent to response ~ 1.
 #' @param num.trees numeric, default 10000. Number of trees to grow. Higher
 #'   numbers will increase model accuracy, but increase calculation time. See
 #'   \code{\link[ranger]{ranger}} for details.
-#' @param trim numeric, default 0.5. Percentages of SNPs to be trimmed between model iterations. Multiple
-#'   trim levels can be provided corresponding to different trim cuttoffs. If less trim levels
-#'   are provided than needed to describe every trim_cuttoff interval, will trim a single SNP
-#'   below the final cuttoff. See details.
-#' @param trim_cuttoffs numeric, default NULL. Specifies the number of SNPs below which to change trim
-#'   percentages. If NULL, the default, trims at the given level untill 1 SNP remails. See details.
+#' @param trim numeric, default 0.5. Percentages of SNPs to be trimmed between
+#'   model iterations. Multiple trim levels can be provided corresponding to
+#'   different trim cuttoffs. If less trim levels are provided than needed to
+#'   describe every trim_cuttoff interval, will trim a single SNP below the
+#'   final cuttoff. See details.
+#' @param trim_cuttoffs numeric, default NULL. Specifies the number of SNPs
+#'   below which to change trim percentages. If NULL, the default, trims at the
+#'   given level untill 1 SNP remails. See details.
 #' @param importance character, default "impurity_corrected". The method by
 #'   which SNP importance is determined. Options: \itemize{\item{impurity}
-#' \item{impurity_corrected} \item{permutation}}. See
-#' \code{\link[ranger]{ranger}} for details.
+#'   \item{impurity_corrected} \item{permutation}}. See
+#'   \code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
 #'   minor allele. \item{af: } insertion of the average allele frequency}.
@@ -955,11 +981,13 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 #'   only a single category is run (either a one-category facet or no facet).
 #' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
 #'
-#' @return A list containing: \itemize{\item{error_delta: } A data.frame noting the number of SNPs
-#' and corresponding prediction_error in each model iteration. \item{confusion_matrices: } An array containing
-#' confusion matrices for categorical responses. The third subscript denotes model iteration ('[,,1]' would reference
-#' model 1.) \item{best_model: } The model with the lowest prediction error from the provided dataset, in the format provided
-#' by \code{\link{run_random_forest}}}
+#' @return A list containing: \itemize{\item{error_delta: } A data.frame noting
+#'   the number of SNPs and corresponding prediction_error in each model
+#'   iteration. \item{confusion_matrices: } An array containing confusion
+#'   matrices for categorical responses. The third subscript denotes model
+#'   iteration ('[,,1]' would reference model 1.) \item{best_model: } The model
+#'   with the lowest prediction error from the provided dataset, in the format
+#'   provided by \code{\link{run_random_forest}}}
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.

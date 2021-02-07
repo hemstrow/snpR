@@ -33,13 +33,15 @@
 #'@param r Numeric. Region of the chromosome to subset and plot. Given in kb in
 #'  the format numeric vector c(lower, upper).
 #'@param l.text character, default "CLD". Legend title.
-#'@param viridis.option character, default "inferno". Viridis color scale option to use.
-#'  Other color scales may be substituted by appending the scale_color_continuous
-#'  and scale_fill_continuous ggplot functions to the produced plot using the
-#'  '+' operator. See \code{\link[ggplot2]{scale_gradient}} for details.
+#'@param viridis.option character, default "inferno". Viridis color scale option
+#'  to use. Other color scales may be substituted by appending the
+#'  scale_color_continuous and scale_fill_continuous ggplot functions to the
+#'  produced plot using the '+' operator. See
+#'  \code{\link[ggplot2]{scale_gradient}} for details.
 #'@param title character. Plot title.
 #'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
+#'@param background character, default "white". Background color for plot.
 #'
 #'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
 #'  ggplot object. \item{dat: } Data used to generate the ggplot object. }
@@ -53,10 +55,10 @@
 #' dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
 #'
 #' # produce plots for linkage group IX in the ASP and CLF populations.
-#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIX", c("ASP", "CLF"))
+#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIX", c("ASP", "CLF"))
 #'
 #' # produce plots for every population for linkage group IV
-#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
+#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIV")
 #'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
@@ -365,9 +367,9 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'
 #' Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
 #' theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-#' Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
-#' Works by conversion to the "sn" format described in \code{\link{format_snps}}
-#' with interpolated missing genotypes.
+#' Approximation and Projection approach implemented in
+#' \code{\link[umap]{umap}}. Works by conversion to the "sn" format described in
+#' \code{\link{format_snps}} with interpolated missing genotypes.
 #'
 #' Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
 #' coordinates are calculated using \code{\link{prcomp}}. By default, the first
@@ -379,15 +381,17 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' information as possible. As such, a tSNE plot can be seen as a representation
 #' of many different PC axis compressed into a single two-dimensional plot. This
 #' compression process is stochastic, and so plots will vary somewhat between
-#'  runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
-#' coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
-#' results to a two dimensional visualization.
+#' runs, and multiple runs are recommended. Uniform Manifold Approximation and
+#' Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
+#' UMAP similarly attempts to reduce multi-dimensional results to a two
+#' dimensional visualization.
 #'
 #' For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
 #' consulted.
 #'
-#' Additional arguments to the UMAP can be also be provided. Additional information on these
-#' arguments can be found in \code{\link[umap]{umap.defaults}}.
+#' Additional arguments to the UMAP can be also be provided. Additional
+#' information on these arguments can be found in
+#' \code{\link[umap]{umap.defaults}}.
 #'
 #' Data points for individuals can be automatically colored by any sample-level
 #' facet categories. Facets should be provided as described in
@@ -398,9 +402,9 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @param facets character, default NULL. Categorical sample-level metadata
 #'   variables by which to color points. Up to two different sample-specific
 #'   facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#' @param plot.type character, default c("PCA", "tSNE", "umap"). Types of plots
+#' @param plot_type character, default c("PCA", "tSNE", "umap"). Types of plots
 #'   to be produced, see description.
-#' @param check.duplicates logical, default FALSE. Checks for any duplicated
+#' @param check_duplicates logical, default FALSE. Checks for any duplicated
 #'   individuals, which will cause errors. Since these rarely exist and
 #'   drastically slow down function run-time, this defaults to FALSE.
 #' @param minimum_percent_coverage numeric, default FALSE. Proportion of samples
@@ -421,29 +425,38 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'   \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
 #' @param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
 #'   perform.
-#' @param viridis.option character, default "viridis". Viridis color scale option
-#'   to use for significance lines and SNP labels. See
+#' @param viridis.option character, default "viridis". Viridis color scale
+#'   option to use for significance lines and SNP labels. See
 #'   \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
-#' @param ncp numeric or NULL, default NULL. Number of components to consider for iPCA sn format
-#'   interpolations of missing data. If null, the optimum number will be estimated, with the
-#'   maximum specified by ncp.max. This can be very slow.
-#' @param ncp.max numeric, default 5. Maximum number of components to check for when determining
-#'   the optimum number of components to use when interpolating sn data using the iPCA approach.
-#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.
+#' @param ncp numeric or NULL, default NULL. Number of components to consider
+#'   for iPCA sn format interpolations of missing data. If null, the optimum
+#'   number will be estimated, with the maximum specified by ncp.max. This can
+#'   be very slow.
+#' @param ncp.max numeric, default 5. Maximum number of components to check for
+#'   when determining the optimum number of components to use when interpolating
+#'   sn data using the iPCA approach.
+#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
+#'   \code{\link[umap]{umap}}.
 #'
-#' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
-#'  data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of these two lists
-#'  may contain one, two, or three objects, one for each PCA, tSNE, or umap plot requested,
-#'  named "pca" and "tsne", and "umap", respectively.
+#' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
+#'   plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
+#'   these two lists may contain one, two, or three objects, one for each PCA,
+#'   tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+#'   respectively.
 #'
 #' @author William Hemstrom
 #' @author Matt Thorstensen
 #'
-#' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
-#' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
-#' @references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
+#'   Embedding using a Barnes-Hut Implementation, URL:
+#'   \url{https://github.com/jkrijthe/Rtsne}.
+#' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing
+#'   high-dimensional data using t-SNE. journal of machine learning research.
+#'   \emph{Journal of Machine Learning Research}.
+#' @references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
+#'   and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 #'
 #' @seealso \code{\link[mmtsne]{mmtsne}}
 #'
@@ -452,7 +465,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @examples
 #' # plot colored by population
 #' plot_clusters(stickSNPs, "pop")
-#' 
+#'
 #' # plot colored by population and family
 #' plot_clusters(stickSNPs, "pop", "umap")
 plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
@@ -776,11 +789,12 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' @param suggestive numeric, default NULL. Value at which a line will be drawn
 #'   designating suggestive SNPs. If highlight = "suggestive", SNPs above this
 #'   level will also be labeled.
-#' @param sig_below logical, default FALSE. If TRUE, treats values lower than the
-#'   significance threshold as significant.
+#' @param sig_below logical, default FALSE. If TRUE, treats values lower than
+#'   the significance threshold as significant.
 #' @param log.p logical, default FALSE. If TRUE, plot variables and thresholds
 #'   will be transformed to -log.
-#' @param abs logical, default FALSE. If TRUE, converts the plot variable to it's absolute value.
+#' @param abs logical, default FALSE. If TRUE, converts the plot variable to
+#'   it's absolute value.
 #' @param highlight character, numeric, or FALSE, default "significant".
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 #'   above those respetive values will be highlighted. If a numeric vector, SNPs
@@ -805,7 +819,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'
 #' @examples
 #' # make some data
-#' x <- calc_basic_snp_stats(x, "pop.group", sigma = 200, step = 50)
+#' x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
 #'
 #' # plot pi, breaking apart by population, keeping only the groupIX and
 #' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
@@ -814,7 +828,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' plot_manhattan(x, "pi", facets = "pop",
 #' chr = "group", chr.subfacet = c("groupIX", "groupIV"),
 #' sample.subfacet = c("ASP", "OPL", "SMR"),
-#' significant = 0.05, suggestive = 0.15, sig_below = T)
+#' significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 #'
 #' # plot FST for the ASP/PAL comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
@@ -824,7 +838,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'
 #' # plot sliding-window FST between ASP and CLF
 #' # and between OPL and SMR
-#' plot_manhattan(x, "fst", window = T, facets = c("pop.group"),
+#' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
 #' chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 #' significant = .29, suggestive = .2)
 #'
@@ -835,8 +849,8 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' ## plot
 #' plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
 #' significant = 0.0001, suggestive = 0.001,
-#' log.p = T, highlight = F)
-#'
+#' log.p = TRUE, highlight = FALSE)
+#' 
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
@@ -1065,10 +1079,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' These methods are not re-implemented in R, instead, this function calls the
 #' \code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
 #' functions instead. Please cite the references noted in those functions if
-#' using this function. For snapclust, the "ward" method is used to initialize clusters
-#' if one rep is requested, otherwise the clusters are started randomly each rep. Other
-#' methods can be used by providing pop.ini as an additional argument as long as only one
-#' rep is requested.
+#' using this function. For snapclust, the "ward" method is used to initialize
+#' clusters if one rep is requested, otherwise the clusters are started randomly
+#' each rep. Other methods can be used by providing pop.ini as an additional
+#' argument as long as only one rep is requested.
 #'
 #' Multiple different runs can be conducted using the 'reps' argument, and the
 #' results can be combined for plotting across all of these reps using the
@@ -1113,12 +1127,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param facet.order character, default NULL. Optional order in which the
 #'   levels of the provided facet should appear on the plot, left to right.
 #' @param k numeric, default 2. The maximum of k (number of clusters) for which
-#' to run the clustering/assignment algorithm. The values 2:k will be run.
+#'   to run the clustering/assignment algorithm. The values 2:k will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-#'   See \code{\link[LEA]{main_sNMF}} or \code{\link[adegenet]{snapclust.choose.k}}
-#'   for details, respectively.
+#'   See \code{\link[LEA]{main_sNMF}} or
+#'   \code{\link[adegenet]{snapclust.choose.k}} for details, respectively.
 #' @param reps numeric, default 1. The number of independent clustering
 #'   repititions to run.
 #' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
@@ -1140,7 +1154,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param clumpp logical, default T. Specifies if CUMPP should be run to
 #'   collapse results across multiple reps. If FALSE, will use only the first
 #'   rep for plotting.
-#' @param clumpp_path character, default "/usr/bin/CLUMPP.exe". Path to the clumpp executable, required if clumpp = T.
+#' @param clumpp_path character, default "/usr/bin/CLUMPP.exe". Path to the
+#'   clumpp executable, required if clumpp = T.
 #' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
 #'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
@@ -1154,8 +1169,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
-#' @param ... additional arguments passed to either \code{\link[LEA]{main_sNMF}} or
-#'   \code{\link[adegenet]{snapclust.choose.k}}.
+#' @param ... additional arguments passed to either \code{\link[LEA]{main_sNMF}}
+#'   or \code{\link[adegenet]{snapclust.choose.k}}.
 #'
 #' @export
 #' @author William Hemstrom
@@ -1181,7 +1196,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
 #'   \item{K_plot: } A data.frame containing the value suggested for use in K
 #'   selection vs K value for the selected method.}
-#'
+#'  
+#' @examples
+#' # basic sNMF
+#' plot_structure(stickSNPs, "pop")
+#' 
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
                            I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
@@ -1959,37 +1978,61 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 }
 
 #' Plot STRUCTURE like results on a map.
-#' 
-#' Plots the mean cluster assignment for each population on a map using the scatterpie package alongside
-#' any additional simple feature objects (\code{\link[sf]{sf}}). Assignments must be given in the format provided
-#' by \code{link{plot_structure}}.
-#' 
-#' Currently, this only works for simple, sample specific facets. Coordinates for pie charts should be provided
-#' as an \code{\link[sf]{sf}} object, where one column, named for the facet being plotted, provides the subfacet level names
-#' matching those in the assignments. Additional sf objects can be provided, which will also be plotted. Note that there is
-#' no need to standardize the CRS across the objects, since each will be transformed to match the sample coordinates.
-#' 
-#' @param assignments Structure like results, parsed in or generated via \code{link{plot_structure}}, which generates the needed plot data.
+#'
+#' Plots the mean cluster assignment for each population on a map using the
+#' scatterpie package alongside any additional simple feature objects
+#' (\code{\link[sf]{sf}}). Assignments must be given in the format provided by
+#' \code{link{plot_structure}}.
+#'
+#' Currently, this only works for simple, sample specific facets. Coordinates
+#' for pie charts should be provided as an \code{\link[sf]{sf}} object, where
+#' one column, named for the facet being plotted, provides the subfacet level
+#' names matching those in the assignments. Additional sf objects can be
+#' provided, which will also be plotted. Note that there is no need to
+#' standardize the CRS across the objects, since each will be transformed to
+#' match the sample coordinates.
+#'
+#' @param assignments Structure like results, parsed in or generated via
+#'   \code{link{plot_structure}}, which generates the needed plot data.
 #' @param K numeric. Value of K (number of clusters) to plot.
-#' @param facet character. The facet by which data is broken down in the passed assignments.
-#' @param pop_coordinates sf object, see \code{\link[sf]{sf}}. sf object containing points/coordinates for each facet level. Must contain a column of data with population labels named identically to the provided facet (for example, named "pop" if "pop" is the provided facet.)
-#' @param sf list of sf objects, default NULL. Additional features to be plotted alongside points, such as rivers or county lines.
-#' @param sf_fill_colors character vector, default "viridis". A vector of colors to use to fill each polygon sf object. By default, uses the viridis palette with an alpha of 0.2.
-#' @param sf_line_colors character vector, default "viridis". A vector of colors to use to color lines in in each sf object. By default, uses the viridis palette with an alpha of 0.2.
-#' @param pop_names logical, default T. If true, facet level names will be displayed on the map.
+#' @param facet character. The facet by which data is broken down in the passed
+#'   assignments.
+#' @param pop_coordinates sf object, see \code{\link[sf]{sf}}. sf object
+#'   containing points/coordinates for each facet level. Must contain a column
+#'   of data with population labels named identically to the provided facet (for
+#'   example, named "pop" if "pop" is the provided facet.)
+#' @param sf list of sf objects, default NULL. Additional features to be plotted
+#'   alongside points, such as rivers or county lines.
+#' @param sf_fill_colors character vector, default "viridis". A vector of colors
+#'   to use to fill each polygon sf object. By default, uses the viridis palette
+#'   with an alpha of 0.2.
+#' @param sf_line_colors character vector, default "viridis". A vector of colors
+#'   to use to color lines in in each sf object. By default, uses the viridis
+#'   palette with an alpha of 0.2.
+#' @param pop_names logical, default T. If true, facet level names will be
+#'   displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
 #'   to use instead of viridis palette  the pie charts.
-#' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a proportion of the total map space.
-#' @param label_scale numeric, default 0.075 Factor by which to scale facet level names if plotted.
-#' @param point_padding_scale numeric, default 0.25. Factor by which to scale buffers between pie charts and facet level names if plotted.
-#' @param crop logical, default F. If TRUE, will will crop the plot around the sample points. If false will show the full extent of the data, often set by any additional sf objects being plotted.
-#' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km", transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a scale to the plot. If NULL, no scale added.
-#' @param compass list or NULL, list(symbol = 16). Arguments passed to \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass added.
-#' 
+#' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a
+#'   proportion of the total map space.
+#' @param label_scale numeric, default 0.075 Factor by which to scale facet
+#'   level names if plotted.
+#' @param point_padding_scale numeric, default 0.25. Factor by which to scale
+#'   buffers between pie charts and facet level names if plotted.
+#' @param crop logical, default F. If TRUE, will will crop the plot around the
+#'   sample points. If false will show the full extent of the data, often set by
+#'   any additional sf objects being plotted.
+#' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km",
+#'   transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a
+#'   scale to the plot. If NULL, no scale added.
+#' @param compass list or NULL, list(symbol = 16). Arguments passed to
+#'   \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
+#'   added.
+#'
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' # get an sf of the sampling locations
@@ -2000,19 +2043,19 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' lat_long$pop <- rownames(lat_long)
 #' psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
 #' psf <- sf::`st_crs<-`(psf, "EPSG:4326")
-#' 
+#'
 #' # get the assignments
 #' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
-#' 
+#'
 #' # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
 #' background <- maps::map("state", "oregon")
 #' background <- sf::st_as_sf(background)
-#' 
+#'
 #' # make the plot
 #' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 #' }
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
-                               pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = F,
+                               pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = FALSE,
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
   #===================sanity checks=================
   msg <- character()

@@ -11,7 +11,7 @@ do_bootstraps(
   sigma,
   step = NULL,
   statistics = "all",
-  nk = T,
+  nk = TRUE,
   par = FALSE,
   do.p = TRUE,
   p.alt = "two-sided"
@@ -31,6 +31,9 @@ window size is 6*sigma.}
 \item{step}{numeric or NULL, default NULL. Designates the number of kilobases
 between each window centroid. If NULL, windows are centered on each SNP.}
 
+\item{statistics}{character. Designates the statistic(s) to smooth, typically
+"all", "single", or "pairwise". See details for options.}
+
 \item{nk}{logical, default TRUE. If TRUE, weights SNP contribution to window
 averages by the number of observations at those SNPs.}
 
@@ -46,9 +49,6 @@ bootstrapped value is as small or smaller than observed. \item "greater":
 probability that a bootstrapped value is as large or larger than observed.
 \item "two-sided": probability that a bootstrapped value is as or more
 extreme than observed. }}
-
-\item{statistic}{character. Designates the statistic(s) to smooth, typically
-"all", "single", or "pairwise". See details for options.}
 }
 \value{
 A snpRdata object with bootstrapped windows merged in to the
@@ -90,14 +90,21 @@ every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
 
 
-If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
-bootstrapped null distribution of that statistic using an emperical continuous
-distribution function.
+If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
+upon the bootstrapped null distribution of that statistic using an empirical 
+continuous distribution function.
 }
 \examples{
 # add statistics
-dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
-do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+dat <- calc_basic_snp_stats(stickSNPs, "group", sigma = 200, step = 150)
+
+# do bootstraps
+dat <- do_bootstraps(dat, facets = "group", boots = 1000, 
+                     sigma = 200, step = 150)
+
+# fetch results, bootstraps and then p-values on original stats
+get.snpR.stats(dat, "group", "bootstraps")
+get.snpR.stats(dat, "group", "single.window")
 
 }
 \references{

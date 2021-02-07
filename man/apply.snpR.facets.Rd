@@ -10,7 +10,7 @@ apply.snpR.facets(
   req,
   fun,
   case = "ps",
-  par = F,
+  par = FALSE,
   ...,
   stats.type = "all",
   response = NULL,
@@ -37,6 +37,14 @@ to use. Works for some cases/reqs.}
 
 \item{stats.type}{character, default "all". Other options "pairwise" or
 "stats". Type of statistic under to pull under the ps.pf.psf option.}
+
+\item{response}{character, default NULL. Possible response variable name
+passed to specific functions.}
+
+\item{maf}{numeric, defualt NULL. Possible maf, passed to some functions.}
+
+\item{interpolate}{character, default NULL. Possible interpolation option,
+passed to some functions.}
 }
 \description{
 Internal function to apply functions across snpR data. Facet desicnations

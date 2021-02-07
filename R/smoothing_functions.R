@@ -1,21 +1,15 @@
 #function for calculating gaussian weight of a point
 
-#'Calculate gaussian weights.
+#' Calculate gaussian weights.
 #'
-#'Get the gaussian weight of a statistic given its position relative to the
-#'center and scaling factor sigma. Used internally, probably shouldn't be
-#'called.
+#' Get the gaussian weight of a statistic given its position relative to the
+#' center and scaling factor sigma.
 #'
-#'@param p numeric. Position of value to smooth.
-#'@param c numeric. Position of center of window.
-#'@param s numeric. Sigma, scaling factor.
+#' @param p numeric. Position of value to smooth.
+#' @param c numeric. Position of center of window.
+#' @param s numeric. Sigma, scaling factor.
 #'
-#'@return A numeric value, the relative weight of the point.
-#'
-#'@keywords internal
-#'
-#' @examples
-#' gaussian_weight(10000, 10500, 1000)
+#' @return A numeric value, the relative weight of the point.
 gaussian_weight <- function(p, c, s) {
   exp(-(p-c)^2/(2*s^2))
 }
@@ -74,7 +68,8 @@ gaussian_weight <- function(p, c, s) {
 #'
 #'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'
-#'@return snpRdata object with smoothed averages for any requested statistics merged into the window.stats or pairwise.window.stats slots.
+#'@return snpRdata object with smoothed averages for any requested statistics
+#'  merged into the window.stats or pairwise.window.stats slots.
 #'
 #'@examples
 #'# add a few statistics

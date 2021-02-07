@@ -31,6 +31,13 @@ plot_clusters(
 variables by which to color points. Up to two different sample-specific
 facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
+\item{plot_type}{character, default c("PCA", "tSNE", "umap"). Types of plots
+to be produced, see description.}
+
+\item{check_duplicates}{logical, default FALSE. Checks for any duplicated
+individuals, which will cause errors. Since these rarely exist and
+drastically slow down function run-time, this defaults to FALSE.}
+
 \item{minimum_percent_coverage}{numeric, default FALSE. Proportion of samples
 a SNP must be sequenced in to be used in generating plots.}
 
@@ -57,41 +64,38 @@ found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 \item{iter}{numeric, default 1000. Number of tSNE iterations/umap epochs to
 perform.}
 
-\item{viridis.option}{character, default "viridis". Viridis color scale option
-to use for significance lines and SNP labels. See
+\item{viridis.option}{character, default "viridis". Viridis color scale
+option to use for significance lines and SNP labels. See
 \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
 
-\item{ncp}{numeric or NULL, default NULL. Number of components to consider for iPCA sn format
-interpolations of missing data. If null, the optimum number will be estimated, with the
-maximum specified by ncp.max. This can be very slow.}
+\item{ncp}{numeric or NULL, default NULL. Number of components to consider
+for iPCA sn format interpolations of missing data. If null, the optimum
+number will be estimated, with the maximum specified by ncp.max. This can
+be very slow.}
 
-\item{ncp.max}{numeric, default 5. Maximum number of components to check for when determining
-the optimum number of components to use when interpolating sn data using the iPCA approach.}
+\item{ncp.max}{numeric, default 5. Maximum number of components to check for
+when determining the optimum number of components to use when interpolating
+sn data using the iPCA approach.}
 
-\item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or \code{\link[umap]{umap}}.}
-
-\item{plot.type}{character, default c("PCA", "tSNE", "umap"). Types of plots
-to be produced, see description.}
-
-\item{check.duplicates}{logical, default FALSE. Checks for any duplicated
-individuals, which will cause errors. Since these rarely exist and
-drastically slow down function run-time, this defaults to FALSE.}
+\item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
+\code{\link[umap]{umap}}.}
 }
 \value{
-A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap plot
- data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of these two lists
- may contain one, two, or three objects, one for each PCA, tSNE, or umap plot requested,
- named "pca" and "tsne", and "umap", respectively.
+A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
+  plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
+  these two lists may contain one, two, or three objects, one for each PCA,
+  tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+  respectively.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
 theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
-Works by conversion to the "sn" format described in \code{\link{format_snps}}
-with interpolated missing genotypes.
+Approximation and Projection approach implemented in
+\code{\link[umap]{umap}}. Works by conversion to the "sn" format described in
+\code{\link{format_snps}} with interpolated missing genotypes.
 }
 \details{
 Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
@@ -104,15 +108,17 @@ multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
 information as possible. As such, a tSNE plot can be seen as a representation
 of many different PC axis compressed into a single two-dimensional plot. This
 compression process is stochastic, and so plots will vary somewhat between
- runs, and multiple runs are recommended. Uniform Manifold Approximation and Projection (UMAP)
-coordinates are calculated via \code{\link[umap]{umap}}. UMAP similarly attempts to reduce multi-dimensional
-results to a two dimensional visualization.
+runs, and multiple runs are recommended. Uniform Manifold Approximation and
+Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
+UMAP similarly attempts to reduce multi-dimensional results to a two
+dimensional visualization.
 
 For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.
 
-Additional arguments to the UMAP can be also be provided. Additional information on these
-arguments can be found in \code{\link[umap]{umap.defaults}}.
+Additional arguments to the UMAP can be also be provided. Additional
+information on these arguments can be found in
+\code{\link[umap]{umap.defaults}}.
 
 Data points for individuals can be automatically colored by any sample-level
 facet categories. Facets should be provided as described in
@@ -127,11 +133,16 @@ plot_clusters(stickSNPs, "pop")
 plot_clusters(stickSNPs, "pop", "umap")
 }
 \references{
-Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor Embedding using a Barnes-Hut Implementation, URL: \url{https://github.com/jkrijthe/Rtsne}.
+Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
+  Embedding using a Barnes-Hut Implementation, URL:
+  \url{https://github.com/jkrijthe/Rtsne}.
 
-Van Der Maaten, L. & Hinton, G. (2008) Visualizing high-dimensional data using t-SNE. journal of machine learning research. \emph{Journal of Machine Learning Research}.
+Van Der Maaten, L. & Hinton, G. (2008) Visualizing
+  high-dimensional data using t-SNE. journal of machine learning research.
+  \emph{Journal of Machine Learning Research}.
 
-McInnes, L. & Healy (2018). UMAP: uniform manifold approximation and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
+  and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}

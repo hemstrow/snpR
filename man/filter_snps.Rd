@@ -26,8 +26,8 @@ minor allele frequency}
 \item{hf_hets}{FALSE or numeric between 0 and 1, default FALSE. Maximum
 acceptable heterozygote frequency.}
 
-\item{HWE}{FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE violation p-value below
-this will be rejected.}
+\item{HWE}{FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE
+violation p-value below this will be rejected.}
 
 \item{min_ind}{FALSE or integer, default FALSE. Minimum number of individuals
 in which a loci must be sequenced.}

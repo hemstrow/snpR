@@ -10,14 +10,15 @@ calc_basic_snp_stats(
   fst.method = "WC",
   sigma = NULL,
   step = NULL,
-  par = F,
+  par = FALSE,
   nk = TRUE
 )
 }
 \arguments{
 \item{x}{snpRdata object.}
 
-\item{facets}{character. Categorical metadata variables by which to break up analysis. See \code{\link{Facets_in_snpR}} for more details.}
+\item{facets}{character. Categorical metadata variables by which to break up
+analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{fst.method}{character, default "WC". Defines the FST estimator to use.
 Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
@@ -37,7 +38,8 @@ use for parallel processing.}
 averages by the number of observations at those SNPs.}
 }
 \value{
-A snpRdata object with all of the described statistics merged into the appropriate sockets.
+A snpRdata object with all of the described statistics merged into the
+ appropriate sockets.
 }
 \description{
 Automatically calculate most basic statistics from snpRdata. Calculates maf,
@@ -50,8 +52,9 @@ described in \code{\link{Facets_in_snpR}}. Note that Fst and private allele
 calculations require a sample specific contrast (the pairwise part of pairwise
 Fst), and thus will not be calculated unless a facet with a sample meta data
 variable included is specified. The other stats, in contrast, are snp-specific
-and thus ignore any snp meta data variables included in facets. Providing NULL or
-"all" to the facets argument works as described in \code{\link{Facets_in_snpR}}.
+and thus ignore any snp meta data variables included in facets. Providing NULL
+or "all" to the facets argument works as described in
+\code{\link{Facets_in_snpR}}.
 }
 \examples{
 x <- calc_basic_snp_stats(stickSNPs, c("pop"))

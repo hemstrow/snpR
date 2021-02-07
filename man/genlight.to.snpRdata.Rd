@@ -7,14 +7,17 @@
 genlight.to.snpRdata(genlight, snp.meta = NULL, sample.meta = NULL)
 }
 \arguments{
-\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.}
+\item{genlight}{genlight object.}
 
-\item{sample.meta}{data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.}
+\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, IDs from
+genind may be added.}
 
-\item{genind}{genlight object.}
+\item{sample.meta}{data.frame, default NULL. Metadata for each individual
+sample, IDs and pops from genind may be added.}
 }
 \description{
-Convert genlight object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genlight object.
+Convert genlight object to snpRdata. Internal, called by import.snpR.data
+when provided a adegenet genlight object.
 }
 \author{
 William Hemstrom

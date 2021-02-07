@@ -89,7 +89,7 @@ check.snpRdata <- function(object){
 #'function for this object class.
 #'
 #'@author William Hemstrom
-#'
+#'  
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",
                                        facet.meta = "data.frame",
@@ -130,39 +130,50 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'from most snpR functions. Genotypes are stored in the "character" format, as
 #'output by \code{\link{format_snps}}. Missing data is noted with "NN".
 #'
-#'@section File import:
-#'  Supports automatic import of several types of files. Options:
-#'  
-#'  \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!
-#'  \item{.ms: } Files in the ms format, as provided by many commonly used simulation tools.
-#'  \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA",
-#'  "CT"). \item{0000: }SNP genotypes stored as four numeric characters (e.g.
-#'  "0101", "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each
-#'  cell, but only a single nucleotide noted if homozygote and two nucleotides
+#'@section File import: Supports automatic import of several types of files.
+#'  Options:
+#'
+#'  \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported
+#'  via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+#'  taken from the fixed fields in the VCF and sample metadata from the sample
+#'  IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
+#'  Files in the ms format, as provided by many commonly used simulation tools.
+#'  \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA", "CT").
+#'  \item{0000: }SNP genotypes stored as four numeric characters (e.g. "0101",
+#'  "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each cell,
+#'  but only a single nucleotide noted if homozygote and two nucleotides
 #'  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
 #'  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
 #'  (heterozygous), or 2 (homozyogus allele 2).}
-#'  
-#'  Additional arguments can be provided to import.snpR.data that will be passed to \code{\link[data.table]{fread}}
-#'  when reading in genotype data.
-#'  
-#'  Sample and snp metadata can also be provided via file path, and will be read in using \code{\link[data.table]{fread}}
-#'  \emph{with the default settings}. If these settings are not correct, please read in the metadata manually
-#'  and provide to import.snpR.data.
+#'
+#'  Additional arguments can be provided to import.snpR.data that will be passed
+#'  to \code{\link[data.table]{fread}} when reading in genotype data.
+#'
+#'  Sample and snp metadata can also be provided via file path, and will be read
+#'  in using \code{\link[data.table]{fread}} \emph{with the default settings}.
+#'  If these settings are not correct, please read in the metadata manually and
+#'  provide to import.snpR.data.
 #'
 #'@section Conversions from other S4 objects:
-#'  
-#'  Supports automatic conversions from some other popular S4 object types. Options:
-#'  
-#'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
-#'  import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
-#'  Sample and SNP IDs as well as, when possible, pop IDs will be taken from the genind object. This
-#'  data will be added too but will not replace data provided to the SNP or sample.meta arguments. Note that only \emph{SNP}
-#'  data is currently allowed, data with more than two alleles for loci will return an error.
-#'  \item{genlight: } \code{\link[adegenet]{genlight}} objects from adegenet.
-#'  Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight object if possible.
-#'  This data will be added too but will not replace data provided to the SNP or sample.meta arguments.
-#'  \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!}
+#'
+#'  Supports automatic conversions from some other popular S4 object types.
+#'  Options:
+#'
+#'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
+#'  adegenet. Note, no need to import genpop objects, the equivalent statistics
+#'  are calculated automatically when functions called with facets. Sample and
+#'  SNP IDs as well as, when possible, pop IDs will be taken from the genind
+#'  object. This data will be added too but will not replace data provided to
+#'  the SNP or sample.meta arguments. Note that only \emph{SNP} data is
+#'  currently allowed, data with more than two alleles for loci will return an
+#'  error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
+#'  adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
+#'  will be taken from the genlight object if possible. This data will be added
+#'  too but will not replace data provided to the SNP or sample.meta arguments.
+#'  \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
+#'  snp metadata is taken from the fixed fields in the VCF and sample metadata
+#'  from the sample IDs. Note that this only imports SNPs with called
+#'  genotypes!}
 #'
 #'@section Slots:
 #'
@@ -205,26 +216,31 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  function. See documentation.
 #'
 #'
-#'@param genotypes data.frame, unique S4 from other packages, or filename. If a data.frame, raw genotypes in a two-character format ("GG",
-#'  "GA", "CT", "NN"), where SNPs are in rows and individual samples are in
-#'  columns. Otherwise, see documentation for allowed S4 objects and files.
-#'@param snp.meta data.frame, default NULL. Metadata for each SNP, must have a number of rows
-#'  equal to the number of SNPs in the dataset. If NULL, a single "snpID" column will be added.
-#'@param sample.meta data.frame, default NULL. Metadata for each individual sample, must have
-#'  a number of rows equal to the number of samples in the dataset. If NULL, a single "sampID" column will be added.
+#'@param genotypes data.frame, unique S4 from other packages, or filename. If a
+#'  data.frame, raw genotypes in a two-character format ("GG", "GA", "CT",
+#'  "NN"), where SNPs are in rows and individual samples are in columns.
+#'  Otherwise, see documentation for allowed S4 objects and files.
+#'@param snp.meta data.frame, default NULL. Metadata for each SNP, must have a
+#'  number of rows equal to the number of SNPs in the dataset. If NULL, a single
+#'  "snpID" column will be added.
+#'@param sample.meta data.frame, default NULL. Metadata for each individual
+#'  sample, must have a number of rows equal to the number of samples in the
+#'  dataset. If NULL, a single "sampID" column will be added.
 #'@param mDat character, default "NN", matching the encoding of missing
 #'  \emph{genotypes} in the data provided to the genotypes argument.
-#'@param chr.length numeric, default NULL. If a path to a .ms file is provided, specifies chromosome lengths.
-#'  Note that a single value assumes that each chromosome is of equal length whereas
-#'  a vector of values gives the length for each chromosome in order.
-#'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a \emph{genotype} file name is passed that is not a vcf or ms file.
+#'@param chr.length numeric, default NULL. If a path to a .ms file is provided,
+#'  specifies chromosome lengths. Note that a single value assumes that each
+#'  chromosome is of equal length whereas a vector of values gives the length
+#'  for each chromosome in order.
+#'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
+#'  \emph{genotype} file name is passed that is not a vcf or ms file.
 #'
 #'@examples
 #' # import example data as a snpRdata object
 #' # produces data identical to that contained in the stickSNPs example dataset.
 #' genos <- stickRAW[,-c(1:3)]
 #' snp_meta <- stickRAW[,1:3]
-#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
 #' import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
 #'
 #' # from an adegenet genind object
@@ -239,16 +255,16 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' genlight <- new("genlight", dat) # conversion
 #' newalleles <- character(adegenet::nLoc(genlight))
 #' for(i in 1:length(newalleles)){
-#'   newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+#'   newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
 #' }
 #' adegenet::alleles(genlight) <- newalleles
-#' adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
-#' adegenet::position(genlight) <- sample(100000, 1000, F)
-#' adegenet::chr(genlight) <- sample(10, 1000, T)
-#' 
+#' adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
+#' adegenet::position(genlight) <- sample(100000, 1000, FALSE)
+#' adegenet::chr(genlight) <- sample(10, 1000, TRUE)
+#'
 #' ## run the conversion
 #' dat <- import.snpR.data(genlight)
-#' 
+#'
 #' \dontrun{
 #' # from a file:
 #' dat <- import.snpR.data("data/stick_NN_input.txt", drop = 1:3) # note that the drop argument is passed to data.table::fread!
@@ -357,7 +373,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
     if(ncol(genotypes) == 1){
       genotypes <- genotypes[order(snp.meta$position),]
-      genotypes <- as.data.frame(genotypes, stringsAsFactors = F)
+      genotypes <- as.data.frame(genotypes, stringsAsFactors = FALSE)
     }
     else{
       genotypes <- genotypes[order(snp.meta$position),]
@@ -413,12 +429,12 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
            other = list())
   x@calced_stats$.base <- character()
   
-  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
+  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
   
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
                    subfacet = rep(".base", nrow(gs$gs)),
                    facet.type = rep(".base", nrow(gs$gs)),
-                   stringsAsFactors = F)
+                   stringsAsFactors = FALSE)
   
   fm <- cbind(fm, snp.meta)
   
@@ -429,7 +445,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Input data will be filtered to remove non bi-allelic data.\n")
-  invisible(capture.output(x <- filter_snps(x, non_poly = F)))
+  invisible(capture.output(x <- filter_snps(x, non_poly = FALSE)))
   
   # add basic maf
   invisible(capture.output(x <- calc_maf(x)))
@@ -448,8 +464,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' A convenience function that pulls statistics of any specified type at
 #' particular facets from a snpRdata object.
 #'
-#' Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets =
-#' "all", data for all facets, including the base facet, will be returned. By
+#' Facets are specified as described in \code{\link{Facets_in_snpR}}. If facets
+#' = "all", data for all facets, including the base facet, will be returned. By
 #' default, the base facet alone will be returned.
 #'
 #' Different types of statistics are retrieved via the following options under
@@ -459,12 +475,15 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' \item{pairwise: } pairwise, non-window statistics (Fst). \item{single.window:
 #' } non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
 #' sliding window statistics. \item{LD: } linkage disequilibrium matrices and
-#' tables. \item{bootstraps: } bootstraps of window statistics. \item{genetic_distance: } genetic distances
-#' \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist: } geographic distances.
-#' \item{ibd: } isolation by distance results. \item{sample: } sample stats. \item{pop: } population sumamry statistics. }
+#' tables. \item{bootstraps: } bootstraps of window statistics.
+#' \item{genetic_distance: } genetic distances \item{allele_frequency_matrix: }
+#' allele frequency matrices. \item{geo_dist: } geographic distances. \item{ibd:
+#' } isolation by distance results. \item{sample: } sample stats. \item{pop: }
+#' population sumamry statistics. }
 #'
 #' @param x snpRdata object.
-#' @param facets character or NULL, default NULL. Facets for which to fetch data.
+#' @param facets character or NULL, default NULL. Facets for which to fetch
+#'   data.
 #' @param type character, default "single". Type of statistics to pull, see
 #'   description.
 #'
@@ -478,8 +497,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' # fetch pi
 #' get.snpR.stats(dat, "group.pop")
 #' # fetch fst
-#' get.snpR.stats(dat, "group.pop", "pairwise") 
-#'
+#' get.snpR.stats(dat, "group.pop", "pairwise")
+#' 
 get.snpR.stats <- function(x, facets = NULL, type = "single"){
   # sanity check
   if(!is.snpRdata(x)){
@@ -529,7 +548,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
           keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
         }
         else{
-          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = T))
+          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = TRUE))
           tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
           
           # need to paste together any snp or sample faces
@@ -542,7 +561,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
         }
       }
     }
-    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = F))
+    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))
   }
   
   extract.LD <- function(y, facets){
@@ -628,7 +647,6 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
 }
 
 
-#' what shows on call for a snpRdata object
 setMethod("show", "snpRdata", function(object) {
 
   calced_stats_print <- character(0)
@@ -658,40 +676,35 @@ setMethod("show", "snpRdata", function(object) {
   )
 })
 
-# define nrow for snpRdata
-
-
-#' Get the number of snps in a snpRdata object.
-#' 
-#' @param x snpRdata object
-#' 
-#' @export
-setGeneric("nsnps", function(x, value) standardGeneric("nsnps"))
-setMethod("nsnps", "snpRdata", function(x) nrow(x))
-
-
-#' @export
-#' @describeIn nsnps identical to nrow
-setMethod("nrow", "snpRdata", function(x) {
-  nrow(snp.meta(x))
-})
-
-
-
-# define ncol  for snpRdata
 
 #' Get the number of samples in a snpRdata object.
 #' 
 #' @param x snpRdata object
 #' 
+#' @name snpRdata_dims
+NULL
+
 #' @export
-setGeneric("nsamps", function(x, value) standardGeneric("nsamps"))
+#' @describeIn snpRdata_dims get the number of SNPs
+setGeneric("nsnps", function(x) standardGeneric("nsnps"))
+setMethod("nsnps", "snpRdata", function(x) nrow(x))
+
+
+#' @export
+#' @describeIn snpRdata_dims identical to nsnps
+setMethod("nrow", "snpRdata", function(x) {
+  nrow(snp.meta(x))
+})
+
+#' @export
+#' @describeIn snpRdata_dims get the number of samples
+setGeneric("nsamps", function(x) standardGeneric("nsamps"))
 setMethod("nsamps", "snpRdata", function(x) ncol(x))
 
 
 
 #' @export
-#' @describeIn nsamps identical to ncol
+#' @describeIn snpRdata_dims identical to nsamps
 setMethod("ncol", "snpRdata", function(x) {
   nrow(sample.meta(x))
 })
@@ -700,8 +713,8 @@ setMethod("ncol", "snpRdata", function(x) {
 
 
 
-# define dim  for snpRdata
 #' @export
+#' @describeIn snpRdata_dims get the number of SNPs and samples
 setMethod("dim", "snpRdata", function(x) {
   c(nrow(x), ncol(x))
 })
@@ -711,36 +724,37 @@ setMethod("dim", "snpRdata", function(x) {
 
 
 #' Get from or overwrite components of a snpRdata object
-#' 
-#' Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta, or sample meta).
-#' If overwritten, any calculated stats will be removed, since their values may be dependant upon
-#' changes in metadata.
-#' 
+#'
+#' Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta,
+#' or sample meta). If overwritten, any calculated stats will be removed, since
+#' their values may be dependant upon changes in metadata.
+#'
 #' @param x snpRdata object to get genotype data from.
 #' @param value Genotypes, snp metadata, or sample metadata
-#' 
-#' @export
+#'
 #' @name extract_snpRdata
-#' 
+#'
 #' @examples
 #' # copy test data
 #' test <- stickSNPs
-#' 
+#'
 #' # show genotypes
 #' genotypes(test)
-#' 
+#'
 #' # show or overwrite snp meta
 #' snp.meta(test)
-#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), T), chr = sample(LETTERS[1:4], nrow(test), T))
-#' 
+#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
+#'
 #' #show or overwrite sample meta
 #' sample.meta(test)
-#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), T), pop = sample(LETTERS[5:8], ncol(test), T))
-#' 
-#'  @description view genotypes
+#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
+NULL
+
+#' @export
+#' @describeIn extract_snpRdata view genotypes
 setGeneric("genotypes", function(x) standardGeneric("genotypes"))
 setMethod("genotypes", "snpRdata", function(x){
-  genos <- as.data.frame(x@.Data, stringsAsFactors = F)
+  genos <- as.data.frame(x@.Data, stringsAsFactors = FALSE)
   colnames(genos) <- x@names
   rownames(genos) <- x@row.names
   return(genos)

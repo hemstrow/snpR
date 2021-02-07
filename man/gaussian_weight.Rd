@@ -18,10 +18,5 @@ A numeric value, the relative weight of the point.
 }
 \description{
 Get the gaussian weight of a statistic given its position relative to the
-center and scaling factor sigma. Used internally, probably shouldn't be
-called.
+center and scaling factor sigma.
 }
-\examples{
-gaussian_weight(10000, 10500, 1000)
-}
-\keyword{internal}

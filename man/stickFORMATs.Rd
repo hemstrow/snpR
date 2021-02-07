@@ -12,14 +12,14 @@ stickFORMATs
 }
 \description{
 Contains the dataset found in \code{\link{stickSNPs}} in every format that
-\code{\link{format_snps}} can currently export to. Each element of the list is named
-according to the output argument option required to export to that format.
-See \code{\link{format_snps}} for details.
+\code{\link{format_snps}} can currently export to. Each element of the list is
+named according to the output argument option required to export to that
+format. See \code{\link{format_snps}} for details.
 }
 \details{
-Dataset contains genotypes at 833 SNP loci for 420 Three-spined
-Stickleback collected in 2015 from several locations in the Deschutes River,
-Oregon, USA. For more information, see Hemstrom et al (in prep).
+Dataset contains genotypes at 833 SNP loci for 420 Three-spined Stickleback
+collected in 2015 from several locations in the Deschutes River, Oregon, USA.
+For more information, see Hemstrom et al (in prep).
 }
 \references{
 Hemstrom et al (in prep)

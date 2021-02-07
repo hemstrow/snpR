@@ -2,10 +2,15 @@
 % Please edit documentation in R/internals.R
 \name{convert_2_to_1_column}
 \alias{convert_2_to_1_column}
-\title{Tiny internal used when converting from a phased, transposed dataset (like from an MS output)}
+\title{Tiny internal used when converting from a phased, transposed dataset (like
+from an MS output)}
 \usage{
 convert_2_to_1_column(x)
 }
+\arguments{
+\item{x}{input matrix}
+}
 \description{
-Tiny internal used when converting from a phased, transposed dataset (like from an MS output)
+Tiny internal used when converting from a phased, transposed dataset (like
+from an MS output)
 }

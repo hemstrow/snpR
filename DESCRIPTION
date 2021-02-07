@@ -1,6 +1,6 @@
 Package: snpR
 Type: Package
-Title: Whole-genome analysis tools for use with SNP data.
+Title: Whole-genome analysis tools for use with SNP data
 Version: 1.1.2.0
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
@@ -17,6 +17,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
+    bigmemory,
     bigtabulate,
     doSNOW,
     dplyr,
@@ -48,6 +49,7 @@ Suggests:
     GMMAT,
     knitr,
     LEA,
+    markdown,
     missMDA,
     mmtsne,
     pophelper,
@@ -56,6 +58,8 @@ Suggests:
     readr,
     remotes,
     Rtsne,
+    scatterpie,
+    sequoia,
     sf,
     umap,
     vcfR,

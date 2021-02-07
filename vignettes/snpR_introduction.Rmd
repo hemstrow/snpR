@@ -71,7 +71,6 @@ sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1
 
 # import
 my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
-#
 ```
 
 The result will be the same! There are a handful of other possible imports that format_snps can handle, as described in the function's documentation.
@@ -222,7 +221,7 @@ Note that a PCA cannot be constructed with missing data, so we interploate with 
 Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that.
 
 ```{r}
-head(sample.meta(stickSNPs))
+head(sample.meta(my.dat))
 ```
 
 To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!**
@@ -230,7 +229,7 @@ To run a PCA and tSNE, we can use the plot_clusters function. Note that this fun
 
 ```{r}
 # generate both tSNE and PCA plots
-p <- plot_clusters(stickSNPs, facets = c("pop.fam"))
+p <- plot_clusters(my.dat, facets = c("pop.fam"))
 ```
 
 To view the plots, we can call two objects under the "plots" element in the list that plot_clusters returned.

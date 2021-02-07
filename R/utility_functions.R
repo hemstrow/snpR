@@ -1,11 +1,14 @@
 #' Convert genind object to snpRdata.
-#' 
-#' Convert genind object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genind object.
-#' 
+#'
+#' Convert genind object to snpRdata. Internal, called by import.snpR.data when
+#' provided a adegenet genind object.
+#'
 #' @param genind genind object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.
-#' 
+#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
+#'   genind may be added.
+#' @param sample.meta data.frame, default NULL. Metadata for each individual
+#'   sample, IDs and pops from genind may be added.
+#'
 #' @author William Hemstrom
 genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks=============
@@ -38,8 +41,7 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
       warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
     }
   }
-  
-  if(adegenet::plody(genind) != 2){
+  if(any(adegenet::ploidy(genind) != 2)){
     msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
   }
   
@@ -98,13 +100,16 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
 }
 
 #' Convert genlight object to snpRdata.
-#' 
-#' Convert genlight object to snpRdata. Internal, called by import.snpR.data when provided a adegenet genlight object.
-#' 
-#' @param genind genlight object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual sample, IDs and pops from genind may be added.
-#' 
+#'
+#' Convert genlight object to snpRdata. Internal, called by import.snpR.data
+#' when provided a adegenet genlight object.
+#'
+#' @param genlight genlight object.
+#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
+#'   genind may be added.
+#' @param sample.meta data.frame, default NULL. Metadata for each individual
+#'   sample, IDs and pops from genind may be added.
+#'
 #' @author William Hemstrom
 genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks=============
@@ -200,8 +205,9 @@ genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
 
 #' Internal to process a ms file
 #' @param x filepath to ms file
-#' @param chr.length length of the chromosome. If a single value, assumes all the same length.
-#'   If a vector of the same length as number of chr, assumes those are the chr lengths in order of apperance in ms file.
+#' @param chr.length length of the chromosome. If a single value, assumes all
+#'   the same length. If a vector of the same length as number of chr, assumes
+#'   those are the chr lengths in order of apperance in ms file.
 #' @author William Hemstrom
 process_ms <- function(x, chr.length){
   infile <- x #infile
@@ -261,11 +267,14 @@ process_ms <- function(x, chr.length){
 }
 
 #' Convert a vcf file/vcfR object into a snpRdata object
-#' 
-#' @param vcf_file character or vcfR object. Either a path to a vcf file or a vcfR object.
-#' @param snp.meta data.frame or null, default null. snp metadata, will overwrite data in vcf if provided.
-#' @param sample.meta data.frame or null, default null. sample metadata, will overwrite sample names in vcf if provided.
-#' 
+#'
+#' @param vcf_file character or vcfR object. Either a path to a vcf file or a
+#'   vcfR object.
+#' @param snp.meta data.frame or null, default null. snp metadata, will
+#'   overwrite data in vcf if provided.
+#' @param sample.meta data.frame or null, default null. sample metadata, will
+#'   overwrite sample names in vcf if provided.
+#'
 #' @author William Hemstrom
 process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks, part 1=============
@@ -389,7 +398,7 @@ process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
 #'  facet to keep. Samples in other levels will be removed.
 #'@param snp.facets characet, default NULL. \emph{snp specific} facets over
 #'  which subsetting will occur.
-#'@param snp.facets character, default NULL. Levels of the specified snp facets
+#'@param snp.subfacets character, default NULL. Levels of the specified snp facets
 #'  to keep. SNPs in other levels will be removed.
 #'
 #'@export
@@ -596,8 +605,8 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 #'  minor allele frequency
 #'@param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
-#'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE violation p-value below
-#'  this will be rejected.
+#'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE
+#'  violation p-value below this will be rejected.
 #'@param min_ind FALSE or integer, default FALSE. Minimum number of individuals
 #'  in which a loci must be sequenced.
 #'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
@@ -1008,31 +1017,35 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'genepop format, colnames are SNP ids, matching the first metadata column in
 #'input.} \item{structure: }{STRUCTURE format, two lines per individual: allele
 #'calls stored as single character numeric (e.g. "1", "2"). Allele calls per
-#'individual stored on two subsequent lines.} \item{0000: }{numeric genotype
-#'tab format, genotypes stored as four numeric characters (e.g. "0101",
-#'"0204").} \item{hapmap: }{Migrate-n hapmap, allele counts tabulated within
-#'populations, in migrate-n hapmap format. Since this migrate-n implementation
-#'is iffy, this probably shouldn't be used much.} \item{NN: }{character
-#'genotype tab format, genotypes stored as actual base calls (e.g. "AA", "CT").}
-#'\item{pa: }{allele presence/absence format, presence or absence of each
-#'possible allele at each possible genotype noted. Interpolation possible, with
-#'missing data substituted with allele freqency in all samples or each
-#'population.} \item{rafm: }{RAFM format, two allele calls at each locus stored
-#'in subsequent columns, e.g. locus1.1 locus1.2.} \item{faststructure:
-#'}{fastSTRUCTURE format, identical to STRUCTURE format save with the addition of
-#'filler columns proceeding data such that exactly 6 columns proceed data. These
-#'columns can be filled with metadata if desired.} \item{dadi: }{dadi format SNP
-#'data format, requires two columns named "ref" and "anc" with the flanking
-#'bases around the SNP, e.g. "ACT" where the middle location is the A/C snp.}
-#'\item{plink: }{PLINK! binary input format, requires columns named "group",
-#'"snp", and "position", and may contain a column named "cM", "cm", or
-#'"morgans", containing linkage group/chr, snp ID, position in bp, and distance
-#'in cM in order to create .bim extended map file.} \item{sn: }{Single character
-#'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
-#'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-#''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a healthy serving of additional metadata but very little sample metadata.}
-#'\item{snpRdata: }{a snpRdata object.}
-#'}
+#'individual stored on two subsequent lines.} \item{0000: }{numeric genotype tab
+#'format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
+#'\item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations,
+#'in migrate-n hapmap format. Since this migrate-n implementation is iffy, this
+#'probably shouldn't be used much.} \item{NN: }{character genotype tab format,
+#'genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
+#'presence/absence format, presence or absence of each possible allele at each
+#'possible genotype noted. Interpolation possible, with missing data substituted
+#'with allele freqency in all samples or each population.} \item{rafm: }{RAFM
+#'format, two allele calls at each locus stored in subsequent columns, e.g.
+#'locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
+#'STRUCTURE format save with the addition of filler columns proceeding data such
+#'that exactly 6 columns proceed data. These columns can be filled with metadata
+#'if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
+#'named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
+#'the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
+#'format, requires columns named "group", "snp", and "position", and may contain
+#'a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
+#'position in bp, and distance in cM in order to create .bim extended map file.}
+#'\item{sn: }{Single character numeric format. Each genotype will be listed as
+#'0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
+#'remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
+#'format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
+#'Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
+#'For more information see sequoia documentation.} \item{fasta: }{fasta sequence
+#'format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
+#'other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
+#'missing values), with a healthy serving of additional metadata but very little
+#'sample metadata.} \item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1043,14 +1056,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'The expected number of minor alleles based on the later method is equal to the
 #'interpolated value from the former, but the later allows for multiple runs to
 #'determine the impact of stochastic draws and is generally prefered and
-#'required for some downstream analysis. It is therefore the default. As a slower
-#'but more accurate alternative to "af" interpolation, "iPCA" may be selected. This
-#'an iterative PCA approach to interpolate based on SNP/SNP covariance via
-#'\code{\link[missMDA]{imputePCA}}. If the ncp arugment is not defined,
-#'the number of components used for interpolation will be estimated using
-#'\code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much slower
-#'than the other methods, especially for large datasets. Setting an ncp of 2-5
-#'generally results in reasonable inpterpolations without the time constraint.
+#'required for some downstream analysis. It is therefore the default. As a
+#'slower but more accurate alternative to "af" interpolation, "iPCA" may be
+#'selected. This an iterative PCA approach to interpolate based on SNP/SNP
+#'covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is not
+#'defined, the number of components used for interpolation will be estimated
+#'using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+#'slower than the other methods, especially for large datasets. Setting an ncp
+#'of 2-5 generally results in reasonable inpterpolations without the time
+#'constraint.
 #'
 #'Note also that for the plink format, a .bed binary file can be generated. If
 #'the "plink" option is selected and an outfile is designated, R will generate a
@@ -1067,8 +1081,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'cell, but only a single nucleotide noted if homozygote and two nucleotides
 #'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-#'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output from
-#'the simulation program ms.}}
+#'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
+#'from the simulation program ms.}}
 #'
 #'
 #'@param x snpRdata object or data.frame. Input data, in any of the above listed
@@ -1078,9 +1092,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'@param facets Character or NULL, default NULL. Facets overwhich to break up
 #'  data for some output formats, following the format described in
 #'  \code{\link{Facets_in_snpR}}.
-#'@param n_samp Integer or numeric vector, default NA. For structure or RAFM outputs. How
-#'  many random loci should be selected? Can either be an integer or a numeric
-#'  vector of loci to use.
+#'@param n_samp Integer or numeric vector, default NA. For structure or RAFM
+#'  outputs. How many random loci should be selected? Can either be an integer
+#'  or a numeric vector of loci to use.
 #'@param interpolate Character or FALSE, default "bernoulli". If transforming to
 #'  "sn" format, notes the interpolation method to be used to fill missing data.
 #'  Options are "bernoulli", "af", or FALSE. See details.
@@ -1106,16 +1120,21 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'@param snp.meta data.frame, default NULL. If x is not a snpRdata object,
 #'  optionally specifies a data.frame containing meta data for each SNP. See
 #'  details for more information.
-#'@param chr.length numeric, default NULL. Chromosome lengths, for ms input files.
-#'  Note that a single value assumes that each chromosome is of equal length whereas
-#'  a vector of values gives the length for each chromosome in order.
-#'@param ncp numeric or NULL, default 2. Number of components to consider for iPCA sn format
-#'  interpolations of missing data. If null, the optimum number will be estimated, with the
-#'  maximum specified by ncp.max. This can be very slow.
-#'@param ncp.max numeric, default 5. Maximum number of components to check for when determining
-#'  the optimum number of components to use when interpolating sn data using the iPCA approach.
-#'@param chr character, default "chr". Name of column containing chromosome information, for VCF output.
-#'@param position character, default "position". Name of column containing position information, for VCF output.
+#'@param chr.length numeric, default NULL. Chromosome lengths, for ms input
+#'  files. Note that a single value assumes that each chromosome is of equal
+#'  length whereas a vector of values gives the length for each chromosome in
+#'  order.
+#'@param ncp numeric or NULL, default 2. Number of components to consider for
+#'  iPCA sn format interpolations of missing data. If null, the optimum number
+#'  will be estimated, with the maximum specified by ncp.max. This can be very
+#'  slow.
+#'@param ncp.max numeric, default 5. Maximum number of components to check for
+#'  when determining the optimum number of components to use when interpolating
+#'  sn data using the iPCA approach.
+#'@param chr character, default "chr". Name of column containing chromosome
+#'  information, for VCF output.
+#'@param position character, default "position". Name of column containing
+#'  position information, for VCF output.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1128,7 +1147,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' @examples
 #' #import data to a snpRdata object
 #' ## get sample meta data
-#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = F)
+#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
 #' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
@@ -1172,7 +1191,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
-#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
@@ -1327,7 +1346,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       if(!is.data.frame(ped)){
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
-      if(ncol(ped) != 6 | nrow(ped) != ncol(data)){
+      if(ncol(ped) != 6 | nrow(ped) != ncol(x)){
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }
@@ -2464,8 +2483,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @param y numeric or character, default 1:ncol(x). Designates the sample
 #'   indices or IDs in x for which duplicates will be checked.
 #' @param id.col character, default NULL. Designates a column in the sample
-#' metadata which contains sample IDs. If provided, y is assumed to contain
-#' sample IDs uniquely matching those in the the sample ID column.
+#'   metadata which contains sample IDs. If provided, y is assumed to contain
+#'   sample IDs uniquely matching those in the the sample ID column.
 #'
 #' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
 #'   the best match for each sample noted in y and the percentage of genotypes
@@ -2603,18 +2622,21 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
 
 
-#' Fetch the allele frequencies for all SNPs for each level of each requested facet.
-#' 
-#' Fetch allele frequencies for all SNPs for each level of all the requested facets.
-#' Major and minor allele frequencies will be interleved, with the major allele first
-#' for each locus. Note that this particular function is not overwrite-safe.
-#' 
-#' @param x snpRdata object
-#' @param facets character, default NULL. The facets for which to calculate allele frequencies.
-#'   See \code{\link{Facets_in_snpR}} for details.
+#' Fetch the allele frequencies for all SNPs for each level of each requested
+#' facet.
 #'
-#' @return A named, nested list containing allele frequency matrices for each facet level for all requested facets.
-#' 
+#' Fetch allele frequencies for all SNPs for each level of all the requested
+#' facets. Major and minor allele frequencies will be interleved, with the major
+#' allele first for each locus. Note that this particular function is not
+#' overwrite-safe.
+#'
+#' @param x snpRdata object
+#' @param facets character, default NULL. The facets for which to calculate
+#'   allele frequencies. See \code{\link{Facets_in_snpR}} for details.
+#'
+#' @return A named, nested list containing allele frequency matrices for each
+#'   facet level for all requested facets.
+#'
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){

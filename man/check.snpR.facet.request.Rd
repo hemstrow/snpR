@@ -4,7 +4,13 @@
 \alias{check.snpR.facet.request}
 \title{Get details on and clean up facet arguments.}
 \usage{
-check.snpR.facet.request(x, facets, remove.type = "snp", return.type = F)
+check.snpR.facet.request(
+  x,
+  facets,
+  remove.type = "snp",
+  return.type = FALSE,
+  fill_with_base = TRUE
+)
 }
 \arguments{
 \item{x}{snpRdata object to compare to}
@@ -16,6 +22,9 @@ else, typically "none". Type of facet to remove.}
 
 \item{return.type}{logical, default FALSE. If true, returns both facets and
 facet types ("snp", "sample", "complex", or ".base") as a length two list.}
+
+\item{fill_with_base}{logical, default TRUE. If true, fills the returned facets
+with .base if nothing is left after facets are removed. Otherwise returns null in this case.}
 }
 \description{
 Given a snpRdata object, this function cleans up and determines the types of

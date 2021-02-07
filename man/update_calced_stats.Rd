@@ -9,11 +9,12 @@ update_calced_stats(x, facets, stats, remove.type = "none")
 \arguments{
 \item{x}{snpRdata object to update}
 
+\item{facets}{character. Facets to update, see \code{\link{Facets_in_snpR}}}
+
 \item{stats}{character. Name of the facet to update as calculated.}
 
-\item{remove.type}{character, default none. If provided, will grab only the remove the requested facet type (omit the snp part, for example).}
-
-\item{facet}{character. Facets to update, see \code{\link{Facets_in_snpR}}}
+\item{remove.type}{character, default none. If provided, will grab only the
+remove the requested facet type (omit the snp part, for example).}
 }
 \value{
 A snpRdata object identical to x but with calced stats updated.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/stat_functions.R
 \name{calc_genetic_distances}
 \alias{calc_genetic_distances}
-\title{Caculate genetic distances between individuals or groups of samples.}
+\title{Calculate genetic distances between individuals or groups of samples.}
 \usage{
 calc_genetic_distances(
   x,
@@ -42,23 +42,23 @@ Available methods: \itemize{\item{Edwards} Angular distance as described in
 Edwards 1971.}
 
 All methods first calculate allele frequency matrices using
-\code{\link{tabulate_allele_frequency_matrix}}, then use these matrices (hereafter
-x) to calculate genetic distance.
+\code{\link{tabulate_allele_frequency_matrix}}, then use these matrices
+(hereafter x) to calculate genetic distance.
 
 Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
 <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
 }
 \examples{
 # by pop:
-y <- calc_genetic_distances(stickSNPs, facet = "pop", method = "Edwards"))
+y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 get.snpR.stats(y, "pop", "genetic_distance")
 
 # by group and pop jointly
-y <- calc_genetic_distances(stickSNPs, facet = "pop.group", method = "Edwards")
+y <- calc_genetic_distances(stickSNPs, facets = "pop.group", method = "Edwards")
 get.snpR.stats(y, "pop.group", "genetic_distance")
 
 # by pop and fam seperately
-y <- calc_genetic_distances(stickSNPs, facet = c("pop", "fam"), method = "Edwards")
+y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), method = "Edwards")
 get.snpR.stats(y, c("pop", "group"), "genetic_distance")
 
 # individuals across all snps + plot

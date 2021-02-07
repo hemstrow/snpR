@@ -9,13 +9,16 @@ calc_het_hom_ratio(x, facets = NULL)
 \arguments{
 \item{x}{snpRdata object}
 
-\item{facets}{facets over which to split snps within samples. Takes only SNP level facets. See \code{\link{Facets_in_snpR}} for details.}
+\item{facets}{facets over which to split snps within samples. Takes only SNP
+level facets. See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
-A snpRdata object with heterozygote/homozygote ratios merged into the sample.stats slot.
+A snpRdata object with heterozygote/homozygote ratios merged into the
+  sample.stats slot.
 }
 \description{
-Calculates the ratio of heterozygotes to homozygous sites across all SNPs within each individual.
+Calculates the ratio of heterozygotes to homozygous sites across all SNPs
+within each individual.
 }
 \examples{
 # base facet

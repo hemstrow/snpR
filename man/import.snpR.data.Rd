@@ -14,24 +14,29 @@ import.snpR.data(
 )
 }
 \arguments{
-\item{genotypes}{data.frame, unique S4 from other packages, or filename. If a data.frame, raw genotypes in a two-character format ("GG",
-"GA", "CT", "NN"), where SNPs are in rows and individual samples are in
-columns. Otherwise, see documentation for allowed S4 objects and files.}
+\item{genotypes}{data.frame, unique S4 from other packages, or filename. If a
+data.frame, raw genotypes in a two-character format ("GG", "GA", "CT",
+"NN"), where SNPs are in rows and individual samples are in columns.
+Otherwise, see documentation for allowed S4 objects and files.}
 
-\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, must have a number of rows
-equal to the number of SNPs in the dataset. If NULL, a single "snpID" column will be added.}
+\item{snp.meta}{data.frame, default NULL. Metadata for each SNP, must have a
+number of rows equal to the number of SNPs in the dataset. If NULL, a single
+"snpID" column will be added.}
 
-\item{sample.meta}{data.frame, default NULL. Metadata for each individual sample, must have
-a number of rows equal to the number of samples in the dataset. If NULL, a single "sampID" column will be added.}
+\item{sample.meta}{data.frame, default NULL. Metadata for each individual
+sample, must have a number of rows equal to the number of samples in the
+dataset. If NULL, a single "sampID" column will be added.}
 
 \item{mDat}{character, default "NN", matching the encoding of missing
 \emph{genotypes} in the data provided to the genotypes argument.}
 
-\item{chr.length}{numeric, default NULL. If a path to a .ms file is provided, specifies chromosome lengths.
-Note that a single value assumes that each chromosome is of equal length whereas
-a vector of values gives the length for each chromosome in order.}
+\item{chr.length}{numeric, default NULL. If a path to a .ms file is provided,
+specifies chromosome lengths. Note that a single value assumes that each
+chromosome is of equal length whereas a vector of values gives the length
+for each chromosome in order.}
 
-\item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a \emph{genotype} file name is passed that is not a vcf or ms file.}
+\item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
+\emph{genotype} file name is passed that is not a vcf or ms file.}
 }
 \description{
 \code{import.snpR.data} converts genotype and meta data to the snpRdata class,
@@ -48,41 +53,52 @@ from most snpR functions. Genotypes are stored in the "character" format, as
 output by \code{\link{format_snps}}. Missing data is noted with "NN".
 }
 \section{File import}{
+ Supports automatic import of several types of files.
+ Options:
 
- Supports automatic import of several types of files. Options:
- 
- \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!
- \item{.ms: } Files in the ms format, as provided by many commonly used simulation tools.
- \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA",
- "CT"). \item{0000: }SNP genotypes stored as four numeric characters (e.g.
- "0101", "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each
- cell, but only a single nucleotide noted if homozygote and two nucleotides
+ \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported
+ via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+ taken from the fixed fields in the VCF and sample metadata from the sample
+ IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
+ Files in the ms format, as provided by many commonly used simulation tools.
+ \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA", "CT").
+ \item{0000: }SNP genotypes stored as four numeric characters (e.g. "0101",
+ "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each cell,
+ but only a single nucleotide noted if homozygote and two nucleotides
  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
  (heterozygous), or 2 (homozyogus allele 2).}
- 
- Additional arguments can be provided to import.snpR.data that will be passed to \code{\link[data.table]{fread}}
- when reading in genotype data.
- 
- Sample and snp metadata can also be provided via file path, and will be read in using \code{\link[data.table]{fread}}
- \emph{with the default settings}. If these settings are not correct, please read in the metadata manually
- and provide to import.snpR.data.
+
+ Additional arguments can be provided to import.snpR.data that will be passed
+ to \code{\link[data.table]{fread}} when reading in genotype data.
+
+ Sample and snp metadata can also be provided via file path, and will be read
+ in using \code{\link[data.table]{fread}} \emph{with the default settings}.
+ If these settings are not correct, please read in the metadata manually and
+ provide to import.snpR.data.
 }
 
 \section{Conversions from other S4 objects}{
 
- 
- Supports automatic conversions from some other popular S4 object types. Options:
- 
- \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from adegenet. Note, no need to 
- import genpop objects, the equivalent statistics are calculated automatically when functions called with facets.
- Sample and SNP IDs as well as, when possible, pop IDs will be taken from the genind object. This
- data will be added too but will not replace data provided to the SNP or sample.meta arguments. Note that only \emph{SNP}
- data is currently allowed, data with more than two alleles for loci will return an error.
- \item{genlight: } \code{\link[adegenet]{genlight}} objects from adegenet.
- Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight object if possible.
- This data will be added too but will not replace data provided to the SNP or sample.meta arguments.
- \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is taken from the fixed fields in the VCF and sample metadata from the sample IDs. Note that this only imports SNPs with called genotypes!}
+
+ Supports automatic conversions from some other popular S4 object types.
+ Options:
+
+ \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
+ adegenet. Note, no need to import genpop objects, the equivalent statistics
+ are calculated automatically when functions called with facets. Sample and
+ SNP IDs as well as, when possible, pop IDs will be taken from the genind
+ object. This data will be added too but will not replace data provided to
+ the SNP or sample.meta arguments. Note that only \emph{SNP} data is
+ currently allowed, data with more than two alleles for loci will return an
+ error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
+ adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
+ will be taken from the genlight object if possible. This data will be added
+ too but will not replace data provided to the SNP or sample.meta arguments.
+ \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
+ snp metadata is taken from the fixed fields in the VCF and sample metadata
+ from the sample IDs. Note that this only imports SNPs with called
+ genotypes!}
 }
 
 \section{Slots}{
@@ -132,7 +148,7 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 # produces data identical to that contained in the stickSNPs example dataset.
 genos <- stickRAW[,-c(1:3)]
 snp_meta <- stickRAW[,1:3]
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
 import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
 
 # from an adegenet genind object
@@ -147,12 +163,12 @@ print(object.size(dat), unit="aut") # size of the original data
 genlight <- new("genlight", dat) # conversion
 newalleles <- character(adegenet::nLoc(genlight))
 for(i in 1:length(newalleles)){
-  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
 }
 adegenet::alleles(genlight) <- newalleles
-adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
-adegenet::position(genlight) <- sample(100000, 1000, F)
-adegenet::chr(genlight) <- sample(10, 1000, T)
+adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
+adegenet::position(genlight) <- sample(100000, 1000, FALSE)
+adegenet::chr(genlight) <- sample(10, 1000, TRUE)
 
 ## run the conversion
 dat <- import.snpR.data(genlight)
