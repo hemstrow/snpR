@@ -139,7 +139,7 @@ named by the "snp" argument.
 }
 \examples{
 # make some data
-x <- calc_basic_snp_stats(x, "pop.group", sigma = 200, step = 50)
+x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
 
 # plot pi, breaking apart by population, keeping only the groupIX and
 # groupIV chromosomes and the ASP, PAL, and SMR populations, with
@@ -148,7 +148,7 @@ x <- calc_basic_snp_stats(x, "pop.group", sigma = 200, step = 50)
 plot_manhattan(x, "pi", facets = "pop",
 chr = "group", chr.subfacet = c("groupIX", "groupIV"),
 sample.subfacet = c("ASP", "OPL", "SMR"),
-significant = 0.05, suggestive = 0.15, sig_below = T)
+significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 
 # plot FST for the ASP/PAL comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID
@@ -158,7 +158,7 @@ chr = "group", snp = ".snp.id")
 
 # plot sliding-window FST between ASP and CLF
 # and between OPL and SMR
-plot_manhattan(x, "fst", window = T, facets = c("pop.group"),
+plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
 chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 significant = .29, suggestive = .2)
 
@@ -169,7 +169,7 @@ y <- get.snpR.stats(x, "pop")
 ## plot
 plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
 significant = 0.0001, suggestive = 0.001,
-log.p = T, highlight = F)
+log.p = TRUE, highlight = FALSE)
 
 }
 \author{

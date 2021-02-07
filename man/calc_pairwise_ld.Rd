@@ -87,18 +87,27 @@ Heatmaps of the resulting data can be easily plotted using
 \code{\link{plot_pairwise_LD_heatmap}}
 }
 \examples{
-#CLD
+# CLD
 x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
 get.snpR.stats(x, "group.pop", "LD")
 
-#standard haplotype frequency estimation
+# standard haplotype frequency estimation
 x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
+get.snpR.stats(x, "group.pop", "LD")
+
+# subset for specific subfacets (ASP and OPL, chromosome IX)
+x <- calc_pairwise_ld(stickSNPs, facets = "group.pop",
+                      subfacets = list(pop = c("ASP", "OPL"), 
+                                       group = "groupIX"))
 get.snpR.stats(x, "group.pop", "LD")
 
 \dontrun{
 ## not run, really slow
-#ME haplotype estimation
-x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+# ME haplotype estimation
+x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", 
+                      CLD = FALSE, use.ME = TRUE,
+                      subfacets = list(pop = c("ASP", "OPL"), 
+                                       group = "groupIX"))
 get.snpR.stats(x, "group.pop", "LD")
 }
 }

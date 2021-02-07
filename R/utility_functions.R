@@ -41,8 +41,7 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
       warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
     }
   }
-  
-  if(adegenet::ploidy(genind) != 2){
+  if(any(adegenet::ploidy(genind) != 2)){
     msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
   }
   
@@ -1148,7 +1147,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' @examples
 #' #import data to a snpRdata object
 #' ## get sample meta data
-#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = F)
+#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
 #' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
@@ -1192,7 +1191,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
-#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, T), pheno = sample(1:2, 420, T))
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
@@ -1347,7 +1346,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       if(!is.data.frame(ped)){
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
-      if(ncol(ped) != 6 | nrow(ped) != ncol(data)){
+      if(ncol(ped) != 6 | nrow(ped) != ncol(x)){
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }

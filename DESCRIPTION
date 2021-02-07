@@ -19,11 +19,8 @@ LazyData: true
 Imports:
     bigmemory,
     bigtabulate,
-    data.table,
-    doParallel,
     doSNOW,
     dplyr,
-    foreach,
     matrixStats,
     methods,
     ggplot2,

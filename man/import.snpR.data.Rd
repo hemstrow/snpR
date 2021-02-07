@@ -148,7 +148,7 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 # produces data identical to that contained in the stickSNPs example dataset.
 genos <- stickRAW[,-c(1:3)]
 snp_meta <- stickRAW[,1:3]
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
 import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
 
 # from an adegenet genind object
@@ -163,12 +163,12 @@ print(object.size(dat), unit="aut") # size of the original data
 genlight <- new("genlight", dat) # conversion
 newalleles <- character(adegenet::nLoc(genlight))
 for(i in 1:length(newalleles)){
-  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
 }
 adegenet::alleles(genlight) <- newalleles
-adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
-adegenet::position(genlight) <- sample(100000, 1000, F)
-adegenet::chr(genlight) <- sample(10, 1000, T)
+adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
+adegenet::position(genlight) <- sample(100000, 1000, FALSE)
+adegenet::chr(genlight) <- sample(10, 1000, TRUE)
 
 ## run the conversion
 dat <- import.snpR.data(genlight)

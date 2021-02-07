@@ -157,6 +157,11 @@ group identifications per individuals.
 Note that several files will be created in the working directory when using
 this function that are not automatically cleaned after use.
 }
+\examples{
+# basic sNMF
+plot_structure(stickSNPs, "pop")
+
+}
 \references{
 Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.
   (2014). Fast and Efficient Estimation of Individual Ancestry Coefficients.

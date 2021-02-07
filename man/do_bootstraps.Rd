@@ -90,14 +90,21 @@ every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
 
 
-If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
-bootstrapped null distribution of that statistic using an emperical continuous
-distribution function.
+If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
+upon the bootstrapped null distribution of that statistic using an empirical 
+continuous distribution function.
 }
 \examples{
 # add statistics
-dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
-do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+dat <- calc_basic_snp_stats(stickSNPs, "group", sigma = 200, step = 150)
+
+# do bootstraps
+dat <- do_bootstraps(dat, facets = "group", boots = 1000, 
+                     sigma = 200, step = 150)
+
+# fetch results, bootstraps and then p-values on original stats
+get.snpR.stats(dat, "group", "bootstraps")
+get.snpR.stats(dat, "group", "single.window")
 
 }
 \references{

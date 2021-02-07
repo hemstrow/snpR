@@ -71,7 +71,6 @@ sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1
 
 # import
 my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
-#
 ```
 
 The result will be the same! There are a handful of other possible imports that format_snps can handle, as described in the function's documentation.

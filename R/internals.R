@@ -1006,9 +1006,11 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #'  else, typically "none". Type of facet to remove.
 #'@param return.type logical, default FALSE. If true, returns both facets and
 #'  facet types ("snp", "sample", "complex", or ".base") as a length two list.
+#'@param fill_with_base logical, default TRUE. If true, fills the returned facets
+#'  with .base if nothing is left after facets are removed. Otherwise returns null in this case.
 #'
 #'@author William Hemstrom
-check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE){
+check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE){
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -1099,6 +1101,20 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     facets <- facets[-which(to.remove)]
     facet.types <- facet.types[-which(to.remove)]
   }
+  
+  # fix if we've removed everything, return the base facet if fill_with_base is TRUE
+  if(fill_with_base){
+    if(length(facets) == 0){
+      facets <- ".base"
+      if(return.type){
+        return(list(facets, ".base"))
+      }
+      else{
+        return(".base")
+      }
+    }
+  }
+  
   
   # fix the facet type for .base
   if(return.type){

@@ -762,10 +762,15 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
 
   # add any missing facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- check.snpR.facet.request(x, facets, return.type = T)
+  if(all(facets[[2]] == ".base")){
+    stop("At least one sample level facet is required for pairwise Fst esitmiation.")
+  }
+  facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
     invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
   }
+  
 
   method <- tolower(method)
 
@@ -990,18 +995,27 @@ calc_private <- function(x, facets = NULL){
 #'@export
 #'
 #' @examples
-#' #CLD
+#' # CLD
 #' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
 #' get.snpR.stats(x, "group.pop", "LD")
 #'
-#' #standard haplotype frequency estimation
+#' # standard haplotype frequency estimation
 #' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
 #' get.snpR.stats(x, "group.pop", "LD")
 #'
+#' # subset for specific subfacets (ASP and OPL, chromosome IX)
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop",
+#'                       subfacets = list(pop = c("ASP", "OPL"), 
+#'                                        group = "groupIX"))
+#' get.snpR.stats(x, "group.pop", "LD")
+#' 
 #' \dontrun{
 #' ## not run, really slow
-#' #ME haplotype estimation
-#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE, use.ME = TRUE)
+#' # ME haplotype estimation
+#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", 
+#'                       CLD = FALSE, use.ME = TRUE,
+#'                       subfacets = list(pop = c("ASP", "OPL"), 
+#'                                        group = "groupIX"))
 #' get.snpR.stats(x, "group.pop", "LD")
 #' }
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
@@ -2163,9 +2177,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     ssfacets <- names(subfacets)
 
     # check complex facets
-    complex.sfacets <- check.snpR.facet.request(x, ssfacets, remove.type = "simple")
+    complex.sfacets <- check.snpR.facet.request(x, ssfacets, remove.type = "simple", fill_with_base = FALSE)
     if(length(complex.sfacets) > 0){
-      stop("Complex (snp and sample) level subfacets not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels.\n")
+      stop("Complex (snp and sample) level SUBFACETS not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels.\n")
     }
 
     # combine duplicates
@@ -2737,7 +2751,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   x <- calc_pi(x, facets)
   x <- calc_hwe(x, facets)
   x <- calc_ho(x, facets)
-  if(!is.null(facets[1])){
+  if(!is.null(facets[1]) & !any(check.snpR.facet.request(x, facets, return.type = TRUE)[[2]] == ".base")){
     x <- calc_pairwise_fst(x, facets, method = fst.method)
     x <- calc_private(x, facets)
   }

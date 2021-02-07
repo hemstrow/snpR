@@ -83,10 +83,10 @@ Note that NA LD values will be colored white in the resulting plot.
 dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
 
 # produce plots for linkage group IX in the ASP and CLF populations.
-plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIX", c("ASP", "CLF"))
+plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIX", c("ASP", "CLF"))
 
 # produce plots for every population for linkage group IV
-plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
+plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIV")
 
 
 }

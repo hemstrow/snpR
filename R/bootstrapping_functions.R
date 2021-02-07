@@ -33,9 +33,9 @@
 #'(chromosome, etc.).
 #'
 #'
-#'If do.p is TRUE, calculates p-values for smoothed values of a statistic based upon the
-#'bootstrapped null distribution of that statistic using an emperical continuous
-#'distribution function.
+#'If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
+#'upon the bootstrapped null distribution of that statistic using an empirical 
+#'continuous distribution function.
 #'
 #'@param x snpRdata object.
 #'@param facets character or NULL, default NULL. Categories by which to break up
@@ -70,9 +70,16 @@
 #'
 #' @examples
 #' # add statistics
-#' dat <- calc_basic_snp_stats(dat3, c("group.pop"), sigma = 200, step = 150)
-#' do_bootstraps(dat, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
-#'
+#' dat <- calc_basic_snp_stats(stickSNPs, "group", sigma = 200, step = 150)
+#' 
+#' # do bootstraps
+#' dat <- do_bootstraps(dat, facets = "group", boots = 1000, 
+#'                      sigma = 200, step = 150)
+#' 
+#' # fetch results, bootstraps and then p-values on original stats
+#' get.snpR.stats(dat, "group", "bootstraps")
+#' get.snpR.stats(dat, "group", "single.window")
+#' 
 do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = TRUE, par = FALSE, do.p = TRUE, p.alt = "two-sided"){
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
   #      be run simultainously, with no need to loop across facets.
@@ -190,7 +197,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
       trows <- tracker:(tracker + n_snps[j] - 1)
 
       # figure out nk
-      if(!is.null(part.cols$stats) & !is.null(part.cols$pairwise)){
+      if(!is.null(part.cols$single) & !is.null(part.cols$pairwise)){
         tnk <- cbind(snk, pnk)[trows,]
       }
       else{
@@ -384,12 +391,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     names(part.cols) <- stats.type
     if(any(statistics %in% single.types) & any(statistics %in% pairwise.types)){
       bound.stats <- cbind(stats, pairwise.stats)
-      part.cols$stats <- ncol(stats)
+      part.cols$single <- ncol(stats)
       part.cols$pairwise <- ncol(pairwise.stats)
     }
     else if(any(statistics %in% single.types)){
       bound.stats <- stats
-      part.cols$stats <- ncol(stats)
+      part.cols$single <- ncol(stats)
     }
     else{
       bound.stats <- pairwise.stats

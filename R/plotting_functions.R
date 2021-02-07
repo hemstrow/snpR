@@ -55,10 +55,10 @@
 #' dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
 #'
 #' # produce plots for linkage group IX in the ASP and CLF populations.
-#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIX", c("ASP", "CLF"))
+#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIX", c("ASP", "CLF"))
 #'
 #' # produce plots for every population for linkage group IV
-#' plot_pairwise_LD_heatmap(dat3, c("pop.group"), "groupIV")
+#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIV")
 #'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
@@ -819,7 +819,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'
 #' @examples
 #' # make some data
-#' x <- calc_basic_snp_stats(x, "pop.group", sigma = 200, step = 50)
+#' x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
 #'
 #' # plot pi, breaking apart by population, keeping only the groupIX and
 #' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
@@ -828,7 +828,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' plot_manhattan(x, "pi", facets = "pop",
 #' chr = "group", chr.subfacet = c("groupIX", "groupIV"),
 #' sample.subfacet = c("ASP", "OPL", "SMR"),
-#' significant = 0.05, suggestive = 0.15, sig_below = T)
+#' significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 #'
 #' # plot FST for the ASP/PAL comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
@@ -838,7 +838,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #'
 #' # plot sliding-window FST between ASP and CLF
 #' # and between OPL and SMR
-#' plot_manhattan(x, "fst", window = T, facets = c("pop.group"),
+#' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
 #' chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 #' significant = .29, suggestive = .2)
 #'
@@ -849,7 +849,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 #' ## plot
 #' plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
 #' significant = 0.0001, suggestive = 0.001,
-#' log.p = T, highlight = F)
+#' log.p = TRUE, highlight = FALSE)
 #' 
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
@@ -1196,7 +1196,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
 #'   \item{K_plot: } A data.frame containing the value suggested for use in K
 #'   selection vs K value for the selected method.}
-#'   
+#'  
+#' @examples
+#' # basic sNMF
+#' plot_structure(stickSNPs, "pop")
+#' 
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
                            I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",

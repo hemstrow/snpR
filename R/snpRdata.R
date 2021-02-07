@@ -240,7 +240,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' # produces data identical to that contained in the stickSNPs example dataset.
 #' genos <- stickRAW[,-c(1:3)]
 #' snp_meta <- stickRAW[,1:3]
-#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = F)
+#' sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
 #' import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
 #'
 #' # from an adegenet genind object
@@ -255,12 +255,12 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' genlight <- new("genlight", dat) # conversion
 #' newalleles <- character(adegenet::nLoc(genlight))
 #' for(i in 1:length(newalleles)){
-#'   newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, F), collapse = "/")
+#'   newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
 #' }
 #' adegenet::alleles(genlight) <- newalleles
-#' adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, T)
-#' adegenet::position(genlight) <- sample(100000, 1000, F)
-#' adegenet::chr(genlight) <- sample(10, 1000, T)
+#' adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
+#' adegenet::position(genlight) <- sample(100000, 1000, FALSE)
+#' adegenet::chr(genlight) <- sample(10, 1000, TRUE)
 #'
 #' ## run the conversion
 #' dat <- import.snpR.data(genlight)
@@ -373,7 +373,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
     if(ncol(genotypes) == 1){
       genotypes <- genotypes[order(snp.meta$position),]
-      genotypes <- as.data.frame(genotypes, stringsAsFactors = F)
+      genotypes <- as.data.frame(genotypes, stringsAsFactors = FALSE)
     }
     else{
       genotypes <- genotypes[order(snp.meta$position),]
@@ -429,12 +429,12 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
            other = list())
   x@calced_stats$.base <- character()
   
-  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
+  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
   
   fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
                    subfacet = rep(".base", nrow(gs$gs)),
                    facet.type = rep(".base", nrow(gs$gs)),
-                   stringsAsFactors = F)
+                   stringsAsFactors = FALSE)
   
   fm <- cbind(fm, snp.meta)
   
@@ -445,7 +445,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   cat("Input data will be filtered to remove non bi-allelic data.\n")
-  invisible(capture.output(x <- filter_snps(x, non_poly = F)))
+  invisible(capture.output(x <- filter_snps(x, non_poly = FALSE)))
   
   # add basic maf
   invisible(capture.output(x <- calc_maf(x)))
@@ -548,7 +548,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
           keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
         }
         else{
-          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = T))
+          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = TRUE))
           tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
           
           # need to paste together any snp or sample faces
@@ -561,7 +561,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
         }
       }
     }
-    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = F))
+    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))
   }
   
   extract.LD <- function(y, facets){
@@ -743,18 +743,18 @@ setMethod("dim", "snpRdata", function(x) {
 #'
 #' # show or overwrite snp meta
 #' snp.meta(test)
-#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), T), chr = sample(LETTERS[1:4], nrow(test), T))
+#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
 #'
 #' #show or overwrite sample meta
 #' sample.meta(test)
-#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), T), pop = sample(LETTERS[5:8], ncol(test), T))
+#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
 NULL
 
 #' @export
 #' @describeIn extract_snpRdata view genotypes
 setGeneric("genotypes", function(x) standardGeneric("genotypes"))
 setMethod("genotypes", "snpRdata", function(x){
-  genos <- as.data.frame(x@.Data, stringsAsFactors = F)
+  genos <- as.data.frame(x@.Data, stringsAsFactors = FALSE)
   colnames(genos) <- x@names
   rownames(genos) <- x@row.names
   return(genos)
