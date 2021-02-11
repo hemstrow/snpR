@@ -29,7 +29,12 @@ Here, we will walk through a basic analysis of the example three-spined stickleb
 
 ## Data import
 
-snpR can take a variety of SNP data formats. The basic input format is a tab-delimited SNP dataset, where each row contains metadata and genotypes for a single SNP. Genotypes are noted with two characters, such as "GG" or "GA" for a G/G homozygote and a G/A heterozygote, respectively. The missing data format can be user-defined, but is "NN" by default. For example, see the stick_NN_input.txt distributed with this package (snpR/data/stick_NN_input.txt). Note that this is identical to the format output by, for example, the ANGSD software package. Ensure that genotypes are not stored as factors during import. The resulting data looks like:
+snpR can take a variety of SNP data formats. The basic input format is a tab-delimited SNP dataset, where each row contains metadata and genotypes for a single SNP. Genotypes are noted with two characters, such as "GG" or "GA" for a G/G homozygote and a G/A heterozygote, respectively. The missing data format can be user-defined, but is "NN" by default. For example, see the stick_NN_input.txt distributed with this package.
+```{r}
+system.file("extdata", "stick_NN_input.txt", package = "snpR")
+```
+
+Note that this is identical to the format output by, for example, the ANGSD software package. Ensure that genotypes are not stored as factors during import. The resulting data looks like:
 
 ```{r echo=FALSE}
 print(head(stickFORMATs$NN)[,1:6], row.names = F)
@@ -309,10 +314,12 @@ If you have many different facet combinations and a large dataset, this may take
 
 ```{r, results='hide'}
 
+ncores <- parallel::detectCores()
+ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
 my.dat <- calc_smoothed_averages(my.dat, "pop.group",
                                  sigma = 200, # using a window size of 200
-                                 step = 50,
-                                 par = 8) # using a step size of 50 between windows
+                                 step = 50, # using a step size of 50 between windows
+                                 par = ncores) # in parallel
 
 
 ```

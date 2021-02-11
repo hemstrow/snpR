@@ -72,10 +72,10 @@ to run_sequioa.
 a <- 2013:2015 #create a vector of possible birthyears
 b <- c("M", "F", "U") #create a vector of possible sexes
 stk <- stickSNPs
-sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = T) #create birthyears
+sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create birth years
 sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = T) # create sexes
-dup <- run_sequoia(x = stk, run_dupcheck = T, run_parents = F, run_pedigree = F)
+sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
 }
 \references{
 Huisman,J. (2017) Pedigree reconstruction from SNP data:

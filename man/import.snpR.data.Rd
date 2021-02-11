@@ -175,7 +175,7 @@ dat <- import.snpR.data(genlight)
 
 \dontrun{
 # from a file:
-dat <- import.snpR.data("data/stick_NN_input.txt", drop = 1:3) # note that the drop argument is passed to data.table::fread!
+dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
 # if wanted, snp and sample metadata could be provided as usual.
 }
 

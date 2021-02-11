@@ -1,5 +1,6 @@
-# contains snpRdata definition, accessors, and methods. Mostly external stuff, internals like apply.snpR.data are found
-# in utility or internals
+#'@import data.table 
+#'@importFrom foreach %dopar%
+NULL
 
 
 check.snpRdata <- function(object){
@@ -77,16 +78,44 @@ check.snpRdata <- function(object){
 #'and smoothed statistic data.
 #'
 #'The snpRdata class is built to contain SNP genotype data for use by functions
-#'in the snpR package. It inherits from the S3 class data.frame, in which the
-#'genotypes are stored, and can be manipulated identically. It also stores
-#'sample and locus specific metadata, genomic summary information, and any
-#'results from most snpR functions. The raw data for each of these latter
-#'objects is accessable via the at operator. Genotypes are stored in the
-#'"character" format, as output by format_snps(). Missing data is noted with
-#'"NN".
+#'in the snpR package. It also stores sample and locus specific metadata,
+#'genomic summary information, and any results from most snpR functions. Results
+#'can be gathered using \code{\link{get.snpR.stats}}. Genotypes are stored in
+#'the "character" format, as output by format_snps().
 #'
 #'For more information, see \code{\link{import.snpR.data}}, the constructor
 #'function for this object class.
+#'
+#'
+#'@slot sample.meta data.frame containing sample metadata
+#'@slot snp.meta data.frame containing snp metadata
+#'@slot facet.meta data.frame containing snp metadata for the geno.tables (in
+#'  the order of snps in that data)
+#'@slot mDat character, missing data key
+#'@slot snp.form numeric, number of characters per genotype (not really used)
+#'@slot geno.tables list containing three matrices: gs (genotype counts), as
+#'  (allele counts), and wm (genotype counts + missing counts)
+#'@slot ac data.frame containing ac formatted data, see
+#'  \code{\link{format_snps}}.
+#'@slot facets character, vector of tabulated facets
+#'@slot facet.type character, types of each tabulated facet.
+#'@slot stats data.frame, all calculated single-snp non-pairwise stats.
+#'@slot window.stats data.frame, all calculated window non-pairwise stats.
+#'@slot pairwise.stats data.frame, all calculated pairwise single snp stats.
+#'@slot pairwise.window.stats data.frame, all calculated window pairwise stats.
+#'@slot sample.stats data.frame, all calculated single sample stats.
+#'@slot pop.stats data.frame, all calculated population level summary stats.
+#'@slot pairwise.LD nested list of matrices, all calculated pairwise LD stats.
+#'@slot window.bootstraps data.frame, all calculated bootstraps
+#'@slot sn list, contains sn formatted data if calculated
+#'@slot calced_stats list, contains information on what statistics have been
+#'  calculated for which facets
+#'@slot allele_frequency_matrices list of matrices, allele frequency matrices if
+#'  calculated
+#'@slot genetic_distances list of matrices, genetic distance matrices if
+#'  calculated
+#'@slot other list, contains other miscellanious calculated statistics that do
+#'  not fit cleanly elsewhere.
 #'
 #'@author William Hemstrom
 #'  
@@ -267,11 +296,12 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #' \dontrun{
 #' # from a file:
-#' dat <- import.snpR.data("data/stick_NN_input.txt", drop = 1:3) # note that the drop argument is passed to data.table::fread!
+#' dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
 #' # if wanted, snp and sample metadata could be provided as usual.
 #' }
 #'
 #'@export
+#'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
                              ...){
@@ -646,143 +676,4 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   
 }
 
-
-setMethod("show", "snpRdata", function(object) {
-
-  calced_stats_print <- character(0)
-  if(length(object@calced_stats) > 0){
-    for(i in 1:length(object@calced_stats)){
-      calced_stats_print <- c(calced_stats_print, "Facet: ", names(object@calced_stats)[i], "\n", paste0(object@calced_stats[[i]], collapse = ", "), "\n\n")
-    }
-  }
-  
-  
-  mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
-  
-  cat(is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
-      "==============================================\n",
-      "Average minor allele frequency:", mean(mafs), "\n",
-      "Minimum minor allele frequency:", min(mafs), "\n",
-      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),])/nrow(object@sample.meta))), "\n",
-      "==============================================\n",
-      "Possible sample metadata facets:\n", paste0(colnames(object@sample.meta), collapse = "\t"), "\n\n",
-      "Possible SNP metadata facets:\n", paste0(colnames(object@snp.meta), collapse = "\t"), "\n\n",
-      "==============================================\n",
-      "Currently tabulated facets:\n",
-      paste0(object@facets, collapse = "\t"), "\n\n",
-      "Currently calculated statistics:\n", calced_stats_print,
-      "Calculated statistics can be accessed via get.snpR.stats()\n",
-      "==============================================\n"
-  )
-})
-
-
-#' Get the number of samples in a snpRdata object.
-#' 
-#' @param x snpRdata object
-#' 
-#' @name snpRdata_dims
-NULL
-
-#' @export
-#' @describeIn snpRdata_dims get the number of SNPs
-setGeneric("nsnps", function(x) standardGeneric("nsnps"))
-setMethod("nsnps", "snpRdata", function(x) nrow(x))
-
-
-#' @export
-#' @describeIn snpRdata_dims identical to nsnps
-setMethod("nrow", "snpRdata", function(x) {
-  nrow(snp.meta(x))
-})
-
-#' @export
-#' @describeIn snpRdata_dims get the number of samples
-setGeneric("nsamps", function(x) standardGeneric("nsamps"))
-setMethod("nsamps", "snpRdata", function(x) ncol(x))
-
-
-
-#' @export
-#' @describeIn snpRdata_dims identical to nsamps
-setMethod("ncol", "snpRdata", function(x) {
-  nrow(sample.meta(x))
-})
-
-
-
-
-
-#' @export
-#' @describeIn snpRdata_dims get the number of SNPs and samples
-setMethod("dim", "snpRdata", function(x) {
-  c(nrow(x), ncol(x))
-})
-
-
-
-
-
-#' Get from or overwrite components of a snpRdata object
-#'
-#' Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta,
-#' or sample meta). If overwritten, any calculated stats will be removed, since
-#' their values may be dependant upon changes in metadata.
-#'
-#' @param x snpRdata object to get genotype data from.
-#' @param value Genotypes, snp metadata, or sample metadata
-#'
-#' @name extract_snpRdata
-#'
-#' @examples
-#' # copy test data
-#' test <- stickSNPs
-#'
-#' # show genotypes
-#' genotypes(test)
-#'
-#' # show or overwrite snp meta
-#' snp.meta(test)
-#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
-#'
-#' #show or overwrite sample meta
-#' sample.meta(test)
-#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
-NULL
-
-#' @export
-#' @describeIn extract_snpRdata view genotypes
-setGeneric("genotypes", function(x) standardGeneric("genotypes"))
-setMethod("genotypes", "snpRdata", function(x){
-  genos <- as.data.frame(x@.Data, stringsAsFactors = FALSE)
-  colnames(genos) <- x@names
-  rownames(genos) <- x@row.names
-  return(genos)
-})
-
-
-#' @export
-#' @describeIn extract_snpRdata set genotypes
-setGeneric("genotypes<-", function(x, value) standardGeneric("genotypes<-"))
-setMethod("genotypes<-", "snpRdata", function(x, value) import.snpR.data(value, snp.meta(x), sample.meta(x), mDat = x@mDat))
-
-#' @export
-#' @describeIn extract_snpRdata view snp meta
-setGeneric("snp.meta", function(x, value) standardGeneric("snp.meta"))
-setMethod("snp.meta", "snpRdata", function(x, value) x@snp.meta)
-
-#' @export
-#' @describeIn extract_snpRdata set snp meta
-setGeneric("snp.meta<-", function(x, value) standardGeneric("snp.meta<-"))
-setMethod("snp.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat))
-
-#' @export
-#' @describeIn extract_snpRdata view sample meta
-setGeneric("sample.meta", function(x, value) standardGeneric("sample.meta"))
-setMethod("sample.meta", "snpRdata", function(x, value) x@sample.meta)
-
-#' @export
-#' @describeIn extract_snpRdata set sample meta
-setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
-setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
 

@@ -20,6 +20,7 @@ Imports:
     bigmemory,
     bigtabulate,
     doSNOW,
+    doParallel,
     dplyr,
     matrixStats,
     methods,
@@ -32,7 +33,6 @@ Imports:
     tidyr
 Depends:
     data.table,
-    doParallel,
     foreach
 Suggests:
     ade4,
@@ -67,3 +67,18 @@ Suggests:
     testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
+Collate: 
+    'NeEstimator_interface.R'
+    'association_functions.R'
+    'bootstrapping_functions.R'
+    'colony_interface.R'
+    'dataset_documentation.R'
+    'internals.R'
+    'plotting_functions.R'
+    'sequoia_interface.R'
+    'sfs_functions.R'
+    'smoothing_functions.R'
+    'snpRdata.R'
+    'snpRdata_methods.R'
+    'stat_functions.R'
+    'utility_functions.R'

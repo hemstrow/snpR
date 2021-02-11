@@ -1156,9 +1156,6 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
 #'
 #'@author William Hemstrom
 #'
-#' @examples
-#' tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
-#'
 tabulate_genotypes <- function(x, mDat, verbose = F){
   
   # fix for if x is a vector (only one individual) and convert to data.table

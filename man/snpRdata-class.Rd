@@ -13,17 +13,69 @@ and smoothed statistic data.
 }
 \details{
 The snpRdata class is built to contain SNP genotype data for use by functions
-in the snpR package. It inherits from the S3 class data.frame, in which the
-genotypes are stored, and can be manipulated identically. It also stores
-sample and locus specific metadata, genomic summary information, and any
-results from most snpR functions. The raw data for each of these latter
-objects is accessable via the at operator. Genotypes are stored in the
-"character" format, as output by format_snps(). Missing data is noted with
-"NN".
+in the snpR package. It also stores sample and locus specific metadata,
+genomic summary information, and any results from most snpR functions. Results
+can be gathered using \code{\link{get.snpR.stats}}. Genotypes are stored in
+the "character" format, as output by format_snps().
 
 For more information, see \code{\link{import.snpR.data}}, the constructor
 function for this object class.
 }
+\section{Slots}{
+
+\describe{
+\item{\code{sample.meta}}{data.frame containing sample metadata}
+
+\item{\code{snp.meta}}{data.frame containing snp metadata}
+
+\item{\code{facet.meta}}{data.frame containing snp metadata for the geno.tables (in
+the order of snps in that data)}
+
+\item{\code{mDat}}{character, missing data key}
+
+\item{\code{snp.form}}{numeric, number of characters per genotype (not really used)}
+
+\item{\code{geno.tables}}{list containing three matrices: gs (genotype counts), as
+(allele counts), and wm (genotype counts + missing counts)}
+
+\item{\code{ac}}{data.frame containing ac formatted data, see
+\code{\link{format_snps}}.}
+
+\item{\code{facets}}{character, vector of tabulated facets}
+
+\item{\code{facet.type}}{character, types of each tabulated facet.}
+
+\item{\code{stats}}{data.frame, all calculated single-snp non-pairwise stats.}
+
+\item{\code{window.stats}}{data.frame, all calculated window non-pairwise stats.}
+
+\item{\code{pairwise.stats}}{data.frame, all calculated pairwise single snp stats.}
+
+\item{\code{pairwise.window.stats}}{data.frame, all calculated window pairwise stats.}
+
+\item{\code{sample.stats}}{data.frame, all calculated single sample stats.}
+
+\item{\code{pop.stats}}{data.frame, all calculated population level summary stats.}
+
+\item{\code{pairwise.LD}}{nested list of matrices, all calculated pairwise LD stats.}
+
+\item{\code{window.bootstraps}}{data.frame, all calculated bootstraps}
+
+\item{\code{sn}}{list, contains sn formatted data if calculated}
+
+\item{\code{calced_stats}}{list, contains information on what statistics have been
+calculated for which facets}
+
+\item{\code{allele_frequency_matrices}}{list of matrices, allele frequency matrices if
+calculated}
+
+\item{\code{genetic_distances}}{list of matrices, genetic distance matrices if
+calculated}
+
+\item{\code{other}}{list, contains other miscellanious calculated statistics that do
+not fit cleanly elsewhere.}
+}}
+
 \author{
 William Hemstrom
 }
