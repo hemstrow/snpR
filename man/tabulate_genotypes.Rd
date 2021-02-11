@@ -25,10 +25,6 @@ alleles and genotypes at each locus.
 \details{
 This function is pirmarily used interally in several other funcitons.
 }
-\examples{
-tabulate_genotypes(stickSNPs[,-c(1:3)], "NN")
-
-}
 \author{
 William Hemstrom
 }

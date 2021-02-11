@@ -995,13 +995,16 @@ calc_private <- function(x, facets = NULL){
 #'@export
 #'
 #' @examples
-#' # CLD
+#' \dontrun{
+#' # not run, slow
+#' ## CLD
 #' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
 #' get.snpR.stats(x, "group.pop", "LD")
 #'
-#' # standard haplotype frequency estimation
+#' ## standard haplotype frequency estimation
 #' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
 #' get.snpR.stats(x, "group.pop", "LD")
+#' }
 #'
 #' # subset for specific subfacets (ASP and OPL, chromosome IX)
 #' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop",
@@ -1950,12 +1953,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         # initialize and store things
         x_storage <- as.matrix(as.data.frame(x))
         na.test <- suppressWarnings(as.numeric(x_storage[1]))
-        #save the info as a bigmatrix if it can be safelx_storage converted to numeric. Usually this is true for ms but not necissarily other data types.
+        #save the info as a bigmatrix if it can be safely converted to numeric. Usually this is true for ms but not necessarily other data types.
         if(!is.na(na.test)){
           if(as.numeric(x_storage[1]) == x_storage[1]){
             cat("Saving matrix as big.matrix object for quicker sharing.\n")
-            xb <- bigmemorx_storage::as.big.matrix(x, tx_storagepe = "char")
-            xbd <- bigmemorx_storage::describe(xb)
+            xb <- bigmemory::as.big.matrix(x, type = "char")
+            xbd <- bigmemory::describe(xb)
             remove(x)
           }
         }
@@ -2307,7 +2310,8 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
       prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
       prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
       prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
-      prox <- prox[, -which(colnames(prox) == "variable")]
+      bad.col <- which(colnames(prox) == "variable")
+      prox <- prox[, -..bad.col]
       colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
       prox <- na.omit(prox)
       prox <- as.data.table(prox)
@@ -2911,7 +2915,7 @@ calc_het_hom_ratio <- function(x, facets = NULL){
 #'
 #' @examples
 #' \dontrun{
-#' # not run
+#' # not run, since the path to NeEstimator may vary
 #' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
 #' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation.
 #' get.snpR.stats(ne, "pop", type = "pop")}
