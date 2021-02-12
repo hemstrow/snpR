@@ -16,8 +16,7 @@ plot_structure_map(
   viridis.option = "viridis",
   alt.palette = NULL,
   radius_scale = 0.05,
-  label_scale = 0.75,
-  point_padding_scale = 0.25,
+  label_args = NULL,
   crop = FALSE,
   scale_bar = list(dist = 4, dist_unit = "km", transform = T),
   compass = list(symbol = 16)
@@ -25,7 +24,7 @@ plot_structure_map(
 }
 \arguments{
 \item{assignments}{Structure like results, parsed in or generated via
-\code{link{plot_structure}}, which generates the needed plot data.}
+\code{\link{plot_structure}}, which generates the needed plot data.}
 
 \item{K}{numeric. Value of K (number of clusters) to plot.}
 
@@ -60,11 +59,10 @@ to use instead of viridis palette  the pie charts.}
 \item{radius_scale}{numeric 0-1, default 0.05. Scale for pie chart radii as a
 proportion of the total map space.}
 
-\item{label_scale}{numeric, default 0.075 Factor by which to scale facet
-level names if plotted.}
-
-\item{point_padding_scale}{numeric, default 0.25. Factor by which to scale
-buffers between pie charts and facet level names if plotted.}
+\item{label_args}{list, default NULL. Named list of arguments passed to
+\code{\link[ggrepel]{geom_label_repel}}. For example, passing
+list(max.overlaps = 14) will add the max.overlaps argument to the function
+call.}
 
 \item{crop}{logical, default F. If TRUE, will will crop the plot around the
 sample points. If false will show the full extent of the data, often set by
@@ -112,6 +110,6 @@ background <- maps::map("state", "oregon")
 background <- sf::st_as_sf(background)
 
 # make the plot
-plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 }
 }

@@ -1833,6 +1833,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   #===========final fixes to plot data=========
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
+  pdat <- pdat[which(pdat$K <= k),] # double check that we didn't import extra K values, which is possible with externally run data.
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)
@@ -1993,7 +1994,7 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' match the sample coordinates.
 #'
 #' @param assignments Structure like results, parsed in or generated via
-#'   \code{link{plot_structure}}, which generates the needed plot data.
+#'   \code{\link{plot_structure}}, which generates the needed plot data.
 #' @param K numeric. Value of K (number of clusters) to plot.
 #' @param facet character. The facet by which data is broken down in the passed
 #'   assignments.
@@ -2017,10 +2018,10 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #'   to use instead of viridis palette  the pie charts.
 #' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a
 #'   proportion of the total map space.
-#' @param label_scale numeric, default 0.075 Factor by which to scale facet
-#'   level names if plotted.
-#' @param point_padding_scale numeric, default 0.25. Factor by which to scale
-#'   buffers between pie charts and facet level names if plotted.
+#' @param label_args list, default NULL. Named list of arguments passed to
+#'   \code{\link[ggrepel]{geom_label_repel}}. For example, passing
+#'   list(max.overlaps = 14) will add the max.overlaps argument to the function
+#'   call.
 #' @param crop logical, default F. If TRUE, will will crop the plot around the
 #'   sample points. If false will show the full extent of the data, often set by
 #'   any additional sf objects being plotted.
@@ -2052,10 +2053,11 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' background <- sf::st_as_sf(background)
 #'
 #' # make the plot
-#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), label_scale = 100, radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 #' }
 plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
-                               pop_names = T, viridis.option = "viridis", alt.palette = NULL, radius_scale = 0.05, label_scale = .75, point_padding_scale = .25, crop = FALSE,
+                               pop_names = T, viridis.option = "viridis", alt.palette = NULL,
+                               radius_scale = 0.05, label_args = NULL, crop = FALSE,
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
   #===================sanity checks=================
   msg <- character()
@@ -2163,7 +2165,8 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   if(pop_names){
     # add labels
     #mp + ggplot2::geom_label(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale)
-    mp <- mp + ggrepel::geom_label_repel(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop), size = r*label_scale, point.padding = r*point_padding_scale, max.iter = 10000)
+    label_call <- c(list(data = pie_dat, mapping = ggplot2::aes(x = long, y = lat, label = pop)), label_args)
+    mp <- mp + do.call(ggrepel::geom_label_repel, label_call)
   }
   
   # scale/compass
