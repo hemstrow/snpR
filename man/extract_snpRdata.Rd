@@ -4,7 +4,7 @@
 \name{extract_snpRdata}
 \alias{extract_snpRdata}
 \alias{genotypes}
-\alias{geontypes<-}
+\alias{genotypes<-}
 \alias{snp.meta}
 \alias{snp.meta<-}
 \alias{sample.meta}

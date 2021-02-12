@@ -2,7 +2,7 @@
 % Please edit documentation in R/snpRdata_methods.R
 \name{snpRdata_dims}
 \alias{snpRdata_dims}
-\alias{nspns}
+\alias{nsnps}
 \alias{nsamps}
 \alias{nrow}
 \alias{ncol}
