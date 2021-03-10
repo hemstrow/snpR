@@ -1335,6 +1335,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
   }
   else if(output == "plink"){
+    check.installed("BMS")
     if(is.null(input_format)){
       if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
         stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
