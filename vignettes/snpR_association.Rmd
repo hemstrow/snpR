@@ -177,6 +177,7 @@ colnames(get.snpR.stats(x)) # a reminder of the statistics we calculated earlier
 p <- plot_manhattan(x, 
                plot_var = "gmmat_pval_phenotype", # value to plot 
                chr = "group", # specify the snp metadata column containing chr info
+               bp = "position",
                log.p = T) # plot the -log10 of the p-values
 
 p$plot

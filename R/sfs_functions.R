@@ -292,7 +292,6 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
   # index lists the pop
   # input is a dadi formatted data.frame
   get_counts <- function(x, pops){
-    browser
     # figure out which allele is the outgroup/derived in each row and figure out polarization status
     anc.als <- substr(x$anc, 2, 2)
     ref.als <- substr(x$ref, 2, 2)
@@ -374,8 +373,19 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 
   # return
   masked <- sfs
-  masked[1,1] <- 0
-  masked[nrow(masked), ncol(masked)] <- 0
+  if(is.matrix(masked)){
+    masked[1,1] <- 0
+    if(!fold){
+      masked[nrow(masked), ncol(masked)] <- 0
+    }
+  }
+  else{
+    masked[1] <- 0
+    if(!fold){
+      masked[length(masked)] <- 0
+    }
+  }
+  
   cat("SFS completed with", sum(masked, na.rm = T), "segrgating sites.\n")
   return(sfs)
 }

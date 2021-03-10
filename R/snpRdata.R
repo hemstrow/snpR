@@ -40,6 +40,10 @@ check.snpRdata <- function(object){
     errors <- c(errors, msg)
   }
 
+  # check that the facet meta and snp meta column names match
+  if(!identical(colnames(object@snp.meta), colnames(object@facet.meta)[-c(1:3)])){
+    errors <- c(errors, "Column names in the snp.meta and stored metadata for facets do not match. This is likely due to later change of the snp metadata which added or changed column names but didn't change facet.meta column names.\n")
+  }
 
   warns <- character()
   # check for bad entries in character columns (periods are fine in numeric!)
@@ -443,12 +447,22 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   #===========format and calculate some basics=========
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
+
+  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
   
   x <- new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
-           facet.meta = data.frame(),
-           geno.tables = list(),
+           facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
+                                   subfacet = rep(".base", nrow(gs$gs)),
+                                   facet.type = rep(".base", nrow(gs$gs)),
+                                   stringsAsFactors = FALSE),
+                              snp.meta),
+           geno.tables = gs,
            mDat = mDat,
-           stats = data.table(),
+           stats = cbind(data.table::data.table(facet = rep(".base", nrow(gs$gs)),
+                                                subfacet = rep(".base", nrow(gs$gs)),
+                                                facet.type = rep(".base", nrow(gs$gs)),
+                                                stringsAsFactors = FALSE),
+                         snp.meta),
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
            sn <- list(sn = NULL, type = NULL),
            facets = ".base",
@@ -457,20 +471,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
            allele_frequency_matrices = list(),
            genetic_distances = list(),
            other = list())
+  
   x@calced_stats$.base <- character()
-  
-  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
-  
-  fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
-                   subfacet = rep(".base", nrow(gs$gs)),
-                   facet.type = rep(".base", nrow(gs$gs)),
-                   stringsAsFactors = FALSE)
-  
-  fm <- cbind(fm, snp.meta)
-  
-  x@geno.tables <- gs
-  x@facet.meta <- fm
-  x@stats <- fm
   
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
