@@ -87,7 +87,7 @@ when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
 
 \item{chr}{character, default "chr". Name of column containing chromosome
-information, for VCF output.}
+information, for VCF or plink! output.}
 
 \item{position}{character, default "position". Name of column containing
 position information, for VCF output.}
@@ -138,19 +138,20 @@ that exactly 6 columns proceed data. These columns can be filled with metadata
 if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
 named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
 the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
-format, requires columns named "group", "snp", and "position", and may contain
-a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
-position in bp, and distance in cM in order to create .bim extended map file.}
-\item{sn: }{Single character numeric format. Each genotype will be listed as
-0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
-remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
-format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
-Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
-For more information see sequoia documentation.} \item{fasta: }{fasta sequence
-format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
-other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
-missing values), with a healthy serving of additional metadata but very little
-sample metadata.} \item{snpRdata: }{a snpRdata object.} }
+format, requires columns named "position" and one matching the name designated
+with the 'chr' argument, and may contain a column named "cM", "cm", or
+"morgans", containing linkage group/chr, snp ID, position in bp, and distance
+in cM in order to create .bim extended map file.} \item{sn: }{Single character
+numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
+0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
+'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
+BirthYear in sample metadata for running Sequoia. For more information see
+sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf:
+}{Variant Call Format, a standard format for SNPs and other genomic variants.
+Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a
+healthy serving of additional metadata but very little sample metadata.}
+\item{snpRdata: }{a snpRdata object.} }
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -232,12 +233,12 @@ dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNP
 format_snps(dat, "dadi", facets = "pop")
 
 #PLINK! format
-format_snps(stickSNPs, "plink", outfile = "plink_out")
+format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
 #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 
 #PLINK! format with provided ped
 ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
-format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
+format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
 #from command line, then run plink_out.sh to generate plink_out.bed.
 
 #Sequoia format

@@ -23,6 +23,10 @@ is.snpRdata <- function(x){
 #'@param facets character. Facets to use.
 #'
 add.facets.snpR.data <- function(x, facets = NULL){
+  #===========================binding issues for unquoted variables============
+  .snp.id <- facet <- subfacet <- NULL
+  
+  
   if(is.null(facets[1])){return(x)}
   facets <- check.snpR.facet.request(x, facets)
   if(is.null(facets[1])){return(x)}
@@ -138,7 +142,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  invisible(capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
+  invisible(utils::capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
   nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
@@ -231,6 +235,8 @@ find.snpR.facets <- function(x){
 #'
 #'@author William Hemstrom
 apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
+  #=====global bindings====
+
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -347,16 +353,15 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       }
       
       comb <- rbindlist(comb)
-      
       mcols <- 1:ncol(x@facet.meta)
-      meta <- comb[,..mcols]
-      comb <- comb[,-..mcols]
+      meta <- comb[,mcols, with = FALSE]
+      comb <- comb[,-mcols, with = FALSE]
       
       # call function
       out <- fun(comb, ...)
       n.ord <- (1:ncol(meta))[-which(colnames(meta) == ".snp.id")]
       n.ord <- c(n.ord, which(colnames(meta) == ".snp.id"))
-      meta <- meta[,..n.ord]
+      meta <- meta[,n.ord, with = FALSE]
       out <- cbind(meta, out)
       if(req == "cast.gs"){
         colnames(out)[ncol(out)] <- paste0("p_armitage_", response)
@@ -374,14 +379,14 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           sub.x <- x
         }
         else if(opts[i,"t.snp.facet"] == ".base"){
-          suppressWarnings(invisible(capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
+          suppressWarnings(invisible(utils::capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
         }
         else{
-          suppressWarnings(invisible(capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
+          suppressWarnings(invisible(utils::capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
                                                                               snp.facets = opts[i,3], snp.subfacets = opts[i,4]))))
         }
         
-        suppressWarnings(invisible(capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
+        suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
         out <- fun(sub.x = sub.x, opts.list = opts.list, ...)
         if(!is.data.frame(out)){
           out$importance <- cbind(facet = opts[i,1], subfacet = opts[i,2], out$importance)
@@ -618,14 +623,14 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           ## add nk and remove any non-numeric columns
           nk <- matrixStats::rowSums2(x@geno.tables$as)
           if(data.table::is.data.table(x@stats)){
-            stats_to_use <- cbind(nk = nk, x@stats[,..cols.to.use])
+            stats_to_use <- cbind(nk = nk, x@stats[,cols.to.use, with = FALSE])
           }
           else{
             stats_to_use <- cbind(nk = nk, x@stats[,cols.to.use])
           }
           numeric.cols <- which(sapply(stats_to_use, class) %in% c("numeric", "integer"))
           ## save
-          stats_to_use <- stats_to_use[,..numeric.cols]
+          stats_to_use <- stats_to_use[,numeric.cols, with = FALSE]
           task.list <- get.task.list(x, facets)
           meta.to.use <- x@facet.meta
           
@@ -635,10 +640,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           pos.col <- which(colnames(x@pairwise.stats) == "position")
           start.col <- which(colnames(x@pairwise.stats) == "comparison") + 1
           cols.to.use <- start.col:ncol(x@pairwise.stats)
-          stats_to_use <- x@pairwise.stats[,..cols.to.use]
+          stats_to_use <- x@pairwise.stats[,cols.to.use, with = FALSE]
           nk.col <- which(colnames(stats_to_use) == "nk")
           n.col.ord <- c(nk.col, (1:ncol(stats_to_use))[-nk.col])
-          stats_to_use <- stats_to_use[,..n.col.ord]
+          stats_to_use <- stats_to_use[,n.col.ord, with = FALSE]
           task.list <- get.task.list(x, facets, source = "pairwise.stats")
           
           # re-order the meta and save
@@ -647,7 +652,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           facet.cols <- c(facet.cols, which(colnames(meta.to.use) == "comparison"))
           n.col.ord <- c(facet.cols, (1:ncol(meta.to.use))[-facet.cols])
           if(data.table::is.data.table(meta.to.use)){
-            meta.to.use <- meta.to.use[,..n.col.ord]
+            meta.to.use <- meta.to.use[,n.col.ord, with = FALSE]
           }
           else{
             meta.to.use <- meta.to.use[,n.col.ord]
@@ -774,6 +779,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
 #'@param type character, default "stats". The type of statistic to merge, see
 #'  list in description.
 merge.snpR.stats <- function(x, stats, type = "stats"){
+  .snp.id <- facet <- subfacet <- comparison <- NULL
   
   # the merging function used for most cases.
   #    n.s: new stats
@@ -799,46 +805,46 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     if(length(new.meta) > 0){
       fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
       colnames(fill) <- new.meta
-      o.s <- cbind(o.s[,..starter.meta], fill, o.s[,-..starter.meta])
+      o.s <- cbind(o.s[,starter.meta, with = FALSE], fill, o.s[,-starter.meta, with = FALSE])
     }
     old.meta <- meta.cols.o[which(!(meta.cols.o %in% meta.cols.n))]
     if(length(old.meta) > 0){
       fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
       colnames(fill) <- old.meta
-      n.s <- cbind(n.s[,..starter.meta], fill, n.s[,-..starter.meta])
+      n.s <- cbind(n.s[,starter.meta, with = FALSE], fill, n.s[,-starter.meta, with = FALSE])
     }
     
     ## make sure metadata columns are sorted identically
-    new.meta <- n.s[,..meta.cols]
+    new.meta <- n.s[,meta.cols, with = FALSE]
     n.ord <- match(colnames(new.meta), meta.cols)
-    new.meta <- new.meta[,..n.ord]
-    old.meta <- o.s[,..meta.cols]
+    new.meta <- new.meta[,n.ord, with = FALSE]
+    old.meta <- o.s[,meta.cols, with = FALSE]
     o.ord <- match(colnames(old.meta), meta.cols)
-    old.meta <- old.meta[,..o.ord]
+    old.meta <- old.meta[,o.ord, with = FALSE]
     if(ncol(o.s) - length(old.meta) != 0){
-      o.s <- cbind(old.meta, o.s[,-..meta.cols])
+      o.s <- cbind(old.meta, o.s[,-meta.cols, with = FALSE])
     }
     if(ncol(n.s) - length(new.meta) != 0){
-      n.s <- cbind(new.meta, n.s[,-..meta.cols])
+      n.s <- cbind(new.meta, n.s[,-meta.cols, with = FALSE])
     }
     
     ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
     m.s <- merge(o.s, n.s, by = meta.cols, all = T)
     ### grab any columns that need to be fixed (end in .x or .y) and save any matching columns that are fine as is.
     match.cols <- colnames(m.s)[which(colnames(m.s) %in% c(colnames(o.s), colnames(n.s)))]
-    stat.cols.to.fix <- m.s[,-..match.cols]
+    stat.cols.to.fix <- m.s[,-match.cols, with = FALSE]
     stat.cols.y <- grep("\\.y$", colnames(stat.cols.to.fix))
     if(length(stat.cols.y) > 0){
       # replace NAs in y with values from x. No reason to do the vice versa.
-      stat.cols.y <- as.matrix(stat.cols.to.fix[,..stat.cols.y])
+      stat.cols.y <- as.matrix(stat.cols.to.fix[,stat.cols.y, with = FALSE])
       stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
-      stat.cols.x <- as.matrix(stat.cols.to.fix[,..stat.cols.x])
+      stat.cols.x <- as.matrix(stat.cols.to.fix[,stat.cols.x, with = FALSE])
       NA.y <- is.na(stat.cols.y)
       stat.cols.y[NA.y] <- stat.cols.x[NA.y]
       colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))
       
       # update m.s
-      m.s <- cbind(m.s[,..match.cols], stat.cols.y)
+      m.s <- cbind(m.s[,match.cols, with = FALSE], stat.cols.y)
       
       
       # fix column classes
@@ -1173,7 +1179,7 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
   gmat <- gmat[,-1]
   mis.cols <- -which(colnames(gmat) == mDat)
   if(length(mis.cols) > 0){
-    tmat <- gmat[,..mis.cols] # remove missing data
+    tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
   }
   else{
     tmat <- gmat
@@ -1193,20 +1199,20 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
       het <- b
-      set(amat, j = i, value = rowSums(tmat[,..het]))
+      set(amat, j = i, value = rowSums(tmat[,het, with = FALSE]))
     }
     else{
       het <- b[b != hom]
       if(length(het) > 0){
-        if(data.table::is.data.table(tmat[,..het])){
-          set(amat, j = i, value = (tmat[,..hom] * 2) + rowSums(tmat[,..het]))
+        if(data.table::is.data.table(tmat[,het, with = FALSE])){
+          set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2) + rowSums(tmat[,het, with = FALSE]))
         }
         else{
           amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
         }
       }
       else{
-        set(amat, j = i, value = (tmat[,..hom] * 2))
+        set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2))
       }
     }
   }
@@ -1539,7 +1545,7 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
 merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
   # prunes and prepares data on the names and nest levels of a list
   prune.names <- function(list){
-    ln <- capture.output(str(list))
+    ln <- utils::capture.output(utils::str(list))
     ln <- ln[which(!grepl("attr\\(\\*,", ln))]
     ns <- character()
     pn <- vector("list")
@@ -1665,7 +1671,7 @@ check_calced_stats <- function(x, facets, stats){
 #' @param source character, default NULL. If install.type = 'github', gives the
 #'   source from which to install.
 check.installed <- function(pkg, install.type = "basic", source = NULL){
-  if(!pkg %in% rownames(installed.packages())){
+  if(!pkg %in% rownames(utils::installed.packages())){
     say <- paste0("Package '", pkg, "' not found.")
     cat(say, "")
     resp <- "empty"
@@ -1681,17 +1687,17 @@ check.installed <- function(pkg, install.type = "basic", source = NULL){
     }
     else{
       if(install.type == "basic"){
-        install.packages(pkg)
+        utils::install.packages(pkg)
       }
       if(install.type == "bioconductor"){
         if(!"BiocManager" %in% installed.packages()){
-          install.packages("BiocManager")
+          utils::install.packages("BiocManager")
         }
         BiocManager::install(pkg)
       }
       if(install.type == "github"){
-        if(!"remotes" %in% installed.packages()){
-          install.packages("remotes")
+        if(!"remotes" %in% utils::installed.packages()){
+          utils::install.packages("remotes")
         }
         remotes::install_github(source)
       }
@@ -1730,7 +1736,7 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
     }
     
     # for the methods already implemented in R, really easy.
-    sig_tab <- sapply(methods, function(x) p.adjust(tp, x)) # run those methods
+    sig_tab <- sapply(methods, function(x) stats::p.adjust(tp, x)) # run those methods
     colnames(sig_tab) <- methods
     sig_tab <- as.data.frame(sig_tab)
     
@@ -1762,7 +1768,7 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
     colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)] <- 
       paste0(pcol, "_bysubfacet_", colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)])
     keep.cols <- which(!colnames(p_case) %in% levs)
-    out <- cbind(out, p_case[,..keep.cols])
+    out <- cbind(out, p_case[,keep.cols, with = FALSE])
   }
   # split up, but only across facets (aka, split up the set run by pop and the set run by fam, but not within either)
   if("by_facet" %in% case){
@@ -1773,7 +1779,7 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
     colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)] <- 
       paste0(pcol, "_byfacet_", colnames(p_case)[(ncol(p_case) - length(methods) + 1):ncol(p_case)])
     keep.cols <- which(!colnames(p_case) %in% "facet")
-    out <- cbind(out, p_case[,..keep.cols])
+    out <- cbind(out, p_case[,keep.cols, with = FALSE])
   }
   
   #return

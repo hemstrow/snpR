@@ -141,7 +141,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     names(heatmap_x) <- c("SNPa", "SNPb", "value")
 
     #getting rid of all the zeros from snps being compared to themselves
-    heatmap_x <- na.omit(heatmap_x)
+    heatmap_x <- stats::na.omit(heatmap_x)
     heatmap_x$SNPa <- as.numeric(as.character(heatmap_x$SNPa))/1000000
     heatmap_x$SNPb <- as.numeric(as.character(heatmap_x$SNPb))/1000000
 
@@ -240,7 +240,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     if(!is.null(snp.subfacet[1])){
       LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
       names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
-      if(!is.null(sample.subfacet))?{
+      if(!is.null(sample.subfacet)){
         LD_mat_list <- LD_mat_list[[which(names(LD_mat_list) %in% sample.subfacet)]]
       }
     }
@@ -322,6 +322,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   levs <- LD_mats$levs
   LD_mats <- as.data.frame(LD_mats$dat)
 
+  SNPa <- SNPb <- value <- NULL
   out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value, color = value)) +
     ggplot2::geom_tile(color = "white")
 
@@ -605,7 +606,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 
   if("pca" %in% plot_type){
     cat("Preparing pca...\n")
-    pca_r <- prcomp(as.matrix(sn))
+    pca_r <- stats::prcomp(as.matrix(sn))
     pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
     plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
   }
@@ -644,6 +645,7 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
 
     #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
     #make the base plot, then add categories as color and fill.
+    PC1 <- PC2 <- NULL
     out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
 
 
@@ -1027,6 +1029,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   #============produce the plot========
+  pvar <- NULL
   p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
     ggplot2::geom_point() +
     ggplot2::theme_bw() +
@@ -1059,6 +1062,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   # highlight
   if(do.highlight){
+    highlight.label <- NULL
     p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
                                        mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
                                        force = 1.3)

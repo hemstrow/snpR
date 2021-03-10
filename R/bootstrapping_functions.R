@@ -273,7 +273,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
         n_snps <- n_snps[-which(empties)]
       }
 
-      fws <- lapply(fws$lmat, na.omit)
+      fws <- lapply(fws$lmat, stats::na.omit)
 
       ## draw the random snps
       nrands <- sample(1:nrow(x), length(unlist(fws)), replace = T)
@@ -338,13 +338,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
       stattype.meta <- rep("single", length(facet.meta))
       if(nk){ # grab a cast nk as well...
         nk.meta <- c(meta.cols, "nk")
-        snk <- data.table::dcast(stats[,..nk.meta], .snp.id~facet + subfacet, value.var = "nk")
+        snk <- data.table::dcast(stats[,nk.meta, with = FALSE], .snp.id~facet + subfacet, value.var = "nk")
         snk <- snk[nrands,-".snp.id"]
         ## need to duplicate columns, since each nk value will be used for multiple stats!
         col.seq <- rep(1:ncol(snk), sum(statistics %in% single.types))
-        snk <- snk[,..col.seq]
+        snk <- snk[,col.seq, with = FALSE]
       }
-      stats <- stats[,..keep.cols]
+      stats <- stats[,keep.cols, with = FALSE]
       stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols)
 
       # subset according to the snps we are using
@@ -369,12 +369,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
       keep.cols <- c(meta.cols, stat.cols)
       if(nk){ # grab a cast nk as well...
         nk.meta <- c(meta.cols, "nk")
-        pnk <- data.table::dcast(pairwise.stats[,..nk.meta], .snp.id~facet + comparison, value.var = "nk")
+        pnk <- data.table::dcast(pairwise.stats[,nk.meta, with = FALSE], .snp.id~facet + comparison, value.var = "nk")
         pnk <- pnk[nrands,-".snp.id"]
         col.seq <- rep(1:ncol(pnk), sum(statistics %in% pairwise.types))
-        pnk <- pnk[,..col.seq]
+        pnk <- pnk[,col.seq, with = FALSE]
       }
-      pairwise.stats <- pairwise.stats[,..keep.cols]
+      pairwise.stats <- pairwise.stats[,keep.cols, with = FALSE]
       pairwise.stats <- data.table::dcast(pairwise.stats, .snp.id~facet + comparison, value.var = stat.cols)
 
       # subset according to the snps we are using
@@ -433,7 +433,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 
     # rearrange
     ord <- c(3, 4, 5, 6, 7, 8, 2)
-    boot.set <- boot.set[,..ord]
+    boot.set <- boot.set[,ord, with = FALSE]
 
     return(boot.set)
   }
@@ -557,7 +557,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   # bind and return
   out <- data.table::rbindlist(out)
   col.ord <- c(1, 2, ncol(out), 3:(ncol(out) - 1))
-  out <- out[,..col.ord]
+  out <- out[,col.ord, with = FALSE]
   x@window.bootstraps <- rbind(x@window.bootstraps, out)
 
   if(do.p){
@@ -678,7 +678,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
 
 
     # create a cumulative distibution function of the distribution
-    edist <- ecdf(x@window.bootstraps[matches,]$value)
+    edist <- stats::ecdf(x@window.bootstraps[matches,]$value)
 
     # get p-values
     ## get the matching statistic data
@@ -687,15 +687,15 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       scol <- which(colnames(x@window.stats) == statistic)
       meta.cols <- 1:which(colnames(x@window.stats) == "nk.status")
       matches <- get.matches(x@window.stats, facet, subfacet, snp.facet, sigma, nk, step, statistic)
-      meta <- x@window.stats[matches,..meta.cols]
-      matches <- x@window.stats[matches, ..scol]
+      meta <- x@window.stats[matches, meta.cols, with = FALSE]
+      matches <- x@window.stats[matches, scol, with = FALSE]
     }
     else{
       scol <- which(colnames(x@pairwise.window.stats) == statistic)
       meta.cols <- 1:which(colnames(x@window.stats) == "nk.status")
       matches <- get.matches(x@pairwise.window.stats, facet, subfacet, snp.facet, sigma, nk, step, statistic)
-      meta <- x@pairwise.window.stats[matches,..meta.cols]
-      matches <- x@pairwise.window.stats[matches, ..scol]
+      meta <- x@pairwise.window.stats[matches, meta.cols, with = FALSE]
+      matches <- x@pairwise.window.stats[matches,  scol, with = FALSE]
     }
 
     ## get the proportion of the bootstrapped distribution less than or equal to the observed point.
@@ -832,53 +832,4 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
 
 
   return(x)
-}
-
-
-do_fst_permutations <- function(x, facets = NULL, boots, sites = "all", method = "per_site", sample_subfacet = NULL, par = FALSE){
-  #============subfunctions===============
-  # wrapper function to generate a psuedo dataset for given sites
-  generate_psuedo <- function(x, sites, boots){
-    y <- subset_snpR_data(x, snps = sites)
-
-    #=========shuffle boots times===========
-    ord <- numeric(ncol(y)*boots)
-    out <- as.data.frame(matrix(NA, nrow = boots*nrow(y), ncol = ncol(y)))
-    for(i in 1:boots){
-      tord <- sample(ncol(y), ncol(y))
-      ord[(((i-1)*ncol(y)) + 1):(i*ncol(y))] <- tord
-      out[(((i-1)*nrow(y)) + 1):(i*nrow(y)),] <- y[,tord]
-    }
-
-    #=========put into a snpRdata object, with a snp facet relating to the boot number============
-    # prepare snp meta, replicated for bootstraps
-    snp.meta <- y@snp.meta[rep(1:nrow(y@snp.meta), times = boots),-ncol(x@snp.meta)]
-    snp.meta$bootstrap <- rep(1:boots, each = nrow(y@snp.meta)) # add a column containing bootstrap meta
-
-    # prepare facet meta
-    fm <- y@facet.meta[y@facet.meta$facet == ".base",]
-    fm <- fm[rep(1:nrow(fm), times = boots),]
-
-    # add to snpRdata object, same sample meta
-    x <- snpRdata(.Data = out,
-                  sample.meta = x@sample.meta,
-                  snp.meta = cbind(snp.meta, .snp.id = 1:nrow(snp.meta)),
-                  facet.meta = data.frame(),
-                  geno.tables = ngs,
-                  ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                  stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                  window.stats = x@window.stats,
-                  facets = x@facets,
-                  facet.type = x@facet.type,
-                  row.names = x@row.names[-which(vio.snps)])
-
-
-    gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = T)
-
-    fm <- data.frame(facet = rep(".base", nrow(gs$gs)),
-                     subfacet = rep(".base", nrow(gs$gs)),
-                     facet.type = rep(".base", nrow(gs$gs)),
-                     stringsAsFactors = F)
-  }
-
 }

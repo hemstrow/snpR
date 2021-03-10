@@ -230,7 +230,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 
 
   # run the model
-  capture.output(suppressWarnings(suppressMessages(sub.x <- subset_snpR_data(x, samps = model.samples))))
+  utils::capture.output(suppressWarnings(suppressMessages(sub.x <- subset_snpR_data(x, samps = model.samples))))
   model <- run_genomic_prediction(sub.x, response = response, iterations =  iterations,
                                   burn_in = burn_in, thin = thin, model = model)
 
@@ -257,6 +257,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 
   # plot
   if(plot == TRUE){
+    observed <- predicted <- NULL
     tplot <- ggplot2::ggplot(as.data.frame(pdat), ggplot2::aes(observed, predicted)) +
       ggplot2::geom_point() +
       ggplot2::geom_smooth(method = "lm") +
@@ -266,7 +267,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
   }
 
   return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
-              rsq = summary(lm(observed~predicted, pdat))$r.squared))
+              rsq = summary(stats::lm(observed~predicted, pdat))$r.squared))
 
 }
 
@@ -433,7 +434,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
         }
 
         # see which covariates we need
-        cvars <- terms(formula(formula))
+        cvars <- stats::terms(formula(formula))
         cvars <- attr(cvars, "term.labels")
         bad.cvars <- which(!(cvars %in% colnames(x@sample.meta)))
         if(length(bad.cvars) > 0){
@@ -445,7 +446,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
       }
     }
 
-    if(!"GMMAT" %in% installed.packages()){
+    if(!"GMMAT" %in% utils::installed.packages()){
       check.installed("SeqVar", "bioconductor")
       check.installed("SeqVarTools", "bioconductor")
       check.installed("GMMAT")
@@ -456,12 +457,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
       #                 These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
       #                 If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
     }
-    if(!"AGHmatrix" %in% installed.packages()){
-      check.installed("AGHmatrix")
-      # msg <- c(msg,
-      #          paste0("The gmmat.score method requires the AGHmatrix package. This can be installed via
-      #                 install.packages('AGHmatrix')."))
-    }
+    check.installed("AGHmatrix")
+
   }
   
   if(length(msg) > 0){
@@ -526,7 +523,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     chi <- (b^2)/Vb
 
     # use the pchisq function with 1 degree of freedom to get a p-value and return.
-    return(pchisq(chi, 1, lower.tail = F))
+    return(stats::pchisq(chi, 1, lower.tail = F))
   }
   odds.ratio.chisq <- function(cast_ac, method, ...){
     # odds ratio
@@ -573,7 +570,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
 
       chi.stat <- chi.a + chi.b + chi.c + chi.d
-      chi.p <- pchisq(chi.stat, 1, lower.tail = F)
+      chi.p <- stats::pchisq(chi.stat, 1, lower.tail = F)
       return(data.frame(chi_stat = chi.stat, chi_p = chi.p, associated_allele = asso.allele))
     }
   }
@@ -609,10 +606,10 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
     else{
       if(length(unique(phenos[,response])) > 2){
-        family <- gaussian(link = "identity")
+        family <- stats::gaussian(link = "identity")
       }
       else if(length(unique(phenos[,response])) == 2){
-        family <- binomial(link = "logit")
+        family <- stats::binomial(link = "logit")
       }
       else{
         stop("Less than two unique phenotypes.\n")
@@ -621,22 +618,22 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
 
     # run null model
-    invisible(capture.output(mod <- GMMAT::glmmkin(fixed = formula,
-                                                   data = phenos,
-                                                   kins = G,
-                                                   id = sampleID,
-                                                   family = family,
-                                                   maxiter = iter)))
+    invisible(utils::capture.output(mod <- GMMAT::glmmkin(fixed = formula,
+                                                          data = phenos,
+                                                          kins = G,
+                                                          id = sampleID,
+                                                          family = family,
+                                                          maxiter = iter)))
 
     # run the test
     nmeta.col <- 2 + ncol(sub.x@snp.meta)
-    write.table(asso.in, "asso_in.txt", sep = "\t", quote = F, col.names = F, row.names = F)
+    utils::write.table(asso.in, "asso_in.txt", sep = "\t", quote = F, col.names = F, row.names = F)
     score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
                                    "asso_out_score.txt",
                                    infile.ncol.skip = nmeta.col,
                                    infile.ncol.print = 1:nmeta.col,
                                    infile.header.print = colnames(asso.in)[1:nmeta.col])
-    score.out <- read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
+    score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
     file.remove(c("asso_in.txt", "asso_out_score.txt"))
     return(score.out)
@@ -646,7 +643,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
   # check facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   if(method == "armitage"){
@@ -889,7 +886,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   facets <- check.snpR.facet.request(x, facets)

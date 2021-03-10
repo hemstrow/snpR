@@ -185,7 +185,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
       msg <- c(msg, "x must either be either a dadi formatted data file or a data.frame derived from such.\n")
     }
     else{
-      x <- read.table(x, header = T, stringsAsFactors = F)
+      x <- utils::read.table(x, header = T, stringsAsFactors = F)
     }
   }
   if(length(msg) > 0){
@@ -311,7 +311,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
     for(i in 1:length(pops)){
       x <- data.table::as.data.table(x)
       dat.cols <- grep(pops[i], colnames(x))
-      tdat <- x[,..dat.cols]
+      tdat <- x[,dat.cols, with = FALSE]
       tdat <- as.matrix(tdat)
       out[,1,i] <- rowSums(tdat) # total count
       t.index <- 2 * (1:nrow(tdat))
@@ -373,7 +373,10 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
   attr(sfs, which = "pop") <- pops
 
   # return
-  cat("SFS completed with", sum(sfs, na.rm = T), "segrgating sites.\n")
+  masked <- sfs
+  masked[1,1] <- 0
+  masked[nrow(masked), ncol(masked)] <- 0
+  cat("SFS completed with", sum(masked, na.rm = T), "segrgating sites.\n")
   return(sfs)
 }
 

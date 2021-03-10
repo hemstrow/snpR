@@ -494,7 +494,7 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
   colnames(dyads)[1:2] <- c("Sample1", "Sample2")
 
   ## add in non-sibs
-  all_pairs <- as.data.frame(t(combn(colnames(x), 2)), stringsAsFactors = F)
+  all_pairs <- as.data.frame(t(utils::combn(colnames(x), 2)), stringsAsFactors = F)
   colnames(all_pairs) <- c("Sample1", "Sample2")
   cdyads <- rbind(dyads, dyads[,c(2,1,3,4)])
   all_pairs <- merge(all_pairs, cdyads, by = c("Sample1", "Sample2"), all.x = T)

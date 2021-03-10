@@ -155,7 +155,7 @@ calc_pi <- function(x, facets = NULL){
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   out <- apply.snpR.facets(x, facets, "ac", func, case = "ps")
@@ -170,6 +170,9 @@ calc_pi <- function(x, facets = NULL){
 #'@export
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
+  maj_count <- NULL
+  
+  
   # function to run on whatever desired facets:
   func <- function(gs, m.al, ref = NULL){
     
@@ -227,7 +230,7 @@ calc_maf <- function(x, facets = NULL){
       adt$major <-  major
       adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
       ac.rows <- 1:(which(colnames(adt) == "major") - 1)
-      total.allele.count <- rowSums(adt[,..ac.rows])
+      total.allele.count <- rowSums(adt[,ac.rows, with = FALSE])
       maf <- 1 - adt$maj_count/total.allele.count # get the maf
       
       # other things for return
@@ -247,7 +250,7 @@ calc_maf <- function(x, facets = NULL){
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
   
   if(facets[1] == ".base" & length(facets) == 1){
@@ -420,7 +423,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   # add any missing facets
   add.facets <- check.snpR.facet.request(x, facets)
   if(!all(add.facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, add.facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, add.facets)))
   }
   facets <- check.snpR.facet.request(x, facets, remove.type = "none")
 
@@ -498,6 +501,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' get.snpR.stats(x[[1]], "pop", "pairwise")
 #' x[[2]] # overall fst
 calc_pairwise_fst <- function(x, facets, method = "WC"){
+  facet <- subfacet <- .snp.id <- NULL
+  
   func <- function(x, method, facets = NULL){
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
@@ -523,7 +528,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         file.remove(g.filename)
       }
       init.files <- list.files()
-      invisible(capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
+      invisible(utils::capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
       genepop::Fst(g.filename, pairs = TRUE)
 
 
@@ -618,7 +623,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
         for(j in (i+1):ncol(n_tots)){
           new.rows <- prog:(prog + nrow(n_tots) - 1)
           data.table::set(pnk, i = new.rows, 1L, paste0(colnames(n_tots)[i], "~", colnames(n_tots)[j]))
-          suppressWarnings(data.table::set(pnk, i = new.rows, 2L, n_tots[,..i] + n_tots[,..j]))
+          suppressWarnings(data.table::set(pnk, i = new.rows, 2L, n_tots[,i, with = FALSE] + n_tots[,j, with = FALSE]))
           prog <- prog + as.integer(nrow(n_tots))
 
         }
@@ -657,14 +662,14 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
     colnames(out) <- comps
 
-    #loop through each comparison and caculate pairwise FST at each site
+    #loop through each comparison and calculate pairwise FST at each site
     c.col <- 1L
     prog <- 1L
     for (i in 1:(length(pops) - 1)){ #i is the first pop
-      idat <- x[.(pops[i])] # get data for first pop
-      j <- i + 1 #intialize j as the next pop
+      idat <- x[subfacet == pops[i]] # get data for first pop
+      j <- i + 1 #initialize j as the next pop
       for (j in j:length(pops)){#j is pop being compared
-        jdat <- x[.(pops[j]),] #get data for second pop
+        jdat <- x[subfacet == pops[j]] #get data for second pop
 
         if(method == "wc" | method == "wier"){
 
@@ -768,7 +773,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
   
 
@@ -842,7 +847,7 @@ calc_ho <- function(x, facets = NULL){
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   out <- apply.snpR.facets(x,
@@ -913,7 +918,7 @@ calc_private <- function(x, facets = NULL){
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   out <- apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
@@ -1418,7 +1423,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         m2matvcn <- rep(names(m2mat), 1)
       }
       m2matv[!is.na(m2matv)] <- m2matvcn[!is.na(m2matv)]
-      m2matv <- na.omit(m2matv)
+      m2matv <- stats::na.omit(m2matv)
       if(is.matrix(m2mat)){
         m2mat <- matrix(m2matv, nrow(m2mat), 2, T)
         m2mat <- ifelse(substr(m2mat[,1], 1, sform) != substr(m2mat[,2], 1, sform) &
@@ -1438,7 +1443,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     hapmat <- cbind(hapmat, mc)
     hapmat <- as.vector(t(hapmat))
-    hapmat <- na.omit(hapmat)
+    hapmat <- stats::na.omit(hapmat)
     #if(length(hapmat) %% nrow(y) != 0){
     #  browser()
     #}
@@ -1591,7 +1596,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #get pvals
       chisqu <- rsq*(4)
-      pval <- 1 - pchisq(chisqu, 1)
+      pval <- 1 - stats::pchisq(chisqu, 1)
 
       #remove dummy filler if this was the final comparison.
       if(length(snp.list$snps[[i]]) == 1){
@@ -2218,20 +2223,20 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(filter_samp_facets){
       if(filter_snp_facets){
-        invisible(capture.output(x <- subset_snpR_data(x,
+        invisible(utils::capture.output(x <- subset_snpR_data(x,
                                                        facets = sample.facets,
                                                        subfacets = sample.subfacets,
                                                        snp.facets = snp.facets,
                                                        snp.subfacets = snp.subfacets)))
       }
       else{
-        invisible(capture.output(x <- subset_snpR_data(x,
+        invisible(utils::capture.output(x <- subset_snpR_data(x,
                                                        facets = sample.facets,
                                                        subfacets = sample.subfacets)))
       }
     }
     else if(filter_snp_facets){
-      invisible(capture.output(x <- subset_snpR_data(x,
+      invisible(utils::capture.output(x <- subset_snpR_data(x,
                                                      snp.facets = snp.facets,
                                                      snp.subfacets = snp.subfacets)))
     }
@@ -2303,6 +2308,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 #'
 #' @author William Hemstrom
 calc_CLD <- function(x, facets = NULL, par = FALSE){
+  proximity <- s1_position <- s2_position <- NULL
+  
   #============subfunctions==============
   # calculate composite LD for a single facet of data.
   do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
@@ -2311,9 +2318,9 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
       prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
       prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
       bad.col <- which(colnames(prox) == "variable")
-      prox <- prox[, -..bad.col]
+      prox <- prox[,-bad.col, with = FALSE]
       colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-      prox <- na.omit(prox)
+      prox <- stats::na.omit(prox)
       prox <- as.data.table(prox)
       prox[,proximity := abs(s1_position - s2_position)]
       prox[,sample.facet := sample.facet]
@@ -2328,7 +2335,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
 
     # do the CLD calculation, add column/row names, NA out the lower triangle and diag
     ## CLD
-    suppressWarnings(CLD <- cor(t(genos), use = "pairwise.complete.obs")^2)
+    suppressWarnings(CLD <- stats::cor(t(genos), use = "pairwise.complete.obs")^2)
     ## matrix of complete case sample sizes
     complete.cases.matrix <- !is.na(t(genos))
     complete.cases.matrix <- crossprod(complete.cases.matrix)
@@ -2459,10 +2466,10 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
       cat("Task #:", i, "of", nrow(tasks),
           " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
           " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
-      capture.output(invisible(suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
-                                                                      subfacets = tasks[i,2],
-                                                                      snp.facets = tasks[i,3],
-                                                                      snp.subfacets = tasks[i,4]))))
+      utils::capture.output(invisible(suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+                                                                             subfacets = tasks[i,2],
+                                                                             snp.facets = tasks[i,3],
+                                                                             snp.subfacets = tasks[i,4]))))
 
       geno.storage[[i]] <- list(geno = y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], snp.meta = y@snp.meta)
     }
@@ -2634,7 +2641,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
       chi <- chi.pp + chi.qq + chi.2pq
 
       # calculate p-values
-      out <- pchisq(chi, 2, lower.tail = FALSE)
+      out <- stats::pchisq(chi, 2, lower.tail = FALSE)
     }
 
     # otherwise we have to use the looped version:
@@ -2662,7 +2669,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   # add any missing facets
   facets <- check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
   }
 
   out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
@@ -2934,6 +2941,11 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     stop("x is not a snpRdata object.\n")
   }
   
+  msg <- character()
+  if(!file.exists(NeEstimator_path)){
+    msg <- c(msg, "NeEstimator executable not found at provided path.\n")
+  }
+  
   facets <- check.snpR.facet.request(x, facets, remove.type = "snp")
   
   
@@ -3083,7 +3095,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       am <- 1 - (am / (nloc/2))
       diag(am) <- 0
       am <- sqrt(am)
-      am <- as.dist(am)
+      am <- stats::as.dist(am)
     }
     am <- list(am)
     names(am) <- method
@@ -3121,7 +3133,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       if(snp_facets[i] == ".base"){
         out_snp[[i]] <- vector("list", 1)
         names(out_snp[[i]]) <- ".base"
-        out_snp[[i]][[1]] <- list(dist(t(sn)))
+        out_snp[[i]][[1]] <- list(stats::dist(t(sn)))
         names(out_snp[[i]][[1]]) <- method
         
       }
@@ -3137,7 +3149,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
           t_snp_cols <- y@snp.meta[,snp_columns, drop = F]
           t_snp_indices <- do.call(paste, c(t_snp_cols, sep = "    "))
           t_snp_indices <- which(t_snp_indices %in% tasks[j,4])
-          out_snp[[i]][[j]] <- list(dist(t(sn[t_snp_indices,])))
+          out_snp[[i]][[j]] <- list(stats::dist(t(sn[t_snp_indices,])))
           names(out_snp[[i]][[j]]) <- method
         }
       }
@@ -3261,7 +3273,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
     
     # if the categories are all base, easy peasy
     if(all(categories[,1] == ".base")){
-      geo_mats$.base[[genetic_distance_method]] <- dist(x@sample.meta[,x_y])
+      geo_mats$.base[[genetic_distance_method]] <- stats::dist(x@sample.meta[,x_y])
     }
     else{
       # otherwise need to break it down by sample level facet
@@ -3276,7 +3288,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
       rownames(gmeans) <- categories[,2]
       
       #get the distances
-      geo_mats[[categories[1,1]]][[genetic_distance_method]] <- dist(gmeans)
+      geo_mats[[categories[1,1]]][[genetic_distance_method]] <- stats::dist(gmeans)
     }
   }
   
@@ -3304,11 +3316,11 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
           bad.entries <- which(rowSums(is.na(matgd)) == ncol(matgd) - 1)
           
           # remove from gene dist
-          gd[[i]][[j]][[k]] <- as.dist(matgd[-bad.entries, -bad.entries])
+          gd[[i]][[j]][[k]] <- stats::as.dist(matgd[-bad.entries, -bad.entries])
           
           # remove from geo dist
           matgeod <- as.matrix(geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]])
-          tgeodist<- as.dist(matgeod[-bad.entries, -bad.entries])
+          tgeodist<- stats::as.dist(matgeod[-bad.entries, -bad.entries])
           
           warning("NAs detected in genetic distance data for facet: ", paste(names(gd)[i], names(gd[[i]])[j], names(gd[[i]][[j]])[k]),
                   "\nlevels\t\n\t", paste0(row.names(matgeod)[bad.entries], collapse = "\n\t"))
@@ -3437,9 +3449,9 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single"){
   # get the stats back in a format with facet and sub-facet, clean up, and return
   stats <- merge(means, unique(cbind(group_key, groups)), by = "groups")
   drop_col <- which(colnames(stats) == "groups")
-  stats <- stats[,-..drop_col]
+  stats <- stats[,-drop_col, with = FALSE]
   new.ord <- c((ncol(stats) - (ncol(group_key) - 1)):ncol(stats), 1:(ncol(stats) - ncol(group_key)))
-  stats <- stats[,..new.ord]
+  stats <- stats[,new.ord, with = FALSE]
   colnames(stats)[(ncol(group_key) + 1): ncol(stats)] <- paste0("weighted_mean_", colnames(stats)[(ncol(group_key) + 1): ncol(stats)])
   colnames(stats)[2] <- "subfacet"
   

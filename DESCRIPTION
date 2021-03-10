@@ -33,7 +33,8 @@ Imports:
     tidyr
 Depends:
     data.table,
-    foreach
+    foreach,
+    R (>= 2.10)
 Suggests:
     ade4,
     adegenet,

@@ -889,7 +889,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     #========HWE violation======================================
     if(HWE){
       cat("Filtering loci out of HWE...\n")
-      invisible(capture.output(x <- calc_hwe(x)))
+      invisible(utils::capture.output(x <- calc_hwe(x)))
       phwe <- x@stats$pHWE[x@stats$facet == ".base"]
       phwe <- which(phwe < HWE)
       cat("\t", length(phwe), " bad loci\n")
@@ -905,17 +905,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       ngs <- list(gs = ngs, as = nas, wm = nwm)
       ngs <- lapply(ngs, fix.one.loci)
       rm(nas, nwm)
-      invisible(capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
-                                             sample.meta = x@sample.meta,
-                                             snp.meta = x@snp.meta[-which(vio.snps),],
-                                             facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                             geno.tables = ngs,
-                                             ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                             stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                                             window.stats = x@window.stats,
-                                             facets = x@facets,
-                                             facet.type = x@facet.type,
-                                             row.names = x@row.names[-which(vio.snps)])))
+      invisible(utils::capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
+                                                    sample.meta = x@sample.meta,
+                                                    snp.meta = x@snp.meta[-which(vio.snps),],
+                                                    facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                                    geno.tables = ngs,
+                                                    ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
+                                                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
+                                                    window.stats = x@window.stats,
+                                                    facets = x@facets,
+                                                    facet.type = x@facet.type,
+                                                    row.names = x@row.names[-which(vio.snps)])))
       x@stats <- data.table::as.data.table(x@stats) # I'm not sure why this is needed, since the object passed to the constructor function above is already a data.table...
     }
     return(x)
@@ -928,7 +928,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
     if(length(rejects) > 0){
       old.facets <- x@facets
-      invisible(capture.output(x <- import.snpR.data(x[,-rejects],
+      invisible(utils::capture.output(x <- import.snpR.data(x[,-rejects],
                                                      snp.meta = x@snp.meta,
                                                      sample.meta = x@sample.meta[-rejects,],
                                                      mDat = mDat)))
@@ -1033,19 +1033,20 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
 #'named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
 #'the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
-#'format, requires columns named "group", "snp", and "position", and may contain
-#'a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
-#'position in bp, and distance in cM in order to create .bim extended map file.}
-#'\item{sn: }{Single character numeric format. Each genotype will be listed as
-#'0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
-#'remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
-#'format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
-#'Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
-#'For more information see sequoia documentation.} \item{fasta: }{fasta sequence
-#'format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
-#'other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
-#'missing values), with a healthy serving of additional metadata but very little
-#'sample metadata.} \item{snpRdata: }{a snpRdata object.} }
+#'format, requires columns named "position" and one matching the name designated
+#'with the 'chr' argument, and may contain a column named "cM", "cm", or
+#'"morgans", containing linkage group/chr, snp ID, position in bp, and distance
+#'in cM in order to create .bim extended map file.} \item{sn: }{Single character
+#'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
+#'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
+#''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+#'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
+#'BirthYear in sample metadata for running Sequoia. For more information see
+#'sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf:
+#'}{Variant Call Format, a standard format for SNPs and other genomic variants.
+#'Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a
+#'healthy serving of additional metadata but very little sample metadata.}
+#'\item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1132,7 +1133,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  when determining the optimum number of components to use when interpolating
 #'  sn data using the iPCA approach.
 #'@param chr character, default "chr". Name of column containing chromosome
-#'  information, for VCF output.
+#'  information, for VCF or plink! output.
 #'@param position character, default "position". Name of column containing
 #'  position information, for VCF output.
 #'
@@ -1187,12 +1188,12 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' format_snps(dat, "dadi", facets = "pop")
 #'
 #' #PLINK! format
-#' format_snps(stickSNPs, "plink", outfile = "plink_out")
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
 #' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
 #' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
-#' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
 #' #Sequoia format
@@ -1335,12 +1336,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   else if(output == "plink"){
     if(is.null(input_format)){
-      if(!all(c("position") %in% colnames(x@snp.meta)) | !any(c("group", "chr") %in% colnames(x@snp.meta))){
-        stop("Columns named position, group/chr, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in snp metadata!")
+      if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
+        stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
       }
     }
-    else if(!all(c("position") %in% colnames(x)) | !any(c("group", "chr") %in% colnames(x@snp.meta))){
-      stop("Columns named position, group, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in x!")
+    else if(!all(c("position") %in% colnames(x)) | !any(chr %in% colnames(x))){
+      stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in x!")
     }
     if(!is.null(ped)){
       if(!is.data.frame(ped)){
@@ -1354,9 +1355,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
       facets <- facets[-c(snp.facets, both.facets)]
-    }
-    if(any(colnames(x@snp.meta) == "chr")){
-      colnames(x@snp.meta)[which(colnames(x@snp.meta) == "chr")] <- "group"
     }
   }
   else if(output == "sn"){
@@ -1449,7 +1447,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       x <- process_ms(x, chr.length)
       snp.meta <- x$meta
       x <- x$x
-      x <- convert_2_to_1_column(ms.in$x)
+      x <- convert_2_to_1_column(x)
       cat(" done.\n")
 
       input_format <- "sn"
@@ -1533,7 +1531,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       #rebind to matrix and remake data.
       if(output == "NN"){
-        rdata <- cbind(header, x) #all done if just converting to NN
+        rdata <- cbind(sample.meta, x) #all done if just converting to NN
       }
       else{
         x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
@@ -1681,6 +1679,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
 
     # grab the major and minors for each snp in the analysis.
+    .snp.id <- facet <- subfacet <- NULL
     x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
     maj <- x@stats$major[x@stats$facet == ".base"]
     min <- x@stats$minor[x@stats$facet == ".base"]
@@ -1936,7 +1935,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       xvt[xv.dup == "0"] <- "00"
       xvt[xv.dup == "1"] <- "01"
       xvt[xv.dup == "2"] <- "11"
-      xvt[xv.dup == miss] <- "10"
+      xvt[!xv.dup %in% c("0", "1", "2", "FF")] <- "10"
       xvt[xv.dup == "FF"] <- "00"
 
       # get allele names for map file down the line
@@ -2078,7 +2077,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     #===============make an extended map file=================
     # with morgans
     if(any(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))){
-      bim <- data.frame(chr = x@snp.meta$group,
+      bim <- data.frame(chr = x@snp.meta[,chr],
                         rs = x@snp.meta$.snp.id,
                         cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
                         bp = x@snp.meta$position,
@@ -2087,8 +2086,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     # without morgans
     else{
-      bim <- data.frame(chr = x@snp.meta$group,
-                        rs = x@snp.meta$snp,
+      bim <- data.frame(chr = x@snp.meta[,chr],
+                        rs = x@snp.meta$.snp.id,
                         cM = 0,
                         bp = x@snp.meta$position,
                         a1 = a.names[,1],
@@ -2253,7 +2252,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn <- as.matrix(sn)
     hets <- which(sn == 1)
     nhets <- length(hets)
-    draws <- rbinom(nhets, 1, .5)
+    draws <- stats::rbinom(nhets, 1, .5)
     draws[draws == 1] <- 2
     sn[hets] <- draws
 
@@ -2443,7 +2442,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       writeLines(writeobj, outfile)
     }
     else if(output == "lea"){
-      write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
+      utils::write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
     }
     else if(output == "colony"){
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = " ", row.names = F)
