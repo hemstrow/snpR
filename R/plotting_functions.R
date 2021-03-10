@@ -241,7 +241,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
       LD_mat_list <- vector("list", length = length(x@pairwise.LD$LD_matrices[[facets]]))
       names(LD_mat_list) <- names(x@pairwise.LD$LD_matrices[[facets]])
       if(!is.null(sample.subfacet)){
-        LD_mat_list <- LD_mat_list[[which(names(LD_mat_list) %in% sample.subfacet)]]
+        LD_mat_list <- LD_mat_list[which(names(LD_mat_list) %in% sample.subfacet)]
       }
     }
     else{
@@ -1974,8 +1974,8 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
     }
     p <- p +
       ggplot2::geom_line() + ggplot2::theme_bw() +
-      ggplot2::xlab(pops[1])
-    ggplot2::scale_x_continuous(expand = c(0, 0))
+      ggplot2::xlab(pops[1]) +
+      ggplot2::scale_x_continuous(expand = c(0, 0))
   }
 
 
