@@ -232,7 +232,7 @@ head(sample.meta(my.dat))
 To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!**
 
 
-```{r}
+```{r, results='hide'}
 # generate both tSNE and PCA plots
 p <- plot_clusters(my.dat, facets = c("pop.fam"))
 ```
