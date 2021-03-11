@@ -718,7 +718,6 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     else{
       out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
     }
-    print(out)
     plots[[i]] <- out
   }
   return(list(data = plot_dats, plots = plots))
