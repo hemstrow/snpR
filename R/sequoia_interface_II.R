@@ -59,11 +59,10 @@
 run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, pMaxSibIter = 10, min_maf = 0.3, min_ind = 0.5, ...){
   
   #===================sanity checks===============
-  
   # check that provided snpRdata objects are in the correct format
-    if(class(x) != "snpRdata"){
-      stop("Not a snpRdata object.\n")
-    }
+  if(class(x) != "snpRdata"){
+    stop("Not a snpRdata object.\n")
+  }
   
   check.installed("sequoia")
   
@@ -72,7 +71,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   if(run_pedigree & !run_parents){
     msg <- c(msg, "Parents must be run before pedigree construction!\n")
   }
-
+  
   if(run_pedigree){
     if(pMaxSibIter < 0 | pMaxSibIter >= 25 ){ 
       msg <- c(msg, "Must include MaxSibIter value greater than 0 and less than 25 for pedigree construction!\n")
@@ -80,7 +79,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   }
   
   if(min_maf < 0.25){
-    warning("Minumum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
+    warning("Minimum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
   }
   if(min_ind < 0.5){
     warning("Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
@@ -129,16 +128,16 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     
     # run sequoia
     if(run_dupcheck){
-      dups <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = -1)
+      dups <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Method = "dup")
       out[[i]]$dups <- dups
     }
     
     if(run_parents){
-      out[[i]]$parents <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = 0, ...)
+      out[[i]]$parents <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Method = "par", ...)
     }
     
     if(run_pedigree){
-      out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, MaxSibIter = pMaxSibIter, ...) 
+      out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, Method = "ped", ...) 
     }
   }
   return(out)
