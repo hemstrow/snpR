@@ -1041,12 +1041,12 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
 #''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
 #'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
-#'BirthYear in sample metadata for running Sequoia. For more information see
-#'sequoia documentation.} \item{fasta: }{fasta sequence format.} \item{vcf:
-#'}{Variant Call Format, a standard format for SNPs and other genomic variants.
-#'Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a
-#'healthy serving of additional metadata but very little sample metadata.}
-#'\item{snpRdata: }{a snpRdata object.} }
+#'BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata 
+#'for running Sequoia. For more information see sequoia documentation.} \item{fasta: }
+#'{fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format 
+#'for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. 
+#'(for missing values), with a healthy serving of additional metadata but very 
+#'little sample metadata.}\item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1148,8 +1148,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' @examples
 #' #import data to a snpRdata object
 #' ## get sample meta data
-#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
-#' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), 
+#' fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), 
+#' stringsAsFactors = FALSE)
+#' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, 
+#' input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
 #' format_snps(stickSNPs, "ac", facets = "pop")
@@ -1184,7 +1187,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #dadi
 #' ## add ref and anc snp meta data columns to stickSNPs
 #' dat <- as.data.frame(stickSNPs)
-#' dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+#' dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), 
+#' sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
 #' format_snps(dat, "dadi", facets = "pop")
 #'
 #' #PLINK! format
@@ -1192,7 +1196,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
-#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, 
+#' sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
 #' #from command line, then run plink_out.sh to generate plink_out.bed.
 #'
