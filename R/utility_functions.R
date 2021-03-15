@@ -2189,9 +2189,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       rdata <- t(rdata)
       rdata <- matrix(as.numeric(rdata), ncol = ncol(rdata))
       colnames(rdata) <- 1:ncol(rdata)
-      #for lifehistory data input needs id, sex, year born
-      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
-        ID <- x@sample.meta$ID
+      
+      fix.sex.sequoia <- function(y){
         #format sex for sequoia (1 = F,2 = M,3 = U,4 = H,NA)
         sexes <- c("F", "M", "U", "H", "1", "2", "3", "4")
         sex <- x@sample.meta$Sex
@@ -2200,15 +2199,39 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         sex[which(sex == "M")] <- 2
         sex[which(sex == "U")] <- 3
         sex[which(sex == "H")] <- 4
+        return(sex)
+      }
+      
+      #for lifehistory data input needs id, sex, year born
+      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
+        if(all(c("BY.min", "BY.max") %in% colnames(sample.meta(x)))){
+          warning("BirthYear, BY.max, and BY.min columns all found in sample metadata. Defaulting to use BirthYear.\n")
+        }
+        ID <- x@sample.meta$ID
+        sex <- fix.sex.sequoia(x)
+        
         #ACTUALLY MAKE THE TABLE
         lhtable <- data.frame(ID=ID,
                               Sex = as.numeric(sex),
                               BirthYear = x@sample.meta$BirthYear,
                               stringsAsFactors = F)
-        rownames(rdata) <- ID
-        rdata = list(dat=rdata, lh=lhtable)
+        
       }
-      else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
+      else if(all(c("BY.min", "BY.max", "ID", "Sex") %in% colnames(sample.meta(x)))){
+        ID <- x@sample.meta$ID
+        sex <- fix.sex.sequoia(x)
+        
+        #ACTUALLY MAKE THE TABLE
+        lhtable <- data.frame(ID=ID,
+                              Sex = as.numeric(sex),
+                              BY.min = sample.meta(x)$BY.min,
+                              BY.max = sample.meta(x)$BY.max,
+                              stringsAsFactors = F)
+      }
+      else{stop("Needs 'ID' and 'Sex' and either 'BirthYear' or 'BY.min' and 'BY.max' columns in sample metadata. \n")}
+      
+      rownames(rdata) <- ID
+      rdata = list(dat=rdata, lh=lhtable)
     }
 
     # lea

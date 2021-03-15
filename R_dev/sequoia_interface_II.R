@@ -45,13 +45,13 @@
 #'
 #' @examples
 #' # to follow an example using the stickSNPs example dataset you need to add some variables 
-#' that don't exist in the actual dataset.
+#' # that don't exist in the actual dataset.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
 #' set.seed(4865)
 #' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create 
-#' birth years
+#' # birth years
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
@@ -63,23 +63,46 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     stop("Not a snpRdata object.\n")
   }
   
-  check.installed("sequoia")
+  check.installed("sequoia", "github", "JiscaH/sequoia")
+  if(packageVersion("sequoia") < as.package_version("2.2")){
+    cat("Sequoia version is too old, version 2.2 or greater is required.\n")
+    check.installed("remotes")
+    remotes::install_github("JiscaH/sequoia", ref = "stable")
+  }
+  
   
   msg <- character(0)
+  warn <- character(0)
   
   if(run_pedigree & !run_parents){
     msg <- c(msg, "Parents must be run before pedigree construction!\n")
   }
   
   if(min_maf < 0.25){
-    warning("Minimum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
+    warn <- c(warn, "Minimum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
   }
   if(min_ind < 0.5){
-    warning("Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
+    warn <- c(warn, "Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
   }
   
-  if(c("ID", "Sex", "BirthYear") %in% colnames(x) | c("ID", "Sex", "BY.min", "BY.max") %in% colnames(x) == "FALSE") {
-    warning("Need columns ID, Sex, and Birthyear OR columns ID, Sex, BY.min and BY.max in the dataset. \n")
+  req.columns <- c("ID", "Sex")
+  if(any(!req.columns %in% colnames(sample.meta(x)))){
+    msg <- c(msg, "Columns named 'ID' and 'Sex' are required in the sample metadata.\n")
+  }
+  
+  # check columns in metadata
+  col_logi <- sum(c("BirthYear" %in% colnames(sample.meta(x)),
+                    sum(c("BY.min", "BY.max") %in% colnames(sample.meta(x))) == 2))
+  
+  if(col_logi == 0){
+    msg <- c(msg, "Columns named either BirthYear or both BY.min and BY.max are required in sample meta.\n")
+  }
+  else if(col_logi == 2){
+    warn <- c("Both BirthYear, BY.min, and BY.max are contained in the sample metadata, defaulting to BirthYear. To change this behavior, remove the BirthYear column.\n")
+  }
+  
+  if(length(warn) > 0){
+    warning(warn)
   }
   
   if(length(msg) > 0){
