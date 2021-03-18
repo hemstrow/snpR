@@ -65,7 +65,7 @@ Note that there are many more Sequoia specific arguments that can be added to
 change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
 etc.) See documentation for \code{\link[sequoia]{sequoia}}. These can be
 passed to the pedigree and parentage reconstructions using the ... argument
-to run_sequioa.
+to run_sequoia.
 }
 \examples{
 # to follow an example using the stickSNPs example dataset you need to add some variables that don't exist in the actual dataset.

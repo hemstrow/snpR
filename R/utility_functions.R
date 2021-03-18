@@ -413,7 +413,24 @@ process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
 #' # Keep SNPs 1:100, individuals in the ASP population
 #' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
 subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
-
+  #=========sanity checks========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  msg <- character(0)
+  
+  if(max(snps) > nrow(x)){
+    msg <- c(msg, "All requested snps must be within 1:nrow(x).\n")
+  }
+  if(max(samps) > ncol(x)){
+    msg <- c(msg, "All requested samps must be within 1:ncol(x).\n")
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
   #=========subfunctions=========
   fix.for.one.snp <- function(x){
     if(nrow(x) == 1){
@@ -607,7 +624,7 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 #'  acceptable heterozygote frequency.
 #'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE
 #'  violation p-value below this will be rejected.
-#'@param min_ind FALSE or integer, default FALSE. Minimum number of individuals
+#'@param min_ind FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of individuals
 #'  in which a loci must be sequenced.
 #'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
 #'  proportion of SNPs an individual must be genotyped at.
@@ -625,14 +642,16 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 #'@author William Hemstrom
 #'
 #' @examples
-#' # Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
-#' # of 0.55, 50% minimum individuals, and at least 75% of loci sequenced per
-#' # individual.
-#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75)
+#' # Filter with a minor allele frequency of 0.05, maximum heterozygote 
+#' # frequency of 0.55, 50% minimum individuals, and at least 75% of loci 
+#' # sequenced per individual.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, 
+#'             min_ind = 0.5, min_loci = 0.75)
 #'
 #' # The same filters, but with minor allele frequency considered per-population
 #' # and a full re-run of loci filters after individual removal.
-#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75, re_run = "full", maf.facets = "pop")
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
+#'             min_loci = 0.75, re_run = "full", maf.facets = "pop")
 #'
 filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf.facets = NULL,
