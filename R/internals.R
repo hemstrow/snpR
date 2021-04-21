@@ -1674,16 +1674,14 @@ check.installed <- function(pkg, install.type = "basic", source = NULL){
   if(!pkg %in% rownames(utils::installed.packages())){
     say <- paste0("Package '", pkg, "' not found.")
     cat(say, "")
-    resp <- "empty"
+    cat("Install? (y or n)\n")
     
-    while(resp != "y" & resp != "n"){
-      cat("Install? (y or n)\n")
-      resp <- readLines(n = 1)
-    }
+    resp <- readLines(n = 1)
+    resp <- tolower(resp)
     
     
-    if(resp == "n"){
-      return(say)
+    if(resp != "y"){
+      stop(say)
     }
     else{
       if(install.type == "basic"){
