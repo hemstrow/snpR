@@ -760,6 +760,10 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     stop("x is not a snpRdata object.\n")
   }
   
+  if(method == "genepop"){
+    check.installed("genepop")
+  }
+  
   if(any(x@ac$n_alleles > 2)){
     vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
     vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
