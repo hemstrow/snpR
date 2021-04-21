@@ -865,6 +865,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   msg <- character()
   pkg.check <- check.installed("ggrepel")
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  pkg.check <- check.installed("viridis")
+  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
   if(length(msg) > 0){
     stop(msg, collapse = "\n")
