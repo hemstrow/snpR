@@ -559,6 +559,9 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   
   #=======subfunctions======
   extract.basic <- function(y, facets, type = "standard"){
+    if(nrow(y) == 0){
+      stop("No statistics calculated for provided type.\n")
+    }
     if(type == "standard"){
       keep.rows <- which(y$facet %in% facets)
       keep.cols <- which(!colnames(y) %in% c("facet.type"))
@@ -592,6 +595,9 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
           keep.rows <- c(keep.rows, which(y$snp.facet == snp.facets & y$facet == sample.facets))
         }
       }
+    }
+    if(length(keep.rows) == 0){
+      stop("No statistics calculated for this facet and statistics type.\n")
     }
     return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))
   }
