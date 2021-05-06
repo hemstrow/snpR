@@ -177,7 +177,10 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  but only a single nucleotide noted if homozygote and two nucleotides
 #'  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
 #'  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
-#'  (heterozygous), or 2 (homozyogus allele 2).}
+#'  (heterozygous), or 2 (homozyogus allele 2). \item{.genepop: } genepop file
+#'  format, with genotypes stored as either 4 or 6 numeric characters. Works
+#'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
+#'  the first allele (numerically) will be coded as A, the second as C.}
 #'
 #'  Additional arguments can be provided to import.snpR.data that will be passed
 #'  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -310,6 +313,24 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
                              ...){
   #======special cases========
+  # sample and snp metadata
+  if(is.character(sample.meta)){
+    if(file.exists(sample.meta)){
+      sample.meta <- as.data.frame(data.table::fread(sample.meta))
+    }
+    else{
+      stop("Cannot locate sample.meta file.\n")
+    }
+  }
+  if(is.character(snp.meta)){
+    if(file.exists(snp.meta)){
+      snp.meta <- as.data.frame(data.table::fread(snp.meta))
+    }
+    else{
+      stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  
   # genotypes
   if("genind" %in% class(genotypes)){
     return(genind.to.snpRdata(genotypes, snp.meta, sample.meta))
@@ -320,6 +341,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   if("vcfR" %in% class(genotypes)){
     return(process_vcf(genotypes, snp.meta, sample.meta))
   }
+  if(is.matrix(genotypes)){
+    genotypes <- as.data.frame(genotypes)
+  }
   if(is.character(genotypes)){
     if(file.exists(genotypes)){
       # check for ms or vcf file
@@ -328,6 +352,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       }
       else if(grepl("\\.ms$", genotypes)){
         return(format_snps(genotypes, input_format = "ms", snp.meta = snp.meta, sample.meta = sample.meta, chr.length = chr.length))
+      }
+      else if(grepl("\\.genepop$", genotypes)){
+        return(process_genepop(genotypes, snp.meta, sample.meta, mDat))
       }
       
       # other formats
@@ -372,23 +399,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     }
   }
   
-  # sample and snp metadata
-  if(is.character(sample.meta)){
-    if(file.exists(sample.meta)){
-      sample.meta <- as.data.frame(data.table::fread(sample.meta))
-    }
-    else{
-      stop("Cannot locate sample.meta file.\n")
-    }
-  }
-  if(is.character(snp.meta)){
-    if(file.exists(snp.meta)){
-      snp.meta <- as.data.frame(data.table::fread(snp.meta))
-    }
-    else{
-      stop("Cannot locate snp.meta file.\n")
-    }
-  }
+  
   
   #============sanity checks and prep========
   if(is.null(snp.meta)){

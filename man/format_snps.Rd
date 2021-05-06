@@ -105,9 +105,14 @@ While this function can accept a few non-snpRdata input formats, it will
 reformat to a snpRdata object internally. As such, it takes a facets argument
 that works identically to elsewhere in the package, as described in
 \code{\link{Facets_in_snpR}}. This argument is only used for output formats
-where facets are important, such as the genepop format. Additionally, this
-function can therefore be used as an alternative to
-\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
+where facets are important, such as the genepop format.
+
+While this function can be used as an alternative to
+\code{\link{import.snpR.data}} when the output argument is set to "snpRdata",
+this is more complicated and not recommended. Instead, it is simpler
+\code{\link{import.snpR.data}} or one of the wrappers in
+\code{\link{snpR_import_wrappers}}. The option is kept for backwards
+compatability and internal use.
 
 If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 metadata may either be provided in the first few columns of x, the number of
