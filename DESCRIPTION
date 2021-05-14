@@ -74,6 +74,7 @@ Collate:
     'bootstrapping_functions.R'
     'colony_interface.R'
     'dataset_documentation.R'
+    'import_functions.R'
     'import_wrappers.R'
     'internals.R'
     'plotting_functions.R'

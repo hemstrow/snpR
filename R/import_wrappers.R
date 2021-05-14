@@ -28,10 +28,11 @@
 #'  (heterozygous), or 2 (homozyogus allele 2).\item{genepop: } genepop file
 #'  format, with genotypes stored as either 4 or 6 numeric characters. Works
 #'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
+#'  the first allele (numerically) will be coded as A, the second as C.
+#'  \item{FSTAT: } FSTAT file
+#'  format, with genotypes stored as either 4 or 6 numeric characters. Works
+#'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
 #'  the first allele (numerically) will be coded as A, the second as C.}
-#'
-#'  Additional arguments can be provided to import.snpR.data that will be passed
-#'  to \code{\link[data.table]{fread}} when reading in genotype data.
 #'
 #'  Sample and snp metadata can also be provided via file path, and will be read
 #'  in using \code{\link[data.table]{fread}} \emph{with the default settings}.
@@ -40,24 +41,23 @@
 #'
 #'@section Conversions from other S4 objects:
 #'
-#'  Supports automatic conversions from some other popular S4 object types.
-#'  Options:
+#'Supports automatic conversions from some other popular S4 object types.
+#'Options:
 #'
-#'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
-#'  adegenet. Note, no need to import genpop objects, the equivalent statistics
-#'  are calculated automatically when functions called with facets. Sample and
-#'  SNP IDs as well as, when possible, pop IDs will be taken from the genind
-#'  object. This data will be added too but will not replace data provided to
-#'  the SNP or sample.meta arguments. Note that only \emph{SNP} data is
-#'  currently allowed, data with more than two alleles for loci will return an
-#'  error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
-#'  adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
-#'  will be taken from the genlight object if possible. This data will be added
-#'  too but will not replace data provided to the SNP or sample.meta arguments.
-#'  \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
-#'  snp metadata is taken from the fixed fields in the VCF and sample metadata
-#'  from the sample IDs. Note that this only imports SNPs with called
-#'  genotypes!}
+#'\itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
+#'adegenet. Note, no need to import genpop objects, the equivalent statistics
+#'are calculated automatically when functions called with facets. Sample and SNP
+#'IDs as well as, when possible, pop IDs will be taken from the genind object.
+#'This data will be added too but will not replace data provided to the SNP or
+#'sample.meta arguments. Note that only \emph{SNP} data is currently allowed,
+#'data with more than two alleles for loci will return an error. \item{genlight:
+#'} \code{\link[adegenet]{genlight}} objects from adegenet. Sample and SNP IDs,
+#'SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight
+#'object if possible. This data will be added too but will not replace data
+#'provided to the SNP or sample.meta arguments. \item{vcfR: }
+#'\code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is
+#'taken from the fixed fields in the VCF and sample metadata from the sample
+#'IDs. Note that this only imports SNPs with called genotypes!}
 #'
 #'@param file character, path to a file containing genotype data to import.
 #'@param genlight genlight object to convert, see
@@ -75,22 +75,28 @@
 #'@param chr.length numeric, Specifies chromosome lengths. Note that a single
 #'  value assumes that each chromosome is of equal length whereas a vector of
 #'  values gives the length for each chromosome in order.
-#'@param mDat character, default "0000". For genepop input, gives the identity of missing data.
-#'  Note, if the default is set but the data has genotypes stored in 6 characters, mDat will be set to "000000".
+#'@param mDat character, default "0000". Note, if the default is set but the
+#'  data has genotypes stored in 6 characters, mDat will be set to "000000".
 #'
-#'@aliases read.vcf read.ms read.delimited.snps convert.genlight convert.genid
+#'@aliases read.vcf read.ms read.delimited.snps read.genepop read.FSTAT convert.genlight convert.genid
 #'@name snpR_import_wrappers
 NULL
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .vcf or .vcf.gz files.
 read.vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
+  if(!grepl("\\.vcf$", genotypes) | !grepl("\\.vcf\\.gz$", genotypes)){
+    stop("File extension is not .vcf or .vcf.gz. Please check that the correct file has been entered and rename if needed.\n")
+  }
   return(import.snpR.data(file, snp.meta, sample.meta))
 }
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .ms files.
 read.ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
+  if(!grepl("\\.ms$", file)){
+    stop("File extension is not .ms. Please check that the correct file has been entered and rename if needed.\n")
+  }
   return(import.snpR.data(file, snp.meta, sample.meta, chr.length = chr.length))
 }
 
@@ -104,7 +110,19 @@ read.delimited.snps <- function(file, snp.meta = NULL, sample.meta = NULL){
 #' @export
 #' @describeIn snpR_import_wrappers Import genepop formatted data. 
 read.genepop <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
-  return(process_genepop(file, snp.meta, sample.meta, mDat))
+  if(!grepl("\\.genepop$", file)){
+    stop("File extension is not .genepop. Please check that the correct file has been entered and rename if needed.\n")
+  }
+  return(import.snpR.data(file, snp.meta, sample.meta, mDat))
+}
+
+#' @export
+#' @describeIn snpR_import_wrappers Import FSTAT formatted data. 
+read.FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+  if(!grepl("\\.fstat$", file)){
+    stop("File extension is not .fstat. Please check that the correct file has been entered and rename if needed.\n")
+  }
+  return(import.snpR.data(file, snp.meta, sample.meta, mDat))
 }
 
 #' @export

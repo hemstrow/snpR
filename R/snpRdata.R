@@ -180,7 +180,11 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  (heterozygous), or 2 (homozyogus allele 2). \item{.genepop: } genepop file
 #'  format, with genotypes stored as either 4 or 6 numeric characters. Works
 #'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
-#'  the first allele (numerically) will be coded as A, the second as C.}
+#'  the first allele (numerically) will be coded as A, the second as C.
+#'  \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
+#'  numeric characters. Works only with bi-allelic data. Genotypes will be
+#'  converted (internally) to NN: the first allele (numerically) will be coded
+#'  as A, the second as C.}
 #'
 #'  Additional arguments can be provided to import.snpR.data that will be passed
 #'  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -270,7 +274,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  for each chromosome in order.
 #'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
-#'
+#'  
 #'@examples
 #' # import example data as a snpRdata object
 #' # produces data identical to that contained in the stickSNPs example dataset.
@@ -346,7 +350,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   if(is.character(genotypes)){
     if(file.exists(genotypes)){
-      # check for ms or vcf file
+      # check for ms or vcf, etc file
       if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
         return(process_vcf(genotypes, snp.meta, sample.meta))
       }
@@ -355,6 +359,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       }
       else if(grepl("\\.genepop$", genotypes)){
         return(process_genepop(genotypes, snp.meta, sample.meta, mDat))
+      }
+      else if(grepl("\\.fstat$", genotypes)){
+        return(process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
       }
       
       # other formats

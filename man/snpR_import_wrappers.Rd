@@ -5,6 +5,8 @@
 \alias{read.vcf}
 \alias{read.ms}
 \alias{read.delimited.snps}
+\alias{read.genepop}
+\alias{read.FSTAT}
 \alias{convert.genlight}
 \alias{convert.genid}
 \alias{convert.vcfR}
@@ -15,6 +17,10 @@ read.vcf(file, snp.meta = NULL, sample.meta = NULL)
 read.ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
 
 read.delimited.snps(file, snp.meta = NULL, sample.meta = NULL)
+
+read.genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
+
+read.FSTAT(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
 convert.genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 
@@ -32,13 +38,16 @@ file containing SNP metadata, one row per SNP, with named columns.}
 
 \item{sample.meta}{data.frame, default NULL. Metadata for each individual
 sample, must have a number of rows equal to the number of samples in the
-dataset. If NULL, a single "sampID" column will be added. If a character,
+data set. If NULL, a single "sampID" column will be added. If a character,
 the path to a file containing sample metadata, one row per sample, with
 named columns.}
 
 \item{chr.length}{numeric, Specifies chromosome lengths. Note that a single
 value assumes that each chromosome is of equal length whereas a vector of
 values gives the length for each chromosome in order.}
+
+\item{mDat}{character, default "0000". Note, if the default is set but the
+data has genotypes stored in 6 characters, mDat will be set to "000000".}
 
 \item{genlight}{genlight object to convert, see
 \code{\link[adegenet]{genlight}}.}
@@ -64,8 +73,12 @@ See \code{\link{import.snpR.data}} for more detail.
 
 \item \code{read.ms}: Import .ms files.
 
-\item \code{read.delimited.snps}: Import tab delimited data where genotypes are stored as:
-NN, 0000, or snp_tab format.
+\item \code{read.delimited.snps}: Import tab delimited data where genotypes
+are stored as: NN, 0000, or snp_tab format.
+
+\item \code{read.genepop}: Import genepop formatted data.
+
+\item \code{read.FSTAT}: Import FSTAT formatted data.
 
 \item \code{convert.genlight}: Convert adegenet genlight objects.
 
@@ -89,10 +102,14 @@ NN, 0000, or snp_tab format.
  but only a single nucleotide noted if homozygote and two nucleotides
  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
- (heterozygous), or 2 (homozyogus allele 2).}
-
- Additional arguments can be provided to import.snpR.data that will be passed
- to \code{\link[data.table]{fread}} when reading in genotype data.
+ (heterozygous), or 2 (homozyogus allele 2).\item{genepop: } genepop file
+ format, with genotypes stored as either 4 or 6 numeric characters. Works
+ only with bi-allelic data. Genotypes will be converted (internally) to NN:
+ the first allele (numerically) will be coded as A, the second as C.
+ \item{FSTAT: } FSTAT file
+ format, with genotypes stored as either 4 or 6 numeric characters. Works
+ only with bi-allelic data. Genotypes will be converted (internally) to NN:
+ the first allele (numerically) will be coded as A, the second as C.}
 
  Sample and snp metadata can also be provided via file path, and will be read
  in using \code{\link[data.table]{fread}} \emph{with the default settings}.
@@ -103,23 +120,22 @@ NN, 0000, or snp_tab format.
 \section{Conversions from other S4 objects}{
 
 
- Supports automatic conversions from some other popular S4 object types.
- Options:
+Supports automatic conversions from some other popular S4 object types.
+Options:
 
- \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
- adegenet. Note, no need to import genpop objects, the equivalent statistics
- are calculated automatically when functions called with facets. Sample and
- SNP IDs as well as, when possible, pop IDs will be taken from the genind
- object. This data will be added too but will not replace data provided to
- the SNP or sample.meta arguments. Note that only \emph{SNP} data is
- currently allowed, data with more than two alleles for loci will return an
- error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
- adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
- will be taken from the genlight object if possible. This data will be added
- too but will not replace data provided to the SNP or sample.meta arguments.
- \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
- snp metadata is taken from the fixed fields in the VCF and sample metadata
- from the sample IDs. Note that this only imports SNPs with called
- genotypes!}
+\itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
+adegenet. Note, no need to import genpop objects, the equivalent statistics
+are calculated automatically when functions called with facets. Sample and SNP
+IDs as well as, when possible, pop IDs will be taken from the genind object.
+This data will be added too but will not replace data provided to the SNP or
+sample.meta arguments. Note that only \emph{SNP} data is currently allowed,
+data with more than two alleles for loci will return an error. \item{genlight:
+} \code{\link[adegenet]{genlight}} objects from adegenet. Sample and SNP IDs,
+SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight
+object if possible. This data will be added too but will not replace data
+provided to the SNP or sample.meta arguments. \item{vcfR: }
+\code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is
+taken from the fixed fields in the VCF and sample metadata from the sample
+IDs. Note that this only imports SNPs with called genotypes!}
 }
 

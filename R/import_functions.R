@@ -389,10 +389,11 @@ process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, m
   
   #===============prep genotypes===========
   gt <- dat[-c(1:(poplines[1] - 1), poplines)]
-  gt <- strsplit(gt, split = "\\s")
-  gt <- data.frame(gt)
+  gt <- data.table::fread(text = gt, colClasses = "character")
+  gt <- t(gt)
+  gt[1,] <- gsub("\\s,$", "", gt[1,])
   colnames(gt) <- gt[1,]
-  gt <- gt[-c(1:2),]
+  gt <- gt[-1,]
   
   #===============prep sample metadata===========
   ps <- poplines - ((1:length(poplines)) + (poplines[1] - 2))
@@ -438,6 +439,84 @@ process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, m
   }
   
   #=============convert to snpRdata object=====
+  ac <- format_and_check_numeric(gt, mDat)
+  
+  return(import.snpR.data(ac, snp.meta, sample.meta))
+}
+
+#' Convert a FSTAT file into a snpRdata object.
+#'
+#' @param FSTAT_file character. A path to a genepop file.
+#' @param snp.meta data.frame or null, default null. snp metadata.
+#' @param sample.meta data.frame or null, default null. sample metadata
+#' @param mDat character, default "0000". Missing data format. If the genotype
+#'   is 6 instead of 4 characters, will be automatically changed to 000000 IF
+#'   the default value is provided.
+#'
+#' @author William Hemstrom
+process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+  info <- readLines(FSTAT_file, n = 1)
+  info <- strsplit(info[1], "\\s")[[1]]
+  info <- as.numeric(info)
+  
+  gt <- data.table::fread(FSTAT_file, skip = info[2] + 1, colClasses = "character")
+  
+  #====================sanity checks=================
+  msg <- character()
+  if(!is.null(snp.meta)){
+    if(nrow(snp.meta != info[2])){
+      msg <- c(msg, 
+               paste0("The number of SNPs in the data (", info[2], ") is not equal to the number in the provided SNP metadata (", nrow(snp.meta), ")."))
+    }
+  }
+  if(!is.null(sample.meta)){
+    if(nrow(sample.meta != nrow(gt))){
+      msg <- c(msg, 
+               paste0("The number of SNPs in the data (", nrow(gt), ") is not equal to the number in the provided SNP metadata (", nrow(sample.meta), ")."))
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  #=====================format the numeric part=============
+  ac <- format_and_check_numeric(t(gt[,-1]), mDat)
+  
+  #=====================check snp.meta======================
+  snp.ids <- data.table::fread(FSTAT_file, nrows = info[2], skip = 1, header = F)[[1]]
+  if(!is.null(snp.meta)){
+    if("FSTAT_snpIDs" %in% colnames(snp.meta)){
+      warning("FSTAT_snpIDs column detected in provided sample.meta. This column will be overwritten with FSTAT SNP labels.\n")
+    }
+    snp.meta$FSTAT_snpIDs <- snp.ids
+  }
+  else{
+    snp.meta <- data.frame(FSTAT_snpIDs = snp.ids)
+  }
+  
+  
+  #====================check sample.meta===================
+  if(!is.null(sample.meta)){
+    if("FSTAT_pops" %in% colnames(sample.meta)){
+      warning("FSTAT_pops column detected in provided sample.meta. This column will be overwritten with FSTAT pop labels.\n")
+    }
+    sample.meta$FSTAT_pops <- gt[,1][[1]]
+  }
+  else{
+    sample.meta <- data.frame(FSTAT_pop = gt[,1][[1]])
+  }
+  
+  return(import.snpR.data(ac, snp.meta, sample.meta))
+}
+
+
+
+
+#' Format numeric data in the 0000 or 000000 form.
+#' 
+#' Formats numeric data into NN format, checking for 3+ alleles at an loci.
+#' Alleles coded as A and C. Expects individuals in columns.
+format_and_check_numeric <- function(gt, mDat){
   form <- nchar(gt[1,1])
   if(!form %in% c(4, 6)){
     stop("Genepop inputs must have genotypes formatted as either 2 or 3 numeric values per allele (0101 or 123123, for example).\n")
@@ -459,6 +538,7 @@ process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, m
   
   # combine to check for the correct number of alleles per loci (using factor levels for speed)
   ac <- cbind(a1, a2)
+  rm(a1, a2); gc();
   ac[ac == substr(mDat, 1, form/2)] <- NA
   ac <- as.data.frame(t(ac), stringsAsFactors = T)
   ac <- dplyr::mutate_all(ac, as.numeric)
@@ -474,6 +554,5 @@ process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, m
   ac[is.na(ac)] <- "N"
   ac <- paste0(ac[1:ncol(gt),], ac[(ncol(gt) + 1 ):nrow(ac),])
   ac <- matrix(ac, nrow(gt), ncol(gt), byrow = T)
-  
-  return(import.snpR.data(ac, snp.meta, sample.meta))
+  return(ac)
 }

@@ -67,7 +67,14 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  but only a single nucleotide noted if homozygote and two nucleotides
  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
- (heterozygous), or 2 (homozyogus allele 2).}
+ (heterozygous), or 2 (homozyogus allele 2). \item{.genepop: } genepop file
+ format, with genotypes stored as either 4 or 6 numeric characters. Works
+ only with bi-allelic data. Genotypes will be converted (internally) to NN:
+ the first allele (numerically) will be coded as A, the second as C.
+ \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
+ numeric characters. Works only with bi-allelic data. Genotypes will be
+ converted (internally) to NN: the first allele (numerically) will be coded
+ as A, the second as C.}
 
  Additional arguments can be provided to import.snpR.data that will be passed
  to \code{\link[data.table]{fread}} when reading in genotype data.
