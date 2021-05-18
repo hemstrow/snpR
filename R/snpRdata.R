@@ -457,8 +457,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   uniques <- uniques[-which(names(uniques) == ".sample.id")]
   uniques <- unlist(uniques)
   if(any(duplicated(uniques))){
-    warning(cat("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
-                paste0(uniques[which(duplicated(uniques))], "\n")))
+    warning(paste0("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
+                paste0(uniques[which(duplicated(uniques))], "\n", collapse = "")))
   }
   
   
