@@ -1239,11 +1239,11 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 #'generally prefered and required for some downstream analysis. It is therefore
 #'the default. As a slower but more accurate alternative to "af" interpolation,
 #'"iPCA" may be selected. This an iterative PCA approach to interpolate based on
-#'SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment
+#'SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument
 #'is not defined, the number of components used for interpolation will be
 #'estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method
 #'is much slower than the other methods, especially for large datasets. Setting
-#'an ncp of 2-5 generally results in reasonable inpterpolations without the time
+#'an ncp of 2-5 generally results in reasonable interpolations without the time
 #'constraint.
 #'
 #'@param sn data.frame. Input sn formatted data, as produced by

@@ -416,7 +416,14 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'   method to use for missing data. Options: \itemize{\item{bernoulli:
 #'   }{Interpolated via binomial draw for each allele against minor allele
 #'   frequency.} \item{af: }{Interpolated by inserting the expected number of
-#'   minor alleles at missing data points given loci minor allele frequencies.}}
+#'   minor alleles at missing data points given loci minor allele frequencies.}
+#'   \item{iPCA: }{This an iterative PCA approach to interpolate based on
+#'   SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp
+#'   argument is not defined, the number of components used for interpolation
+#'   will be estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case,
+#'   this method is much slower than the other methods, especially for large
+#'   datasets. Setting an ncp of 2-5 generally results in reasonable
+#'   interpolations without the time constraint.}}
 #' @param dims numeric, default 2. Output dimensionality, default 2.
 #' @param initial_dims numeric, default 50. The number of dimensions retained in
 #'   the initial PCA step during tSNE.

@@ -6,7 +6,7 @@
 \usage{
 plot_clusters(
   x,
-  facets = FALSE,
+  facets = NULL,
   plot_type = c("PCA", "tSNE", "umap"),
   check_duplicates = FALSE,
   minimum_percent_coverage = FALSE,
@@ -48,7 +48,14 @@ a sample must be sequenced at in order to be used in plots.}
 method to use for missing data. Options: \itemize{\item{bernoulli:
 }{Interpolated via binomial draw for each allele against minor allele
 frequency.} \item{af: }{Interpolated by inserting the expected number of
-minor alleles at missing data points given loci minor allele frequencies.}}}
+minor alleles at missing data points given loci minor allele frequencies.}
+\item{iPCA: }{This an iterative PCA approach to interpolate based on
+SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp
+argument is not defined, the number of components used for interpolation
+will be estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case,
+this method is much slower than the other methods, especially for large
+datasets. Setting an ncp of 2-5 generally results in reasonable
+interpolations without the time constraint.}}}
 
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
