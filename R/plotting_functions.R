@@ -469,7 +469,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'
 #' # plot colored by population and family
 #' plot_clusters(stickSNPs, "pop", "umap")
-plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
+plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
                           viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, ...){
@@ -500,8 +500,10 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     msg <- c(msg, "Only one facet may be specified at a time. This facet may be complex, with up to two sample levels (e.g. pop.family).")
   }
   if(any(facets[[2]] != "sample")){
-    bf <- facets[[1]][which(facets[[2]] != "sample")]
-    msg <- c(msg,  paste0("Only sample level facets can be plotted. Facets ", paste0(bf, collapse = ", "), " refer to snp metadata."))
+    if(!(length(facets[[2]]) == 1 & facets[[2]][1] == ".base")){
+      bf <- facets[[1]][which(facets[[2]] != "sample")]
+      msg <- c(msg,  paste0("Only sample level facets can be plotted. Facet(s): ", paste0(bf, collapse = ", "), " refer to snp metadata."))
+    }
   }
   facets <- facets[[1]]
   facets <- unlist(strsplit(facets, "(?<!^)\\.", perl = T))
@@ -649,66 +651,68 @@ plot_clusters <- function(x, facets = FALSE, plot_type = c("PCA", "tSNE", "umap"
     out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
 
 
-    if(facets[1] == FALSE){
-      plots[[i]] <- plot = out + ggplot2::geom_point()
-      next
-    }
-
-
-    #add variables.
-    v1 <- tpd[,which(colnames(tpd) == facets[1])] #get the factors
-
-    # add geoms to plot
-    if(length(facets) == 1){
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+    if(facets[1] == ".base"){
+      out <- out + ggplot2::geom_point()
     }
     else{
-      # if two plotting variables, prepare the second and add it as well.
-      v2 <- tpd[,which(colnames(tpd) == facets[2])]
-      out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
-    }
-
-
-    # change the color scales for the variables
-    ## for the first variable
-    # if the data is likely continuous:
-    if(is.numeric(v1)){
-      if(is.null(alt.palette)){
-        out <- out + ggplot2::scale_color_viridis_c(name = facets[1], option = viridis.option)
+      #add variables.
+      v1 <- tpd[,which(colnames(tpd) == facets[1])] #get the factors
+      
+      # add geoms to plot
+      if(length(facets) == 1){
+        out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
       }
       else{
-        out <- out + ggplot2::scale_color_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[1])
+        # if two plotting variables, prepare the second and add it as well.
+        v2 <- tpd[,which(colnames(tpd) == facets[2])]
+        out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
       }
-    }
-    else{
-      if(is.null(alt.palette)){
-        out <- out + ggplot2::scale_color_viridis_d(name = facets[1], option = viridis.option)
-      }
-      else{
-        out <- out + ggplot2::scale_color_manual(values = alt.palette, name = facets[1])
-      }
-    }
-
-    ## for the second variable if defined
-    if(length(facets) > 1){
-      if(is.numeric(v2)){
+      
+      
+      # change the color scales for the variables
+      ## for the first variable
+      # if the data is likely continuous:
+      if(is.numeric(v1)){
         if(is.null(alt.palette)){
-          out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+          out <- out + ggplot2::scale_color_viridis_c(name = facets[1], option = viridis.option)
         }
         else{
-          out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+          out <- out + ggplot2::scale_color_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[1])
         }
       }
       else{
         if(is.null(alt.palette)){
-          out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
+          out <- out + ggplot2::scale_color_viridis_d(name = facets[1], option = viridis.option)
         }
         else{
-          out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
+          out <- out + ggplot2::scale_color_manual(values = alt.palette, name = facets[1])
         }
       }
-
+      
+      ## for the second variable if defined
+      if(length(facets) > 1){
+        if(is.numeric(v2)){
+          if(is.null(alt.palette)){
+            out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+          }
+          else{
+            out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+          }
+        }
+        else{
+          if(is.null(alt.palette)){
+            out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
+          }
+          else{
+            out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
+          }
+        }
+        
+      }
     }
+
+
+    
 
     if(plot_type[i] == "pca"){
       loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
