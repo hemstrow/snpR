@@ -989,6 +989,16 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       x@pop.stats <- smart.merge(x@pop.stats, stats, meta.names, starter.meta)
     }
   }
+  else if(type == "weighted.means"){
+    if(nrow(x@weighted.means) == 0){
+      x@weighted.means <- as.data.table(stats)
+    }
+    else{
+      meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
+      starter.meta <- meta.names
+      x@weighted.means <- smart.merge(x@weighted.means, stats, meta.names, starter.meta)
+    }
+  }
   
   return(x)
 }
@@ -1134,7 +1144,7 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   dups <- duplicated(facets)
   if(any(dups)){
     facets <- facets[-which(dups)]
-    facet.types <- facet.types[-which(to.remove)]
+    facet.types <- facet.types[-which(dups)]
   }
   if(return.type){
     return(list(unlist(facets), facet.types))
