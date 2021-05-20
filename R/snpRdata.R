@@ -144,6 +144,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        calced_stats = "list",
                                        allele_frequency_matrices = "list",
                                        genetic_distances = "list",
+                                       weighted.means = "data.frame",
                                        other = "list"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
@@ -488,6 +489,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
            calced_stats = list(),
            allele_frequency_matrices = list(),
            genetic_distances = list(),
+           weighted.means = data.frame(),
            other = list())
   
   x@calced_stats$.base <- character()
