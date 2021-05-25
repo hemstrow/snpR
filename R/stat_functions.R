@@ -511,7 +511,6 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' get.snpR.stats(x[[1]], "pop", "pairwise")
 #' x[[2]] # overall fst
 calc_pairwise_fst <- function(x, facets, method = "WC"){
-  browser()
   facet <- subfacet <- .snp.id <- NULL
   
   func <- function(x, method, facets = NULL){
@@ -795,7 +794,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
   method <- tolower(method)
 
-  # call apply.snpR.facets, slightly different for each method, since they require different stuff.
+  #=================================call apply.snpR.facets, slightly different for each method, since they require different stuff.===============
   if(method == "genepop"){
     out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
     ave.fst <- out[[2]]
@@ -816,7 +815,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
   }
 
-  # merge
+  #==================merge and return============================
   x <- merge.snpR.stats(x, out, type = "pairwise")
   if(method != "genepop"){
     ofacets <- check.snpR.facet.request(x, ofacets, "none", T)
@@ -830,6 +829,12 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
     x <- calc_weighted_stats(x, ofacets, type = "pairwise", stats_to_get = "fst")
   }
   else{
+    ave.fst$snp.facet <- ".base"
+    ave.fst$snp.subfacet <- ".base"
+    ave.fst$subfacet <- ave.fst$comparison
+    ave.fst$comparison <- NULL
+    ave.fst <- ave.fst[,c("facet", "subfacet", "snp.facet", "snp.subfacet", "weighted_mean_fst")]
+    x <- merge.snpR.stats(x, ave.fst, "weighted.means")
     # format averages and merge
   }
   x <- update_calced_stats(x, facets, "fst", "snp")
@@ -3448,7 +3453,15 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   }
   
   for(i in 1:length(facets[[1]])){
+    split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
+    split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
+    snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
+    split.snp.part <- unlist(strsplit(split.part[[1]][which(split.part[[2]] == "snp")], split = "(?<!^)\\.", perl = T))
+    samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
+    
+    
     # get weights and stats
+    #=======================simple case==================
     if(type == "single"){
       weights <- (stats$maj.count + stats$min.count)/2
       
@@ -3456,16 +3469,13 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
         split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
         split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         if(length(split.part[[1]]) > 2){
-          snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
-          samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
-          
-          snp.part <- paste(snp.part, collapse = ".")
-          samp.part <- paste(samp.part, collapse = ".")
-          split.part <- list(c(snp.part, samp.part), c("snp", "sample"))
+          snp.partp <- paste(snp.part, collapse = ".")
+          samp.partp <- paste(samp.part, collapse = ".")
+          split.part <- list(c(snp.partp, samp.partp), c("snp", "sample"))
         }
         keep.rows <- which(stats$facet %in% split.part[[1]][which(split.part[[2]] == "sample")])
         
-        group_key <- c("facet", "subfacet", split.part[[1]][which(split.part[[2]] == "snp")])
+        group_key <- c("facet", "subfacet", split.snp.part)
       }
       else if(facets[[2]][i] == "sample"){
         keep.rows <- which(stats$facet %in% facets[[1]][i])
@@ -3473,7 +3483,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       }
       else if(facets[[2]][i] == "snp"){
         keep.rows <- which(stats$facet == ".base")
-        group_key <- facets[[1]][i]
+        group_key <- split.snp.part
       }
       else{
         keep.rows <- which(stats$facet == ".base")
@@ -3490,20 +3500,16 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       group_key_tab <- stats[keep.rows,group_key, drop = F]
       group_key_tab$key <- do.call(paste, group_key_tab)
     }
+    #=====================single window case======================
     else if(type == "single.window"){
       weights <- stats$n_snps
       
       
       if(facets[[2]][i] == "complex" | facets[[2]][i] == "special"){
-        split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
-        split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         if(length(split.part[[1]]) > 2){
-          snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
-          samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
-          
-          snp.part <- paste(snp.part, collapse = ".")
-          samp.part <- paste(samp.part, collapse = ".")
-          split.part <- list(c(snp.part, samp.part), c("snp", "sample"))
+          snp.partp <- paste(snp.part, collapse = ".")
+          samp.partp <- paste(samp.part, collapse = ".")
+          split.part <- list(c(snp.partp, samp.partp), c("snp", "sample"))
         }
         keep.rows <- which(stats$facet %in% split.part[[1]][which(split.part[[2]] == "sample")] &
                              stats$snp.facet %in% split.part[[1]][which(split.part[[2]] == "snp")])
@@ -3538,20 +3544,16 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       group_key_tab <- stats[keep.rows,group_key, drop = F]
       group_key_tab$key <- do.call(paste, group_key_tab)
     }
+    #=======================pairwise case==========================
     else if(type == "pairwise"){
       weights <- stats$nk
       
 
       if(facets[[2]][i] == "complex"){
-        split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
-        split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         if(length(split.part[[1]]) > 2){
-          snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
-          samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
-          
-          snp.part <- paste(snp.part, collapse = ".")
-          samp.part <- paste(samp.part, collapse = ".")
-          split.part <- list(c(snp.part, samp.part), c("snp", "sample"))
+          snp.partp <- paste(snp.part, collapse = ".")
+          samp.partp <- paste(samp.part, collapse = ".")
+          split.part <- list(c(snp.partp, samp.partp), c("snp", "sample"))
         }
         keep.rows <- which(stats$facet %in% split.part[[1]][which(split.part[[2]] == "sample")])
         
@@ -3578,10 +3580,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     }
     else{stop("calc_weighted_stats type not recognized.")}
     
-    # figure out group key (facet levels)
-
-    
-    # calculate weighted means using equation sum(w*s)/sum(w)
+    #===================calculate weighted means using equation sum(w*s)/sum(w)=======================
     weighted <- as.data.table(weights*selected_stats)
     group_mean_weights <- tapply(weights, group_key_tab$key, sum, na.rm = T)
     weighted$key <- group_key_tab$key
@@ -3598,24 +3597,34 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)] <- paste0("weighted_mean_", colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)])
     
     
-    ## add on extra filler columns
-    missing_cols <- which(!colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))] %in% colnames(mstats))
-    if(length(missing_cols > 0)){
-      fill <- matrix(".base", nrow(mstats), length(missing_cols))
-      colnames(fill) <- colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))][missing_cols]
-      mstats <- cbind(fill, mstats)
-    }
+    
+    #====================add on extra filler columns====================
     if(!"snp.subfacet" %in% colnames(mstats)){
-      mstats <- cbind(snp.subfacet = ".base", mstats)
-    }
-    if(!"snp.facet" %in% colnames(mstats)){
-      if(facets[[2]][i] == "special"){
-        snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
-        snp.part <- paste(snp.part, collapse = ".")
-        mstats <- cbind(snp.facet = snp.part, mstats)
+      if(facets[[2]][i] %in% c("base", "sample")){
+        mstats <- mstats[,snp.subfacet := ".base"]
       }
       else{
-        mstats <- cbind(snp.facet = ".base", mstats)
+        if(facets[[2]][i] == "special"){
+          mstats$snp.subfacet <- ".base"
+        }
+        else if(length(split.snp.part) > 1){
+          mstats$snp.subfacet <- do.call(paste, c(mstats[,..split.snp.part], sep = "."))
+        }
+        else{
+          mstats$snp.subfacet <- mstats[,..split.snp.part]
+        }
+      }
+    }
+    if(!"snp.facet" %in% colnames(mstats)){
+      if(facets[[2]][i] %in%  "special"){
+        snp.partp <- paste(snp.part, collapse = ".")
+        mstats <- mstats[,snp.facet := snp.partp]
+      }
+      else if(facets[[2]][i] %in% c("base", "sample")){
+        mstats <- mstats[,snp.facet := ".base"]
+      }
+      else{
+        mstats <- mstats[,snp.facet := check.snpR.facet.request(x, paste0(split.snp.part, collapse = "."), remove.type = "sample")]
       }
     }
     if(!"subfacet" %in% colnames(mstats)){
@@ -3623,13 +3632,15 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
         colnames(mstats)[which(colnames(mstats) == "comparison")] <- "subfacet"
       }
       else{
-        mstats <- cbind(subfacet = ".base", mstats)
+        mstats <- mstats[,subfacet := ".base"]
       }
     }
     if(!"facet" %in% colnames(mstats)){
-      mstats <- cbind(facet = ".base", mstats)
+      mstats <- mstats[,facet := ".base"]
     }
     
+    good.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", paste0("weighted_mean_", stats_to_get))
+    mstats <- mstats[,..good.cols]
     x <- merge.snpR.stats(x, mstats, type = "weighted.means")
   }
   
