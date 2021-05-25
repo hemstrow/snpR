@@ -1,22 +1,22 @@
 #'Generate bootstrapped windowed statistics
 #'
 #'\code{do_bootstraps} creates a distribution of bootstrapped smoothed values
-#'for requested statistcs.
+#'for requested statistics.
 #'
-#'Bootstrapps are conducted as described by Hohenlohe et al. (2010). For each
+#'Bootstraps are conducted as described by Hohenlohe et al. (2010). For each
 #'bootstrap, this function draws random window position, then draws random
 #'statistics from all provided SNPs to fill each observed position on that
 #'window and calculates a smoothed statistic for that window using
-#'gaussian-smoothing. Note that a "position" column \emph{must} be present in
+#'Gaussian-smoothing. Note that a "position" column \emph{must} be present in
 #'the snp metadata of the snpRdata object to do any window calculations.
 #'
 #'Bootstraps for multiple statistics can be calculated at once. If the
 #'statistics argument is set to "all", all calculated stats will be run. If it
 #'is set to "single", then all non-pairwise statistics will be bootstrapped, if
 #'it is set to "pairwise", then all pairwise statistics will be bootstrapped.
-#'Inidividual statistics can also be requested by name ("pi", "ho", etc.). All
+#'Individual statistics can also be requested by name ("pi", "ho", etc.). All
 #'statistics bootstrapped at the same time will be calculated using \emph{the
-#'same randomly filled windows}, and thus do not represent independant
+#'same randomly filled windows}, and thus do not represent independent
 #'observations between statistics. This is still computationally more efficient,
 #'however.
 #'
@@ -36,6 +36,12 @@
 #'If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
 #'upon the bootstrapped null distribution of that statistic using an empirical 
 #'continuous distribution function.
+#'
+#'Note that this function will return an error if equivalent windowed statistics
+#'have not first been calculated for the designated facets (if the "chromosome"
+#'facet is requested with a sigma of 200 and a step of 50, do_bootstraps will
+#'error unless \code{\link{calc_smoothed_averages}} has not yet been run with
+#'the same facet, sigma, and step values).
 #'
 #'@param x snpRdata object.
 #'@param facets character or NULL, default NULL. Categories by which to break up
@@ -87,6 +93,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   #      we need to do everything once for each unique snp level facet defined in the data.
 
   #================sanity checks================
+  msg <- character(0)
   o.facets <- facets
   facets <- check.snpR.facet.request(x, facets, "none")
 
@@ -113,14 +120,70 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     stats.type <- c(stats.type, "single")
   }
 
-  # run basic sanity checks
-  sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
 
   # get mafs if doing any normal stats. Can make this more efficient by adding only where missing in the future.
   if("single" %in% stats.type & nk){
-    x <- calc_maf(x, facets)
+    what.stats <- check_calced_stats(x, check.snpR.facet.request(x, facets), "maf")
+    if(any(!unlist(what.stats))){
+      x <- calc_maf(x,  check.snpR.facet.request(x, facets)[which(!unlist(what.stats))])
+    }
     x@stats$nk <- x@stats$maj.count + x@stats$min.count
   }
+  
+  # check that we've actually calculated windowed stats for the facet we are doing!
+  facet_details <- check.snpR.facet.request(x, facets, "none", "TRUE")
+  for(i in 1:length(facets)){
+    split.facet <- check.snpR.facet.request(x, unlist(strsplit(facets[i], "(?<!^)\\.", perl = T)), "none", TRUE)
+    snp.part <- which(split.facet[[2]] == "snp")
+    snp.part <- split.facet[[1]][snp.part]
+    if(length(snp.part) == 0){
+      snp.part <- ".base"
+    }
+    samp.part <- which(split.facet[[2]] == "sample")
+    samp.part <- split.facet[[1]][samp.part]
+    if(length(samp.part) == 0){
+      samp.part <- ".base"
+    }
+    
+    
+    
+    # check pairwise
+    if("pairwise" %in% stats.type){
+      has.samp.part.pw <- which(x@pairwise.window.stats$facet == paste0(samp.part, collapse = "."))
+      has.snp.part.pw <- which(x@pairwise.window.stats$snp.facet == paste0(snp.part, collapse = "."))
+      has.step.matches.pw <- which(x@pairwise.window.stats$step == step)
+      has.sigma.matches.pw <- which(x@pairwise.window.stats$sigma == sigma)
+      has.both.parts.pw <- intersect(intersect(has.snp.part.pw, has.samp.part.pw), intersect(has.step.matches.pw, has.sigma.matches.pw))
+      
+    }
+    if("single" %in% stats.type){
+      has.samp.part.s <- which(x@window.stats$facet == paste0(samp.part, collapse = "."))
+      has.snp.part.s <- which(x@window.stats$snp.facet == paste0(snp.part, collapse = "."))
+      has.step.matches.s <- which(x@window.stats$step == step)
+      has.sigma.matches.s <- which(x@window.stats$sigma == sigma)
+      has.both.parts.s <- intersect(intersect(has.snp.part.s, has.samp.part.s), intersect(has.sigma.matches.s, has.step.matches.s))
+    }
+    
+    # check single
+    if("pairwise" %in% stats.type){
+      if(length(has.both.parts.pw) == 0){
+        msg <- c(msg, paste0("Windowed stats with the same step and sigma not calculated for any pairwise statstistics for facet: ", facets[i], "."))
+      }
+    }
+    if("single" %in% stats.type){
+      if(length(has.both.parts.s) == 0){
+        msg <- c(msg, paste0("Windowed stats with the same step and sigma not calculated for any single statstistics for facet: ", facets[i], "."))
+      }
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(paste0(msg, "\n"))
+  }
+  
+  # run basic sanity checks
+  sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
+  
 
   #===========subfunctions=======
   get.grps <- function(snps, facet){
@@ -461,7 +524,10 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     lapply(facets[y], function(z) check.snpR.facet.request(x, z))
   })
   snp.facet.matches <- lapply(snp.facet.matches, unlist) # this is now a list with an entry for each snp level facet containing the pop level facets to run.
-
+  
+  # remove empty facets (sample level only facets)
+  snp.facet.matches <- Filter(Negate(is.null), snp.facet.matches)
+  
   # add in .base if needed, for sample level only facets
   samp.facets <- check.snpR.facet.request(x, facets, "none", T)
   samp.facets <- samp.facets[[1]][which(samp.facets[[2]] == "sample")]
@@ -737,8 +803,9 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       # for complex facets
       else if(facets[[2]][[i]] == "complex"){
         u.facet <-  unlist(strsplit(facets[[1]][[i]], "(?<!^)\\.", perl = T))
-        samp.part <- check.snpR.facet.request(x, u.facet)
-        snp.part <- check.snpR.facet.request(x, u.facet, "sample")
+        split.parts <- check.snpR.facet.request(x, u.facet, remove.type = "none", return.type = T)
+        samp.part <- split.parts[[1]][which(split.parts[[2]] == "sample")]
+        snp.part <- split.parts[[1]][which(split.parts[[2]] == "snp")]
 
         keep.samp <- which(u.rows$facet == samp.part)
         keep.snp <- which(u.rows$snp.facet == snp.part)

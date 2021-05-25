@@ -4,7 +4,7 @@
 \alias{calc_weighted_stats}
 \title{Calculate weighted averages of previously calculated genetic statistics.}
 \usage{
-calc_weighted_stats(x, facets = NULL, type = "single")
+calc_weighted_stats(x, facets = NULL, type = "single", stats_to_get)
 }
 \arguments{
 \item{x}{snpRdata object.}

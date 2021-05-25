@@ -515,7 +515,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         # if this is a genepop fst output, we should expect a list of size two. Need to return the correct parts!
         if(length(out) == 2){
           suppressWarnings(out1 <- rbind(out1, cbind(data.table::as.data.table(x@snp.meta), facet = facets[i], data.table::as.data.table(out[[1]]))))
-          out2 <- rbind(out2, data.frame(comparison = names(out[[2]]), overall_fst = out[[2]], stringsAsFactors = F))
+          out2 <- rbind(out2, data.frame(facet = facets[i], comparison = names(out[[2]]), weighted_mean_fst = out[[2]], stringsAsFactors = F))
         }
       }
       
@@ -1116,6 +1116,10 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   if(any(to.remove)){
     facets <- facets[-which(to.remove)]
     facet.types <- facet.types[-which(to.remove)]
+    if(!".base" %in% facets){
+      facets <- c(facets, ".base")
+      facet.types <- c(facets, ".base")
+    }
   }
   
   # fix if we've removed everything, return the base facet if fill_with_base is TRUE
@@ -1401,24 +1405,24 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
   
   # facets
   if(is.null(facets[1]) & any(stats.type == "pairwise")){
-    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
+    msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type or statistics = 'single'")
   }
   facet.types <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   if(any(facet.types[[2]] == "snp") & any(stats.type == "pairwise")){
-    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type = 'single'")
+    msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type or statistics = 'single'")
   }
   
   # statistics, really only for bootstrapping
   if(!is.null(stats[1])){
     bad.stats <- which(!(stats %in% good.types))
     if(length(bad.stats) > 0){
-      msg <- c(msg, paste0("Some statics are not acceptable for bootstrapping: ", paste0(stats[bad.stats], collapse = " "),
+      msg <- c(msg, paste0("Some of the requested statics are not acceptable for bootstrapping: ", paste0(stats[bad.stats], collapse = " "),
                            "Acceptable stats: ", paste0(good.types, collapse = " ")))
     }
     
     missing.stats <- which(!(stats %in% c(colnames(x@stats), colnames(x@pairwise.stats))))
     if(length(missing.stats) > 0){
-      msg <- c(msg, paste0("Some statics are not acceptable found in the data: ", paste0(stats[missing.stats], collapse = " "),
+      msg <- c(msg, paste0("Some of the statistics for which smoothing have been suggested have not been yet been calculated: ", paste0(stats[missing.stats], collapse = " "),
                            ". Please run these statistics for the supplied facets!"))
     }
   }
