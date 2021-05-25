@@ -35,7 +35,10 @@
 #'
 #'If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
 #'upon the bootstrapped null distribution of that statistic using an empirical 
-#'continuous distribution function.
+#'continuous distribution function. Note that in this case, the minimum possible
+#'p-value for a window depends upon the number of bootstraps calculated (if only
+#'a 1000 bootstraps were performed, the minimum possible p-value is about .001, 
+#'or one in a thousand.)
 #'
 #'Note that this function will return an error if equivalent windowed statistics
 #'have not first been calculated for the designated facets (if the "chromosome"
