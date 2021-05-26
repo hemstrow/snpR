@@ -51,7 +51,7 @@ for(i in 1:length(pairwise.stats[[1]])){
 for(i in 1:length(sample.stats[[1]])){
   names(statistic_index)[tracker] <- sample.stats[[1]][i]
   statistic_index[[tracker]] <- list(category = "sample", types = c("sample", "weighted.means"),
-                                     col_pattern = pairwise.stats[[2]][[i]])
+                                     col_pattern = sample.stats[[2]][[i]])
   tracker <- tracker + 1
 }
 

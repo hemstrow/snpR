@@ -575,8 +575,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   facets <- check.snpR.facet.request(x, facets, "none")
   
   if(!all(stats %in% names(statistic_index))){
-    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index)), collapse = ", "]),
-                         "not recognized. Recognized statistics: ",
+    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index))], collapse = ", "),
+                         "\nnot recognized. \nRecognized statistics: ",
                          paste0(names(statistic_index), collapse = ", "),
                          "."))
   }
@@ -755,12 +755,6 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
-  extract.sample <- function(y, facets){
-    facets <- check.snpR.facet.request(x, facets, "sample")
-    keep.rows <- which(y$facet %in% facets)
-    return(y[keep.rows,])
-  }
-  
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -811,7 +805,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
-    return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern))
+    facets <- check.snpR.facet.request(x, facets, "sample")
+    return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern, type = "comingled"))
   }
   else if(type == "pop"){
     return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))

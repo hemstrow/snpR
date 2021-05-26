@@ -705,7 +705,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
     }
   }
   else if(case == "per_sample"){
-    
+
     split_facets <- strsplit(facets, "(?<!^)\\.", perl = T)
     names(split_facets) <- facets
     
@@ -723,7 +723,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         ident <- which(apply(x@snp.meta[,colnames(opts),drop = F], 1, function(x) identical(as.character(x), as.character(opts[i,]))))
         if(length(ident) > 0){
           genotypes <- x[ident,, drop = FALSE]
-          suppressWarnings(out[[i]] <- cbind.data.frame(facet = fname,
+          suppressWarnings(out[[i]] <- cbind.data.frame(snp.facet = fname,
+                                                        x@sample.meta,
                                                         opts[i,,drop = F],
                                                         stat = fun(genotypes, ...),
                                                         stringsAsFactors = F))
@@ -733,16 +734,23 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
     }
     
     # run
+    browser()
     out <- vector("list", length(facets))
     for(i in 1:length(facets)){
       if(facets[i] == ".base"){
-        out[[i]] <- cbind.data.frame(x@sample.meta, facet = ".base",
+        out[[i]] <- cbind.data.frame(facet = ".base", subfacet = ".base", snp.facet = ".base", snp.subfacet = ".base",
+                                     x@sample.meta,
                                      stat = fun(x, ...),
                                      stringsAsFactors = F)
       }
       else{
         out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
-        out[[i]] <- cbind(x@sample.meta, out[[i]])
+        opt.names <- check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
+        opt.names <- unlist(strsplit(opt.names, "(?<!^)\\.", perl = T))
+        out[[i]]$snp.subfacet <- do.call(paste, c(opts[[i]][,opt.names, drop = F], sep = "."))
+        out[[i]]$facet <- ".base"
+        out[[i]]$subfacet <- ".base"
+        out[[i]] <- out[[i]][,c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@sample.meta), "stat")]
       }
     }
     suppressWarnings(out <- dplyr::bind_rows(out))
@@ -789,6 +797,8 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   smart.merge <- function(n.s, o.s, meta.names, starter.meta){
     n.s <- data.table::as.data.table(n.s)
     o.s <- data.table::as.data.table(o.s)
+    if(identical(n.s, o.s)){return(n.s)}
+      
     if(nrow(o.s) == 0){
       return(n.s)
     }
@@ -917,8 +927,9 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     x@pairwise.window.stats <- n.s
   }
   else if(type == "sample.stats"){
+    browser()
     meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
-    starter.meta <- c("facet", "subfacet")
+    starter.meta <- meta.cols
     n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
     
     # fix NAs that result from adding new facets
