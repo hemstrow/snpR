@@ -536,7 +536,10 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to fetch
 #'   data.
-#' @param type character, default "single". Type of statistics to pull, see
+#' @param stats character or NULL, default NULL. Statistics for which to fetch data.
+#'   Named identically as in the function used to calculate them (such as calc_pi).
+#'   See description for list.
+#' @param type character, default NULL. If set, the type of statistics to pull. See
 #'   description.
 #'
 #' @export
@@ -547,11 +550,78 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' dat <- calc_pairwise_fst(stickSNPs, "group.pop")
 #'
 #' # fetch pi
-#' get.snpR.stats(dat, "group.pop")
+#' get.snpR.stats(dat, "group.pop", "pi")
 #' # fetch fst
-#' get.snpR.stats(dat, "group.pop", "pairwise")
+#' get.snpR.stats(dat, "group.pop", "fst")
 #' 
-get.snpR.stats <- function(x, facets = NULL, type = "single"){
+get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
+  if(!is.null(type)){
+    return(.get.snpR.stats(x, facets, type))
+  }
+  
+  #====================sanity checks=====================
+  msg <- character()
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  if(is.null(facets[1])){
+    facets <- ".base"
+  }
+  if(facets[1] == "all"){
+    facets <- x@facets
+  }
+  
+  facets <- check.snpR.facet.request(x, facets, "none")
+  
+  if(!all(stats %in% names(statistic_index))){
+    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index)), collapse = ", "]),
+                         "not recognized. Recognized statistics: ",
+                         paste0(names(statistic_index), collapse = ", "),
+                         "."))
+  }
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+  #=======================fetch, using the internal version of .get.snpR.data========================
+  out <- vector("list", length(stats))
+  names(out) <- stats
+  
+  # loop through each requested stat
+  for(i in 1:length(stats)){
+    out[[i]] <- vector("list", length(statistic_index[[stats[i]]]$types))
+    names(out[[i]]) <- statistic_index[[stats[i]]]$types
+    
+    # loop through each possible stat storage location
+    for(j in 1:length(out[[i]])){
+      
+      # run if the col pattern is set or not
+      if(!is.na(statistic_index[[stats[i]]]$col_pattern[1])){
+        suppressWarnings(res <- .get.snpR.stats(x, facets, type = names(out[[i]])[j], col_pattern = statistic_index[[stats[i]]]$col_pattern))
+      }
+      else{
+        suppressWarnings(res <- .get.snpR.stats(x, facets, type = names(out[[i]])[j]))
+      }
+      
+      # add results if not null
+      if(!is.null(res)){
+        out[[i]][[j]] <- res
+      }
+    }
+    out[[i]] <- Filter(Negate(is.null), out[[i]])
+    if(length(out[[i]]) == 0){
+      warning(paste0("No calculated statistics found for stat: ", stats[i], " for any requested facets."))
+    }
+  }
+  
+  return(out)
+}
+
+#' Internal version of get.snpR.stats, for backwards comparability if type is set or
+#' for fetching data for get.snpR.stats.
+#' 
+#' See documentation for get.snpR.stats.
+.get.snpR.stats <- function(x, facets = NULL, type = "single", col_pattern = NULL){
   # sanity check
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -565,7 +635,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -578,9 +648,10 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   
   
   #=======subfunctions======
-  extract.basic <- function(y, facets, type = "standard"){
+  extract.basic <- function(y, facets, type = "standard", col_pattern = NULL){
     if(nrow(y) == 0){
-      stop("No statistics calculated for provided type.\n")
+      warning("No statistics calculated for provided type.\n")
+      return(NULL)
     }
     if(type == "standard"){
       keep.rows <- which(y$facet %in% facets)
@@ -616,6 +687,50 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
         }
       }
     }
+    else if(type == "comingled"){ # this type has facet and snp.facet info, mingles everything (as in weighted.means)
+      facets <- check.snpR.facet.request(x, facets, "none", T)
+      
+      keep.rows <- numeric()
+      for(i in 1:length(facets[[1]])){
+        split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
+        split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
+        snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
+        if(length(snp.part) == 0){
+          snp.part <- ".base"
+        }
+        samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
+        if(length(samp.part) == 0){
+          samp.part <- ".base"
+        }
+        
+        keep.rows <- c(keep.rows, which(y$facet == samp.part & y$snp.facet == snp.part))
+      }
+      
+      keep.rows <- sort(unique(keep.rows))
+      
+      # remove empty columns
+      empty.cols <- which(colSums(is.na(y[keep.rows,])) == nrow(y[keep.rows,]))
+      keep.cols <- 1:ncol(y)
+      if(any(empty.cols)){
+        keep.cols <- keep.cols[-empty.cols]
+      }
+    }
+    
+    
+    # adjust keep.cols to remove any unwanted stats
+    if(!is.null(col_pattern)){
+      good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet",
+                                                       colnames(x@facet.meta)))
+      for(i in 1:length(col_pattern)){
+        grep.cols <- which(grepl(col_pattern[i], colnames(y)))
+      }
+      if(length(grep.cols) == 0){
+        return(NULL)
+      }
+      
+      keep.cols <- keep.cols[which(keep.cols %in% c(good.cols, grep.cols))]
+    }
+    
     if(length(keep.rows) == 0){
       stop("No statistics calculated for this facet and statistics type.\n")
     }
@@ -661,7 +776,7 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
   #========extract data======
   if(type == "single"){
     facets <- check.snpR.facet.request(x, facets)
-    return(extract.basic(x@stats, facets))
+    return(extract.basic(x@stats, facets, col_pattern = col_pattern))
   }
   else if(type == "pairwise"){
     facets <- check.snpR.facet.request(x, facets)
@@ -669,19 +784,19 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     if(length(base.facets) > 0){
       stop("Cannot find pairwise statistics without any facets (facets = NULL or '.base').\n")
     }
-    return(extract.basic(x@pairwise.stats, facets))
+    return(extract.basic(x@pairwise.stats, facets, col_pattern = col_pattern))
   }
   else if(type == "single.window"){
-    return(extract.basic(x@window.stats, facets, "window"))
+    return(extract.basic(x@window.stats, facets, "window", col_pattern = col_pattern))
   }
   else if(type == "pairwise.window"){
-    return(extract.basic(x@pairwise.window.stats, facets, "window"))
+    return(extract.basic(x@pairwise.window.stats, facets, "window", col_pattern = col_pattern))
   }
   else if(type == "LD"){
     return(extract.LD(x@pairwise.LD, facets))
   }
   else if(type == "bootstraps"){
-    return(extract.basic(x@window.bootstraps, facets, "window"))
+    return(extract.basic(x@window.bootstraps, facets, "window", col_pattern = col_pattern))
   }
   else if(type == "genetic_distance"){
     return(extract.gd.afm(x@genetic_distances, facets))
@@ -696,12 +811,13 @@ get.snpR.stats <- function(x, facets = NULL, type = "single"){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
-    return(extract.basic(x@sample.stats, facets))
+    return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern))
   }
   else if(type == "pop"){
-    return(extract.basic(x@pop.stats, facets))
+    return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))
+  }
+  else if(type == "weighted.means"){
+    return(extract.basic(x@weighted.means, facets, type = "comingled", col_pattern = col_pattern))
   }
   
 }
-
-

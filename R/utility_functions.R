@@ -1943,8 +1943,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn[hets] <- draws
 
     # assign major or minor back
-    x <- calc_maf(x)
-    s <- get.snpR.stats(x)
+    maf.check <- check_calced_stats(x, ".base", stats = "maf")
+    if(!unlist(maf.check)){
+      x <- calc_maf(x)
+    }
+    s <- .get.snpR.stats(x)
 
     # majors
     sn[is.na(sn)] <- "N"
@@ -1962,8 +1965,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn[mins] <- rmins
 
     # paste together by columns
-    rdat <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
-    names(rdat) <- colnames(sn)
+    rdata <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
+    names(rdata) <- colnames(sn)
   }
   
   # VCF
@@ -1980,12 +1983,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
                             POS = snp.meta(x)[,position],
-                            REF = get.snpR.stats(x)$major,
-                            ALT = get.snpR.stats(x)$minor,
+                            REF = .get.snpR.stats(x)$major,
+                            ALT = .get.snpR.stats(x)$minor,
                             QUAL = ".",
                             FILTER = "PASS",
-                            INFO = paste0("NS=", get.snpR.stats(x)$maj.count + get.snpR.stats(x)$min.count,
-                                          ";AC=", get.snpR.stats(x)$min.count),
+                            INFO = paste0("NS=", .get.snpR.stats(x)$maj.count + .get.snpR.stats(x)$min.count,
+                                          ";AC=", .get.snpR.stats(x)$min.count),
                             FORMAT = "GT")
     colnames(data_meta)[1] <- "#CHROM"
     malt <- which(data_meta$ALT == "N")
@@ -2124,7 +2127,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       saveRDS(rdata, paste0(outfile, ".RDS"))
     }
     else if(output == "fasta"){
-      writeobj <- c(rbind(paste0(">", names(rdat)), rdat))
+      writeobj <- c(rbind(paste0(">", names(rdata)), rdata))
       writeLines(writeobj, outfile)
     }
     else if(output == "lea"){
@@ -2341,10 +2344,10 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   if(any(!unlist(missing_mafs))){
     x <- calc_maf(x, names(missing_mafs)[which(!unlist(missing_mafs))])
   }
-  am <- get.snpR.stats(x, needed.sample.facets)
+  am <- .get.snpR.stats(x, needed.sample.facets)
   
   # grab column names
-  maj_min <- get.snpR.stats(x)
+  maj_min <- .get.snpR.stats(x)
   maj_min <- paste0(rep(unique(maj_min$.snp.id), each = 2), "_",
                     c(maj_min$major, maj_min$minor)[rep(1:nrow(maj_min), each = 2) + (0:1) * nrow(maj_min)])
   

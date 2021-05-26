@@ -270,7 +270,7 @@ calc_maf <- function(x, facets = NULL){
       x <- calc_maf(x)
     }
     
-    major_minor_base <- get.snpR.stats(x)[,c("major", "minor")]
+    major_minor_base <- .get.snpR.stats(x)[,c("major", "minor")]
     out <- apply.snpR.facets(x,
                              facets = facets,
                              req = "gs",
@@ -3119,7 +3119,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   # grab the data we are working with for sample specific facets
   y <- x
   if(sample_facets_detected){
-    x <- get.snpR.stats(y, facets, "allele_frequency_matrix")
+    x <- .get.snpR.stats(y, facets, "allele_frequency_matrix")
   }
   #=============subfunctions=========
   # dist subfunction
@@ -3295,7 +3295,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   if(length(missing) > 0){
     x <- calc_genetic_distances(x, names(cs)[missing])
   }
-  gd <- get.snpR.stats(x, facets, "genetic_distance")
+  gd <- .get.snpR.stats(x, facets, "genetic_distance")
   
   #===============fetch geo dist matrices=======================
   # get the geo dist matrices
@@ -3445,7 +3445,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   }
   
   
-  stats <- get.snpR.stats(x, facets, type)
+  stats <- .get.snpR.stats(x, facets, type)
   facets <- check.snpR.facet.request(x, facets, "none", T)
   if(any(facets[[2]] == "complex") & type == "single.window"){
     facets[[1]] <- c(facets[[1]], facets[[1]][which(facets[[2]] == "complex")])
