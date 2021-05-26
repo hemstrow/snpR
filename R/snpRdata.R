@@ -755,6 +755,22 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
+<<<<<<< HEAD
+=======
+  extract.sample <- function(y, facets, col_pattern = NULL){
+    y <- as.data.table(y)
+    facet.check <- check.snpR.facet.request(x, facets, "sample")
+    keep.rows <- which(y$facet %in% facet.check)
+    colnames(y)[which(colnames(y) == "facet")] <- "snp.facet"
+    keep.cols <- which(colnames(y) %in% c(colnames(x@sample.meta), "snp.facet", "snp.subfacet"))
+    for(i in 1:length(col_pattern)){
+      keep.cols <- c(keep.cols, grep(col_pattern[i], colnames(y)))
+    }
+    keep.cols <- unique(keep.cols)
+    return(y[keep.rows, ..keep.cols])
+  }
+  
+>>>>>>> feb93b7d0739349d7e67a508a562373f2c773083
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -805,8 +821,12 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
+<<<<<<< HEAD
     facets <- check.snpR.facet.request(x, facets, "sample")
     return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern, type = "comingled"))
+=======
+    return(extract.sample(x@sample.stats, facets, col_pattern = col_pattern))
+>>>>>>> feb93b7d0739349d7e67a508a562373f2c773083
   }
   else if(type == "pop"){
     return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))
