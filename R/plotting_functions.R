@@ -1228,8 +1228,33 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   check.installed("pophelper", "github", "royfrancis/pophelper")
   
+  if(!is.null(facet.order)){
+    if(is.null(facet)){
+      msg <- c(msg, "A faceting variable must be provided if a facet.order is.\n")
+    }
+    if(length(facet.order) != length(unique(facet.order))){
+      msg <- c(msg, "facet.order must contain only unique entries, one per unique category in the provided facet.\n")
+    }
+  }
+  
   # check if this is with a snpRdata object or a qlist and do some other checks
-  if(!class(x) == "snpRdata"){
+  if(!is.snpRdata(x)){
+    if(!is.null(facet.order)){
+      if(!is.null(facet)){
+        cats <- unique(facet)
+        
+        if(length(facet.order) != length(cats)){
+          msg <- c(msg, "The length of facet.order must equal the number of unique categories in the provided facet.\n")
+        }
+        
+        cats <- unique(facet)
+        if(!all(cats %in% facet.order)){
+          msg <- c(msg, paste0("All categories in the requested facet must be present in facet.order. Missing categories: ",
+                               paste0(cats[which(!cats %in% facet.order)], collapse = ", "), "\n"))
+        }
+      }
+    }
+    
     # file pattern
     if(!is.list(x)){
       if(is.character(x) & length(x) > 1){
@@ -1321,6 +1346,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   # checks for snpRdata objects only
   if(provided_qlist == FALSE){
+    x <- add.facets.snpR.data(x, facet)
     good.methods <- c("snapclust", "snmf")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
@@ -1339,7 +1365,18 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     if(!is.null(facet[[1]])){
       fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
       if(any(fcheck[[2]] != "sample")){
-        msg <- c(msg, paste0("Only simple, sample level facets allowed.\n"))
+        msg <- c(msg, "Only simple, sample level facets allowed.\n")
+      }
+    }
+    if(!is.null(facet.order)){
+      cats <- get.task.list(x, facet)
+      num.cats <- length(unique(cats[,2]))
+      if(num.cats != length(unique(facet.order))){
+        msg <- c(msg, "The number of categories provided in facet.order must equal the number of categories in the provided facet.\n")
+        if(!all(cats %in% facet.order)){
+          msg <- c(msg, paste0("All categories in the requested facet must be present in facet.order. Missing categories: ",
+                               paste0(cats[which(!cats %in% facet.order)], collapse = ", "), "\n"))
+        }
       }
     }
     sample_meta <- x@sample.meta
@@ -1880,7 +1917,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   # add facets
   if(!is.null(facet[1])){
-    pops <- unique(sample_meta[,facet])
+    if(!is.null(facet.order)){
+      pops <- facet.order
+    }
+    else{
+      pops <- unique(sample_meta[,facet])
+    }
     fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)

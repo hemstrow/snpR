@@ -491,7 +491,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'
 #'@return A snpRdata object with pairwise FST as well as the number of total
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
-#'  socket.
+#'  slot.
 #'
 #'@references Wier and Cockerham (1984). \emph{Evolution}
 #'@references Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
@@ -504,12 +504,11 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' @examples
 #' # Using Wier and Cockerham 1984's method
 #' x <- calc_pairwise_fst(stickSNPs, "pop")
-#' get.snpR.stats(x, "pop", "pairwise")
+#' get.snpR.stats(x, "pop", "fst")
 #'
 #' # Using genepop, note that the overall value is part 2 of the returned list
 #' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
-#' get.snpR.stats(x[[1]], "pop", "pairwise")
-#' x[[2]] # overall fst
+#' get.snpR.stats(x, "pop", "fst")
 calc_pairwise_fst <- function(x, facets, method = "WC"){
   facet <- subfacet <- .snp.id <- NULL
   
@@ -839,15 +838,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   }
   x <- update_calced_stats(x, facets, "fst", "snp")
 
-  if(method == "genepop"){
-    message("Returning list: first element is the snpRdata object now containing pairwise fst values, second is the average pairwise fst for all comparisons.\n")
-    return(list(x, ave.fst))
-  }
-  else{
-    return(x)
-  }
-
-
+  return(x)
 }
 
 

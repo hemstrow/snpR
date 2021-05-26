@@ -575,8 +575,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   facets <- check.snpR.facet.request(x, facets, "none")
   
   if(!all(stats %in% names(statistic_index))){
-    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index)), collapse = ", "]),
-                         "not recognized. Recognized statistics: ",
+    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index))], collapse = ", "),
+                         "\nnot recognized. \nRecognized statistics: ",
                          paste0(names(statistic_index), collapse = ", "),
                          "."))
   }
@@ -755,10 +755,17 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
-  extract.sample <- function(y, facets){
-    facets <- check.snpR.facet.request(x, facets, "sample")
-    keep.rows <- which(y$facet %in% facets)
-    return(y[keep.rows,])
+  extract.sample <- function(y, facets, col_pattern = NULL){
+    y <- as.data.table(y)
+    facet.check <- check.snpR.facet.request(x, facets, "sample")
+    keep.rows <- which(y$facet %in% facet.check)
+    colnames(y)[which(colnames(y) == "facet")] <- "snp.facet"
+    keep.cols <- which(colnames(y) %in% c(colnames(x@sample.meta), "snp.facet", "snp.subfacet"))
+    for(i in 1:length(col_pattern)){
+      keep.cols <- c(keep.cols, grep(col_pattern[i], colnames(y)))
+    }
+    keep.cols <- unique(keep.cols)
+    return(y[keep.rows, ..keep.cols])
   }
   
   #========prep=============
@@ -811,7 +818,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
-    return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern))
+    return(extract.sample(x@sample.stats, facets, col_pattern = col_pattern))
   }
   else if(type == "pop"){
     return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))
