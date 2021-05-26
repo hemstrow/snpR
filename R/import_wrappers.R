@@ -103,8 +103,8 @@ read.ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
 #' @export
 #' @describeIn snpR_import_wrappers Import tab delimited data where genotypes
 #'   are stored as: NN, 0000, or snp_tab format.
-read.delimited.snps <- function(file, snp.meta = NULL, sample.meta = NULL){
-  return(import.snpR.data(file, snp.meta, sample.meta))
+read.delimited.snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
+  return(import.snpR.data(file, snp.meta, sample.meta, mDat = mDat))
 }
 
 #' @export
