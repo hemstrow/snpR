@@ -554,7 +554,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' # fetch fst
 #' get.snpR.stats(dat, "group.pop", "fst")
 #' 
-get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
+get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL, bootstraps = FALSE){
   if(!is.null(type)){
     return(.get.snpR.stats(x, facets, type))
   }
@@ -587,32 +587,33 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   out <- vector("list", length(stats))
   names(out) <- stats
   
-  # loop through each requested stat
-  for(i in 1:length(stats)){
-    out[[i]] <- vector("list", length(statistic_index[[stats[i]]]$types))
-    names(out[[i]]) <- statistic_index[[stats[i]]]$types
-    
-    # loop through each possible stat storage location
-    for(j in 1:length(out[[i]])){
-      
-      # run if the col pattern is set or not
-      if(!is.na(statistic_index[[stats[i]]]$col_pattern[1])){
-        suppressWarnings(res <- .get.snpR.stats(x, facets, type = names(out[[i]])[j], col_pattern = statistic_index[[stats[i]]]$col_pattern))
-      }
-      else{
-        suppressWarnings(res <- .get.snpR.stats(x, facets, type = names(out[[i]])[j]))
-      }
-      
-      # add results if not null
-      if(!is.null(res)){
-        out[[i]][[j]] <- res
-      }
-    }
-    out[[i]] <- Filter(Negate(is.null), out[[i]])
-    if(length(out[[i]]) == 0){
-      warning(paste0("No calculated statistics found for stat: ", stats[i], " for any requested facets."))
+  # determine the parts of the snpR object we need to harvest
+  needed.parts <- purrr::map(statistic_index[stats], "types")
+  unique.needed.parts <- unique(unlist(needed.parts))
+  if(!bootstraps){
+    if(any(unique.needed.parts == "bootstraps")){
+      unique.needed.parts <- unique.needed.parts[-which(unique.needed.parts == "bootstraps")]
     }
   }
+  out <- vector("list", length(unique.needed.parts))
+  names(out) <- unique.needed.parts
+  for(i in 1:length(unique.needed.parts)){
+    need.this.part <- names(needed.parts)[grep(unique.needed.parts[i], needed.parts)]
+    col_patterns <-  unlist(purrr::map(statistic_index[need.this.part], "col_pattern"))
+    if(!is.na(col_patterns[1])){
+      suppressWarnings(res <- .get.snpR.stats(x, facets, type = unique.needed.parts[i],
+                                              col_pattern = col_patterns))
+    }
+    else{
+      suppressWarnings(res <- .get.snpR.stats(x, facets, type = unique.needed.parts[i]))
+    }
+    
+    if(!is.null(res)){
+      out[[i]] <- res
+    }
+  }
+  
+  out <- Filter(Negate(is.null), out)
   
   return(out)
 }
@@ -721,8 +722,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
     if(!is.null(col_pattern)){
       good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet",
                                                        colnames(x@facet.meta)))
+      grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
-        grep.cols <- which(grepl(col_pattern[i], colnames(y)))
+        grep.cols <- c(grep.cols, grep(col_pattern[i], colnames(y)))
       }
       if(length(grep.cols) == 0){
         return(NULL)
@@ -755,22 +757,6 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
-<<<<<<< HEAD
-=======
-  extract.sample <- function(y, facets, col_pattern = NULL){
-    y <- as.data.table(y)
-    facet.check <- check.snpR.facet.request(x, facets, "sample")
-    keep.rows <- which(y$facet %in% facet.check)
-    colnames(y)[which(colnames(y) == "facet")] <- "snp.facet"
-    keep.cols <- which(colnames(y) %in% c(colnames(x@sample.meta), "snp.facet", "snp.subfacet"))
-    for(i in 1:length(col_pattern)){
-      keep.cols <- c(keep.cols, grep(col_pattern[i], colnames(y)))
-    }
-    keep.cols <- unique(keep.cols)
-    return(y[keep.rows, ..keep.cols])
-  }
-  
->>>>>>> feb93b7d0739349d7e67a508a562373f2c773083
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -821,12 +807,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
-<<<<<<< HEAD
     facets <- check.snpR.facet.request(x, facets, "sample")
     return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern, type = "comingled"))
-=======
-    return(extract.sample(x@sample.stats, facets, col_pattern = col_pattern))
->>>>>>> feb93b7d0739349d7e67a508a562373f2c773083
   }
   else if(type == "pop"){
     return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))

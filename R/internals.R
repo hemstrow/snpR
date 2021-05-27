@@ -734,7 +734,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
     }
     
     # run
-    browser()
     out <- vector("list", length(facets))
     for(i in 1:length(facets)){
       if(facets[i] == ".base"){
@@ -789,94 +788,6 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
 merge.snpR.stats <- function(x, stats, type = "stats"){
   .snp.id <- facet <- subfacet <- comparison <- NULL
   
-  # the merging function used for most cases.
-  #    n.s: new stats
-  #    o.s: old stats
-  #    meta.names: names of the metadata columns, usually everything up to .snp.id
-  #    starter.meta: any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
-  smart.merge <- function(n.s, o.s, meta.names, starter.meta){
-    n.s <- data.table::as.data.table(n.s)
-    o.s <- data.table::as.data.table(o.s)
-    if(identical(n.s, o.s)){return(n.s)}
-      
-    if(nrow(o.s) == 0){
-      return(n.s)
-    }
-
-    # figure out which columns contain metadata
-    meta.cols.n <- which(colnames(n.s) %in% meta.names)
-    meta.cols.n <- colnames(n.s)[meta.cols.n]
-    meta.cols.o <- which(colnames(o.s) %in% meta.names)
-    meta.cols.o <- colnames(o.s)[meta.cols.o]
-    meta.cols <- unique(c(meta.cols.n, meta.cols.o))
-    
-    # add in any missing metadata columns to both o.s and n.s
-    new.meta <- meta.cols.n[which(!(meta.cols.n %in% meta.cols.o))]
-    if(length(new.meta) > 0){
-      fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
-      colnames(fill) <- new.meta
-      o.s <- cbind(o.s[,starter.meta, with = FALSE], fill, o.s[,-starter.meta, with = FALSE])
-    }
-    old.meta <- meta.cols.o[which(!(meta.cols.o %in% meta.cols.n))]
-    if(length(old.meta) > 0){
-      fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
-      colnames(fill) <- old.meta
-      n.s <- cbind(n.s[,starter.meta, with = FALSE], fill, n.s[,-starter.meta, with = FALSE])
-    }
-    
-    ## make sure metadata columns are sorted identically
-    new.meta <- n.s[,meta.cols, with = FALSE]
-    n.ord <- match(colnames(new.meta), meta.cols)
-    new.meta <- new.meta[,n.ord, with = FALSE]
-    old.meta <- o.s[,meta.cols, with = FALSE]
-    o.ord <- match(colnames(old.meta), meta.cols)
-    old.meta <- old.meta[,o.ord, with = FALSE]
-    if(ncol(o.s) - length(old.meta) != 0){
-      o.s <- cbind(old.meta, o.s[,-meta.cols, with = FALSE])
-    }
-    if(ncol(n.s) - length(new.meta) != 0){
-      n.s <- cbind(new.meta, n.s[,-meta.cols, with = FALSE])
-    }
-    
-    ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
-    m.s <- merge(o.s, n.s, by = meta.cols, all = T)
-    ### grab any columns that need to be fixed (end in .x or .y) and save any matching columns that are fine as is.
-    match.cols <- colnames(m.s)[which(colnames(m.s) %in% c(colnames(o.s), colnames(n.s)))]
-    stat.cols.to.fix <- m.s[,-match.cols, with = FALSE]
-    stat.cols.y <- grep("\\.y$", colnames(stat.cols.to.fix))
-    if(length(stat.cols.y) > 0){
-      # replace NAs in y with values from x. No reason to do the vice versa.
-      stat.cols.y <- as.matrix(stat.cols.to.fix[,stat.cols.y, with = FALSE])
-      stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
-      stat.cols.x <- as.matrix(stat.cols.to.fix[,stat.cols.x, with = FALSE])
-      NA.y <- is.na(stat.cols.y)
-      stat.cols.y[NA.y] <- stat.cols.x[NA.y]
-      colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))
-      
-      # update m.s
-      m.s <- cbind(m.s[,match.cols, with = FALSE], stat.cols.y)
-      
-      
-      # fix column classes
-      for(j in 1:ncol(m.s)){
-        if(is.character(m.s[[j]]) & !(colnames(m.s)[j] %in% meta.names)){
-          set(m.s, j = j, value = tryCatch(as.numeric(m.s[[j]]), warning = function(x) m.s[[j]]))
-        }
-      }
-    }
-    
-    # sort by .snp.id if that's a thing here.
-    if(any(colnames(m.s) == ".snp.id")){
-      if("subfacet" %in% colnames(m.s)){
-        m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
-      }
-      else{
-        m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
-      }
-    }
-    return(m.s)
-  }
-  
   # note: not my code, pulled from:
   # https://stackoverflow.com/questions/51263678/r-combine-arbitrary-lists-element-by-element-with-respect-to-matched-names
   # should work at all depths?
@@ -927,7 +838,6 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     x@pairwise.window.stats <- n.s
   }
   else if(type == "sample.stats"){
-    browser()
     meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
     starter.meta <- meta.cols
     n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
@@ -1014,7 +924,95 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   return(x)
 }
 
-
+#' Merging function used in merge.snpR.stats and elsewhere
+#' @param n.s new stats
+#' @param o.s old stats
+#' @param meta.names names of the metadata columns, usually everything up to .snp.id
+#' @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
+smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+  n.s <- data.table::as.data.table(n.s)
+  o.s <- data.table::as.data.table(o.s)
+  if(all(colnames(n.s) %in% colnames(o.s))){
+    if(isTRUE(all.equal(n.s, o.s, ignore.col.order = T, ignore.row.order = T, check.attributes = F))){return(n.s)}
+  }
+  
+  if(nrow(o.s) == 0){
+    return(n.s)
+  }
+  
+  # figure out which columns contain metadata
+  meta.cols.n <- which(colnames(n.s) %in% meta.names)
+  meta.cols.n <- colnames(n.s)[meta.cols.n]
+  meta.cols.o <- which(colnames(o.s) %in% meta.names)
+  meta.cols.o <- colnames(o.s)[meta.cols.o]
+  meta.cols <- unique(c(meta.cols.n, meta.cols.o))
+  
+  # add in any missing metadata columns to both o.s and n.s
+  new.meta <- meta.cols.n[which(!(meta.cols.n %in% meta.cols.o))]
+  if(length(new.meta) > 0){
+    fill <- matrix(".base", nrow = nrow(o.s), ncol = length(new.meta))
+    colnames(fill) <- new.meta
+    o.s <- cbind(o.s[,starter.meta, with = FALSE], fill, o.s[,-starter.meta, with = FALSE])
+  }
+  old.meta <- meta.cols.o[which(!(meta.cols.o %in% meta.cols.n))]
+  if(length(old.meta) > 0){
+    fill <- matrix(".base", nrow = nrow(n.s), ncol = length(old.meta))
+    colnames(fill) <- old.meta
+    n.s <- cbind(n.s[,starter.meta, with = FALSE], fill, n.s[,-starter.meta, with = FALSE])
+  }
+  
+  ## make sure metadata columns are sorted identically
+  new.meta <- n.s[,meta.cols, with = FALSE]
+  n.ord <- match(colnames(new.meta), meta.cols)
+  new.meta <- new.meta[,n.ord, with = FALSE]
+  old.meta <- o.s[,meta.cols, with = FALSE]
+  o.ord <- match(colnames(old.meta), meta.cols)
+  old.meta <- old.meta[,o.ord, with = FALSE]
+  if(ncol(o.s) - length(old.meta) != 0){
+    o.s <- cbind(old.meta, o.s[,-meta.cols, with = FALSE])
+  }
+  if(ncol(n.s) - length(new.meta) != 0){
+    n.s <- cbind(new.meta, n.s[,-meta.cols, with = FALSE])
+  }
+  
+  ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
+  m.s <- merge(o.s, n.s, by = meta.cols, all = T)
+  ### grab any columns that need to be fixed (end in .x or .y) and save any matching columns that are fine as is.
+  match.cols <- colnames(m.s)[which(colnames(m.s) %in% c(colnames(o.s), colnames(n.s)))]
+  stat.cols.to.fix <- m.s[,-match.cols, with = FALSE]
+  stat.cols.y <- grep("\\.y$", colnames(stat.cols.to.fix))
+  if(length(stat.cols.y) > 0){
+    # replace NAs in y with values from x. No reason to do the vice versa.
+    stat.cols.y <- as.matrix(stat.cols.to.fix[,stat.cols.y, with = FALSE])
+    stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
+    stat.cols.x <- as.matrix(stat.cols.to.fix[,stat.cols.x, with = FALSE])
+    NA.y <- is.na(stat.cols.y)
+    stat.cols.y[NA.y] <- stat.cols.x[NA.y]
+    colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))
+    
+    # update m.s
+    m.s <- cbind(m.s[,match.cols, with = FALSE], stat.cols.y)
+    
+    
+    # fix column classes
+    for(j in 1:ncol(m.s)){
+      if(is.character(m.s[[j]]) & !(colnames(m.s)[j] %in% meta.names)){
+        set(m.s, j = j, value = tryCatch(as.numeric(m.s[[j]]), warning = function(x) m.s[[j]]))
+      }
+    }
+  }
+  
+  # sort by .snp.id if that's a thing here.
+  if(any(colnames(m.s) == ".snp.id")){
+    if("subfacet" %in% colnames(m.s)){
+      m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
+    }
+    else{
+      m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
+    }
+  }
+  return(m.s)
+}
 
 #'Get details on and clean up facet arguments.
 #'
@@ -1498,7 +1496,8 @@ get.task.list <- function(x, facets, source = "stats"){
     # snp facets
     if(any(t.facet.type == "snp")){
       use.facet <- t.facet[t.facet.type == "snp"]
-      t.snp.meta <- meta.to.use[,use.facet]
+      meta.to.use <- as.data.table(meta.to.use)
+      t.snp.meta <- meta.to.use[,..use.facet]
       snp.opts <- unique(t.snp.meta)
       t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
       if(is.null(nrow(snp.opts))){
