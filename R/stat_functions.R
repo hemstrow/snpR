@@ -2983,6 +2983,9 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
   
   facets <- check.snpR.facet.request(x, facets, remove.type = "snp")
+  if(length(msg) > 0){
+    stop(msg)
+  }
   
   
   #=============run====================================

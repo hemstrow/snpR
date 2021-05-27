@@ -595,7 +595,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   if(length(stats) == 1 & stats[1] %in% 
      c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
        "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")){
-    return(.get.snpR.stats(x, facets, type = stat))
+    return(.get.snpR.stats(x, facets, type = stats))
   }
   
   #====================sanity checks=====================
