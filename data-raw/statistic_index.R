@@ -6,7 +6,7 @@ single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe"
                                 "pa",
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
                                 c("pHWE")))
-window.stats <- list(stat = "tajimas_D",
+window.stats <- list(stat = "tajimas_d",
                   col_pattern = c("ws.theta", "ts.theta", "D", "n_snps"))
 pairwise.stats <- list(stat = "fst",
                     col_pattern = c("fst", "nk"))

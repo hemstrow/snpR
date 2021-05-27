@@ -520,32 +520,65 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' = "all", data for all facets, including the base facet, will be returned. By
 #' default, the base facet alone will be returned.
 #'
-#' Different types of statistics are retrieved via the following options under
-#' the "type" argument:
+#' Different statistics are returned either by named statistic or by type.
 #'
-#' \itemize{ \item{single: } non-pairwise, non-window statitics (pi, ho, ect.)
-#' \item{pairwise: } pairwise, non-window statistics (Fst). \item{single.window:
-#' } non-pairwise, sliding window statistics. \item{pairwise.window: } pairwise,
-#' sliding window statistics. \item{LD: } linkage disequilibrium matrices and
-#' tables. \item{bootstraps: } bootstraps of window statistics.
-#' \item{genetic_distance: } genetic distances \item{allele_frequency_matrix: }
-#' allele frequency matrices. \item{geo_dist: } geographic distances. \item{ibd:
-#' } isolation by distance results. \item{sample: } sample stats. \item{pop: }
-#' population sumamry statistics. }
+#' @section Types:
+#'
+#'   \itemize{ \item{single: } non-pairwise, non-window statitics (pi, ho, ect.)
+#'   \item{pairwise: } pairwise, non-window statistics (Fst).
+#'   \item{single.window: } non-pairwise, sliding window statistics.
+#'   \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }
+#'   linkage disequilibrium matrices and tables. \item{bootstraps: } bootstraps
+#'   of window statistics. \item{genetic_distance: } genetic distances
+#'   \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist:
+#'   } geographic distances. \item{ibd: } isolation by distance results.
+#'   \item{sample: } sample stats. \item{pop: } population summary statistics. }
+#'
+#' @section Statistics: 
+#' 
+#' \itemize{ \item{ho: } Observed heterozygosity, via
+#'   \code{\link{calc_ho}}. \item{pi: } pi (expected number of pairwise
+#'   differences, via \code{\link{calc_pi}}). \item{maf: } minor allele
+#'   frequencies (and major/minor counts and identities), via
+#'   \code{\link{calc_maf}}. \item{private: } private allele identities, via
+#'   \code{\link{calc_private}}. \item{association: } results from phenotypic
+#'   association tests, via \code{\link{calc_association}}. \item{hwe: }
+#'   Hardy-Weinburg Equilibrium p-values, via \code{\link{calc_hwe}}.
+#'   \item{tajimas_d: } Tajima's D, Waterson's Theta, and Tajima's Theta, via
+#'   \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
+#'   \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }
+#'   Heterozygote/Homozygote ratios within individuals, via
+#'   \code{\link{calc_het_hom_ratio}}. \item{ne: } Effective population size
+#'   estimates, via \code{\link{calc_ne}}. \item{ld: } Pairwise linkage
+#'   disequilibrium, via \code{\link{calc_pairwise_ld}}.
+#'   \item{genetic_distances: } Genetic distances,
+#'   \code{\link{calc_genetic_distances}}. \item{isolation_by_distance: }
+#'   Genetic isolation by distance metrics, via
+#'   \code{\link{calc_isolation_by_distance}}. \item{geographic_distance: }
+#'   Geographic distances between samples--does not use genetic data. Calculated
+#'   during \code{\link{calc_isolation_by_distance}}, but fetchable
+#'   independently here.
+#'
+#'   }
 #'
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to fetch
 #'   data.
-#' @param stats character or NULL, default NULL. Statistics for which to fetch data.
-#'   Named identically as in the function used to calculate them (such as calc_pi).
-#'   See description for list.
-#' @param type character, default NULL. If set, the type of statistics to pull. See
-#'   description.
+#' @param stats character or NULL, default NULL. Statistics for which to fetch
+#'   data. Named identically as in the function used to calculate them (such as
+#'   calc_pi). See description for list. Alternatively, a type of statistic can
+#'   be requested--see description for details.
+#' @param bootstraps logical, default FALSE. If FALSE, bootstraps will not be
+#'   returned even if they have been created for the requested statistics. Since
+#'   bootstrapped datasets are often quite large, returning these may use a lot
+#'   of additional memory.
 #'
+#'   
 #' @export
 #' @author William Hemstrom
-#'
-#' @examples # generate some statistics
+#'   
+#' @examples
+#' # generate some statistics
 #' dat <- calc_pi(stickSNPs, "group.pop")
 #' dat <- calc_pairwise_fst(stickSNPs, "group.pop")
 #'
@@ -554,9 +587,15 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' # fetch fst
 #' get.snpR.stats(dat, "group.pop", "fst")
 #' 
-get.snpR.stats <- function(x, facets = NULL, stats = NULL, type = NULL, bootstraps = FALSE){
-  if(!is.null(type)){
-    return(.get.snpR.stats(x, facets, type))
+#' # return a type of statistic instead of specific statistics
+#' dat <- calc_ho(stickSNPs, "group.pop")
+#' get.snpR.stats(dat, "group.pop", "weighted.means")
+#' 
+get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
+  if(length(stats) == 1 & stats[1] %in% 
+     c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
+       "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")){
+    return(.get.snpR.stats(x, facets, type = stat))
   }
   
   #====================sanity checks=====================

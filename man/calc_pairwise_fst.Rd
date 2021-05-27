@@ -20,7 +20,7 @@ package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
 \value{
 A snpRdata object with pairwise FST as well as the number of total
  observations at each SNP in each comparison merged in to the pairwise.stats
- socket.
+ slot.
 }
 \description{
 \code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
@@ -51,12 +51,11 @@ Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
 \examples{
 # Using Wier and Cockerham 1984's method
 x <- calc_pairwise_fst(stickSNPs, "pop")
-get.snpR.stats(x, "pop", "pairwise")
+get.snpR.stats(x, "pop", "fst")
 
 # Using genepop, note that the overall value is part 2 of the returned list
 x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
-get.snpR.stats(x[[1]], "pop", "pairwise")
-x[[2]] # overall fst
+get.snpR.stats(x, "pop", "fst")
 }
 \references{
 Wier and Cockerham (1984). \emph{Evolution}

@@ -4,13 +4,17 @@
 \alias{calc_het_hom_ratio}
 \title{Calculate the ratio of heterozygous/homozygous sites per individual.}
 \usage{
-calc_het_hom_ratio(x, facets = NULL)
+calc_het_hom_ratio(x, facets = NULL, complex_averages = FALSE)
 }
 \arguments{
 \item{x}{snpRdata object}
 
 \item{facets}{facets over which to split snps within samples. Takes only SNP
 level facets. See \code{\link{Facets_in_snpR}} for details.}
+
+\item{complex_averages}{logical, default FALSE. If TRUE, will compute weighted averages for
+complex (snp + sample metadata) facets. This can be quite time consuming, and so is generally
+not recommended.}
 }
 \value{
 A snpRdata object with heterozygote/homozygote ratios merged into the

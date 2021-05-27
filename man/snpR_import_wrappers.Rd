@@ -16,7 +16,7 @@ read.vcf(file, snp.meta = NULL, sample.meta = NULL)
 
 read.ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
 
-read.delimited.snps(file, snp.meta = NULL, sample.meta = NULL)
+read.delimited.snps(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN")
 
 read.genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
