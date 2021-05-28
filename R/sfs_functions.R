@@ -401,7 +401,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #' allele frequency between two populations to determine the directionality of
 #' population spread between the two. Since the "destination" population is
 #' sourced from but experienced more genetic drift than the "source" population,
-#' it should have relativley more high-frequency derived alleles \emph{after the
+#' it should have relatively more high-frequency derived alleles \emph{after the
 #' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 #' details.
 #'
@@ -414,7 +414,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #'   file using \code{\link{make_SFS}}.
 #' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
-#' @param pops character, default NULL. cPassed to \code{\link{calc_SFS}} -- see
+#' @param pops character, default NULL. Passed to \code{\link{calc_SFS}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
 #' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} --
 #'   see documentation there for details. Ignored if a sfs is provided.
