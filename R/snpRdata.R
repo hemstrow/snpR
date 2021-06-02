@@ -742,6 +742,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
         if(length(samp.part) == 0){
           samp.part <- ".base"
         }
+        samp.part <- paste0(samp.part, collapse = ".")
+        snp.part <- paste0(snp.part, collapse = ".")
         
         keep.rows <- c(keep.rows, which(y$facet == samp.part & y$snp.facet == snp.part))
       }
@@ -773,6 +775,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
     }
     
     if(length(keep.rows) == 0){
+      # return(NULL)
       stop("No statistics calculated for this facet and statistics type.\n")
     }
     return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))

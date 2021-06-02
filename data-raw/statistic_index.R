@@ -7,13 +7,13 @@ single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe"
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
                                 c("pHWE")))
 window.stats <- list(stat = "tajimas_d",
-                  col_pattern = c("ws.theta", "ts.theta", "D", "n_snps"))
+                  col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
 pairwise.stats <- list(stat = "fst",
-                    col_pattern = c("fst", "nk"))
+                    col_pattern = list(c("fst", "nk")))
 sample.stats <- list(stat = "het_hom_ratio",
-                  col_pattern = c("Het/Hom"))
+                  col_pattern = list(c("Het/Hom")))
 pop.stats <- list(stat = "ne",
-               col_pattern = c("LDNe"))
+               col_pattern = list(c("LDNe")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance"),
                     types = list(c("LD"),
                                  c("genetic_distances"),
