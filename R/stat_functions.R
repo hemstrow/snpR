@@ -447,7 +447,10 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 
   x <- merge.snpR.stats(x, out, type = "window.stats")
   x <- update_calced_stats(x, facets, "tajimas_D")
+  x <- calc_weighted_stats(x, facets, type = "single.window", "ts.theta")
+  x <- calc_weighted_stats(x, facets, type = "single.window", "ws.theta")
   x <- calc_weighted_stats(x, facets, type = "single.window", "D")
+  
   return(x)
 
 }
@@ -3600,7 +3603,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
         group_key_tab <- stats[keep.rows, group_key, drop = F]
         group_key_tab$key <- do.call(paste, c(group_key_tab, sep = "."))
         colnames(group_key_tab)[1] <- "subfacet"
-        group_key_tab$facet <- samp.part
+        group_key_tab$facet <- paste0(samp.part, collapse = ".")
       }
       if(facets[[2]][i] == "snp"){
         keep.rows <- which(stats$snp.facet == snp.part & stats$facet == ".base")
