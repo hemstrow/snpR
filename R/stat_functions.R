@@ -3603,6 +3603,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
         group_key_tab <- stats[keep.rows, group_key, drop = F]
         group_key_tab$key <- do.call(paste, c(group_key_tab, sep = "."))
         colnames(group_key_tab)[1] <- "subfacet"
+        group_key_tab$subfacet <- group_key_tab$key
         group_key_tab$facet <- paste0(samp.part, collapse = ".")
       }
       if(facets[[2]][i] == "snp"){
