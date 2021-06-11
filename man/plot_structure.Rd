@@ -23,6 +23,8 @@ plot_structure(
   viridis.option = "viridis",
   alt.palette = NULL,
   t.sizes = c(12, 12, 12),
+  separator_thickness = 1,
+  separator_color = "white",
   ...
 )
 }
@@ -61,7 +63,7 @@ used to initialize the search? Initializing with a subset of the total SNPs
 can radically speed up computation time for large datasets.}
 
 \item{alpha}{numeric, default 10. For sNMF, determines the regularization
-parameter. For small datasets, this can have a large effect, and should
+  parameter. For small datasets, this can have a large effect, and should
 probably be larger than the default. See documentation for
 \code{\link[LEA]{main_sNMF}}.}
 
@@ -98,6 +100,13 @@ to use instead of the viridis palette.}
 
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
 c(strip.title, axis, axis.ticks).}
+
+\item{separator_thickness}{numeric, default 1. Thickness of facet level
+separator lines. If 0, no separators drawn. Since separators currently
+overlap with samples somewhat, this may be desirable.}
+
+\item{separator_color}{character, default "white". Color of facet level
+separator lines.}
 
 \item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 or \code{\link[adegenet]{snapclust.choose.k}}.}

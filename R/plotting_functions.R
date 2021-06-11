@@ -1158,8 +1158,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   can radically speed up computation time for large datasets.
 #' @param alpha numeric, default 10. For sNMF, determines the regularization
 #'   parameter. For small datasets, this can have a large effect, and should
-#'   probably be larger than the default. See documentation for
-#'   \code{\link[LEA]{main_sNMF}}.
+#' probably be larger than the default. See documentation for
+#' \code{\link[LEA]{main_sNMF}}.
 #' @param qsort character, numeric, or FALSE, default "last". Determines if
 #'   individuals should be sorted (possibly within facet levels) by cluster
 #'   assignment proportion. If not FALSE, determines which cluster to use for
@@ -1185,6 +1185,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
+#' @param separator_thickness numeric, default 1. Thickness of facet level
+#'   separator lines. If 0, no separators drawn. Since separators currently
+#'   overlap with samples somewhat, this may be desirable.
+#' @param separator_color character, default "white". Color of facet level
+#'   separator lines.
 #' @param ... additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 #'   or \code{\link[adegenet]{snapclust.choose.k}}.
 #'
@@ -1220,7 +1225,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
                            I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
-                           alt.palette = NULL, t.sizes = c(12, 12, 12), ...){
+                           alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", ...){
 
   #===========sanity checks===================
   msg <- character()
@@ -1933,7 +1938,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     seps[1] <- -.5
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
-      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = "white", size = 1) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, size = separator_thickness) +
       ggplot2::xlab(label = facet[1])
   }
   else{
