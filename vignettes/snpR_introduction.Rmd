@@ -18,7 +18,7 @@ library(snpR); library(ggplot2)
 # snpR Introduction
 
 snpR is a SNP genomic analysis package that is designed to do a range of basic genomic analyses, such as calculate observed and expected heterozygosity, linkage disequilibrium, pairwise-Fst, and so on. All functions are written to
-take similar arguments and interpret them in consistant ways. This is done through the use of the snpRdata object class, which all snpR functions take as their first argument. Nearly all functions are written to be overwrite safe:
+take similar arguments and interpret them in consistent ways. This is done through the use of the snpRdata object class, which all snpR functions take as their first argument. Nearly all functions are written to be overwrite safe:
 the object provided to the function should be overwritten by the output. Newly calculated statistics will simply be merged-in to the existing object.
 
 A fundamental feature of snpR is the use of *facets*. Facets define categorical metadata features of the data, and can reference either features describing individual SNPs (such as chromosome) or individual samples (such as population). Facets are used to automatically break apart input data to calculate statistics in intuitive ways, such as by calculating observed heterozygosity in each population. Since metadata is contained in the snpRdata object, the user will never need to manually subset or loop calculations across categories/levels of a facet.
@@ -40,7 +40,7 @@ Note that this is identical to the format output by, for example, the ANGSD soft
 print(head(stickFORMATs$NN)[,1:6], row.names = F)
 ```
 
-Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respecitively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes).
+Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respectively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes).
 
 Data in the "NN" format, as shown above, can be imported directly into a snpRdata set alongside any corresponding metadata using import.snpR.data function:
 
