@@ -1125,9 +1125,11 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   if(any(to.remove)){
     facets <- facets[-which(to.remove)]
     facet.types <- facet.types[-which(to.remove)]
-    if(!".base" %in% facets){
-      facets <- c(facets, ".base")
-      facet.types <- c(facets, ".base")
+    if(fill_with_base){
+      if(!".base" %in% facets){
+        facets <- c(facets, ".base")
+        facet.types <- c(facets, ".base")
+      }
     }
   }
   

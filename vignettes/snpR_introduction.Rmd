@@ -1,6 +1,6 @@
 ---
 title: "Introduction to Basic SNP Analysis with snpR"
-author: "William Hemstrom"
+author: "William Hemstrom and Melissa Jones"
 date: "June 27, 2021"
 output: 
   rmarkdown::html_vignette:
@@ -406,7 +406,7 @@ The results can be accessed as usual, although they are in a slightly different 
 ```{r}
 stats <- get.snpR.stats(my.dat, "group.pop", "LD")
 
-str(stat)
+str(stats)
 ```
 
 The results are a multi-level named list. The first level references "prox" and "matrices". "prox" is fairly straightforward:

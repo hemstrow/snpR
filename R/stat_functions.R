@@ -1063,7 +1063,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
-  
+
   #sanity checks:
   # subsampling
   if(is.numeric(ss) & ss <= 0){
@@ -2218,7 +2218,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     # check complex facets
     complex.sfacets <- check.snpR.facet.request(x, ssfacets, remove.type = "simple", fill_with_base = FALSE)
     if(length(complex.sfacets) > 0){
-      stop("Complex (snp and sample) level SUBFACETS not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels.\n")
+      stop(paste0("Complex (snp and sample) level SUBFACETS not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels. Bad facets: ",
+                  paste0(complex.sfacets, collapse = ", "), "\n"))
     }
 
     # combine duplicates
@@ -3662,7 +3663,6 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
         group_key_tab <- make_group_key_tab(stats, keep.rows, group_key)
       }
       if(facets[[2]][i] == ".base"){
-        browser()
         weights <- nrow(x) - matrixStats::colSums2(genotypes(x) == x@mDat)
         keep.rows <- which(stats$snp.facet == ".base" & stats$facet == ".base")
         group_key <- c("facet", "subfacet", "snp.facet", "snp.subfacet")
