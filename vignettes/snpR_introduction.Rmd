@@ -237,7 +237,7 @@ To run a PCA and tSNE, we can use the plot_clusters function. Note that this fun
 
 ```{r, results='hide'}
 # generate both tSNE and PCA plots
-p <- plot_clusters(my.dat, facets = c("pop.fam"), plot_type = c("pca", "tsne"))
+p <- plot_clusters(my.dat, facets = c("pop.fam"), plot_type = c("pca"))
 ```
 
 To view the plots, we can call two objects under the "plots" element in the list that plot_clusters returned.
@@ -248,28 +248,23 @@ p$plots$pca
 
 ```
 
-```{r}
-# view the tSNE
-p$plots$tsne
-```
-
 plot_clusters also returns the raw plot data under the data element.
 
-There are other parameters that can also be tweaked in the t-SNE function, such as perplexity and theta. For more information, check out the documentation for Rtsne::Rtsne.
+There are other visualization tools available with plot_clusters (tSNE and UMAP). Both of these approaches attempt to reduce additional data dimensions beyond the first two principal components down to a two-dimensional visualization. Since they require additional optional packages, they are not demonstrated here. Check out the plot_clusters() documentation for details!
 
 ## Calculate minor allele frequencies, $\pi$, Ho, and check for private alleles and HWE.
 
 Minor allele frequencies, $\pi$, Ho, the number of private alleles, and HWE divergence, and other basic diversity statistics are easy to calculate with snpR. Each use a very similar function, which take identical arguments. Since each returns a copy of the input snpRdata object, but with new information merged in, we can safely overwrite the original object each time we use a function.
 
-Each function, like most functions, take a snpRdata object and facets as their first two arguments. Here, we'll use the my.dat object and calculate these stats splitting by fam and pop.
+Each function, like most functions, take a snpRdata object and facets as their first two arguments. Here, we'll use the my.dat object and calculate these stats splitting by both pop and fam and pop simultaneously.
 
 ```{r}
 # calculate minor allele frequencies, pi, ho, check for private alleles and HWE.
-my.dat <- calc_maf(my.dat, "fam.pop")
-my.dat <- calc_pi(my.dat, "fam.pop")
-my.dat <- calc_ho(my.dat, "fam.pop")
-my.dat <- calc_private(my.dat, "fam.pop")
-my.dat <- calc_hwe(my.dat, "fam.pop")
+my.dat <- calc_maf(my.dat, c("pop", "fam.pop"))
+my.dat <- calc_pi(my.dat, c("pop", "fam.pop"))
+my.dat <- calc_ho(my.dat, c("pop", "fam.pop"))
+my.dat <- calc_private(my.dat, c("pop", "fam.pop"))
+my.dat <- calc_hwe(my.dat, c("pop", "fam.pop"))
 
 ```
 
@@ -316,9 +311,11 @@ If you have many different facet combinations and a large dataset, this may take
 
 
 ```{r, results='hide'}
-
+# check the number of cores available for this machine and use half of them.
 ncores <- parallel::detectCores()
 ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
+
+# run
 my.dat <- calc_smoothed_averages(my.dat, "pop.group",
                                  sigma = 200, # using a window size of 200
                                  step = 50, # using a step size of 50 between windows
@@ -451,9 +448,11 @@ This function can do multiple statistics at once. The random windows for each st
 
 Since this can be slow, the par argument can be used to parallelize.
 
-```{r}
+```{r, results='hide'}
 my.dat <- do_bootstraps(my.dat, "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all", par = 8)
-
+```
+To view the results, use get.snpR.stats again.
+```{r}
 stats <- get.snpR.stats(my.dat, "group.pop", "single.window")
 head(stats)
 ```
