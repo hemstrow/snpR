@@ -584,7 +584,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         }
         
         # run the function and create a snp res metadata df to bind to the results.
-        assign("last.warning", NULL, envir = baseenv())
+        # assign("last.warning", NULL, envir = baseenv())
         res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
         
         # return
@@ -685,7 +685,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         # run the LD calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
         suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                                                 .options.snow = opts, .export = "data.table") %dopar% {
+                                                 .options.snow = opts, .export = "data.table", .packages = "snpR") %dopar% {
                                                    run.one.loop(stats_to_use, meta.to.use, task.list, q, TRUE)
                                                  })
         
