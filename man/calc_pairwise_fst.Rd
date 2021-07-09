@@ -4,7 +4,7 @@
 \alias{calc_pairwise_fst}
 \title{Pairwise FST from SNP data.}
 \usage{
-calc_pairwise_fst(x, facets, method = "WC")
+calc_pairwise_fst(x, facets, method = "WC", boot = FALSE, boot_par = FALSE)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -16,6 +16,11 @@ analysis. See \code{\link{Facets_in_snpR}} for more details.}
 Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
 (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
 package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
+
+\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do. See details.}
+
+\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
+using the supplied number of cores.}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total
@@ -32,13 +37,19 @@ Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
 the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in
-the current working directory, which are not cleaned automatically.
-\code{calc_pairwise_fst} will ask for permission to continue if these files
-already exist.
+the default temporary directory (see \code{\link[base]{temfile}}).
 
 The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
-produce very similar results. Generally, either of the two former options are
-prefered for computational efficieny.
+produce very similar results both per SNP and per population.
+Generally, either of the two former options are
+preferred for computational efficiency.
+
+P-values for group level comparisons can be calculated via bootstrapping
+using the boot option. Bootstraps are performed via randomly mixing
+individuals amongst different levels of the supplied facet, and so work under
+the null hypothesis that all groups are panmictic. P-values are calculated
+according to \code{\link[ade4]{randtest}}, although that function is not
+directly called. 
 
 The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
@@ -53,9 +64,14 @@ Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
 x <- calc_pairwise_fst(stickSNPs, "pop")
 get.snpR.stats(x, "pop", "fst")
 
-# Using genepop, note that the overall value is part 2 of the returned list
+# Using genepop
 x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
 get.snpR.stats(x, "pop", "fst")
+
+# bootstrap p-values for overall pairwise-Fst values
+x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
+get.snpR.stats(x, "pop", "fst")
+
 }
 \references{
 Wier and Cockerham (1984). \emph{Evolution}

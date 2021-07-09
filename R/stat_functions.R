@@ -468,13 +468,19 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'the genepop package (see references).
 #'
 #'If the genpop option is used, several intermediate files will be created in
-#'the current working directory, which are not cleaned automatically.
-#'\code{calc_pairwise_fst} will ask for permission to continue if these files
-#'already exist.
+#'the default temporary directory (see \code{\link[base]{temfile}}).
 #'
 #'The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
-#'produce very similar results. Generally, either of the two former options are
-#'prefered for computational efficieny.
+#'produce very similar results both per SNP and per population.
+#'Generally, either of the two former options are
+#'preferred for computational efficiency.
+#'
+#'P-values for group level comparisons can be calculated via bootstrapping
+#'using the boot option. Bootstraps are performed via randomly mixing
+#'individuals amongst different levels of the supplied facet, and so work under
+#'the null hypothesis that all groups are panmictic. P-values are calculated
+#'according to \code{\link[ade4]{randtest}}, although that function is not
+#'directly called. 
 #'
 #'The data can be broken up categorically by either SNP and/or sample metadata,
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
@@ -491,6 +497,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
 #'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
 #'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do. See details.
+#' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
+#'   using the supplied number of cores.
 #'
 #'@return A snpRdata object with pairwise FST as well as the number of total
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
@@ -509,10 +518,15 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' x <- calc_pairwise_fst(stickSNPs, "pop")
 #' get.snpR.stats(x, "pop", "fst")
 #'
-#' # Using genepop, note that the overall value is part 2 of the returned list
+#' # Using genepop
 #' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
 #' get.snpR.stats(x, "pop", "fst")
-calc_pairwise_fst <- function(x, facets, method = "WC"){
+#' 
+#' # bootstrap p-values for overall pairwise-Fst values
+#' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
+#' get.snpR.stats(x, "pop", "fst")
+#' 
+calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE){
   facet <- subfacet <- .snp.id <- NULL
   
   func <- function(x, method, facets = NULL){
@@ -535,13 +549,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
 
     #===============genepop======================
     if(method == "genepop"){
-      g.filename <- paste0("genepop.", facets, ".txt")
+      g.filename <- tempfile(fileext = ".txt")
       if(file.exists(g.filename)){
         file.remove(g.filename)
       }
       init.files <- list.files()
       invisible(utils::capture.output(format_snps(x, output = "genepop", facets = facets, outfile = g.filename)))
-      genepop::Fst(g.filename, pairs = TRUE)
+      invisible(utils::capture.output(genepop::Fst(g.filename, pairs = TRUE)))
 
 
 
@@ -797,48 +811,129 @@ calc_pairwise_fst <- function(x, facets, method = "WC"){
   method <- tolower(method)
 
   #=================================call apply.snpR.facets, slightly different for each method, since they require different stuff.===============
-  if(method == "genepop"){
-    out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
-    ave.fst <- out[[2]]
-    out <- out[[1]]
-  }
-  else if(method == "wc" | method == "wier"){
-    need.ho <- which(!unlist(check_calced_stats(x, facets, "ho")))
-    if(length(need.ho) > 0){
-      x <- calc_ho(x, facets[need.ho])
+  one_run <- function(x, facets, method){
+    x <- add.facets.snpR.data(x, facets)
+    if(method == "genepop"){
+      out <- apply.snpR.facets(x, facets, req = "snpRdata", fun = func, case = "facet.pairwise", method = "genepop")
     }
-    out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = method)
-  }
-  else if(method == "hohenlohe"){
-    need.pi <- which(!unlist(check_calced_stats(x, facets, "pi")))
-    if(length(need.pi) > 0){
-      x <- calc_pi(x, facets[need.pi])
+    else if(method == "wc" | method == "wier"){
+      need.ho <- which(!unlist(check_calced_stats(x, facets, "ho")))
+      if(length(need.ho) > 0){
+        x <- calc_ho(x, facets[need.ho])
+      }
+      out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = method)
     }
-    out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
+    else if(method == "hohenlohe"){
+      need.pi <- which(!unlist(check_calced_stats(x, facets, "pi")))
+      if(length(need.pi) > 0){
+        x <- calc_pi(x, facets[need.pi])
+      }
+      out <- apply.snpR.facets(x, facets, req = c("ac.stats"), case = "facet.pairwise", fun = func, method = "hohenlohe")
+    }
+    
+    return(out)
   }
-
-  #==================merge and return============================
-  x <- merge.snpR.stats(x, out, type = "pairwise")
-  if(method != "genepop"){
-    ofacets <- check.snpR.facet.request(x, ofacets, "none", T)
-    bad.ofacets <- which(ofacets[[2]] == "snp" | ofacets[[2]] == ".base")
-    if(length(bad.ofacets) > 0){
-      ofacets <- ofacets[[1]][-bad.ofacets]
+  one_wm <- function(x){
+    out <- x[,weighted.mean(fst, w = nk, na.rm = T), by = list(comparison, facet)]
+    colnames(out)[which(colnames(out) == "V1")] <- "weighted_mean_fst"
+    return(out)
+  }
+  one_boot <- function(x, facets, method){
+    invisible(utils::capture.output(x <- import.snpR.data(genotypes(x)[,sample(ncol(x), ncol(x), replace = T)],
+                                                          snp.meta(x), sample.meta(x), mDat = x@mDat)))
+    bout <- one_run(x, facets, method)
+    
+    if(method == "genepop"){
+      return(bout[[2]])
     }
     else{
-      ofacets <- ofacets[[1]]
+      return(one_wm(bout))
     }
-    x <- calc_weighted_stats(x, ofacets, type = "pairwise", stats_to_get = "fst")
+  }
+  
+  real_out <- one_run(x, facets, method)
+  if(method == "genepop"){
+    real_wm <- real_out[[2]]
+    real_out <- real_out[[1]]
   }
   else{
-    ave.fst$snp.facet <- ".base"
-    ave.fst$snp.subfacet <- ".base"
-    ave.fst$subfacet <- ave.fst$comparison
-    ave.fst$comparison <- NULL
-    ave.fst <- ave.fst[,c("facet", "subfacet", "snp.facet", "snp.subfacet", "weighted_mean_fst")]
-    x <- merge.snpR.stats(x, ave.fst, "weighted.means")
-    # format averages and merge
+    real_wm <- one_wm(real_out)
   }
+  
+  #============run bootstraps if requested=======================
+  if(!isFALSE(boot)){
+    cat("Conducting bootstraps..\n")
+    if(isFALSE(boot_par)){    
+      boots <- matrix(0, nrow(real_wm), boot)
+      for(i in 1:boot){
+        cat("Boot", i, "out of", boot, "\n")
+        boots[,i] <- one_boot(x, facets, method)$weighted_mean_fst
+      }
+    }
+    else{
+      
+      boot <- 1:boot
+      if(boot_par < length(boot)){
+        pboot <- split(boot, rep(1:boot_par, length.out = length(boot), each = ceiling(length(boot)/boot_par)))
+      }
+      else{
+        boot_par <- length(boot)
+        pboot <- split(boot, 1:boot_par, drop = F)
+      }
+      
+      cl <- snow::makeSOCKcluster(boot_par)
+      doSNOW::registerDoSNOW(cl)
+      
+      
+      
+      #prepare reporting function
+      ntasks <- length(pboot)
+      progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+      opts <- list(progress=progress)
+      
+      boot_rows <- nrow(real_wm)
+      
+      #loop through each set
+      boots <- foreach::foreach(q = 1:ntasks,
+                                .packages = c("snpR", "data.table"), 
+                                .options.snow = opts, 
+                                .combine = cbind) %dopar% {
+                                  
+                                  boots <- matrix(0, boot_rows, length(pboot[[q]]))
+                                  for(i in 1:length(pboot[[q]])){
+                                    boots[,i] <- one_boot(x, facets, method)$weighted_mean_fst
+                                  }
+                                  boots
+                                }
+      
+      
+      parallel::stopCluster(cl)
+      doSNOW::registerDoSNOW()
+    }
+    
+    cat("Bootstraps complete.\n")
+  }
+  
+
+  # get p-values
+  real_wm$weighted_mean_fst_p <- (rowSums(boots >= unlist(real_wm$weighted_mean_fst)) + 1)/(ncol(boots) + 1)
+
+  #==================merge and return============================
+  x <- merge.snpR.stats(x, real_out, type = "pairwise")
+
+  real_wm$snp.facet <- ".base"
+  real_wm$snp.subfacet <- ".base"
+  real_wm$subfacet <- real_wm$comparison
+  real_wm$comparison <- NULL
+  if(!isFALSE(boot)){
+    real_wm <- real_wm[,c("facet", "subfacet", "snp.facet", "snp.subfacet", "weighted_mean_fst", "weighted_mean_fst_p")]
+  }
+  else{
+    real_wm <- real_wm[,c("facet", "subfacet", "snp.facet", "snp.subfacet", "weighted_mean_fst")]
+  }
+  x <- merge.snpR.stats(x, real_wm, "weighted.means")
+  
+  
   x <- update_calced_stats(x, facets, "fst", "snp")
 
   return(x)
