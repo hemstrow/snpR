@@ -44,17 +44,20 @@
 #'   17, 1009–1024.
 #'
 #' @examples
-#' # to follow an example using the stickSNPs example dataset you need to add some variables 
-#' that don't exist in the actual dataset.
+#' # to follow an example using the stickSNPs example dataset you need to add 
+#' # some variables that don't exist in the actual dataset.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
 #' set.seed(4865)
-#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create 
-#' birth years
+#' sample.meta(stk)$BirthYear <- sample(x = a, size = 
+#'                                      nsamps(stickSNPs), 
+#'                                      replace = TRUE) #create birth years
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
-#' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
+#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), 
+#'                                replace = TRUE) # create sexes
+#' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, 
+#'                    run_pedigree = FALSE)
 run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, min_maf = 0.3, min_ind = 0.5, ...){
   
   #===================sanity checks===============
