@@ -911,13 +911,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
       doSNOW::registerDoSNOW()
     }
     
+    
+    # get p-values
+    real_wm$weighted_mean_fst_p <- (rowSums(boots >= unlist(real_wm$weighted_mean_fst)) + 1)/(ncol(boots) + 1)
+    
     cat("Bootstraps complete.\n")
   }
   
-
-  # get p-values
-  real_wm$weighted_mean_fst_p <- (rowSums(boots >= unlist(real_wm$weighted_mean_fst)) + 1)/(ncol(boots) + 1)
-
   #==================merge and return============================
   x <- merge.snpR.stats(x, real_out, type = "pairwise")
 
