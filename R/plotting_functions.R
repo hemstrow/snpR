@@ -2555,3 +2555,135 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   # return
   return(out)
 }
+
+#' Make an heatmap of pairwise Fst values.
+#' 
+#' Creates a \code{\link[ggplot2]{ggplot}} heatmap of pairwise Fst values
+#' previously calculated via \code{\link{calc_pairwise_fst}}. Optionally prints
+#' Fst values and marks those with significant p-values.
+#' 
+#' 
+#'@param x snpRdata object.
+#'@param facets character, default NULL. Categorical metadata variables by which
+#'  to break up plots. Must match facets for which Fst data has been previously
+#'  calculated via \code{\link{calc_pairwise_fst}}. 
+#'  See \code{\link{Facets_in_snpR}} for more details.
+#'@param viridis.option character, default "inferno". Viridis color scale option
+#'  to use. Other color scales may be substituted by appending the
+#'  scale_color_continuous and scale_fill_continuous ggplot functions to the
+#'  produced plot using the '+' operator.
+#'@param print_fst logical, default TRUE. If true, will print Fst values on
+#'  plot.
+#'@param mark_sig numeric or FALSE, default FALSE. If numeric, Fst values with
+#'  bootstrapped p-values below the given number will be marked with an '*'.
+#'  Requires that bootstrapped p-values were calculated for the requested 
+#'  facets.
+#'@param lab_lower logical, default FALSE. If TRUE, labels will be placed in 
+#'  the lower triangle instead of on top of the heatmap.
+#'  
+#'@author William Hemstrom
+#'
+#'@return A ggplot or list of named ggplots for each facet.
+#'@export
+#'@examples
+#'# Calculate pairwise fst
+#'x <- calc_pairwise_fst(stickSNPs, "pop")
+#'
+#'# plot
+#'plot_pairwise_fst_heatmap(x, "pop")
+#'
+#'# plot without FST values
+#'plot_pairwise_fst_heatmap(x, "pop", print_fst = FALSE)
+#'
+#'# bootstrap some p-values and plot
+#'x <- calc_pairwise_fst(x, "pop", boot = 5)
+#'## using a high alpha due low number of boots
+#'plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2) 
+#'
+#'# put labels in lower triangle
+#'plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2, lab_lower = TRUE) 
+#'
+plot_pairwise_fst_heatmap <- function(x, facets = NULL, 
+                                      viridis.option = "inferno", 
+                                      print_fst = TRUE, mark_sig = FALSE,
+                                      lab_lower = FALSE){
+  #=============sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  msg <- character(0)
+  
+  facets <- check.snpR.facet.request(x, facets, return.type = T)
+  facets <- facets[[1]][which(facets[[2]] == "sample")]
+  if(length(facets) == 0){
+    msg <- c(msg, "No sample-level facets requested.\n")
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #============function=============
+  make_one_plot <- function(mean_fst){
+    mean_fst <- as.data.table(mean_fst)
+    mean_fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
+    levs <- unique(c(mean_fst$p1, mean_fst$p2))
+    mean_fst$p1 <- factor(mean_fst$p1, levs)
+    mean_fst$p2 <- factor(mean_fst$p2, levs)
+    if(!isFALSE(mark_sig)){
+      if(!any(colnames(mean_fst) == "weighted_mean_fst_p")){
+        mark_sig <- FALSE
+        warning("Bootstraped significance values not calculated for facet:", mean_fst$facet[1])
+      }
+      else{
+        mean_fst[,sig := ifelse(weighted_mean_fst_p <= mark_sig, "*", "")]
+      }
+    }
+    
+    p <- ggplot2::ggplot(mean_fst, ggplot2::aes(x = p1, y = p2, fill = weighted_mean_fst)) +
+      ggplot2::geom_tile() + ggplot2::scale_fill_viridis_c(option = viridis.option) +
+      ggplot2::theme_bw() + ggplot2::theme(axis.title = ggplot2::element_blank()) +
+      ggplot2::labs(fill = "Fst")
+
+    if(print_fst){
+      if(mark_sig){
+        if(lab_lower){
+          p <- p + ggplot2::geom_label(ggplot2::aes(label = paste0(round(weighted_mean_fst, 4), sig), x = p2, y = p1), fill = "white", alpha = .5)
+        }
+        else{
+          p <- p + ggplot2::geom_label(ggplot2::aes(label = paste0(round(weighted_mean_fst, 4), sig)), fill = "white", alpha = .5)
+        }
+      }
+      else{
+        if(lab_lower){
+          p <- p + ggplot2::geom_label(ggplot2::aes(label = round(weighted_mean_fst, 4), x = p2, y = p1), fill = "white", alpha = .5)
+        }
+        else{
+          p <- p + ggplot2::geom_label(ggplot2::aes(label = round(weighted_mean_fst, 4)), fill = "white", alpha = .5)
+        }
+      }
+    }
+    else if(mark_sig){
+      if(lab_lower){
+        p <- p + ggplot2::geom_label(data = mean_fst[which(mean_fst$sig == "*"),], 
+                                     ggplot2::aes(label = sig, x = p2, y = p1), fill = "white", alpha = .5)
+      }
+      else{
+        p <- p + ggplot2::geom_label(data = mean_fst[which(mean_fst$sig == "*"),], 
+                                   ggplot2::aes(label = sig), fill = "white", alpha = .5)
+      }
+    }
+    
+    return(p)
+  }
+
+  #============make plots===========
+  plots <- vector("list", length(facets))
+  names(plots) <- facets
+  for(i in 1:length(facets)){
+    plots[[i]] <- make_one_plot(get.snpR.stats(x, facets[i], "fst")$weighted.means)
+  }
+  if(length(plots) == 1){plots <- plots[[1]]}
+  
+  return(plots)
+}
