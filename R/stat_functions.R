@@ -3208,7 +3208,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     out <- out_snp
   }
   
-  y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method))
+  y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method, "_", interpolate))
   return(merge.snpR.stats(y, out, "genetic_distances"))
   
 }
@@ -3264,7 +3264,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #' res
 #' plot(res$group.pop$groupV$Edwards) # plot perms vs observed
 #' 
-calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", ...){
+calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", interpolate = "bernoulli", ...){
   #================sanity checks=============================================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -3296,10 +3296,10 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   x <- add.facets.snpR.data(x, facets)
   
   # calc gds if needed and fetch
-  cs <- check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method))
+  cs <- check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method, "_", interpolate))
   missing <- which(!unlist(cs))
   if(length(missing) > 0){
-    x <- calc_genetic_distances(x, names(cs)[missing])
+    x <- calc_genetic_distances(x, names(cs)[missing], genetic_distance_method, interpolate)
   }
   gd <- .get.snpR.stats(x, facets, "genetic_distance")
   
@@ -3743,7 +3743,6 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   
   return(x)
 }
-
 
 
 

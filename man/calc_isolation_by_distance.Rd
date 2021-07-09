@@ -9,6 +9,7 @@ calc_isolation_by_distance(
   facets = NULL,
   x_y = c("x", "y"),
   genetic_distance_method = "Edwards",
+  interpolate = "bernoulli",
   ...
 )
 }

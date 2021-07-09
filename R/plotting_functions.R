@@ -2258,3 +2258,300 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   # return
   return(mp)
 }
+
+#' Plot a phylogenetic-like clustering tree.
+#' 
+#' Generate and plot dendritic trees in the style of a phylogenetic tree for
+#' individuals or groups of individuals from snpR data. Note that this function
+#' is not overwrite safe.
+#' 
+#' Plots are generated via the \code{\link[ape]{nj}} or \code{\link[ape]{bionj}}
+#' ape package for nj or bionj trees. The plots produced are ggplot objects, produced
+#' using \code{\link[ggtree]{ggtree}} function, as well as a handful of others from
+#' the ggtree package. For more information, see the documentation for those functions
+#' and packages.
+#' 
+#' Bootstraps are conducted by re-sampling SNPs with replacement, according to Felsenstein (1985).
+#' If no snp level facets are provides, loci are resampled without restraint. If a snp level
+#' facet is provided, loci are only resampled within the levels of that facet (e.g. within chromosomes).
+#' 
+#' The genetic distances used to make the trees are calculated using \code{\link{calc_genetic_distances}}.
+#' 
+#' @param x snpRdata object.
+#' @param facets character or NULL, default NULL. Facets for which to calculate
+#'   genetic distances, as described in \code{\link{Facets_in_snpR}}. If snp or
+#'   base level facets are requested, distances will be between individuals.
+#'   Otherwise, distances will be between the levels of the sample facets. If bootstraps
+#'   are requested, SNPs will
+#' @param distance_method character, default "Edwards". Name of the method to use.
+#'   Options: \itemize{\item{Edwards} Angular distance as described in Edwards
+#'   1971.} See \code{\link{calc_genetic_distances}}.
+#' @param interpolate character, default "bernoulli". Missing data interpolation
+#'   method, solely for individual/individual distances. Options detailed in
+#'   documentation for \code{\link{format_snps}}.
+#' @param tree_method character, default nj. Method by which the tree is constructed
+#'   from genetic distances. Options: \itemize{\item{nj} Neighbor-joining trees, via
+#'   \code{\link[ape]{nj}}. \item{bionj} BIONJ trees, according to Gascuel 1997, via 
+#'   \code{\link[ape]{bionj}}. \item{upgma} UPGMA trees, via \code{\link[stats]{hclust}}.}
+#' @param root character or FALSE, default FALSE. A vector containing the requested roots for
+#'   each facet. Roots are specified by a string matching either the individual sample or sample facet level by
+#'   which to root. If FALSE for a given facet, trees will be unrooted. Note that all UPGMA
+#'   trees are automatically rooted, so this argument is ignored for that tree type.
+#' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do for each facet. See details.
+#' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
+#'   using the supplied number of cores.
+#'   
+#' @author William Hemstrom
+#' @export
+#' 
+#' @return A nested, named list containing plots, trees, and bootstraps for each facet and facet level.
+#' 
+#' @examples 
+#' # Calculate nj trees for the base facet, each chromosome, and for each population.
+#' tp <- plot_tree(stickSNPs, c(".base", "pop", "group"), 
+#'                 root = c(FALSE, "PAL", FALSE))
+#' tp$pop$.base$plot # View the resulting plot
+#' 
+#' # Calculate bionj trees for pop with bootstrapping
+#' tp <- plot_tree(stickSNPs, "pop", root = "PAL", boot = 5)
+#' tp$pop$.base$plot # nodes now have a bootstrap support indicator
+#' 
+#' @references 
+#' Felsenstein, J. (1985). Confidence Limits on Phylogenies: An Approach Using the Bootstrap. Evolution, 39(4), 783–791. https://doi.org/10.2307/2408678
+#' Gascuel, O. (1997). BIONJ: an improved version of the NJ algorithm based on a simple model of sequence data. Molecular Biology and Evolution, 14(7), 685–695. https://doi.org/10.1093/oxfordjournals.molbev.a025808
+#' 
+plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate = "bernoulli", 
+                      tree_method = "nj", root = FALSE,
+                      boot = FALSE, boot_par = FALSE){
+  #=======sanity checks==========
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
+  x <- add.facets.snpR.data(x, facets)
+  
+  msg <- character(0)
+  
+  if(!tree_method %in% c("nj", "bionj", "upgma")){
+    msg <- c(msg, "Tree method not recognized. Acceptable methods: nj, bionj, or upgma.\n")
+  }
+  
+  if(length(root) < length(facets)){
+    if(length(root) == 1){
+      root <- rep(root, length(facets))
+    }
+    else{
+      msg <- c(msg, "Root strategy not specified for each facet.\n")
+    }
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  check.installed("ape")
+  check.installed("ggtree")
+  
+  #=======function=========
+  # expects 
+  fun <- function(x, tfacet, distance_method, tree_method, interpolate, root, boot, boot_par){
+    if(root == "FALSE"){root <- FALSE}
+    #============fetch dist matrix function============
+    fetch_dist <- function(x, tfacet){
+      dist <- get.snpR.stats(x, tfacet, "genetic_distance")
+      dists <- vector("list", length(dist[[1]]))
+      names(dists) <- names(dist[[1]])
+      for(i in 1:length(dist[[1]])){
+        dists[[i]] <-  dist[[1]][[i]][names(dist[[1]][[i]]) == distance_method][[1]]
+      }
+      return(dists)
+    }
+    
+    dists <- fetch_dist(x, tfacet)
+    
+    final_output <- vector("list", length(dists))
+    names(final_output) <- names(dists)
+    
+    
+    
+    #============define tree method===========
+    if(tree_method == "nj"){
+      if(!isFALSE(root)){
+        tree_fun <- function(x) ape::root(ape::nj(x), outgroup = root)
+      }
+      else{
+        tree_fun <- function(x) ape::nj(x)
+      }
+    }
+    else if(tree_method == "bionj"){
+      if(!isFALSE(root)){
+        tree_fun <- function(x) ape::root(ape::bionj(x), outgroup = root)
+      }
+      else{
+        tree_fun <- function(x) ape::bionj(x)
+      }
+    }
+    else if(tree_method == "upgma"){
+      if(isFALSE(root)){
+        warning("UPGMA trees are always rooted.")
+        root <- TRUE
+      }     
+      tree_fun <- function(x) as.phylo(stats::hclust(x, "average"))
+    }
+    
+    #=============make a tree=============
+    tree <- lapply(dists, tree_fun)
+    
+    #=========bootstrap, if requested=============
+    if(!isFALSE(boot)){
+      #======define function========
+      boot_fun <- function(x, tfacet, distance_method, interpolate){
+        snp.facet <- check.snpR.facet.request(x, tfacet, "sample")
+        
+        #========shuffle=========
+        if(snp.facet == ".base"){
+          invisible(utils::capture.output(
+            shuff <- import.snpR.data(genotypes(x)[sample(nrow(x), nrow(x), replace = T),], 
+                                      snp.meta = snp.meta(x), sample.meta = sample.meta(x))))
+        }
+        else{
+          t.snp.meta <- snp.meta(x)
+          split.snp.meta <- unlist(strsplit(snp.facet, "(?<!^)\\.", perl = T))
+          levs <- do.call(paste, c(t.snp.meta[,split.snp.meta, drop = F], sep = "."))
+          ulevs <- unique(levs)
+          t.snp.meta$ord <- 1:nrow(t.snp.meta)
+          for(j in 1:length(ulevs)){
+            tsum <- sum(levs == ulevs[j])
+            t.snp.meta[which(levs == ulevs[j]),] <- t.snp.meta[which(levs == ulevs[j]),][sample(tsum, tsum, replace = T),]
+          }
+          
+          t.snp.meta$.snp.id <- snp.meta(x)$.snp.id
+          invisible(utils::capture.output(
+            shuff <- import.snpR.data(genotypes(x)[t.snp.meta$ord,], 
+                                      snp.meta = snp.meta(x), sample.meta = sample.meta(x))))
+          
+        }
+        
+        #======make the trees========
+        invisible(utils::capture.output(
+          shuff <- calc_genetic_distances(shuff, tfacet, distance_method, interpolate)))
+        
+        tdist <- fetch_dist(shuff, tfacet)
+        treeb <- lapply(tdist, tree_fun)
+        return(treeb)
+      }
+      
+      #======run bootstraps=========
+      if(isFALSE(boot_par)){
+        boots <- vector("list", boot)
+        for(i in 1:boot){
+          cat("Boot", i, "out of", boot, "\n")
+          boots[[i]] <- boot_fun(x, tfacet, distance_method, interpolate)
+        }
+      }
+      else{
+        
+        boot <- 1:boot
+        if(boot_par < length(boot)){
+          pboot <- split(boot, rep(1:boot_par, length.out = length(boot), each = ceiling(length(boot)/boot_par)))
+        }
+        else{
+          boot_par <- length(boot)
+          pboot <- split(boot, 1:boot_par, drop = F)
+        }
+        
+        cl <- snow::makeSOCKcluster(boot_par)
+        doSNOW::registerDoSNOW(cl)
+        
+        
+        
+        #prepare reporting function
+        ntasks <- length(pboot)
+        progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+        opts <- list(progress=progress)
+        
+        #loop through each set of facets
+        output <- foreach::foreach(q = 1:ntasks,
+                                   .packages = c("ape", "snpR"), 
+                                   .options.snow = opts) %dopar% {
+                                     
+                                     boots <- vector("list", length(pboot[[q]]))
+                                     for(i in 1:length(pboot[[q]])){
+                                       boots[[i]] <- boot_fun(x, tfacet, distance_method, interpolate)
+                                     }
+                                     boots
+                                   }
+        
+        
+        parallel::stopCluster(cl)
+        doSNOW::registerDoSNOW()
+        
+        # delist one level
+        boots <- unlist(output, F)
+      }
+    }
+    
+    
+    #=========generate plot==================
+    # if boots
+    if(!isFALSE(boot)){
+      apply_boots <- function(tree, boots, root){
+        boot_val <- ape::prop.clades(tree, boots, rooted = !isFALSE(root))
+        boot_val[is.na(boot_val)] <- 0
+        boot_val <- paste0((boot_val/length(boots))*100, "%") 
+        tree$node.label <- boot_val
+        return(tree)
+      }
+      
+      for(i in 1:length(tree)){
+        tree[[i]] <- apply_boots(tree[[i]], purrr::map(boots, names(tree[i])), root)
+      }
+      
+    }
+    
+    tout <- vector("list", length(tree))
+    names(tout) <- names(tree)
+    
+    for(i in 1:length(tree)){
+      # make the plot
+      tp <- ggplot2::ggplot(tree[[i]], ggplot2::aes(x, y), label = label) + ggtree::geom_tree() +
+        ggtree::geom_tiplab() + ggtree::theme_tree()
+      
+      
+      # add parts
+      ## boot values
+      if(!isFALSE(boot)){
+        tp <- tp + ggtree::geom_text2(ggplot2::aes(subset = !isTip, label = label),
+                                      hjust = -.3)
+      }
+      
+      tout[[i]] <- list(plot = tp, tree = tree[[i]])
+      if(isFALSE(boot)){
+        tout[[i]]$boot <- FALSE
+      }
+      else{
+        tout[[i]]$boot <- purrr::map(boots, names(tree[i]))
+      }
+    }
+    return(tout)
+  }
+  
+  #=======run==============
+  needed_dists <- check_calced_stats(x, facets, paste0("genetic_distance", "_", distance_method, "_", interpolate))
+  needed_dists <- which(!unlist(needed_dists))
+  if(length(needed_dists) > 0){
+    invisible(utils::capture.output(
+      x <- calc_genetic_distances(x, facets[needed_dists], distance_method, interpolate = interpolate)))
+  }
+  
+  out <- vector("list", length = length(facets))
+  for(i in 1:length(facets)){
+    cat("Facet:", facets[i], "\n")
+    out[[i]] <- fun(x, facets[i], distance_method, tree_method, interpolate, root[i], boot, boot_par)
+  }
+  names(out) <- facets
+  
+  # return
+  return(out)
+}
