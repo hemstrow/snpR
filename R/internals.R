@@ -1035,7 +1035,7 @@ smart.merge <- function(n.s, o.s, meta.names, starter.meta){
 #'  with .base if nothing is left after facets are removed. Otherwise returns null in this case.
 #'
 #'@author William Hemstrom
-check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE){
+check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE, return_base_when_empty = TRUE){
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -1128,13 +1128,13 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
     if(fill_with_base){
       if(!".base" %in% facets){
         facets <- c(facets, ".base")
-        facet.types <- c(facets, ".base")
+        facet.types <- c(facet.types, ".base")
       }
     }
   }
   
-  # fix if we've removed everything, return the base facet if fill_with_base is TRUE
-  if(fill_with_base){
+  # fix if we've removed everything, return the base facet if return_base_when_empty is TRUE
+  if(return_base_when_empty){
     if(length(facets) == 0){
       facets <- ".base"
       if(return.type){

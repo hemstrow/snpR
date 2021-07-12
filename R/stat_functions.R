@@ -798,7 +798,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 
   # add any missing facets
   ofacets <- facets
-  facets <- check.snpR.facet.request(x, facets, return.type = T)
+  facets <- check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   if(all(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst esitmiation.")
   }
