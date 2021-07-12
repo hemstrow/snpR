@@ -625,7 +625,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   #=======================fetch, using the internal version of .get.snpR.data========================
   out <- vector("list", length(stats))
   names(out) <- stats
-  
+
   # determine the parts of the snpR object we need to harvest
   needed.parts <- purrr::map(statistic_index[stats], "types")
   unique.needed.parts <- unique(unlist(needed.parts))
@@ -675,7 +675,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means", "fst.matrix")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -799,6 +799,27 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
+  extract.fst.matrix <- function(x, facets = NULL){
+    fst <- data.table::as.data.table(.get.snpR.stats(x, facets, "weighted.means"), col_pattern = c("fst"))
+    fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
+    
+    cats <- unique(fst$facet)
+    res <- vector("list", length(cats))
+    names(res) <- cats
+    
+    for(i in 1:length(cats)){
+      if("weighted_mean_fst_p" %in% colnames(fst)){
+        res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
+                         p = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst_p"))
+      }
+      else{
+        res[[i]] <- data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst")
+      }
+    }
+    
+    return(res)
+  }
+  
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -857,6 +878,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   }
   else if(type == "weighted.means"){
     return(extract.basic(x@weighted.means, facets, type = "comingled", col_pattern = col_pattern))
+  }
+  else if(type == "fst.matrix"){
+    return(extract.fst.matrix(x, facets))
   }
   
 }
