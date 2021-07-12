@@ -43,7 +43,7 @@ for(i in 1:length(window.stats[[1]])){
 
 for(i in 1:length(pairwise.stats[[1]])){
   names(statistic_index)[tracker] <- pairwise.stats[[1]][i]
-  statistic_index[[tracker]] <- list(category = "pairwise", types = c("pairwise", "pairwise.window", "weighted.means"),
+  statistic_index[[tracker]] <- list(category = "pairwise", types = c("pairwise", "pairwise.window", "weighted.means", "fst.matrix"),
                                      col_pattern = pairwise.stats[[2]][[i]])
   tracker <- tracker + 1
 }
