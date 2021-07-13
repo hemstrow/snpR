@@ -9,8 +9,8 @@
 \alias{read.FSTAT}
 \alias{convert.genlight}
 \alias{convert.genid}
-\alias{convert.vcfR}
 \alias{read.plink}
+\alias{convert.vcfR}
 \title{snpRdata Import Wrappers}
 \usage{
 read.vcf(file, snp.meta = NULL, sample.meta = NULL)
@@ -23,13 +23,13 @@ read.genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
 read.FSTAT(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
+read.plink(file)
+
 convert.genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 
 convert.genid(genid, snp.meta = NULL, sample.meta = NULL)
 
 convert.vcfR(vcfR, snp.meta = NULL, sample.meta = NULL)
-
-read.plink(file)
 }
 \arguments{
 \item{file}{character, path to a file containing genotype data to import.}
@@ -83,13 +83,13 @@ are stored as: NN, 0000, or snp_tab format.
 
 \item \code{read.FSTAT}: Import FSTAT formatted data.
 
+\item \code{read.plink}: Import plink bed, bim, and fam data.
+
 \item \code{convert.genlight}: Convert adegenet genlight objects.
 
 \item \code{convert.genid}: Convert adegenet genid objects
 
 \item \code{convert.vcfR}: Convert adegenet vcfR objects
-
-\item \code{read.plink}: Import plink bed, bim, and fam data.
 }}
 
 \section{File import}{

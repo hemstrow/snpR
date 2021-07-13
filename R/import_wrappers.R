@@ -133,6 +133,18 @@ read.FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 }
 
 #' @export
+#' @describeIn snpR_import_wrappers Import plink bed, bim, and fam data.
+read.plink <- function(file){
+  if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
+    check.installed("tools")
+    return(process_plink(tools::file_path_sans_ext(file)))
+  }
+  else{
+    return(process_plink(file))
+  }
+}
+
+#' @export
 #' @describeIn snpR_import_wrappers Convert adegenet genlight objects.
 convert.genlight <- function(genlight, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(file, snp.meta, sample.meta))
@@ -150,14 +162,3 @@ convert.vcfR <- function(vcfR, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(vcfR, snp.meta, sample.meta))
 }
 
-#' @export
-#' @describeIn snpR_import_wrappers Import plink bed, bim, and fam data.
-read.plink <- function(file){
-  if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
-    check.installed("tools")
-    return(process_plink(tools::file_path_sans_ext(file)))
-  }
-  else{
-    return(process_plink(file))
-  }
-}
