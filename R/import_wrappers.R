@@ -70,6 +70,7 @@
 #'@param genlight genlight object to convert, see
 #'  \code{\link[adegenet]{genlight}}.
 #'@param genid genid object to convert, see \code{\link[adegenet]{genid}}.
+#'@param vcfR vcfR object to convert, see \code{\link[vcfR]{vcfR}}.
 #'@param snp.meta data.frame or character, default NULL. Metadata for each SNP,
 #'  must have a number of rows equal to the number of SNPs in the dataset. If
 #'  NULL, a single "snpID" column will be added. If a character, the path to a

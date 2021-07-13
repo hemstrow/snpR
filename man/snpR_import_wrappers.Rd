@@ -56,6 +56,8 @@ data has genotypes stored in 6 characters, mDat will be set to "000000".}
 \code{\link[adegenet]{genlight}}.}
 
 \item{genid}{genid object to convert, see \code{\link[adegenet]{genid}}.}
+
+\item{vcfR}{vcfR object to convert, see \code{\link[vcfR]{vcfR}}.}
 }
 \description{
 These functions wrap \code{\link{import.snpR.data}} to import data into the
