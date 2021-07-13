@@ -1224,7 +1224,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' 
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
                            I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
-                           clumpp.opt = "greedy", ID = NULL, viridis.option = "viridis",
+                           clumpp.opt = "greedy", admixture_path = "/user/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", ...){
 
   #===========sanity checks===================
@@ -1352,7 +1352,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # checks for snpRdata objects only
   if(provided_qlist == FALSE){
     x <- add.facets.snpR.data(x, facet)
-    good.methods <- c("snapclust", "snmf")
+    good.methods <- c("snapclust", "snmf", "admixture")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
     }
@@ -1362,6 +1362,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
     if(method == "snapclust"){
       check.installed("adegenet")
+    }
+    if(method == "admixture"){
+      if(!file.exists(admixture_path)){
+        msg <- c(msg, "No file found at provided admixture path.\n")
+      }
+      if(Sys.info()[1] == "Windows"){
+        msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment.\n")
+      }
     }
 
     if(length(facet) > 1){
@@ -1780,6 +1788,17 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       # fix K plot
       K_plot <- dplyr::bind_rows(K_plot)
       colnames(K_plot)[1] <- "Cross.Entropy"
+    }
+    else if(method == "admixture"){
+      #=========prep===========
+      # write plink files
+      old.snp.meta <- snp.meta(x)
+      snp.meta(x)$chr <- 0
+      format_snps(x, "plink", outfile = "plink_files")
+      for(i in 1:k){
+        cmd <- paste0(admixture_path, " --cv ", admixture_cv, " plink_files.bed ", i, " log", i, ".out")
+        sys <- Sys.info()[1]
+      }
     }
   }
   else if(provided_qlist == TRUE){
