@@ -793,6 +793,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  information, for VCF or plink! output.
 #'@param position character, default "position". Name of column containing
 #'  position information, for VCF output.
+#'@param phenotype character, default "phenotype". Optional name of column
+#'  containing phenotype information, for plink! output.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -850,13 +852,13 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'
 #' #PLINK! format
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
-#' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 #'
 #' #PLINK! format with provided ped
 #' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, 
 #' sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
-#' #from command line, then run plink_out.sh to generate plink_out.bed.
+#' #note that a column in the sample metadata containing phenotypic information
+#' #can be provided to the "phenotype" arugment if wished.
 #'
 #' #Sequoia format
 #' b <- sample.meta(stickSNPs)
@@ -876,7 +878,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        ncp = 2, ncp.max = 5, chr = "chr", position = "position"){
+                        ncp = 2, ncp.max = 5, chr = "chr", position = "position",
+                        phenotype = "phenotype"){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -997,7 +1000,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
   }
   else if(output == "plink"){
-    check.installed("BMS")
+    check.installed("genio")
     if(is.null(input_format)){
       if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
         stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
@@ -1014,7 +1017,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }
-    cat("Converting to PLINK! binary format.")
+    cat("Converting to PLINK! binary format.\n\tThis relies on the genio package--please cite this for publication.\n")
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
       facets <- facets[-c(snp.facets, both.facets)]
@@ -1220,10 +1223,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #convert "sn" format to NN
     if(input_format == "sn"){
-      # save for plink if that's the destination format!
-      if(output == "plink"){
-        pl_0g_dat <- x
-      }
       xv <- as.matrix(x)
       xv[xv == 0] <- "AA"
       xv[xv == 1] <- "AC"
@@ -1577,112 +1576,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   #PLINK format
   if(output == "plink"){
-    #======================make a vector containing the bits for each genotype============
-    # much easier with sn!
-    if(exists("pl_0g_dat")){
-      # convert to vector
-      xv <- as.vector(t(pl_0g_dat))
-
-      # add a few filler genotype calls to fill in the empty bits later on.
-      x.dup <- ncol(pl_0g_dat) %% 4
-      if(x.dup  != 0){
-        x.dup <- 4 - x.dup
-      }
-      x.dup <- matrix("FF", nrow(pl_0g_dat), x.dup)
-      x.dup <- cbind(pl_0g_dat, x.dup)
-      xv.dup <- as.vector(t(x.dup))
-
-      # define the vector that we're going to fill with bits for each genotype
-      xvt <- character(length(xv.dup))
-
-      xvt[xv.dup == "0"] <- "00"
-      xvt[xv.dup == "1"] <- "01"
-      xvt[xv.dup == "2"] <- "11"
-      xvt[!xv.dup %in% c("0", "1", "2", "FF")] <- "10"
-      xvt[xv.dup == "FF"] <- "00"
-
-      # get allele names for map file down the line
-      a.names <- matrix(c(0,1), nrow(header), 2, T)
+    #===============make a bed file using genio==========
+    # remove any snps with no data
+    sn <- as.matrix(format_snps(x, "sn", interpolate = FALSE)[,-c(1:(ncol(snp.meta(x)) - 1))])
+    bads <- which(rowSums(is.na(sn)) == ncol(sn))
+    if(length(bads) > 0){
+      sn <- sn[-bads,]
+      warning("Removed some loci without any called genotypes.\n")
     }
-
-    # harder for the NN format
-    else{
-      # convert to vector
-      xv <- as.vector(t(x))
-
-      # add a few filler genotype calls to fill in the empty bits later on.
-      x.dup <- ncol(x) %% 4
-      if(x.dup  != 0){
-        x.dup <- 4 - x.dup
-      }
-      x.dup <- matrix("FF", nrow(x), x.dup)
-      x.dup <- cbind(x, x.dup)
-      xv.dup <- as.vector(t(x.dup))
-
-      # define the vector that we're going to fill with bits for each genotype
-      xvt <- character(length(xv.dup))
-
-      # pull allele table to check for violations
-      as <- x@geno.tables$as[x@facet.meta$facet == ".base",]
-
-      # if there are any alleles without any data, warn and remove
-      if(any(rowSums(as) == 0)){
-        missing.dat <- which(rowSums(as) == 0)
-        warning(paste0("Removed ", length(missing.dat), "SNPs with no called genotypes.!\n"),
-                "Removed SNPs:\n", missing.dat)
-        x <- x[-missing.dat,]
-        as <- as[-missing.dat,]
-        xv <- as.vector(t(x))
-      }
-
-      # get the unique alleles for each loci, fixing for loci with one allele.
-      unique.as <- cbind(as, N1 = rep(0, nrow(as))) # put in dummies for rows with missing haplotypes
-      unique.as <- ifelse(unique.as != 0, TRUE, FALSE) # convert to logical
-      if(any(rowSums(unique.as) != 2)){
-        unique.as[rowSums(unique.as) != 2, 5] <- TRUE # add one missing allele note
-      }
-      unique.as <- which(t(unique.as)) %% ncol(unique.as) # get the column for each TRUE
-      unique.as[unique.as == 0] <- 5 # fix for sixth column
-      unique.as <- c(colnames(as), "M")[unique.as] # add column names.
-
-      # match to observed genotypes
-      ## these lines generate a vector equal in length to xv that has the correct genotype options per loci for all three genotypes.
-      v00 <- paste0(unique.as[seq(1, length(unique.as), 2)],
-                    unique.as[seq(1, length(unique.as), 2)])
-      v00 <- rep(v00, each = ncol(x.dup))
-      v11 <- paste0(unique.as[seq(2, length(unique.as), 2)],
-                    unique.as[seq(2, length(unique.as), 2)])
-      v11 <- rep(v11, each = ncol(x.dup))
-      v01a <- paste0(unique.as[seq(1, length(unique.as), 2)],
-                     unique.as[seq(2, length(unique.as), 2)])
-      v01a <- rep(v01a, each = ncol(x.dup))
-      v01b <- paste0(unique.as[seq(2, length(unique.as), 2)],
-                     unique.as[seq(1, length(unique.as), 2)])
-      v01b <- rep(v01b, each = ncol(x.dup))
-
-      ## these lines create xvt, which has the correct binary doublets.
-      xvt[xv.dup == v00] <- "00"
-      xvt[xv.dup == v11] <- "11"
-      xvt[xv.dup == v01a] <- "01"
-      xvt[xv.dup == v01b] <- "01"
-      xvt[xv.dup == "NN"] <- "10"
-      xvt[xv.dup == "FF"] <- "00"
-
-      # get allele names for map file down the line
-      a.names <- matrix(unique.as, nrow(x), 2, T)
+    
+    if(isFALSE(outfile)){
+      genio::write_bed("plink_out.bed", sn, verbose = FALSE)
+      cat("Wrote bed file to plink_out.bed\n")
     }
-
-    #=====================add magic numbers and reorder vector==============
-
-    # order correctly for plink (weird reversed bytes)
-    xvt <- paste0(xvt[seq(4, length(xvt), 4)],
-                  xvt[seq(3, length(xvt), 4)],
-                  xvt[seq(2, length(xvt), 4)],
-                  xvt[seq(1, length(xvt), 4)])
-
-    # add magic number and SNP-major identifier
-    bed <- c("01101100", "00011011", "00000001", xvt)
-
+    genio::write_bed(paste0(outfile, ".bed"), sn, verbose = FALSE)
 
     #===============make a ped file=================
     # make an empty set of ped header columns if not provided
@@ -1706,8 +1613,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       else{
         Sex <- rep("NA", ncol(x))
       }
-      if(any(lower.sample.cols == "phenotype")){
-        Phenotype <- x@sample.meta[,which(lower.sample.cols == "phenotype")]
+      if(any(colnames(x@sample.meta) == phenotype)){
+        Phenotype <- x@sample.meta[,which(colnames(x@sample.meta) == phenotype)]
       }
       else{
         Phenotype <- rep("NA", ncol(x))
@@ -1738,11 +1645,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     ped <- cbind(ped, matrix(x.np, nrow(ped), nrow(x)), stringsAsFactors = F)
 
     #===============make an extended map file=================
+    a.names <- get.snpR.stats(x, stats = "maf")$single[,c("major", "minor")]
     # with morgans
     if(any(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))){
       bim <- data.frame(chr = x@snp.meta[,chr],
                         rs = x@snp.meta$.snp.id,
-                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
+                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))][,1],
                         bp = x@snp.meta$position,
                         a1 = a.names[,1],
                         a2 = a.names[,2])
@@ -1760,11 +1668,16 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # recode chr
     bim$chr <- as.numeric(as.factor(bim$chr))
 
+    # remove bads
+    if(length(bads) > 0){
+      bim <- bim[-bads,]
+    }
+    
     # grab normal map file
     map <- bim[,1:4]
 
     # name output
-    rdata <- list(ped = ped, bed = bed, map = map, bim = bim, fam = fam)
+    rdata <- list(ped = ped, map = map, bim = bim, fam = fam)
   }
 
   # colony format for 01234
@@ -2102,22 +2015,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
     else if(output == "plink"){
-      t2 <- as.logical(as.numeric(unlist(strsplit(bed, "")))) # merge the data and convert it to a logical.
-      t2 <- BMS::bin2hex(t2) # convet to hex codes
-      t2 <- unlist(strsplit(t2,"")) # unlist
-      t2 <- paste0("\\\\x",
-                   t2[seq(1,length(t2),2)],
-                   t2[seq(2,length(t2),2)],
-                   collapse = "")
-
-
-      # system type
-      sys.type <- Sys.info()["sysname"]
-
-      # call
-      writeLines(paste0("#!/bin/bash\n\n",
-                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
-      cat(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(fam, paste0(outfile, ".fam"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)

@@ -21,7 +21,8 @@ format_snps(
   ncp = 2,
   ncp.max = 5,
   chr = "chr",
-  position = "position"
+  position = "position",
+  phenotype = "phenotype"
 )
 }
 \arguments{
@@ -91,6 +92,9 @@ information, for VCF or plink! output.}
 
 \item{position}{character, default "position". Name of column containing
 position information, for VCF output.}
+
+\item{phenotype}{character, default "phenotype". Optional name of column
+containing phenotype information, for plink! output.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
@@ -243,13 +247,13 @@ format_snps(dat, "dadi", facets = "pop")
 
 #PLINK! format
 format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
-#from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
 
 #PLINK! format with provided ped
 ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, 
 sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
 format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
-#from command line, then run plink_out.sh to generate plink_out.bed.
+#note that a column in the sample metadata containing phenotypic information
+#can be provided to the "phenotype" arugment if wished.
 
 #Sequoia format
 b <- sample.meta(stickSNPs)

@@ -9,7 +9,8 @@ check.snpR.facet.request(
   facets,
   remove.type = "snp",
   return.type = FALSE,
-  fill_with_base = TRUE
+  fill_with_base = TRUE,
+  return_base_when_empty = TRUE
 )
 }
 \arguments{
