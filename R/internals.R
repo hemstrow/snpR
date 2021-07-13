@@ -1819,3 +1819,29 @@ convert_2_to_1_column <- function(x){
   ind.genos <- matrix(ind.genos, ncol = ncol(x)/2) # rematrix and transpose!
   return(ind.genos)
 }
+
+#' Perform a row-specific gsub/match given a key table
+#' 
+#' @param x input data
+#' @param lookup table of matches. Each column is something that can be gsub-ed
+#'   and each row corresponds to the rows of x
+#' @param lookup_match a character vector with length equal to the number of columns
+#'   of lookup. In order, the matches in x for the contents of each column
+#'   in lookup.
+#' @param patch A character string that will be used to join row ID to contents.
+#'   SHOULD NOT BE FOUND ANYWHERE IN X, LOOKUP, OR LOOKUP_MATCH.
+row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
+  # make the lookup table row-specific
+  lookup <- data.table::data.table(lookup = as.character(unlist(lookup)), row = 1:nrow(lookup), 
+                       match = rep(lookup_match, each = nrow(lookup)))
+  lookup[,key := paste0(row, patch, match)]
+  
+  # make x row-specific
+  x_rows <- nrow(x)
+  x_cols <- ncol(x)
+  x <- data.table::data.table(ident = as.character(unlist(x)), row = 1:nrow(x))
+  x[,key := paste0(row, patch, ident)]
+  x$match <- lookup$lookup[match(x$key, lookup$key)]
+  
+  return(matrix(lookup$lookup[match(x$key, lookup$key)], x_rows, x_cols))
+}

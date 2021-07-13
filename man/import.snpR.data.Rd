@@ -74,7 +74,12 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
  numeric characters. Works only with bi-allelic data. Genotypes will be
  converted (internally) to NN: the first allele (numerically) will be coded
- as A, the second as C.}
+ as A, the second as C. \item{plink: } plink .bed, .fam, and .bim files, via
+ \code{\link[genio]{read_plink}}. If any of these file types is provided,
+ snpR via \code{\link[genio]{read_plink}} will look for the other file types
+ automatically. Sample metadata should be contained in the .fam file and
+ SNP metadata in the .bim file, so sample or snp meta data provided here will
+ be ignored.}
 
  Additional arguments can be provided to import.snpR.data that will be passed
  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -181,9 +186,18 @@ adegenet::chr(genlight) <- sample(10, 1000, TRUE)
 dat <- import.snpR.data(genlight)
 
 \dontrun{
+## not run:
 # from a file:
 dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
 # if wanted, snp and sample metadata could be provided as usual.
+
+## not run:
+# from plink:
+# make plink data
+format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "group")
+
+# read plink
+dat <- import.snpR.data("plink_test.bed")
 }
 
 }

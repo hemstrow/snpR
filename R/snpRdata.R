@@ -185,7 +185,12 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
 #'  numeric characters. Works only with bi-allelic data. Genotypes will be
 #'  converted (internally) to NN: the first allele (numerically) will be coded
-#'  as A, the second as C.}
+#'  as A, the second as C. \item{plink: } plink .bed, .fam, and .bim files, via
+#'  \code{\link[genio]{read_plink}}. If any of these file types is provided,
+#'  snpR via \code{\link[genio]{read_plink}} will look for the other file types
+#'  automatically. Sample metadata should be contained in the .fam file and
+#'  SNP metadata in the .bim file, so sample or snp meta data provided here will
+#'  be ignored.}
 #'
 #'  Additional arguments can be provided to import.snpR.data that will be passed
 #'  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -307,9 +312,18 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' dat <- import.snpR.data(genlight)
 #'
 #' \dontrun{
+#' ## not run:
 #' # from a file:
 #' dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
 #' # if wanted, snp and sample metadata could be provided as usual.
+#' 
+#' ## not run:
+#' # from plink:
+#' # make plink data
+#' format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "group")
+#'
+#' # read plink
+#' dat <- import.snpR.data("plink_test.bed")
 #' }
 #'
 #'@export
@@ -349,7 +363,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   if(is.matrix(genotypes)){
     genotypes <- as.data.frame(genotypes)
   }
-  if(is.character(genotypes)){
+  if(is.character(genotypes) & length(genotypes) == 1){
     if(file.exists(genotypes)){
       # check for ms or vcf, etc file
       if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
@@ -364,47 +378,51 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       else if(grepl("\\.fstat$", genotypes)){
         return(process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
       }
-      
-      # other formats
+      else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
+        check.installed("tools")
+        return(process_plink(tools::file_path_sans_ext(genotypes)))
+      }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))
-        
-        # NN, no need to do anything, just read in and proceed as normal.
-        if(genotypes[1,1] %in% 
-                 c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
-                   cat("Assuming data is in NN format.\n")
-        }
-        
-        # sn
-        else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
-          cat("Assuming single nucleotide format.\n")
-          return(format_snps(genotypes, input_format = "sn", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
-        }
-        
-        # 0000
-        else if(genotypes[1,1] %in% 
-                c(apply(expand.grid(c("01", "02", "03", "04"), c("01", "02", "03", "04")), 1, paste, collapse=""), mDat)){
-          cat("Assuming 0000 format.\n")
-          return(format_snps(genotypes, input_format = "0000", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
-        }
-        
-        # SNP_tab
-        else if(genotypes[1,1] %in% 
-                c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=" "), mDat, c("A", "T", "C", "G"))){
-          cat("Assuming snp_tab format.\n")
-          return(format_snps(genotypes, input_format = "snp_tab", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
-        }
-        
-        #couldn't find a supported format
-        else{
-          good.formats <- c(".vcf", ".vcf.gz", ".ms", "NN", "0000", "sn", "snp_tab")
-          stop(paste0(c("Unsupported file format. Supported formats: ", good.formats, "\n"), collapse = " "))
-        }
       }
     }
     else{
       stop("File not found. Fix path or import manually and provide to import.snpR.data.\n")
     }
+  }
+  
+  
+  #=================check input format for non-special case=============================
+  # NN, no need to do anything, just read in and proceed as normal.
+  if(genotypes[1,1] %in% 
+     c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
+    cat("Assuming data is in NN format.\n")
+  }
+  
+  # sn
+  else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
+    cat("Assuming single nucleotide format.\n")
+    return(format_snps(genotypes, input_format = "sn", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+  }
+  
+  # 0000
+  else if(genotypes[1,1] %in% 
+          c(apply(expand.grid(c("01", "02", "03", "04"), c("01", "02", "03", "04")), 1, paste, collapse=""), mDat)){
+    cat("Assuming 0000 format.\n")
+    return(format_snps(genotypes, input_format = "0000", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+  }
+  
+  # SNP_tab
+  else if(genotypes[1,1] %in% 
+          c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=" "), mDat, c("A", "T", "C", "G"))){
+    cat("Assuming snp_tab format.\n")
+    return(format_snps(genotypes, input_format = "snp_tab", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
+  }
+  
+  #couldn't find a supported format
+  else{
+    good.formats <- c(".vcf", ".vcf.gz", ".ms", ".bim", ".bed", ".fam", ".fstat", ".genepop", "NN", "0000", "sn", "snp_tab")
+    stop(paste0(c("Unsupported file format. Supported formats: ", good.formats, "\n"), collapse = " "))
   }
   
   

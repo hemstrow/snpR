@@ -509,7 +509,46 @@ process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat 
   return(import.snpR.data(ac, snp.meta, sample.meta))
 }
 
-
+#' Read in plink data
+#' @param plink_file extensionless filepath to plink files
+#' 
+#' @author William Hemstrom
+process_plink <- function(plink_file){
+  check.installed("genio")
+  
+  
+  #======use genio to read in data===========
+  res <- genio::read_plink(file = plink_file, verbose = F)
+  colnames(res$bim)[which(colnames(res$bim) == "id")] <- ".snp.id"
+  colnames(res$fam)[which(colnames(res$fam) == "id")] <- ".sample.id"
+  
+  
+  
+  #======convert genotypes==========
+  # create row-specific look-up table
+  if(all(c(res$bim$ref, res$bim$alt) %in% c("A", "T", "C", "G", "N"))){
+    
+    # convert to NN using the ref and alt info
+    lookup <- res$bim[,c("ref", "alt")]
+    lookup <- data.table::as.data.table(lookup)
+    lookup[,o1 := paste0(ref, ref)]
+    lookup[,o2 := paste0(ref, alt)]
+    lookup[,o3 := paste0(alt,alt)]
+    lookup <- lookup[,-c(1:2)]
+    genotypes <- row_specific_gsub(res$X, lookup, c(0, 1, 2))
+    genotypes[is.na(genotypes)] <- "NN"
+    
+    return(import.snpR.data(genotypes, 
+                            snp.meta = as.data.frame(res$bim), 
+                            sample.meta = as.data.frame(res$fam)))
+  }
+  else{
+    res$X[is.na(res$X)] <- -1
+    return(import.snpR.data(res$X, 
+                            snp.meta = as.data.frame(res$bim), 
+                            sample.meta = as.data.frame(res$fam), mDat = -1))
+  }
+}
 
 
 #' Format numeric data in the 0000 or 000000 form.

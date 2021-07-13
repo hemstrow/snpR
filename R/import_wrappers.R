@@ -32,10 +32,17 @@
 #'  \item{FSTAT: } FSTAT file
 #'  format, with genotypes stored as either 4 or 6 numeric characters. Works
 #'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
-#'  the first allele (numerically) will be coded as A, the second as C.}
+#'  the first allele (numerically) will be coded as A, the second as C.
+#'  \item{plink: } plink .bed, .fam, and .bim files, via
+#'  \code{\link[genio]{read_plink}}. If any of these file types is provided,
+#'  snpR via \code{\link[genio]{read_plink}} will look for the other file types
+#'  automatically. Sample metadata should be contained in the .fam file and
+#'  SNP metadata in the .bim file, so sample or snp meta data can be provided
+#'  here.}
 #'
 #'  Sample and snp metadata can also be provided via file path, and will be read
-#'  in using \code{\link[data.table]{fread}} \emph{with the default settings}.
+#'  in using \code{\link[data.table]{fread}} \emph{with the default settings}
+#'  using \code{\link{read.delimited.snps}}.
 #'  If these settings are not correct, please read in the metadata manually and
 #'  provide to import.snpR.data.
 #'
@@ -141,4 +148,16 @@ convert.genid <- function(genid, snp.meta = NULL, sample.meta = NULL){
 #' @describeIn snpR_import_wrappers Convert adegenet vcfR objects
 convert.vcfR <- function(vcfR, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(vcfR, snp.meta, sample.meta))
+}
+
+#' @export
+#' @describeIn snpR_import_wrappers Import plink bed, bim, and fam data.
+read.plink <- function(file){
+  if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
+    check.installed("tools")
+    return(process_plink(tools::file_path_sans_ext(file)))
+  }
+  else{
+    return(process_plink(file))
+  }
 }

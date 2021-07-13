@@ -10,6 +10,7 @@
 \alias{convert.genlight}
 \alias{convert.genid}
 \alias{convert.vcfR}
+\alias{read.plink}
 \title{snpRdata Import Wrappers}
 \usage{
 read.vcf(file, snp.meta = NULL, sample.meta = NULL)
@@ -27,6 +28,8 @@ convert.genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 convert.genid(genid, snp.meta = NULL, sample.meta = NULL)
 
 convert.vcfR(vcfR, snp.meta = NULL, sample.meta = NULL)
+
+read.plink(file)
 }
 \arguments{
 \item{file}{character, path to a file containing genotype data to import.}
@@ -85,6 +88,8 @@ are stored as: NN, 0000, or snp_tab format.
 \item \code{convert.genid}: Convert adegenet genid objects
 
 \item \code{convert.vcfR}: Convert adegenet vcfR objects
+
+\item \code{read.plink}: Import plink bed, bim, and fam data.
 }}
 
 \section{File import}{
@@ -109,10 +114,17 @@ are stored as: NN, 0000, or snp_tab format.
  \item{FSTAT: } FSTAT file
  format, with genotypes stored as either 4 or 6 numeric characters. Works
  only with bi-allelic data. Genotypes will be converted (internally) to NN:
- the first allele (numerically) will be coded as A, the second as C.}
+ the first allele (numerically) will be coded as A, the second as C.
+ \item{plink: } plink .bed, .fam, and .bim files, via
+ \code{\link[genio]{read_plink}}. If any of these file types is provided,
+ snpR via \code{\link[genio]{read_plink}} will look for the other file types
+ automatically. Sample metadata should be contained in the .fam file and
+ SNP metadata in the .bim file, so sample or snp meta data can be provided
+ here.}
 
  Sample and snp metadata can also be provided via file path, and will be read
- in using \code{\link[data.table]{fread}} \emph{with the default settings}.
+ in using \code{\link[data.table]{fread}} \emph{with the default settings}
+ using \code{\link{read.delimited.snps}}.
  If these settings are not correct, please read in the metadata manually and
  provide to import.snpR.data.
 }
