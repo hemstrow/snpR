@@ -1091,14 +1091,16 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'
 #' Individual cluster assignment probabilities can be calculated using several
 #' different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-#' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-#' These methods are not re-implemented in R, instead, this function calls the
-#' \code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
-#' functions instead. Please cite the references noted in those functions if
-#' using this function. For snapclust, the "ward" method is used to initialize
-#' clusters if one rep is requested, otherwise the clusters are started randomly
-#' each rep. Other methods can be used by providing pop.ini as an additional
-#' argument as long as only one rep is requested.
+#' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.
+#' \item{admixture: } The ADMIXTURE program. Requires a local admixture
+#' executable, and thus cannot run on a Windows platform.} These methods are not
+#' re-implemented in R, instead, this function calls the
+#' \code{\link[LEA]{main_sNMF}}, \code{\link[adegenet]{snapclust.choose.k}}, or
+#' a local executable for the ADMIXTURE program instead. Please cite the
+#' references noted in those functions. For snapclust, the "ward" method is used
+#' to initialize clusters if one rep is requested, otherwise the clusters are
+#' started randomly each rep. Other methods can be used by providing pop.ini as
+#' an additional argument as long as only one rep is requested.
 #'
 #' Multiple different runs can be conducted using the 'reps' argument, and the
 #' results can be combined for plotting across all of these reps using the
@@ -1177,6 +1179,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
 #'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 #'   approach. } See CLUMPP documentation for details.
+#' @param admixture character, default "/usr/bin/admixture". Path to the
+#'   admixture executable, required if method = "admixture".
+#' @param admixture_cv numeric, default 5. Fold to use for cross-validation for
+#'   admixture, used to determine the optimum k.
 #' @param ID character or NULL, default NULL. Designates a column in the sample
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
@@ -1312,6 +1318,19 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
           if(length(facet) != nrow(qlist[[1]])){
             msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
           }
+        }
+      }
+      else if(provided_qlist == "parse"){
+        lev1 <- list.files(pattern = x)[1]
+        if(length(lev1) > 0){
+          msg <- c(msg, paste0("No q files matching '", x, "' located.\n"))
+        }
+        else{
+          lev1 <- read.table(lev1)
+          if(nrow(lev1) != length(facet)){
+            msg <- c(msg, "If a pattern for q files is provided alongside facet information, facet must be a character vector containing population identifiers for each sample in the q files.\n")
+          }
+          rm(lev1)
         }
       }
       sample_meta <- data.frame(d = facet, stringsAsFactors = F)
@@ -1687,11 +1706,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     for(i in 1:length(qlist)){
       if(is.data.frame(qlist[[i]])){
-        qlist[[i]] <- qlist[[i]][ord,]
+        qlist[[i]] <- qlist[[i]][ord,, drop = F]
       }
       else{
         for(j in 1:length(qlist[[i]])){
-          qlist[[i]][[j]] <- qlist[[i]][[j]][ord,]
+          qlist[[i]][[j]] <- qlist[[i]][[j]][ord,, drop = F]
         }
       }
     }
@@ -1795,11 +1814,25 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       old.snp.meta <- snp.meta(x)
       snp.meta(x)$chr <- 0
       format_snps(x, "plink", outfile = "plink_files")
+      cv_storage <- expand.grid(1:k, 1:reps)
+      colnames(cv_storage) <- c("K", "rep")
+      cv_storage <- dplyr::arrange(cv_storage, K, rep)
+      cv_storage$cv_error <- NA
       for(i in 1:k){
-        cmd <- paste0(admixture_path, " --cv ", admixture_cv, " plink_files.bed ", i, " log", i, ".out")
-        sys <- Sys.info()[1]
+        for(j in 1:reps){
+          cmd <- paste0(admixture_path, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
+          system(cmd)
+          file.rename(paste0("plink_files.", i, ".P"), paste0("plink_files.", i, "_", j, ".P"))
+          file.rename(paste0("plink_files.", i, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
+          cv_err <- readLines(paste0("plink_files_log", i, "_", j, ".out"))
+          cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
+            as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
+        }
       }
+      qlist <- parse_qfiles(".Q")
+      K_plot <- cv_storage
     }
+    
   }
   else if(provided_qlist == TRUE){
     qlist <- x

@@ -19,6 +19,8 @@ plot_structure(
   clumpp = T,
   clumpp_path = "/usr/bin/CLUMPP.exe",
   clumpp.opt = "greedy",
+  admixture_path = "/user/bin/admixture",
+  admixture_cv = 5,
   ID = NULL,
   viridis.option = "viridis",
   alt.palette = NULL,
@@ -89,6 +91,9 @@ configurations. Slow. \item{greedy: } The standard approach. Slow for large
 datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 approach. } See CLUMPP documentation for details.}
 
+\item{admixture_cv}{numeric, default 5. Fold to use for cross-validation for
+admixture, used to determine the optimum k.}
+
 \item{ID}{character or NULL, default NULL. Designates a column in the sample
 metadata containing sample IDs.}
 
@@ -110,6 +115,9 @@ separator lines.}
 
 \item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 or \code{\link[adegenet]{snapclust.choose.k}}.}
+
+\item{admixture}{character, default "/usr/bin/admixture". Path to the
+admixture executable, required if method = "admixture".}
 }
 \value{
 A list containing: \itemize{\item{plot: } A ggplot object.
@@ -126,14 +134,16 @@ STRUCTURE. Runs for each value of k between 2 and the given number.
 \details{
 Individual cluster assignment probabilities can be calculated using several
 different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-These methods are not re-implemented in R, instead, this function calls the
-\code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
-functions instead. Please cite the references noted in those functions if
-using this function. For snapclust, the "ward" method is used to initialize
-clusters if one rep is requested, otherwise the clusters are started randomly
-each rep. Other methods can be used by providing pop.ini as an additional
-argument as long as only one rep is requested.
+Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.
+\item{admixture: } The ADMIXTURE program. Requires a local admixture
+executable, and thus cannot run on a Windows platform.} These methods are not
+re-implemented in R, instead, this function calls the
+\code{\link[LEA]{main_sNMF}}, \code{\link[adegenet]{snapclust.choose.k}}, or
+a local executable for the ADMIXTURE program instead. Please cite the
+references noted in those functions. For snapclust, the "ward" method is used
+to initialize clusters if one rep is requested, otherwise the clusters are
+started randomly each rep. Other methods can be used by providing pop.ini as
+an additional argument as long as only one rep is requested.
 
 Multiple different runs can be conducted using the 'reps' argument, and the
 results can be combined for plotting across all of these reps using the
