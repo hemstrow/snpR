@@ -2738,7 +2738,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
       p <- min(1.0, sum(probs[probs <= target])/ mysum)
       return(p)
     }
-
+    
     gs <- gs$gs
 
     # get observed genotype counts
@@ -2766,9 +2766,11 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
       chi.qq <- calc.chi(oqq, eqq)
       chi.2pq <- calc.chi(o2pq, e2pq)
       chi <- chi.pp + chi.qq + chi.2pq
+      nans <- is.nan(chi)
+      chi[which(nans)] <- 0
 
       # calculate p-values
-      out <- stats::pchisq(chi, 2, lower.tail = FALSE)
+      out <- stats::pchisq(chi, ifelse(nans, 0, 1), lower.tail = FALSE)
     }
 
     # otherwise we have to use the looped version:
