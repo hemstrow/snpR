@@ -631,10 +631,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   
   facets <- check.snpR.facet.request(x, facets, "none")
   
-  if(!all(stats %in% names(statistic_index))){
-    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(statistic_index))], collapse = ", "),
+  if(!all(stats %in% names(.internal.data$statistic_index))){
+    msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(.internal.data$statistic_index))], collapse = ", "),
                          "\nnot recognized. \nRecognized statistics: ",
-                         paste0(names(statistic_index), collapse = ", "),
+                         paste0(names(.internal.data$statistic_index), collapse = ", "),
                          "."))
   }
   if(length(msg) > 0){
@@ -645,7 +645,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   names(out) <- stats
 
   # determine the parts of the snpR object we need to harvest
-  needed.parts <- purrr::map(statistic_index[stats], "types")
+  needed.parts <- purrr::map(.internal.data$statistic_index[stats], "types")
   unique.needed.parts <- unique(unlist(needed.parts))
   if(!bootstraps){
     if(any(unique.needed.parts == "bootstraps")){
@@ -656,7 +656,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   names(out) <- unique.needed.parts
   for(i in 1:length(unique.needed.parts)){
     need.this.part <- names(needed.parts)[grep(unique.needed.parts[i], needed.parts)]
-    col_patterns <-  unlist(purrr::map(statistic_index[need.this.part], "col_pattern"))
+    col_patterns <-  unlist(purrr::map(.internal.data$statistic_index[need.this.part], "col_pattern"))
     if(!is.na(col_patterns[1])){
       suppressWarnings(res <- .get.snpR.stats(x, facets, type = unique.needed.parts[i],
                                               col_pattern = col_patterns))
@@ -818,7 +818,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
   extract.fst.matrix <- function(x, facets = NULL){
-    fst <- data.table::as.data.table(.get.snpR.stats(x, facets, "weighted.means"), col_pattern = statistic_index$fst$col_pattern)
+    fst <- data.table::as.data.table(.get.snpR.stats(x, facets, "weighted.means"), col_pattern = .internal.data$statistic_index$fst$col_pattern)
     fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
     
     cats <- unique(fst$facet)

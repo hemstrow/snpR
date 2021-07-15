@@ -1,3 +1,4 @@
+#===========================statistic_index================
 #=============possible calculated statistics===============
 single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe"),
                      col_pattern = list("ho", 
@@ -69,4 +70,17 @@ for(i in 1:length(other.stats[[1]])){
   tracker <- tracker + 1
 }
 
-usethis::use_data(statistic_index, internal = T, overwrite = T)
+
+
+
+#============================test_snps=====================
+test_snps <- subset_snpR_data(stickSNPs, 1:12, sample(nsamps(stickSNPs), 10, F))
+test_snps <- filter_snps(test_snps)
+
+sample.meta(test_snps)$pop <- rep(c("ASP", "PAL"), 5)
+sample.meta(test_snps)$fam <- rep(c("A", "B"), each = 5)
+
+
+#============================save==========================
+.internal.data <- list(test_snps = test_snps, statistic_index = statistic_index)
+usethis::use_data(.internal.data, internal = T, overwrite = T)
