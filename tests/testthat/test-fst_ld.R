@@ -1,26 +1,34 @@
 context("fst and ld")
-local_edition(3)
 
-tdat <- stickRAW[1:100, 1:103]
-tdat <- import.snpR.data(tdat[,-c(1:3)], tdat[,1:3], data.frame(pop = rep(c("A", "B"), each = 50)))
-tdat <- add.facets.snpR.data(tdat, "pop")
+
 
 test_that("correct genepop", {
-  tdfst <- calc_pairwise_fst(tdat, "pop", "genepop")
-  expect_snapshot(list(tdfst[[1]]@pairwise.stats, tdfst[[2]]))
+  local_edition(3)
+  tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
+  tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+  expect_snapshot(tdfst) # note, run off of genepop, not internally calced. Thus checked, but should not change.
 })
 
 test_that("correct wc", {
-  tdfst <- calc_pairwise_fst(tdat, "pop", "wc")
-  expect_snapshot(tdfst@pairwise.stats)
+  tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc")
+  tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+  expect_equal(round(tdfst$pairwise$fst, 4), 
+               round(c(-8.695652e-02, -1.040834e-16,  4.411765e-02, -1.111111e-01,
+                       -1.333741e-01, -3.978780e-02,  0.000000e+00,  1.195278e-01,
+                       -5.769231e-02 ), 4)) # values from pegas, also double checked by hand. Note that heifstat slightly disagrees on a few of these (where the allele is fixed in one loci)
 })
 
-test_that("correct hoh", {
-  tdfst <- calc_pairwise_fst(tdat, "pop", "hohenlohe")
-  expect_snapshot(tdfst@pairwise.stats)
-})
 
 test_that("correct cld ld",{
-  tdld <- calc_pairwise_ld(tdat, "pop")
+  tdld <- calc_pairwise_ld(.internal.data$test_snps, "pop")
+  tdld <- get.snpR.stats(tdld, "pop", "ld")
+  tdld <- tdld$LD$matrices$ASP$.base$CLD
+  tdld <- as.numeric(tdld)
   
+  ASPcor <- cor(t(format_snps(.internal.data$test_snps, "sn", interpolate = FALSE)[,-c(1:2)][,which(sample.meta(.internal.data$test_snps)$pop == "ASP")]), 
+                use = "pairwise.complete.obs")^2
+  ASPcor[which(lower.tri(ASPcor))] <- NA
+  diag(ASPcor) <- NA
+  ASPcor <- as.numeric(ASPcor)
+  expect_equal(ASPcor, tdld) # checked by hand vs definition of CLD LD.
 })
