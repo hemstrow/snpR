@@ -12,10 +12,9 @@ calc_pairwise_fst(x, facets, method = "WC", boot = FALSE, boot_par = FALSE)
 \item{facets}{character. Categorical metadata variables by which to break up
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{method}{character, default "WC". Defines the FST estimator to use.
-Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
-(1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
-package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
+\item{method}{character, default "wc". Defines the FST estimator to use.
+Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: } Wier
+(1990) \item{Genepop: } Rousset (2008), uses the genepop package. }}
 
 \item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do. See details.}
 
@@ -55,9 +54,9 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
-Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
-\item{"Wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
-2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
+Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
+\item{"wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
+2008.}}
 }
 \examples{
 # Using Wier and Cockerham 1984's method
@@ -77,8 +76,6 @@ get.snpR.stats(x, "pop", "fst")
 Wier and Cockerham (1984). \emph{Evolution}
 
 Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
-
-Hohenlohe et al. (2010). \emph{PLOS Genetics}
 
 Rousset (2008). \emph{Molecular Ecology Resources}
 }

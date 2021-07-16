@@ -486,17 +486,16 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 #'statistic, at least a single sample level facet must be provided.
 #'
-#'Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
-#'\item{"Wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
-#'2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
+#'Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
+#'\item{"wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
+#'2008.}}
 #'
 #'@param x snpRdata. Input SNP data.
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param method character, default "WC". Defines the FST estimator to use.
-#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
-#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
-#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'@param method character, default "wc". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: } Wier
+#'  (1990) \item{Genepop: } Rousset (2008), uses the genepop package. }
 #' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do. See details.
 #' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
 #'   using the supplied number of cores.
@@ -507,7 +506,6 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'
 #'@references Wier and Cockerham (1984). \emph{Evolution}
 #'@references Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
-#'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
 #'@author William Hemstrom
@@ -794,6 +792,11 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
     vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
     vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
     stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
+  }
+  
+  method <- tolower(method)
+  if(!method %in% c("genepop", "wc", "wier")){
+    stop("Method not found. Acceptable methods: genepop, wc, wier.")
   }
 
   # add any missing facets
