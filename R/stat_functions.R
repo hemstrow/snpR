@@ -698,44 +698,70 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         if(method == "wc" | method == "wier"){
 
           #allele frequencies in both i and jdat.
-          ps1 <- idat$ni1/idat$n_total
-          ps2 <- jdat$ni1/jdat$n_total
+          ps1_1 <- idat$ni1/idat$n_total
+          ps1_2 <- idat$ni2/idat$n_total
+          ps2_1 <- jdat$ni1/jdat$n_total
+          ps2_2 <- jdat$ni2/jdat$n_total
+          
+          
+          intot <- idat$n_total/2
+          jntot <- jdat$n_total/2
 
-          #other stats
+          # compute variance parts
           r <- 2 #number of comps
-          nbar <- (idat$n_total + jdat$n_total)/2 #average sample size
-          comb_ntots <- cbind(idat$n_total, jdat$n_total)
+          nbar <- (intot + jntot)/2 #average sample size in individuals
+          comb_ntots <- cbind(intot, jntot)
           CV <- matrixStats::rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
-          pbar <- ((idat$n_total*ps1) + (jdat$n_total*ps2))/(r*nbar) #average sample allele frequency
-          ssq <- (((idat$n_total)*(ps1-pbar)^2) + ((jdat$n_total)*(ps2-pbar)^2))/((r-1)*nbar) #sample varaince of allele frequencies
-          hbar <- ((idat$n_total*idat$ho) + (jdat$n_total*jdat$ho))/(r*nbar) #average heterozygote frequencies
-
-          #equation parts used in both
-          inner1 <- pbar*(1-pbar)
-          inner2 <- ((r-1)/r)*ssq
-          inner3 <- .25*hbar
-
+          per_al <- function(intot, jntot, ps1, ps2, r, nbar, nc){
+            pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
+            ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
+            hbar <- ((intot*idat$ho) + (jntot*jdat$ho))/(r*nbar) #average heterozygote frequencies
+            
+            #equation parts used in both
+            inner1 <- pbar*(1-pbar)
+            inner2 <- ((r-1)/r)*ssq
+            inner3 <- .25*hbar
+            
+            if(method == "wc"){
+              inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
+              a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
+              b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
+              c <- .5*hbar
+              # check_dat <- data.frame(a = a, b = b, c = c, nbar = nbar, nc = nc, CV = CV, ssq = ssq, hbar = hbar, pbar = pbar, ps1 = ps1, ps2 = ps2, FST = Fst, FIS = Fis)
+              # saveRDS(check_dat, "check_dat_temp.RDS")
+              return(list(a = a, b = b, c = c))
+            }
+            else{
+              S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
+              S2i1 <- ((r*(nbar - nc))/nbar)*inner1
+              S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
+              S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
+              S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
+              return(list(S1 = S1, S2 = S2))
+            }
+          }
+          parts_1 <- per_al(intot, jntot, ps1_1, ps2_1, r, nbar, nc)
+          parts_2 <- per_al(intot, jntot, ps1_2, ps2_2, r, nbar, nc)
+         
+          # compute Fst
           if(method == "wc"){
-            inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
-            a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
-            b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
-            c <- .5*hbar
-            Fst <- a/(a+b+c)
-            data.table::set(out, j = c.col, value = Fst) # write fst
+            a <- cbind(parts_1$a, parts_2$a)
+            b <- cbind(parts_1$b, parts_2$b)
+            c <- cbind(parts_1$c, parts_2$c)
+            Fst <- rowSums(a)/rowSums(a + b + c)
+            Fit <- 1 - rowSums(c)/rowSums(a + b + c)
+            Fis <- 1 - rowSums(c)/rowSums(b + c)
           }
           else{
-            S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
-            S2i1 <- ((r*(nbar - nc))/nbar)*inner1
-            S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
-            S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
-            S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
-            Fst <- S1/S2
-            data.table::set(out, j = c.col, value = Fst) # write fst
+            S1 <- cbind(parts_1$S1, parts_2$S1)
+            S2 <- cbind(parts_2$S2, parts_2$S2)
+            Fst <- rowSums(S1)/rowSums(S2)
           }
-
+          data.table::set(out, j = c.col, value = Fst) # write fst
         }
 
+        # hohenlohe is currently unsupported, it's borked
         else if(method == "hohenlohe"){
 
           #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
