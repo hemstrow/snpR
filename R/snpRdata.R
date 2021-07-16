@@ -779,7 +779,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
     
     # adjust keep.cols to remove any unwanted stats
     if(!is.null(col_pattern)){
-      good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet",
+      good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison",
                                                        colnames(x@facet.meta)))
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
