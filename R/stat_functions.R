@@ -1228,7 +1228,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     colnames(m1) <- colnames(x)
     m1 <- cbind(as.data.frame(t(m1)), n)
     m2 <- dplyr::group_by(m1, n)
-    m2 <- dplyr::summarise_all(m2, dplyr::funs(sum))
+    m2 <- dplyr::summarise_all(m2, list(~sum(.)))
+    
     #m2 <- m1 %>% group_by(n) %>% summarise_all(funs(sum))
     m2 <- t(as.matrix(m2[,-1]))
     colnames(m2) <- sort(unique(n))
@@ -1396,6 +1397,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #2)
     #turn this into a genotype count table
     mgcv <- reshape2::melt(gcv)
+    mgcv$value <- as.factor(mgcv$value)
     cnames <- levels(mgcv$value)
     ghapmat <- bigtabulate::bigtabulate(mgcv, ccols = which(colnames(mgcv) %in% c("Var1", "value")))
     colnames(ghapmat) <- cnames
@@ -1690,7 +1692,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         tprox <- cbind(meta[i,],
                        meta[snp.list$snps[[i]],],
                        abs(meta[i,]$position - meta[snp.list$snps[[i]],]$position),
-                       rsq = NA, Dprime = NA, pval = NA)
+                       rsq = NA, Dprime = NA, pval = NA, row.names = NULL)
 
         colnames(tprox) <- colnames(prox)
         prox <- rbind(prox, tprox)
