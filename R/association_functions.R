@@ -447,7 +447,6 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
 
     if(!"GMMAT" %in% utils::installed.packages()){
-      check.installed("SeqVar", "bioconductor")
       check.installed("SeqVarTools", "bioconductor")
       check.installed("GMMAT")
       
