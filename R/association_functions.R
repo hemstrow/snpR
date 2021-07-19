@@ -654,6 +654,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
   else if(method == "gmmat.score"){
     out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
   }
+  
+  x <- update_calced_stats(x, facets, paste0("association_", method))
 
   x <- merge.snpR.stats(x, out)
   return(x)
