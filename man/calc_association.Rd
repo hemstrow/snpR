@@ -93,10 +93,10 @@ which allele (major or minor) is associated with which phenotype.
 }
 \examples{
   # add a dummy phenotype and run an association test.
-  sample.meta <- cbind(stickSNPs@sample.meta, phenotype = sample(c("A", "B"), nrow(stickSNPs@sample.meta), TRUE))
-  x <- import.snpR.data(as.data.frame(stickSNPs), stickSNPs@snp.meta, sample.meta)
-  x <- calc_association(x, facets = c("pop", "pop.fam"), response = "phenotype", method = "armitage")
-  get.snpR.stats(x, c("pop", "pop.fam"))
+  x <- stickSNPs
+  sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+  x <- calc_association(x, facets = c("pop"), response = "phenotype", method = "armitage")
+  get.snpR.stats(x, "pop", "association")
 
 }
 \references{
