@@ -821,6 +821,11 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
 #'   c(strip.title, axis, axis.ticks).
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
+#' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
+#'   x-axis chromosome names will be abbreviated using 
+#'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
+#'   minimum length specified. Helpful when chromosome/scaffold/etc names are
+#'   very long.
 #'
 #' @author William Hemstrom
 #' @export
@@ -830,6 +835,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
 #'
 #'
 #' @examples
+#' # association testing:
+#' # add a dummy phenotype and run an association test.
+#' x <- stickSNPs
+#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+#' x <- calc_association(x, response = "phenotype", method = "armitage")
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
+#'                log.p = T)
+#' 
+#' 
+#' # other types of stats:
 #' # make some data
 #' x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
 #'
@@ -870,7 +885,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            highlight = "significant",
                            sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
-                           colors = c("black", "slategray3")){
+                           colors = c("black", "slategray3"),
+                           abbreviate_labels = FALSE){
 
   #=============sanity checks==============================
   msg <- character()
@@ -937,6 +953,21 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
   else{
     stop("x must be a data.frame or snpRdata object.\n")
+  }
+  
+  #================sanity checks==============
+  msg <- character(0)
+  
+  if(!bp %in% colnames(stats)){
+    msg <- c(msg, paste0("Position column: ", bp, " not found in data/snp.meta. Define with argument bp = \n"))
+  }
+  
+  if(!chr %in% colnames(stats)){
+    msg <- c(msg, paste0("Chromosome column: ", chr, " not found in data/snp.meta. Define with argument chr = \n"))
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
   }
 
   #====clean up=====
@@ -1026,7 +1057,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
       # labels
       if(is.null(snp)){
-        stats$highlight.label <- paste0(stats$chr, "_", stats[,bp])
+        if(!isFALSE(abbreviate_labels)){
+          stats$highlight.label <- paste0(abbreviate(stats$chr, minlength = abbreviate_labels) , "_", stats[,bp])
+        }
+        else{
+          stats$highlight.label <- paste0(stats$chr, "_", stats[,bp])
+        }
       }
       else{
         stats$highlight.label <- stats[,snp]
@@ -1053,7 +1089,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                    axis.text.y = ggplot2::element_text(size = t.sizes[3]),
                    strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
                    axis.title = ggplot2::element_text(size = t.sizes[2])) +
-    ggplot2::scale_x_continuous(label = names(cum.chr.centers), breaks = cum.chr.centers, minor_breaks = NULL) +
     ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers))) +
     ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
 
@@ -1080,6 +1115,17 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                                        force = 1.3)
   }
 
+  # abbreviate
+  if(!isFALSE(abbreviate_labels)){
+    p <- p + ggplot2::scale_x_continuous(label = abbreviate(names(cum.chr.centers), 
+                                                            minlength = abbreviate_labels), 
+                                         breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  else{
+    p <- p + ggplot2::scale_x_continuous(label = names(cum.chr.centers), 
+                                         breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  
   return(list(plot = p, data = stats))
 }
 

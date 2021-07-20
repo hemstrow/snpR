@@ -23,7 +23,8 @@ plot_manhattan(
   viridis.option = "plasma",
   viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10),
-  colors = c("black", "slategray3")
+  colors = c("black", "slategray3"),
+  abbreviate_labels = FALSE
 )
 }
 \arguments{
@@ -97,6 +98,12 @@ c(strip.title, axis, axis.ticks).}
 
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
+
+\item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
+x-axis chromosome names will be abbreviated using 
+\code{\link[base]{abbreviate}}, with each abbreviated label having the
+minimum length specified. Helpful when chromosome/scaffold/etc names are
+very long.}
 }
 \value{
 A list containing \itemize{\item{plot: } A ggplot manhattan plot.
@@ -138,6 +145,16 @@ highlighted SNPs will be either chr_bp by default or given in the column
 named by the "snp" argument.
 }
 \examples{
+# association testing:
+# add a dummy phenotype and run an association test.
+x <- stickSNPs
+sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+x <- calc_association(x, response = "phenotype", method = "armitage")
+plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
+               log.p = T)
+
+
+# other types of stats:
 # make some data
 x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
 
