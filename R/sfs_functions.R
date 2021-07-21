@@ -120,7 +120,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   #==============run=========================
   # subset
   if(!is.null(pops)){
-    x <- subset_snpR_data(x, facets = facet, subfacets = pops)
+    x <- .subset_snpR_data(x, facets = facet, subfacets = pops)
   }
 
   # get dadi formatted data

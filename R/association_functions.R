@@ -1303,7 +1303,7 @@ refine_rf <- function(rf, response, facets = NULL, subfacet = NULL,
 
     # subset
     o.mod <- rf$models[[use.model]]
-    dat <- subset_snpR_data(rf$data, facets = o.facet, subfacets = subfacet)
+    dat <- .subset_snpR_data(rf$data, facets = o.facet, subfacets = subfacet)
     dat <- import.snpR.data(as.data.frame(dat, stringsAsFactors = F), dat@snp.meta, dat@sample.meta, dat@mDat)
     matches <- intersect(which(rf$data@stats$facet == o.facet),
                          which(rf$data@stats$subfacet == subfacet))

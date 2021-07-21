@@ -44,7 +44,180 @@
 #'
 #' # Keep SNPs 1:100, individuals in the ASP population
 #' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
-subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
+  #============extract facet info===============
+  argnames <- match.call()
+  argnames <- as.list(argnames)
+  argnames <- argnames[-1]
+  
+  is.facet <- which(!names(argnames) %in% c("x", ".snps", ".samps"))
+  if(length(is.facet) > 0){
+    facets <- names(argnames)[is.facet]
+  }
+  else{
+    facets <- NULL
+  }
+  
+  #===========sanity checks====================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  msg <- character(0)
+  
+  # check facet types
+  if(!is.null(facets)){
+    facets <- check.snpR.facet.request(x, facets, "none", TRUE)
+    if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
+      msg <- c(msg, "Sample level facets cannot be provided alongside a vector of samples to retain/remove.\n")
+    }
+    if(any(c("snp", "complex") %in% facets[[2]]) %in% facets[[2]] & !identical(.snps, 1:nsnps(x))){
+      msg <- c(msg, "SNP level facets cannot be provided alongside a vector of SNPs to retain/remove.\n")
+    }
+    if("complex" %in% facets[[2]]){
+      msg <- c(msg, "Complex (sample + SNP) facets cannot be used for subsetting. Please split into SNP and sample components and rerun.\n")
+    }
+    # if(length(facets[[1]]) > 1){
+    #   valid <- logical(length(facets[[1]]))
+    #   for(i in 1:length(facets[[1]])){
+    #     valid[i] <- ifelse(length(grep(facets[[1]][i], facets[[1]][-i])) == 0, TRUE, FALSE)
+    #   }
+    #   
+    #   if(sum(valid) < length(valid)){
+    #     msg <- c(msg, paste0("Some facets are listed more than once amongst arguments: ", paste0(facets[[1]][which(!valid)], collapse = ", "),
+    #                          ". Each facet may only be listed once. Joint facets (such as pop.fam) will return only cases true in both, seperate facets will return cases true in either.\n"))
+    #   }
+    # }
+    
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  
+  #===========subset===========================
+  if(!is.null(facets)){
+    # eval the facets
+    ## check for negatives, fix, and note
+    has.negatives <- grep("-", argnames[is.facet])
+    argnames[is.facet][has.negatives] <- lapply(argnames[is.facet][has.negatives], function(x){
+      x <- gsub("-", "", x)
+      if(any(length(x) > 2)){stop("Negative subscripts cannot be provided inside c() calls. Please place negative subscripts outside c() calls.\n")}
+      return(x[2])
+    } )
+    single.part <- !grepl("^c\\(", argnames[is.facet][has.negatives])
+    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], str2lang)
+    ## eval
+    argnames[is.facet] <- lapply(argnames[is.facet], eval)
+    
+    
+    # check to see if there are mixed negative and positive subsets
+    if(any(facets[[2]] == "snp")){
+      if(!all(which(facets[[2]] == "snp") %in% has.negatives) & !all(!which(facets[[2]] == "snp") %in% has.negatives)){
+        stop("Cannot mix negative and positive subscripts in SNP subfacets.\n")
+      }
+    }
+    if(any(facets[[2]] == "sample")){
+      if(!all(which(facets[[2]] == "sample") %in% has.negatives) & !all(!which(facets[[2]] == "sample") %in% has.negatives)){
+        stop("Cannot mix negative and positive subscripts in sample subfacets.\n")
+      }
+    }
+    
+    
+    
+    # check for flipped facet orders
+    ord.flipped <- which(facets[[1]] != names(argnames[is.facet]))
+    ## if any flipped, need to flip subfacets as well
+    if(any(ord.flipped)){
+      for(i in 1:length(ord.flipped)){
+        split.ord.facet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = T))
+        split.raw.facet <- unlist(strsplit(names(argnames[is.facet])[i], "(?<!^)\\.", perl = T))
+        re_ord <- match(split.raw.facet, split.ord.facet)
+        for(j in 1:length(argnames[is.facet][[i]])){
+          split.lev <-  unlist(strsplit(argnames[is.facet][[i]][j], "(?<!^)\\.", perl = T))
+          argnames[is.facet][[i]][j] <- paste0(split.lev[re_ord], collapse = ".")
+        }
+      }
+    }
+  }
+  
+  #====================snps====================
+  if("snp" %in% facets[[2]]){
+    if(any(which(facets[[2]] == "snp") %in% has.negatives)){
+      .snps <- rep(TRUE, nsnps(x))
+    }
+    else{
+      .snps <- logical(nsnps(x))
+    }
+    
+    snp.facets <- facets[[1]][which(facets[[2]] == "snp")]
+    for(i in 1:length(snp.facets)){
+      snp.subfacets <- argnames[[is.facet[which(facets[[2]] == "snp")][i]]]
+      for(j in 1:length(snp.subfacets)){
+        new.matches <- fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
+        if(length(new.matches) == 0){
+          warning(paste0("No sample found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
+          
+        }
+        if(which(facets[[2]] == "snp")[i] %in% has.negatives){
+          .snps[new.matches] <- FALSE
+        }
+        else{
+          .snps[new.matches] <- TRUE
+        }
+      }
+    }
+    .snps <- which(.snps)
+  }
+  
+  
+  
+  if("sample" %in% facets[[2]]){
+    
+    if(any(which(facets[[2]] == "sample") %in% has.negatives)){
+      .samps <- rep(TRUE, nsamps(x))
+    }
+    else{
+      .samps <- logical(nsamps(x))
+    }
+    
+    
+    samp.facets <- facets[[1]][which(facets[[2]] == "sample")]
+    for(i in 1:length(samp.facets)){
+      samp.subfacets <- argnames[[is.facet[which(facets[[2]] == "sample")][i]]]
+      for(j in 1:length(samp.subfacets)){
+        new.matches <- fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
+        if(length(new.matches) == 0){
+          warning(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
+        }
+        if(which(facets[[2]] == "sample")[i] %in% has.negatives){
+          .samps[new.matches] <- FALSE
+        }
+        else{
+          .samps[new.matches] <- TRUE
+        }
+      }
+    }
+    
+    .samps <- which(.samps)
+  }
+  
+  #===============return================
+  nsampm <- sample.meta(x)[.samps,]
+  nsampm <- nsampm[,-which(colnames(nsampm) == ".sample.id")]
+  
+  nsnpm <- snp.meta(x)[.snps,]
+  nsnpm <- nsnpm[,-which(colnames(nsnpm) == ".snp.id")]
+  return(import.snpR.data(genotypes(x)[.snps, .samps], snp.meta = nsnpm,
+                          sample.meta = nsampm, mDat = x@mDat))
+}
+
+
+
+
+#' old subset version with different facet specification. For internal use.
+.subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
   #=========sanity checks========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -197,6 +370,8 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     return(x)
   }
 }
+
+
 
 
 #'Filter SNPs in snpRdata objects.

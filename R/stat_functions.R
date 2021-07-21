@@ -2381,20 +2381,20 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(filter_samp_facets){
       if(filter_snp_facets){
-        invisible(utils::capture.output(x <- subset_snpR_data(x,
+        invisible(utils::capture.output(x <- .subset_snpR_data(x,
                                                        facets = sample.facets,
                                                        subfacets = sample.subfacets,
                                                        snp.facets = snp.facets,
                                                        snp.subfacets = snp.subfacets)))
       }
       else{
-        invisible(utils::capture.output(x <- subset_snpR_data(x,
+        invisible(utils::capture.output(x <- .subset_snpR_data(x,
                                                        facets = sample.facets,
                                                        subfacets = sample.subfacets)))
       }
     }
     else if(filter_snp_facets){
-      invisible(utils::capture.output(x <- subset_snpR_data(x,
+      invisible(utils::capture.output(x <- .subset_snpR_data(x,
                                                      snp.facets = snp.facets,
                                                      snp.subfacets = snp.subfacets)))
     }
@@ -2597,7 +2597,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
           " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
 
       # can't integrate this part into do_CLD without screwing up the parallel due to s4 issues.
-      suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+      suppressWarnings(y <- .subset_snpR_data(x, facets = tasks[i,1],
                                              subfacets = tasks[i,2],
                                              snp.facets = tasks[i,3],
                                              snp.subfacets = tasks[i,4]))
@@ -2624,7 +2624,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
       cat("Task #:", i, "of", nrow(tasks),
           " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
           " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")
-      utils::capture.output(invisible(suppressWarnings(y <- subset_snpR_data(x, facets = tasks[i,1],
+      utils::capture.output(invisible(suppressWarnings(y <- .subset_snpR_data(x, facets = tasks[i,1],
                                                                              subfacets = tasks[i,2],
                                                                              snp.facets = tasks[i,3],
                                                                              snp.subfacets = tasks[i,4]))))

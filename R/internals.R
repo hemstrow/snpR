@@ -379,10 +379,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           sub.x <- x
         }
         else if(opts[i,"t.snp.facet"] == ".base"){
-          suppressWarnings(invisible(utils::capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
+          suppressWarnings(invisible(utils::capture.output(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
         }
         else{
-          suppressWarnings(invisible(utils::capture.output(sub.x <- subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
+          suppressWarnings(invisible(utils::capture.output(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
                                                                               snp.facets = opts[i,3], snp.subfacets = opts[i,4]))))
         }
         
@@ -1542,6 +1542,24 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
   else{
     t.facets <- unlist(strsplit(task.list.row[1], "(?<!^)\\.", perl = T))
     matches <- which(do.call(paste, c(dat = as.data.frame(x@sample.meta[,t.facets]), sep = ".")) == task.list.row[2])
+  }
+  
+  return(matches)
+}
+
+#' Internal to find which snp metadata rows match a row from a task list.
+#' @param x snpRdata object to check
+#' @param task.list.row A row of an object created by
+#'   \code{\link{get.task.list}} to look up info about.
+fetch.snp.meta.matching.task.list <- function(x, task.list.row){
+  task.list.row <- unlist(task.list.row) # in case it is passed with drop = F for some reason
+  
+  if(task.list.row[3] == ".base"){
+    matches <- 1:nrow(x@snp.meta)
+  }
+  else{
+    t.facets <- unlist(strsplit(task.list.row[3], "(?<!^)\\.", perl = T))
+    matches <- which(do.call(paste, c(dat = as.data.frame(x@snp.meta[,t.facets]), sep = ".")) == task.list.row[4])
   }
   
   return(matches)
