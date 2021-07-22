@@ -4,7 +4,7 @@
 \alias{get.snpR.stats}
 \title{Pull calculated statistics from snpRdata objects.}
 \usage{
-get.snpR.stats(x, facets = NULL, stats = NULL, bootstraps = FALSE)
+get.snpR.stats(x, facets = NULL, stats = "single", bootstraps = FALSE)
 }
 \arguments{
 \item{x}{snpRdata object.}
@@ -78,13 +78,15 @@ Different statistics are returned either by named statistic or by type.
 
 \examples{
 # generate some statistics
-dat <- calc_pi(stickSNPs, "group.pop")
-dat <- calc_pairwise_fst(stickSNPs, "group.pop")
+dat <- calc_pi(stickSNPs, "pop")
+dat <- calc_pairwise_fst(dat, "pop")
 
 # fetch pi
-get.snpR.stats(dat, "group.pop", "pi")
+get.snpR.stats(dat, "pop", "pi")
 # fetch fst
-get.snpR.stats(dat, "group.pop", "fst")
+get.snpR.stats(dat, "pop", "fst")
+# fetch both
+get.snpR.stats(dat, "pop", c("pi", "fst"))
 
 # return a type of statistic instead of specific statistics
 dat <- calc_ho(stickSNPs, "group.pop")

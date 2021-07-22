@@ -2,13 +2,8 @@
 #'Subset snpRdata objects
 #'
 #'Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
-#'Throws away as few calculated stats as possible.
-#'
-#'This function exists to intelligently subset snpRdata. While the typical
-#'bracket notation can be used to subset snpRdata, that method is inherited from
-#'the data.frame S3 object class for consistancy. As such, the result will be a
-#'data.frame, not a snpRdata object. This function keeps the data in a snpRdata
-#'object, and retains as much previously calculated data as possible.
+#'Statistics will need to be recalculated after subsetting to avoid confusion. 
+#'The bracket operators can be alternatively, following the same syntax.
 #'
 #'If \emph{samples} are removed, most statistics will be thrown away, since
 #'values like pi will change. In contrast, if \emph{snps} are removed, many
@@ -21,29 +16,41 @@
 #'
 #'@param x snpRdata object.
 #'@param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep.
+#'  SNPs to keep. Negative subscripts allowed.
 #'@param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
-#'  to samples to keep.
-#'@param facets character, default NULL. \emph{sample specific} facets over
-#'  which subsetting will occur.
-#'@param subfacets character, default NULL. Levels of the specified sample level
-#'  facet to keep. Samples in other levels will be removed.
-#'@param snp.facets characet, default NULL. \emph{snp specific} facets over
-#'  which subsetting will occur.
-#'@param snp.subfacets character, default NULL. Levels of the specified snp facets
-#'  to keep. SNPs in other levels will be removed.
+#'  to samples to keep. Negative subscripts allowed.
+#'@param ... Facet subsetting may be specified by providing the facet as an 
+#'  argument and then providing the levels to keep or remove. Setting
+#'  pop = "ASP", for example, would keep only samples in the "ASP" level of the
+#'  pop facet, and setting pop.fam = "ASP.A" would keep only samples the ASP
+#'  pop and the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL")
+#'  would remove samples in the ASP or PAL pops. Subsetting by 
+#'  multiple facets is supported, although negative and positive subscripts
+#'  cannot be mixed across sample or SNP facets. They may be mixed between the
+#'  two.
 #'
 #'@export
 #'
 #' @examples
-#' # Keep only individuals in the ASP and PAL populations and on the LGIX or LGIV chromosome.
-#' subset_snpR_data(stickSNPs, facets = "pop", subfacets = c("ASP", "PAL"), snp.facets = "group", snp.subfacets = c("groupIX", "groupIV"))
-#'
-#' # Keep only individuals and SNPs 1 through 10
-#' subset_snpR_data(stickSNPs, snps = 1:10, samps = 1:10)
-#'
-#' # Keep SNPs 1:100, individuals in the ASP population
-#' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
+#' # Keep only individuals in the ASP and PAL populations 
+#' # and on the LGIX or LGIV chromosome.
+#' subset_snpR_data(stickSNPs, pop = c("ASP", "PAL"), 
+#'                  group = c("groupIX", "groupIV"))
+#'                  
+#' # keep individuals/SNPs in the first 10 columns/rows.
+#' subset_snpR_data(stickSNPs, 1:10, 1:10)
+#' 
+#' # negative subscripts: remove individuals in family B
+#' subset_snpR_data(stickSNPs, fam = -"B")
+#' 
+#' # negative subscripts: remove individuals in pop PAL AND fam B or C, 
+#' # and keep only SNPs on LGIV
+#' subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
+#'                  group = "groupIV")
+#'                  
+#' # using the bracket operator, same as example 1:
+#' stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
+#' 
 subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   #============extract facet info===============
   argnames <- match.call()
@@ -90,6 +97,58 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     # }
     
   }
+  
+  # .snps and .samps
+  if(is.logical(.snps)){
+    if(length(.snps) != nsnps(x)){
+      if(length(.snps) > nsnps(x)){
+        warning("More .snps/j requested than present in data")
+      }
+      if(length(.snps) %% nsnps != 0){
+        warning("Length of .snps/i is not a multiple of number of SNPs in x.\n")
+      }
+      .snps <- rep(.snps, length.out = nsnps(x))
+    }
+    .snps <- which(.snps)
+  }
+  if(is.logical(.samps)){
+    if(length(.samps) != nsamps(x)){
+      if(length(.samps) > nsamps(x)){
+        warning("More .samps/j requested than present in data")
+      }
+      if(length(.samps) %% nsamps != 0){
+        warning("Length of .samps/i is not a multiple of number of samples in x.\n")
+      }
+      .samps <- rep(.samps, length.out = nsamps(x))
+    }
+    .samps <- which(.samps)
+  }
+  
+  if(!is.numeric(.snps) & !is.integer(.snps)){
+    msg <- c(msg, ".snps/i must be a numeric vector.\n")
+  }
+  else{
+    if(!all(.snps == as.integer(.snps))){
+      msg <- c(msg, ".snps/i must only contain integers.\n")
+    }
+    if(max(.snps) > nrow(x)){
+      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+    }
+  }
+  
+  if(!is.numeric(.samps) & !is.integer(.samps)){
+    msg <- c(msg, ".samps/j must be a numeric vector.\n")
+  }
+  else{
+    if(!all(.samps == as.integer(.samps))){
+      msg <- c(msg, ".samps/j must only contain integers.\n")
+    }
+    if(max(.samps) > ncol(x)){
+      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+    }
+  }
+
+  
   
   if(length(msg) > 0){
     stop(msg)
@@ -209,7 +268,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   nsnpm <- snp.meta(x)[.snps,]
   nsnpm <- nsnpm[,-which(colnames(nsnpm) == ".snp.id")]
-  return(import.snpR.data(genotypes(x)[.snps, .samps], snp.meta = nsnpm,
+  return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
                           sample.meta = nsampm, mDat = x@mDat))
 }
 
@@ -319,7 +378,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
 
-    if(length(x@sn) != 0){
+    if(length(x@sn$sn) != 0){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps, samps]
       sn <- cbind(dat@snp.meta[,-ncol(dat@snp.meta)], sn)
@@ -731,7 +790,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       ngs <- list(gs = ngs, as = nas, wm = nwm)
       ngs <- lapply(ngs, fix.one.loci)
       rm(nas, nwm)
-      invisible(utils::capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
+      invisible(utils::capture.output(x <- snpRdata(.Data = as.data.frame(genotypes(x)[-which(vio.snps),], stringsAsFactors = F),
                                                     sample.meta = x@sample.meta,
                                                     snp.meta = x@snp.meta[-which(vio.snps),],
                                                     facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
@@ -754,7 +813,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
     if(length(rejects) > 0){
       old.facets <- x@facets
-      invisible(utils::capture.output(x <- import.snpR.data(x[,-rejects],
+      invisible(utils::capture.output(x <- import.snpR.data(genotypes(x)[,-rejects],
                                                      snp.meta = x@snp.meta,
                                                      sample.meta = x@sample.meta[-rejects,],
                                                      mDat = mDat)))
@@ -1021,8 +1080,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #dadi
 #' ## add ref and anc snp meta data columns to stickSNPs
 #' dat <- as.data.frame(stickSNPs)
-#' dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), 
-#' sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+#' snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 #' format_snps(dat, "dadi", facets = "pop")
 #'
 #' #PLINK! format
@@ -1885,14 +1943,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     maj <- x@stats$major[x@stats$facet == ".base"]
 
     # check to see if each allele is the minor, assign a one if so
-    a1 <- substr(unlist(t(x)), 1, 1)
-    a2 <- substr(unlist(t(x)), 2, 2)
+    a1 <- substr(unlist(t(genotypes(x))), 1, 1)
+    a2 <- substr(unlist(t(genotypes(x))), 2, 2)
 
     a1 <- a1 == rep(min, each = ncol(x))
     a2 <- a2 == rep(min, each = ncol(x))
 
     rdata <- t(a1 + a2)
-    rdata[as.matrix(x) == x@mDat] <- NA
+    rdata[as.matrix(genotypes(x)) == x@mDat] <- NA
 
 
     # sn
@@ -2255,11 +2313,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @author William Hemstrom
 #' @export
 #' @examples
-#' # check for duplicates with samples 1, 3, and 5
-#' check_duplicates(stickSNPs, c(1, 3, 5))
+#' # check for duplicates with sample 1
+#' check_duplicates(stickSNPs, 1)
 #'
 #' # check duplicates using the .samp.id column as sample IDs
-#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id")
+#' check_duplicates(stickSNPs, 1, id.col = ".sample.id")
 check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   #============sanity checks============
   msg <- character()
@@ -2329,7 +2387,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
 
     #figure out which values are "NN"
-    t.samp <- x[,t.samp.id]
+    t.samp <- genotypes(x)[,t.samp.id]
     miss <- t.samp == "NN"
 
     # finish initializing
@@ -2354,7 +2412,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
       }
 
       # compare only loci non "NN" in both samples
-      c.samp <- x[,j]
+      c.samp <- genotypes(x)[,j]
       c.miss <- c.samp == "NN"
       u.miss <- which(c.miss | miss)
 

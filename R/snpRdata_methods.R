@@ -18,7 +18,7 @@ setMethod("show", "snpRdata", function(object) {
       "==============================================\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
-      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),])/nrow(object@sample.meta))), "\n",
+      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),, drop = F])/nrow(object@sample.meta))), "\n",
       "==============================================\n",
       "Possible sample metadata facets:\n", paste0(colnames(object@sample.meta), collapse = "\t"), "\n\n",
       "Possible SNP metadata facets:\n", paste0(colnames(object@snp.meta), collapse = "\t"), "\n\n",
@@ -151,4 +151,18 @@ setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set sample meta
 setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
+
+#' @export
+#' @describeIn subset_snpR_data bracket operator
+setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop = FALSE){
+  if(rlang::is_missing(i)){
+    i <- 1:nsnps(x)
+  }
+  if(rlang::is_missing(j)){
+    j <- 1:nsamps(x)
+  }
+  return(subset_snpR_data(x, i, j, ...))
+})
+
+
 

@@ -28,6 +28,7 @@ Imports:
     plyr,
     purrr,
     reshape2,
+    rlang,
     snow,
     stringr,
     tidyr

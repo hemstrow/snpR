@@ -66,7 +66,7 @@ run_genomic_prediction <- function(x, response, iterations,
   check.installed("BGLR")
   
   #===============apply====================
-  if(length(x@sn) != 0){
+  if(length(x@sn$sn) != 0){
     if(x@sn$type != "bernoulli"){
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
       x@sn$type <- "bernoulli"
@@ -193,7 +193,7 @@ run_genomic_prediction <- function(x, response, iterations,
 cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
                                               burn_in = 1000, thin = 100, cross_percentage = 0.9,
                                               model = "BayesB", cross_samples = NULL, plot = TRUE){
-  
+
   #===============sanity checks============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -230,13 +230,13 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 
 
   # run the model
-  utils::capture.output(suppressWarnings(suppressMessages(sub.x <- subset_snpR_data(x, samps = model.samples))))
+  utils::capture.output(suppressWarnings(suppressMessages(sub.x <- subset_snpR_data(x, .samps = model.samples))))
   model <- run_genomic_prediction(sub.x, response = response, iterations =  iterations,
                                   burn_in = burn_in, thin = thin, model = model)
 
   # check accuracy
   cross.samples <- (1:ncol(x))[-sort(model.samples)]
-  if(length(x@sn) != 0){
+  if(length(x@sn$sn) != 0){
     if(x@sn$type != "bernoulli"){
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = "bernoulli"))
       x@sn$type <- "bernoulli"
@@ -748,7 +748,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #' dat <- stickSNPs
 #' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
 #' ## run rf
-#' rf <- run_random_forest(dat, response = "weight")
+#' rf <- run_random_forest(dat, response = "weight", pvals = FALSE)
 #' rf$models
 #' ## dummy phenotypes vs. predicted
 #' with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
@@ -771,7 +771,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
     #================grab data=====================
     ## sn format
-    if(length(sub.x@sn) != 0){
+    if(length(sub.x@sn$sn) != 0){
       if(sub.x@sn$type != interpolate){
         sn <- format_snps(sub.x, "sn", interpolate = interpolate)
       }

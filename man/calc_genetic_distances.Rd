@@ -63,7 +63,7 @@ get.snpR.stats(y, c("pop", "group"), "genetic_distance")
 
 # individuals across all snps + plot
 y <- calc_genetic_distances(stickSNPs)
-heatmap(as.matrix(get.snpR.stats(y, type = "genetic_distance")$.base$.base$Edwards))
+heatmap(as.matrix(get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards))
 
 }
 \references{

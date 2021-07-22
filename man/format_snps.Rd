@@ -241,8 +241,7 @@ format_snps(stickSNPs, "rafm", facets = "pop", n_samp = 100)
 #dadi
 ## add ref and anc snp meta data columns to stickSNPs
 dat <- as.data.frame(stickSNPs)
-dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), 
-sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 format_snps(dat, "dadi", facets = "pop")
 
 #PLINK! format

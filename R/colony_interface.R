@@ -131,27 +131,37 @@
 #'   551–555.
 #'
 #' @examples
-#' # A simple example for running all individuals in the snpR object as siblings in colony.
-#' write_colony_input(x = stickSNPs, outfile = "stk.col")
-#'
-#' # A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects.
+#' 
+#' # A simple example for running all individuals in the snpR object as siblings in
+#' # colony. Not run to avoid clutter.
+#' \dontrun{
+#'   write_colony_input(x = stickSNPs, outfile = "stk.col")
+#'  }
+#'   
+#' # A more complex example requires 1) creating and adding variables to the 
+#' # stickSNPs example dataset and 2) creating subset snpR objects.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
 #' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
-#' #generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
-#' sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
-#' dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
-#' off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
-#' write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
-#'
+#' #generating snpR objects for male and female potential parents and offspring 
+#' # (no U sexes in the potential parents in for this example)
+#' sir <- subset_snpR_data(stk, Sex = "M", BirthYear = 2013)
+#' dam <- subset_snpR_data(stk, Sex = "F", BirthYear = 2013)
+#' off <- subset_snpR_data(stk, BirthYear = c("2014", "2015"))
+#' # not run to avoid clutter
+#' \dontrun{
+#'   write_colony_input(x = off, outfile = "parents_example.col", 
+#'                      maternal_genotypes = dam, paternal_genotypes = sir)
+#' }
+#' 
 #' # running a simple model
 #' \dontrun{
-#' ## intentionally shorter run, with a small subset of the samples
-#' test_dat <- subset_snpR_data(stickSNPs, facets = "pop", subfacets = "ASP")
-#' run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+#'   ## intentionally shorter run, with a small subset of the samples
+#'   test_dat <- subset_snpR_data(stickSNPs, pop = "ASP")
+#'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
 #' }
 NULL
 

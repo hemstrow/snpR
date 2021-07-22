@@ -548,7 +548,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
   cat("Formatting data...\n")
 
   # check for matching sn plot:
-  if(length(x@sn) != 0){
+  if(length(x@sn$sn) != 0){
     if(x@sn$type != interpolation_method){
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
       x@sn$type <- interpolation_method
@@ -1272,10 +1272,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'  
 #' @examples
 #' # basic sNMF
-#' plot_structure(stickSNPs, "pop")
+#' plot_structure(stickSNPs, "pop", clumpp = FALSE)
 #' 
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
-                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = T, clumpp_path = "/usr/bin/CLUMPP.exe",
+                           I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", admixture_path = "/user/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", ...){
 
@@ -2450,6 +2450,9 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   
   check.installed("ape")
   check.installed("ggtree")
+  if(utils::packageVersion("ggtree") < numeric_version("3.1.2")){
+    stop("Package ggtree version 3.1.2+ required. The most recent development version can be installed via remotes::install_github('YuLab-SMU/ggtree')")
+  }
   
   #=======function=========
   # expects 

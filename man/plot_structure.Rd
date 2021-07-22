@@ -16,7 +16,7 @@ plot_structure(
   alpha = 10,
   qsort = "last",
   qsort_K = "last",
-  clumpp = T,
+  clumpp = TRUE,
   clumpp_path = "/usr/bin/CLUMPP.exe",
   clumpp.opt = "greedy",
   admixture_path = "/user/bin/admixture",
@@ -178,7 +178,7 @@ this function that are not automatically cleaned after use.
 }
 \examples{
 # basic sNMF
-plot_structure(stickSNPs, "pop")
+plot_structure(stickSNPs, "pop", clumpp = FALSE)
 
 }
 \references{

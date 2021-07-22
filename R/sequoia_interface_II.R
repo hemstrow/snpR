@@ -69,7 +69,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   check.installed("sequoia")
   
   msg <- character(0)
-  
+
   if(run_pedigree & !run_parents){
     msg <- c(msg, "Parents must be run before pedigree construction!\n")
   }
@@ -81,11 +81,11 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     warning("Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
   }
   
-  if(c("ID", "Sex", "BirthYear") %in% colnames(x) | c("ID", "Sex", "BY.min", "BY.max") %in% colnames(x) == "FALSE") {
+  if(!all(c("ID", "Sex", "BirthYear") %in% colnames(sample.meta(x))) & !all(c("ID", "Sex", "BY.min", "BY.max") %in% colnames(sample.meta(x)))) {
     warning("Need columns ID, Sex, and Birthyear OR columns ID, Sex, BY.min and BY.max in the dataset. \n")
   }
   
-  if(all(c("ID", "Sex", "BirthYear", "BY.min", "BY.max") %in% colnames(x))) {
+  if(all(c("ID", "Sex", "BirthYear", "BY.min", "BY.max") %in% colnames(sample.meta(x)))) {
     warning("Defaulting to BirthYear as life history information for sequoia. \n")
   }
   
@@ -117,7 +117,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     else{
       snpmatches <- which(snp.meta(x)[,tasks[i, 3]] == tasks[i,4])
     }
-    tdat <- subset_snpR_data(x, samps = tmatches, snps = snpmatches)
+    tdat <- subset_snpR_data(x, .samps = tmatches, .snps = snpmatches)
     
     
     

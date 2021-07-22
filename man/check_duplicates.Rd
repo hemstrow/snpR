@@ -35,11 +35,11 @@ The proportion of identical genotypes between matching samples and all other
 samples are calculated. By default, every sample will be checked.
 }
 \examples{
-# check for duplicates with samples 1, 3, and 5
-check_duplicates(stickSNPs, c(1, 3, 5))
+# check for duplicates with sample 1
+check_duplicates(stickSNPs, 1)
 
 # check duplicates using the .samp.id column as sample IDs
-check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id")
+check_duplicates(stickSNPs, 1, id.col = ".sample.id")
 }
 \author{
 William Hemstrom

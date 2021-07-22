@@ -501,7 +501,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                                                 stringsAsFactors = FALSE),
                          snp.meta),
            snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
-           sn <- list(sn = NULL, type = NULL),
+           sn = list(sn = NULL, type = NULL),
            facets = ".base",
            facet.type = ".base",
            calced_stats = list(),
@@ -597,19 +597,21 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'   
 #' @examples
 #' # generate some statistics
-#' dat <- calc_pi(stickSNPs, "group.pop")
-#' dat <- calc_pairwise_fst(stickSNPs, "group.pop")
+#' dat <- calc_pi(stickSNPs, "pop")
+#' dat <- calc_pairwise_fst(dat, "pop")
 #'
 #' # fetch pi
-#' get.snpR.stats(dat, "group.pop", "pi")
+#' get.snpR.stats(dat, "pop", "pi")
 #' # fetch fst
-#' get.snpR.stats(dat, "group.pop", "fst")
+#' get.snpR.stats(dat, "pop", "fst")
+#' # fetch both
+#' get.snpR.stats(dat, "pop", c("pi", "fst"))
 #' 
 #' # return a type of statistic instead of specific statistics
 #' dat <- calc_ho(stickSNPs, "group.pop")
 #' get.snpR.stats(dat, "group.pop", "weighted.means")
 #' 
-get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
+get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALSE){
   if(length(stats) == 1 & stats[1] %in% 
      c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
        "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")){
@@ -796,6 +798,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
       # return(NULL)
       stop("No statistics calculated for this facet and statistics type.\n")
     }
+    
+    if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison"))){
+      return(NULL)
+    }
     return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))
   }
   
@@ -818,6 +824,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = NULL, bootstraps = FALSE){
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
   extract.fst.matrix <- function(x, facets = NULL){
+    facets <- check.snpR.facet.request(x, facets, "complex", return_base_when_empty = F, fill_with_base = F)
+    if(length(facets) == 0){
+      return(NULL)
+    }
     fst <- data.table::as.data.table(.get.snpR.stats(x, facets, "weighted.means"), col_pattern = .internal.data$statistic_index$fst$col_pattern)
     fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
     

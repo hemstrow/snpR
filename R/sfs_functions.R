@@ -52,8 +52,10 @@
 #' @examples
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 #' dat <- calc_maf(stickSNPs)
-#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
-#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
+#' # note, setting ref and anc is done by default if these columns don't exist!
+#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") 
+#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
+#' 
 #' # run for two populations
 #' ## call calc_sfs()
 #' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
@@ -101,8 +103,8 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   
   if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
     warning("ref and anc columns are suggested in snp metadata. See documentation for details. The major allele will be subsituted for the ancestral state.\n")
-    x@snp.meta$ref <- paste0("A", get.snpR.stats(x)$minor, "A")
-    x@snp.meta$anc <- paste0("A", get.snpR.stats(x)$major, "A")
+    x@snp.meta$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
+    x@snp.meta$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
 
     if(fold == T){
       warning("Without ancestral and derived character states, folded spectra will be misleading.\n")
@@ -120,7 +122,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   #==============run=========================
   # subset
   if(!is.null(pops)){
-    x <- .subset_snpR_data(x, facets = facet, subfacets = pops)
+    suppressWarnings(x <- .subset_snpR_data(x, facets = facet, subfacets = pops))
   }
 
   # get dadi formatted data
