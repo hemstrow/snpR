@@ -5,14 +5,10 @@
 #'Statistics will need to be recalculated after subsetting to avoid confusion. 
 #'The bracket operators can be alternatively, following the same syntax.
 #'
-#'If \emph{samples} are removed, most statistics will be thrown away, since
-#'values like pi will change. In contrast, if \emph{snps} are removed, many
-#'statistics will simply be subset. LD, bootstraps, and window stats will
-#'\emph{always} be discarded, so overwrite with caution.
-#'
-#'Sample and snp facets to subset over can be provided. Facet levels to keep are
-#'provided in the corresponding subfacet arguments. Facets designated as
-#'described in \code{\link{Facets_in_snpR}}.
+#'Sample and snp facets to subset over can be provided. Filtering by facet
+#'categories is performed by naming the facet as an argument name, then
+#'providing the levels to keep or remove to that argument. See examples. Facets
+#'designated as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata object.
 #'@param .snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
@@ -34,7 +30,7 @@
 #'  two.
 #'@param drop logical, default FALSE. Deprecated.
 #'
-#'@name extract_snpRdata
+#'@name subset_snpRdata
 #'@aliases subset_snpR_data [
 #'
 #' @examples
@@ -54,13 +50,17 @@
 #' subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
 #'                  group = "groupIV")
 #'                  
-#' # using the bracket operator, same as example 1:
+#' # using the bracket operator, same as example 1
 #' stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
+#' 
+#' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
+#' # fam = B
+#' stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
 NULL
 
 
 #' @export
-#' @describeIn extract_snpRdata subset_snpR_data
+#' @describeIn subset_snpRdata subset_snpR_data
 subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   #============extract facet info===============
   argnames <- match.call()
