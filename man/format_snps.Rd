@@ -42,7 +42,7 @@ or a numeric vector of loci to use.}
 
 \item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
 "sn" format, notes the interpolation method to be used to fill missing data.
-Options are "bernoulli", "af", or FALSE. See details.}
+Options are "bernoulli", "af", "iPCA", or FALSE. See details.}
 
 \item{outfile}{character vector, default FALSE. If a filepath is provided, a
 copy of the output will be saved to that location. For some output styles,

@@ -8,7 +8,7 @@
 \alias{read.genepop}
 \alias{read.FSTAT}
 \alias{convert.genlight}
-\alias{convert.genid}
+\alias{convert.genind}
 \alias{read.plink}
 \alias{convert.vcfR}
 \title{snpRdata Import Wrappers}
@@ -27,7 +27,7 @@ read.plink(file)
 
 convert.genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 
-convert.genid(genid, snp.meta = NULL, sample.meta = NULL)
+convert.genind(genind, snp.meta = NULL, sample.meta = NULL)
 
 convert.vcfR(vcfR, snp.meta = NULL, sample.meta = NULL)
 }
@@ -55,7 +55,7 @@ data has genotypes stored in 6 characters, mDat will be set to "000000".}
 \item{genlight}{genlight object to convert, see
 \code{\link[adegenet]{genlight}}.}
 
-\item{genid}{genid object to convert, see \code{\link[adegenet]{genid}}.}
+\item{genind}{genind object to convert, see \code{\link[adegenet]{genind}}.}
 
 \item{vcfR}{vcfR object to convert, see \code{\link[vcfR]{vcfR}}.}
 }
@@ -89,7 +89,7 @@ are stored as: NN, 0000, or snp_tab format.
 
 \item \code{convert.genlight}: Convert adegenet genlight objects.
 
-\item \code{convert.genid}: Convert adegenet genid objects
+\item \code{convert.genind}: Convert adegenet genind objects
 
 \item \code{convert.vcfR}: Convert adegenet vcfR objects
 }}

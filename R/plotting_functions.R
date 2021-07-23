@@ -841,7 +841,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
 #' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
-#'                log.p = T)
+#'                log.p = TRUE)
 #' 
 #' 
 #' # other types of stats:
@@ -1225,7 +1225,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
 #'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 #'   approach. } See CLUMPP documentation for details.
-#' @param admixture character, default "/usr/bin/admixture". Path to the
+#' @param admixture_path character, default "/usr/bin/admixture". Path to the
 #'   admixture executable, required if method = "admixture".
 #' @param admixture_cv numeric, default 5. Fold to use for cross-validation for
 #'   admixture, used to determine the optimum k.

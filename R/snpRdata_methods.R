@@ -153,7 +153,7 @@ setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
 
 #' @export
-#' @describeIn subset_snpR_data bracket operator
+#' @describeIn extract_snpRdata extraction operator
 setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop = FALSE){
   if(rlang::is_missing(i)){
     i <- 1:nsnps(x)

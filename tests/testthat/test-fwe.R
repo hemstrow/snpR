@@ -19,3 +19,4 @@ test_that("BH",{
 test_that("BY",{
   expect_equal(check$p_overall_BY <= .05, c(rep(T, length = 2), rep(F, length(p) - 2)))
 })
+

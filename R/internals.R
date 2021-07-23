@@ -1033,6 +1033,8 @@ smart.merge <- function(n.s, o.s, meta.names, starter.meta){
 #'  facet types ("snp", "sample", "complex", or ".base") as a length two list.
 #'@param fill_with_base logical, default TRUE. If true, fills the returned facets
 #'  with .base if nothing is left after facets are removed. Otherwise returns null in this case.
+#'@param return_base_when_empty logical, default TRUE. If not facets pass filters,
+#'  will pass .base if true.
 #'
 #'@author William Hemstrom
 check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE, return_base_when_empty = TRUE){

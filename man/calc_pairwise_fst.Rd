@@ -36,7 +36,7 @@ Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
 the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in
-the default temporary directory (see \code{\link[base]{temfile}}).
+the default temporary directory (see \code{\link{temfile}}).
 
 The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
 produce very similar results both per SNP and per population.

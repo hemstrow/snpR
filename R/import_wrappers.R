@@ -69,7 +69,7 @@
 #'@param file character, path to a file containing genotype data to import.
 #'@param genlight genlight object to convert, see
 #'  \code{\link[adegenet]{genlight}}.
-#'@param genid genid object to convert, see \code{\link[adegenet]{genid}}.
+#'@param genind genind object to convert, see \code{\link[adegenet]{genind}}.
 #'@param vcfR vcfR object to convert, see \code{\link[vcfR]{vcfR}}.
 #'@param snp.meta data.frame or character, default NULL. Metadata for each SNP,
 #'  must have a number of rows equal to the number of SNPs in the dataset. If
@@ -86,7 +86,7 @@
 #'@param mDat character, default "0000". Note, if the default is set but the
 #'  data has genotypes stored in 6 characters, mDat will be set to "000000".
 #'
-#'@aliases read.vcf read.ms read.delimited.snps read.genepop read.FSTAT convert.genlight convert.genid
+#'@aliases read.vcf read.ms read.delimited.snps read.genepop read.FSTAT convert.genlight convert.genind
 #'@name snpR_import_wrappers
 NULL
 
@@ -152,8 +152,8 @@ convert.genlight <- function(genlight, snp.meta = NULL, sample.meta = NULL){
 }
 
 #' @export
-#' @describeIn snpR_import_wrappers Convert adegenet genid objects
-convert.genid <- function(genid, snp.meta = NULL, sample.meta = NULL){
+#' @describeIn snpR_import_wrappers Convert adegenet genind objects
+convert.genind <- function(genind, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(file, snp.meta, sample.meta))
 }
 

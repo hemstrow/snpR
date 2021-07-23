@@ -677,10 +677,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   return(out)
 }
 
-#' Internal version of get.snpR.stats, for backwards comparability if type is set or
-#' for fetching data for get.snpR.stats.
-#' 
-#' See documentation for get.snpR.stats.
+# Internal version of get.snpR.stats, for backwards comparability if type is set or
+# for fetching data for get.snpR.stats.
+# 
+# See documentation for get.snpR.stats.
 .get.snpR.stats <- function(x, facets = NULL, type = "single", col_pattern = NULL){
   # sanity check
   if(!is.snpRdata(x)){

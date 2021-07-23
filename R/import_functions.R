@@ -551,10 +551,10 @@ process_plink <- function(plink_file){
 }
 
 
-#' Format numeric data in the 0000 or 000000 form.
-#' 
-#' Formats numeric data into NN format, checking for 3+ alleles at an loci.
-#' Alleles coded as A and C. Expects individuals in columns.
+# Format numeric data in the 0000 or 000000 form.
+# 
+# Formats numeric data into NN format, checking for 3+ alleles at an loci.
+# Alleles coded as A and C. Expects individuals in columns.
 format_and_check_numeric <- function(gt, mDat){
   form <- nchar(gt[1,1])
   if(!form %in% c(4, 6)){

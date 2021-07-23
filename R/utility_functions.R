@@ -15,10 +15,14 @@
 #'described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata object.
-#'@param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'@param .snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
 #'  SNPs to keep. Negative subscripts allowed.
-#'@param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
+#'@param .samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
 #'  to samples to keep. Negative subscripts allowed.
+#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep. Negative subscripts allowed.
+#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep. Negative subscripts allowed.
 #'@param ... Facet subsetting may be specified by providing the facet as an 
 #'  argument and then providing the levels to keep or remove. Setting
 #'  pop = "ASP", for example, would keep only samples in the "ASP" level of the
@@ -28,8 +32,10 @@
 #'  multiple facets is supported, although negative and positive subscripts
 #'  cannot be mixed across sample or SNP facets. They may be mixed between the
 #'  two.
+#'@param drop logical, default FALSE. Deprecated.
 #'
-#'@export
+#'@name extract_snpRdata
+#'@aliases subset_snpR_data [
 #'
 #' @examples
 #' # Keep only individuals in the ASP and PAL populations 
@@ -50,7 +56,11 @@
 #'                  
 #' # using the bracket operator, same as example 1:
 #' stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
-#' 
+NULL
+
+
+#' @export
+#' @describeIn extract_snpRdata subset_snpR_data
 subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   #============extract facet info===============
   argnames <- match.call()
@@ -275,7 +285,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 
 
 
-#' old subset version with different facet specification. For internal use.
+# Old subset version with different facet specification. For internal use.
 .subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
   #=========sanity checks========
   if(!is.snpRdata(x)){
@@ -989,7 +999,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  or a numeric vector of loci to use.
 #'@param interpolate Character or FALSE, default "bernoulli". If transforming to
 #'  "sn" format, notes the interpolation method to be used to fill missing data.
-#'  Options are "bernoulli", "af", or FALSE. See details.
+#'  Options are "bernoulli", "af", "iPCA", or FALSE. See details.
 #'@param outfile character vector, default FALSE. If a filepath is provided, a
 #'  copy of the output will be saved to that location. For some output styles,
 #'  such as genepop, additional lines will be added to the output to allow them

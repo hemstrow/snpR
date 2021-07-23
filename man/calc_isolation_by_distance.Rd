@@ -27,6 +27,11 @@ should be latitude.}
 \item{genetic_distance_method}{character, default "Edwards". The genetic
 distance method to use, see \code{\link{calc_genetic_distances}}.}
 
+\item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
+"sn" format, notes the interpolation method to be used to fill missing data.
+Options are "bernoulli", "af", "iPCA", or FALSE. See 
+\code{\link{format_snps}} for details.}
+
 \item{...}{Additional arguments passed to \code{\link[ade4]{mantel.randtest}}}
 }
 \value{

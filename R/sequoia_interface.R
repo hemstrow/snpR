@@ -39,7 +39,6 @@
 #' @return A data.frame for each facet specified with sequoia output summary
 #'   information.
 #'
-#' @export
 #' @author William Hemstrom
 #' @author Melissa Jones
 #'

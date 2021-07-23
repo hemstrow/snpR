@@ -468,7 +468,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'the genepop package (see references).
 #'
 #'If the genpop option is used, several intermediate files will be created in
-#'the default temporary directory (see \code{\link[base]{temfile}}).
+#'the default temporary directory (see \code{\link{temfile}}).
 #'
 #'The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
 #'produce very similar results both per SNP and per population.
@@ -3372,6 +3372,10 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'   should be latitude.
 #' @param genetic_distance_method character, default "Edwards". The genetic
 #'   distance method to use, see \code{\link{calc_genetic_distances}}.
+#' @param interpolate Character or FALSE, default "bernoulli". If transforming to
+#'  "sn" format, notes the interpolation method to be used to fill missing data.
+#'  Options are "bernoulli", "af", "iPCA", or FALSE. See 
+#'  \code{\link{format_snps}} for details.
 #' @param ... Additional arguments passed to \code{\link[ade4]{mantel.randtest}}
 #'
 #' @return A snpRdata object with both geographic distance and IBD results

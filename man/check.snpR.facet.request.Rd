@@ -26,6 +26,9 @@ facet types ("snp", "sample", "complex", or ".base") as a length two list.}
 
 \item{fill_with_base}{logical, default TRUE. If true, fills the returned facets
 with .base if nothing is left after facets are removed. Otherwise returns null in this case.}
+
+\item{return_base_when_empty}{logical, default TRUE. If not facets pass filters,
+will pass .base if true.}
 }
 \description{
 Given a snpRdata object, this function cleans up and determines the types of

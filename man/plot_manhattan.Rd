@@ -151,7 +151,7 @@ x <- stickSNPs
 sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 x <- calc_association(x, response = "phenotype", method = "armitage")
 plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
-               log.p = T)
+               log.p = TRUE)
 
 
 # other types of stats:

@@ -91,6 +91,9 @@ configurations. Slow. \item{greedy: } The standard approach. Slow for large
 datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 approach. } See CLUMPP documentation for details.}
 
+\item{admixture_path}{character, default "/usr/bin/admixture". Path to the
+admixture executable, required if method = "admixture".}
+
 \item{admixture_cv}{numeric, default 5. Fold to use for cross-validation for
 admixture, used to determine the optimum k.}
 
@@ -115,9 +118,6 @@ separator lines.}
 
 \item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 or \code{\link[adegenet]{snapclust.choose.k}}.}
-
-\item{admixture}{character, default "/usr/bin/admixture". Path to the
-admixture executable, required if method = "admixture".}
 }
 \value{
 A list containing: \itemize{\item{plot: } A ggplot object.
