@@ -161,7 +161,14 @@ setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop =
   if(rlang::is_missing(j)){
     j <- 1:nsamps(x)
   }
-  return(subset_snpR_data(x, i, j, ...))
+  
+  # expand dots: for some reason extra calls don't get passed correctly without doing this...
+  extra.args <- match.call()
+  extra.args <- as.list(extra.args)
+  extra.args <- extra.args[which(!names(extra.args) %in% c("x", "i", "j", "drop"))][-1]
+  
+  # pass to subset_snpR_data and return
+  return(do.call(subset_snpR_data, args = c(list(x = x, .snps = i, .samps = j), extra.args)))
 })
 
 
