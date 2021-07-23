@@ -34,7 +34,7 @@
 #'  two.
 #'@param drop logical, default FALSE. Deprecated.
 #'
-#'@name extract_snpRdata
+#'@name subset_snpRdata
 #'@aliases subset_snpR_data [
 #'
 #' @examples
@@ -54,13 +54,17 @@
 #' subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
 #'                  group = "groupIV")
 #'                  
-#' # using the bracket operator, same as example 1:
+#' # using the bracket operator, same as example 1
 #' stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
+#' 
+#' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
+#' # fam = B
+#' stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
 NULL
 
 
 #' @export
-#' @describeIn extract_snpRdata subset_snpR_data
+#' @describeIn subset_snpRdata subset_snpR_data
 subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   #============extract facet info===============
   argnames <- match.call()
