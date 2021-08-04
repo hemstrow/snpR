@@ -1274,10 +1274,16 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' # basic sNMF
 #' plot_structure(stickSNPs, "pop", clumpp = FALSE)
 #' 
-plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000,
+plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000, burnin = 100,
                            I = NULL, alpha = 10, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
-                           clumpp.opt = "greedy", admixture_path = "/user/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
-                           alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", ...){
+                           clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
+                           alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
+                           no_admix = TRUE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
+                           infer_alpha = TRUE, separate_pop_alphas = FALSE, infer_lambda = FALSE, 
+                           infer_pop_specific_lambda = 0, lambda = 1, f_prior_mean = 0.01, f_prior_sd = 0.05,
+                           uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 
+                           gens_back = 2, mig_prior = 0.01, locprior_init_r = 1, locprior_max_r = 20,
+                           alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, ...){
 
   #===========sanity checks===================
   msg <- character()
@@ -1417,7 +1423,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # checks for snpRdata objects only
   if(provided_qlist == FALSE){
     x <- add.facets.snpR.data(x, facet)
-    good.methods <- c("snapclust", "snmf", "admixture")
+    good.methods <- c("snapclust", "snmf", "admixture", "structure")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
     }
@@ -1877,6 +1883,98 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       qlist <- parse_qfiles(".Q")
       K_plot <- cv_storage
+    }
+    else if(method == "structure"){
+      browser()
+      # write the mainparams file
+      mainparams <- c(paste0("#define BURNIN ", burnin),
+                      paste0("#define NUMREPS ", iterations),
+                      "#define INFILE structure_infile",
+                      "#define OUTFILE structure_outfile",
+                      paste0("#define NUMINDS ", nsamps(x)),
+                      paste0("#define NUMLOCI ", nsnps(x)),
+                      "#define PLOIDY 2",
+                      "#define MISSING -9",
+                      "#define ONEROWPERIND 0",
+                      "#define LABEL 1",
+                      paste0("#define POPDATA ", ifelse(is.null(facet), 0, 1)),
+                      "#define POPFLAG 0",
+                      "#define LOCDATA 1",
+                      "#define PHENOTYPE 0",
+                      "#define EXTRACOLS 0",
+                      "#define MARKERNAMES 0",
+                      "#define RECESSIVEALLELES 0",
+                      "#define MAPDISTANCES 0",
+                      "#define PHASED 0",
+                      "#define PHASEINFO 0",
+                      "#define MARKOVPHASE 0",
+                      "#define NOTAMBIGUOUS -999")
+      
+      # write the extraparams file
+      extraparams <- c(paste0("#define NOADMIX ", as.numeric(no_admix)),
+                       "#define LINKAGE 0",
+                       paste0("#define USEPOPINFO ", as.numeric(use_pop_info)),
+                       paste0("#define LOCPRIOR ", as.numeric(loc_prior)),
+                       paste0("#define FREQSCORR ", as.numeric(correlated_frequencies)),
+                       "#define ONEFST 0",
+                       paste0("#define INFERALPHA ", as.numeric(infer_alpha)),
+                       paste0("#define POPALPHAS ", as.numeric(separate_pop_alphas)),
+                       paste0("#define ALPHA ", alpha),
+                       paste0("#define INFERLAMBDA ", as.numeric(infer_lambda)),
+                       paste0("#define POPSPECIFICLAMBDA ", as.numeric(infer_pop_specific_lambda)),
+                       paste0("#define LAMBDA ", lambda),
+                       paste0("#define FPRIORMEAN ", f_prior_mean),
+                       paste0("#define FPRIORSD ", f_prior_sd),
+                       paste0("#define UNIFPRIORALPHA ", as.numeric(uniform_alpha_prior)),
+                       paste0("#define ALPHAMAX ", alpha_max),
+                       paste0("#define ALPHAPRIORA ", alpha_prior_a),
+                       paste0("#define ALPHAPRIORB ", alpha_prior_b),
+                       "#define LOG10RMIN -4.0",
+                       "#define LOG10RMAX 1.0",
+                       "#define LOG10RPROPSD 0.1",
+                       "#define LOG10RSTART -2.0",
+                       paste0("#define GENSBACK ", gens_back),
+                       paste0("#define MIGRPRIOR ", mig_prior),
+                       "#define PFROMPOPFLAGONLY 0",
+                       "#define LOCISPOP 1",
+                       paste0("#define LOCPRIORINIT ", locprior_init_r),
+                       paste0("#define MAXLOCPRIOR ", locprior_max_r),
+                       "#define PRINTNET     1",
+                       "#define PRINTLAMBDA  1",
+                       "#define PRINTQSUM    1",
+                       "#define SITEBYSITE   0",
+                       "#define PRINTQHAT    1",
+                       "#define UPDATEFREQ   0",
+                       "#define PRINTLIKES   0",
+                       "#define INTERMEDSAVE 0",
+                       "#define ECHODATA     0",
+                       "#define ANCESTDIST   0",
+                       "#define NUMBOXES   1000",
+                       "#define ANCESTPINT 0.90",
+                       "#define COMPUTEPROB 1",
+                       "#define ADMBURNIN  0",
+                       paste0("#define ALPHAPROPSD ", alpha_prop_sd),
+                       paste0("#define STARTATPOPINFO ", as.logical(start_at_pop_info)),
+                       "#define RANDOMIZE 0",
+                       paste0("#define SEED ", sample(100000, 1)),
+                       paste0("#define METROFREQ ", metro_update_freq),
+                       paste0("#define REPORTHITRATE 0")
+                       )
+      
+      writeLines(mainparams, "mainparams")
+      writeLines(extraparams, "extraparams")
+      
+      # write the input file
+      format_snps(x, "structure", facet, outfile = "structure_infile")
+      # seems to be borked on Windows, I can't get the executable to work with the datafile, even though it works fine with the GUI
+
+      for(i in 1:k){
+        for(j in 1:reps){
+          cmd <- paste0(structure_path, " -K ", i, " -o ", paste0("structure_outfile_k", i, "_r", j))
+          
+          system(cmd)
+        }
+      }
     }
     
   }
