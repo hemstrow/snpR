@@ -1502,21 +1502,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(outfile != FALSE){
     if(is.character(outfile) & length(outfile) == 1){
       cat("Printing results to:", outfile, "\n")
-      if(file.exists(outfile)){
-        #ask for confirmation before proceeding, since shit will be overwritten.
-        cat("Outfile already exits. ")
-        resp <- "empty"
-        while(resp != "y" & resp != "n"){
-          cat("Overwrite? (y or n)\n")
-          resp <- readLines(n = 1)
-        }
-        if(resp == "n"){
-          stop("Please provide acceptable path to file for output.\n")
-        }
-        else{
-          cat("\tProceeding with conversion...\n")
-        }
-      }
     }
     else{
       stop("Outfile must be a character vector of length 1.\n")
@@ -1697,8 +1682,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       snames[seq(1,nrow(outm),2)] <- x@names
       snames[seq(2,nrow(outm),2)] <- x@names
       if(output == "structure"){ # bind sample and metadata for structure
+        outm[outm == 0] <- -9
         rdata <- cbind(ind = snames,
-                       x@sample.meta[,colnames(x@sample.meta) %in% facets],
+                       as.numeric(as.factor(x@sample.meta[rep(1:nsamps(x), each = 2), colnames(x@sample.meta) %in% facets])),
                        as.data.frame(outm, stringsAsFactors = F))
       }
       else{ #add a bunch of filler columns for faststructure and change missing data to -9
