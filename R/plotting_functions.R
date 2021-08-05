@@ -1421,7 +1421,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
   # checks for snpRdata objects only
-  if(provided_qlist == FALSE){
+  if(isFALSE(provided_qlist)){
     x <- add.facets.snpR.data(x, facet)
     good.methods <- c("snapclust", "snmf", "admixture", "structure")
     if(!method %in% good.methods){
@@ -1440,6 +1440,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       if(Sys.info()[1] == "Windows"){
         msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment.\n")
+      }
+    }
+    if(method == "structure"){
+      if(!file.exists(structure_path)){
+        msg <- c(msg, "No file found at provided structure path.\n")
       }
     }
 
