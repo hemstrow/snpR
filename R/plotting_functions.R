@@ -1283,7 +1283,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            infer_pop_specific_lambda = 0, lambda = 1, f_prior_mean = 0.01, f_prior_sd = 0.05,
                            uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 
                            gens_back = 2, mig_prior = 0.01, locprior_init_r = 1, locprior_max_r = 20,
-                           alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, ...){
+                           alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), ...){
 
   #===========sanity checks===================
   msg <- character()
@@ -1374,11 +1374,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       else if(provided_qlist == "parse"){
         lev1 <- list.files(pattern = x)[1]
-        if(length(lev1) > 0){
+        if(!length(lev1) > 0){
           msg <- c(msg, paste0("No q files matching '", x, "' located.\n"))
         }
         else{
-          lev1 <- read.table(lev1)
+          lev1 <- ifelse(method == "structure", pophelper::readQStructure(lev1), pophelper::readQ(lev1))[[1]]
           if(nrow(lev1) != length(facet)){
             msg <- c(msg, "If a pattern for q files is provided alongside facet information, facet must be a character vector containing population identifiers for each sample in the q files.\n")
           }
@@ -1692,7 +1692,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
 
     # sort by Q values if requested
-    if(qsort != FALSE){
+    if(!isFALSE(qsort)){
       if(!is.null(facet)){
         pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
       }
@@ -1722,7 +1722,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   parse_qfiles <- function(pattern){
     # read in the files
     qfiles <- list.files(full.names = T, pattern = pattern)
-    qlist <- pophelper::readQ(qfiles)
+    if(method == "structure"){
+      qlist <- pophelper::readQStructure(qfiles)
+    }
+    else{
+      qlist <- pophelper::readQ(qfiles)
+    }
 
     # get k values
     att <- lapply(qlist, attributes)
@@ -1885,7 +1890,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       K_plot <- cv_storage
     }
     else if(method == "structure"){
-      browser()
+
       # write the mainparams file
       mainparams <- c(paste0("#define BURNIN ", burnin),
                       paste0("#define NUMREPS ", iterations),
@@ -1899,7 +1904,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                       "#define LABEL 1",
                       paste0("#define POPDATA ", ifelse(is.null(facet), 0, 1)),
                       "#define POPFLAG 0",
-                      "#define LOCDATA 1",
+                      "#define LOCDATA 0",
                       "#define PHENOTYPE 0",
                       "#define EXTRACOLS 0",
                       "#define MARKERNAMES 0",
@@ -1943,7 +1948,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                        "#define PRINTLAMBDA  1",
                        "#define PRINTQSUM    1",
                        "#define SITEBYSITE   0",
-                       "#define PRINTQHAT    1",
+                       "#define PRINTQHAT    0",
                        "#define UPDATEFREQ   0",
                        "#define PRINTLIKES   0",
                        "#define INTERMEDSAVE 0",
@@ -1956,7 +1961,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                        paste0("#define ALPHAPROPSD ", alpha_prop_sd),
                        paste0("#define STARTATPOPINFO ", as.logical(start_at_pop_info)),
                        "#define RANDOMIZE 0",
-                       paste0("#define SEED ", sample(100000, 1)),
+                       paste0("#define SEED ", seed),
                        paste0("#define METROFREQ ", metro_update_freq),
                        paste0("#define REPORTHITRATE 0")
                        )
@@ -1966,14 +1971,62 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       
       # write the input file
       format_snps(x, "structure", facet, outfile = "structure_infile")
-      # seems to be borked on Windows, I can't get the executable to work with the datafile, even though it works fine with the GUI
 
-      for(i in 1:k){
-        for(j in 1:reps){
-          cmd <- paste0(structure_path, " -K ", i, " -o ", paste0("structure_outfile_k", i, "_r", j))
+      # prep cv storage
+      cv_storage <- expand.grid(K = 1:k, rep = 1:reps)
+      cv_storage$est_ln_prob <- 0
+      cv_storage$mean_ln_prob <- 0
+      cv_storage$var <- 0
+      
+      # run for each k and rep
+      for(j in 1:reps){
+        for(i in 1:k){
+          # run structure
+          outfile <- paste0("structure_outfile_k", i, "_r", j)
+          cmd <- paste0(structure_path, " -K ", i, " -o ", outfile, " -D ", seed)
           
           system(cmd)
+          
+          # grab ln summary data
+          suppressWarnings(lndat <- readLines(paste0(outfile, "_f")))
+          sline <- grep("Estimated Ln Prob of Data", lndat)
+          lndat <- lndat[sline:(sline + 2)]
+          lndat <- as.numeric(gsub("^.+= ", "", lndat))
+          cv_storage[which(cv_storage$K == i & cv_storage$rep == j),3:5] <- lndat
+          
+          seed <- seed + 1
         }
+      }
+      
+      qlist <- parse_qfiles("_f")
+
+      # prep summary data for K plot/evanno
+      cv_storage <- as.data.table(cv_storage)
+      evanno <-cv_storage[, mean(est_ln_prob), by = K]
+      colnames(evanno)[2] <- "mean_est_ln_prob"
+      if(k >= 3 & reps > 1){
+        evanno$lnpK <- NA
+        evanno$lnppK <- NA
+        evanno$deltaK <- NA
+        evanno$sd_est_ln_prob <- cv_storage[, sqrt(var(est_ln_prob)), by = K][[2]]
+        evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
+        evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
+        # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
+        #                                             2*evanno$mean_est_ln_prob[-c(1, nrow(evanno))] +
+        #                                             evanno$mean_est_ln_prob[-nrow(evanno)][-(nrow(evanno) - 1)])/
+        #                                           evanno$sd_est_ln_prob[-c(1, nrow(evanno))])
+        evanno$deltaK[-c(1, nrow(evanno))] <- abs(evanno$lnppK)[-c(1, nrow(evanno))]/evanno$sd_est_ln_prob[-c(1, nrow(evanno))] # no reason to resolve for ln''(K)
+        
+        infs <- which(is.infinite(evanno$deltaK))
+        if(length(infs) > 0){
+          evanno$deltaK[infs] <- NA
+          warning(paste0("For some values of K (", paste0((1:k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
+        }
+        
+        K_plot <- list(raw = cv_storage, evanno = evanno)
+      }
+      else{
+        K_plot <- list(raw = cv_storage)
       }
     }
     
@@ -2057,7 +2110,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
 
     ## qsort
-    if(qsort != FALSE){
+    if(!isFALSE(qsort)){
       if(!is.null(facet)){
         pop <- as.data.frame(sample_meta[,facet], stringsAsFactors = F)
       }
@@ -2091,6 +2144,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)
+  
+  if(any(pdat$K == "K = 1")){
+    pdat <- pdat[-which(pdat$K == "K = 1"),]
+  }
 
   #===========make plot==============
   p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
