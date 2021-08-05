@@ -513,7 +513,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
     }
   }
   facets <- facets[[1]]
-  facets <- unlist(strsplit(facets, "(?<!^)\\.", perl = T))
+  facets <- unlist(.split.facet(facets))
   facets <- check.snpR.facet.request(x, facets)
 
   plot_type <- tolower(plot_type)
@@ -2678,7 +2678,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
         }
         else{
           t.snp.meta <- snp.meta(x)
-          split.snp.meta <- unlist(strsplit(snp.facet, "(?<!^)\\.", perl = T))
+          split.snp.meta <- unlist(.split.facet(snp.facet))
           levs <- do.call(paste, c(t.snp.meta[,split.snp.meta, drop = F], sep = "."))
           ulevs <- unique(levs)
           t.snp.meta$ord <- 1:nrow(t.snp.meta)

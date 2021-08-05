@@ -200,11 +200,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     ## if any flipped, need to flip subfacets as well
     if(any(ord.flipped)){
       for(i in 1:length(ord.flipped)){
-        split.ord.facet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = T))
-        split.raw.facet <- unlist(strsplit(names(argnames[is.facet])[i], "(?<!^)\\.", perl = T))
+        split.ord.facet <- unlist(.split.facet(facets[[1]][i]))
+        split.raw.facet <- unlist(.split.facet(names(argnames[is.facet])[i]))
         re_ord <- match(split.raw.facet, split.ord.facet)
         for(j in 1:length(argnames[is.facet][[i]])){
-          split.lev <-  unlist(strsplit(argnames[is.facet][[i]][j], "(?<!^)\\.", perl = T))
+          split.lev <-  unlist(.split.facet(argnames[is.facet][[i]][j]))
           argnames[is.facet][[i]][j] <- paste0(split.lev[re_ord], collapse = ".")
         }
       }
@@ -333,7 +333,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
         complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
         if(length(complex.snp.facets) > 0){
           for(i in 1:length(complex.snp.facets)){
-            tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
+            tfacets <- unlist(.split.facet(complex.snp.facets[i]))
             tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
             tcols <- tcols[,match(colnames(tcols), tfacets)]
             t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
@@ -357,7 +357,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
         complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
         if(length(complex.samp.facets) > 0){
           for(i in 1:length(complex.samp.facets)){
-            tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
+            tfacets <- unlist(.split.facet(complex.samp.facets[i]))
             tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
             tcols <- tcols[,match(colnames(tcols), tfacets)]
             t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
@@ -2171,7 +2171,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       llist[length(llist)] <- paste0("SNP_", ncol(rdata))
 
       # write output
-      cat(paste0(unlist(strsplit(outfile, split =  "(?<!^)\\.", perl = T))[1], "_genepop\n"), file = outfile)
+      cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
       cat(llist, "\nPOP\n", file = outfile, append = T) # keming, this is the line that writes the snps. Put a conditonal in to behave differently depending on if we are writing a genepop or a baps, and write a new line or two to write the snps in a column for baps.
 
       # write the tables, splitting by pop if requested:
@@ -2179,7 +2179,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         cat("\tWriting genepop file seperated by populations. First provided facet is treated as pop.\t")
 
         # sort by pop
-        write.facets <- sort(unlist(strsplit(facets, split = "(?<!^)\\.", perl = T)))
+        write.facets <- sort(unlist(.split.facet(facets)))
         facet.cols <- match(write.facets, colnames(x@sample.meta))
         pop <- do.call(paste, as.data.frame(x@sample.meta[,facet.cols]))
         pop <- gsub(" ", ".", pop)

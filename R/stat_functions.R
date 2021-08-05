@@ -1843,7 +1843,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         t.samp.facet <- ".base"
         write.facet <- which(names(out) == ".base")
       }
-      t.facet <- unlist(strsplit(facets[i], split = "(?<!^)\\.", perl = T))
+      t.facet <- unlist(.split.facet(facets[i]))
 
       this.out <- out[[write.facet]]
 
@@ -3313,7 +3313,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
         tasks <- get.task.list(y, snp_facets[i])
         out_snp[[i]] <- vector("list", nrow(tasks))
         names(out_snp[[i]]) <- tasks[,4]
-        snp_columns <- unlist(strsplit(tasks[,3][1], "(?<!^)\\.", perl = T))
+        snp_columns <- unlist(.split.facet(tasks[,3][1]))
         
         # run the tasks
         for(j in 1:nrow(tasks)){

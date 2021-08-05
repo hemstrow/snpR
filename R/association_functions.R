@@ -1258,7 +1258,7 @@ refine_rf <- function(rf, response, facets = NULL, subfacet = NULL,
 
   # subset if need be
   if(o.facet != ".base"){
-    facets <- strsplit(facets, "(?<!^)\\.", perl = T)
+    facets <- .split.facet(facets)
     facets <- unlist(facets)
 
     # figure out which of the run rf models (facets) we are using.

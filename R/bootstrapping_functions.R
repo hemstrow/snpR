@@ -136,7 +136,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   # check that we've actually calculated windowed stats for the facet we are doing!
   facet_details <- check.snpR.facet.request(x, facets, "none", "TRUE")
   for(i in 1:length(facets)){
-    split.facet <- check.snpR.facet.request(x, unlist(strsplit(facets[i], "(?<!^)\\.", perl = T)), "none", TRUE)
+    split.facet <- check.snpR.facet.request(x, unlist(.split.facet(facets[i])), "none", TRUE)
     snp.part <- which(split.facet[[2]] == "snp")
     snp.part <- split.facet[[1]][snp.part]
     if(length(snp.part) == 0){
@@ -805,7 +805,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       }
       # for complex facets
       else if(facets[[2]][[i]] == "complex"){
-        u.facet <-  unlist(strsplit(facets[[1]][[i]], "(?<!^)\\.", perl = T))
+        u.facet <-  unlist(.split.facet(facets[[1]][[i]]))
         split.parts <- check.snpR.facet.request(x, u.facet, remove.type = "none", return.type = T)
         samp.part <- split.parts[[1]][which(split.parts[[2]] == "sample")]
         snp.part <- split.parts[[1]][which(split.parts[[2]] == "snp")]

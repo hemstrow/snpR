@@ -734,7 +734,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
           keep.rows <- c(keep.rows, which(y$snp.facet == ".base" & y$facet == ".base"))
         }
         else{
-          tfacet <- unlist(strsplit(facets[[1]][i], "(?<!^)\\.", perl = TRUE))
+          tfacet <- unlist(.split.facet(facets[[1]][i]))
           tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
           
           # need to paste together any snp or sample faces
@@ -752,7 +752,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       
       keep.rows <- numeric()
       for(i in 1:length(facets[[1]])){
-        split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
+        split.part <- unlist(.split.facet(facets[[1]][i]))
         split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
         if(length(snp.part) == 0){

@@ -35,7 +35,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
   comp.facets <- grep("(?<!^)\\.", facets, perl = T)
   if(length(comp.facets) != 0){
     run.facets <- as.list(facets[-c(comp.facets)])
-    facet.list <- c(run.facets, strsplit(facets[comp.facets], split = "(?<!^)\\.", perl = T))
+    facet.list <- c(run.facets, .split.facet(facets[comp.facets]))
   }
   else{
     facet.list <- as.list(facets)
@@ -324,10 +324,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       for(i in 1:length(facets)){
         tgs <- gs[gs$facet == pheno.facets[i],]
         
-        which.is.phenotype <- which(unlist(strsplit(pheno.facets[i], split = "(?<!^)\\.", perl = T)) == response)
+        which.is.phenotype <- which(unlist(.split.facet(pheno.facets[i])) == response)
         
         # add phenotype and subfacet column
-        id <- strsplit(tgs$subfacet, split = "(?<!^)\\.", perl = T)
+        id <- .split.facet(tgs$subfacet)
         l <- length(id[[1]])
         uid <- unlist(id)
         p.vals <- seq(from = which.is.phenotype, to = length(uid), by = l)
@@ -566,8 +566,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         ## figure out which data rows contain matching sample facets
         sample.matches <- which(apply(meta[,1:2], 1, function(x) identical(as.character(x), as.character(task.list[q,1:2]))))
         
-        snp.facets <- unlist(strsplit(task.list[q,3], "(?<!^)\\.", perl = T))
-        
+        snp.facets <- unlist(.split.facet(task.list[q,3]))
+
         if(snp.facets[1] != ".base"){
           # figure out which data rows contain matching snp facets
           snp.cols <- meta[,snp.facets]
@@ -706,7 +706,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
   }
   else if(case == "per_sample"){
 
-    split_facets <- strsplit(facets, "(?<!^)\\.", perl = T)
+    split_facets <- .split.facet(facets)
     names(split_facets) <- facets
     
     # options across all facets
@@ -745,7 +745,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       else{
         out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
         opt.names <- check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
-        opt.names <- unlist(strsplit(opt.names, "(?<!^)\\.", perl = T))
+        opt.names <- unlist(.split.facet(opt.names))
         out[[i]]$snp.subfacet <- do.call(paste, c(opts[[i]][,opt.names, drop = F], sep = "."))
         out[[i]]$facet <- ".base"
         out[[i]]$subfacet <- ".base"
@@ -1053,7 +1053,7 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   
   
   # remove the facet parts as requested.
-  facets <- strsplit(facets, "(?<!^)\\.", perl = T)
+  facets <- .split.facets(facets)
   to.remove <- logical(length(facets))
   missing.facets <- character(0)
   facet.types <- character(length(facets))
@@ -1477,7 +1477,7 @@ get.task.list <- function(x, facets, source = "stats"){
   snp.facet.list <- vector("list", length = length(facets))
   for(i in 1:length(facets)){
     t.facet <- facets[i]
-    t.facet <- unlist(strsplit(t.facet, split = "(?<!^)\\.", perl = T))
+    t.facet <- unlist(.split.facet(t.facet))
     t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
     
     # sample facets
@@ -1542,7 +1542,7 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
     matches <- 1:nrow(x@sample.meta)
   }
   else{
-    t.facets <- unlist(strsplit(task.list.row[1], "(?<!^)\\.", perl = T))
+    t.facets <- unlist(.split.facet(task.list.row[1]))
     matches <- which(do.call(paste, c(dat = as.data.frame(x@sample.meta[,t.facets]), sep = ".")) == task.list.row[2])
   }
   
@@ -1560,7 +1560,7 @@ fetch.snp.meta.matching.task.list <- function(x, task.list.row){
     matches <- 1:nrow(x@snp.meta)
   }
   else{
-    t.facets <- unlist(strsplit(task.list.row[3], "(?<!^)\\.", perl = T))
+    t.facets <- unlist(.split.facet(task.list.row[3]))
     matches <- which(do.call(paste, c(dat = as.data.frame(x@snp.meta[,t.facets]), sep = ".")) == task.list.row[4])
   }
   
@@ -1927,12 +1927,12 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   }
   
   for(i in 1:length(facets[[1]])){
-    split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
+    split.part <- unlist(.split.facet(facets[[1]][i]))
     split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
     snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
-    split.snp.part <- unlist(strsplit(split.part[[1]][which(split.part[[2]] == "snp")], split = "(?<!^)\\.", perl = T))
+    split.snp.part <- unlist(.split.facet(split.part[[1]][which(split.part[[2]] == "snp")]))
     samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
-    split.samp.part <- unlist(strsplit(split.part[[1]][which(split.part[[2]] == "sample")], split = "(?<!^)\\.", perl = T))
+    split.samp.part <- unlist(.split.facet(split.part[[1]][which(split.part[[2]] == "sample")]))
     
     
     
@@ -1942,7 +1942,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       weights <- (stats$maj.count + stats$min.count)/2
       
       if(facets[[2]][i] == "complex"){
-        split.part <- unlist(strsplit(facets[[1]][i], split = "(?<!^)\\.", perl = T))
+        split.part <- unlist(.split.facet(facets[[1]][i]))
         split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         if(length(split.part[[1]]) > 2){
           snp.partp <- paste(snp.part, collapse = ".")
@@ -2211,3 +2211,8 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   
   return(x)
 }
+
+#' Split a single or multiple compound facet into parts
+#' 
+#' @param facet compound facet(s) to split
+.split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T)

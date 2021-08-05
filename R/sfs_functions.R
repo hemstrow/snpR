@@ -89,7 +89,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
     if(any(check_facet[[2]] != "sample")){
       msg <- c(msg, "For now, only sample level facets are allowed.\n")
     }
-    if(length(strsplit(facet, "(?<!^)\\.", perl = T)[[1]]) > 1){
+    if(length(.split.facet(facet)[[1]]) > 1){
       msg <- c(msg, "For now, only facets referring to only one column of metadata are allowed.\n")
     }
   }
