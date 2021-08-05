@@ -1053,7 +1053,7 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   
   
   # remove the facet parts as requested.
-  facets <- .split.facets(facets)
+  facets <- .split.facet(facets)
   to.remove <- logical(length(facets))
   missing.facets <- character(0)
   facet.types <- character(length(facets))
