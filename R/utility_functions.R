@@ -335,8 +335,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
           for(i in 1:length(complex.snp.facets)){
             tfacets <- unlist(.split.facet(complex.snp.facets[i]))
             tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
-            tcols <- tcols[,match(colnames(tcols), tfacets)]
-            t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+            t.snp.meta <- cbind(t.snp.meta, .paste.by.facet(tcols, match(colnames(tcols), tfacets)))
           }
           colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
         }
@@ -359,8 +358,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
           for(i in 1:length(complex.samp.facets)){
             tfacets <- unlist(.split.facet(complex.samp.facets[i]))
             tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
-            tcols <- tcols[,match(colnames(tcols), tfacets)]
-            t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+            t.samp.meta <- cbind(t.samp.meta, .paste.by.facet(tcols, match(colnames(tcols), tfacets)))
+            
           }
           colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
         }
@@ -1201,6 +1200,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("Too many facets selected for fastSTRUCTURE. Limit 5.\n")
       }
     }
+    else{
+      if(length(facets) > 1){
+        stop("Only one facet permitted for structure format. Complex, sample only facets are allowed.\n")
+      }
+    }
   }
   else if(output == "0000"){
     cat("Converting to numeric 2 character format.\n")
@@ -1681,14 +1685,28 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       snames <- character(nrow(outm))
       snames[seq(1,nrow(outm),2)] <- x@names
       snames[seq(2,nrow(outm),2)] <- x@names
+      
+      # fix missing to -9
+      outm[outm == 0] <- -9
+
+      
       if(output == "structure"){ # bind sample and metadata for structure
-        outm[outm == 0] <- -9
+
+        
+        #prep pop numbers
+        facets <- check.snpR.facet.request(x, facets)
+        facets <- unlist(.split.facet(facets))
+        
+        struc.meta <- as.numeric(as.factor(
+          .paste.by.facet(sample.meta(x)[rep(1:nsamps(x), each = 2),], colnames(sample.meta(x)) %in% facets)))
+        
+        
         rdata <- cbind(ind = snames,
-                       as.numeric(as.factor(x@sample.meta[rep(1:nsamps(x), each = 2), colnames(x@sample.meta) %in% facets])),
+                       struc.meta,
                        as.data.frame(outm, stringsAsFactors = F))
+        colnames(rdata)[2] <- paste(facets, collapse = ".")
       }
       else{ #add a bunch of filler columns for faststructure and change missing data to -9
-        outm[outm == 0] <- -9
         if(length(facets) == 1 & facets[1] == ".base"){
           rdata <- cbind(ind = snames,
                          matrix("filler", nrow(outm), 5),
@@ -2181,7 +2199,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         # sort by pop
         write.facets <- sort(unlist(.split.facet(facets)))
         facet.cols <- match(write.facets, colnames(x@sample.meta))
-        pop <- do.call(paste, as.data.frame(x@sample.meta[,facet.cols]))
+        pop <- .paste.by.facet(sample.meta(x), facet.cols)
         pop <- gsub(" ", ".", pop)
         rdata$pop <- pop
 

@@ -570,8 +570,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
 
         if(snp.facets[1] != ".base"){
           # figure out which data rows contain matching snp facets
-          snp.cols <- meta[,snp.facets]
-          snp.cols <- do.call(paste, as.data.frame(snp.cols))
+          snp.cols <- .paste.by.facet(meta, snp.facets, sep = " ")
           snp.matches <- which(snp.cols == task.list[q,4])
           
           # get the intersect and return.
@@ -2216,3 +2215,10 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
 #' 
 #' @param facet compound facet(s) to split
 .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T)
+
+#' Paste together metadata according to a list of column names
+#' 
+#' @param df data.frame with data do paste
+#' @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
+#' @param sp character, default ".". Pasted facets will be split by this.
+.paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))
