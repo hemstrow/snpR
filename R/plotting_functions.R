@@ -1286,6 +1286,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), ...){
 
   #===========sanity checks===================
+  kmax <- max(k)
   msg <- character()
   provided_qlist <- FALSE
 
@@ -1374,12 +1375,25 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       else if(provided_qlist == "parse"){
         lev1 <- list.files(pattern = x)[1]
-        if(!length(lev1) > 0){
+        if(!length(lev1) > 0 | is.na(lev1)){
           msg <- c(msg, paste0("No q files matching '", x, "' located.\n"))
         }
         else{
-          lev1 <- ifelse(method == "structure", pophelper::readQStructure(lev1), pophelper::readQ(lev1))[[1]]
-          if(nrow(lev1) != length(facet)){
+          if(method == "structure"){
+            if(!use_pop_info){
+              lev1 <- pophelper::readQStructure(lev1)[[1]]
+              good <- nrow(lev1) != length(facet)
+            }
+            else{
+              lev1 <- readLines(lev1, n = 16)
+              good <- as.numeric(gsub(" ", "", gsub("individuals", "", lev1[16]))) == length(facet)
+            }
+          }
+          else{
+            lev1 <- pophelper::readQ(lev1)[[1]]
+            good <- nrow(lev1) != length(facet)
+          }
+          if(!good){
             msg <- c(msg, "If a pattern for q files is provided alongside facet information, facet must be a character vector containing population identifiers for each sample in the q files.\n")
           }
           rm(lev1)
@@ -1398,6 +1412,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   if(clumpp & reps == 1){
     clumpp <- FALSE
     warning("Since only one rep is requested, clumpp will not be run.\n")
+  }
+  if(method == "structure" & use_pop_info){
+    warning("CLUMPP cannot be used with the use_pop_info option.\n")
+    clumpp <- FALSE
   }
 
   if(clumpp){
@@ -1439,12 +1457,16 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         msg <- c(msg, "No file found at provided admixture path.\n")
       }
       if(Sys.info()[1] == "Windows"){
-        msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment.\n")
+        msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment or pick another assignment approach.\n")
       }
     }
     if(method == "structure"){
       if(!file.exists(structure_path)){
         msg <- c(msg, "No file found at provided structure path.\n")
+      }
+      
+      if(use_pop_info & is.null(facet)){
+        stop("Cannot use population info if a facet is not provided.\n")
       }
     }
 
@@ -1454,8 +1476,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     if(!is.null(facet[[1]])){
       fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
       if(any(fcheck[[2]] != "sample")){
-        msg <- c(msg, "Only simple, sample level facets allowed.\n")
+        stop("Only simple, sample level facets allowed.\n")
       }
+      facets <- check.snpR.facet.request(x, facet, remove.type = "snp")
     }
     if(!is.null(facet.order)){
       cats <- get.task.list(x, facet)
@@ -1469,22 +1492,29 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
     }
     sample_meta <- x@sample.meta
+    if(!is.null(facet[[1]])){
+      sf <- unlist(.split.facet(facet))
+      if(length(sf) > 1){
+        sample_meta <- cbind(sample_meta, .paste.by.facet(sample_meta, sf))
+        colnames(sample_meta)[ncol(sample_meta)] <- facet
+      }
+    }
   }
 
   # palette checks
   if(!is.null(alt.palette[1])){
 
     # is it long enough?
-    if(length(alt.palette) < k){
+    if(length(alt.palette) < length(k)){
       msg <- c(msg, "Provided alternative palette must contain at least as many colors
-               as the maximum k value.\n")
+               as the requested k values.\n")
     }
 
     # is everything a valid color (can ggplot work with it)?
     else{
-      alt.palette <- alt.palette[1:k]
-      tpd <- matrix(rnorm(k*2, 0, 1), k, 2)
-      tpd <- cbind(as.data.frame(tpd), col = 1:k)
+      alt.palette <- alt.palette[seq_along(k)]
+      tpd <- matrix(rnorm(kmax*2, 0, 1), kmax, 2)
+      tpd <- cbind(as.data.frame(tpd), col = seq_along(k))
 
       color.check <- ggplot2::ggplot(tpd, ggplot2::aes(V1, V2, color = as.factor(col))) +
         ggplot2::geom_point() + ggplot2::scale_color_manual(values = alt.palette)
@@ -1511,6 +1541,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # fix things so that the cluster ID is the same in all sets
   fix_clust <- function(x){
 
+    if(length(x) == 1){
+      return(x)
+    }
+    
     #loop through each q object
     for (i in 2:length(x)){
       #see which columns in the previous run are the most similar to each column
@@ -1526,9 +1560,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         elist <- numeric(ncol(x[[i - 1]]))
 
         #compare to each other col.
-        for(k in 1:ncol(x[[i-1]])){
+        for(tk in 1:ncol(x[[i-1]])){
           #save euclidian dist
-          elist[k] <- sum((x[[i]][,j] - x[[i-1]][,k])^2, na.rm = T)
+          elist[tk] <- sum((x[[i]][,j] - x[[i-1]][,tk])^2, na.rm = T)
         }
 
         #save results
@@ -1675,7 +1709,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     # get only the correct k values (in case this is re-running in a previous directory)
     ks <- unlist(lapply(mq, function(x) attr(x, "k")))
-    mq <- mq[which(ks <= k)]
+    mq <- mq[which(ks %in% k)]
+    if(length(mq) == 0){
+      stop("No provided q files have k values in requested range.\n")
+    }
 
     # fix cluster IDs to match
     mq <- fix_clust(mq)
@@ -1722,13 +1759,122 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     return(list(q = mq, ord = ind_ord, qlist = save.q))
   }
+  
+  # parse qfiles with usepopinfo. Terrible to parse in a vectorized way.......
+  parse_qfiles_usepopinfo <- function(pattern){
+    proc_one_qfile <- function(qf){
+      # read and convert to data.table
+      tqf <- readLines(qf)
+      tqf <- tqf[(grep("Probability of being from assumed population", tqf) + 2)
+                 :(grep("Estimated Allele Frequencies in each cluster", tqf) - 3)]
+      tqf <- data.table::fread(text = tqf, sep = " ", fill = TRUE, stringsAsFactors = F)
+      
+      # prepare output
+      pop_cols <- grep("Pop", unlist(tqf[1,,]))
+      if(length(pop_cols) + 1 != kmax){
+        warning(paste0("File ", qf, "matches pattern, but is for k = ", length(pop_cols) + 1, " not k = ", kmax, " as expected, and has been skipped.\n"))
+        return(FALSE)
+      }
+      gens <- pop_cols[2] - pop_cols[1] - 3
+      tqf_clean <- data.table(ID = tqf[[2]], missing = as.numeric(gsub("\\(", "", gsub("\\)", "", tqf[[3]])))/100, 
+                              popid = tqf[[4]], prob_correctly_assigned = tqf[[6]], sig_mismatch = tqf[[ncol(tqf)]],
+                              ancestry_probability = NA, clean_popid = sample_meta[,facet],
+                              ancestry_pop = rep(unique(tqf[[4]]), each = nrow(tqf)))
+      tqf_clean <- data.table(tqf_clean, genback = rep(1:gens, each = nrow(tqf_clean)))
+      tqf_clean$ancestry_probability <- as.numeric(tqf_clean$ancestry_probability)
+      
+      # assign ancestry probs for inds in each pop
+      for(i in 1:(length(pop_cols) + 1)){
+        for(j in 1:gens){
+          # pops before i
+          if(i != 1){
+            bpc <- pop_cols[i - 1] + j + 1
+            suppressWarnings(tqf_clean[popid < i & genback == j & ancestry_pop == i, ancestry_probability := unlist(tqf[V4 < i, ..bpc])])
+          }
+
+          # this pop is left NA
+          
+          # pops after i
+          if(i != length(pop_cols) + 1){
+            bpc <- pop_cols[i] + j + 1
+            suppressWarnings(tqf_clean[popid > i & genback == j & ancestry_pop == i, ancestry_probability := unlist(tqf[V4 > i, ..bpc])])
+          }
+        }
+      }
+      
+      return(tqf_clean)
+    }
+    
+    qfiles <- list.files(full.names = T, pattern = pattern)
+    cats <- expand.grid(pop = k, rep = 1:reps, generation_back = 0:gens_back)
+    cats <- .paste.by.facet(cats, 1:3, "_")
+    qlist <- vector("list", length(cats))
+    names(qlist) <- cats
+    for(i in 1:length(qfiles)){
+      qlist[[i]] <- proc_one_qfile(qfiles[i])
+      if(is.data.table(qlist[[i]])){
+        qlist[[i]][, rep := i]
+      }
+    }
+    
+    
+    #=========short-circut whole process straight to plot, since all of the lumping, clumpping, and sorting aren't relevant.======
+    # clean results
+    empties <- unlist(lapply(qlist, isFALSE))
+    if(any(empties)){
+      qlist <- qlist[-which(empties)]
+    }
+    qlist <- purrr::compact(qlist)
+    found_reps <- length(qlist)
+    if(found_reps != reps){
+      warning(paste0("Found data for ", found_reps, " reps, but parsing requested for only ", reps, "reps. Check source files matching provided pattern -- Returning data for all found reps.\n"))
+    }
+    
+    qlist <- data.table::rbindlist(qlist)
+
+    # plot
+    qlist[, genback := paste0("generation ", qlist$genback - 1)]
+    if(!is.null(facet)){
+      upc <- c(3, 7)
+      upc <- unique(qlist[,..upc])
+      qlist[, ancestry_pop := upc$clean_popid[match(qlist$ancestry_pop, upc$popid)]]
+      qlist[, popid := clean_popid]
+    }
+    
+    if(found_reps > 1){
+      p <- ggplot2::ggplot(qlist, ggplot2::aes(x = ancestry_pop, y = ancestry_probability, color = prob_correctly_assigned, shape = as.factor(rep)))
+      
+    }
+    else{
+      p <- ggplot2::ggplot(qlist, ggplot2::aes(x = ancestry_pop, y = ancestry_probability, color = prob_correctly_assigned))
+    }
+    
+    p <- p + ggplot2::geom_point() +
+      ggplot2::facet_grid(genback ~ popid) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(strip.background = ggplot2::element_blank(),
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, size = t.sizes[3]),
+                     strip.text = ggplot2::element_text(size = t.sizes[1]),
+                     axis.title = ggplot2::element_text(size = t.sizes[2])) +
+      ggplot2::scale_color_viridis_c(option = viridis.option, end = .75) +
+      ggplot2::ylab("Migrant Probability") +
+      ggplot2::xlab("Source Population")
+    
+    return(list(plot = p, qdata = qlist))
+
+  }
 
   # function to parse in q files, used only if clumpp not run and a file pattern is provided
   parse_qfiles <- function(pattern){
     # read in the files
     qfiles <- list.files(full.names = T, pattern = pattern)
     if(method == "structure"){
-      qlist <- pophelper::readQStructure(qfiles)
+      if(!use_pop_info){
+        qlist <- pophelper::readQStructure(qfiles)
+      }
+      else{
+        return(parse_qfiles_usepopinfo(pattern))
+      }
     }
     else{
       qlist <- pophelper::readQ(qfiles)
@@ -1785,27 +1931,40 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   #===========run the assignment/clustering method===============
   # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
-  if(provided_qlist == FALSE){
+  if(isFALSE(provided_qlist)){
     if(method == "snapclust"){
+      warning("The adegenet maintainers do not currently recommend using snapclust. Consider picking a different assignment method.\n")
+      if(!identical(k, 2:kmax)){
+        k <- 2:kmax
+        warning("Snapclust will always run all values of k between two and the maximum provided k.\n")
+      }
+      
+      if(any(k == 1)){
+        k <- k[-which(k == 1)]
+        if(length(k) == 0){
+          stop("Please supply k values other than k = 1 for snapclust.\n")
+        }
+      }
       # format and run snapclust
       invisible(capture.output(x.g <- format_snps(x, "adegenet")))
 
       # initialize
-      qlist <- vector("list", length = k - 1)
-      names(qlist) <- paste0("K_", 2:k)
+      qlist <- vector("list", length = length(k))
+      names(qlist) <- paste0("K_", k)
       for(i in 1:length(qlist)){
         qlist[[i]] <- vector("list", length = reps)
         names(qlist[[i]]) <- paste0("r_", 1:reps)
+        attr(qlist[[i]], "k") <- k[i]
       }
       K_plot <- vector("list", length(rep))
 
       # run once per rep
       for(i in 1:reps){
         if(reps == 1){
-          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, ...)
+          res <- adegenet::snapclust.choose.k(x = x.g, max = kmax, IC.only = FALSE, ...)
         }
         else{
-          res <- adegenet::snapclust.choose.k(x = x.g, max = k, IC.only = FALSE, pop.ini = NULL, ...)
+          res <- adegenet::snapclust.choose.k(x = x.g, max = kmax, IC.only = FALSE, pop.ini = NULL, ...)
         }
 
         for(j in 1:length(res$objects)){
@@ -1829,7 +1988,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
             }
           }
         }
-        K_plot[[i]] <- data.frame(val = res[[1]], K = 1:k, rep = i, stringsAsFactors = F)
+        K_plot[[i]] <- data.frame(val = res[[1]], K = 1:kmax, rep = i, stringsAsFactors = F)
       }
 
       # fix K plot
@@ -1837,6 +1996,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       colnames(K_plot)[1] <- names(res)[1]
     }
     else if(method == "snmf"){
+
+      if(any(k == 1)){
+        k <- k[-which(k == 1)]
+        if(length(k) == 0){
+          stop("Please supply k values other than k = 1 for sNMF.\n")
+        }
+      }
+      
+      
       # format data
       if(file.exists("lea_input.geno")){
         file.remove("lea_input.geno")
@@ -1845,30 +2013,30 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
       # run the analysis
       if(!is.null(I)){
-        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, I = I, ...)
+        snmf.res <- LEA::snmf("lea_input.geno", K = k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, I = I, ...)
       }
       else{
-        snmf.res <- LEA::snmf("lea_input.geno", K = 2:k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, ...)
+        snmf.res <- LEA::snmf("lea_input.geno", K = k, repetitions = reps, iterations = iterations, entropy = T, project = "new", alpha = alpha, ...)
       }
 
       # read in
-      qlist <- vector("list", k - 1)
-      names(qlist) <-  paste0("K_", 2:k)
-      K_plot <- vector("list", k - 1)
-      for(i in 2:k){
+      qlist <- vector("list", length(k))
+      names(qlist) <-  paste0("K_", k)
+      K_plot <- expand.grid(k = k, rep = 1:reps)
+      K_plot$Cross.Entropy <- NA
+      prog <- 1
+      for(i in k){
 
         # process each rep
-        qlist[[i - 1]] <- vector("list", reps)
-        names(qlist[[i - 1]]) <-  paste0("r_", 1:reps)
+        qlist[[prog]] <- vector("list", reps)
+        attr(qlist[[prog]], "k") <- i
+        names(qlist[[prog]]) <-  paste0("r_", 1:reps)
         for(j in 1:reps){
-          qlist[[i - 1]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
+          qlist[[prog]][[j]] <- as.data.frame(LEA::Q(snmf.res, i, j))
         }
-        K_plot[[i - 1]] <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, k), K = i)
+        K_plot[which(K_plot$k == i),]$Cross.Entropy <- data.frame(Cross.Entropy = LEA::cross.entropy(snmf.res, i), K = i)[,1]
+        prog <- prog + 1
       }
-
-      # fix K plot
-      K_plot <- dplyr::bind_rows(K_plot)
-      colnames(K_plot)[1] <- "Cross.Entropy"
     }
     else if(method == "admixture"){
       #=========prep===========
@@ -1876,11 +2044,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       old.snp.meta <- snp.meta(x)
       snp.meta(x)$chr <- 0
       format_snps(x, "plink", outfile = "plink_files")
-      cv_storage <- expand.grid(1:k, 1:reps)
+      cv_storage <- expand.grid(k, 1:reps)
       colnames(cv_storage) <- c("K", "rep")
       cv_storage <- dplyr::arrange(cv_storage, K, rep)
       cv_storage$cv_error <- NA
-      for(i in 1:k){
+      for(i in k){
         for(j in 1:reps){
           cmd <- paste0(admixture_path, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
           system(cmd)
@@ -1895,6 +2063,21 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       K_plot <- cv_storage
     }
     else if(method == "structure"){
+      if(!identical(k, min(k):kmax) & length(k) != 1){
+        k <- min(k):kmax
+      }
+      
+      if(length(k) != 1 & use_pop_info){
+        stop("Cannot use pop info across multiple values of k. Please set k equal to the number of levels of the provided facet.\n")
+      }
+      else{
+        cats <- get.task.list(x, facet)
+        num.cats <- length(unique(cats[,2]))
+        if(num.cats != k){
+          stop(paste0("k must be set to the same value as the number of levels of the provided facet (", num.cats, ").\n"))
+        }
+        
+      }
 
       # write the mainparams file
       mainparams <- c(paste0("#define BURNIN ", burnin),
@@ -1978,14 +2161,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       format_snps(x, "structure", facet, outfile = "structure_infile")
 
       # prep cv storage
-      cv_storage <- expand.grid(K = 1:k, rep = 1:reps)
+      cv_storage <- expand.grid(K = k, rep = 1:reps)
       cv_storage$est_ln_prob <- 0
       cv_storage$mean_ln_prob <- 0
       cv_storage$var <- 0
       
       # run for each k and rep
       for(j in 1:reps){
-        for(i in 1:k){
+        for(i in k){
           # run structure
           outfile <- paste0("structure_outfile_k", i, "_r", j)
           cmd <- paste0(structure_path, " -K ", i, " -o ", outfile, " -D ", seed)
@@ -2003,13 +2186,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       
-      qlist <- parse_qfiles("_f")
-
+      
+      
       # prep summary data for K plot/evanno
       cv_storage <- as.data.table(cv_storage)
       evanno <-cv_storage[, mean(est_ln_prob), by = K]
       colnames(evanno)[2] <- "mean_est_ln_prob"
-      if(k >= 3 & reps > 1){
+      if(kmax >= 3 & reps > 1){
         evanno$lnpK <- NA
         evanno$lnppK <- NA
         evanno$deltaK <- NA
@@ -2025,7 +2208,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         infs <- which(is.infinite(evanno$deltaK))
         if(length(infs) > 0){
           evanno$deltaK[infs] <- NA
-          warning(paste0("For some values of K (", paste0((1:k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
+          warning(paste0("For some values of K (", paste0((k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
         }
         
         K_plot <- list(raw = cv_storage, evanno = evanno)
@@ -2033,6 +2216,19 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       else{
         K_plot <- list(raw = cv_storage)
       }
+      
+      
+      
+      # read in qlist
+      qlist <- parse_qfiles("_f")
+      
+      # end if doing use_pop_info
+      if(use_pop_info){
+        return(qlist)
+      }
+      
+
+     
     }
     
   }
@@ -2075,7 +2271,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     if(!exists("qlist")){
       qlist <- vector("list", length(cq))
     }
-    for(i in 1:length(qlist)){
+    else{
+      # need to remove any k = 1, since that'll mess things up down the line
+      k1 <- which(unlist(lapply(qlist, attr, which = "k")) == 1)
+      if(length(k1 > 0)){
+        qlist[[k1]] <- NULL
+      }
+    }
+    
+    for(i in 1:length(cq)){
       qlist[[i]][["clumpp"]] <- cq[[i]]
     }
 
@@ -2084,6 +2288,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # parse in if provided with a pattern
     if(provided_qlist == "parse"){
       qlist <- parse_qfiles(x)
+      if(use_pop_info){
+        return(qlist)
+      }
     }
 
     if(reps != 1){
