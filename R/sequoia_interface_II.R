@@ -1,7 +1,7 @@
 #' Run Sequoia pedigree/parentage assignment with snpR
 #'
 #' Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
-#' construction tool. Note that this function \emph{is not overwrite safe!}.
+#' construction tool. Note that this function \emph{is not overwrite safe}!
 #'
 #' This is an integration of the program and package written by Jisca Huisman.
 #' Note that there are many more Sequoia specific arguments that can be added to
