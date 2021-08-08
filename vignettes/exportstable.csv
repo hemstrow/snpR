@@ -1,4 +1,4 @@
-Format,‘output=’ Argument,Description
+Format,Argument,Description
 Allele Count,ac,"allele count format, allele counts tabulated for all samples or within populations. Used in bayescan and others."
 Genepop,genepop,"genepop format, genotypes stored as four numeric characters (e.g. ""0101"", ""0204""), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input."
 STRUCTURE,structure,"STRUCTURE format, two lines per individual (one for each allele) with genotypes formatted as 1, 2, 3, or 4 for each nucleotide."
