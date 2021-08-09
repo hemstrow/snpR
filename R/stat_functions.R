@@ -3318,7 +3318,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
         # run the tasks
         for(j in 1:nrow(tasks)){
           t_snp_cols <- y@snp.meta[,snp_columns, drop = F]
-          t_snp_indices <- .paste.by.facet(y, snp_columns, sep = "    ")
+          t_snp_indices <- .paste.by.facet(t_snp_cols, snp_columns, sep = "    ")
           t_snp_indices <- which(t_snp_indices %in% tasks[j,4])
           out_snp[[i]][[j]] <- list(stats::dist(t(sn[t_snp_indices,])))
           names(out_snp[[i]][[j]]) <- method
