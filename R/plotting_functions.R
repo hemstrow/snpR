@@ -1680,6 +1680,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     #get order to stick individual in
     lx <- x[[q]]
     upops <- unique(pop)
+    lx <- as.data.frame(lx)
     lx$s <- 1:nrow(lx)
 
     #get the sorting cluster priority:
@@ -2431,7 +2432,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   #===========final fixes to plot data=========
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
-  pdat <- pdat[which(pdat$K <= k),] # double check that we didn't import extra K values, which is possible with externally run data.
+  pdat <- pdat[which(pdat$K %in% k),] # double check that we didn't import extra K values, which is possible with externally run data.
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)
