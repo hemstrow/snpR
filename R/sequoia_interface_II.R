@@ -83,7 +83,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   }
   
   if(!all(c("ID", "Sex", "BirthYear") %in% colnames(sample.meta(x))) & !all(c("ID", "Sex", "BY.min", "BY.max") %in% colnames(sample.meta(x)))) {
-    warning("Need columns ID, Sex, and Birthyear OR columns ID, Sex, BY.min and BY.max in the dataset. \n")
+    warning("Need columns ID, Sex, and BirthYear OR columns ID, Sex, BY.min and BY.max in the dataset. \n")
   }
   
   if(all(c("ID", "Sex", "BirthYear", "BY.min", "BY.max") %in% colnames(sample.meta(x)))) {
