@@ -1392,10 +1392,10 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
       msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
     if(sigma >= 500 | sigma >= 500){
-      warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in megabases!")
+      warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in kilobases!")
     }
     else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
     }
   }
   else{
@@ -1403,10 +1403,10 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
       msg <- c(msg, "sigma must be a numeric vector of length 1. step may be the same or NULL.")
     }
     if(sigma >= 500){
-      warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in megabases!")
+      warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in kilobases!")
     }
     else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " mb!"))
+      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
     }
   }
   

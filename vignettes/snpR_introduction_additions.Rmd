@@ -241,7 +241,7 @@ Both the PCA and tSNE plotting functions can work with a column of population ID
 head(sample.meta(my.dat))
 ```
 
-To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!** so, save it to a new variable. Note if you do not supply a plot_type argument all possible plot types will run (PCA, tSNE, UMAP) which can be time and computationally intensive depending on the dataset. 
+To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, unlike all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!** so, save it to a new variable. If you do not supply a plot_type argument all possible plot types will run (PCA, tSNE, UMAP) which can be time and computationally intensive depending on the dataset. 
 
 
 ```{r, results='hide'}
