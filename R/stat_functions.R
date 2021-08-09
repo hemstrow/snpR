@@ -753,37 +753,38 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
             Fit <- 1 - rowSums(c)/rowSums(a + b + c)
             Fis <- 1 - rowSums(c)/rowSums(b + c)
           }
-          else{
-            S1 <- cbind(parts_1$S1, parts_2$S1)
-            S2 <- cbind(parts_2$S2, parts_2$S2)
-            Fst <- rowSums(S1)/rowSums(S2)
-          }
+          # Wier-- comes out exactly the same
+          # else{
+          #   S1 <- cbind(parts_1$S1, parts_2$S1)
+          #   S2 <- cbind(parts_2$S2, parts_2$S2)
+          #   Fst <- rowSums(S1)/rowSums(S2)
+          # }
           data.table::set(out, j = c.col, value = Fst) # write fst
         }
 
         # hohenlohe is currently unsupported, it's borked
-        else if(method == "hohenlohe"){
-
-          #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
-          #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
-          #com.top <- (choose(n.ali, 2) * idat$pi) + (choose(n.alj, 2) * jdat$pi) #get the numerator
-          com.top <- (choose(idat$n_total, 2) * idat$pi) + (choose(jdat$n_total, 2) * jdat$pi)
-
-          t.ni1 <- idat$ni1 + jdat$ni1 #get the total number of allele one
-          t.ni2 <- idat$ni2 + jdat$ni2 #get the total number of allele two
-          ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
-          pbot <- choose((t.ni1 + t.ni2), 2) #get the pooled pi denominator
-          ppi <- 1 - ptop/pbot #get pooled pi
-          #com.bot <- ppi * (choose(n.ali,2) + choose(n.alj,2)) #get the denominator
-          com.bot <- ppi * (choose(idat$n_total,2) + choose(jdat$n_total,2)) #get the denominator
-          Fst <- 1 - com.top/com.bot #get fst
-          if(any(abs(Fst) > 1, na.rm = T)){cat("Fst > 1 at", which(Fst > 1), ". That's not good.");stop()}
-          #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
-          data.table::set(out, j = c.col, value = Fst) # write fst
-        }
+        # else if(method == "hohenlohe"){
+        # 
+        #   #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
+        #   #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
+        #   #com.top <- (choose(n.ali, 2) * idat$pi) + (choose(n.alj, 2) * jdat$pi) #get the numerator
+        #   com.top <- (choose(idat$n_total, 2) * idat$pi) + (choose(jdat$n_total, 2) * jdat$pi)
+        # 
+        #   t.ni1 <- idat$ni1 + jdat$ni1 #get the total number of allele one
+        #   t.ni2 <- idat$ni2 + jdat$ni2 #get the total number of allele two
+        #   ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
+        #   pbot <- choose((t.ni1 + t.ni2), 2) #get the pooled pi denominator
+        #   ppi <- 1 - ptop/pbot #get pooled pi
+        #   #com.bot <- ppi * (choose(n.ali,2) + choose(n.alj,2)) #get the denominator
+        #   com.bot <- ppi * (choose(idat$n_total,2) + choose(jdat$n_total,2)) #get the denominator
+        #   Fst <- 1 - com.top/com.bot #get fst
+        #   if(any(abs(Fst) > 1, na.rm = T)){cat("Fst > 1 at", which(Fst > 1), ". That's not good.");stop()}
+        #   #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
+        #   data.table::set(out, j = c.col, value = Fst) # write fst
+        # }
 
         else{
-          stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tWier: Wier (1990).\n\tHohenlohe: Hohenlohe et al. (2010).")
+          stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tgenepop: Genepop")
         }
 
         # update pnk
@@ -821,15 +822,15 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   }
   
   method <- tolower(method)
-  if(!method %in% c("genepop", "wc", "wier")){
-    stop("Method not found. Acceptable methods: genepop, wc, wier.")
+  if(!method %in% c("genepop", "wc")){
+    stop("Method not found. Acceptable methods: genepop, wc.")
   }
 
   # add any missing facets
   ofacets <- facets
   facets <- check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   if(all(facets[[2]] == ".base")){
-    stop("At least one sample level facet is required for pairwise Fst esitmiation.")
+    stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
