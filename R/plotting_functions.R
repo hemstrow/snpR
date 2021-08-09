@@ -1350,8 +1350,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   selection vs K value for the selected method.}
 #'  
 #' @examples
-#' # basic sNMF
-#' plot_structure(stickSNPs, "pop", clumpp = FALSE)
+#' # basic sNMF, k = 2 and 3
+#' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
+#' 
+#' # basic snapclust
+#' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
 #' 
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
@@ -1771,7 +1774,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
     ## grab only the correct k values:
     ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
-    qlist <- qlist[which(ks <= k)]
+    qlist <- qlist[which(ks %in% k)]
     ## run
     pophelper::clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
     dirs <- list.files(".", "pop")
