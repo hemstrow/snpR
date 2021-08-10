@@ -630,6 +630,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
+    # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
+    
     #==========================run filters========================
     vio.snps <- logical(nrow(x)) #vector to track status
 
@@ -646,7 +648,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
       if(bi_al){
         cat("Filtering non-biallelic loci...\n")
-        bi <- ifelse(rowSums(bimat) > 2, T, F) # if true, should keep the allele
+        bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
         bi.vio <- x@snp.meta$.snp.id[which(bi)] # IDs of violating snps.
         cat(paste0("\t", length(bi.vio), " bad loci\n"))
         vio.snps[which(bi)] <- T
@@ -654,7 +656,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
       if(non_poly){
         cat("Filtering non_polymorphic loci...\n")
-        np <- ifelse(rowSums(bimat) < 2, T, F) # if true, should keep the allele
+        np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
         np.vio <- x@snp.meta$.snp.id[which(np)]
         cat(paste0("\t", length(np.vio), " bad loci\n"))
         vio.snps[which(np)] <- T
@@ -792,25 +794,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
     #==========remove violating loci==================
     if(any(vio.snps)){
-      vio.ids <- x@snp.meta$.snp.id[which(vio.snps)]
-      ngs <- x@geno.tables$gs[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      nas <- x@geno.tables$as[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      nwm <- x@geno.tables$wm[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      ngs <- list(gs = ngs, as = nas, wm = nwm)
-      ngs <- lapply(ngs, fix.one.loci)
-      rm(nas, nwm)
-      invisible(utils::capture.output(x <- snpRdata(.Data = as.data.frame(genotypes(x)[-which(vio.snps),], stringsAsFactors = F),
-                                                    sample.meta = x@sample.meta,
-                                                    snp.meta = x@snp.meta[-which(vio.snps),],
-                                                    facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                                    geno.tables = ngs,
-                                                    ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                                    stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                                                    window.stats = x@window.stats,
-                                                    facets = x@facets,
-                                                    facet.type = x@facet.type,
-                                                    row.names = x@row.names[-which(vio.snps)])))
-      x@stats <- data.table::as.data.table(x@stats) # I'm not sure why this is needed, since the object passed to the constructor function above is already a data.table...
+
+      x <- x[-which(vio.snps),]
     }
     return(x)
   }
@@ -822,10 +807,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
     if(length(rejects) > 0){
       old.facets <- x@facets
-      invisible(utils::capture.output(x <- import.snpR.data(genotypes(x)[,-rejects],
-                                                     snp.meta = x@snp.meta,
-                                                     sample.meta = x@sample.meta[-rejects,],
-                                                     mDat = mDat)))
+      x <- x[,-rejects]
       cat("Re-calculating and adding facets.\n")
       if(any(old.facets != ".base")){
         x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
