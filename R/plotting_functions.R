@@ -397,14 +397,19 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' Data points for individuals can be automatically colored by any sample-level
 #' facet categories. Facets should be provided as described in
 #' \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-#' automatically plotted simultaniously.
+#' automatically plotted simultaneously.
 #'
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Categorical sample-level metadata
 #'   variables by which to color points. Up to two different sample-specific
 #'   facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#' @param plot_type character, default c("PCA", "tSNE", "umap"). Types of plots
-#'   to be produced, see description.
+#' @param plot_type character, default "pca". c("pca", "tSNE", "umap"). Types of
+#'   plots to be produced. Options \itemize{\item{pca: } Principal Component
+#'   Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
+#'   Neighbor Embedding, which collapses dims (see argument) dimensions of
+#'   variance into two. \item{umap: } Uniform Manifold Approximation and
+#'   Projection, which collapses multiple dimensions of variance into two. } See
+#'   description for details.
 #' @param check_duplicates logical, default FALSE. Checks for any duplicated
 #'   individuals, which will cause errors. Since these rarely exist and
 #'   drastically slow down function run-time, this defaults to FALSE.
@@ -475,8 +480,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' plot_clusters(stickSNPs, "pop")
 #'
 #' # plot colored by population and family
-#' plot_clusters(stickSNPs, "pop", "umap")
-plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap"), check_duplicates = FALSE,
+#' plot_clusters(stickSNPs, "pop.fam")
+plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
                           viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, ...){
@@ -538,6 +543,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
   if(interpolation_method == "iPCA"){
     check.installed("missMDA")
   }
+  if(isFALSE(interpolation_method)){
+    stop("All methods require no missing data. Please enable interpolation.\n")
+  }
   
 
   if(length(msg) > 0){
@@ -586,12 +594,17 @@ plot_clusters <- function(x, facets = NULL, plot_type = c("PCA", "tSNE", "umap")
 
   if(check_duplicates){
     cat("Checking for duplicates...\n")
+    sn <- as.data.table(t(sn))
     dups <- which(duplicated(sn) | duplicated(sn, fromLast=TRUE))
     if(length(dups) > 0){
       cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")
-      sn <- sn[,-dups]
+      sn <- sn[-dups,]
+      meta <- meta[-dups,]
     }
+    sn <- as.matrix(t(sn))
   }
+  
+  
 
 
   rm.snps <- nrow(sn)
