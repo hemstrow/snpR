@@ -2726,9 +2726,9 @@ plot_sfs <- function(sfs, viridis.option = "inferno", log = TRUE){
 #' background <- sf::st_as_sf(background)
 #'
 #' # make the plot
-#' plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 #' }
-plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
+plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
                                pop_names = T, viridis.option = "viridis", alt.palette = NULL,
                                radius_scale = 0.05, label_args = NULL, crop = FALSE,
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
@@ -2779,9 +2779,9 @@ plot_structure_map <- function(assignments, K, facet, pop_coordinates, sf = NULL
   
   #==================prep for plot ===========================
   # generate plotting data.frame
-  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,which(colnames(assignments$plot_data) == facet)])), ncol = 3 + K))
-  colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:K))
-  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", K),]
+  pie_dat <- as.data.frame(matrix(0, nrow = length(unique(assignments$plot_data[,which(colnames(assignments$plot_data) == facet)])), ncol = 3 + k))
+  colnames(pie_dat) <- c("pop", "lat", "long", paste0("Cluster ", 1:k))
+  tpd <- assignments$plot_data[assignments$plot_data$K == paste0("K = ", k),]
   tpd <- tpd[,c(facet, "Cluster", "Percentage")]
   tpd$Cluster <- as.numeric(tpd$Cluster)
   anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)

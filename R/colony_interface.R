@@ -118,6 +118,8 @@
 #' @param path character. Path to the directory containing colony results.
 #' @param x snpRdata object from which metadata for colony results can be found.
 #' @param prefix character. The prefix for the colony files to be parsed.
+#' @param cleanup logical, default FALSE. If TRUE, colony files will be removed
+#'   after parsing.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
@@ -478,7 +480,7 @@ call_colony <- function(infile, colony_path){
 #' Parse colony data.
 #' @describeIn colony_interface Parse a previously run colony analysis.
 #' @export
-parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
+parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE){
   #===============full and half sibs==============================
   # read in half and full sibs
   fsd <- readr::read_csv(paste0(path, prefix, ".FullSibDyad"))
@@ -524,7 +526,16 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL){
 
   .sidcol <- which(colnames(x@sample.meta) == ".sample.id")
   x@sample.meta <- x@sample.meta[,c((1:ncol(x@sample.meta))[-.sidcol], .sidcol)]
-
+  
+  
+  #=============cleanup and return================
+  if(cleanup){
+    if(!path == "/"){
+      # tiny sanity check to make sure that someone doesn't delete their whole computer...
+      # unlink already won't delete ., .., or ~
+      unlink(path, recursive = TRUE)
+    }
+  }
   return(list(x = x, dyads = dyads, all_pairs = all_pairs, clusters = clusters))
 }
 
@@ -547,7 +558,7 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
                        known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                        known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                        maternal_exclusions = NULL, paternal_exclusions = NULL,
-                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
+                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL, cleanup = FALSE){
   msg <- character(0)
   if(!file.exists(colony_path)){
     msg <- c(msg, "Cannot find colony executable.\n")
@@ -605,6 +616,7 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
   return(parse_colony(prefix = outfile,
                       x = x,
                       path = "./colony/",
-                      sampleIDs = sampleIDs))
+                      sampleIDs = sampleIDs,
+                      cleanup = cleanup))
 
 }
