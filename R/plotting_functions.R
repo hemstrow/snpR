@@ -1514,7 +1514,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
           }
           else{
             lev1 <- pophelper::readQ(lev1)[[1]]
-            good <- nrow(lev1) != length(facet)
+            good <- nrow(lev1) == length(facet)
           }
           if(!good){
             msg <- c(msg, "If a pattern for q files is provided alongside facet information, facet must be a character vector containing population identifiers for each sample in the q files.\n")
