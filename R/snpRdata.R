@@ -782,7 +782,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     # adjust keep.cols to remove any unwanted stats
     if(!is.null(col_pattern)){
       good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison",
-                                                       colnames(x@facet.meta)))
+                                                       colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
         grep.cols <- c(grep.cols, grep(col_pattern[i], colnames(y)))
@@ -900,7 +900,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   else if(type == "sample"){
     facets <- check.snpR.facet.request(x, facets, "sample")
     return(extract.basic(x@sample.stats, facets, 
-                         col_pattern = c(colnames(x@sample.meta)[-which(colnames(x@sample.meta) == ".sample.id")], col_pattern), 
+                         col_pattern = col_pattern, 
                          type = "comingled"))
   }
   else if(type == "pop"){
