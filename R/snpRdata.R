@@ -899,7 +899,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   else if(type == "sample"){
     facets <- check.snpR.facet.request(x, facets, "sample")
-    return(extract.basic(x@sample.stats, facets, col_pattern = col_pattern, type = "comingled"))
+    return(extract.basic(x@sample.stats, facets, 
+                         col_pattern = c(colnames(x@sample.meta)[-which(colnames(x@sample.meta) == ".sample.id")], col_pattern), 
+                         type = "comingled"))
   }
   else if(type == "pop"){
     return(extract.basic(x@pop.stats, facets, col_pattern = col_pattern))
