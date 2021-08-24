@@ -76,26 +76,26 @@ test_that("pca",{
   expect_snapshot(p$data$pca) # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
-test_that("tsne"){
+test_that("tsne",{
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
   
   expect_true(ggplot2::is.ggplot(p$plots$tsne))
   expect_snapshot(p$data$tsne) # run entirely via R's prcomp function, shouldn't change with a set seed.
-}
+})
 
-test_that("tsne"){
+test_that("tsne",{
   skip_if_not_installed(c("umap"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
   expect_snapshot(p$data$umap) # run entirely via R's prcomp function, shouldn't change with a set seed.
-}
+})
 
 #==================plot_manhattan==========
-test_that("manhattan plots"){
+test_that("manhattan plots", {
   skip_if_not_installed(c("GMMAT", "AGHmatrix"))
   asso <- stickSNPs[pop = "ASP"]
   set.seed(1212)
@@ -104,4 +104,62 @@ test_that("manhattan plots"){
   
   p <- plot_manhattan(asso, "gmmat_pval_cat_phenotype", chr = "group", log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
-}
+})
+
+#=================LD======================
+test_that("LD heatmap", {
+  ld <- calc_pairwise_ld(stickSNPs, "pop.group", subfacets = list(pop = c("ASP", "PAL"), group = c("groupXIX", "groupIV")))
+  p <- plot_pairwise_LD_heatmap(ld, "pop.group")
+  
+  expect_true(ggplot2::is.ggplot(p$plot))
+  expect_equal(unique(p$plot$data$snp.subfacet), c("groupXIX", "groupIV"))
+  expect_equal(unique(p$plot$data$var), c("ASP", "PAL"))
+  
+  p2 <- plot_pairwise_LD_heatmap(ld, "pop.group", snp.subfacet = "groupIV", sample.subfacet = "ASP")
+  expect_true(ggplot2::is.ggplot(p2$plot))
+  expect_equal(unique(p2$plot$data$snp.subfacet), c("groupIV"))
+  expect_equal(unique(p2$plot$data$var), c("ASP"))
+})
+
+#==============fst======================
+test_that("FST heatmap",{
+  fst <- calc_pairwise_fst(stickSNPs, "pop")
+  p <- plot_pairwise_fst_heatmap(fst, "pop")
+  
+  expect_true(ggplot2::is.ggplot(p))
+  expect_equal(unique(p$data$facet), "pop")
+  expect_true("label" %in% names(p$labels))
+  
+  p2 <- plot_pairwise_fst_heatmap(fst, "pop", print_fst = FALSE)
+  expect_true(!"label" %in% names(p2$labels))
+})
+
+
+#============tree====================
+test_that("tree plot",{
+  skip_if_not_installed(c("ggree", "ape"))
+  if("ggtree" %in% installed.packages()){
+    skip_if_not(utils::packageVersion("ggtree") >= numeric_version("3.1.2"))
+  }
+  
+  
+  tree <- plot_tree(stickSNPs)
+  
+  expect_true(ggplot2::is.ggplot(tree$.base$.base$plot))
+  expect_true(all(colnames(stickSNPs) %in% tree$.base$.base$plot$data$label))
+  
+  tree <- plot_tree(stickSNPs, facets = "pop")
+  expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
+  expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$pop$.base$plot$data$label))
+  
+  tree <- plot_tree(stickSNPs, "pop.group")
+  expect_true(all(unlist(lapply(purrr::map(tree$group.pop, "plot"), ggplot2::is.ggplot))))
+  expect_equal(names(tree$group.pop), unique(snp.meta(stickSNPs)$group))
+  expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$group.pop$groupV$plot$data$label))
+  
+  tree <- plot_tree(stickSNPs, "pop", boot = 3)
+  expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
+  vals <- as.numeric(gsub("%", "", tree$pop$.base$plot$data$label[-which(tree$pop$.base$plot$data$label %in% sample.meta(stickSNPs)$pop)]))
+  expect_true(all(vals <= 100 & vals >= 0 & !is.na(vals)))
+  
+})
