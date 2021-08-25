@@ -1577,9 +1577,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       rdata <- cbind(ref = x@snp.meta$ref, # since everything is sorted by .snp.id, this will match.
                      anc = x@snp.meta$anc,
                      Allele1 = x@stats[x@stats$facet == ".base", "major"],
-                     ni1[order(ni1$.snp.id), 3:ncol(ni1)],
+                     ni1[order(ni1$.snp.id), 3:ncol(ni1), drop = FALSE],
                      Allele2 = x@stats[x@stats$facet == ".base", "minor"],
-                     ni2[order(ni2$.snp.id), 3:ncol(ni2)],
+                     ni2[order(ni2$.snp.id), 3:ncol(ni2), drop = FALSE],
                      x@snp.meta[,which(!(colnames(x@snp.meta) %in% c("ref", "anc", ".snp.id")))])
       rdata <- as.data.frame(rdata)
       colnames(rdata)[c(3,3 + length(3:ncol(ni1)) + 1)] <- c("Allele1", "Allele2")

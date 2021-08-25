@@ -58,17 +58,17 @@
 #' 
 #' # run for two populations
 #' ## call calc_sfs()
-#' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
+#' sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(30,30))
 #' ## plot
 #' plot_sfs(sfs)
 #'
 #' # run for the overall dataset
-#' sfs <- calc_SFS(dat, projection = 100)
+#' sfs <- calc_sfs(dat, projection = 100)
 #' ## plot
 #' plot_sfs(sfs)
 #'
 #' 
-calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
+calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   #=============sanity checks=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -106,8 +106,8 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
     x@snp.meta$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
     x@snp.meta$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
 
-    if(fold == T){
-      warning("Without ancestral and derived character states, folded spectra will be misleading.\n")
+    if(fold == FALSE){
+      warning("Without ancestral and derived character states, unfolded spectra will be misleading.\n")
     }
   }
   else{
@@ -395,7 +395,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #' Calculate the directionality index from a 2d site frequency spectrum.
 #'
 #' Calculates the directionality index based on a 2d SFS according to Peter and
-#' Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
+#' Slatkin (2013). Input spectra can be created using the \code{\link{calc_sfs}}
 #' function, using a provided snpRdata object, or passed from other programs.
 #' \emph{Spectra must be not be folded}.
 #'
@@ -414,11 +414,11 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #'   c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 #'   the second to matrix rows. These objects can be produced from a dadi input
 #'   file using \code{\link{make_SFS}}.
-#' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see
+#' @param facet character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
-#' @param pops character, default NULL. Passed to \code{\link{calc_SFS}} -- see
+#' @param pops character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
-#' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} --
+#' @param projection numeric, default NULL. Passed to \code{\link{calc_sfs}} --
 #'   see documentation there for details. Ignored if a sfs is provided.
 #'
 #' @export
@@ -432,7 +432,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #' calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
 #'
 #' #an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
-#' sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
+#' sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 #' calc_directionality(sfs = sfs)
 #' 
 calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL){
@@ -467,7 +467,7 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
   }
   #===========prep if a SFS not provided===========
   if(is.null(sfs)){
-    sfs <- calc_SFS(x, facet, pops, projection, fold = F)
+    sfs <- calc_sfs(x, facet, pops, projection, fold = F)
   }
   
   # flip everthing, since i should be pop 1 and j should be pop 2, and the

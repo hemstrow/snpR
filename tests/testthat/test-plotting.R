@@ -163,3 +163,30 @@ test_that("tree plot",{
   expect_true(all(vals <= 100 & vals >= 0 & !is.na(vals)))
   
 })
+
+#============sfs========
+test_that("sfs plot",{
+  # 1D
+  sfs <- plot_sfs(stickSNPs, projection = 100)
+  expect_true(ggplot2::is.ggplot(sfs))
+  expect_true(sum(sfs$data$N, na.rm = T) <= nsnps(stickSNPs))
+  expect_equal(unique(sfs$data$p1), 0)
+  expect_true(max(sfs$data$p2[which(!is.na(sfs$data$N))]) <= 100/2) # folded
+
+  # 2D
+  sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  expect_true(ggplot2::is.ggplot(sfs2))
+  expect_true(sum(sfs2$data$N, na.rm = T) <= nsnps(stickSNPs))
+  expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 50) # folded
+  
+  
+  # works with sfs provided
+  sfsp <- calc_sfs(stickSNPs, projection = 100)
+  sfsp <- plot_sfs(sfs = sfsp)
+  expect_identical(sfs$data, sfsp$data)
+  
+  sfsp2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  sfsp2 <- plot_sfs(sfs = sfsp2)
+  expect_identical(sfs2$data, sfsp2$data)
+})
+
