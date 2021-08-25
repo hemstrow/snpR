@@ -72,6 +72,8 @@ Different statistics are returned either by named statistic or by type.
   Geographic distances between samples--does not use genetic data. Calculated
   during \code{\link{calc_isolation_by_distance}}, but fetchable
   independently here.
+  \item{random_forest} Random forest snp-specific responsces, see
+  \code{\link{run_random_forest}}.
 
   }
 }

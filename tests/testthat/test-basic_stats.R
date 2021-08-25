@@ -8,12 +8,12 @@ test_that("maf",{
   maf <- head(get.snpR.stats(tdm, "pop", "maf")$single, 2)
   
   # test
-  expect_equal(round(maf$maf, 5), c(.4, .3) # hand calced
+  expect_equal(round(maf$maf, 5), c(.5, 0) # hand calced
                ) # correct maf?
   expect_equal(maf$major, c("C", "C"))
   expect_equal(maf$minor, c("G", "G")) # note, the 2nd to last A will be N if it fails to account for the overall minor, since that facet has none of the minor alleles.
-  expect_equal(maf$maj.count, c(6, 7))
-  expect_equal(maf$min.count, c(4, 3))
+  expect_equal(maf$maj.count, c(5, 6))
+  expect_equal(maf$min.count, c(5, 0))
 })
 
 
@@ -42,7 +42,7 @@ test_that("private", {
   expect_true(all(unlist(check_calced_stats(tdm, c("pop"), "pa"))))
   pa <- get.snpR.stats(tdm, "pop", "private")$single
   
-  expect_equal(pa$pa, c(0, 0, 0, 1, rep(0,9), 1, 0, 1, 0, 0)) # hand calced
+  expect_equal(pa$pa, c(1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0)) # hand calced
 })
 
 test_that("hwe", {

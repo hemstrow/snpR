@@ -5,6 +5,7 @@ asdat <- .internal.data$test_snps
 sample.meta(asdat)$phenotype <- rnorm(ncol(asdat))
 sample.meta(asdat)$cat_phenotype <- sample(c("A", "B"), ncol(asdat), replace = TRUE)
 
+#=========association=========
 test_that("correct gmmat", {
   local_edition(3)
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
@@ -49,4 +50,43 @@ test_that("correct chisq", {
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
   expect_snapshot(aschi) # Hand checked, should not change.
+})
+
+
+#=========random forest========
+test_that("random forest",{
+  skip_if_not_installed("ranger")
+  # basic
+  rf <- run_random_forest(asdat, response = "phenotype", pvals = FALSE)
+  expect_s3_class(rf$models$.base_.base$model, "ranger")
+  expect_equal(dim(rf$models$.base_.base$predictions), c(nsamps(asdat), 2))
+  expect_equal(length(rf$models), 1)
+
+  # several facets
+  rf <- run_random_forest(asdat, facets = "pop", response = "phenotype", pvals = FALSE)
+  expect_equal(length(rf$models), 2)
+  expect_s3_class(rf$models$pop_ASP$model, "ranger")
+  expect_s3_class(rf$models$pop_PAL$model, "ranger")
+  expect_equal(dim(rf$models$pop_ASP$predictions), c(5, 2))
+  expect_equal(dim(rf$models$pop_PAL$predictions), c(5, 2))
+  
+  # formula specification
+  rf <- run_random_forest(asdat, response = "cat_phenotype", formula = cat_phenotype ~ phenotype, pvals = FALSE)
+  expect_equal(rf$models$.base_.base$covariate_importance$variable, "phenotype")
+  
+  # pvals
+  rf <- run_random_forest(asdat, response = "cat_phenotype", formula = cat_phenotype ~ phenotype, pvals = TRUE)
+  expect_true("p_val" %in% colnames(rf$models$.base_.base$covariate_importance))
+  expect_true("cat_phenotype_RF_importance_pvals" %in% colnames(get.snpR.stats(rf$data, stats = "random_forest")$single))
+  
+  # note: all rf construction and calculation external, no need to check the numbers themselves.
+})
+
+
+#========genomic prediction=========
+test_that("genomic prediction",{
+  
+  
+  
+  
 })

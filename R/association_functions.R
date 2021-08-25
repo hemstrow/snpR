@@ -788,16 +788,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
     ## attach phenotype, anything else in the formula if given.
     if(!is.null(formula)){
+      msg <- character()
       res <- try(formula(formula), silent = T)
       if(class(res) == "try-error"){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
       else{
-        phen <- strsplit(formula, "~")
-        phen <- phen[[1]][1]
-        phen <- gsub(" ", "", phen)
-        if(phen != response){
+        if(all.vars(formula)[1] != response){
           msg <- c(msg,
                    "The response variable in the provided formula must be the same as that provided to the response argument.\n")
         }
@@ -810,13 +808,19 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
           msg <- c(msg,
                    "Some covariates specified in formula not found in sample metadata: ", paste0(cvars[bad.cvars], collapse = ", "), ".\n")
         }
+        
+        if(length(msg) > 0){
+          stop(msg)
+        }
 
+        colnames(sn) <- paste0("loc_", 1:ncol(sn))
         ocn <- colnames(sn)
+        sn <- as.data.frame(sn)
         sn <- cbind(sub.x@sample.meta[,response], sub.x@sample.meta[,cvars], sn)
+        colnames(sn)[1:(length(cvars) + 1)] <- c(response, cvars)
 
         # reset formula:
-        formula <- paste0(formula, paste0(ocn, collapse = " + "))
-
+        formula <- formula(paste0(as.character(formula), "+", paste0(ocn, collapse = " + ")))
       }
     }
     else{
@@ -866,23 +870,42 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         op <- ranger::importance_pvalues(rout, "janitza")[,2]
       }
       else{
-        warning("No p-values calcuated. P-values must be done via permutation when a quantitative response is used. See ?ranger::importance_pvalues for help. Imput data for these p-value caluculations can be generated with format_snps using the 'sn' format option.\n")
+        warning("No p-values calcuated. P-values must be done via permutation, and only when a quantitative response is used. See ?ranger::importance_pvalues for help.\n")
       }
     }
 
 
     # prepare objects for return
-    imp.out <- cbind(sub.x@snp.meta, rout$variable.importance)
-    colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
-    if(exists("op")){
-      imp.out <- cbind(imp.out, op)
-      colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance_pvals")
+    if(!is.null(formula)){
+      imp.out <- cbind(sub.x@snp.meta, rout$variable.importance[which(!names(rout$variable.importance) %in% cvars)])
+      colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
+      covariate_importance <- data.frame(variable = cvars, importance = rout$variable.importance[which(names(rout$variable.importance) %in% cvars)])
+      if(exists("op")){
+        covariate_importance$p_val <- op[which(names(op) %in% cvars)]
+        imp.out <- cbind(imp.out, op[which(!names(op) %in% cvars)])
+        colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance_pvals")
+        
+      }
+      
+    }
+    else{
+      imp.out <- cbind(sub.x@snp.meta, rout$variable.importance)
+      colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
+      if(exists("op")){
+        imp.out <- cbind(imp.out, op[which(!names(op) %in% cvars)])
+        colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance_pvals")
+      }
     }
 
     pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
                            stringsAsFactors = F)
 
-    return(list(importance = imp.out, predictions = pred.out, model = rout))
+    if(!is.null(formula)){
+      return(list(importance = imp.out, predictions = pred.out, model = rout, covariate_importance = covariate_importance))
+    }
+    else{
+      return(list(importance = imp.out, predictions = pred.out, model = rout))
+    }
   }
 
 
@@ -892,7 +915,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
   facets <- check.snpR.facet.request(x, facets)
 
-  out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response, formula = formula,
+  out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response,
                            interpolate = interpolate,  par = par, ...)
 
   x <- merge.snpR.stats(x, out$stats)

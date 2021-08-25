@@ -11,9 +11,16 @@ test_that("correct wc", {
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_equal(round(tdfst$pairwise$fst, 4), 
-               round(c(-8.695652e-02, -1.040834e-16,  4.411765e-02, -1.111111e-01,
-                       -1.333741e-01, -3.978780e-02,  0.000000e+00,  1.195278e-01,
-                       -5.769231e-02 ), 4)) # values from pegas, also double checked by hand. Note that heifstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+               round(c(0.36724566,
+                       0.21886514, 
+                       -0.11111111,
+                       0.27038627,
+                       -0.17977528,
+                       0.16666667,
+                       -0.12957696,
+                       -0.03529412,
+                       0.16666667,
+                       -0.08172128), 4)) # values from pegas, also double checked by hand. Note that heifstat slightly disagrees on a few of these (where the allele is fixed in one loci)
 })
 
 
