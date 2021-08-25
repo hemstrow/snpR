@@ -1,12 +1,13 @@
 #===========================statistic_index================
 #=============possible calculated statistics===============
-single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe"),
+single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe", "random_forest"),
                      col_pattern = list("ho", 
                                 "pi", 
                                 c("maf", "major", "minor", "maj.count", "min.count"),
                                 "pa",
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
-                                c("pHWE")))
+                                c("pHWE"),
+                                c("RF_importance", "RF_importance_pvals")))
 window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
 pairwise.stats <- list(stat = "fst",
@@ -74,12 +75,12 @@ for(i in 1:length(other.stats[[1]])){
 
 
 #============================test_snps=====================
+set.seed(1212)
 test_snps <- subset_snpR_data(stickSNPs, 1:12, sample(nsamps(stickSNPs), 10, F))
 test_snps <- filter_snps(test_snps)
 
 sample.meta(test_snps)$pop <- rep(c("ASP", "PAL"), 5)
 sample.meta(test_snps)$fam <- rep(c("A", "B"), each = 5)
-
 
 #============================save==========================
 .internal.data <- list(test_snps = test_snps, statistic_index = statistic_index)
