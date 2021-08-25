@@ -1,13 +1,14 @@
 #===========================statistic_index================
 #=============possible calculated statistics===============
-single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe", "random_forest"),
+single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction"),
                      col_pattern = list("ho", 
                                 "pi", 
                                 c("maf", "major", "minor", "maj.count", "min.count"),
                                 "pa",
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
                                 c("pHWE"),
-                                c("RF_importance", "RF_importance_pvals")))
+                                c("RF_importance", "RF_importance_pvals"),
+                                c("gp_effect")))
 window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
 pairwise.stats <- list(stat = "fst",

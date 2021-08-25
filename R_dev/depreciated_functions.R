@@ -1298,3 +1298,448 @@ rgap_snps <- function(x, gap, method = "gap", n = 1, levels = "group"){
   }
   return(ret)
 }
+
+
+
+
+#' Refine a random forest model via sequential removal of uninformative SNPs.
+#'
+#' Improves the prediction accuracy of a random forest model via iterative
+#' removal of uninformative SNPs. In each step, the SNPs with the lowest
+#' absolute value importance are removed from the model. Depending on the
+#' provided arguments, multiple trim percentages can be provided for different
+#' SNP number cuttoffs.
+#'
+#' Random Forest models can fail to predict well with "noisy" data, where most
+#' explanitory variables are uniformative. Since most whole-genome sequence data
+#' is like this, it can be useful to "trim" a data to remove uniformative snps.
+#' Since even models constructed on "noisy" data tend to pick out the most
+#' important SNPs with a decent degree of accuracy, an initial random forest
+#' model can be used to select SNPs to remove. Sequential removal of unimportant
+#' SNPs in this way can radically improve prediction accuracy, although SNP
+#' p-values stop being informative.
+#'
+#' Multiple trim levels can be specified, which will determine the percentage of
+#' SNPs removed according to different cuttoff levels of remaining SNPs. For
+#' example, providing trim levels of 0.9, 0.5, and 0.1 with cuttoffs of 1000 and
+#' 100 will trim 90% of SNPs untill 1000 remain, then trim 50% untill 100
+#' remain, then trim 10% thereafter.
+#'
+#' If less trim levels are provided than needed for each cuttoff, a single SNP
+#' will be removed each step below the final cuttoff. For example, providing
+#' trim levels of 0.9 and 0.5 and cuttoffs of 1000 and 100 will trim 90% of SNPs
+#' untill 1000 remain, then 50% untill 100 remain, then one at a time.
+#'
+#' If the data contains informative SNPs, prediction accuracy should improve on
+#' average untill informative SNPs begin to be removed, at which point accuracy
+#' will decrease.
+#'
+#' mtry will be set to the number of SNPs in each run.
+#'
+#' As usual, facets can be requested. However, in this case, only a single facet
+#' and facet level (subfacet) may be provided at once, and must match a facet
+#' and level in the provided input model.
+#'
+#' @param rf The random forest model to be refined. List containg snpRdata
+#'   object (named $data) and a \code{\link[ranger]{ranger}} model, named
+#'   $models$x$model, where x is the facet/subfacet. Identical to ojects created
+#'   by \code{\link{run_random_forest}}.
+#'@param response character. Name of the column containing the response
+#'   variable of interest. Must match a column name in sample metadata. Response
+#'   must be categorical, with only two categories.
+#' @param facets Character, default NULL. Facet to run. Only a single facet and
+#'   facet level (subfacet) may be provided at once, and must match a facet and
+#'   level in the provided input model. If NULL, runs the base level facet.
+#' @param subfacet Character, default NULL. Facet level (subfacet) to run. Only
+#'   a single facet and facet level (subfacet) may be provided at once, and must
+#'   match a facet and level in the provided input model. If NULL, runs the base
+#'   level facet.
+#' @param formula charcter, default NULL. Model for the response variable, as
+#'   described in \code{\link[stats]{formula}}. If NULL, the model will be
+#'   equivalent to response ~ 1.
+#' @param num.trees numeric, default 10000. Number of trees to grow. Higher
+#'   numbers will increase model accuracy, but increase calculation time. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param trim numeric, default 0.5. Percentages of SNPs to be trimmed between
+#'   model iterations. Multiple trim levels can be provided corresponding to
+#'   different trim cuttoffs. If less trim levels are provided than needed to
+#'   describe every trim_cuttoff interval, will trim a single SNP below the
+#'   final cuttoff. See details.
+#' @param trim_cuttoffs numeric, default NULL. Specifies the number of SNPs
+#'   below which to change trim percentages. If NULL, the default, trims at the
+#'   given level untill 1 SNP remails. See details.
+#' @param importance character, default "impurity_corrected". The method by
+#'   which SNP importance is determined. Options: \itemize{\item{impurity}
+#'   \item{impurity_corrected} \item{permutation}}. See
+#'   \code{\link[ranger]{ranger}} for details.
+#' @param interpolate character, default "bernoulli". Interpolation method for
+#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#' @param par numeric, default FALSE. Number of parallel computing cores to use
+#'   for computing RFs across multiple facet levels or within a single facet if
+#'   only a single category is run (either a one-category facet or no facet).
+#' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
+#'
+#' @return A list containing: \itemize{\item{error_delta: } A data.frame noting
+#'   the number of SNPs and corresponding prediction_error in each model
+#'   iteration. \item{confusion_matrices: } An array containing confusion
+#'   matrices for categorical responses. The third subscript denotes model
+#'   iteration ('[,,1]' would reference model 1.) \item{best_model: } The model
+#'   with the lowest prediction error from the provided dataset, in the format
+#'   provided by \code{\link{run_random_forest}}}
+#'
+#' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
+#'   Implementation of Random Forests for High Dimensional Data in C++ and R.
+#'   \emph{Journal of Statistical Software}.
+#' @references Goldstein et al. (2011). Random forests for genetic association
+#'   studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
+#'
+#' @seealso \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.
+#' @seealso \code{\link{run_random_forest}}
+#'
+refine_rf <- function(rf, response, facets = NULL, subfacet = NULL,
+                      formula = NULL, num.trees = 10000,
+                      trim = 0.5, trim_cuttoffs = NULL,
+                      importance = "impurity_corrected",
+                      interpolate = "bernoulli",
+                      par = FALSE,
+                      ...){
+  #==============sanity checks================
+  msg <- character()
+  if(length(facets) > 1){
+    msg <- c(msg, "No more than one facet may be refined at a time.\n")
+    if(is.null(subfacet)[1]){
+      msg <- c(msg, "No more that one subfacet may be refined at a time. Please list a subfacet.\n")
+    }
+  }
+  if(!is.null(subfacet[1])){
+    if(length(subfacet) > 1){
+      msg <- c(msg, "No more that one subfacet may be refined at a time.\n")
+    }
+  }
+  if(!is.null(facets)){
+    if(length(rf$models) != 1 | names(rf$models[[1]] != ".base_.base")){
+      msg <- c(msg, "If the base facet is requested, please provide an input rf result with only the base facet calculated.\n")
+    }
+  }
+  
+  # trim checks:
+  ## if trim is null, start at a single snp per iteration.
+  if(is.null(trim[1])){
+    trim <- 0.5
+    trim_cuttoffs <- nrow(rf$data)
+  }
+  ## if trim_cuttoffs is null, just go until one snp left.
+  if(is.null(trim_cuttoffs)){
+    if(length(trim) > 1){
+      msg <- c(msg, "Only one trim level allowed when no trim_cuttoffs provided.\n")
+    }
+    trim_cuttoffs <- 1
+  }
+  
+  if(length(trim) + 1 > length(trim_cuttoffs)){
+    msg <- c(msg, "Too many trim levels for the given cuttoffs. Only one more trim level may be given than cuttoffs.\n")
+  }
+  
+  
+  
+  #==============the actual refinement function==================
+  run_refine <- function(rf, response, formula, num.trees, trim_cuttoffs, trim, search_cuttoff, par,
+                         ...){
+    
+    #=============subfunctions:=========
+    # trim snps below a given importance quantile
+    remove_trim <- function(imps, trim){
+      best.imp <- quantile(imps, trim)
+      best.imp <- which(imps >= best.imp[1])
+      return(best.imp)
+    }
+    # trim to a specific number of snps
+    remove_set_to_n_snps <- function(imps, n_snps){
+      imps <- data.frame(imps, ord = 1:length(imps))
+      imps <- dplyr::arrange(imps, desc(imps))
+      imps <- imps[1:n_snps,]
+      imps <- dplyr::arrange(imps, ord)
+      best.imp <- imps$ord
+      return(best.imp)
+    }
+    # remove a single snp
+    remove_single <- function(imps){
+      best.imp <- which.min(imps)
+      best.imp <- (1:nrow(rf$data@stats))[-best.imp]
+      return(best.imp)
+    }
+    # set to the next level, then trim a given percentage
+    remove_set_and_trim <- function(imps, n_snps, trim){
+      # set
+      imps <- data.frame(imps, ord = 1:length(imps))
+      imps <- dplyr::arrange(imps, desc(imps))
+      imps <- imps[1:n_snps,]
+      imps <- dplyr::arrange(imps, ord)
+      
+      # trim
+      best.imp <- quantile(imps[,1], trim)
+      best.imp <- imps[which(imps[,1] >= best.imp[1]),]
+      
+      # return
+      best.imp$ord
+    }
+    
+    # remove according to cuttoffs and trim levels
+    remove_snps <- function(imps, trim_cuttoffs, trim){
+      
+      # figure out which "bin" we are in
+      n_snps <- length(imps)
+      bin.logi <- which(n_snps > trim_cuttoffs)
+      if(length(bin.logi) > 0){
+        
+        # grab the current bin and trim
+        bin <- min(bin.logi)
+        best.imp <- remove_trim(imps, trim[bin])
+        
+        # check if we changed bins!
+        bin.t.trim <- which(length(best.imp) > trim_cuttoffs)
+        if(!identical(bin.t.trim, bin.logi)){
+          
+          # if we haven't hit the last bin
+          if(length(bin.t.trim) != 0){
+            # we either want to set this to - the current trim or to the cuttoff - the next trim, whichever has more snps.
+            
+            best.imp.current.trim <- remove_trim(imps, trim[bin])
+            best.imp.set.plus.next.trim <- remove_set_and_trim(imps, trim_cuttoffs[min(bin.t.trim) - 1], trim[min(bin.t.trim)])
+            if(length(best.imp.current.trim) > length(best.imp.set.plus.next.trim)){
+              best.imp <- best.imp.current.trim
+            }
+            else{
+              best.imp <- best.imp.set.plus.next.trim
+            }
+          }
+          
+          
+          ## if we've hit the last bin and are using a single cutoff, set to single cuttoff
+          else if(length(bin.t.trim) == 0 & trim_single){
+            best.imp <- remove_set_to_n_snps(imps, trim_cuttoffs[length(trim_cuttoffs)])
+            if(length(best.imp) == n_snps){
+              best.imp <- remove_single(imps)
+            }
+          }
+          
+          ## if we've hit the last bin but aren't using a single cuttoff, keep trimming as usual
+          else if(length(bin.t.trim) == 0){
+            best.imp.current.trim <- remove_trim(imps, trim[bin])
+            best.imp.set.plus.next.trim <- remove_set_and_trim(imps, trim_cuttoffs[bin],  trim[length(trim)])
+            if(length(best.imp.current.trim) > length(best.imp.set.plus.next.trim)){
+              best.imp <- best.imp.current.trim
+            }
+            else{
+              best.imp <- best.imp.set.plus.next.trim
+            }
+            
+          }
+        }
+      }
+      # if we've hit the last bin...
+      else{
+        if(trim_single){
+          best.imp <- remove_single(imps)
+        }
+        else{
+          best.imp <- remove_trim(imps, trim[length(trim)])
+        }
+      }
+      
+      
+      
+      return(best.imp)
+    }
+    
+    #==========initialize============
+    
+    
+    
+    # intialize output
+    out <- matrix(NA, 1000, 2)
+    colnames(out) <- c("n_snps", "prediction_error")
+    out[1,] <- c(nrow(rf$data), rf$models[[1]]$model$prediction.error)
+    
+    # initialize output confusion array
+    if(any(names(rf$models[[1]]$model) == "confusion.matrix")){
+      conf.out <- array(NA, dim = c(dim(rf$models[[1]]$model$confusion.matrix), 1000))
+      conf.out[,,1] <- rf$models[[1]]$model$confusion.matrix
+    }
+    
+    
+    # initialize best model output
+    best.mod <- rf
+    best.error <- out[1,2]
+    
+    # intialize difference
+    diff <- 1
+    
+    # find the target column name
+    tar.col <- paste0(response, "_RF_importance")
+    
+    # if we are provided with less trim_cuttoffs than trim levels, we assume no single trimming
+    if(length(trim_cuttoffs) < length(trim)){
+      trim_single <- FALSE
+    }
+    # if the same, we trim single SNPs beneath the lowest cutoff
+    else if (length(trim_cuttoffs) == length(trim)){
+      trim_single <- TRUE
+    }
+    else{
+      stop("Not enough trim levels provided for given trim cuttoffs.\n")
+    }
+    
+    #==========while loop================
+    i <- 2
+    continue <- T
+    while(continue == T){
+      
+      # if we somehow reach the end of the output storage, make it bigger!
+      if(i == nrow(out)){
+        out <- rbind(out, matrix(NA, 100000000, 2))
+        conf.out <- c(conf.out, array(NA, dim = c(dim(rf$models[[1]]$model$confusion.matrix), 1000)))
+        conf.out <- array(conf.out, c(dim(rf$models[[1]]$model$confusion.matrix), 2000))
+      }
+      
+      imps <- abs(rf$data@stats[[tar.col]])
+      
+      # get the snps to keep
+      best.imp <- remove_snps(imps, trim_cuttoffs, trim)
+      
+      # subset
+      suppressWarnings(input <- subset_snpR_data(rf$data, snps = best.imp))
+      if(nrow(input) == 1){
+        continue <- FALSE
+      }
+      
+      # report some things
+      out[i,1] <- nrow(input)
+      cat("Refinement: ", i - 1, "\n\tStarting prediction error: ", out[i-1, 2],
+          "\n\tNumber of remaining SNPs: ", out[i,1], "\n\tBeginning rf...\n")
+      
+      # run rf
+      suppressWarnings(rf <- run_random_forest(x = input, response = response,
+                                               formula = formula, num.trees = num.trees,
+                                               mtry = nrow(input), par = par,  importance = importance,
+                                               pvals = FALSE, ...))
+      
+      # save outputs
+      out[i,2] <- rf$models[[1]]$model$prediction.error
+      if(exists("conf.out")){
+        conf.out[,,i] <- rf$models[[1]]$model$confusion.matrix
+      }
+      if(out[i,2] < best.error){
+        best.mod <- rf
+        best.error <- out[i,2]
+      }
+      
+      i <- i + 1
+    }
+    
+    #==============return==============
+    # return final model and outputs
+    empties <- which(is.na(out[,1]))
+    out <- out[-empties,]
+    if(exists("conf.out")){
+      conf.out <- conf.out[,,-empties]
+      return(list(error_delta = out, confusion_matrices = conf.out, best_model = best.mod))
+    }
+    else{
+      return(list(error_delta = out, best_model = best.mod))
+      
+    }
+  }
+  
+  #==============prep============================================
+  # strip down to the correct facet, doing  more sanity checks
+  facets <- check.snpR.facet.request(rf$data, facets, "snp")
+  o.facet <- facets
+  
+  # subset if need be
+  if(o.facet != ".base"){
+    facets <- .split.facet(facets)
+    facets <- unlist(facets)
+    
+    # figure out which of the run rf models (facets) we are using.
+    use.model <- sapply(facets, function(x) grepl(pattern = x, x = names(rf$models)))
+    if(length(names(rf$models)) == 1){
+      if(sum(use.model) != length(use.model)){
+        msg <- c(msg, "Requested facet not found in provided rf.\n")
+      }
+      else{
+        use.model <- 1
+      }
+    }
+    else{
+      use.model <- which(rowSums(use.model) == ncol(use.model))
+      if(length(use.model) == 0){
+        msg <- c(msg, "Requested facet not found in provided rf.\n")
+      }
+    }
+    
+    
+    # figure out which subfacet we are using if requested.
+    if(!is.null(subfacet)){
+      good.mods <- names(rf$models)[use.model]
+      use.model <- which(grepl(subfacet, good.mods))
+      
+      if(length(use.model) > 1){
+        msg <- c(msg, "Subfacet + facet request matches more than one model in the provided rf.\n")
+      }
+      else if(length(use.model)  == 0){
+        msg <- c(msg, "Subfacet + facet request matches no models in the provided rf.\n")
+      }
+      
+      else{
+        use.model <- good.mods[use.model]
+      }
+    }
+    
+    # stop if errors
+    if(length(msg) > 0){
+      stop(msg)
+    }
+    
+    # subset
+    o.mod <- rf$models[[use.model]]
+    dat <- .subset_snpR_data(rf$data, facets = o.facet, subfacets = subfacet)
+    dat <- import.snpR.data(as.data.frame(dat, stringsAsFactors = F), dat@snp.meta, dat@sample.meta, dat@mDat)
+    matches <- intersect(which(rf$data@stats$facet == o.facet),
+                         which(rf$data@stats$subfacet == subfacet))
+    imps <- rf$data@stats[matches,]
+    imps$facet <- ".base"
+    imps$subfacet <- ".base"
+    dat <- merge.snpR.stats(dat, imps)
+    
+    rf <- list(data = dat, models = list(.base_.base = o.mod))
+  }
+  
+  
+  # add sn formatted data if not present
+  if(length(rf$data@sn) != 0){
+    if(rf$data@sn$type != interpolate){
+      sn <- format_snps(rf$data, "sn", interpolate = interpolate)
+      rf$data@sn <- list(type = interpolate, sn = sn)
+      
+    }
+  }
+  else{
+    sn <- format_snps(rf$data, "sn", interpolate = interpolate)
+    rf$data@sn <- list(type = interpolate, sn = sn)
+  }
+  
+  #==============run the refinement============
+  
+  out <- run_refine(rf, response = response,
+                    formula = formula,
+                    num.trees = num.trees,
+                    trim_cuttoffs = trim_cuttoffs,
+                    trim = trim,
+                    search_cuttoff = search_cuttoff,
+                    par = par,
+                    ...)
+  
+  return(out)
+}

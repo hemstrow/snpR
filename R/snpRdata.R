@@ -562,7 +562,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'   \code{\link{calc_private}}. \item{association: } results from phenotypic
 #'   association tests, via \code{\link{calc_association}}. \item{hwe: }
 #'   Hardy-Weinburg Equilibrium p-values, via \code{\link{calc_hwe}}.
-#'   \item{tajimas_d: } Tajima's D, Waterson's Theta, and Tajima's Theta, via
+#'   \item{tajimas_d: } Tajima's D, Watterson's Theta, and Tajima's Theta, via
 #'   \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
 #'   \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }
 #'   Heterozygote/Homozygote ratios within individuals, via
@@ -576,7 +576,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'   Geographic distances between samples--does not use genetic data. Calculated
 #'   during \code{\link{calc_isolation_by_distance}}, but fetchable
 #'   independently here.
-#'   \item{random_forest} Random forest snp-specific responsces, see
+#'   \item{random_forest} Random forest snp-specific responses, see
 #'   \code{\link{run_random_forest}}.
 #'
 #'   }
@@ -783,8 +783,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     
     # adjust keep.cols to remove any unwanted stats
     if(!is.null(col_pattern)){
-      good.cols <- which(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison",
-                                                       colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))
+      keep.cols <- colnames(y)[keep.cols]
+      
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison",
+                                                    colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
         grep.cols <- c(grep.cols, grep(col_pattern[i], colnames(y)))
@@ -792,8 +794,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       if(length(grep.cols) == 0){
         return(NULL)
       }
+      grep.cols <- colnames(y)[grep.cols]
       
-      keep.cols <- keep.cols[which(keep.cols %in% c(good.cols, grep.cols))]
+      keep.cols <- which(colnames(y) %in% c(good.cols, grep.cols))
     }
     
     if(length(keep.rows) == 0){

@@ -58,7 +58,7 @@ Different statistics are returned either by named statistic or by type.
   \code{\link{calc_private}}. \item{association: } results from phenotypic
   association tests, via \code{\link{calc_association}}. \item{hwe: }
   Hardy-Weinburg Equilibrium p-values, via \code{\link{calc_hwe}}.
-  \item{tajimas_d: } Tajima's D, Waterson's Theta, and Tajima's Theta, via
+  \item{tajimas_d: } Tajima's D, Watterson's Theta, and Tajima's Theta, via
   \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
   \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }
   Heterozygote/Homozygote ratios within individuals, via
@@ -72,7 +72,7 @@ Different statistics are returned either by named statistic or by type.
   Geographic distances between samples--does not use genetic data. Calculated
   during \code{\link{calc_isolation_by_distance}}, but fetchable
   independently here.
-  \item{random_forest} Random forest snp-specific responsces, see
+  \item{random_forest} Random forest snp-specific responses, see
   \code{\link{run_random_forest}}.
 
   }

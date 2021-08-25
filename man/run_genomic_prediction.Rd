@@ -6,15 +6,23 @@
 \usage{
 run_genomic_prediction(
   x,
+  facets = NULL,
   response,
   iterations,
   burn_in,
   thin,
-  model = "BayesB"
+  model = "BayesB",
+  interpolate = "bernoulli",
+  par = FALSE,
+  ...
 )
 }
 \arguments{
 \item{x}{snpRdata object}
+
+\item{facets}{character, default NULL. Categorical metadata variables by
+which to break up analysis. See \code{\link{Facets_in_snpR}} for more
+details.}
 
 \item{response}{character. Name of the column containing the response
 variable of interest. Must match a column name in sample metadata.}
@@ -29,14 +37,20 @@ data point.}
 
 \item{model}{character, default "BayesB". Prediction model to use, see
 description for the ETA argument in \code{\link[BGLR]{BGLR}}.}
+
+\item{interpolate}{character, default "bernoulli". Interpolation method for
+missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+minor allele. \item{af: } insertion of the average allele frequency}.}
+
+\item{par}{numeric or FALSE, default FALSE. If a number specifies the number of processing cores to use \emph{across facet levels}. Not used if only one facet level.}
 }
 \value{
-A list containing: \itemize{ \item{model: } The model output from
+A list containing: two parts: \itemize{\item{x: } The provided snpRdata object with effect sizes merged in.
+\item{models: } Other model results, a list containing: \itemize{ \item{model: } The model output from
   BGLR. See \code{\link[BGLR]{BGLR}}. \item{h2: } Estimated heritability of
-  the response variable. \item{transposed_interpolated_genotypes: }
-  Transposed genotypes, the input for BGLR. \item{predictions: } A data.frame
+  the response variable.\item{predictions: } A data.frame
   containing the provided phenotypes and the predicted Breeding Values (BVs)
-  for those phenotypes. }
+  for those phenotypes. }}
 }
 \description{
 Run genomic prediction given a single response variable (usually a phenotype)
@@ -72,8 +86,15 @@ sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs
 ## run prediction
 gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
 ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
-with(gp$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
+with(gp$models$.base_.base$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
+## fetch estimated loci effects
+get.snpR.stats(gp$x, stats = "genomic_prediction")
 
+\dontrun{
+# with facets, not run
+gp <- run_genomic_prediction(gp$x, facets = "pop", response = "weight", iterations = 1000, burn_in = 100, thin = 10)
+get.snpR.stats(gp$x, facets = "pop", stats = "genomic_prediction")
+}
 }
 \references{
 Pérez, P., and de los Campos, G. (2014). \emph{Genetics}.

@@ -387,9 +387,9 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         }
         
         suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
-        out <- fun(sub.x = sub.x, opts.list = opts.list, ...)
+        out <- fun(sub.x = sub.x,  ...)
         if(!is.data.frame(out)){
-          out$importance <- cbind(facet = opts[i,1], subfacet = opts[i,2], out$importance, row.names = NULL)
+          out$.fm <- cbind(facet = opts[i,1], subfacet = opts[i,2])
           return(out)
         }
         else{
@@ -440,27 +440,11 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         doSNOW::registerDoSNOW()
       }
       
-      # run in parallel
-      
       # combine
       ## for rf
       if(!is.data.frame(out[[1]])){
-        
-        # initialize
-        bind_list <- vector("list", length(out))
-        nvec <- character(length(out))
-        
-        # bind and grab names
-        for(i in 1:length(bind_list)){
-          bind_list[[i]] <- out[[i]]$importance
-          out[[i]] <- out[[i]][-1]
-          nvec[i] <- paste0(bind_list[[i]]$facet[1], "_", bind_list[[i]]$subfacet[1])
-        }
-        suppressWarnings(bind_list <- dplyr::bind_rows(bind_list))
-        names(out) <- nvec
-        
         # return
-        return(list(stats = bind_list, models = out))
+        return(out)
       }
       ## for GMMAT
       else{

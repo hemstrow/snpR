@@ -13,7 +13,8 @@ cross_validate_genomic_prediction(
   cross_percentage = 0.9,
   model = "BayesB",
   cross_samples = NULL,
-  plot = TRUE
+  plot = TRUE,
+  interpolate = "bernoulli"
 )
 }
 \arguments{
