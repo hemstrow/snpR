@@ -4,9 +4,24 @@
 \alias{plot_sfs}
 \title{Plot 1 or 2d site frequency spectra.}
 \usage{
-plot_sfs(sfs, viridis.option = "inferno", log = TRUE)
+plot_sfs(
+  x = NULL,
+  facet = NULL,
+  sfs = NULL,
+  viridis.option = "inferno",
+  log = TRUE,
+  pops = NULL,
+  projection = NULL,
+  fold = TRUE
+)
 }
 \arguments{
+\item{x}{snpRdata object. The SNP metadata must contain "ref" and "anc" data.}
+
+\item{facet}{character, default NULL. Name of the sample metadata column
+which specifies the source population of individuals. For now, allows only
+a single simple facet (one column).If NULL, runs the entire dataset.}
+
 \item{sfs}{matrix or numeric. Either a 2d site frequency spectra stored in a
 matrix, with an additional "pops" attribute containing population IDs, such
 as c("POP1", "POP2"), where the first pop is the matrix columns and the
@@ -20,6 +35,18 @@ option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{log}{logical, default TRUE. If TRUE, the number of SNPs in each SFS
 cell is log transformed.}
+
+\item{pops}{character, default NULL. A vector of population names of up to
+length 2 containing the names of populations for which the an SFS is to be
+created. If NULL, runs the entire dataset.}
+
+\item{projection}{numeric. A vector of sample sizes to project the SFS to, in
+\emph{number of gene copies}. Sizes too large will result in a SFS
+containing few or no SNPs. Must match the length of the provided pops
+vector.}
+
+\item{fold}{logical, default FALSE. Determines if the SFS should be folded or
+left polarized.}
 }
 \value{
 A ggplot2 plot object of the provided SFS.
@@ -36,4 +63,24 @@ an additional "pops" attribute containing population IDs, such as c("POP1",
 matrix rows, or a 1d site frequency spectra stored as a numeric vector with a
 similar pops attribute giving the population name. These objects can be
 produced from a dadi input file using \code{\link{make_SFS}}.
+
+Generates a 1 or 2 dimensional site frequency spectrum 
+using the projection methods and folding methods of Marth et al (2004) and
+Gutenkunst et al (2009). This code is essentially an R re-implementation of
+the SFS construction methods implemented in the program \emph{dadi} (see
+Gutenkunst et al (2009)).
+}
+\examples{
+# folded, 1D
+plot_sfs(stickSNPs, projection = 100)
+
+# unfolded, 1D, one specific population
+plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
+
+# unfolded, two poplations
+plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+
+# via a sfs matrix, useful for pulling in spectra from elsewhere
+sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+plot_sfs(sfs = sfs)
 }

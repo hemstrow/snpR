@@ -48,7 +48,7 @@ write_colony_input(
 
 call_colony(infile, colony_path)
 
-parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL)
+parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE)
 
 run_colony(
   x,
@@ -86,7 +86,8 @@ run_colony(
   maternal_exclusions = NULL,
   paternal_exclusions = NULL,
   excluded_maternal_siblings = NULL,
-  excluded_paternal_siblings = NULL
+  excluded_paternal_siblings = NULL,
+  cleanup = FALSE
 )
 }
 \arguments{
@@ -221,6 +222,9 @@ siblings, column 3 the IDs of excluded siblings separated by spaces.}
 \item{prefix}{character. The prefix for the colony files to be parsed.}
 
 \item{path}{character. Path to the directory containing colony results.}
+
+\item{cleanup}{logical, default FALSE. If TRUE, colony files will be removed
+after parsing.}
 }
 \description{
 Interfaces with the command-line version of the COLONY pedigree program.

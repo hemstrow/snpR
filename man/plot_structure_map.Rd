@@ -6,7 +6,7 @@
 \usage{
 plot_structure_map(
   assignments,
-  K,
+  k,
   facet,
   pop_coordinates,
   sf = NULL,
@@ -25,8 +25,6 @@ plot_structure_map(
 \arguments{
 \item{assignments}{Structure like results, parsed in or generated via
 \code{\link{plot_structure}}, which generates the needed plot data.}
-
-\item{K}{numeric. Value of K (number of clusters) to plot.}
 
 \item{facet}{character. The facet by which data is broken down in the passed
 assignments.}
@@ -75,6 +73,8 @@ scale to the plot. If NULL, no scale added.}
 \item{compass}{list or NULL, list(symbol = 16). Arguments passed to
 \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
 added.}
+
+\item{K}{numeric. Value of K (number of clusters) to plot.}
 }
 \description{
 Plots the mean cluster assignment for each population on a map using the
@@ -110,6 +110,6 @@ background <- maps::map("state", "oregon")
 background <- sf::st_as_sf(background)
 
 # make the plot
-plot_structure_map(assignments, K = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
 }
 }

@@ -7,7 +7,7 @@
 plot_clusters(
   x,
   facets = NULL,
-  plot_type = c("PCA", "tSNE", "umap"),
+  plot_type = "pca",
   check_duplicates = FALSE,
   minimum_percent_coverage = FALSE,
   minimum_genotype_percentage = FALSE,
@@ -31,8 +31,13 @@ plot_clusters(
 variables by which to color points. Up to two different sample-specific
 facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{plot_type}{character, default c("PCA", "tSNE", "umap"). Types of plots
-to be produced, see description.}
+\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap"). Types of
+plots to be produced. Options \itemize{\item{pca: } Principal Component
+Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
+Neighbor Embedding, which collapses dims (see argument) dimensions of
+variance into two. \item{umap: } Uniform Manifold Approximation and
+Projection, which collapses multiple dimensions of variance into two. } See
+description for details.}
 
 \item{check_duplicates}{logical, default FALSE. Checks for any duplicated
 individuals, which will cause errors. Since these rarely exist and
@@ -130,14 +135,14 @@ information on these arguments can be found in
 Data points for individuals can be automatically colored by any sample-level
 facet categories. Facets should be provided as described in
 \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-automatically plotted simultaniously.
+automatically plotted simultaneously.
 }
 \examples{
 # plot colored by population
 plot_clusters(stickSNPs, "pop")
 
 # plot colored by population and family
-plot_clusters(stickSNPs, "pop", "umap")
+plot_clusters(stickSNPs, "pop.fam")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor

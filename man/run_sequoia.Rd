@@ -71,7 +71,7 @@ Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
 construction tool. Note that this function \emph{is not overwrite safe!}.
 
 Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
-construction tool. Note that this function \emph{is not overwrite safe!}.
+construction tool. Note that this function \emph{is not overwrite safe}!
 }
 \details{
 This is an integration of the program and package written by Jisca Huisman.

@@ -64,7 +64,7 @@ a snpRdata object.
 \details{
 Since the output is a ggplot object, options can be added or changed by adding
 "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options
-are also built into this function as agruments, but can be overwritten freely.
+are also built into this function as arguments, but can be overwritten freely.
 
 Specific facets and facet levels can be requested as long as LD data for those
 facets has been previously calculated. Facets should be provided as described
