@@ -274,10 +274,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   #===============return================
   nsampm <- sample.meta(x)[.samps,]
-  nsampm <- nsampm[,-which(colnames(nsampm) == ".sample.id")]
-  
+
   nsnpm <- snp.meta(x)[.snps,]
-  nsnpm <- nsnpm[,-which(colnames(nsnpm) == ".snp.id")]
   return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
                           sample.meta = nsampm, mDat = x@mDat))
 }
