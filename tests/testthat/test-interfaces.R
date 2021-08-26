@@ -26,7 +26,7 @@ test_that("colony",{
   col_path <- "C://usr/bin/Colony/colony2s.exe"
   skip_if(!file.exists(col_path))
   
-  col <- run_colony(stickSNPs[pop = "ASP"], colony_path = col_path, run_length = 1, method = "PLS")
+  col <- run_colony(stickSNPs[pop = "ASP"], colony_path = col_path, run_length = 1, method = "PLS", cleanup = TRUE)
   
   expect_identical(colnames(col$clusters), c("ClusterIndex", "ClusterProbability", "OffspringID", "FatherID", "MotherID"))
   expect_snapshot(col$dyads[col$dyads$Probability > .5, -3])

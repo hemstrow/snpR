@@ -34,7 +34,7 @@ test_that("correct armitage", {
 
   asarm <- get.snpR.stats(asarm, stats = "association")
   expect_equal(round(asarm$single$p_armitage_cat_phenotype, 4), 
-               c(0.8402, 0.3894, 0.0651, 0.7469, 0.4652, 0.4386, 0.4076, 0.2888, 0.7782))# from CATT
+               c(0.1275, 0.3428, 0.7469, 0.2123, 1.0000, 0.2059, 0.5023, 0.4479, 0.2059, 0.6353))# from CATT
 })
 
 test_that("correct odds", {

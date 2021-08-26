@@ -1,330 +1,323 @@
 # correct genepop
 
     Code
-      list(tdfst[[1]]@pairwise.stats, tdfst[[2]])
+      tdfst
     Output
-      [[1]]
-            snp    group position .snp.id facet comparison     fst n_total
-        1: 2366   groupI   182629       1   pop        A~B  0.0461     170
-        2:  242 groupIII   279838       2   pop        A~B -0.0099     162
-        3:  913  groupII   624966       3   pop        A~B  0.0272     182
-        4:  333 groupIII   651384       4   pop        A~B -0.0079     162
-        5: 2215   groupI  1054125       5   pop        A~B -0.0063     154
-        6:  474  groupII  1393364       6   pop        A~B  0.0005     166
-        7: 2288   groupI  1464164       7   pop        A~B -0.0021     134
-        8: 2370   groupI  1842491       8   pop        A~B -0.0035     190
-        9: 2435   groupI  2059342       9   pop        A~B  0.0870     148
-       10:  741  groupII  2150508      10   pop        A~B -0.0089     198
-       11: 2536   groupI  2348631      11   pop        A~B  0.0917     170
-       12: 2577   groupI  2474891      12   pop        A~B  0.0257     158
-       13: 2624   groupI  2641270      13   pop        A~B -0.0103     162
-       14:  800  groupII  2770932      14   pop        A~B  0.0196     188
-       15: 2678   groupI  2832575      15   pop        A~B -0.0049     188
-       16:  814  groupII  3063980      16   pop        A~B  0.0186     182
-       17:  826  groupII  3366897      17   pop        A~B  0.0222     140
-       18: 2689   groupI  3456895      18   pop        A~B  0.0222     168
-       19:  839  groupII  3792170      19   pop        A~B -0.0087     194
-       20: 2704   groupI  3935010      20   pop        A~B  0.0424     150
-       21:  853  groupII  4164239      21   pop        A~B  0.0106     178
-       22: 2715   groupI  4460285      22   pop        A~B  0.0598     194
-       23:  863  groupII  4571238      23   pop        A~B -0.0108     170
-       24:  875  groupII  4958480      24   pop        A~B -0.0062     188
-       25: 2737   groupI  5234500      25   pop        A~B  0.0398     188
-       26:  887  groupII  5407268      26   pop        A~B -0.0080     170
-       27: 2747   groupI  5498169      27   pop        A~B -0.0031     188
-       28:  898  groupII  5843765      28   pop        A~B  0.0050     182
-       29: 2762   groupI  6082574      29   pop        A~B  0.0071     184
-       30:  912  groupII  6147484      30   pop        A~B -0.0096     182
-       31: 2773   groupI  6615720      31   pop        A~B  0.0395     184
-       32:  929  groupII  7054976      32   pop        A~B  0.0147     166
-       33: 2783   groupI  7076190      33   pop        A~B  0.0091     156
-       34:  945  groupII  7914770      34   pop        A~B  0.0838     172
-       35: 2797   groupI  8399603      35   pop        A~B  0.1879     180
-       36:  964  groupII  8668761      36   pop        A~B  0.0337     188
-       37: 2811   groupI  8984380      37   pop        A~B  0.1168     170
-       38:  979  groupII  9485673      38   pop        A~B  0.0118     182
-       39: 2826   groupI  9576825      39   pop        A~B  0.1067     184
-       40:  990  groupII  9982941      40   pop        A~B -0.0209     160
-       41: 2203   groupI 10083399      41   pop        A~B -0.0090     172
-       42: 2216   groupI 10593829      42   pop        A~B      NA     184
-       43:  428  groupII 10829169      43   pop        A~B -0.0104     190
-       44: 2232   groupI 11297259      44   pop        A~B -0.0103     170
-       45:  440  groupII 11505084      45   pop        A~B -0.0098     174
-       46: 2246   groupI 12188591      46   pop        A~B  0.0169     140
-       47:  456  groupII 12636227      47   pop        A~B  0.0599     184
-       48: 2260   groupI 13013831      48   pop        A~B -0.0090     192
-       49: 2277   groupI 13927361      49   pop        A~B  0.0622     194
-       50:  472  groupII 13930843      50   pop        A~B  0.0216     166
-       51:  484  groupII 14229758      51   pop        A~B -0.0085     192
-       52: 2291   groupI 14778034      52   pop        A~B  0.1163     150
-       53:  498  groupII 14918983      53   pop        A~B  0.0291     186
-       54: 2301   groupI 15018713      54   pop        A~B -0.0020     174
-       55: 2312   groupI 15463994      55   pop        A~B -0.0079     182
-       56:  511  groupII 15691316      56   pop        A~B -0.0064     182
-       57:  522  groupII 16232226      57   pop        A~B  0.0111     172
-       58: 2332   groupI 16498302      58   pop        A~B  0.0668     184
-       59:  533  groupII 16598364      59   pop        A~B  0.0302     166
-       60:  544  groupII 16835662      60   pop        A~B -0.0104     172
-       61: 2350   groupI 17310044      61   pop        A~B  0.0315     184
-       62:  558  groupII 17371602      62   pop        A~B  0.1775     166
-       63:  570  groupII 17566756      63   pop        A~B -0.0008     188
-       64:  580  groupII 17762512      64   pop        A~B  0.0094     180
-       65: 2361   groupI 18038072      65   pop        A~B  0.0003     192
-       66:  596  groupII 18217491      66   pop        A~B  0.1190     152
-       67:  607  groupII 18463857      67   pop        A~B  0.0144     186
-       68: 2374   groupI 18576903      68   pop        A~B  0.0501     152
-       69:  621  groupII 18865278      69   pop        A~B -0.0115     180
-       70: 2389   groupI 18936566      70   pop        A~B -0.0076     188
-       71:  635  groupII 19244005      71   pop        A~B  0.0245     188
-       72:  649  groupII 19560030      72   pop        A~B  0.0367     158
-       73: 2403   groupI 19759331      73   pop        A~B  0.0007     144
-       74:  663  groupII 19801138      74   pop        A~B -0.0109     186
-       75:  674  groupII 20025734      75   pop        A~B -0.0020     174
-       76: 2417   groupI 20183983      76   pop        A~B  0.1280     160
-       77:  687  groupII 20287494      77   pop        A~B  0.0238     182
-       78: 2429   groupI 20477470      78   pop        A~B  0.0043     156
-       79:  698  groupII 20496069      79   pop        A~B  0.0594     180
-       80: 2441   groupI 20669628      80   pop        A~B  0.0218     154
-       81:  710  groupII 20760663      81   pop        A~B -0.0108     186
-       82: 2456   groupI 20998739      82   pop        A~B  0.0092     174
-       83:  726  groupII 21057559      83   pop        A~B -0.0012     172
-       84: 2471   groupI 21284266      84   pop        A~B  0.0196     186
-       85:  744  groupII 21643975      85   pop        A~B  0.0204     140
-       86: 2484   groupI 21852229      86   pop        A~B  0.0031     178
-       87:  757  groupII 22120193      87   pop        A~B  0.0292     184
-       88: 2497   groupI 22229662      88   pop        A~B  0.0962     192
-       89:  773  groupII 22502694      89   pop        A~B  0.0053     158
-       90: 2513   groupI 22746027      90   pop        A~B -0.0038     184
-       91: 2527   groupI 23197841      91   pop        A~B  0.0761     174
-       92: 2545   groupI 23737472      92   pop        A~B -0.0067     164
-       93: 2559   groupI 24292008      93   pop        A~B  0.0048     170
-       94: 2571   groupI 24593697      94   pop        A~B  0.0823     182
-       95: 2590   groupI 25253087      95   pop        A~B  0.0073     194
-       96: 2609   groupI 25814315      96   pop        A~B  0.0511     174
-       97: 2625   groupI 26450227      97   pop        A~B -0.0092     172
-       98: 2641   groupI 26828629      98   pop        A~B -0.0062     174
-       99: 2655   groupI 27017577      99   pop        A~B -0.0183     144
-      100: 2676   groupI 28096083     100   pop        A~B  0.0010     188
-            snp    group position .snp.id facet comparison     fst n_total
+      $pairwise
+             group position facet comparison     fst
+      1   groupXIX    67921   pop    ASP~PAL  0.3672
+      2    groupIX   100382   pop    ASP~PAL  0.2189
+      3     groupX   101821   pop    ASP~PAL -0.1111
+      4     groupI   182629   pop    ASP~PAL  0.2704
+      5    groupIV   194493   pop    ASP~PAL -0.1798
+      6   groupVII   208605   pop    ASP~PAL  0.1667
+      7    groupVI   212436   pop    ASP~PAL -0.1296
+      8   groupXXI   239621   pop    ASP~PAL -0.0353
+      9  groupXVII   250065   pop    ASP~PAL  0.1667
+      10    groupX   267302   pop    ASP~PAL -0.0817
       
-      [[2]]
-          comparison overall_fst
-      A~B        A~B      0.0295
+      $weighted.means
+        facet subfacet snp.facet snp.subfacet weighted_mean_fst
+      1   pop  ASP~PAL     .base        .base            0.0494
+      
+      $fst.matrix
+      $fst.matrix$pop
+          p1    PAL
+      1: ASP 0.0494
+      
       
 
-# correct wc
+# correct traditional ld
 
     Code
-      tdfst@pairwise.stats
+      tdld
     Output
-            snp    group position .snp.id facet comparison           fst  nk
-        1: 2366   groupI   182629       1   pop        A~B  0.0513990381 170
-        2:  242 groupIII   279838       2   pop        A~B -0.0041762323 162
-        3:  913  groupII   624966       3   pop        A~B  0.0311196737 182
-        4:  333 groupIII   651384       4   pop        A~B -0.0026499620 162
-        5: 2215   groupI  1054125       5   pop        A~B -0.0004370199 154
-        6:  474  groupII  1393364       6   pop        A~B  0.0057705868 166
-        7: 2288   groupI  1464164       7   pop        A~B  0.0055233696 134
-        8: 2370   groupI  1842491       8   pop        A~B  0.0016816164 190
-        9: 2435   groupI  2059342       9   pop        A~B  0.0921186442 148
-       10:  741  groupII  2150508      10   pop        A~B -0.0041559099 198
-       11: 2536   groupI  2348631      11   pop        A~B  0.0961284393 170
-       12: 2577   groupI  2474891      12   pop        A~B  0.0310570034 158
-       13: 2624   groupI  2641270      13   pop        A~B -0.0050746666 162
-       14:  800  groupII  2770932      14   pop        A~B  0.0249026981 188
-       15: 2678   groupI  2832575      15   pop        A~B  0.0004155613 188
-       16:  814  groupII  3063980      16   pop        A~B  0.0227033308 182
-       17:  826  groupII  3366897      17   pop        A~B  0.0288956904 140
-       18: 2689   groupI  3456895      18   pop        A~B  0.0281366851 168
-       19:  839  groupII  3792170      19   pop        A~B -0.0035494819 194
-       20: 2704   groupI  3935010      20   pop        A~B  0.0500711662 150
-       21:  853  groupII  4164239      21   pop        A~B  0.0160326328 178
-       22: 2715   groupI  4460285      22   pop        A~B  0.0641871605 194
-       23:  863  groupII  4571238      23   pop        A~B -0.0053193085 170
-       24:  875  groupII  4958480      24   pop        A~B -0.0002020690 188
-       25: 2737   groupI  5234500      25   pop        A~B  0.0447933452 188
-       26:  887  groupII  5407268      26   pop        A~B -0.0027988397 170
-       27: 2747   groupI  5498169      27   pop        A~B  0.0021583863 188
-       28:  898  groupII  5843765      28   pop        A~B  0.0099282430 182
-       29: 2762   groupI  6082574      29   pop        A~B  0.0123921672 184
-       30:  912  groupII  6147484      30   pop        A~B -0.0037558859 182
-       31: 2773   groupI  6615720      31   pop        A~B  0.0446081463 184
-       32:  929  groupII  7054976      32   pop        A~B  0.0200190548 166
-       33: 2783   groupI  7076190      33   pop        A~B  0.0156054793 156
-       34:  945  groupII  7914770      34   pop        A~B  0.0893675213 172
-       35: 2797   groupI  8399603      35   pop        A~B  0.1921764878 180
-       36:  964  groupII  8668761      36   pop        A~B  0.0386666396 188
-       37: 2811   groupI  8984380      37   pop        A~B  0.1214188582 170
-       38:  979  groupII  9485673      38   pop        A~B  0.0166380120 182
-       39: 2826   groupI  9576825      39   pop        A~B  0.1108836530 184
-       40:  990  groupII  9982941      40   pop        A~B -0.0089786406 160
-       41: 2203   groupI 10083399      41   pop        A~B -0.0030743699 172
-       42: 2216   groupI 10593829      42   pop        A~B           NaN 184
-       43:  428  groupII 10829169      43   pop        A~B -0.0050881444 190
-       44: 2232   groupI 11297259      44   pop        A~B -0.0050605894 170
-       45:  440  groupII 11505084      45   pop        A~B -0.0039021440 174
-       46: 2246   groupI 12188591      46   pop        A~B  0.0244445773 140
-       47:  456  groupII 12636227      47   pop        A~B  0.0645405855 184
-       48: 2260   groupI 13013831      48   pop        A~B -0.0040151926 192
-       49: 2277   groupI 13927361      49   pop        A~B  0.0674342285 194
-       50:  472  groupII 13930843      50   pop        A~B  0.0277656077 166
-       51:  484  groupII 14229758      51   pop        A~B -0.0034840371 192
-       52: 2291   groupI 14778034      52   pop        A~B  0.1233190312 150
-       53:  498  groupII 14918983      53   pop        A~B  0.0344284964 186
-       54: 2301   groupI 15018713      54   pop        A~B  0.0031616023 174
-       55: 2312   groupI 15463994      55   pop        A~B -0.0026225532 182
-       56:  511  groupII 15691316      56   pop        A~B -0.0011675810 182
-       57:  522  groupII 16232226      57   pop        A~B  0.0162763580 172
-       58: 2332   groupI 16498302      58   pop        A~B  0.0710038300 184
-       59:  533  groupII 16598364      59   pop        A~B  0.0350922463 166
-       60:  544  groupII 16835662      60   pop        A~B -0.0046409679 172
-       61: 2350   groupI 17310044      61   pop        A~B  0.0366518108 184
-       62:  558  groupII 17371602      62   pop        A~B  0.1816522551 166
-       63:  570  groupII 17566756      63   pop        A~B  0.0042329089 188
-       64:  580  groupII 17762512      64   pop        A~B  0.0136908696 180
-       65: 2361   groupI 18038072      65   pop        A~B  0.0055137845 192
-       66:  596  groupII 18217491      66   pop        A~B  0.1261703304 152
-       67:  607  groupII 18463857      67   pop        A~B  0.0214105300 186
-       68: 2374   groupI 18576903      68   pop        A~B  0.0559394000 152
-       69:  621  groupII 18865278      69   pop        A~B -0.0051682552 180
-       70: 2389   groupI 18936566      70   pop        A~B -0.0025493327 188
-       71:  635  groupII 19244005      71   pop        A~B  0.0295209178 188
-       72:  649  groupII 19560030      72   pop        A~B  0.0412121274 158
-       73: 2403   groupI 19759331      73   pop        A~B  0.0093498004 144
-       74:  663  groupII 19801138      74   pop        A~B -0.0053015765 186
-       75:  674  groupII 20025734      75   pop        A~B  0.0028451912 174
-       76: 2417   groupI 20183983      76   pop        A~B  0.1343417677 160
-       77:  687  groupII 20287494      77   pop        A~B  0.0281963178 182
-       78: 2429   groupI 20477470      78   pop        A~B  0.0090544747 156
-       79:  698  groupII 20496069      79   pop        A~B  0.0640196066 180
-       80: 2441   groupI 20669628      80   pop        A~B  0.0283800659 154
-       81:  710  groupII 20760663      81   pop        A~B -0.0053276612 186
-       82: 2456   groupI 20998739      82   pop        A~B  0.0149341671 174
-       83:  726  groupII 21057559      83   pop        A~B  0.0045755384 172
-       84: 2471   groupI 21284266      84   pop        A~B  0.0244292338 186
-       85:  744  groupII 21643975      85   pop        A~B  0.0275623200 140
-       86: 2484   groupI 21852229      86   pop        A~B  0.0081086930 178
-       87:  757  groupII 22120193      87   pop        A~B  0.0344040735 184
-       88: 2497   groupI 22229662      88   pop        A~B  0.1003184083 192
-       89:  773  groupII 22502694      89   pop        A~B  0.0105006985 158
-       90: 2513   groupI 22746027      90   pop        A~B  0.0015039054 184
-       91: 2527   groupI 23197841      91   pop        A~B  0.0805453006 174
-       92: 2545   groupI 23737472      92   pop        A~B -0.0005695735 164
-       93: 2559   groupI 24292008      93   pop        A~B  0.0097087657 170
-       94: 2571   groupI 24593697      94   pop        A~B  0.0863445970 182
-       95: 2590   groupI 25253087      95   pop        A~B  0.0117408271 194
-       96: 2609   groupI 25814315      96   pop        A~B  0.0566208674 174
-       97: 2625   groupI 26450227      97   pop        A~B -0.0039140213 172
-       98: 2641   groupI 26828629      98   pop        A~B -0.0008022609 174
-       99: 2655   groupI 27017577      99   pop        A~B -0.0089001919 144
-      100: 2676   groupI 28096083     100   pop        A~B  0.0060931900 188
-            snp    group position .snp.id facet comparison           fst  nk
+      $LD
+      $LD$prox
+           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq     Dprime      pval sample.facet
+      1    groupXIX       67921          1   groupIX      100382          2     32461         NaN 0.00000000       NaN        .base
+      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.00000000 0.6102987        .base
+      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.00000000 0.6792776        .base
+      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.00000000 0.4362749        .base
+      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.00000000 0.5270893        .base
+      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.107142857 1.00000000 0.5126908        .base
+      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.002267574 0.04761905 0.9241257        .base
+      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.00000000 0.7257210        .base
+      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.066666667 0.33333333 0.6055766        .base
+      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.00000000 0.7518296        .base
+      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.00000000 0.7720590        .base
+      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.00000000 0.5790997        .base
+      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.00000000 0.7388827        .base
+      2.4   groupIX      100382          2   groupVI      212436          7    112054         NaN 0.00000000       NaN        .base
+      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.127272727 1.00000000 0.4755327        .base
+      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.00000000 0.7750970        .base
+      2.7   groupIX      100382          2    groupX      267302         10    166920 0.020979021 1.00000000 0.7720590        .base
+      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.00000000 0.8777310        .base
+      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.33333333 0.6625206        .base
+      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.00000000 0.8452520        .base
+      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.00000000 0.6170751        .base
+      3.4    groupX      101821          3  groupXXI      239621          8    137800         NaN 0.00000000       NaN        .base
+      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.00000000 0.7750970        .base
+      3.6    groupX      101821          3    groupX      267302         10    165481 0.022222222 1.00000000 0.7655945        .base
+      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.00000000        NA        .base
+      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.00000000        NA        .base
+      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.00000000 0.5218394        .base
+      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.00000000 0.6792776        .base
+      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.00000000 0.8557254        .base
+      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.00000000 0.7874065        .base
+      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.00000000        NA        .base
+      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.074380165 1.00000000 0.5854409        .base
+      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.00000000 1.0000000        .base
+      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.00000000        NA        .base
+      5.4   groupIV      194493          5    groupX      267302         10     72809 0.111111111 1.00000000 0.5049851        .base
+      6    groupVII      208605          6   groupVI      212436          7      3831 0.181818182 1.00000000 0.3937686        .base
+      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.00000000 0.5581846        .base
+      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.008264463 1.00000000 0.8557254        .base
+      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.00000000 0.6625206        .base
+      7     groupVI      212436          7  groupXXI      239621          8     27185 0.057142857 0.40000000 0.6325851        .base
+      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.030769231 1.00000000 0.7257210        .base
+      7.2   groupVI      212436          7    groupX      267302         10     54866 0.109090909 1.00000000 0.5088828        .base
+      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.12500000 0.9061856        .base
+      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.20000000 0.7655945        .base
+      9   groupXVII      250065          9    groupX      267302         10     17237 0.020979021 1.00000000 0.7720590        .base
+          sample.subfacet
+      1             .base
+      1.1           .base
+      1.2           .base
+      1.3           .base
+      1.4           .base
+      1.5           .base
+      1.6           .base
+      1.7           .base
+      1.8           .base
+      2             .base
+      2.1           .base
+      2.2           .base
+      2.3           .base
+      2.4           .base
+      2.5           .base
+      2.6           .base
+      2.7           .base
+      3             .base
+      3.1           .base
+      3.2           .base
+      3.3           .base
+      3.4           .base
+      3.5           .base
+      3.6           .base
+      4             .base
+      4.1           .base
+      4.2           .base
+      4.3           .base
+      4.4           .base
+      4.5           .base
+      5             .base
+      5.1           .base
+      5.2           .base
+      5.3           .base
+      5.4           .base
+      6             .base
+      6.1           .base
+      6.2           .base
+      6.3           .base
+      7             .base
+      7.1           .base
+      7.2           .base
+      8             .base
+      8.1           .base
+      9             .base
+      
+      $LD$matrices
+      $LD$matrices$.base
+      $LD$matrices$.base$.base
+      $LD$matrices$.base$.base$Dprime
+             67921 100382 101821 182629    194493 208605 212436     239621 250065    267302
+      67921     NA      0      1      1 1.0000000      1      1 0.04761905  1.000 0.3333333
+      100382    NA     NA      1      1 1.0000000      1      0 1.00000000  1.000 1.0000000
+      101821    NA     NA     NA      1 0.3333333      1      1 0.00000000  1.000 1.0000000
+      182629    NA     NA     NA     NA 0.0000000      0      1 1.00000000  1.000 1.0000000
+      194493    NA     NA     NA     NA        NA      0      1 0.00000000  0.000 1.0000000
+      208605    NA     NA     NA     NA        NA     NA      1 1.00000000  1.000 1.0000000
+      212436    NA     NA     NA     NA        NA     NA     NA 0.40000000  1.000 1.0000000
+      239621    NA     NA     NA     NA        NA     NA     NA         NA  0.125 0.2000000
+      250065    NA     NA     NA     NA        NA     NA     NA         NA     NA 1.0000000
+      267302    NA     NA     NA     NA        NA     NA     NA         NA     NA        NA
+      
+      $LD$matrices$.base$.base$rsq
+             67921 100382     101821     182629     194493     208605     212436      239621      250065     267302
+      67921     NA    NaN 0.06493506 0.04273504 0.15151515 0.10000000 0.10714286 0.002267574 0.030769231 0.06666667
+      100382    NA     NA 0.02500000 0.02097902 0.07692308 0.02777778        NaN 0.127272727 0.020408163 0.02097902
+      101821    NA     NA         NA 0.00591716 0.04761905 0.00952381 0.06250000         NaN 0.020408163 0.02222222
+      182629    NA     NA         NA         NA         NA         NA 0.10256410 0.042735043 0.008264463 0.01818182
+      194493    NA     NA         NA         NA         NA         NA 0.07438017 0.000000000          NA 0.11111111
+      208605    NA     NA         NA         NA         NA         NA 0.18181818 0.085714286 0.008264463 0.04761905
+      212436    NA     NA         NA         NA         NA         NA         NA 0.057142857 0.030769231 0.10909091
+      239621    NA     NA         NA         NA         NA         NA         NA          NA 0.003472222 0.02222222
+      250065    NA     NA         NA         NA         NA         NA         NA          NA          NA 0.02097902
+      267302    NA     NA         NA         NA         NA         NA         NA          NA          NA         NA
+      
+      $LD$matrices$.base$.base$pval
+             67921 100382    101821    182629    194493    208605    212436    239621    250065    267302
+      67921     NA    NaN 0.6102987 0.6792776 0.4362749 0.5270893 0.5126908 0.9241257 0.7257210 0.6055766
+      100382    NA     NA 0.7518296 0.7720590 0.5790997 0.7388827       NaN 0.4755327 0.7750970 0.7720590
+      101821    NA     NA        NA 0.8777310 0.6625206 0.8452520 0.6170751       NaN 0.7750970 0.7655945
+      182629    NA     NA        NA        NA        NA        NA 0.5218394 0.6792776 0.8557254 0.7874065
+      194493    NA     NA        NA        NA        NA        NA 0.5854409 1.0000000        NA 0.5049851
+      208605    NA     NA        NA        NA        NA        NA 0.3937686 0.5581846 0.8557254 0.6625206
+      212436    NA     NA        NA        NA        NA        NA        NA 0.6325851 0.7257210 0.5088828
+      239621    NA     NA        NA        NA        NA        NA        NA        NA 0.9061856 0.7655945
+      250065    NA     NA        NA        NA        NA        NA        NA        NA        NA 0.7720590
+      267302    NA     NA        NA        NA        NA        NA        NA        NA        NA        NA
+      
+      
+      
+      
+      
 
-# correct hoh
+# correct ME ld
 
     Code
-      tdfst@pairwise.stats
+      tdldme
     Output
-            snp    group position .snp.id facet comparison           fst  nk
-        1: 2366   groupI   182629       1   pop        A~B -1.697058e-02 170
-        2:  242 groupIII   279838       2   pop        A~B -4.854369e-03 162
-        3:  913  groupII   624966       3   pop        A~B  1.206470e-02 182
-        4:  333 groupIII   651384       4   pop        A~B -4.760395e-03 162
-        5: 2215   groupI  1054125       5   pop        A~B -3.859105e-03 154
-        6:  474  groupII  1393364       6   pop        A~B -8.217424e-04 166
-        7: 2288   groupI  1464164       7   pop        A~B -6.970992e-02 134
-        8: 2370   groupI  1842491       8   pop        A~B -5.206584e-03 190
-        9: 2435   groupI  2059342       9   pop        A~B  9.628544e-02 148
-       10:  741  groupII  2150508      10   pop        A~B -5.364574e-03 198
-       11: 2536   groupI  2348631      11   pop        A~B  4.449468e-02 170
-       12: 2577   groupI  2474891      12   pop        A~B  1.332921e-02 158
-       13: 2624   groupI  2641270      13   pop        A~B -6.371043e-03 162
-       14:  800  groupII  2770932      14   pop        A~B  9.965743e-03 188
-       15: 2678   groupI  2832575      15   pop        A~B -1.456753e-02 188
-       16:  814  groupII  3063980      16   pop        A~B  1.024241e-02 182
-       17:  826  groupII  3366897      17   pop        A~B  1.874741e-02 140
-       18: 2689   groupI  3456895      18   pop        A~B  9.448267e-03 168
-       19:  839  groupII  3792170      19   pop        A~B -9.551170e-03 194
-       20: 2704   groupI  3935010      20   pop        A~B  2.350927e-02 150
-       21:  853  groupII  4164239      21   pop        A~B  1.188391e-02 178
-       22: 2715   groupI  4460285      22   pop        A~B  3.718814e-02 194
-       23:  863  groupII  4571238      23   pop        A~B -5.669221e-03 170
-       24:  875  groupII  4958480      24   pop        A~B -4.082854e-03 188
-       25: 2737   groupI  5234500      25   pop        A~B  2.860934e-02 188
-       26:  887  groupII  5407268      26   pop        A~B -7.031526e-03 170
-       27: 2747   groupI  5498169      27   pop        A~B -1.693647e-03 188
-       28:  898  groupII  5843765      28   pop        A~B -5.630821e-04 182
-       29: 2762   groupI  6082574      29   pop        A~B  2.315310e-02 184
-       30:  912  groupII  6147484      30   pop        A~B -4.242931e-03 182
-       31: 2773   groupI  6615720      31   pop        A~B  8.780526e-02 184
-       32:  929  groupII  7054976      32   pop        A~B  3.332787e-03 166
-       33: 2783   groupI  7076190      33   pop        A~B -3.819329e-03 156
-       34:  945  groupII  7914770      34   pop        A~B  3.491778e-02 172
-       35: 2797   groupI  8399603      35   pop        A~B  1.038826e-01 180
-       36:  964  groupII  8668761      36   pop        A~B  4.794426e-02 188
-       37: 2811   groupI  8984380      37   pop        A~B  6.146545e-02 170
-       38:  979  groupII  9485673      38   pop        A~B -9.273703e-04 182
-       39: 2826   groupI  9576825      39   pop        A~B  6.652403e-02 184
-       40:  990  groupII  9982941      40   pop        A~B -7.660687e-03 160
-       41: 2203   groupI 10083399      41   pop        A~B -5.438963e-03 172
-       42: 2216   groupI 10593829      42   pop        A~B           NaN 184
-       43:  428  groupII 10829169      43   pop        A~B -5.391875e-03 190
-       44: 2232   groupI 11297259      44   pop        A~B -5.811511e-03 170
-       45:  440  groupII 11505084      45   pop        A~B -2.464367e-03 174
-       46: 2246   groupI 12188591      46   pop        A~B  9.483254e-03 140
-       47:  456  groupII 12636227      47   pop        A~B  4.365059e-02 184
-       48: 2260   groupI 13013831      48   pop        A~B -4.831158e-03 192
-       49: 2277   groupI 13927361      49   pop        A~B  5.337896e-02 194
-       50:  472  groupII 13930843      50   pop        A~B  4.186267e-03 166
-       51:  484  groupII 14229758      51   pop        A~B -2.663395e-03 192
-       52: 2291   groupI 14778034      52   pop        A~B  4.033758e-02 150
-       53:  498  groupII 14918983      53   pop        A~B  5.279200e-03 186
-       54: 2301   groupI 15018713      54   pop        A~B -2.150840e-03 174
-       55: 2312   groupI 15463994      55   pop        A~B -8.390789e-03 182
-       56:  511  groupII 15691316      56   pop        A~B -1.804986e-03 182
-       57:  522  groupII 16232226      57   pop        A~B  6.941517e-03 172
-       58: 2332   groupI 16498302      58   pop        A~B  1.403958e-02 184
-       59:  533  groupII 16598364      59   pop        A~B  3.479439e-03 166
-       60:  544  groupII 16835662      60   pop        A~B -4.723135e-03 172
-       61: 2350   groupI 17310044      61   pop        A~B -5.014327e-03 184
-       62:  558  groupII 17371602      62   pop        A~B  9.550192e-02 166
-       63:  570  groupII 17566756      63   pop        A~B -7.289958e-04 188
-       64:  580  groupII 17762512      64   pop        A~B  3.477493e-03 180
-       65: 2361   groupI 18038072      65   pop        A~B  8.398656e-05 192
-       66:  596  groupII 18217491      66   pop        A~B  3.208796e-02 152
-       67:  607  groupII 18463857      67   pop        A~B  2.129511e-03 186
-       68: 2374   groupI 18576903      68   pop        A~B  2.364218e-02 152
-       69:  621  groupII 18865278      69   pop        A~B -6.120159e-03 180
-       70: 2389   groupI 18936566      70   pop        A~B -6.566643e-03 188
-       71:  635  groupII 19244005      71   pop        A~B -1.542052e-02 188
-       72:  649  groupII 19560030      72   pop        A~B  2.384242e-02 158
-       73: 2403   groupI 19759331      73   pop        A~B  4.467697e-03 144
-       74:  663  groupII 19801138      74   pop        A~B -4.378284e-03 186
-       75:  674  groupII 20025734      75   pop        A~B -3.551060e-03 174
-       76: 2417   groupI 20183983      76   pop        A~B  6.467783e-02 160
-       77:  687  groupII 20287494      77   pop        A~B  1.312039e-02 182
-       78: 2429   groupI 20477470      78   pop        A~B -2.192979e-03 156
-       79:  698  groupII 20496069      79   pop        A~B  1.786679e-02 180
-       80: 2441   groupI 20669628      80   pop        A~B  4.487500e-03 154
-       81:  710  groupII 20760663      81   pop        A~B -2.505535e-03 186
-       82: 2456   groupI 20998739      82   pop        A~B  9.390526e-03 174
-       83:  726  groupII 21057559      83   pop        A~B -8.433306e-03 172
-       84: 2471   groupI 21284266      84   pop        A~B  1.488377e-02 186
-       85:  744  groupII 21643975      85   pop        A~B  1.481909e-02 140
-       86: 2484   groupI 21852229      86   pop        A~B  2.591532e-03 178
-       87:  757  groupII 22120193      87   pop        A~B  9.824811e-03 184
-       88: 2497   groupI 22229662      88   pop        A~B  3.388660e-02 192
-       89:  773  groupII 22502694      89   pop        A~B  5.037887e-04 158
-       90: 2513   groupI 22746027      90   pop        A~B  3.551136e-03 184
-       91: 2527   groupI 23197841      91   pop        A~B  2.847589e-02 174
-       92: 2545   groupI 23737472      92   pop        A~B  1.494863e-02 164
-       93: 2559   groupI 24292008      93   pop        A~B -5.438841e-04 170
-       94: 2571   groupI 24593697      94   pop        A~B  4.911900e-02 182
-       95: 2590   groupI 25253087      95   pop        A~B  8.119580e-04 194
-       96: 2609   groupI 25814315      96   pop        A~B  3.333063e-02 174
-       97: 2625   groupI 26450227      97   pop        A~B -5.332240e-03 172
-       98: 2641   groupI 26828629      98   pop        A~B -3.669521e-03 174
-       99: 2655   groupI 27017577      99   pop        A~B -6.846453e-03 144
-      100: 2676   groupI 28096083     100   pop        A~B  2.402835e-04 188
-            snp    group position .snp.id facet comparison           fst  nk
+      $LD
+      $LD$prox
+           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq    Dprime      pval sample.facet
+      1    groupXIX       67921          1   groupIX      100382          2     32461 0.353994002 0.9999389 0.2340669        .base
+      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.0000000 0.6102987        .base
+      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.0000000 0.6792776        .base
+      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.0000000 0.4362749        .base
+      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.0000000 0.5270893        .base
+      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.194966106 0.9997940 0.3771826        .base
+      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.011083805 0.1052797 0.8332312        .base
+      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.0000000 0.7257210        .base
+      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.108329998 0.4094221 0.5103644        .base
+      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.0000000 0.7518296        .base
+      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.0000000 0.7720590        .base
+      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.0000000 0.5790997        .base
+      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.0000000 0.7388827        .base
+      2.4   groupIX      100382          2   groupVI      212436          7    112054 0.259192408 0.9998711 0.3085740        .base
+      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.222194584 0.9999378 0.3458086        .base
+      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.0000000 0.7750970        .base
+      2.7   groupIX      100382          2    groupX      267302         10    166920 0.032582005 0.9815785 0.7180922        .base
+      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.0000000 0.8777310        .base
+      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.3333333 0.6625206        .base
+      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.0000000 0.8452520        .base
+      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.0000000 0.6170751        .base
+      3.4    groupX      101821          3  groupXXI      239621          8    137800 0.048813740 0.9985965 0.6585785        .base
+      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.0000000 0.7750970        .base
+      3.6    groupX      101821          3    groupX      267302         10    165481 0.034539801 0.9957009 0.7101179        .base
+      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.0000000        NA        .base
+      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.0000000        NA        .base
+      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.0000000 0.5218394        .base
+      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.0000000 0.6792776        .base
+      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.0000000 0.8557254        .base
+      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.0000000 0.7874065        .base
+      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.0000000        NA        .base
+      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.092592006 0.9998079 0.5428037        .base
+      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.0000000 1.0000000        .base
+      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.0000000        NA        .base
+      5.4   groupIV      194493          5    groupX      267302         10     72809 0.135706586 0.9998987 0.4612638        .base
+      6    groupVII      208605          6   groupVI      212436          7      3831 0.246370641 0.9999875 0.3208490        .base
+      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.0000000 0.5581846        .base
+      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.024023016 0.1549936 0.7565707        .base
+      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.0000000 0.6625206        .base
+      7     groupVI      212436          7  groupXXI      239621          8     27185 0.076875619 0.4295364 0.5792168        .base
+      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.047496855 0.9987162 0.6629271        .base
+      7.2   groupVI      212436          7    groupX      267302         10     54866 0.130421519 0.9999492 0.4701233        .base
+      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.1250000 0.9061856        .base
+      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.2000000 0.7655945        .base
+      9   groupXVII      250065          9    groupX      267302         10     17237 0.032582005 0.9815785 0.7180922        .base
+          sample.subfacet
+      1             .base
+      1.1           .base
+      1.2           .base
+      1.3           .base
+      1.4           .base
+      1.5           .base
+      1.6           .base
+      1.7           .base
+      1.8           .base
+      2             .base
+      2.1           .base
+      2.2           .base
+      2.3           .base
+      2.4           .base
+      2.5           .base
+      2.6           .base
+      2.7           .base
+      3             .base
+      3.1           .base
+      3.2           .base
+      3.3           .base
+      3.4           .base
+      3.5           .base
+      3.6           .base
+      4             .base
+      4.1           .base
+      4.2           .base
+      4.3           .base
+      4.4           .base
+      4.5           .base
+      5             .base
+      5.1           .base
+      5.2           .base
+      5.3           .base
+      5.4           .base
+      6             .base
+      6.1           .base
+      6.2           .base
+      6.3           .base
+      7             .base
+      7.1           .base
+      7.2           .base
+      8             .base
+      8.1           .base
+      9             .base
+      
+      $LD$matrices
+      $LD$matrices$.base
+      $LD$matrices$.base$.base
+      $LD$matrices$.base$.base$Dprime
+             67921    100382 101821 182629    194493 208605    212436    239621    250065    267302
+      67921     NA 0.9999389      1      1 1.0000000      1 0.9997940 0.1052797 1.0000000 0.4094221
+      100382    NA        NA      1      1 1.0000000      1 0.9998711 0.9999378 1.0000000 0.9815785
+      101821    NA        NA     NA      1 0.3333333      1 1.0000000 0.9985965 1.0000000 0.9957009
+      182629    NA        NA     NA     NA 0.0000000      0 1.0000000 1.0000000 1.0000000 1.0000000
+      194493    NA        NA     NA     NA        NA      0 0.9998079 0.0000000 0.0000000 0.9998987
+      208605    NA        NA     NA     NA        NA     NA 0.9999875 1.0000000 0.1549936 1.0000000
+      212436    NA        NA     NA     NA        NA     NA        NA 0.4295364 0.9987162 0.9999492
+      239621    NA        NA     NA     NA        NA     NA        NA        NA 0.1250000 0.2000000
+      250065    NA        NA     NA     NA        NA     NA        NA        NA        NA 0.9815785
+      267302    NA        NA     NA     NA        NA     NA        NA        NA        NA        NA
+      
+      $LD$matrices$.base$.base$rsq
+             67921   100382     101821     182629     194493     208605     212436     239621      250065     267302
+      67921     NA 0.353994 0.06493506 0.04273504 0.15151515 0.10000000 0.19496611 0.01108381 0.030769231 0.10833000
+      100382    NA       NA 0.02500000 0.02097902 0.07692308 0.02777778 0.25919241 0.22219458 0.020408163 0.03258200
+      101821    NA       NA         NA 0.00591716 0.04761905 0.00952381 0.06250000 0.04881374 0.020408163 0.03453980
+      182629    NA       NA         NA         NA         NA         NA 0.10256410 0.04273504 0.008264463 0.01818182
+      194493    NA       NA         NA         NA         NA         NA 0.09259201 0.00000000          NA 0.13570659
+      208605    NA       NA         NA         NA         NA         NA 0.24637064 0.08571429 0.024023016 0.04761905
+      212436    NA       NA         NA         NA         NA         NA         NA 0.07687562 0.047496855 0.13042152
+      239621    NA       NA         NA         NA         NA         NA         NA         NA 0.003472222 0.02222222
+      250065    NA       NA         NA         NA         NA         NA         NA         NA          NA 0.03258200
+      267302    NA       NA         NA         NA         NA         NA         NA         NA          NA         NA
+      
+      $LD$matrices$.base$.base$pval
+             67921    100382    101821    182629    194493    208605    212436    239621    250065    267302
+      67921     NA 0.2340669 0.6102987 0.6792776 0.4362749 0.5270893 0.3771826 0.8332312 0.7257210 0.5103644
+      100382    NA        NA 0.7518296 0.7720590 0.5790997 0.7388827 0.3085740 0.3458086 0.7750970 0.7180922
+      101821    NA        NA        NA 0.8777310 0.6625206 0.8452520 0.6170751 0.6585785 0.7750970 0.7101179
+      182629    NA        NA        NA        NA        NA        NA 0.5218394 0.6792776 0.8557254 0.7874065
+      194493    NA        NA        NA        NA        NA        NA 0.5428037 1.0000000        NA 0.4612638
+      208605    NA        NA        NA        NA        NA        NA 0.3208490 0.5581846 0.7565707 0.6625206
+      212436    NA        NA        NA        NA        NA        NA        NA 0.5792168 0.6629271 0.4701233
+      239621    NA        NA        NA        NA        NA        NA        NA        NA 0.9061856 0.7655945
+      250065    NA        NA        NA        NA        NA        NA        NA        NA        NA 0.7180922
+      267302    NA        NA        NA        NA        NA        NA        NA        NA        NA        NA
+      
+      
+      
+      
+      
 

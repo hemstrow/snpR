@@ -2199,7 +2199,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       else{
         cats <- get.task.list(x, facet)
         num.cats <- length(unique(cats[,2]))
-        if(num.cats != k & use_pop_info){
+        if(num.cats != kmax & use_pop_info){
           stop(paste0("k must be set to the same value as the number of levels of the provided facet (", num.cats, ").\n"))
         }
         

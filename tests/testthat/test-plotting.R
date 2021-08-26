@@ -70,6 +70,7 @@ test_that("structure map",{
 
 #==================plot_clusters=====================
 test_that("pca",{
+  local_edition(3)
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
   expect_true(ggplot2::is.ggplot(p$plots$pca))
@@ -77,6 +78,7 @@ test_that("pca",{
 })
 
 test_that("tsne",{
+  local_edition(3)
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
@@ -85,7 +87,8 @@ test_that("tsne",{
   expect_snapshot(p$data$tsne) # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
-test_that("tsne",{
+test_that("umap",{
+  local_edition(3)
   skip_if_not_installed(c("umap"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
@@ -137,7 +140,7 @@ test_that("FST heatmap",{
 
 #============tree====================
 test_that("tree plot",{
-  skip_if_not_installed(c("ggree", "ape"))
+  skip_if_not_installed(c("ggtree", "ape"))
   if("ggtree" %in% installed.packages()){
     skip_if_not(utils::packageVersion("ggtree") >= numeric_version("3.1.2"))
   }
