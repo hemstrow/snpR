@@ -3266,7 +3266,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       am <- x%*%t(x)
       am <- 1 - (am / (nloc/2))
       diag(am) <- 0
-      am <- sqrt(am)
+      suppressWarnings(am <- sqrt(am))
       am <- stats::as.dist(am)
     }
     am <- list(am)
@@ -3456,10 +3456,13 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
       # find geographic mean coordiantes for each facet level
       gmeans <- t(apply(categories, 1, function(row){
         matches <- fetch.sample.meta.matching.task.list(x, row)
-        matches <- x@sample.meta[matches,]
-        matches <- matches[,x_y]
+        matches <- x@sample.meta[matches,, drop = FALSE]
+        matches <- matches[,x_y, drop = FALSE]
+        if(nrow(matches) == 1){
+          return(matches)
+        }
         colnames(matches) <- c("x", "y")
-        geosphere::geomean(matches)
+        return(geosphere::geomean(matches))
       }))
       rownames(gmeans) <- categories[,2]
       
@@ -3489,8 +3492,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
         if(any(is.na(gd[[i]][[j]][[k]]))){
           # find bad entries
           matgd <- as.matrix(gd[[i]][[j]][[k]])
-          bad.entries <- which(rowSums(is.na(matgd)) == ncol(matgd) - 1)
-          
+          bad.entries <- which(rowSums(is.na(matgd)) > 0)
           # remove from gene dist
           gd[[i]][[j]][[k]] <- stats::as.dist(matgd[-bad.entries, -bad.entries])
           
@@ -3505,7 +3507,13 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
           tgeodist <- geo_mats[[tsampfacet]][[names(gd[[i]][[j]])[k]]]
         }
         
-        ibd[[i]][[j]][[k]] <- ade4::mantel.randtest(gd[[i]][[j]][[k]], tgeodist, ...)
+        if(attr(gd[[i]][[j]][[k]], "Size") != 0){
+          ibd[[i]][[j]][[k]] <- ade4::mantel.randtest(gd[[i]][[j]][[k]], tgeodist, ...)
+        }
+        else{
+          warning("All genetic distance measures NA for facet", paste(names(gd)[i], names(gd[[i]])[j], names(gd[[i]][[j]])[k]),"\n\t")
+          ibd[[i]][[j]][[k]] <- NULL
+        }
         
       }
     }
