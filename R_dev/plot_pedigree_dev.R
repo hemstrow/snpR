@@ -55,7 +55,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
   
   #===================prep=========================
   
-  # well the data needs to be either 1) output from run_sequoia or 2) independent pedigree construction (individual id order needs to be 1 id, )
+  # well the data needs to be either 1) output from run_sequoia or 2) independent pedigree construction (individual id order needs to be 1 id, 2 sire, 3 dam)
 
   if(is.snpRdata(x)){
     # run run_sequoia, grab the output as x.
