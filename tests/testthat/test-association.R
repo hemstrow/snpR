@@ -15,26 +15,27 @@ test_that("correct gmmat", {
 
 test_that("correct armitage", {
   local_edition(3)
+  skip_if_not_installed("CATT")
   asarm <- calc_association(asdat, response = "cat_phenotype", method = "armitage")
   
-  # code to generate test values, not run to avoid CATT dependency
-  # sn <- format_snps(asdat, "sn", interpolate = FALSE)[,-c(1:2)]
-  # cc <- sample.meta(asdat)$cat_phenotype
-  # cc <- as.numeric(as.factor(cc)) - 1
-  # comp <- numeric(nrow(sn))
-  # for(i in 1:nrow(sn)){
-  #   nas <- which(is.na(sn[i,]))
-  #   if(length(nas) > 0){
-  #     comp[i] <- CATT::CATT(cc[-nas], sn[i,-nas])$p.value
-  #   }
-  #   else{
-  #     comp[i] <- CATT::CATT(cc, sn[i,])$p.value
-  #   }
-  # }
+  #code to generate test values
+  sn <- format_snps(asdat, "sn", interpolate = FALSE)[,-c(1:2)]
+  cc <- sample.meta(asdat)$cat_phenotype
+  cc <- as.numeric(as.factor(cc)) - 1
+  comp <- numeric(nrow(sn))
+  for(i in 1:nrow(sn)){
+    nas <- which(is.na(sn[i,]))
+    if(length(nas) > 0){
+      comp[i] <- CATT::CATT(cc[-nas], sn[i,-nas])$p.value
+    }
+    else{
+      comp[i] <- CATT::CATT(cc, sn[i,])$p.value
+    }
+  }
 
   asarm <- get.snpR.stats(asarm, stats = "association")
   expect_equal(round(asarm$single$p_armitage_cat_phenotype, 4), 
-               c(0.1275, 0.3428, 0.7469, 0.2123, 1.0000, 0.2059, 0.5023, 0.4479, 0.2059, 0.6353))# from CATT
+               comp) # from CATT
 })
 
 test_that("correct odds", {
