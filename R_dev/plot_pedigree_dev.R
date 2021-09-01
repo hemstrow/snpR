@@ -24,6 +24,7 @@
 #'@examples
 #'# output from run_sequoia 
 #'# output from other pedigree construction programs
+#'# example pedigree for stickSNPs
 
 plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){  
   #===================sanity checks===============
