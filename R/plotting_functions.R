@@ -1270,7 +1270,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   overlap with samples somewhat, this may be desirable.
 #' @param separator_color character, default "white". Color of facet level
 #'   separator lines.
-#' @param no_admix logical, defualt TRUE. Used if method = "structure". If TRUE,
+#' @param no_admix logical, default FALSE. Used if method = "structure". If TRUE,
 #'   the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
 #'   will be assumed between clusters.
 #' @param use_pop_info logical, default FALSE. Used if method = "structure". If
@@ -1401,7 +1401,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
-                           no_admix = TRUE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
+                           no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
                            infer_alpha = TRUE, separate_pop_alphas = FALSE, infer_lambda = FALSE, 
                            infer_pop_specific_lambda = FALSE, lambda = 1, f_prior_mean = 0.01, f_prior_sd = 0.05,
                            uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 

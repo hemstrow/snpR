@@ -29,7 +29,7 @@ plot_structure(
   t.sizes = c(12, 12, 12),
   separator_thickness = 1,
   separator_color = "white",
-  no_admix = TRUE,
+  no_admix = FALSE,
   use_pop_info = FALSE,
   loc_prior = FALSE,
   correlated_frequencies = TRUE,
@@ -151,7 +151,7 @@ overlap with samples somewhat, this may be desirable.}
 \item{separator_color}{character, default "white". Color of facet level
 separator lines.}
 
-\item{no_admix}{logical, defualt TRUE. Used if method = "structure". If TRUE,
+\item{no_admix}{logical, default FALSE. Used if method = "structure". If TRUE,
 the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
 will be assumed between clusters.}
 
