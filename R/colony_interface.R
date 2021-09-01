@@ -6,20 +6,22 @@
 #' take snpRdata objects containing maternal or paternal genotypes, or both. No
 #' facet support.
 #'
-#' Requires that the COLONY program is installed locally. Input and output files
-#' will be stored in a colony folder created in the current working directory.
-#' The functions documented here can write input files, call them using colony,
-#' and parse some parts of the results given the original snpRdata object. Note
-#' that no facet support is currently available here due to the complexity and
-#' number of possible input parameters that are difficult to handle across
-#' multiple facets and facet levels. Facet support for the basic, default
-#' operation with few additional options may be added in the future. For now,
-#' facets can be handled during parentage and pedigree creation in snpR using
-#' the \code{\link{run_sequoia}} function, which runs a notably simpler (with
-#' respect to implementation) pedigree toolkit.
+#' Requires that the COLONY program is installed locally if running within snpR.
+#' Text files exported from write_colony_input command can also be imported to
+#' non-local command line versions of COLONY (eg. on a compute cluster). Input
+#' and output files will be stored in a colony folder created in the current 
+#' working directory. The functions documented here can write input files, call 
+#' them using COLONY, and parse some parts of the results given the original 
+#' snpRdata object. Note that no facet support is currently available here due 
+#' to the complexity and number of possible input parameters that are difficult 
+#' to handle across multiple facets and facet levels. Facet support for the 
+#' basic, default operation with few additional options may be added in the 
+#' future. For now, facets can be handled during parentage and pedigree creation 
+#' in snpR using the \code{\link{run_sequoia}} function, which runs a notably 
+#' simpler (with respect to implementation) pedigree toolkit.
 #'
-#' These functions includes many commonly used options but not all possible
-#' parameters for colony inputs. See Colony User Guide for using extra features.
+#' These functions include many commonly used options but not all possible
+#' parameters for COLONY inputs. See COLONY User Guide for using extra features.
 #'
 #' This is still in development. The defaults and the most commonly used options
 #' have been tested and work well, but some of the more esoteric options haven't
@@ -134,8 +136,8 @@
 #'
 #' @examples
 #' 
-#' # A simple example for running all individuals in the snpR object as siblings in
-#' # colony. Not run to avoid clutter.
+#' # A simple example for running all individuals in the snpR object as siblings 
+#' # in colony. Not run to avoid clutter.
 #' \dontrun{
 #'   write_colony_input(x = stickSNPs, outfile = "stk.col")
 #'  }
@@ -150,9 +152,14 @@
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' #generating snpR objects for male and female potential parents and offspring 
 #' # (no U sexes in the potential parents in for this example)
-#' sir <- subset_snpR_data(stk, Sex = "M", BirthYear = 2013)
-#' dam <- subset_snpR_data(stk, Sex = "F", BirthYear = 2013)
-#' off <- subset_snpR_data(stk, BirthYear = c("2014", "2015"))
+#' # get list of samples which are now "M" for subsetting
+#' lsir <- which(stk@sample.meta$Sex =="M" & stk@sample.meta$BirthYear == "2013") #list sires
+#' ldam <- which(stk@sample.meta$Sex =="F" & stk@sample.meta$BirthYear == "2013") #list dams
+#' loff <- which(stk@sample.meta$BirthYear %in% c("2014","2015")) #list of offspring
+#' 
+#' sir <- subset_snpR_data(x = stk, .samps = lsir) #creating new snpR objects for Colony formatting
+#' dam <- subset_snpR_data(x = stk, .samps = ldam)
+#' off <- subset_snpR_data(x = stk, .samps = loff)
 #' # not run to avoid clutter
 #' \dontrun{
 #'   write_colony_input(x = off, outfile = "parents_example.col", 
@@ -162,7 +169,8 @@
 #' # running a simple model
 #' \dontrun{
 #'   ## intentionally shorter run, with a small subset of the samples
-#'   test_dat <- subset_snpR_data(stickSNPs, pop = "ASP")
+#'   asp <- which(stickSNPs@sample.meta$pop == "ASP")
+#'   test_dat <- subset_snpR_data(stickSNPs, .samps = asp)
 #'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
 #' }
 NULL

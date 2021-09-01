@@ -23,7 +23,7 @@
 #'Stickleback collected in 2015 from several locations in the Deschutes River,
 #'Oregon, USA. For more information, see Hemstrom et al (in prep).
 #'
-#'Genotypes noted as two characters repesenting bases sequenced at a specific
+#'Genotypes noted as two characters representing bases sequenced at a specific
 #'site (e.g. "CC" or "GT"). Each SNP occupies one row, each sample occupies on
 #'column. Missing data coded as "NN".
 #'
@@ -50,3 +50,10 @@
 #'
 #'@references Hemstrom et al (in prep)
 "stickFORMATs"
+
+"stickPED"
+
+#'Contains an artificially constructed pedigree based on the 
+#'\code{\link{stickSNPs}} dataset. Here samples named 1 through 420 represent 
+#'the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
+#'individuals inferred via pedigree construction are affixed with "f" or "m". 

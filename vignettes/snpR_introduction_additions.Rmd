@@ -21,7 +21,7 @@ library(snpR); library(ggplot2); library(kableExtra)
 
 snpR is a SNP genomic analysis package that is designed to do a range of basic genomic analyses, such as calculate observed and expected heterozygosity, linkage disequilibrium, pairwise-Fst, and so on. This package also has dimensionality reduction tools (eg. PCA, tsne, umap), data formatting conversions for other packages and programs, population structure, genetic prediction, private allele detection and more (See documentation for details). All functions are written to take similar arguments and interpret them in consistent ways. This is done through the use of the snpRdata object class, which all snpR functions take as their first argument. Nearly all functions are written to be overwrite safe: the object provided to the function should be overwritten by the output. Newly calculated statistics will simply be merged-in to the existing object.
 
-A fundamental feature of snpR is the use of *facets*. Facets define categorical metadata features of the data, and can reference either features describing individual SNPs (such as chromosome) or individual samples (such as population). Facets are used to automatically break apart input data to calculate statistics in intuitive ways, such as by calculating observed heterozygosity in each population. Since metadata is contained in the snpRdata object, the user will never need to manually subset or loop calculations across categories/levels of a facet. Further, facets can be combined so that many calculations occur across these groups with just one command. Facets are combined using "." argument (Examples are provided below).
+A fundamental feature of snpR is the use of *facets*. Facets define categorical metadata features of the data, and can reference either features describing individual SNPs (such as chromosome) or individual samples (such as population). Facets are used to automatically break apart input data to calculate statistics in intuitive ways, such as by calculating observed heterozygosity in each population. Since metadata is contained in the snpRdata object, the user will never need to manually subset or loop calculations across categories/levels of a facet. Further, facets can be combined so that many calculations occur across these groups with just one command. Facets are combined using "." argument (Examples are provided below). Further information on facets is provided later in this guide. 
 
 # Quick-start Guide
 
@@ -46,8 +46,8 @@ Data in the "NN" format, as shown above, can be imported directly into a snpRdat
 
 ```{r}
 # example data is present in stickRAW 
-# the first three characters of the column names are the population, so let's grab that:
-# since the first three columns contain snp.metadata, we need to remove those!
+# the first three characters of the column names are the population, so let's grab that.
+# since the first three columns contain snp.metadata, we need to remove those before import!
 sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), stringsAsFactors = F)
 
 # grab our sample metadata
@@ -95,7 +95,7 @@ snpRdata objects store a range of variables internally in order to minimize repe
 Calling a snpRdata object will show a summary of the calculations done on the object and the metadata categories available.
 
 ```{r}
-#my.dat
+#my.dat #except for when knitting this document, apparently
 ```
 
 By and large, snpRdata objects should be accessed via accessor functions:
@@ -132,7 +132,7 @@ genotypes(my.dat)[1:6, 1:6]
 ```
 
 
-Almost all snpR functions are built to allow overwriting for easy object management. Since calculated data is stored snpRdata objects, snpR functions generally return the snpRdata object that was given to them, but with extra data merged in. For example, to calculate observed heterozygosity, the calc_ho function can be used:
+Almost all snpR functions are built to allow overwriting for easy object management. Since calculated data is stored in snpRdata objects, snpR functions generally return the snpRdata object that was given to them, but with extra data merged in. For example, to calculate observed heterozygosity, the calc_ho function can be used:
 
 ```{r}
 # calculate observed heterozygosity, overwriting the my.dat object
@@ -140,7 +140,7 @@ my.dat <- calc_ho(my.dat)
 
 ```
 
-Calculated statistics can be fetched using the get.snpR.stats accessor function. Note that this function returns a data.frame, not a snpRdata object, and *should never be used to overwrite a snpRdata object!*. Since some calculations are run pairwise you need to specify if you want the pairwise or single stats returned. 
+Calculated statistics can be fetched using the get.snpR.stats accessor function. Note that this function returns a data.frame or nested list (depending on the requested stats), not a snpRdata object, and *should never be used to overwrite a snpRdata object!*. Since some calculations are run pairwise you need to specify if you want the pairwise or single stats returned. 
 
 ```{r}
 # fetch calculated statistics
@@ -155,23 +155,23 @@ head(ho)
 Facets are a fundamental feature of snpR. Often, SNP data must be separated by population/chromosome/family/year etc. before statistics are calculated. Additionally, many statistics, like Fst, need to be calculated *pairwise* by comparing each population to every other population. Facets allow you to easily do this without the need for direct data manipulation. 
 
 #### Basic Facets
-Facets are defined by reference to column names in either the snp or sample metadata that was provided when creating a snpRdata object. For example, the facet "pop" would split my.dat apart by the pop column in the sample metadata and run the requested function or calculation for each of the levels within that facet (eg. the facet pop comprises 6 levels - ASP, CLF, OPL, PAL, SMR, UPD). Whereas the facet "group" would split my.dat apart by the "group" column in the snp metadata (21 subfacets). 
+Facets are defined by reference to column names in either the snp or sample metadata that was provided when creating a snpRdata object. For example, the facet "pop" would split my.dat apart by the pop column in the sample metadata and run the requested function or calculation for each of the levels/subfacets within that facet (eg. the facet pop comprises 6 levels/subfacets - ASP, CLF, OPL, PAL, SMR, UPD). Whereas the facet "group" would split my.dat apart by the "group" column in the snp metadata (21 levels/subfacets) and run any specified calculation for each unique level/subfacet. 
 
 To calculate observed heterozygosity at each SNP within each population, for example, one can supply the "pop" facet.
 
 ```{r}
-my.dat <- calc_ho(my.dat, facets = "pop")
-head(get.snpR.stats(my.dat, facets = "pop", stats = "single"))
+my.dat <- calc_ho(my.dat, facets = "pop") #running the calculation
+head(get.snpR.stats(my.dat, facets = "pop", stats = "single")) #retrieving the results
 
 ```
 
 #### Complex Facets
 
-Facets can define more than one column at once, in which case the data is split by *both* columns! Within a single facet, column names are separated by a '.'.  For example, if there was both a pop and fam (or family) column in the sample metadata, the facet "pop.fam" would split by both the pop and the fam columns simultaneously, so it would have categories like "popA.famB" for an individual from population A, family B. These "complex" facets can also note both SNP and sample-specific categories simultaneously, for example, "pop.group" would split the data by the pop column in the sample metadata and the group column in the SNP metadata simultaneously.
+Facets can define more than one column at once, in which case the data is split by *both* columns! Within a single facet, column names are separated by a '.'.  For example, if there was both a pop and fam (or family) column in the sample metadata, the facet "pop.fam" would split by both the pop and the fam columns simultaneously, so it would have categories like "popA.famB" for an individual from population A, family B. These "complex" facets can also note both SNP and sample-specific categories simultaneously, for example, "pop.group" would split the data by the pop column in the sample metadata and the group column in the SNP metadata simultaneously. 
 
 ```{r}
-my.dat <- calc_ho(my.dat, "pop.fam")
-head(get.snpR.stats(my.dat, "pop.fam", stats = "single"))
+my.dat <- calc_ho(my.dat, "pop.fam") #running the calculation
+head(get.snpR.stats(my.dat, "pop.fam", stats = "single")) #retrieving the results
 ```
 
 The order of the categories given in a facet do not matter--"pop.group" will produce the same result as "group.pop".
@@ -266,11 +266,18 @@ plot_clusters also returns the raw plot data under the data element.
 
 There are other parameters that can also be tweaked in the t-SNE function, such as perplexity and theta. For more information, check out the documentation for Rtsne::Rtsne.
 
+Tip: you can specify viridis palette option for your plot! Or, if you want more customization, save the plot to a new object and use your preferred plotting library package. For example:
+
+```{r, echo=FALSE, eval=FALSE}
+a <- p$data$pca
+ggplot2::ggplot(a, aes(PC1, PC2, color=pop))+geom_point() # a simple example
+
+```
 ## Calculate minor allele frequencies, $\pi$, Ho, check for private alleles and HWE.
 
-Minor allele frequencies, $\pi$, Ho, the number of private alleles, and HWE divergence, and other basic diversity statistics are easy to calculate with snpR. Each use a very similar function, which take identical arguments. Since each returns a copy of the input snpRdata object, but with new information merged in, we can safely overwrite the original object each time we use a function.
+Minor allele frequencies, $\pi$, Ho, the number of private alleles, and HWE divergence, and other basic diversity statistics are easy to calculate with snpR. Each use a very similar function, which takes identical arguments. Since each returns a copy of the input snpRdata object, but with new information merged in, we can safely overwrite the original object each time we use these functions.
 
-Each function, like most functions, take a snpRdata object and facets as their first two arguments. Here, we'll use the my.dat object and calculate these stats splitting by fam and pop.
+Each of these functions, like most functions, take a snpRdata object and facets as their first two arguments. Here, we'll use the my.dat object and calculate various statistics splitting the dataset by fam and pop.
 
 ```{r}
 # calculate minor allele frequencies, pi, ho, check for private alleles and HWE.
@@ -285,7 +292,7 @@ my.dat <- calc_hwe(my.dat, "fam.pop")
 We can then use get.snpR.stats to view the results!
 
 ```{r}
-stats <- get.snpR.stats(my.dat, "all", stats = "single") # using the "all" facet requests statistics for all facets that have been run.
+stats <- get.snpR.stats(my.dat, "all", stats = "single") # using the "all" facet requests statistics for all facets that have been run. Specify that the returned stats are of the "single" type and not a different kind (eg. "pairwise", "association")
 
 head(stats)
 ```
@@ -385,7 +392,7 @@ Now, we'll calculate pairwise LD for one population. We'll use Burrow's Composit
 Since LD comparisons take a while, it can be worthwhile to run only a few different categories of a given facet. The snpR LD function can do this with the "subfacet" argument. This argument takes a named list, where each entry contains the categories to run for a specific facet. For example:
 
 ```{r, results="hide"}
-list(pop = "ASP", group = "groupIX")
+list(pop = "ASP", group = "groupIX") #
 
 ```
 would run the ASP population for the groupIX chromosome, whereas
@@ -494,10 +501,10 @@ Association methods include gmmat, armitage, odds ratio, and chi squared tests s
 ```{r, results='hide'}
 # stickSNPs does not have categorical phenotypic metadata so we will need to create some for this example
 # add a dummy phenotype and run an association test.
-  x <- stickSNPs
-  sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
-  x <- calc_association(x, facets = c("pop"), response = "phenotype", method = "armitage")
-  get.snpR.stats(x, "pop", "association")
+x <- stickSNPs
+set.seed(5465)
+sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+x <- calc_association(x, facets = c("pop"), response = "phenotype", method = "armitage")
   
 ```
 
@@ -506,6 +513,17 @@ Retrieving association statistics is similar to other stats commands (see docume
 stats <- as.data.frame(get.snpR.stats(x = x, facets = "pop", stats = "association")) 
 head(stats)
 ```
+
+## Pedigree Construction and visualization
+snpR has a workflow to export snpRdata objects for parentage assignment using COLONY (citation) or runnin natively in R using Sequoia (citation)!
+
+function write.colony
+function run_sequoia
+function pedigree
+* visPedigree package by (citation) and other option by kinship2 package (citation)
+
+EXAMPLES
+
 
 ## Table of supported export formats 
 
