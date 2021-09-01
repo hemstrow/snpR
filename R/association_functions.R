@@ -415,7 +415,11 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   the Armitage association method. See description for details.
 #' @param formula charcter, default set to response ~ 1. Null formula for the
 #'   response variable, as described in \code{\link[stats]{formula}}.
-#' @param family.override character, default NULL.
+#' @param family.override character, default NULL. Provides an alternative
+#'   model family object to use for GMMAT GWAS regression. By default, uses
+#'   \code{\link[stats]{gaussian}}, link = "identity" for a quantitative
+#'   phenotype and \code{\link[stats]{binomial}}, link = "logit" for a
+#'   categorical phenotype.
 #' @param maxiter numeric, default 500. Maximum iterations to use when fitting
 #'   the glmm when using the gmmat.score option.
 #' @param sampleID character, default NULL. Optional, the name of a column in

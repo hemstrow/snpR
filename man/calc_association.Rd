@@ -42,7 +42,11 @@ the Armitage association method. See description for details.}
 \item{formula}{charcter, default set to response ~ 1. Null formula for the
 response variable, as described in \code{\link[stats]{formula}}.}
 
-\item{family.override}{character, default NULL.}
+\item{family.override}{character, default NULL. Provides an alternative
+model family object to use for GMMAT GWAS regression. By default, uses
+\code{\link[stats]{gaussian}}, link = "identity" for a quantitative
+phenotype and \code{\link[stats]{binomial}}, link = "logit" for a
+categorical phenotype.}
 
 \item{maxiter}{numeric, default 500. Maximum iterations to use when fitting
 the glmm when using the gmmat.score option.}
