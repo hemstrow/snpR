@@ -1591,6 +1591,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       if(use_pop_info & is.null(facet)){
         stop("Cannot use population info if a facet is not provided.\n")
       }
+      
+      if(iterations <= 1){
+        msg <- c(msg, "Cannot have one or fewer iterations.\n")
+      }
     }
 
     if(length(facet) > 1){
@@ -2204,6 +2208,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
         
       }
+      osp <- options()$scipen
+      options(scipen = 999)
 
       # write the mainparams file
       mainparams <- c(paste0("#define BURNIN ", burnin),
@@ -2307,10 +2313,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
           lndat <- lndat[sline:(sline + 2)]
           lndat <- as.numeric(gsub("^.+= ", "", lndat))
           cv_storage[which(cv_storage$K == i & cv_storage$rep == j),3:5] <- lndat
+
+          
           
           seed <- seed + 1
         }
       }
+      
+      options(scipen = osp)
       
       
       
