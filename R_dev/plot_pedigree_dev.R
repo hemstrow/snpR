@@ -87,16 +87,16 @@ for(i in 1:n.tasks){
   tp <- visPedigree::tidyped(data) #but want to save each version so they can be accessed somehow later
   visPedigree::visped(tp) #want to somehow add plotting options (colors, pruning)
   
-  #somehow specify plotting visPedigree vs kinship2 and respond differently - and different if sequoia or colony based input
+###somehow specify plotting visPedigree vs kinship2 and respond differently - and different if sequoia or colony based input
   
 }
             
             }
   }
   
+### need to remember to have option to remove individuals without family assigned (mum or dad NA) when plotting so that it looks cleaner   
   
-  
-
+###now there is a fake pedigree
   
 
   ###Will's from 8 Aug 2021
