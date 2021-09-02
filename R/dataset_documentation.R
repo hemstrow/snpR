@@ -51,9 +51,10 @@
 #'@references Hemstrom et al (in prep)
 "stickFORMATs"
 
-"stickPED"
 
-#'Contains an artificially constructed pedigree based on the 
-#'\code{\link{stickSNPs}} dataset. Here samples named 1 through 420 represent 
-#'the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
-#'individuals inferred via pedigree construction are affixed with "f" or "m". 
+
+#' Contains an artificially constructed pedigree based on the 
+#' \code{\link{stickSNPs}} dataset. Here samples named 1 through 420 represent 
+#' the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
+#' individuals inferred via pedigree construction are affixed with "f" or "m". 
+"stickPED"
