@@ -16,7 +16,7 @@ Stickleback collected in 2015 from several locations in the Deschutes River,
 Oregon, USA. For more information, see Hemstrom et al (in prep).
 }
 \details{
-Genotypes noted as two characters repesenting bases sequenced at a specific
+Genotypes noted as two characters representing bases sequenced at a specific
 site (e.g. "CC" or "GT"). Each SNP occupies one row, each sample occupies on
 column. Missing data coded as "NN".
 
