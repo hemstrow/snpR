@@ -16,6 +16,9 @@ test_that("structure",{
   expect_true(max(p$plot_data$Percentage) <= 1)
   expect_equal(as.character(unique(p$plot_data$pop)), c("ASP", "PAL"))
   # not internally calced, just a check for proper prep and parsing. Note that the K plot details were all checked against structure harvester
+  
+  expect_error(plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE, iterations = 1),
+               regexp = "one or fewer iterations")
 })
 
 
