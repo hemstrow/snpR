@@ -2206,8 +2206,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         if(num.cats != kmax & use_pop_info){
           stop(paste0("k must be set to the same value as the number of levels of the provided facet (", num.cats, ").\n"))
         }
-        
       }
+      
+      tag <- stringi::stri_rand_strings(1, "10")
+      
       osp <- options()$scipen
       options(scipen = 999)
 
@@ -2302,7 +2304,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       for(j in 1:reps){
         for(i in k){
           # run structure
-          outfile <- paste0("structure_outfile_k", i, "_r", j)
+          outfile <- paste0("structure_outfile_k", i, "_r", j, "_", tag)
           cmd <- paste0(structure_path, " -K ", i, " -o ", outfile, " -D ", seed)
           
           system(cmd)
@@ -2356,7 +2358,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       
       
       # read in qlist
-      qlist <- parse_qfiles("_f")
+      qlist <- parse_qfiles(paste0(tag, "_f"))
       
       # end if doing use_pop_info
       if(use_pop_info){
