@@ -515,14 +515,78 @@ head(stats)
 ```
 
 ## Pedigree Construction and visualization
-snpR has a workflow to export snpRdata objects for parentage assignment using COLONY (citation) or runnin natively in R using Sequoia (citation)!
+snpR has a workflow to export snpRdata objects for parentage assignment using COLONY (Jones and Wang, 2010) or running natively in R using Sequoia (Huisman, 2017). COLONY has a robust clustering algorithm, but requires more knowledge about the sample set and manipulation of data to run the analyses. It is a little more challenging to use with datasets that could comprise multiple generations. Sequoia is a great option for quickly running multi-generational samples with less known metadata.
 
-function write.colony
-function run_sequoia
+#### COLONY
+Formatting data to run in COLONY can be difficult with complicated datasets, but snpR can help make the process easier. The function write_colony_input takes a snpR object and writes a file that can be pulled into the commandline based COLONY interface.
+
+write_colony_input writes a text file formatted for the COLONY commandline interface which is saved in a folder named 'colony' in your working directory. If the folder does not already exist, one will automatically be created. 
+
+If you do not split out data into paternal, maternal, and offspring groups before running the write_colony_input function, COLONY will run analyses as if all samples are potential siblings. If you have known males, females, offspring, or at least birth years, you can manually split out the data using subset_snpRdata. 
+
+There are many parameters that can be specified for COLONY- check the COLONY manual and snpR documentation for more details. 
+
+```{r, echo=FALSE, eval=FALSE}
+# example to produce COLONY input file for all individuals as potential siblings
+write_colony_input(x = stickSNPs, outfile = "sticksnps1.dat", sampleIDs = .sample.id, seed = 4562)
+```
+
+Preparing runs in COLONY with potential parents is more complicated and requires preparation.
+```{r, eval=FALSE, echo=FALSE}
+# a more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating more snpR objects.
+
+# first creating new variables for the dataset 
+a <- 2013:2015 # possible birthyears
+b <- c("M", "F", "U") # possible sexes
+stk <- stickSNPs # new snpR object to manipulate
+sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) # create birthyears
+sample.meta(stk)$ID <- 1:nsamps(stk) # create unique sampleID
+sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+
+# generating snpR objects for male and female potential parents and offspring (selecting only inds with "known" sex)
+lsir <- which(stk@sample.meta$Sex =="M" & stk@sample.meta$BirthYear == "2013") # list sires
+ldam <- which(stk@sample.meta$Sex =="F" & stk@sample.meta$BirthYear == "2013") # list dams
+loff <- which(stk@sample.meta$BirthYear %in% c("2014","2015")) # list of offspring
+
+# creating new snpR objects for Colony formatting
+sir <- subset_snpR_data(x = stk, .samps = lsir) 
+dam <- subset_snpR_data(x = stk, .samps = ldam)
+off <- subset_snpR_data(x = stk, .samps = loff)
+
+# ok, now ready to write colony input
+write_colony_input(x = off, maternal_genotypes = dam, paternal_genotypes = sir, outfile = "sticksnps2.dat", seed = 5674) # see the documentation for write_colony_input for details on more options
+
+```
+#### Sequoia
+Another option is to use Sequoia! The function run_sequoia is designed to take a snpR data object and run parentage analysis and pedigree construction. There are additional arguments and parameters that can be added in the base run_sequoia function (see the Sequoia and run_sequoia documentation for more details). 
+
+Sequoia requires use of snps with high minor allele frequency (~0.3 or more), snpR objects can be filtered in the command directly! Do note that SNPs that are in fewer than 50% of individuals will be automatically dropped by sequoia.
+
+Now let's go through an example of parentage and pedigree construction with sequoia.
+```{r}
+# actually going to run this since native in R and relatively quick to complete
+
+# first creating new variables for the dataset 
+a <- 2013:2015 # possible birthyears
+b <- c("M", "F", "U") # possible sexes
+stk <- stickSNPs # new snpR object to manipulate
+sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) # create birthyears
+sample.meta(stk)$ID <- 1:nsamps(stk) # create unique sampleID
+sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+
+# data does not need to be subset to run sequoia!!
+stk.par <- run_sequoia(x = stk, facets = "pop", run_dupcheck = FALSE, run_parents = TRUE, run_pedigree = FALSE, min_maf = 0.3) # sequoia requires use of snps with high minor allele frequency
+
+
+
+```
+
+#### Visualizing your pedigrees
 function pedigree
 * visPedigree package by (citation) and other option by kinship2 package (citation)
+* visPedigree was written for use in wild animals.
+* visPedigree default view is by generation, not by BirthYears
 
-EXAMPLES
 
 
 ## Table of supported export formats 
