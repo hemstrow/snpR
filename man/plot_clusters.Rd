@@ -125,7 +125,14 @@ Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
 UMAP similarly attempts to reduce multi-dimensional results to a two
 dimensional visualization.
 
-For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
+Note that clusters and relative positions of samples from both tSNE and UMAP 
+may not reliably represent the relationships present in the higher PCA
+dimensions from which they are created. As such, it is probably not wise to
+use these methods to draw conclusions about relationships. They are useful
+exploratory tools, however, and so are kept available here.
+
+
+For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.
 
 Additional arguments to the UMAP can be also be provided. Additional
