@@ -231,7 +231,7 @@ A common first analytical step for new data is to run a PCA to look for any evid
 
 Note 
 
-* A PCA cannot be constructed with missing data, so we interpolate with the average number of each allele across all individuals as the default ("bernoilli"). There are other interpolation methods available in this package (see plot_clusters documentation for more details). 
+* A PCA cannot be constructed with missing data, so we interpolate with the average number of each allele across all individuals as the default ("bernoulli"). There are other interpolation methods available in this package (see plot_clusters documentation for more details). 
 * Filtering data to remove poorly sequenced individuals and loci before PCA is recommended. 
 * tSNE and UMAP require installation of additional libraries in order to run.
 
@@ -587,7 +587,7 @@ stk.ped <- run_sequoia(x = stk, facets = "pop", run_dupcheck = FALSE, run_parent
 This command returns nested lists of outputs, for each layer of analysis and facet. Since the stickSNPs dataset does not have any parents assigned, we have made an artificial pedigree - stickPED.  
 
 #### Visualizing your pedigrees
-Assignment results from COLONY or sequoia can be plotted using a handful of packages. Here we have chosen to use visPedigree () which has a native R integration. 
+Assignment results from COLONY or sequoia can be plotted using a handful of packages. snpR has a function calling on visPedigree (Sheng, 2018) to make plots from COLONY BestCluster or sequoia pedigree construction outputs. 
 
 *****need to get the function going! better
 * color options

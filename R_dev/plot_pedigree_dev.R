@@ -23,8 +23,8 @@
 #' 
 #'@examples
 #'# output from run_sequoia 
-#'# output from other pedigree construction programs
-#'# example pedigree for stickSNPs
+#'# output from COLONY Best Cluster
+#'# example pedigree stickPED
 
 plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){  
   #===================sanity checks===============
@@ -65,7 +65,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
   }
   
   # after the if above, x should be a run_sequoia output object even if it was originally a snpRdata object. 
-  ## shouldn't it get saved to something new, instead of overwriting the snpR object? eg. x2, but then it makes keeping track of the facet options difficult. maybe later
+  ## shouldn't it get saved to something new, instead of overwriting the snpR object? eg. x2, but then it makes keeping track of the facet options difficult. 
   
   # to grab the parts of the nested pedigree list we want, can use purrr::map
   # e.x. purrr::map(x, c("pedigree", "Pedigree"))
@@ -74,7 +74,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
   if(!is.snpRdata(x)){ #actually run_sequoia will result in a list - so then x will be a list
     if(class(x) == "list"){
 
-            x <- purrr::map(x, c("pedigree", "Pedigree")) #but if fed in from colony it would be a data.frame..?    
+            x <- purrr::map(x, c("pedigree", "Pedigree")) #but if data is from colony it would probably be a data.frame    
     #if it was run with facets there will be sublists
             n.tasks <- length(x) # is there some way to grab the names to make specific named tasks? <- yes in sequoia_interface
             #how to access the list elements ? maybe more purrr maps?
@@ -84,7 +84,7 @@ for(i in 1:n.tasks){
   #grab the pedigree information from the appropriate list part - and currently without filtering inds (via LLR -seq or prob - col)
   x2 <- purrr::map(.x = x, .f = [[i]])  # basically want to grab the pedigree results from the output for each facet and then run it through and save in something later but this isn't quite the right way to do this
   #how to grab the first elements of the list?
-  data <- x2[] #need to find (id, dam, and sire) and rearrange the order to feed into visped - so that the order is id, sire, dam 
+  data <- x2[,c(1,3,2)] #need to find (id, dam, and sire) and rearrange the order to feed into visped - so that the order is id, sire, dam 
   tp <- visPedigree::tidyped(data) #but want to save each version so they can be accessed somehow later
   visPedigree::visped(tp) #want to somehow add plotting options (colors, pruning)
   
