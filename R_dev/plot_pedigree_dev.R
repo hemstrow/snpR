@@ -31,7 +31,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
   # check that data is in the correct format
   # snpr object then run sequoia
   # list - then extract and proceed
-  
+  # option for filtering based on LLR scores? or just have people filter the output first and then go through with the plotting?
   
   # ensure necessary packages are installed
   check.installed("visPedigree", install.type = "github", "luansheng/visPedigree") #luansheng/visPedigree
@@ -71,7 +71,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
   # e.x. purrr::map(x, c("pedigree", "Pedigree"))
   # this will collapse the list down a bit
   
-  if(!is.snpRdata(x)){ #actually run_sequoia will result in a list - so then x will be a list
+  if(!is.snpRdata(x)){ #run_sequoia will result in a list - so then x will be a list
     if(class(x) == "list"){
 
             x <- purrr::map(x, c("pedigree", "Pedigree")) #but if data is from colony it would probably be a data.frame    
@@ -84,10 +84,12 @@ for(i in 1:n.tasks){
   #grab the pedigree information from the appropriate list part - and currently without filtering inds (via LLR -seq or prob - col)
   x2 <- purrr::map(.x = x, .f = [[i]])  # basically want to grab the pedigree results from the output for each facet and then run it through and save in something later but this isn't quite the right way to do this
   #how to grab the first elements of the list?
-  data <- x2[,c(1,3,2)] #need to find (id, dam, and sire) and rearrange the order to feed into visped - so that the order is id, sire, dam 
+  data <- x2[,c(1,3,2)] #need to find (id, dam, and sire) and rearrange the order to feed into visped - so that the order is id, sire, dam instead of the sequoia output format id, dam, sire
   tp <- visPedigree::tidyped(data) #but want to save each version so they can be accessed somehow later
   visPedigree::visped(tp) #want to somehow add plotting options (colors, pruning)
-  
+
+  #but need to add in options for colors ... and more 
+    
 ###somehow specify plotting visPedigree vs kinship2 and respond differently - and different if sequoia or colony based input
   
 }

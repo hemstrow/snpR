@@ -233,7 +233,7 @@ Note
 
 * A PCA cannot be constructed with missing data, so we interpolate with the average number of each allele across all individuals as the default ("bernoulli"). There are other interpolation methods available in this package (see plot_clusters documentation for more details). 
 * Filtering data to remove poorly sequenced individuals and loci before PCA is recommended. 
-* tSNE and UMAP require installation of additional libraries in order to run.
+* tSNE and UMAP require installation of additional libraries in order to run (see documentation for more details).
 
 Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that. If you recall, "fam" was created earlier for my.dat in the snpRdata objects section.  
 
@@ -268,7 +268,7 @@ There are other parameters that can also be tweaked in the t-SNE function, such 
 
 Tip: you can specify viridis palette option for your plot! Or, if you want more customization, save the plot to a new object and use your preferred plotting library package. For example:
 
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=TRUE, eval=FALSE}
 a <- p$data$pca
 ggplot2::ggplot(a, aes(PC1, PC2, color=pop))+geom_point() # a simple example
 
@@ -528,15 +528,15 @@ If you do not split out data into paternal, maternal, and offspring before runni
 
 Let's go through an example to produce a simple COLONY input file. In this example all individuals would be run as potential siblings in COLONY. 
 
-```{r, echo=FALSE, eval=FALSE}
-# Note: this code is not
+```{r, echo=TRUE, eval=FALSE}
+# Note: code not run for simplicity
 write_colony_input(x = stickSNPs, outfile = "sticksnps1.dat", sampleIDs = .sample.id, seed = 4562)
 ```
 
 Preparing COLONY with candidate parents requires more preparation and knowledge about your dataset.
-```{r, eval=FALSE, echo=FALSE}
+```{r, eval=FALSE, echo=TRUE}
 # a more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating more snpR objects.
-# not running this code for simplicity
+# Note: code not run for simplicity
 
 # first creating new variables for the dataset 
 a <- 2013:2015 # possible birthyears
@@ -566,8 +566,8 @@ Another option is to use Sequoia! The function run_sequoia is designed to take a
 Sequoia requires use of snps with high minor allele frequency (~0.3 or more), snpR objects can be filtered in the command directly! Do note that SNPs that are in fewer than 50% of individuals will be automatically dropped by sequoia. There are additional arguments and parameters that can be added in the base run_sequoia function (see the sequoia and run_sequoia documentation for more details).
 
 Now let's go through an example of parentage and pedigree construction with sequoia.
-```{r, eval=FALSE, echo=FALSE}
-# not running this code for simplicity
+```{r, eval=FALSE, echo=TRUE}
+# Note: code not run for simplicity
 
 # first creating new variables for the dataset 
 a <- 2013:2015 # possible birthyears
