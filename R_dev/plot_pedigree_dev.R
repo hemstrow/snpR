@@ -64,7 +64,7 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
     x <- run_sequoia(x, run_parents = TRUE, run_pedigree = TRUE, run_dupcheck = TRUE, min_maf = 0.3, min_ind = 0.5, ...) #this can take some time
   }
   
-  # after the if above, x should be a run_sequoia output object even if it was originally a snpRdata object. 
+  # after the if(is.snpRdata(x)) above, x should be a run_sequoia output object even if it was originally a snpRdata object. 
   ## shouldn't it get saved to something new, instead of overwriting the snpR object? eg. x2, but then it makes keeping track of the facet options difficult. 
   
   # to grab the parts of the nested pedigree list we want, can use purrr::map
@@ -75,10 +75,16 @@ plot_pedigree <- function(x, plot.type = "visped", facets = ".base", ...){
     if(class(x) == "list"){
 
             x <- purrr::map(x, c("pedigree", "Pedigree")) #but if data is from colony it would probably be a data.frame    
-    #if it was run with facets there will be sublists
-            n.tasks <- length(x) # is there some way to grab the names to make specific named tasks? <- yes in sequoia_interface
-            #how to access the list elements ? maybe more purrr maps?
+    #if it was run with facets there will be sub-lists
 
+            #from run_sequoia           
+  # prep facets 
+            facets <- check.snpR.facet.request(x, facets, "none")
+            x <- add.facets.snpR.data(x, facets) # but 
+            tasks <- get.task.list(x, facets = facets)
+  # initialize
+            out <- vector("list", nrow(tasks)) #what do we actually want to have returned? a list would be ok, and I think the forma that run_sequoia will return anyways ...
+            
 #==================run===========================       
 for(i in 1:n.tasks){
   #grab the pedigree information from the appropriate list part - and currently without filtering inds (via LLR -seq or prob - col)
