@@ -13,18 +13,14 @@
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Sample-specific facets over which the
 #'   sequoia is called to run. See \code{\link{Facets_in_snpR}}.
-#' @param run_dupcheck FALSE or TRUE, default FALSE. Determines if a Sequoia
-#'   function used to check for duplicate samples in the dataset should be run
-#'   prior to further analysis. This is generally recommended.
-#' @param run_parents FALSE or TRUE, default FALSE. Determines if a Sequoia
-#'   function to assign parents should be run. This runs quickly and is required
-#'   before running the run_pedigree command.
-#' @param run_pedigree FALSE or TRUE, default FALSE. Determines if a Sequoia
-#'   function to construct full pedigree for the sample set should be run. This
-#'   can take a while, since sibship clustering takes a lot of time for larger
-#'   datasets.
-#' @param pMaxSibIter numeric in 1:25, default 10. Maximum iterations to run for
-#'   sibship clustering. Only specified for run_pedigree argument.
+#' @param run_dupcheck FALSE or TRUE, default FALSE. Uses sequoia to check for 
+#'   duplicate samples in the dataset. Duplicate samples should not be included 
+#'   for parentage and pedigree construction. 
+#' @param run_parents FALSE or TRUE, default FALSE. Runs parentage assignments 
+#'   for the samples. This runs quickly and is required before using the 
+#'   run_pedigree command.
+#' @param run_pedigree FALSE or TRUE, default FALSE. Runs pedigree construction 
+#'   for the samples. This process can take a long time. 
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 #'   cutoff for analysis. Sequoia requires high minor allele frequencies for
 #'   parentage and pedigree construction, so it is not generally recommended to
@@ -39,6 +35,7 @@
 #' @return A data.frame for each facet specified with sequoia output summary
 #'   information.
 #'
+#' @export
 #' @author William Hemstrom
 #' @author Melissa Jones
 #'
@@ -47,42 +44,65 @@
 #'   17, 1009–1024.
 #'
 #' @examples
-#' # to follow an example using the stickSNPs example dataset you need to add some variables that don't exist in the actual dataset.
+#' # to follow an example using the stickSNPs example dataset you need to add some variables 
+#' # that don't exist in the actual dataset.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
-#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create birth years
+#' set.seed(4865)
+#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create 
+#' # birth years
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
-run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, pMaxSibIter = 10, min_maf = 0.3, min_ind = 0.5, ...){
+run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, min_maf = 0.3, min_ind = 0.5, ...){
   
   #===================sanity checks===============
-  
   # check that provided snpRdata objects are in the correct format
-    if(class(x) != "snpRdata"){
-      stop("Not a snpRdata object.\n")
-    }
+  if(class(x) != "snpRdata"){
+    stop("Not a snpRdata object.\n")
+  }
   
-  check.installed("sequoia")
+  check.installed("sequoia", "github", "JiscaH/sequoia")
+  if(packageVersion("sequoia") < as.package_version("2.2")){
+    cat("Sequoia version is too old, version 2.2 or greater is required.\n")
+    check.installed("remotes")
+    remotes::install_github("JiscaH/sequoia", ref = "stable")
+  }
+  
   
   msg <- character(0)
+  warn <- character(0)
   
   if(run_pedigree & !run_parents){
     msg <- c(msg, "Parents must be run before pedigree construction!\n")
   }
-
-  if(run_pedigree){
-    if(pMaxSibIter < 0 | pMaxSibIter >= 25 ){ 
-      msg <- c(msg, "Must include MaxSibIter value greater than 0 and less than 25 for pedigree construction!\n")
-    }
-  }
   
   if(min_maf < 0.25){
-    warning("Minumum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
+    warn <- c(warn, "Minimum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
   }
   if(min_ind < 0.5){
-    warning("Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
+    warn <- c(warn, "Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
+  }
+  
+  req.columns <- c("ID", "Sex")
+  if(any(!req.columns %in% colnames(sample.meta(x)))){
+    msg <- c(msg, "Columns named 'ID' and 'Sex' are required in the sample metadata.\n")
+  }
+  
+  # check columns in metadata
+  col_logi <- sum(c("BirthYear" %in% colnames(sample.meta(x)),
+                    sum(c("BY.min", "BY.max") %in% colnames(sample.meta(x))) == 2))
+  
+  if(col_logi == 0){
+    msg <- c(msg, "Columns named either BirthYear or both BY.min and BY.max are required in sample meta.\n")
+  }
+  else if(col_logi == 2){
+    warn <- c("Both BirthYear, BY.min, and BY.max are contained in the sample metadata, defaulting to BirthYear. To change this behavior, remove the BirthYear column.\n")
+  }
+  
+  if(length(warn) > 0){
+    warning(warn)
   }
   
   if(length(msg) > 0){
@@ -128,16 +148,16 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     
     # run sequoia
     if(run_dupcheck){
-      dups <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = -1)
+      dups <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Module = "dup")
       out[[i]]$dups <- dups
     }
     
     if(run_parents){
-      out[[i]]$parents <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, MaxSibIter = 0, ...)
+      out[[i]]$parents <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Module = "par", ...)
     }
     
     if(run_pedigree){
-      out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, MaxSibIter = pMaxSibIter, ...) 
+      out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, Module = "ped", ...) 
     }
   }
   return(out)
