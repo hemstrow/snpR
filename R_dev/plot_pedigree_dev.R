@@ -48,7 +48,7 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
     }
   }
   
-  if(all(x$id %in% c("0", "NA", "*", " ", ","))) {
+  if(all(sample.meta(x)$id %in% c("0", "NA", "*", " ", ","))) { #mj note hopefully didn't wreck this
     stop("Sample id cannot be 0, NA, asterisk, blank space, or comma. \n")
   }
   
@@ -59,7 +59,6 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
   #===================prep=========================
   
   # well the data needs to be either 1) output from run_sequoia or 2) independent pedigree construction (individual id order needs to be 1 id, 2 sire, 3 dam)
-  browser()
   err.msg <- "Input data (x) in unrecognized format. See documentation for accepted formats.\n"
   if(is.snpRdata(x)){
     # run run_sequoia, grab the output as x.

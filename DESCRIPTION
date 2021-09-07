@@ -69,6 +69,7 @@ Suggests:
     umap,
     vcfR,
     viridis,
+    visPedigree,
     testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
