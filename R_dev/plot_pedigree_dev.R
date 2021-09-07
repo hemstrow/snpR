@@ -42,11 +42,13 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
   
   msg <- character(0)
   
-  if(!all(c("sire", "dam", "id", "sex") %in% colnames(sample.meta(x)))) {
-    warning("Need columns sire, dam, id, and sex in the dataset. \n")
+  if(is.snpRdata(x)){
+    if(!all(c("sire", "dam", "id", "sex") %in% colnames(sample.meta(x)))) {
+      warning("Need columns sire, dam, id, and sex in the dataset. \n")
+    }
   }
   
-  if(x$id %in% c("0", "NA", "*", " ", ",")) {
+  if(all(x$id %in% c("0", "NA", "*", " ", ","))) {
     stop("Sample id cannot be 0, NA, asterisk, blank space, or comma. \n")
   }
   
@@ -57,14 +59,14 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
   #===================prep=========================
   
   # well the data needs to be either 1) output from run_sequoia or 2) independent pedigree construction (individual id order needs to be 1 id, 2 sire, 3 dam)
-
+  browser()
   err.msg <- "Input data (x) in unrecognized format. See documentation for accepted formats.\n"
   if(is.snpRdata(x)){
     # run run_sequoia, grab the output as x.
     x <- run_sequoia(x, facets = facets, run_parents = TRUE, run_pedigree = TRUE, run_dupcheck = run_dupcheck,
                      min_maf = 0.3, min_ind = 0.5, ...) #this can take some time
   }
-  else if(is.list(x)){
+  else if(is.list(x) & !is.data.frame(x)){
     if(!sum(unlist(lapply(lapply(x, names), function(x) "pedigree" %in% x))) == length(x) & length(x) > 0){
       stop(err.msg)
     }
@@ -92,15 +94,6 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
       stop(err.msg)
     }
   }
-  
-  # to grab the parts of the nested pedigree list we want, can use purrr::map
-  # e.x. purrr::map(x, c("pedigree", "Pedigree"))
-  # this will collapse the list down a bit
-  
-
-  x <- purrr::map(x, c("pedigree", "Pedigree")) #but if data is from colony it would probably be a data.frame    
-  #if it was run with facets there will be sub-lists
-  
   
   # initialize
   out <- vector("list", length(x)) #what do we actually want to have returned? a list would be ok, and I think the forma that run_sequoia will return anyways ...
