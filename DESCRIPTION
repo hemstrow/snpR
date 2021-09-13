@@ -84,7 +84,6 @@ Collate:
     'internals.R'
     'plotting_functions.R'
     'sequoia_interface.R'
-    'sequoia_interface_II.R'
     'sfs_functions.R'
     'smoothing_functions.R'
     'snpRdata.R'
