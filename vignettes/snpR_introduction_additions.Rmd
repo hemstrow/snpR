@@ -584,10 +584,18 @@ stk.ped <- run_sequoia(x = stk, facets = "pop", run_dupcheck = FALSE, run_parent
 
 ```
 
-This command returns nested lists of outputs, for each layer of analysis and facet. Since the stickSNPs dataset does not have any parents assigned, we have made an artificial pedigree - stickPED.  
+This command returns nested lists of outputs, for each layer of analysis and facet. Since the stickSNPs dataset does not have many parents assigned, we have made an artificial pedigree - stickPED.  
 
 #### Visualizing your pedigrees
 Assignment results from COLONY or sequoia can be plotted using a handful of packages. snpR has a function calling on visPedigree (Sheng, 2018) to make plots from COLONY BestCluster or sequoia pedigree construction outputs. 
+
+Running the plot_pedigree function will run sequoia and construct a pedigree if it is supplied a snpR object. Note that this function returns a list and is **not overwrite safe!** If plot_pedigree is supplied a list from a previous run of sequoia or a data.frame from COLONY BestCluster output it will construct a plot. 
+
+```{r}
+#example with stickSNPs snpR object (reminder: we made an oject stk - with additional needed metadata in the prior example)
+a <- plot_pedigree(stk)
+
+```
 
 *****need to get the function going! better
 * color options

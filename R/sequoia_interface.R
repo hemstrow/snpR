@@ -8,7 +8,7 @@
 #' change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
 #' etc.) See documentation for \code{\link[sequoia]{sequoia}}. These can be
 #' passed to the pedigree and parentage reconstructions using the ... argument
-#' to run_sequoia.
+#' in run_sequoia.
 #'
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Sample-specific facets over which the
@@ -23,17 +23,16 @@
 #'   for the samples. This process can take a long time. 
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 #'   cutoff for analysis. Sequoia requires high minor allele frequencies for
-#'   parentage and pedigree construction, so it is not generally recommended to
-#'   reduce this number.
+#'   parentage and pedigree construction.
 #' @param min_ind numeric in 0.5:1, default 0.5. Removes loci sequenced in less
 #'   than this proportion of individuals. Note that \emph{individuals} with
-#'   genotypes for less than half of the loci will be automatically removed by
+#'   genotypes for fewer than half of the loci will be automatically removed by
 #'   sequoia.
 #' @param ... Additional arguments passed to \code{\link[sequoia]{sequoia}}
 #'   (during parentage and pedigree reconstruction).
 #'
-#' @return A data.frame for each facet specified with sequoia output summary
-#'   information.
+#' @return A nested list with each facet specified containing sequoia output 
+#'   summary information.
 #'
 #' @export
 #' @author William Hemstrom
@@ -55,6 +54,7 @@
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
+#' ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, run_pedigree = TRUE)
 run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, min_maf = 0.3, min_ind = 0.5, ...){
   
   #===================sanity checks===============
@@ -79,10 +79,10 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   }
   
   if(min_maf < 0.25){
-    warn <- c(warn, "Minimum minor allele frequencies below 0.25 are not recommended for sequoia.\n")
+    warn <- c(warn, "Minor allele frequencies below 0.25 are not recommended for sequoia.\n")
   }
   if(min_ind < 0.5){
-    warn <- c(warn, "Genotypes sequenced in less than 50% of individuals will automatically be removed by Sequoia.\n")
+    warn <- c(warn, "Genotypes sequenced in fewer than 50% of individuals will automatically be removed by Sequoia.\n")
   }
   
   req.columns <- c("ID", "Sex")
