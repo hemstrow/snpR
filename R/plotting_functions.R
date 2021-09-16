@@ -1980,7 +1980,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     qlist[, genback := paste0("generation ", qlist$genback - 1)]
     if(!is.null(facet)){
       upc <- c(3, 7)
-      upc <- unique(qlist[,..upc])
+      upc <- .fix..call(unique(qlist[,..upc]))
       qlist[, ancestry_pop := upc$clean_popid[match(qlist$ancestry_pop, upc$popid)]]
       qlist[, popid := clean_popid]
     }

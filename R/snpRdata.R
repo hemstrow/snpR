@@ -825,7 +825,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison"))){
       return(NULL)
     }
-    return(as.data.frame(y[keep.rows, ..keep.cols], stringsAsFactors = FALSE))
+    return(as.data.frame(.fix..call(y[keep.rows, ..keep.cols]), stringsAsFactors = FALSE))
   }
   
   extract.LD <- function(y, facets){

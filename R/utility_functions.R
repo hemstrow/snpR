@@ -458,7 +458,9 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
 #'non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
 #'SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
-#'two observed alleles.} }
+#'two observed alleles. This is mostly an internal argument, since the various
+#'snpRdata import options use it automatically to prevent downstream errors in
+#'other snpR functions. } }
 #'
 #'Note that filtering out poorly sequenced individuals creates a possible
 #'conflict with the loci filters, since after individuals are removed, some loci
@@ -470,50 +472,64 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'To counter this, the "re_run" argument can be used to pass the data through a
 #'second filtering step after individuals are removed. By default, the "partial"
 #'re-run option is used, which re-runs only the non-polymorphic filter (if it
-#'was originally set), since these may cause downstream analysis errors. The
-#'"full" option re-runs all set filters. Note that re-running any of these
-#'filters may cause individuals to fail the individual filter after loci
-#'removal, and so subsequent tertiary re-running of the individual filters,
-#'followed by the loci filters, and so on, could be justified. This function
-#'stops after the second loci re-filtering, since that step is likely to be the
-#'most important to prevent downstream analytical errors.
+#'was originally set). The "full" option re-runs all set filters. Note that
+#'re-running any of these filters may cause individuals to fail the individual
+#'filter after loci removal, and so subsequent tertiary re-running of the
+#'individual filters, followed by the loci filters, and so on, could be
+#'justified. This is not done automatically here.
 #'
-#'Via the "maf.filter" argument, this function can filter by minor allele
+#'Via the "maf_facets" argument, this function can filter by minor allele
 #'frequencies in either \emph{all} samples or \emph{each level of a supplied
 #'sample specific facet and the entire dataset}. In the latter case, any SNPs
 #'that pass the maf filter in \emph{any} facet level are considered to pass the
-#'filter. The latter should be used in instances where populaiton sizes are very
-#'different or there are \emph{many} populations, and thus common alleles of
-#'interest in one population might be otherwise filtered out. With very small
-#'populations, however, this may leave noise in the sample! In most cases,
-#'filtering the entire dataset is sufficient. Facets should be provided as
-#'described in \code{\link{Facets_in_snpR}}.
+#'filter. The latter should be used in instances where population sizes are very
+#'different, there are \emph{many} populations, and/or allele frequencies are
+#'very different between populations and thus common alleles of interest in one
+#'population might be otherwise filtered out.
+#'
+#'The "hwe_facets" argument is the inverse of this: loci will be removed if they
+#'fail the provided hwe filter in any facet level. In both cases, Facets should
+#'be provided as described in \code{\link{Facets_in_snpR}}.
 #'
 #'
 #'@param x snpRdata object.
-#'@param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable
-#'  minor allele frequency
-#'@param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
+#'@param maf numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
+#'  minor allele frequency.
+#'@param hf_hets numeric between 0 and 1 or FALSE, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
-#'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE
-#'  violation p-value below this will be rejected.
-#'@param min_ind FALSE or numeric between 0 and 1, default FALSE. Minimum proportion of individuals
-#'  in which a loci must be sequenced.
-#'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
-#'  proportion of SNPs an individual must be genotyped at.
-#'@param re_run FALSE, "partial", or "full", default "partial". How should loci
-#'  be re_filtered after individuals are filtered?
-#'@param maf.facets FALSE or character, default FALSE. Sample-specific facets
-#'  over which the maf filter can be checked.
-#'@param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
-#'@param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
+#'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
+#'  HWE p-value.
+#'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
+#'  proportion of individuals in which a loci must be sequenced.
+#'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
+#'  proportion of SNPs at which an individual must be genotyped.
+#'@param re_run character or FALSE, default "partial". When individuals are
+#'  removed via min_ind, it is possible that some SNPs that initially passed
+#'  filtering steps will now violate some filters. SNP filters can be re-run
+#'  automatically via several methods: \itemize{ \item{partial: } Refilters for
+#'  non-polymorphic loci (non_poly) only, if that filter was requested
+#'  initially. \item{full: } Re-runs the full filtering scheme (save for
+#'  min_loci).}
+#'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
+#'  overwhich the minor allele frequency can be checked. SNPs will only fail the
+#'  maf filter if they fail in every level of every provided facet.
+#'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
+#'  overwhich the hwe filter can be checked. SNPs will fail the hwe filter if
+#'  they fail in any level of any provided facet.
+#'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
+#'  removed.
+#'@param bi_al logical, default TRUE. If TRUE, loci with more than two alleles
+#'  will be removed. Note that this is mostly an internal argument and should
+#'  rarely be used directly, since import.snpR.data and other snpRdata object
+#'  creation functions all pass SNPs through this filter because many snpR
+#'  functions will fail to work if there are more than two alleles at a locus.
 #'
 #'@return A data.frame in the same format as the input, with SNPs and
 #'  individuals not passing the filters removed.
 #'
 #'@export
 #'@author William Hemstrom
-#'
+#'  
 #' @examples
 #' # Filter with a minor allele frequency of 0.05, maximum heterozygote 
 #' # frequency of 0.55, 50% minimum individuals, and at least 75% of loci 
@@ -524,10 +540,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #' # The same filters, but with minor allele frequency considered per-population
 #' # and a full re-run of loci filters after individual removal.
 #' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
-#'             min_loci = 0.75, re_run = "full", maf.facets = "pop")
+#'             min_loci = 0.75, re_run = "full", maf_facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", maf.facets = NULL,
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = FALSE,
+                        min_loci = FALSE, re_run = "partial", maf_facets = NULL,
+                        hwe_facets = FALSE,
                         non_poly = TRUE, bi_al = TRUE){
 
   #==============do sanity checks====================
@@ -540,15 +557,19 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
   }
 
-  if(HWE){
-    if(!is.numeric(HWE)){
-      stop("HWE must be a numeric value.")
+  if(hwe){
+    if(!is.numeric(hwe)){
+      stop("hwe must be a numeric value.")
     }
-    if(length(HWE) != 1){
-      stop("HWE must be a numeric vector of length 1.")
+    if(length(hwe) != 1){
+      stop("hwe must be a numeric vector of length 1.")
     }
-    if(HWE <= 0 | HWE >= 1){
-      stop("HWE must be a value between 0 and 1.")
+    if(hwe <= 0 | hwe >= 1){
+      stop("hwe must be a value between 0 and 1.")
+    }
+    
+    if(!isFALSE(hwe_facets)){
+      hwe_facets <- check.snpR.facet.request(x, hwe_facets)
     }
   }
 
@@ -588,11 +609,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
   }
 
-  if(!is.null(maf.facets[1])){
-    maf.facets <- check.snpR.facet.request(x, maf.facets, "none")
+  if(!is.null(maf_facets[1])){
+    maf_facets <- check.snpR.facet.request(x, maf_facets, "none")
 
     # add any needed facets...
-    miss.facets <- maf.facets[which(!(maf.facets %in% x@facets))]
+    miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
     if(length(miss.facets) != 0){
       cat("Adding missing facets...\n")
       # need to fix any multivariate facets (those with a .)
@@ -600,11 +621,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
 
     # check for bad facets to remove (those that don't just consider samples)
-    if(any(x@facet.type[x@facets %in% maf.facets] != "sample")){
-      vio.facets <- x@facets[match(maf.facets, x@facets)]
-      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf.facets] != "sample")]
+    if(any(x@facet.type[x@facets %in% maf_facets] != "sample")){
+      vio.facets <- x@facets[match(maf_facets, x@facets)]
+      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf_facets] != "sample")]
       warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
-      maf.facets <- maf.facets[-which(maf.facets %in% vio.facets)]
+      maf_facets <- maf_facets[-which(maf_facets %in% vio.facets)]
     }
   }
 
@@ -692,7 +713,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
     if(maf){
       #if not filtering with multiple pops
-      if(is.null(maf.facets)){
+      if(is.null(maf_facets)){
         cat("Filtering low minor allele frequencies, no pops...\n")
 
         # check to see if we need to calculate mafs:
@@ -726,21 +747,21 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
           # get mafs for any uncalculated facets
 
           # if mafs have been calculated, but not for of the requested any facets...
-          if(!any(x@stats$facet %in% maf.facets)){
-            x <- calc_maf(x, facets = maf.facets)
+          if(!any(x@stats$facet %in% maf_facets)){
+            x <- calc_maf(x, facets = maf_facets)
           }
           #if mafs have been calculated for some but not all of our facets
-          else if(any(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))){
-            run.facets <- unique(x@stats$facet[which(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))])
+          else if(any(is.na(x@stats$maf[x@stats$facet %in% maf_facets]))){
+            run.facets <- unique(x@stats$facet[which(is.na(x@stats$maf[x@stats$facet %in% maf_facets]))])
             x <- calc_maf(x, facets = run.facets)
           }
         }
         else{
-          x <- calc_maf(x, facets = maf.facets)
+          x <- calc_maf(x, facets = maf_facets)
         }
 
         # grab mafs
-        mafs <- x@stats[x@stats$facet %in% maf.facets,]
+        mafs <- x@stats[x@stats$facet %in% maf_facets,]
         mafs$maf <- mafs$maf < maf
 
         # now, figure out in how many subfacets the maf is too low. If all, the loci violates the filter
@@ -780,14 +801,44 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       vio.snps[which(het_f)] <- T
     }
 
-    #========HWE violation======================================
-    if(HWE){
-      cat("Filtering loci out of HWE...\n")
-      invisible(utils::capture.output(x <- calc_hwe(x)))
-      phwe <- x@stats$pHWE[x@stats$facet == ".base"]
-      phwe <- which(phwe < HWE)
-      cat("\t", length(phwe), " bad loci\n")
-      vio.snps[phwe] <- T
+    #========hwe violation======================================
+    if(hwe){
+      cat("Filtering loci out of hwe...\n")
+      
+      # no facets, easy
+      if(isFALSE(hwe_facets)){
+        
+        if(!check_calced_stats(x, ".base", "hwe")$.base){
+          invisible(utils::capture.output(x <- calc_hwe(x)))
+        }
+        phwe <- x@stats$pHWE[x@stats$facet == ".base"]
+        phwe <- which(phwe < hwe)
+        cat("\t", length(phwe), " bad loci\n")
+        vio.snps[phwe] <- T
+        
+      }
+      
+      # facets, slightly more complicated
+      else{
+        
+        run.facets <- check_calced_stats(x, hwe_facets, "hwe")
+        run.facets <- names(run.facets)[!unlist(run.facets)]
+        if(length(run.facets) > 0){
+          invisible(utils::capture.output(x <- calc_hwe(x, run.facets)))
+        }
+        
+        # get the per-facet hwe stats, check against threshold, then condense by snp.
+        phwe <- get.snpR.stats(x, hwe_facets)
+        phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
+        bad.loci <- tapply(phwe$low.p, phwe[,".snp.id"], sum, na.rm = TRUE)
+        bad.loci <- reshape2::melt(bad.loci)
+        bad.loci <- na.omit(bad.loci)
+        bad.loci <- bad.loci[which(bad.loci$value > 0),]
+        bad.loci <- which(snp.meta(x)$.snp.id %in% bad.loci$Var1)
+        cat("\t", length(bad.loci), " bad loci\n")
+        
+        vio.snps[bad.loci] <- TRUE
+      }
     }
 
     #==========remove violating loci==================
@@ -801,8 +852,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
   #funciton to filter by individuals.
   min_loci_filt <- function(){
     cat("Filtering out individuals sequenced in few kept loci...\n")
-    mcounts <- matrixStats::colSums2(ifelse(x == mDat, 1, 0))
-    rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
+    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    rejects <- which(mcounts/nrow(x) < min_loci)
     if(length(rejects) > 0){
       old.facets <- x@facets
       x <- x[,-rejects]
@@ -849,6 +900,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
           hf_hets <- FALSE
           min_ind <- FALSE
           bi_al <- FALSE
+          hwe <- FALSE
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
           x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys ect.
@@ -2515,7 +2567,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
     
     # interleve major and minor frequencies and save
     ord <- rep(1:ncol(tam), each = 2) + (0:1) * ncol(tam)
-    amc <- cbind(amb, tam)[,..ord]
+    amc <- .fix..call(cbind(amb, tam)[,..ord])
     colnames(amc) <- maj_min
     amc <- as.data.frame(amc)
     rownames(amc) <- unlist(pops)

@@ -26,7 +26,7 @@
 #'# output from COLONY Best Cluster
 #'# example pedigree stickPED
 
-plot_pedigree <- function(x, facets = NULL, plot.type = "visped", na.omit = TRUE,...){  
+plot_pedigree <- function(x, facets = NULL, plot.type = "visped", na.omit = TRUE, ...){  
   #===================sanity checks===============
   # check that data is in the correct format
   # snpr object then run sequoia

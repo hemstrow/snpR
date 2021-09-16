@@ -26,6 +26,7 @@ Imports:
     methods,
     ggplot2,
     plyr,
+    pkgcond,
     purrr,
     reshape2,
     rlang,

@@ -1489,7 +1489,7 @@ get.task.list <- function(x, facets, source = "stats"){
     if(any(t.facet.type == "snp")){
       use.facet <- t.facet[t.facet.type == "snp"]
       meta.to.use <- as.data.table(meta.to.use)
-      t.snp.meta <- meta.to.use[,..use.facet]
+      t.snp.meta <- .fix..call(meta.to.use[,..use.facet])
       snp.opts <- unique(t.snp.meta)
       t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
       if(is.null(nrow(snp.opts))){
@@ -2146,9 +2146,9 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     ## get the stats back in a format with facet and sub-facet, clean up, and return
     mstats <- merge(means, unique(group_key_tab), by = "key")
     drop_col <- which(colnames(mstats) == "key")
-    mstats <- mstats[,-..drop_col]
+    mstats <- .fix..call(mstats[,-..drop_col])
     new.ord <- c(2:(ncol(selected_stats) + ncol(group_key_tab) - 1), 1:ncol(selected_stats))
-    mstats <- mstats[,..new.ord]
+    mstats <- .fix..call(mstats[,..new.ord])
     colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)] <- paste0("weighted_mean_", colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)])
     
     
@@ -2163,10 +2163,10 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
           mstats$snp.subfacet <- ".base"
         }
         else if(length(split.snp.part) > 1){
-          mstats$snp.subfacet <- do.call(paste, c(mstats[,..split.snp.part], sep = "."))
+          mstats$snp.subfacet <- do.call(paste, c(.fix..call(mstats[,..split.snp.part]), sep = "."))
         }
         else{
-          mstats$snp.subfacet <- mstats[,..split.snp.part]
+          mstats$snp.subfacet <- .fix..call(mstats[,..split.snp.part])
         }
       }
     }
@@ -2195,7 +2195,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     }
     
     good.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", paste0("weighted_mean_", stats_to_get))
-    mstats <- mstats[,..good.cols]
+    mstats <- .fix..call(mstats[,..good.cols])
     mstats[,1:4] <- dplyr::mutate_all(mstats[,1:4], as.character)
     x <- merge.snpR.stats(x, mstats, type = "weighted.means")
   }
@@ -2216,3 +2216,13 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
 #' @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
 #' @param sep character, default ".". Pasted facets will be split by this.
 .paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))
+
+
+#' Fixes calling scope warning in .. calls with data.table
+#' 
+#' Needed since ..x vars need to be defined as global variables for CRAN, which data.table will throw a warning about.
+#' 
+#' @param fun function to run
+.fix..call <- function(fun){
+  return(pkgcond::suppress_warnings(fun,"variable in calling scope for clarity"))
+}
