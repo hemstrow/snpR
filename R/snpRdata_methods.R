@@ -14,7 +14,7 @@ setMethod("show", "snpRdata", function(object) {
   
   mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
   
-  cat(is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
+  cat(methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
       "==============================================\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
@@ -103,11 +103,16 @@ setMethod("dim", "snpRdata", function(x) {
 #'
 #' # show or overwrite snp meta
 #' snp.meta(test)
-#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
+#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE),
+#'                              chr = sample(LETTERS[1:4], nrow(test), 
+#'                                           replace = TRUE))
 #'
 #' #show or overwrite sample meta
 #' sample.meta(test)
-#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
+#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), 
+#'                                              replace = TRUE), 
+#'                                 pop = sample(LETTERS[5:8], ncol(test), 
+#'                                              replace = TRUE))
 NULL
 
 
@@ -154,6 +159,8 @@ setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genot
 
 #' @export
 #' @describeIn subset_snpRdata extraction operator
+#' @aliases [,snpRdata-method
+#' @docType methods
 setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop = FALSE){
   if(rlang::is_missing(i)){
     i <- 1:nsnps(x)

@@ -55,7 +55,7 @@ x <- calc_association(x,
                       response = "phenotype",
                       method = "gmmat.score")
 
-head(get.snpR.stats(x))
+head(get.snpR.stats(x, stats = "association")$single)
 
 ```
 Note that the resulting p-values are stored in the gmmat_pval_phenotype column.
@@ -70,7 +70,7 @@ x <- calc_association(x,
                       method = "gmmat.score", 
                       formula = "phenotype ~ weight") # weight as a covariate
 
-head(get.snpR.stats(x))
+head(get.snpR.stats(x, stats = "association")$single)
 
 ```
 
@@ -86,23 +86,26 @@ gp <- run_genomic_prediction(x, response = "weight", iterations = 1000, burn_in 
 
 ```
 
-Genomic prediction results include both the model returned by the BGLR function and some processed results.
+Genomic prediction results include a snpRdata object with some snp-specific results merged in, the model returned by the BGLR function, and some additional processed results. Model and additional results are in a nested list, named for the facets run.
 ```{r}
+# model results
+gp_mod <- gp$models$.base_.base
+
 # the model is in the $model part. See BGLR documentation for details.
-# gp$model
+# gp_mod$model
 
 # predicted breeding values and observed phenotypes:
-head(gp$predictions)
+head(gp_mod$predictions)
 
 # estimated heritability
-gp$h2
+gp_mod$h2
 
 ```
 
 Note that BGLR and other genomic prediction approaches can be prone to overfitting. For this example, there should be no causal correlation between the phenotypes and genotypes, since we randomly drew phenotypes for each individual. However, there is a correlation between the predicted breeding values and their phenotypes.
 
 ```{r}
-with(gp$predictions, plot(phenotype, predicted_BV))
+with(gp_mod$predictions, plot(phenotype, predicted_BV))
 ```
 
 snpR includes a cross validation function to check the predictive power of a genomic prediction model by holding some portion of the inidividuals out when fitting the model, then doing a cross-evaluate by comparing the predicted breeding values of these individuals to their phenotypes.
@@ -119,10 +122,10 @@ with(cross_gp$comparison, plot(observed, predicted))
 cross_gp$rsq
 ```
 
-We can see that this doesn't cross evaluate well, as we should expect. If you would like to predict the breeding values of other individuals, the effects of each locus can be found in the model itself.
+We can see that this doesn't cross evaluate well, as we should expect. If you would like to predict the breeding values of other individuals, the effects of each locus can be found in the returned snpRdata object.
 ```{r}
-# the effects of each locus, burried in the model.
-head(cross_gp$model$model$ETA[[1]]$b)
+# the effects of each locus
+head(get.snpR.stats(gp$x, stats = "genomic_prediction")$single)
 ```
 
 Note that BGLR does support covariates and more complicated models, but those aren't supported in snpR. To produce import data for BGLR, 0-1-2 numeric genotypes can be produced using format_snps. Interpolation of missing data is needed for BGLR, which is done via bernoulli sampling off of the allele frequencies by default.
@@ -147,15 +150,16 @@ As with GMMAT GWAS, a formula can be provided to include covariates.
 ```{r, warning=F, message=F}
 rf <- run_random_forest(x, response = "weight", num.trees = 1000)
 ```
+As with GP, RFs return both the snpRdata object with SNP importance (the importance of each SNP to prediction accuracy) merged in and a nested list of models for each facet.
 
-Note that since Random Forests use internal held out data to check prediction accuracy, cross-evalution isn't strictly necissary. Pulling up the model summary will show the estimated prediction rsq.
+Pulling up the model summary will show the estimated prediction R squared.
 
 ```{r}
 # see the model summary, note the low rsq.
 rf$models$.base_.base$model
 ```
 
-We can see that the model does a poor job of predicting phenotypes from a plot as well.
+Given the low R squared, it follows that the model does a poor job of predicting phenotypes.
 ```{r}
 with(rf$models$.base_.base$predictions, plot(pheno, predicted))
 ```
@@ -163,17 +167,17 @@ with(rf$models$.base_.base$predictions, plot(pheno, predicted))
 The importance of each locus to the predictions can be examined as well.
 ```{r}
 # plot importance per variable
-plot(rf$models$.base_.base$model$variable.importance)
+plot(get.snpR.stats(rf$x, stats = "random_forest")$single$weight_RF_importance)
 ```
 
 # Plotting association results
 
 Manhattan plots can be generated both from association results calculated with snpR and from results from elsewhere.
 
-For snpRdata GWAS results, this is straitforward.
+For snpRdata GWAS results, this can be done by handing plot_manhattan() a snpRdata object and specifying the stat to be plotted by calling the name of the result column.
 
 ```{r}
-colnames(get.snpR.stats(x)) # a reminder of the statistics we calculated earlier.
+colnames(get.snpR.stats(x, stats = "association")$single) # a reminder of the statistics we calculated earlier.
 p <- plot_manhattan(x, 
                plot_var = "gmmat_pval_phenotype", # value to plot 
                chr = "group", # specify the snp metadata column containing chr info
@@ -183,15 +187,28 @@ p <- plot_manhattan(x,
 p$plot
 ```
 
-External data or results from Random Forests and Genomic Prediction can be plotted as well.
+Results from RFs of GPs can be plotted as well (as well as any other SNP statistics!).
 
 ```{r}
-# prepare data
-plot_dat <- data.frame(group = snp.meta(x)$group, position = snp.meta(x)$position, importance = rf$models$.base_.base$model$variable.importance)
-
 # plot
-p <- plot_manhattan(plot_dat, plot_var = "importance", chr = "group")
+p <- plot_manhattan(rf$x, 
+               plot_var = "weight_RF_importance", # value to plot 
+               chr = "group", # specify the snp metadata column containing chr info
+               bp = "position")
 p$plot
 
+```
+
+Data from external sources can also be plotted with plot_manhattan().
+```{r}
+# grab rf stats, which might look like something you'd import from elsewhere.
+plot_dat <- get.snpR.stats(rf$x, stats = "random_forest")$single
+
+# check the format
+head(plot_dat)
+
+# plot
+p <- plot_manhattan(plot_dat, plot_var = "weight_RF_importance", chr = "group", bp = "position")
+p$plot # looks the same!
 ```
 

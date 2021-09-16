@@ -8,6 +8,7 @@ sample.meta(asdat)$cat_phenotype <- sample(c("A", "B"), ncol(asdat), replace = T
 #=========association=========
 test_that("correct gmmat", {
   local_edition(3)
+  skip_on_cran()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
   expect_snapshot(asgmmat) # note, run off of gmmat, not internally calced. Thus checked, but should not change.
@@ -40,6 +41,7 @@ test_that("correct armitage", {
 
 test_that("correct odds", {
   local_edition(3)
+  skip_on_cran()
   asodds <- calc_association(asdat, response = "cat_phenotype", method = "odds_ratio")
   asodds <- get.snpR.stats(asodds, stats = "association")
   expect_snapshot(asodds) # Hand checked, should not change.
@@ -48,6 +50,7 @@ test_that("correct odds", {
 
 test_that("correct chisq", {
   local_edition(3)
+  skip_on_cran()
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
   expect_snapshot(aschi) # Hand checked, should not change.

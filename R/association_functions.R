@@ -40,40 +40,50 @@
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
 #'   minor allele. \item{af: } insertion of the average allele frequency}.
-#' @param par numeric or FALSE, default FALSE. If a number specifies the number of processing cores to use \emph{across facet levels}. Not used if only one facet level.
+#' @param par numeric or FALSE, default FALSE. If a number specifies the number
+#'   of processing cores to use \emph{across facet levels}. Not used if only one
+#'   facet level.
+#' @param ... additional arguments passed to \code{\link[BGLR]{BGLR}}
 #'
 #' @export
 #' @author William Hemstrom
 #' @references Pérez, P., and de los Campos, G. (2014). \emph{Genetics}.
-#' 
-#' @return A list containing: two parts: \itemize{\item{x: } The provided snpRdata object with effect sizes merged in.
-#' \item{models: } Other model results, a list containing: \itemize{ \item{model: } The model output from
+#'
+#' @return A list containing: two parts: \itemize{\item{x: } The provided
+#'   snpRdata object with effect sizes merged in. \item{models: } Other model
+#'   results, a list containing: \itemize{ \item{model: } The model output from
 #'   BGLR. See \code{\link[BGLR]{BGLR}}. \item{h2: } Estimated heritability of
-#'   the response variable.\item{predictions: } A data.frame
-#'   containing the provided phenotypes and the predicted Breeding Values (BVs)
-#'   for those phenotypes. }}
+#'   the response variable.\item{predictions: } A data.frame containing the
+#'   provided phenotypes and the predicted Breeding Values (BVs) for those
+#'   phenotypes. }}
 #'
 #' @examples
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
 #' dat <- stickSNPs
-#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), 
+#'                           sample.meta(stickSNPs))
 #' ## run prediction
-#' gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
-#' ## dummy phenotypes vs. predicted Breeding Values for those dummy predictions.
-#' with(gp$models$.base_.base$predictions, plot(phenotype, predicted_BV)) # given that weight was randomly assigned, definitely overfit!
+#' gp <- run_genomic_prediction(dat, response = "weight", iterations = 1000, 
+#'                              burn_in = 100, thin = 10)
+#' ## dummy phenotypes vs. predicted Breeding Values for dummy predictions.
+#' # given that weight was randomly assigned, definitely overfit!
+#' with(gp$models$.base_.base$predictions, plot(phenotype, predicted_BV)) 
 #' ## fetch estimated loci effects
 #' get.snpR.stats(gp$x, stats = "genomic_prediction")
 #' 
 #' \dontrun{
 #' # with facets, not run
-#' gp <- run_genomic_prediction(gp$x, facets = "pop", response = "weight", iterations = 1000, burn_in = 100, thin = 10)
+#' gp <- run_genomic_prediction(gp$x, facets = "pop", response = "weight", 
+#'                              iterations = 1000, burn_in = 100, thin = 10)
 #' get.snpR.stats(gp$x, facets = "pop", stats = "genomic_prediction")
 #' }
 run_genomic_prediction <- function(x, facets = NULL, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB", interpolate = "bernoulli",
                                    par = FALSE, ...){
+  .snp.id <- facet <- subfacet <- NULL
+  
   #===============sanity checks============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -144,8 +154,8 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
     varE <- h2
     for(i in 1:length(h2)){
       u <- sn%*%B[i,]
-      varU[i] <- var(u)
-      varE[i] <- var(phenotypes-u)
+      varU[i] <- stats::var(u)
+      varE[i] <- stats::var(phenotypes-u)
       h2[i] <- varU[i]/(varU[i] + varE[i])
     }
     h2 <- mean(h2)
@@ -264,6 +274,9 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
 #'   will be ignored.
 #' @param plot logical, default TRUE. If TRUE, will generate a ggplot of the
 #'   cross-validation results.
+#' @param interpolate character, default "bernoulli". Interpolation method for
+#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+#'   minor allele. \item{af: } insertion of the average allele frequency}.
 #'
 #' @export
 #' @author William Hemstrom
@@ -280,9 +293,12 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
 #' # run and plot a basic prediction
 #' ## add some dummy phenotypic data.
 #' dat <- stickSNPs
-#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+#' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), 
+#'                           sample.meta(stickSNPs))
 #' ## run cross_validation
-#' cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
+#' cross_validate_genomic_prediction(dat, response = "weight", 
+#'                                   iterations = 1000, burn_in = 100, 
+#'                                   thin = 10)
 #' 
 cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
                                               burn_in = 1000, thin = 100, cross_percentage = 0.9,
@@ -900,7 +916,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         }
 
         # see which covariates we need
-        cvars <- terms(formula(formula))
+        cvars <- stats::terms(formula(formula))
         cvars <- attr(cvars, "term.labels")
         bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
         if(length(bad.cvars) > 0){

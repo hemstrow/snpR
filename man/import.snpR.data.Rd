@@ -160,22 +160,32 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 # produces data identical to that contained in the stickSNPs example dataset.
 genos <- stickRAW[,-c(1:3)]
 snp_meta <- stickRAW[,1:3]
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
-import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
+                          fam = rep(c("A", "B", "C", "D"), 
+                                    length = ncol(stickRAW) - 3), 
+                          stringsAsFactors = FALSE)
+import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, 
+                 mDat = "NN")
 
 # from an adegenet genind object
-ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
-import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
+ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), 
+                                  ncode = 1, NA.char = "N") # get genind data
+# note, will add whatever metadata data is in the genind object to the 
+# snpRdata object. 
+# Could be run without the snp or sample metadatas.
+import.snpR.data(ex.genind, snp_meta, sample_meta) 
 
 # from an adegenet genlight object
 ## create a dummy dataset, add some metadata
-dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, prob=c(.25, .49, .25, .01), replace=TRUE))
+dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, 
+              prob=c(.25, .49, .25, .01), replace=TRUE))
 names(dat) <- paste("indiv", 1:length(dat))
 print(object.size(dat), unit="aut") # size of the original data
-genlight <- new("genlight", dat) # conversion
+genlight <- methods::new("genlight", dat) # conversion
 newalleles <- character(adegenet::nLoc(genlight))
 for(i in 1:length(newalleles)){
-  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
+  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), 
+                          collapse = "/")
 }
 adegenet::alleles(genlight) <- newalleles
 adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
@@ -188,7 +198,9 @@ dat <- import.snpR.data(genlight)
 \dontrun{
 ## not run:
 # from a file:
-dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
+# note that the drop argument is passed to data.table::fread!
+dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", 
+                                    package = "snpR"), drop = 1:3) 
 # if wanted, snp and sample metadata could be provided as usual.
 
 ## not run:

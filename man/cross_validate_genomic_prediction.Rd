@@ -43,6 +43,10 @@ will be ignored.}
 
 \item{plot}{logical, default TRUE. If TRUE, will generate a ggplot of the
 cross-validation results.}
+
+\item{interpolate}{character, default "bernoulli". Interpolation method for
+missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
+minor allele. \item{af: } insertion of the average allele frequency}.}
 }
 \value{
 A list containing: \itemize{ \item{model: } The results from
@@ -95,9 +99,12 @@ full list of references.
 # run and plot a basic prediction
 ## add some dummy phenotypic data.
 dat <- stickSNPs
-sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), 
+                          sample.meta(stickSNPs))
 ## run cross_validation
-cross_validate_genomic_prediction(dat, response = "weight", iterations = 1000, burn_in = 100, thin = 10)
+cross_validate_genomic_prediction(dat, response = "weight", 
+                                  iterations = 1000, burn_in = 100, 
+                                  thin = 10)
 
 }
 \references{

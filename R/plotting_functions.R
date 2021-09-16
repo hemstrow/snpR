@@ -1236,7 +1236,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @param reps numeric, default 1. The number of independent clustering
 #'   repititions to run.
 #' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
-#'   number of iterations to run.
+#'   number of iterations to run. For STRUCTURE the number of MCMC steps, should
+#'   be in the 10,000+ range.
+#' @param burnin numeric, default 100. For STRUCTURE, the number of burnin
+#'   iterations to do prior to the main run. This should usually be in the
+#'   10,000+ range.
 #' @param I numeric or NULL, default NULL. For snmf, how many SNPs should be
 #'   used to initialize the search? Initializing with a subset of the total SNPs
 #'   can radically speed up computation time for large datasets.
@@ -1419,7 +1423,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 
                            gens_back = 2, mig_prior = 0.01, locprior_init_r = 1, locprior_max_r = 20,
                            alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), cleanup = TRUE, ...){
-
+  
+  rnorm <- V1 <- V2 <- popid <- genback <- ancestry_pop <- ancestry_probability <- V4 <- ..bpc <- ..upc <- NULL
+  clean_popid <- prob_correctly_assigned <- K <- est_ln_prob <- Percentage <- Cluster <- NULL
+  
+  
+  
+  
   #===========sanity checks===================
   kmax <- max(k)
   msg <- character()
@@ -1554,9 +1564,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
   if(clumpp){
-    if(!("pophelper" %in% rownames(installed.packages()))){
-      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
-    }
     good.clumpp.opts <- c("fullsearch", "greedy", "large.k.greedy")
     clumpp.opt <- tolower(clumpp.opt)
     if(!clumpp.opt %in% good.clumpp.opts){
@@ -1565,11 +1572,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     
     if(!file.exists(clumpp_path)){
       msg <- c(msg, paste0("Could not find clumpp executable at given clumpp_path.\n"))
-    }
-  }
-  else if(provided_qlist == "parse"){
-    if(!("pophelper" %in% rownames(installed.packages()))){
-      msg <- c(msg, "The package pophelper must be installed to run clumpp. pophelper can be installed via the devtools or remotes packages with devtools::install_github('royfrancis/pophelper') or remotes::install_github('royfrancis/pophelper')\n")
     }
   }
 
@@ -1652,7 +1654,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # is everything a valid color (can ggplot work with it)?
     else{
       alt.palette <- alt.palette[seq_along(k)]
-      tpd <- matrix(rnorm(kmax*2, 0, 1), kmax, 2)
+      tpd <- matrix(stats::rnorm(kmax*2, 0, 1), kmax, 2)
       tpd <- cbind(as.data.frame(tpd), col = seq_along(k))
 
       color.check <- ggplot2::ggplot(tpd, ggplot2::aes(V1, V2, color = as.factor(col))) +
@@ -1661,7 +1663,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       tempfile <- paste0(tempfile, ".pdf")
 
       suppressMessages(res <- try(ggplot2::ggsave(tempfile, color.check), silent = T))
-      invisible(capture.output(file.remove(tempfile)))
+      invisible(utils::capture.output(file.remove(tempfile)))
       if("try-error" %in% class(res)){
         msg <- c(msg, "Alt.palette contains non-color entries or otherwise fails to properly plot.\n")
       }
@@ -1812,7 +1814,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # make a directory and write the k files to it
     for(i in 1:length(x)){
       for(j in 1:reps){
-        write.table(x[[i]][[j]], paste0("K", ncol(x[[i]][[j]]), "r", j, "qopt"), sep = " ", quote = F, col.names = F, row.names = F)
+        utils::write.table(x[[i]][[j]], paste0("K", ncol(x[[i]][[j]]), "r", j, "qopt"), sep = " ", quote = F, col.names = F, row.names = F)
       }
     }
   }
@@ -2088,7 +2090,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       # format and run snapclust
-      invisible(capture.output(x.g <- format_snps(x, "adegenet")))
+      invisible(utils::capture.output(x.g <- format_snps(x, "adegenet")))
 
       # initialize
       qlist <- vector("list", length = length(k))
@@ -2151,7 +2153,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       if(file.exists("lea_input.geno")){
         file.remove("lea_input.geno")
       }
-      invisible(capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
+      invisible(utils::capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
 
       # run the analysis
       if(!is.null(I)){
@@ -2346,7 +2348,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         evanno$lnpK <- NA
         evanno$lnppK <- NA
         evanno$deltaK <- NA
-        evanno$sd_est_ln_prob <- cv_storage[, sqrt(var(est_ln_prob)), by = K][[2]]
+        evanno$sd_est_ln_prob <- cv_storage[, sqrt(stats::var(est_ln_prob)), by = K][[2]]
         evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
         evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
         # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
@@ -2656,6 +2658,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' plot_sfs(sfs = sfs)
 plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "inferno", log = TRUE,
                      pops = NULL, projection = NULL, fold = TRUE){
+  p1 <- p2 <- N <- NULL
+  
+  
   if(is.snpRdata(x)){
     sfs <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold)
   }
@@ -2730,7 +2735,7 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 #'
 #' @param assignments Structure like results, parsed in or generated via
 #'   \code{\link{plot_structure}}, which generates the needed plot data.
-#' @param K numeric. Value of K (number of clusters) to plot.
+#' @param k numeric. Value of K (number of clusters) to plot.
 #' @param facet character. The facet by which data is broken down in the passed
 #'   assignments.
 #' @param pop_coordinates sf object, see \code{\link[sf]{sf}}. sf object
@@ -2772,7 +2777,12 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 #' @examples
 #' \dontrun{
 #' # get an sf of the sampling locations
-#' lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+#' lat_long <- data.frame(SMR = c(44.365931, -121.140420), 
+#'                        CLF = c(44.267718, -121.255805), 
+#'                        OPL = c(44.485958, -121.298360), 
+#'                        ASP = c(43.891693, -121.448360), 
+#'                        UPD = c(43.891755, -121.451600), 
+#'                        PAL = c(43.714114, -121.272797)) # coords for points
 #' lat_long <- t(lat_long)
 #' colnames(lat_long) <- c("lat", "long")
 #' lat_long <- as.data.frame(lat_long)
@@ -2780,20 +2790,29 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 #' psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
 #' psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 #'
-#' # get the assignments
-#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+#' # get the assignments (STRUCTURE-like results)
+#' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) 
 #'
-#' # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+#' # get a map of oregon as a background from the maps package. 
+#' # Note that this map is a bit odd as an sf, but works as an example.
 #' background <- maps::map("state", "oregon")
 #' background <- sf::st_as_sf(background)
 #'
 #' # make the plot
-#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, 
+#'                    sf = list(background), radius_scale = .2, 
+#'                    scale_bar = list(dist = 40, dist_unit = "km", 
+#'                                     transform = T), 
+#'                    compass = list(symbol = 16, scale = 0.2))
 #' }
 plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
                                pop_names = T, viridis.option = "viridis", alt.palette = NULL,
                                radius_scale = 0.05, label_args = NULL, crop = FALSE,
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
+  
+  long <- lat <- pop <- NULL
+  
+  
   #===================sanity checks=================
   msg <- character()
   pkg.check <- check.installed("scatterpie")
@@ -2980,6 +2999,8 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #' 
 #' @examples 
 #' # Calculate nj trees for the base facet, each chromosome, and for each population.
+#' # Note: Examples not run due to odd ape interaction. Work interactively.
+#' \dontrun{
 #' tp <- plot_tree(stickSNPs, c(".base", "pop", "group"), 
 #'                 root = c(FALSE, "PAL", FALSE))
 #' tp$pop$.base$plot # View the resulting plot
@@ -2987,6 +3008,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #' # Calculate bionj trees for pop with bootstrapping
 #' tp <- plot_tree(stickSNPs, "pop", root = "PAL", boot = 5)
 #' tp$pop$.base$plot # nodes now have a bootstrap support indicator
+#' }
 #' 
 #' @references 
 #' Felsenstein, J. (1985). Confidence Limits on Phylogenies: An Approach Using the Bootstrap. Evolution, 39(4), 783–791. https://doi.org/10.2307/2408678
@@ -2995,6 +3017,9 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate = "bernoulli", 
                       tree_method = "nj", root = FALSE,
                       boot = FALSE, boot_par = FALSE){
+  y <- label <- isTip <- NULL
+  
+  
   #=======sanity checks==========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -3072,7 +3097,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
         warning("UPGMA trees are always rooted.")
         root <- TRUE
       }     
-      tree_fun <- function(x) as.phylo(stats::hclust(x, "average"))
+      tree_fun <- function(x) ape::as.phylo(stats::hclust(x, "average"))
     }
     
     #=============make a tree=============
@@ -3282,6 +3307,8 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
                                       viridis.option = "inferno", 
                                       print_fst = TRUE, mark_sig = FALSE,
                                       lab_lower = FALSE){
+  subfacet <- sig <- weighted_mean_fst_p <- p1 <- p2 <- weighted_mean_fst <- NULL
+  
   #=============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

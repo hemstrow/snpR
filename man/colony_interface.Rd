@@ -282,17 +282,23 @@ been fully tested yet.
 a <- 2013:2015 #create a vector of possible birthyears
 b <- c("M", "F", "U") #create a vector of possible sexes
 stk <- stickSNPs
-sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
+sample.meta(stk)$BirthYear <- 
+    sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+sample.meta(stk)$Sex <- 
+    sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #generating snpR objects for male and female potential parents and offspring 
 # (no U sexes in the potential parents in for this example)
 # get list of samples which are now "M" for subsetting
-lsir <- which(stk@sample.meta$Sex =="M" & stk@sample.meta$BirthYear == "2013") #list sires
-ldam <- which(stk@sample.meta$Sex =="F" & stk@sample.meta$BirthYear == "2013") #list dams
-loff <- which(stk@sample.meta$BirthYear \%in\% c("2014","2015")) #list of offspring
+lsir <- which(stk@sample.meta$Sex =="M" & 
+              stk@sample.meta$BirthYear == "2013") #list sires
+ldam <- which(stk@sample.meta$Sex =="F" & 
+              stk@sample.meta$BirthYear == "2013") #list dams
+loff <- which(stk@sample.meta$BirthYear \%in\% c("2014","2015")) #list offspr
 
-sir <- subset_snpR_data(x = stk, .samps = lsir) #creating new snpR objects for Colony formatting
+
+#creating new snpR objects for Colony formatting
+sir <- subset_snpR_data(x = stk, .samps = lsir) 
 dam <- subset_snpR_data(x = stk, .samps = ldam)
 off <- subset_snpR_data(x = stk, .samps = loff)
 # not run to avoid clutter
@@ -306,7 +312,8 @@ off <- subset_snpR_data(x = stk, .samps = loff)
   ## intentionally shorter run, with a small subset of the samples
   asp <- which(stickSNPs@sample.meta$pop == "ASP")
   test_dat <- subset_snpR_data(stickSNPs, .samps = asp)
-  run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+  run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", 
+             method = "PLS", run_length = 1) 
 }
 }
 \references{

@@ -514,6 +514,8 @@ process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat 
 #' 
 #' @author William Hemstrom
 process_plink <- function(plink_file){
+  o1 <- ref <- o2 <- alt <- o3 <- NULL
+  
   check.installed("genio")
   
   

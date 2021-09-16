@@ -70,6 +70,8 @@ The genetic distances used to make the trees are calculated using \code{\link{ca
 }
 \examples{
 # Calculate nj trees for the base facet, each chromosome, and for each population.
+# Note: Examples not run due to odd ape interaction. Work interactively.
+\dontrun{
 tp <- plot_tree(stickSNPs, c(".base", "pop", "group"), 
                 root = c(FALSE, "PAL", FALSE))
 tp$pop$.base$plot # View the resulting plot
@@ -77,6 +79,7 @@ tp$pop$.base$plot # View the resulting plot
 # Calculate bionj trees for pop with bootstrapping
 tp <- plot_tree(stickSNPs, "pop", root = "PAL", boot = 5)
 tp$pop$.base$plot # nodes now have a bootstrap support indicator
+}
 
 }
 \references{

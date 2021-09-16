@@ -51,7 +51,8 @@ as described in \code{\link{Facets_in_snpR}}.
 x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
 get.snpR.stats(x, "group.pop", "single.window")
 
-# the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
+# the entire population at once, note that sigma and step are NULL and 
+# no chromosome/linkage group/scaffold/etc set.
 # this will calculate overall tajima's D without a window for each population.
 x <- calc_tajimas_d(stickSNPs, facets = "pop")
 get.snpR.stats(x, "pop", "single.window")

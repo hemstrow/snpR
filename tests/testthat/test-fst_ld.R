@@ -2,6 +2,7 @@ context("fst and ld")
 
 test_that("correct genepop", {
   local_edition(3)
+  skip_on_cran()
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_snapshot(tdfst) # note, run off of genepop, not internally calced. Thus checked, but should not change.
@@ -40,6 +41,7 @@ test_that("correct cld ld",{
 
 test_that("correct traditional ld",{
   local_edition(3)
+  skip_on_cran()
   tdld <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE)
   tdld <- get.snpR.stats(tdld, stats = "ld")
   expect_snapshot(tdld) # hand checked
@@ -47,6 +49,7 @@ test_that("correct traditional ld",{
 
 test_that("correct ME ld",{
   local_edition(3)
+  skip_on_cran()
   tdldme <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE, use.ME = TRUE)
   tdldme <- get.snpR.stats(tdldme, stats = "ld")
   expect_snapshot(tdldme) # hand checked

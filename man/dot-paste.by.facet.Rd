@@ -11,7 +11,7 @@
 
 \item{facets}{facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.}
 
-\item{sp}{character, default ".". Pasted facets will be split by this.}
+\item{sep}{character, default ".". Pasted facets will be split by this.}
 }
 \description{
 Paste together metadata according to a list of column names

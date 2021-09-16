@@ -147,17 +147,23 @@
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
-#' sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
+#' sample.meta(stk)$BirthYear <- 
+#'     sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-#' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+#' sample.meta(stk)$Sex <- 
+#'     sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
 #' #generating snpR objects for male and female potential parents and offspring 
 #' # (no U sexes in the potential parents in for this example)
 #' # get list of samples which are now "M" for subsetting
-#' lsir <- which(stk@sample.meta$Sex =="M" & stk@sample.meta$BirthYear == "2013") #list sires
-#' ldam <- which(stk@sample.meta$Sex =="F" & stk@sample.meta$BirthYear == "2013") #list dams
-#' loff <- which(stk@sample.meta$BirthYear %in% c("2014","2015")) #list of offspring
+#' lsir <- which(stk@sample.meta$Sex =="M" & 
+#'               stk@sample.meta$BirthYear == "2013") #list sires
+#' ldam <- which(stk@sample.meta$Sex =="F" & 
+#'               stk@sample.meta$BirthYear == "2013") #list dams
+#' loff <- which(stk@sample.meta$BirthYear %in% c("2014","2015")) #list offspr
 #' 
-#' sir <- subset_snpR_data(x = stk, .samps = lsir) #creating new snpR objects for Colony formatting
+#' 
+#' #creating new snpR objects for Colony formatting
+#' sir <- subset_snpR_data(x = stk, .samps = lsir) 
 #' dam <- subset_snpR_data(x = stk, .samps = ldam)
 #' off <- subset_snpR_data(x = stk, .samps = loff)
 #' # not run to avoid clutter
@@ -171,7 +177,8 @@
 #'   ## intentionally shorter run, with a small subset of the samples
 #'   asp <- which(stickSNPs@sample.meta$pop == "ASP")
 #'   test_dat <- subset_snpR_data(stickSNPs, .samps = asp)
-#'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+#'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", 
+#'              method = "PLS", run_length = 1) 
 #' }
 NULL
 
@@ -269,7 +276,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
     afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
     afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
-    write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
+    utils::write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
   }
   # otherwise, check the logical and calculate minor allele frequencies if true
   else if(is.logical(known_af[1]) & length(known_af) == 1){
@@ -284,7 +291,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
       afs_tab <- matrix(0, nrow = 2*nrow(afs), ncol = 2)
       afs_tab[seq(2, nrow(afs_tab), by = 2),] <- afs
       afs_tab[seq(1, nrow(afs_tab), by = 2),] <- c(rep(1, nrow(afs)), rep(2, nrow(afs)))
-      write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
+      utils::write.table(afs_tab, outfile, sep = " ", append = T, row.names = F, col.names = F)
     }
   }
   else{
@@ -324,7 +331,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     write(genotyping_error, outfile, append = T, ncolumns = nrow(x), sep = " ")
   }
   # offspring genotypes
-  write.table(colony_genotypes, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
+  utils::write.table(colony_genotypes, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
 
   #===================maternal and paternal genotype things==============
   # number of male and female candidates, maternal and paternal inclusion probabilities in OMS and PMS
@@ -357,14 +364,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   # paternal and maternal genotypes
   if(class(paternal_genotypes) == "snpRdata"){
     male_colony <- format_snps(paternal_genotypes, "colony")
-    write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
+    utils::write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating genotypes
   }
   write("\n", outfile, append = T) #added newline
 
   if(class(maternal_genotypes) == "snpRdata"){
     female_colony <- format_snps(maternal_genotypes, "colony")
-    write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
+    utils::write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating stuff
   }
 
@@ -372,7 +379,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(known_paternal_dyads[1,1])){
     n_p_d <- nrow(known_paternal_dyads)
     write(c(n_p_d, known_paternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
-    write.table(known_paternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the paternal ID in the second
+    utils::write.table(known_paternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the paternal ID in the second
   }
   else{
     write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
@@ -382,7 +389,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(known_maternal_dyads[1,1])){
     n_m_d <- nrow(known_maternal_dyads)
     write(c(n_m_d, known_maternal_max_mismatches), outfile, append = T, sep = " ") # write the number known + mismatch max
-    write.table(known_maternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the maternal ID in the second
+    utils::write.table(known_maternal_dyads, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write dyads. They should be a matrix or data frame, with the offspring ID in the first column and the maternal ID in the second
   }
   else{
     write(c(0, 0), outfile, append =  T, sep = " ") # no dyads
@@ -392,7 +399,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(known_paternal_sibships[1,1])){
     n_p_s <- nrow(known_paternal_sibships)
     write(n_p_s, outfile, append = T) # write the number known
-    write.table(known_paternal_sibships, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write sibsips. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+    utils::write.table(known_paternal_sibships, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write sibsips. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
   }
   else{
     write(0, outfile, append =  T) # no sibships
@@ -402,7 +409,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(known_maternal_sibships[1,1])){
     n_m_s <- nrow(known_maternal_sibships)
     write(n_m_s, outfile, append = T) # write the number known
-    write.table(known_maternal_sibships, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write sibsips. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
+    utils::write.table(known_maternal_sibships, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write sibsips. Data frame or matrix with sibship size followed by single column containing all of the sibling IDs.
   }
   else{
     write(0, outfile, append =  T) # no sibships
@@ -412,7 +419,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(paternal_exclusions[1,1])){
     npe <- nrow(paternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
+    utils::write.table(paternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the paternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded males separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -422,7 +429,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(maternal_exclusions[1,1])){
     npe <- nrow(maternal_exclusions)
     write(npe, outfile, append = T) # write number of exclusions
-    write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females separated by spaces.
+    utils::write.table(maternal_exclusions, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the maternal exclusions. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded males, col 3 the IDs of excluded females separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -432,7 +439,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(excluded_paternal_siblings[1,1])){
     n_eps <- nrow(excluded_paternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
+    utils::write.table(excluded_paternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded paternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions
@@ -442,7 +449,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   if(!is.null(excluded_maternal_siblings[1,1])){
     n_eps <- nrow(excluded_maternal_siblings)
     write(n_eps, outfile, append = T) # number of exclusions
-    write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
+    utils::write.table(excluded_maternal_siblings, outfile, T, quote = F, sep = " ", row.names = F, col.names = F) # write the excluded maternal sibships. Data.frame or matrix with col one the offspring ID, col 2 the number of excluded siblings, col 3 the IDs of excluded siblings separated by spaces.
   }
   else{
     write(0, outfile, append = T) # no exclusions

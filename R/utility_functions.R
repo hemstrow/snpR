@@ -1030,10 +1030,13 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' @examples
 #' #import data to a snpRdata object
 #' ## get sample meta data
-#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), 
-#' fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), 
-#' stringsAsFactors = FALSE)
-#' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, 
+#' sample_meta <- 
+#'     data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), 
+#'                fam = rep(c("A", "B", "C", "D"), 
+#'                          length = ncol(stickFORMATs$`0000`) - 4), 
+#'                stringsAsFactors = FALSE)
+#' format_snps(stickFORMATs$`0000`, input_format = "0000", 
+#'             input_meta_columns = 4, 
 #' input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
@@ -1072,13 +1075,18 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 #' format_snps(dat, "dadi", facets = "pop")
 #'
-#' #PLINK! format
+#' #PLINK! format, not run to avoid file creation
+#' \dontrun{
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
-#'
+#' }
+#' 
 #' #PLINK! format with provided ped
-#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, 
-#' sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
-#' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped, chr = "group")
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, 
+#'                   mat = 1:420, pat = 1:420, 
+#'                   sex = sample(1:2, 420, replace = TRUE), 
+#'                   pheno = sample(1:2, 420, replace = TRUE))
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", 
+#'             ped = ped, chr = "group")
 #' #note that a column in the sample metadata containing phenotypic information
 #' #can be provided to the "phenotype" arugment if wished.
 #'
@@ -1441,7 +1449,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       xv[xv == input_mDat] <- "NN" #replace with correct missing data
       x <- as.data.frame(xv, stringsAsFactors = F)
       if(output == "NN"){
-        rdata <- cbind(header, x)
+        rdata <- cbind(headers, x)
       }
       else{
         x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
@@ -1681,9 +1689,16 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
           .paste.by.facet(sample.meta(x)[rep(1:nsamps(x), each = 2),], colnames(sample.meta(x)) %in% facets)))
         
         
-        rdata <- cbind(ind = snames,
+        if(length(struc.meta) > 0){
+          rdata <- cbind(ind = snames,
                        struc.meta,
                        as.data.frame(outm, stringsAsFactors = F))
+        }
+        else{
+          rdata <- cbind(ind = snames,
+                         as.data.frame(outm, stringsAsFactors = F))
+        }
+        
         colnames(rdata)[2] <- paste(facets, collapse = ".")
       }
       else{ #add a bunch of filler columns for faststructure and change missing data to -9
@@ -2452,6 +2467,8 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){
+  ..ord <- NULL
+  
   #==================prep and sanity check==================
   msg <- character()
   

@@ -26,6 +26,8 @@ plot_structure_map(
 \item{assignments}{Structure like results, parsed in or generated via
 \code{\link{plot_structure}}, which generates the needed plot data.}
 
+\item{k}{numeric. Value of K (number of clusters) to plot.}
+
 \item{facet}{character. The facet by which data is broken down in the passed
 assignments.}
 
@@ -73,8 +75,6 @@ scale to the plot. If NULL, no scale added.}
 \item{compass}{list or NULL, list(symbol = 16). Arguments passed to
 \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
 added.}
-
-\item{K}{numeric. Value of K (number of clusters) to plot.}
 }
 \description{
 Plots the mean cluster assignment for each population on a map using the
@@ -94,7 +94,12 @@ match the sample coordinates.
 \examples{
 \dontrun{
 # get an sf of the sampling locations
-lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+lat_long <- data.frame(SMR = c(44.365931, -121.140420), 
+                       CLF = c(44.267718, -121.255805), 
+                       OPL = c(44.485958, -121.298360), 
+                       ASP = c(43.891693, -121.448360), 
+                       UPD = c(43.891755, -121.451600), 
+                       PAL = c(43.714114, -121.272797)) # coords for points
 lat_long <- t(lat_long)
 colnames(lat_long) <- c("lat", "long")
 lat_long <- as.data.frame(lat_long)
@@ -102,14 +107,19 @@ lat_long$pop <- rownames(lat_long)
 psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
 psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 
-# get the assignments
-assignments <- plot_structure(stickSNPs, "pop", alpha = 1) # get structure-like results
+# get the assignments (STRUCTURE-like results)
+assignments <- plot_structure(stickSNPs, "pop", alpha = 1) 
 
-# get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+# get a map of oregon as a background from the maps package. 
+# Note that this map is a bit odd as an sf, but works as an example.
 background <- maps::map("state", "oregon")
 background <- sf::st_as_sf(background)
 
 # make the plot
-plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, 
+                   sf = list(background), radius_scale = .2, 
+                   scale_bar = list(dist = 40, dist_unit = "km", 
+                                    transform = T), 
+                   compass = list(symbol = 16, scale = 0.2))
 }
 }

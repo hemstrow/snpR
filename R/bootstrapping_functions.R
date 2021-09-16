@@ -366,7 +366,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
       }
 
       # clean up the window info list
-      fws <- lapply(fws, na.omit)
+      fws <- lapply(fws, stats::na.omit)
 
 
       # get whatever info we can before passing to a looping function

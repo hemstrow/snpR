@@ -88,7 +88,12 @@ available for STRUCTURE via other arguments.}}
 repititions to run.}
 
 \item{iterations}{numeric or Inf, default 1000. For snapclust, the maximum
-number of iterations to run.}
+number of iterations to run. For STRUCTURE the number of MCMC steps, should
+be in the 10,000+ range.}
+
+\item{burnin}{numeric, default 100. For STRUCTURE, the number of burnin
+iterations to do prior to the main run. This should usually be in the
+10,000+ range.}
 
 \item{I}{numeric or NULL, default NULL. For snmf, how many SNPs should be
 used to initialize the search? Initializing with a subset of the total SNPs

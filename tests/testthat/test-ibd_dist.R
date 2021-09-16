@@ -40,6 +40,6 @@ test_that("correct genetic distances", {
   
   check <- unlist(lapply(unlist(unlist(res, recursive = F), recursive = F), class))
   expect_true(all(check == "dist")) # checks that each result is a distance matrix
-  expect_equal(length(check) = 44) # each part there
+  expect_equal(length(check), 44) # each part there
   
 })

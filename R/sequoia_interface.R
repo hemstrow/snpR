@@ -64,7 +64,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   }
   
   check.installed("sequoia", "github", "JiscaH/sequoia")
-  if(packageVersion("sequoia") < as.package_version("2.2")){
+  if(utils::packageVersion("sequoia") < as.package_version("2.2")){
     cat("Sequoia version is too old, version 2.2 or greater is required.\n")
     check.installed("remotes")
     remotes::install_github("JiscaH/sequoia", ref = "stable")
@@ -133,8 +133,8 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     else{
       snpmatches <- which(snp.meta(x)[,tasks[i, 3]] == tasks[i,4])
     }
-    tdat <- subset_snpR_data(x, samps = tmatches, snps = snpmatches)
-    
+    tdat <- x[snpmatches, tmatches]
+
     
     
     # filter snps for running sequoia - requires high MAF >0.25 and 50% inds otherwise inds dropped from seq

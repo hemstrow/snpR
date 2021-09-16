@@ -913,6 +913,9 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #' @param meta.names names of the metadata columns, usually everything up to .snp.id
 #' @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+  .snp.id <- facet <- subfacet <- comparison <- NULL
+  
+  
   n.s <- data.table::as.data.table(n.s)
   o.s <- data.table::as.data.table(o.s)
   if(all(colnames(n.s) %in% colnames(o.s))){
@@ -1289,7 +1292,7 @@ interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
     
     # do interpolation for each missing data point
     if(method == "bernoulli"){
-      ndat <- rbinom(length(NAs), 2, af[NA.cols])
+      ndat <- stats::rbinom(length(NAs), 2, af[NA.cols])
     }
     else if(method == "af"){
       ndat <- af[NA.cols]
@@ -1446,6 +1449,8 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 #'   stats have actually been calculated.
 #' @author William Hemstrom
 get.task.list <- function(x, facets, source = "stats"){
+  ..use.facet <- NULL
+  
   facets <- check.snpR.facet.request(x, facets, "none", F)
   task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
   
@@ -1717,7 +1722,7 @@ check.installed <- function(pkg, install.type = "basic", source = NULL){
         utils::install.packages(pkg)
       }
       if(install.type == "bioconductor"){
-        if(!"BiocManager" %in% installed.packages()){
+        if(!"BiocManager" %in% utils::installed.packages()){
           utils::install.packages("BiocManager")
         }
         BiocManager::install(pkg)
@@ -1834,6 +1839,8 @@ convert_2_to_1_column <- function(x){
 #' @param patch A character string that will be used to join row ID to contents.
 #'   SHOULD NOT BE FOUND ANYWHERE IN X, LOOKUP, OR LOOKUP_MATCH.
 row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
+  ident <- NULL
+  
   # make the lookup table row-specific
   lookup <- data.table::data.table(lookup = as.character(unlist(lookup)), row = 1:nrow(lookup), 
                        match = rep(lookup_match, each = nrow(lookup)))
@@ -1878,6 +1885,9 @@ row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
 #'
 #' @return A snpR data object with weighted statistics merged in.
 calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
+  ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- NULL
+  
+  
   #===========sanity checks===============
   msg <- character(0)
   if(!is.snpRdata(x)){
@@ -2204,5 +2214,5 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
 #' 
 #' @param df data.frame with data do paste
 #' @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
-#' @param sp character, default ".". Pasted facets will be split by this.
+#' @param sep character, default ".". Pasted facets will be split by this.
 .paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))

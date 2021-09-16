@@ -74,6 +74,8 @@ test_that("structure map",{
 #==================plot_clusters=====================
 test_that("pca",{
   local_edition(3)
+  skip_on_cran()
+  
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
   expect_true(ggplot2::is.ggplot(p$plots$pca))
@@ -82,6 +84,8 @@ test_that("pca",{
 
 test_that("tsne",{
   local_edition(3)
+  skip_on_cran()
+  
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
@@ -92,6 +96,7 @@ test_that("tsne",{
 
 test_that("umap",{
   local_edition(3)
+  skip_on_cran()
   skip_if_not_installed(c("umap"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")

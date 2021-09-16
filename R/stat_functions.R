@@ -324,7 +324,8 @@ calc_maf <- function(x, facets = NULL){
 #' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
 #' get.snpR.stats(x, "group.pop", "single.window")
 #'
-#' # the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
+#' # the entire population at once, note that sigma and step are NULL and 
+#' # no chromosome/linkage group/scaffold/etc set.
 #' # this will calculate overall tajima's D without a window for each population.
 #' x <- calc_tajimas_d(stickSNPs, facets = "pop")
 #' get.snpR.stats(x, "pop", "single.window")
@@ -468,7 +469,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'the genepop package (see references).
 #'
 #'If the genpop option is used, several intermediate files will be created in
-#'the default temporary directory (see \code{\link{temfile}}).
+#'the default temporary directory (see \code{\link{tempfile}}).
 #'
 #'The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
 #'produce very similar results both per SNP and per population.
@@ -525,7 +526,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' get.snpR.stats(x, "pop", "fst")
 #' 
 calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE){
-  facet <- subfacet <- .snp.id <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- NULL
   
   func <- function(x, method, facets = NULL){
     if(method != "genepop"){
@@ -3092,8 +3093,9 @@ calc_het_hom_ratio <- function(x, facets = NULL, complex_averages = FALSE){
 #' @examples
 #' \dontrun{
 #' # not run, since the path to NeEstimator may vary
-#' # calculate Ne, noting not to use LD between SNPs on the same chromosome equivalent ("group") for every population.
-#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group") # need to set the path argument to the local NeEstimator installation.
+#' # calculate Ne, noting not to use LD between SNPs on the 
+#' # same chromosome equivalent ("group") for every population.
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
 #' get.snpR.stats(ne, "pop", type = "pop")}
 #' 
 #' @export

@@ -29,9 +29,11 @@ test_that("colony",{
   col <- run_colony(stickSNPs[pop = "ASP"], colony_path = col_path, run_length = 1, method = "PLS", cleanup = TRUE)
   
   expect_identical(colnames(col$clusters), c("ClusterIndex", "ClusterProbability", "OffspringID", "FatherID", "MotherID"))
-  expect_snapshot(col$dyads[col$dyads$Probability > .5, -3])
+  snap_check <- col$dyads[col$dyads$Probability > .5, -3]
+  rownames(snap_check) <- 1:nrow(snap_check)
+  expect_snapshot(snap_check)
   expect_true(is.snpRdata(col$x))
-  expect_snapshot(col$clusters[col$clusters$ClusterProbability > .5, 3]) # not internally calced, just a check for proper prep and parsing
+  expect_snapshot(col$clusters[col$clusters$ClusterProbability > .8, 3]) # not internally calced, just a check for proper prep and parsing
 })
 
 

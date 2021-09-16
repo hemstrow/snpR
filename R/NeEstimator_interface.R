@@ -72,7 +72,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   # write a chr input file
   if(!is.null(chr[1])){
     chrs <- cbind(paste0("c", as.numeric(as.factor(x@snp.meta[,chr]))), paste0("SNP_", 1:nrow(x)))
-    write.table(chrs, "chrinput.map", quote = F, sep = " ", col.names = F, row.names = F)
+    utils::write.table(chrs, "chrinput.map", quote = F, sep = " ", col.names = F, row.names = F)
   }
 
 
@@ -110,7 +110,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
 
   # if we are doing temporal, need to add stuff
   if("temporal" %in% methods){
-    write.table(temporal_gens, "info", col.names = F, row.names = F, sep = " ", append = T, quote = F)
+    utils::write.table(temporal_gens, "info", col.names = F, row.names = F, sep = " ", append = T, quote = F)
     write("0", "info", append = T)
   }
 
