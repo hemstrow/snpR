@@ -1,7 +1,7 @@
 #' @include snpRdata.R
 NULL
 
-
+#' @export
 setMethod("show", "snpRdata", function(object) {
   
   calced_stats_print <- character(0)
@@ -68,7 +68,6 @@ setGeneric("ncol", function(x) standardGeneric("ncol"))
 setMethod("ncol", "snpRdata", function(x) {
   nrow(sample.meta(x))
 })
-
 
 
 
