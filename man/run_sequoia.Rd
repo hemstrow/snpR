@@ -34,20 +34,19 @@ for the samples. This process can take a long time.}
 
 \item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 cutoff for analysis. Sequoia requires high minor allele frequencies for
-parentage and pedigree construction, so it is not generally recommended to
-reduce this number.}
+parentage and pedigree construction.}
 
 \item{min_ind}{numeric in 0.5:1, default 0.5. Removes loci sequenced in less
 than this proportion of individuals. Note that \emph{individuals} with
-genotypes for less than half of the loci will be automatically removed by
+genotypes for fewer than half of the loci will be automatically removed by
 sequoia.}
 
 \item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}}
 (during parentage and pedigree reconstruction).}
 }
 \value{
-A data.frame for each facet specified with sequoia output summary
-  information.
+A nested list with each facet specified containing sequoia output 
+  summary information.
 }
 \description{
 Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
@@ -59,7 +58,7 @@ Note that there are many more Sequoia specific arguments that can be added to
 change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
 etc.) See documentation for \code{\link[sequoia]{sequoia}}. These can be
 passed to the pedigree and parentage reconstructions using the ... argument
-to run_sequoia.
+in run_sequoia.
 }
 \examples{
 # to follow an example using the stickSNPs example dataset you need to add some variables 
@@ -72,7 +71,12 @@ sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = 
 # birth years
 sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+
+# slow, so not run here
+\dontrun{
 dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
+ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, run_pedigree = TRUE)
+}
 }
 \references{
 Huisman,J. (2017) Pedigree reconstruction from SNP data:

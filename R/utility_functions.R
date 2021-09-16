@@ -1078,7 +1078,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #PLINK! format, not run to avoid file creation
 #' \dontrun{
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
-#' }
+#' 
 #' 
 #' #PLINK! format with provided ped
 #' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, 
@@ -1089,6 +1089,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'             ped = ped, chr = "group")
 #' #note that a column in the sample metadata containing phenotypic information
 #' #can be provided to the "phenotype" arugment if wished.
+#'
+#' }
 #'
 #' #Sequoia format
 #' b <- sample.meta(stickSNPs)

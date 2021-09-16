@@ -122,6 +122,8 @@ check.snpRdata <- function(object){
 #'  not fit cleanly elsewhere.
 #'
 #'@author William Hemstrom
+#'
+#'@importFrom methods new
 #'  
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",

@@ -53,8 +53,12 @@
 #' # birth years
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
 #' sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+#' 
+#' # slow, so not run here
+#' \dontrun{
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
 #' ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, run_pedigree = TRUE)
+#' }
 run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, run_pedigree = FALSE, min_maf = 0.3, min_ind = 0.5, ...){
   
   #===================sanity checks===============
