@@ -1,7 +1,7 @@
 #'Make a pedigree plot 
 #' 
 #'Prepares a pedigree plot from pedigree output generated from run_sequoia 
-#'function.
+#'function. Or COLONY BestCluster output format.
 #' 
 #'This is uses the packages VisPedigree and Kinship2 to make pedigree plots
 #'
@@ -26,7 +26,7 @@
 #'# output from COLONY Best Cluster
 #'# example pedigree stickPED
 
-plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck = TRUE, na.omit = TRUE,...){  
+plot_pedigree <- function(x, facets = NULL, plot.type = "visped", na.omit = TRUE,...){  
   #===================sanity checks===============
   # check that data is in the correct format
   # snpr object then run sequoia
@@ -101,10 +101,9 @@ plot_pedigree <- function(x, facets = NULL, plot.type = "visped", run_dupcheck =
   #==================run===========================       
   for(i in 1:length(out)){
     #grab the pedigree information from the appropriate list part - and currently without filtering inds (via LLR -seq or prob - col)
-    x2 <- x[[i]]$pedigree$Pedigree  # basically want to grab the pedigree results from the output for each facet and then run it through and save in something later but this isn't quite the right way to do this
-    #how to grab the first elements of the list?
+    x2 <- x[[i]]$pedigree$Pedigree  # basically want to grab the pedigree results from the output for each facet and then run it through and save in something later
     data <- x2[,c(1,3,2)] #need to find (id, dam, and sire) and rearrange the order to feed into visped - so that the order is id, sire, dam instead of the sequoia output format id, dam, sire
-    bads <- which(rowSums(is.na(data[,-1])) == 2)
+    bads <- which(rowSums(is.na(data[,-1])) == 2) #inds with no parents assigned
     if(length(bads) > 0){
       if(length(bads) == nrow(data)){
         # could throw a warning
