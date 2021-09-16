@@ -614,6 +614,6 @@ function pedigree
 snpR can export data in a wide array of commonly used formats.
 
 ```{r, echo=FALSE, results='asis'}
-# tbl <- read.csv("~/R/snpR/vignettes/exportstable.csv", header = T)
-# print(knitr::kable(tbl))
+tbl <- read.csv("~/R/snpR/vignettes/exportstable.csv", header = T)
+print(knitr::kable(tbl))
 ```
