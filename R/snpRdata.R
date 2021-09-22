@@ -818,8 +818,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     }
     
     if(length(keep.rows) == 0){
-      # return(NULL)
-      stop("No statistics calculated for this facet and statistics type.\n")
+      warning("No statistics calculated for this facet and statistics type.\n")
+      return(NULL)
     }
     
     if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison"))){
