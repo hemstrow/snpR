@@ -923,6 +923,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   if(length(msg) > 0){
     stop(msg, collapse = "\n")
   }
+  
   #=============grab the desired stats=====================
   #====if a snpRdata object========
   if(class(x) == "snpRdata"){
@@ -974,6 +975,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   #====otherwise=====
   else if(is.data.frame(x)){
+    if(data.table::is.data.table(x)){x <- as.data.frame(x)}
     stats <- x
   }
   else{
