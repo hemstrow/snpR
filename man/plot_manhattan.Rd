@@ -182,7 +182,7 @@ significant = .29, suggestive = .2)
 # plot using a data.frame,
 # using log-transformed p-values
 ## grab data
-y <- get.snpR.stats(x, "pop")
+y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 ## plot
 plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
 significant = 0.0001, suggestive = 0.001,
