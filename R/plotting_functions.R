@@ -1156,6 +1156,155 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   return(list(plot = p, data = stats))
 }
 
+
+#' Generate qq plots from p values.
+#' 
+#' 
+#' 
+#' @examples
+#' x <- stickSNPs
+#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+#' 
+#' x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype", method = "armitage")
+#' 
+#' 
+#' facets <- c("pop.fam", "pop", ".base")
+#' p <- plot_qq(x, "p_armitage_phenotype", facets)
+#' 
+#' y <- get.snpR.stats(x, facets, "association")
+#' y <- y$single
+#' p <- plot_qq(y, "p_armitage_phenotype", c("fam.pop", "pop", ".base"))
+#' 
+#' z <- y[y$facet == "pop",]
+#' z <- z[,c(1, 5)]
+#' colnames(z)[1] <- "pop"
+#' p <- plot_qq(z, "p_armitage_phenotype", "pop")
+plot_qq <- function(x, plot_var, facets = NULL){
+  #=============sanity checks and prep============
+  msg <- character(0)
+  
+  # snpRdata
+  if(class(x) == "snpRdata"){
+    facets <- check.snpR.facet.request(x, facets)
+    
+    if(plot_var %in% colnames(x@stats)){
+      stats <- data.table::as.data.table(.get.snpR.stats(x, facets = facets))
+    }
+    else{
+      msg <- c( msg, "No matching statistics in provided snpRdata object.\n")
+    }
+  }
+  
+  # data frame
+  else if(is.data.frame(x)){
+    if(!data.table::is.data.table(x)){x <- data.table::as.data.table(x)}
+    stats <- x
+    if(!plot_var %in% colnames(stats)){
+      msg <- c(msg, "No matching statistics in provided data.frame.\n")
+    }
+    
+    if(is.null(facets)){
+      facets <- ".base"
+      stats$facet <- ".base"
+      stats$subfacet <- ".base"
+    }
+    else{
+      if(all(c("facet", "subfacet") %in% colnames(stats))){
+        bad <- which(!facets %in% stats$facet)
+        
+        
+        if(length(bad) > 0){
+          msg <- c(msg, paste0("No  data for facets ", paste0(facets[bad], collapse = ", "), " found in provided data.\n"))
+        }
+      }
+      
+      else{
+        check <- .split.facet(facets)
+        bad <- character(0)
+        for(i in 1:length(check)){
+          bad <- c(bad, check[[i]][which(!check[[i]] %in% colnames(stats))])
+        }
+        if(length(bad) > 0){
+          msg <- c(msg, paste0("No columns matching facet part(s) ", paste0(check[[i]][bad], collapse = ", "), " found in provided data.\n"))
+        }
+      }
+    }
+  }
+  
+  # otherwise error
+  else{
+    msg <- c(msg, "x must be a data.frame or snpRdata object.\n")
+  }
+  
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  #==============plot===========================
+  # prep p values
+  stats <- stats[-which(is.na(stats[[plot_var]]) | is.nan(stats[[plot_var]]) |
+                          stats[[plot_var]] < 0 | stats[[plot_var]] > 1 |
+                          is.nan(stats[[plot_var]]))]
+  colnames(stats)[which(colnames(stats) == plot_var)] <- ".p"
+  
+  out <- vector("list", length(facets))
+  names(out) <- facets
+  
+  for(i in 1:length(facets)){
+    # grab and id facets
+    split.facet.part <- .split.facet(facets[i])[[1]]
+    if(all(c("facet", "subfacet") %in% colnames(stats))){
+      tstats <- stats[which(stats$facet == facets[i]),]
+      ncols <- unlist(.split.facet(tstats$subfacet))
+      ncols <- data.table::as.data.table(matrix(ncols, ncol = length(split.facet.part), byrow = TRUE))
+      colnames(ncols) <- split.facet.part
+      tstats <- cbind(ncols, tstats)
+    }
+    else{
+      tstats <- stats
+    }
+    
+    
+    # get the x axis
+    tstats[,.o := -log10(sort(.p)), by = c(split.facet.part)]
+    tstats[,.e := -log10(ppoints(length(.p))), by = c(split.facet.part)]
+    
+    # fix facet names to avoid quasiquoting stuff
+    colnames(tstats)[colnames(tstats) %in% split.facet.part] <- paste0("facet_", 1:length(split.facet.part))
+    
+    # fix for CRAN
+    # for(j in 1:length(split.facet.part)){
+    #   assign(paste0("facet_", j), NULL)
+    # }
+    
+    
+    # plot
+    p <- ggplot2::ggplot(tstats, ggplot2::aes(x = .e, y = .o)) + 
+      ggplot2::geom_point() + 
+      ggplot2::geom_abline(slope = 1, intercept = 0, color = "blue") +
+      ggplot2::theme_bw() +
+      ggplot2::theme(strip.background = ggplot2::element_blank()) +
+      ggplot2::ylab("Observed log10(p)") +
+      ggplot2::xlab("Expected log10(p)")
+    
+    if(length(split.facet.part) == 1){
+      if(split.facet.part != ".base"){
+        p <- p + ggplot2::facet_wrap(~facet_1)
+      }
+    }
+    else if(length(split.facet.part) == 2){
+      p <- p + ggplot2::facet_grid(facet_1~facet_2)
+    }
+    else{
+      warning("Cannot plot more than two facets simultaniously.\n")
+      next
+    }
+    
+    out[[i]] <- p
+  }
+  
+  return(out)
+}
 #' Create STRUCTURE-like cluster plots
 #'
 #' Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
