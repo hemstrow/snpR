@@ -1526,6 +1526,11 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' @param seed integer, default sample(100000, 1). Used if method = "structure".
 #'   Starting seed for analysis runs. Each additional run (k value or rep) will
 #'   use a successive seed.
+#' @param strip_col_names string, default NULL. An optional regular expression
+#'   indicating a way to process the column names prior to plotting. Parts of 
+#'   names matching the strings provided will be cut. Useful for when the facet
+#'   argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
+#'   part off. A vector of strings will strip multiple patterns.
 #' @param cleanup logical, default TRUE. If TRUE, extra files created during
 #'   assignment, clumpp, and plot construction will be removed. If FALSE, they
 #'   will be left in the working directory.
@@ -1573,7 +1578,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            infer_pop_specific_lambda = FALSE, lambda = 1, f_prior_mean = 0.01, f_prior_sd = 0.05,
                            uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 
                            gens_back = 2, mig_prior = 0.01, locprior_init_r = 1, locprior_max_r = 20,
-                           alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), cleanup = TRUE, ...){
+                           alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), 
+                           strip_col_names = NULL, cleanup = TRUE, ...){
   
   rnorm <- V1 <- V2 <- popid <- genback <- ancestry_pop <- ancestry_probability <- V4 <- ..bpc <- ..upc <- NULL
   clean_popid <- prob_correctly_assigned <- K <- est_ln_prob <- Percentage <- Cluster <- NULL
@@ -2664,6 +2670,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     pdat <- pdat[-which(pdat$K == "K = 1"),]
   }
 
+  ofacet <- facet
+  # strip column names if requested
+  if(!is.null(strip_col_names)){
+    for(pat in 1:length(strip_col_names)){
+      colnames(pdat) <- stringr::str_replace(colnames(pdat), strip_col_names[pat], "")
+      facet <- stringr::str_replace(facet, strip_col_names[pat], "")
+    }
+  }
+  
   #===========make plot==============
   p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
     ggplot2::facet_wrap(~K, ncol = 1, strip.position = "right") +
@@ -2694,9 +2709,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       pops <- facet.order
     }
     else{
-      pops <- unique(sample_meta[,facet])
+      pops <- unique(sample_meta[,ofacet])
     }
-    fmt <- sapply(pops, function(x) sum(sample_meta[,facet] == x, na.rm = T))
+    fmt <- sapply(pops, function(x) sum(sample_meta[,ofacet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)
     fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
@@ -2874,7 +2889,7 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 #' Plots the mean cluster assignment for each population on a map using the
 #' scatterpie package alongside any additional simple feature objects
 #' (\code{\link[sf]{sf}}). Assignments must be given in the format provided by
-#' \code{link{plot_structure}}.
+#' \code{\link{plot_structure}}.
 #'
 #' Currently, this only works for simple, sample specific facets. Coordinates
 #' for pie charts should be provided as an \code{\link[sf]{sf}} object, where
@@ -2962,8 +2977,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16)){
   
   long <- lat <- pop <- NULL
-  
-  
+
   #===================sanity checks=================
   msg <- character()
   pkg.check <- check.installed("scatterpie")
@@ -3007,6 +3021,12 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     }
   }
   
+  K_opts <- unique(assignments$plot_data$K)
+  K_opts <- as.numeric(gsub("K = ", "", K_opts))
+  if(!k %in% K_opts){
+    msg <- c(msg, "Requested value of k not found in provided assignments.\n")
+  }
+  
   if(length(msg) > 0){stop(msg, "\n")}
   
   #==================prep for plot ===========================
@@ -3019,6 +3039,9 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   anc <- tapply(tpd$Percentage, tpd[,c(facet, "Cluster")], mean)
 
   ## get the pie coordinates
+  if(nrow(pop_coordinates) != nrow(pie_dat)){
+    stop(paste0("The number of unique options of ", facet, " (", nrow(pie_dat), ") is not equal to the number of provided coordinates (", nrow(pop_coordinates), ").\n"))
+  }
   pie_dat[,1] <- as.data.frame(pop_coordinates)[,facet]
   pie_dat[,3:2] <- sf::st_coordinates(pop_coordinates)
   pie_dat[,4:ncol(pie_dat)] <- anc[match(pie_dat[,1], row.names(anc)),]
@@ -3032,11 +3055,23 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 
   #============make the plot====================
   mp <- ggplot2::ggplot()
-  
+
   # add sf overlay if requested.
   if(!is.null(sf)){
+    if(crop){
+      x <- c(xmin = min(pie_dat$long) - r,
+             xmax = max(pie_dat$long) + r)
+      y <- c(ymin = min(pie_dat$lat) - r,
+             ymax = max(pie_dat$lat) + r)
+      dummy <- sf::st_as_sf(data.frame(x = x, y = y), coords = c("x", "y"))
+      dummy <- sf::`st_crs<-`(dummy, use_crs)
+    }
     for(i in 1:length(sf)){
       sf[[i]] <- sf::st_transform(sf[[i]], use_crs)
+      if(crop){
+        sf[[i]] <- sf::st_crop(sf[[i]], y = dummy)
+      }
+      
       if(is.poly[i]){
         mp <- mp + ggplot2::geom_sf(data = sf[[i]], fill = poly_pal[used_poly_pall + 1], color = sf_line_colors[i])
         used_poly_pall <- used_poly_pall + 1
@@ -3058,7 +3093,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     mp <- mp +
       ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
       ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r))
-    
+
   }
 
   if(!is.null(alt.palette)){
@@ -3076,12 +3111,9 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   
   # scale/compass
   if((!is.null(scale_bar) | !is.null(compass))){
-    if(!is.null(sf) | crop){ 
+    if(!is.null(sf)){ 
       # make up a null sf object to set extent if needed
-      y <- ggplot2::layer_scales(mp)$y$range$range
-      x <- ggplot2::layer_scales(mp)$x$range$range
-      dummy <- sf::st_as_sf(data.frame(x = x, y = y), coords = c("x", "y"))
-      dummy <- sf::`st_crs<-`(dummy, sf::st_crs(pop_coordinates))
+      dummy <- sf[[1]]
     }
     else{
       dummy <- pop_coordinates

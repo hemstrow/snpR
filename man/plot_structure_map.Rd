@@ -80,7 +80,7 @@ added.}
 Plots the mean cluster assignment for each population on a map using the
 scatterpie package alongside any additional simple feature objects
 (\code{\link[sf]{sf}}). Assignments must be given in the format provided by
-\code{link{plot_structure}}.
+\code{\link{plot_structure}}.
 }
 \details{
 Currently, this only works for simple, sample specific facets. Coordinates

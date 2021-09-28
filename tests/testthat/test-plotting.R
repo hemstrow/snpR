@@ -117,6 +117,17 @@ test_that("manhattan plots", {
   expect_true(ggplot2::is.ggplot(p$plot))
 })
 
+#=================qq=====================
+# test_that("qq plots",{
+#   set.seed(1212)
+#   sample.meta(asso)$cat_phenotype <- sample(c("A", "B"), ncol(asso), replace = TRUE)
+#   asso <- calc_association(asso, response = "cat_phenotype")
+#   
+#   p <- plot_qq(asso, )
+#   
+#   
+# })
+
 #=================LD======================
 test_that("LD heatmap", {
   ld <- calc_pairwise_ld(stickSNPs, "pop.group", subfacets = list(pop = c("ASP", "PAL"), group = c("groupXIX", "groupIV")))

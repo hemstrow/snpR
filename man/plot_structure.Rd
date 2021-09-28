@@ -52,6 +52,7 @@ plot_structure(
   start_at_pop_info = FALSE,
   metro_update_freq = 10,
   seed = sample(1e+05, 1),
+  strip_col_names = NULL,
   cleanup = TRUE,
   ...
 )
@@ -267,6 +268,12 @@ updates are used. If 0, updates are never used.}
 \item{seed}{integer, default sample(100000, 1). Used if method = "structure".
 Starting seed for analysis runs. Each additional run (k value or rep) will
 use a successive seed.}
+
+\item{strip_col_names}{string, default NULL. An optional regular expression
+indicating a way to process the column names prior to plotting. Parts of 
+names matching the strings provided will be cut. Useful for when the facet
+argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
+part off. A vector of strings will strip multiple patterns.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, extra files created during
 assignment, clumpp, and plot construction will be removed. If FALSE, they
