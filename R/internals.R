@@ -2226,3 +2226,32 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
 .fix..call <- function(fun){
   return(pkgcond::suppress_warnings(fun,"variable in calling scope for clarity"))
 }
+
+
+
+# dist subfunction for pops. Adapted from adegenet code!
+# @param x matrix, genotypes or other character states
+# @param method character, default Edwards. Dist method.
+.get_dist <- function(x, method = "Edwards"){
+  if(method == "Edwards"){
+    x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
+    nloc <- ncol(x)
+    x <- sqrt(as.matrix(x))
+    am <- x%*%t(x)
+    am <- 1 - (am / (nloc/2)) # can produce negative values, meaning an NaN distance measure
+    diag(am) <- 0
+    suppressWarnings(am <- sqrt(am))
+    am <- stats::as.dist(am)
+  }
+  else if(method == "Nei"){
+    d <- x %*% t(x)
+    vec <- sqrt(diag(d))
+    d <- d/vec[col(d)]
+    d <- d/vec[row(d)]
+    d <- -log(d)
+    d <- as.dist(d)
+  }
+  am <- list(am)
+  names(am) <- method
+  return(am)
+}

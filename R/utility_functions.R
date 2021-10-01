@@ -2521,6 +2521,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){
+  
   ..ord <- NULL
   
   #==================prep and sanity check==================
@@ -2533,6 +2534,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   needed.sample.facets <- check.snpR.facet.request(x, facets)
   if(any(facet_types == "snp")){
     needed.sample.facets <- c(needed.sample.facets, ".base")
+    needed.sample.facets <- unique(needed.sample.facets)
   }
   ## add any missing maf data
   missing_mafs <- check_calced_stats(x, needed.sample.facets, "maf")
@@ -2594,7 +2596,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
         include_snps <- unique(am$.snp.id[which(am[,snp.parts[j,1]] == snp.parts[j,2])])
         
         # grab just those snps
-        tout[[j]] <- sample_facet_freqs[[which(needed.sample.facets == t.samp.facet)]] # add everything
+        tout[[j]] <- sample_facet_freqs[[which(needed.sample.facets == t.samp.facet)[1]]] # add everything
         tout[[j]] <- tout[[j]][,which(as.numeric(gsub("_.+", "", colnames(tout[[j]]))) %in% include_snps), drop = F] # subset the requested snps only
       }
       # assign back, nesting with the snp facet name

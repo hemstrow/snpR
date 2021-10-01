@@ -21,34 +21,47 @@ plot_tree(
 \item{facets}{character or NULL, default NULL. Facets for which to calculate
 genetic distances, as described in \code{\link{Facets_in_snpR}}. If snp or
 base level facets are requested, distances will be between individuals.
-Otherwise, distances will be between the levels of the sample facets. If bootstraps
-are requested, SNPs will}
+Otherwise, distances will be between the levels of the sample facets. If
+bootstraps are requested, SNPs will}
 
-\item{distance_method}{character, default "Edwards". Name of the method to use.
-Options: \itemize{\item{Edwards} Angular distance as described in Edwards
-1971.} See \code{\link{calc_genetic_distances}}.}
+\item{distance_method}{character, default "Edwards". Name of the method to
+use. Options: \itemize{\item{Edwards} Angular distance as described in
+Edwards 1971.} See \code{\link{calc_genetic_distances}}.}
 
 \item{interpolate}{character, default "bernoulli". Missing data interpolation
 method, solely for individual/individual distances. Options detailed in
 documentation for \code{\link{format_snps}}.}
 
-\item{tree_method}{character, default nj. Method by which the tree is constructed
-from genetic distances. Options: \itemize{\item{nj} Neighbor-joining trees, via
-\code{\link[ape]{nj}}. \item{bionj} BIONJ trees, according to Gascuel 1997, via 
-\code{\link[ape]{bionj}}. \item{upgma} UPGMA trees, via \code{\link[stats]{hclust}}.}}
+\item{tree_method}{character, default nj. Method by which the tree is
+constructed from genetic distances. Options: \itemize{\item{nj}
+Neighbor-joining trees, via \code{\link[ape]{nj}}. \item{bionj} BIONJ
+trees, according to Gascuel 1997, via \code{\link[ape]{bionj}}.
+\item{upgma} UPGMA trees, via \code{\link[stats]{hclust}}.}}
 
-\item{root}{character or FALSE, default FALSE. A vector containing the requested roots for
-each facet. Roots are specified by a string matching either the individual sample or sample facet level by
-which to root. If FALSE for a given facet, trees will be unrooted. Note that all UPGMA
-trees are automatically rooted, so this argument is ignored for that tree type.}
+\item{root}{character or FALSE, default FALSE. A vector containing the
+requested roots for each facet. Roots are specified by a string matching
+either the individual sample or sample facet level by which to root. If
+FALSE for a given facet, trees will be unrooted. Note that all UPGMA trees
+are automatically rooted, so this argument is ignored for that tree type.}
 
-\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do for each facet. See details.}
+\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do
+for each facet. See details.}
 
-\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
-using the supplied number of cores.}
+\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will
+be processed in parallel using the supplied number of cores.}
 }
 \value{
-A nested, named list containing plots, trees, and bootstraps for each facet and facet level.
+A nested, named list containing plots, trees, and bootstraps for each
+  facet and facet level.
+
+  #' @references Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
+  Approach Using the Bootstrap. Evolution, 39(4), 783–791.
+  https://doi.org/10.2307/2408678 Gascuel, O. (1997). BIONJ: an improved
+  version of the NJ algorithm based on a simple model of sequence data.
+  Molecular Biology and Evolution, 14(7), 685–695.
+  https://doi.org/10.1093/oxfordjournals.molbev.a025808 Paradis, E., Claude,
+  J. and Strimmer, K. (2004). APE: analyses of phylogenetics and evolution in
+  R language. Bioinformatics, 20, 289–290.
 }
 \description{
 Generate and plot dendritic trees in the style of a phylogenetic tree for
@@ -57,16 +70,24 @@ is not overwrite safe.
 }
 \details{
 Plots are generated via the \code{\link[ape]{nj}} or \code{\link[ape]{bionj}}
-ape package for nj or bionj trees. The plots produced are ggplot objects, produced
-using \code{\link[ggtree]{ggtree}} function, as well as a handful of others from
-the ggtree package. For more information, see the documentation for those functions
-and packages.
+ape package for nj or bionj trees. The plots produced are ggplot objects,
+produced using \code{\link[ggtree]{ggtree}} function, as well as a handful of
+others from the ggtree package. For more information, see the documentation
+for those functions and packages.
 
-Bootstraps are conducted by re-sampling SNPs with replacement, according to Felsenstein (1985).
-If no snp level facets are provides, loci are resampled without restraint. If a snp level
-facet is provided, loci are only resampled within the levels of that facet (e.g. within chromosomes).
+Bootstraps are conducted by re-sampling SNPs with replacement, according to
+Felsenstein (1985). If no snp level facets are provides, loci are resampled
+without restraint. If a snp level facet is provided, loci are only resampled
+within the levels of that facet (e.g. within chromosomes).
 
-The genetic distances used to make the trees are calculated using \code{\link{calc_genetic_distances}}.
+The genetic distances used to make the trees are calculated using
+\code{\link{calc_genetic_distances}}. If a sample facet is used, that
+function uses code derived from \code{\link[adegenet]{adegenet}}. Please cite
+them and the actual method (e.g. Edwards, A. W. F. (1971)) alongside the
+tree-building approach.
+
+Bootstrapping is done via \code{\link[ape]{boot.phlyo}}, and as such does not
+support parallel runs on Windows machines.
 }
 \examples{
 # Calculate nj trees for the base facet, each chromosome, and for each population.
@@ -81,10 +102,6 @@ tp <- plot_tree(stickSNPs, "pop", root = "PAL", boot = 5)
 tp$pop$.base$plot # nodes now have a bootstrap support indicator
 }
 
-}
-\references{
-Felsenstein, J. (1985). Confidence Limits on Phylogenies: An Approach Using the Bootstrap. Evolution, 39(4), 783–791. https://doi.org/10.2307/2408678
-Gascuel, O. (1997). BIONJ: an improved version of the NJ algorithm based on a simple model of sequence data. Molecular Biology and Evolution, 14(7), 685–695. https://doi.org/10.1093/oxfordjournals.molbev.a025808
 }
 \author{
 William Hemstrom

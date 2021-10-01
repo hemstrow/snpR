@@ -38,15 +38,16 @@ any sample specific facets, broken apart by any requested snp level facets.
 For details on methods, see details.
 }
 \details{
-Available methods: \itemize{\item{Edwards} Angular distance as described in
-Edwards 1971.}
+If a sample facet is requested, distances are calulcated via code adapted
+from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
+alongside the tree-building and distance methods Available methods:
+\itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
+\item{Nei: } Nei's (1978) genetic distance measure.}
 
-All methods first calculate allele frequency matrices using
-\code{\link{tabulate_allele_frequency_matrix}}, then use these matrices
-(hereafter x) to calculate genetic distance.
-
-Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
-<- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
+Otherwise, genetic distances are calculated via the \code{\link[stats]{dist}}
+function using genotypes formatted numerically (the "sn" option in
+\code{\link{format_snps}}). In all cases, missing genotypes are first
+interpolated according to the method provided to the 'interpolate' argument.
 }
 \examples{
 # by pop:
@@ -54,21 +55,30 @@ y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 get.snpR.stats(y, "pop", "genetic_distance")
 
 # by group and pop jointly
-y <- calc_genetic_distances(stickSNPs, facets = "pop.group", method = "Edwards")
+y <- calc_genetic_distances(stickSNPs, facets = "pop.group", 
+                            method = "Edwards")
 get.snpR.stats(y, "pop.group", "genetic_distance")
 
 # by pop and fam seperately
-y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), method = "Edwards")
+y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
+                            method = "Edwards")
 get.snpR.stats(y, c("pop", "group"), "genetic_distance")
 
 # individuals across all snps + plot
 y <- calc_genetic_distances(stickSNPs)
-heatmap(as.matrix(get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards))
+dat <- get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards
+heatmap(as.matrix(dat))
 
 }
 \references{
 Edwards, A. W. F. (1971). Distances between populations on the
   basis of gene frequencies. Biometrics, 873-881.
+
+Nei, M. (1978). Estimation of average heterozygosity and genetic
+  distance from a small number of individuals. Genetics, 23, 341-369.
+
+Jombart, T. (2008). adegenet: a R package for the multivariate
+  analysis of genetic markers Bioinformatics 24: 1403-1405.
 }
 \author{
 William Hemstrom

@@ -3163,15 +3163,17 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' any sample specific facets, broken apart by any requested snp level facets.
 #' For details on methods, see details.
 #'
-#' Available methods: \itemize{\item{Edwards} Angular distance as described in
-#' Edwards 1971.}
 #'
-#' All methods first calculate allele frequency matrices using
-#' \code{\link{tabulate_allele_frequency_matrix}}, then use these matrices
-#' (hereafter x) to calculate genetic distance.
+#' If a sample facet is requested, distances are calulcated via code adapted
+#' from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
+#' alongside the tree-building and distance methods Available methods:
+#' \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
+#' \item{Nei: } Nei's (1978) genetic distance measure.}
 #'
-#' Method details: \itemize{\item{Edwards 1971:} x <- sqrt(x); x <- x%*%t(x); x
-#' <- 1/(x/number.loci); diag(x) <- 0; x <- sqrt(x)}
+#' Otherwise, genetic distances are calculated via the \code{\link[stats]{dist}}
+#' function using genotypes formatted numerically (the "sn" option in
+#' \code{\link{format_snps}}). In all cases, missing genotypes are first
+#' interpolated according to the method provided to the 'interpolate' argument.
 #'
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to calculate
@@ -3188,28 +3190,36 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' @return An overwrite-safe snpRdata object with genetic distance information
 #'   (a named, nested list containing distance measures named according to
 #'   facets and facet levels) added.
+#'
 #' @references Edwards, A. W. F. (1971). Distances between populations on the
 #'   basis of gene frequencies. Biometrics, 873-881.
+#' @references Nei, M. (1978). Estimation of average heterozygosity and genetic
+#'   distance from a small number of individuals. Genetics, 23, 341-369.
+#' @references Jombart, T. (2008). adegenet: a R package for the multivariate
+#'   analysis of genetic markers Bioinformatics 24: 1403-1405.
 #'
 #' @author William Hemstrom
 #' @export
-#'
+#' 
 #' @examples
 #' # by pop:
 #' y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 #' get.snpR.stats(y, "pop", "genetic_distance")
 #'
 #' # by group and pop jointly
-#' y <- calc_genetic_distances(stickSNPs, facets = "pop.group", method = "Edwards")
+#' y <- calc_genetic_distances(stickSNPs, facets = "pop.group", 
+#'                             method = "Edwards")
 #' get.snpR.stats(y, "pop.group", "genetic_distance")
 #'
 #' # by pop and fam seperately
-#' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), method = "Edwards")
+#' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
+#'                             method = "Edwards")
 #' get.snpR.stats(y, c("pop", "group"), "genetic_distance")
 #'
 #' # individuals across all snps + plot
 #' y <- calc_genetic_distances(stickSNPs)
-#' heatmap(as.matrix(get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards))
+#' dat <- get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards
+#' heatmap(as.matrix(dat))
 #' 
 calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpolate = "bernoulli"){
   #============sanity checks=========
@@ -3219,7 +3229,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     stop("x is not a snpRdata object.\n")
   }
 
-  good.methods <- c("Edwards")
+  good.methods <- c("Edwards", "Nei")
   if(!method %in% good.methods){
     msg <- c(msg, paste0("Provided method not supported. Supported methods: ", paste0(good.methods, collapse = " ")))
   }
@@ -3258,24 +3268,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   if(sample_facets_detected){
     x <- .get.snpR.stats(y, facets, "allele_frequency_matrix")
   }
-  #=============subfunctions=========
-  # dist subfunction
-  get_dist <- function(x, method){
-    if(method == "Edwards"){
-      x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
-      nloc <- ncol(x)
-      x <- sqrt(as.matrix(x))
-      am <- x%*%t(x)
-      am <- 1 - (am / (nloc/2))
-      diag(am) <- 0
-      suppressWarnings(am <- sqrt(am))
-      am <- stats::as.dist(am)
-    }
-    am <- list(am)
-    names(am) <- method
-    return(am)
-  }
-  
+
   #=============run for facets with sample aggregation===============
   if(sample_facets_detected){
     out <- vector("list", length(x))
@@ -3285,10 +3278,10 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     out <- lapply(x, function(y){
       lapply(y, function(z) {
         if("matrix" %in% class(z)){
-          get_dist(z, method = method)
+          .get_dist(z, method = method)
         }
         else{
-          lapply(z, get_dist, method = method)
+          lapply(z, .get_dist, method = method)
         }
       })
     })
