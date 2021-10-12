@@ -2619,7 +2619,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
 
 #' Filter down to one SNPs every \emph{n} bases.
 #'
-#' \code{rgap_snps} grabs one SNPs every \emph{n} bases. This can be
+#' Selects one SNPs every \emph{n} bases. This can be
 #' used to filter for SNPs in tight LD, such as when only one SNP per RAD-tag is
 #' desired.
 #' 
@@ -2644,6 +2644,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
 #' @author William Hemstrom
 #' @export
 #' 
+#' @examples 
 #' # put large gaps inbetween the example data
 #' gapped <- gap_snps(stickSNPs, "group", 100000)
 #'

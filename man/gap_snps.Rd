@@ -19,7 +19,7 @@ facet level.}
 A snpRdata object containing the selected SNPs.
 }
 \description{
-\code{rgap_snps} grabs one SNPs every \emph{n} bases. This can be
+Selects one SNPs every \emph{n} bases. This can be
 used to filter for SNPs in tight LD, such as when only one SNP per RAD-tag is
 desired.
 }
@@ -33,6 +33,14 @@ It is strongly recommended to provide a SNP facet to the facet argument. This
 will define "chromosomes" for the purpose of selecting SNPs. If not set, snpR
 will assume that \emph{all SNPs are on the same chromosome}, which may
 produce undesired results.
+}
+\examples{
+# put large gaps inbetween the example data
+gapped <- gap_snps(stickSNPs, "group", 100000)
+
+# filter first to grab only very good SNPs
+vgood <- filter_snps(stickSNPs, min_ind = .8)
+gapped <- gap_snps(vgood, "group", 100000)
 }
 \author{
 William Hemstrom
