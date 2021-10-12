@@ -1478,6 +1478,9 @@ get.task.list <- function(x, facets, source = "stats"){
         sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
         t.sample.meta <- as.data.frame(t.sample.meta, stringsAsFactors = F)
       }
+      else if(nrow(sample.opts) == 0){
+        stop(paste0("Facet: ", t.sample.facet, " not added. If you are a user seeing this, then the developers made a mistake. Please report a reproduceable example to the github issues page.\n"))
+      }
     }
     else{
       t.sample.facet <- ".base"
@@ -1509,9 +1512,9 @@ get.task.list <- function(x, facets, source = "stats"){
     }
     # get all of the possible factor/subfactor options and make the task list for this facet
     all.opts.1 <- matrix(rep(as.matrix(sample.opts), each = nrow(snp.opts)), ncol = ncol(sample.opts))
-    all.opts.1 <- do.call(paste, as.data.frame(all.opts.1))
+    all.opts.1 <- do.call(paste, c(as.data.frame(all.opts.1), sep = "."),)
     all.opts.2 <- matrix(rep(t(snp.opts), nrow(sample.opts)), ncol = ncol(snp.opts), byrow = TRUE)
-    all.opts.2 <- do.call(paste, as.data.frame(all.opts.2))
+    all.opts.2 <- do.call(paste, c(as.data.frame(all.opts.2), sep = "."))
     t.task.list <- cbind(t.sample.facet, all.opts.1, t.snp.facet, all.opts.2)
     task.list <- rbind(task.list, t.task.list)
   }
