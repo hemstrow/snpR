@@ -2614,3 +2614,113 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   x <- update_calced_stats(x, facets, "allele_frequency_matrix")
   return(merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
 }
+
+
+
+#' Filter down to one SNPs every \emph{n} bases.
+#'
+#' \code{rgap_snps} grabs one SNPs every \emph{n} bases. This can be
+#' used to filter for SNPs in tight LD, such as when only one SNP per RAD-tag is
+#' desired.
+#' 
+#' Note that this approach takes the first SNP every \emph{n} bases, and so is
+#' non-random. \code{\link{filter_snps}} can be used beforehand to ensure that
+#' the selected SNPs are above a desired quality threshold to ensure that poor
+#' SNPs are not selected over loci with more robust genotyping data.
+#' 
+#' It is strongly recommended to provide a SNP facet to the facet argument. This
+#' will define "chromosomes" for the purpose of selecting SNPs. If not set, snpR
+#' will assume that \emph{all SNPs are on the same chromosome}, which may
+#' produce undesired results.
+#'
+#' @param x snpRdata object
+#' @param facet character, default NULL. SNP facet specifying chromosomes or 
+#'   scaffolds. SNP positions will be independantly considered depending on the
+#'   facet level.
+#' @param n Integer. Specifies the minium distance between selected SNPs.
+#' 
+#' @return A snpRdata object containing the selected SNPs.
+#' 
+#' @author William Hemstrom
+#' @export
+#' 
+#' # put large gaps inbetween the example data
+#' gapped <- gap_snps(stickSNPs, "group", 100000)
+#'
+#' # filter first to grab only very good SNPs
+#' vgood <- filter_snps(stickSNPs, min_ind = .8)
+#' gapped <- gap_snps(vgood, "group", 100000)
+gap_snps <- function(x, facet = NULL, n){
+  #==========sanity checks=========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  msg <- character()
+  
+  
+  ffacet <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = TRUE)
+  
+  if(any(ffacet[[2]] %in% c("sample", "complex"))){
+    msg <- c(msg, "Non SNP facets are not permitted.\n")
+  }
+  
+  facet <- check.snpR.facet.request(x, facet, "sample")
+  
+  if(length(facet) != 1){
+    msg <- c(msg, "Only one facet may be provided to gap_snps. Note that complex
+             SNP facets may be used (e.g. chr.group).")
+  }
+  
+  if(!"position" %in% colnames(snp.meta(x))){
+    msg <- c(msg, "There must be a 'position' column in the SNP metadata to use gap_snps!")
+  }
+  
+  if(facet[1] == ".base"){
+    warning("Gapping SNPs by the base facet is not recommended. Consider using a SNP facet instead.\n")
+  }
+  
+  if(".tfacet.ext" %in% colnames(snp.meta(x))){
+    msg <- c(msg, "A column named '.tfacet.ext' cannot be in the SNP metadata.\n")
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #==============subfunction==============
+  retained <- function(pos, n){
+    fsnp <- which.min(pos)
+    cs <- pos[fsnp]
+    # use a while loop to grab the snps
+    # should be a fairly quick loop, since it loops through each gap, not each 
+    # snp. Might still be a bit slow with really large data, can fix later if
+    # I get requests...
+    while(cs[length(cs)] + n <= max(pos)){
+      cs <- c(cs,
+              min(pos[pos >= cs[length(cs)] + n]))
+    }
+    ret <- match(cs, pos)
+    return(ret)
+  }
+  
+  #==============find the SNPs to retain=====================
+  # get a task list, then run for each task
+  task.list <- get.task.list(x, facet)
+  keep.snps <- numeric()
+  
+  # no par option for now, should usually be quick. Can add if requested.
+  for(i in 1:nrow(task.list)){
+    tsm <- snp.meta(x)[fetch.snp.meta.matching.task.list(x, task.list[i,]),]
+    ret <- retained(tsm$position, n)
+    keep.snps <- c(keep.snps, tsm$.snp.id[ret])
+  }
+  
+  #==============subset and return========
+  
+  # grab the snp indexes to keep
+  ids <- sort(match(keep.snps, snp.meta(x)$.snp.id))
+  cat("Selected ", length(ids), "out of ", nrow(x), "SNPs.\n")
+  
+  # subset
+  return(x[ids,])
+}
