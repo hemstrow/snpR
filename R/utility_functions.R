@@ -668,36 +668,16 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       if(bi_al){
         cat("Filtering non-biallelic loci...\n")
         bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
-        bi.vio <- x@snp.meta$.snp.id[which(bi)] # IDs of violating snps.
-        cat(paste0("\t", length(bi.vio), " bad loci\n"))
+        cat(paste0("\t", sum(bi), " bad loci\n"))
         vio.snps[which(bi)] <- T
       }
 
       if(non_poly){
         cat("Filtering non_polymorphic loci...\n")
         np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
-        np.vio <- x@snp.meta$.snp.id[which(np)]
-        cat(paste0("\t", length(np.vio), " bad loci\n"))
+        cat(paste0("\t", sum(np), " bad loci\n"))
         vio.snps[which(np)] <- T
       }
-
-      #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
-      # if((maf | hf_hets) &  sum(bi) != 0){
-      #   x <- x[bi,]
-      #   xv <-   xv <- as.vector(t(x))
-      #   gs <- unique(xv)
-      #   hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-      #   mpos <- which(gs == mDat)
-      #   as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-      #   as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-      #   gmat <- gmat[bi,]
-      #   tmat <- tmat[bi,]
-      #   amat <- amat[bi,]
-      #   headers <- headers[bi,]
-      # }
-      # else{
-      #   keep <- keep + bi
-      # }
     }
 
     #========min inds=======
@@ -705,9 +685,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       cat("Filtering loci sequenced in few individuals...\n")
       mi <- wmat[,colnames(wmat) == mDat]
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
-      mi.vio <- x@snp.meta$.snp.id[which(mi)]
-      vio.snps[mi.vio] <- T
-      cat(paste0("\t", length(mi.vio), " bad loci\n"))
+      vio.snps[which(mi)] <- T
+      cat(paste0("\t", sum(mi), " bad loci\n"))
     }
 
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
@@ -732,8 +711,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
-        maf.vio <- x@snp.meta$.snp.id[which(mafs)]
-        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+        cat(paste0("\t", sum(mafs), " bad loci\n"))
 
 
         vio.snps[which(mafs)] <- T
@@ -780,9 +758,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         cmafs$maf <- cmafs$maf + a.mafs
 
         # check vio and report
-        maf.vio <- x@snp.meta$.snp.id[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))]
+        maf.vio <- which(cmafs$maf == (1 + length(unique(mafs$subfacet))))
         cat(paste0("\t", length(maf.vio), " bad loci\n"))
-        vio.snps[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))] <- T
+        vio.snps[maf.vio] <- T
       }
     }
 
@@ -796,8 +774,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
-      het_f.vio <- x@snp.meta$.snp.id[which(het_f)]
-      cat(paste0("\t", length(het_f.vio), " bad loci\n"))
+      cat(paste0("\t", sum(het_f), " bad loci\n"))
       vio.snps[which(het_f)] <- T
     }
 
