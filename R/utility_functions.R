@@ -2216,7 +2216,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       # write output
       cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
-      cat(llist, "\nPOP\n", file = outfile, append = T) # keming, this is the line that writes the snps. Put a conditonal in to behave differently depending on if we are writing a genepop or a baps, and write a new line or two to write the snps in a column for baps.
+      cat(llist, "\nPOP\n", file = outfile, append = T) 
 
       # write the tables, splitting by pop if requested:
       if(length(facets) > 0){

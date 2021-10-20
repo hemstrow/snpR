@@ -566,7 +566,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'   of window statistics. \item{genetic_distance: } genetic distances
 #'   \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist:
 #'   } geographic distances. \item{ibd: } isolation by distance results.
-#'   \item{sample: } sample stats. \item{pop: } population summary statistics. }
+#'   \item{sample: } sample stats. \item{pop: } population summary statistics.
+#'   \item{weighted.means: } Weighted means of SNP statistics per facet level.}
 #'
 #' @section Statistics: 
 #' 
