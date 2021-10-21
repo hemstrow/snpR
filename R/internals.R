@@ -2373,7 +2373,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   ..shuff <- NULL
   
   #=========parse gp file=========
-  gp_file <- readLines(gp_filepath)
+  pkgcond::suppress_warnings(gp_file <- readLines(gp_filepath), "incomplete final line found on") # need to suppress warnings here because genepop::Fst will remove line endings from the input file for some reason......
   pop_headers <- grep("POP", gp_file)
   
   counts <- c(pop_headers[-1], length(gp_file)) - pop_headers
@@ -2389,19 +2389,21 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   
   #=========boot=============
   rstrings <- stringi::stri_rand_strings(n, 10)
-  rstrings <- paste0(rstrings, ".txt")
-  exists <- file.exists(rstrings)
+  rstrings <- paste0("./", rstrings)
+  exists <- dir.exists(rstrings)
   abort <- 0
   while(sum(exists) > 0){
     rstrings[exists] <- stringi::stri_rand_strings(sum(exists), 10)
-    rstrings <- paste0(rstrings, ".txt")
-    exists <- file.exists(rstrings)
+    rstrings <- paste0("./", rstrings)
+    exists <- dir.exists(rstrings)
     abort <- abort + 1
     
     if(abort > 10000){
-      stop("Cannot generate random file names for bootstraps---there are 10^10 possible names, so this shouldn't generally happen...\n")
+      stop("Cannot generate random directory names for bootstraps---there are (26+26+10)^10 possible names, so this shouldn't generally happen...\n")
     }
   }
+  lapply(rstrings, dir.create)
+  rstrings_files <- paste0(rstrings, "/genepop.txt")
   
   
   adj_pop_headers <- pop_headers - (pop_headers[1] - 1)
@@ -2411,11 +2413,11 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     shuff <- sample(nrow(gp_file), nrow(gp_file), replace = T)
     tgp <- gp_file[shuff,]
     rownames(tgp) <- rownames(gp_file)
-    writeLines(header, rstrings[i], sep = "\n")
+    writeLines(header, rstrings_files[i], sep = "\n")
     for(j in 1:length(pop_headers)){
-      write("POP", rstrings[i], append = TRUE)
+      write("POP", rstrings_files[i], append = TRUE)
       data.table::fwrite(tgp[(adj_pop_headers[j]+1):adj_pop_headers[j + 1],], 
-            file = rstrings[i],
+            file = rstrings_files[i],
             append = TRUE, 
             quote = FALSE, 
             row.names = TRUE, 

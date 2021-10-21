@@ -517,7 +517,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 
     #===============genepop======================
     if(method == "genepop"){
+      if(dir.exists(g.filename)){
+        o.dir <- getwd()
+        setwd(g.filename)
+        g.filename <- list.files(pattern = "genepop.txt")
+      }
       invisible(utils::capture.output(genepop::Fst(g.filename, pairs = TRUE)))
+      
 
 
 
@@ -626,6 +632,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 
       # clean and return, we're done.
       cat("Finished.\n")
+      if(exists("o.dir")){
+        setwd(o.dir)
+      }
       return(out)
     }
 
@@ -932,7 +941,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
     new.files <- list.files()
     new.files <- new.files[which(!new.files %in% dir.condition)]
     if(length(new.files) > 0){
-      file.remove(new.files)
+      file.remove(new.files[which(!dir.exists(new.files))])
+      unlink(new.files[which(dir.exists(new.files))], recursive = TRUE)
     }
   }
   
