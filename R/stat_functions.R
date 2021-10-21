@@ -461,8 +461,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
                               cleanup = TRUE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
   
-  dir.condition <- list.files()
-  
+
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -820,13 +819,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   for(i in 1:length(facets)){
     if(method == "genepop"){
-      invisible(capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], ".txt"))))
+      invisible(capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt"))))
     }
     
     real[[i]] <- one_run(x,
                          method =  method, 
                          facet = facets[i], 
-                         g.filename = paste0(facets[i], ".txt"))
+                         g.filename = paste0(facets[i], "_genepop_input.txt"))
     
     if(method == "genepop"){
       real[[i]]$real_wm <- data.frame(comparison = names(real[[i]]$real_wm), weighted_mean_fst = real[[i]]$real_wm)
@@ -841,7 +840,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
       cat("Preparing input data...\n")
       
       if(method == "genepop"){
-        gp.filenames <- .boot_genepop(paste0(facets[f], ".txt"), boot)
+        gp.filenames <- .boot_genepop(paste0(facets[f], "_genepop_input.txt"), boot)
         wc.inputs <- NULL
       }
       else if(method == "wc"){
@@ -938,11 +937,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   # cleanup
   if(cleanup){
-    new.files <- list.files()
-    new.files <- new.files[which(!new.files %in% dir.condition)]
-    if(length(new.files) > 0){
-      file.remove(new.files[which(!dir.exists(new.files))])
-      unlink(new.files[which(dir.exists(new.files))], recursive = TRUE)
+    if(exists("gp.filenames")){
+      unlink(gp.filenames, recursive = TRUE)
+    }
+    if(method == "genepop"){
+      file.remove(paste0(facets, "_genepop_input.txt"))
+      file.remove("fichier.in", "cmdline.txt")
+      genepop::clean_workdir()
     }
   }
   
