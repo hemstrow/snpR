@@ -1157,28 +1157,47 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 }
 
 
-#' Generate qq plots from p values.
+#' Generate qq plots from p values
+#'
+#' Generate qq (quantile-quantile) plots for p-values, splitting by provided
+#' facets, using either a snpRdata object or a data.frame. Produces a
+#' \code{\link[ggplot2]{ggplot}} object, which is modifiable as usual.
+#'
+#' @param x snpRdata object or data.frame containing p-values to plot.
+#' @param plot_var character, name of the p-values to plot. For a snpRdata
+#'   object, the name should refer to the name of the column produced when
+#'   fetching data via \code{\link{get.snpR.stats}}. For a data.frame, it should
+#'   refer to the column name directly.
+#' @param facets Character, default NULL. Facets by which to split the plot. See
+#'   \code{\link{Facets_in_snpR}}.
+#'
+#'
+#' @export
 #' 
-#' 
+#' @author William Hemstrom
 #' 
 #' @examples
+#'
+#'
+#' 
+#' # from a snpRdata object directly
 #' x <- stickSNPs
 #' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
-#' 
-#' x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype", method = "armitage")
-#' 
-#' 
+#' x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype", 
+#'                       method = "armitage")
 #' facets <- c("pop.fam", "pop", ".base")
 #' p <- plot_qq(x, "p_armitage_phenotype", facets)
 #' 
+#' 
+#' # from a data.frame
 #' y <- get.snpR.stats(x, facets, "association")
 #' y <- y$single
 #' p <- plot_qq(y, "p_armitage_phenotype", c("fam.pop", "pop", ".base"))
-#' 
 #' z <- y[y$facet == "pop",]
 #' z <- z[,c(1, 5)]
 #' colnames(z)[1] <- "pop"
 #' p <- plot_qq(z, "p_armitage_phenotype", "pop")
+#' 
 plot_qq <- function(x, plot_var, facets = NULL){
   #=============sanity checks and prep============
   msg <- character(0)

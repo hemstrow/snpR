@@ -4,17 +4,17 @@
       tdfst
     Output
       $pairwise
-             group position facet comparison     fst
-      1   groupXIX    67921   pop    ASP~PAL  0.3672
-      2    groupIX   100382   pop    ASP~PAL  0.2189
-      3     groupX   101821   pop    ASP~PAL -0.1111
-      4     groupI   182629   pop    ASP~PAL  0.2704
-      5    groupIV   194493   pop    ASP~PAL -0.1798
-      6   groupVII   208605   pop    ASP~PAL  0.1667
-      7    groupVI   212436   pop    ASP~PAL -0.1296
-      8   groupXXI   239621   pop    ASP~PAL -0.0353
-      9  groupXVII   250065   pop    ASP~PAL  0.1667
-      10    groupX   267302   pop    ASP~PAL -0.0817
+         facet comparison     group position     fst
+      1    pop    ASP~PAL  groupXIX    67921  0.3672
+      2    pop    ASP~PAL   groupIX   100382  0.2189
+      3    pop    ASP~PAL    groupX   101821 -0.1111
+      4    pop    ASP~PAL    groupI   182629  0.2704
+      5    pop    ASP~PAL   groupIV   194493 -0.1798
+      6    pop    ASP~PAL  groupVII   208605  0.1667
+      7    pop    ASP~PAL   groupVI   212436 -0.1296
+      8    pop    ASP~PAL  groupXXI   239621 -0.0353
+      9    pop    ASP~PAL groupXVII   250065  0.1667
+      10   pop    ASP~PAL    groupX   267302 -0.0817
       
       $weighted.means
         facet subfacet snp.facet snp.subfacet weighted_mean_fst
@@ -34,98 +34,52 @@
     Output
       $LD
       $LD$prox
-           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq     Dprime      pval sample.facet
-      1    groupXIX       67921          1   groupIX      100382          2     32461         NaN 0.00000000       NaN        .base
-      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.00000000 0.6102987        .base
-      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.00000000 0.6792776        .base
-      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.00000000 0.4362749        .base
-      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.00000000 0.5270893        .base
-      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.107142857 1.00000000 0.5126908        .base
-      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.002267574 0.04761905 0.9241257        .base
-      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.00000000 0.7257210        .base
-      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.066666667 0.33333333 0.6055766        .base
-      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.00000000 0.7518296        .base
-      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.00000000 0.7720590        .base
-      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.00000000 0.5790997        .base
-      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.00000000 0.7388827        .base
-      2.4   groupIX      100382          2   groupVI      212436          7    112054         NaN 0.00000000       NaN        .base
-      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.127272727 1.00000000 0.4755327        .base
-      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.00000000 0.7750970        .base
-      2.7   groupIX      100382          2    groupX      267302         10    166920 0.020979021 1.00000000 0.7720590        .base
-      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.00000000 0.8777310        .base
-      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.33333333 0.6625206        .base
-      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.00000000 0.8452520        .base
-      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.00000000 0.6170751        .base
-      3.4    groupX      101821          3  groupXXI      239621          8    137800         NaN 0.00000000       NaN        .base
-      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.00000000 0.7750970        .base
-      3.6    groupX      101821          3    groupX      267302         10    165481 0.022222222 1.00000000 0.7655945        .base
-      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.00000000        NA        .base
-      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.00000000        NA        .base
-      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.00000000 0.5218394        .base
-      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.00000000 0.6792776        .base
-      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.00000000 0.8557254        .base
-      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.00000000 0.7874065        .base
-      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.00000000        NA        .base
-      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.074380165 1.00000000 0.5854409        .base
-      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.00000000 1.0000000        .base
-      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.00000000        NA        .base
-      5.4   groupIV      194493          5    groupX      267302         10     72809 0.111111111 1.00000000 0.5049851        .base
-      6    groupVII      208605          6   groupVI      212436          7      3831 0.181818182 1.00000000 0.3937686        .base
-      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.00000000 0.5581846        .base
-      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.008264463 1.00000000 0.8557254        .base
-      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.00000000 0.6625206        .base
-      7     groupVI      212436          7  groupXXI      239621          8     27185 0.057142857 0.40000000 0.6325851        .base
-      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.030769231 1.00000000 0.7257210        .base
-      7.2   groupVI      212436          7    groupX      267302         10     54866 0.109090909 1.00000000 0.5088828        .base
-      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.12500000 0.9061856        .base
-      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.20000000 0.7655945        .base
-      9   groupXVII      250065          9    groupX      267302         10     17237 0.020979021 1.00000000 0.7720590        .base
-          sample.subfacet
-      1             .base
-      1.1           .base
-      1.2           .base
-      1.3           .base
-      1.4           .base
-      1.5           .base
-      1.6           .base
-      1.7           .base
-      1.8           .base
-      2             .base
-      2.1           .base
-      2.2           .base
-      2.3           .base
-      2.4           .base
-      2.5           .base
-      2.6           .base
-      2.7           .base
-      3             .base
-      3.1           .base
-      3.2           .base
-      3.3           .base
-      3.4           .base
-      3.5           .base
-      3.6           .base
-      4             .base
-      4.1           .base
-      4.2           .base
-      4.3           .base
-      4.4           .base
-      4.5           .base
-      5             .base
-      5.1           .base
-      5.2           .base
-      5.3           .base
-      5.4           .base
-      6             .base
-      6.1           .base
-      6.2           .base
-      6.3           .base
-      7             .base
-      7.1           .base
-      7.2           .base
-      8             .base
-      8.1           .base
-      9             .base
+           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq     Dprime      pval sample.facet sample.subfacet
+      1    groupXIX       67921          1   groupIX      100382          2     32461         NaN 0.00000000       NaN        .base           .base
+      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.00000000 0.6102987        .base           .base
+      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.00000000 0.6792776        .base           .base
+      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.00000000 0.4362749        .base           .base
+      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.00000000 0.5270893        .base           .base
+      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.107142857 1.00000000 0.5126908        .base           .base
+      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.002267574 0.04761905 0.9241257        .base           .base
+      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.00000000 0.7257210        .base           .base
+      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.066666667 0.33333333 0.6055766        .base           .base
+      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.00000000 0.7518296        .base           .base
+      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.00000000 0.7720590        .base           .base
+      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.00000000 0.5790997        .base           .base
+      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.00000000 0.7388827        .base           .base
+      2.4   groupIX      100382          2   groupVI      212436          7    112054         NaN 0.00000000       NaN        .base           .base
+      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.127272727 1.00000000 0.4755327        .base           .base
+      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.00000000 0.7750970        .base           .base
+      2.7   groupIX      100382          2    groupX      267302         10    166920 0.020979021 1.00000000 0.7720590        .base           .base
+      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.00000000 0.8777310        .base           .base
+      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.33333333 0.6625206        .base           .base
+      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.00000000 0.8452520        .base           .base
+      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.00000000 0.6170751        .base           .base
+      3.4    groupX      101821          3  groupXXI      239621          8    137800         NaN 0.00000000       NaN        .base           .base
+      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.00000000 0.7750970        .base           .base
+      3.6    groupX      101821          3    groupX      267302         10    165481 0.022222222 1.00000000 0.7655945        .base           .base
+      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.00000000        NA        .base           .base
+      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.00000000        NA        .base           .base
+      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.00000000 0.5218394        .base           .base
+      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.00000000 0.6792776        .base           .base
+      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.00000000 0.8557254        .base           .base
+      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.00000000 0.7874065        .base           .base
+      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.00000000        NA        .base           .base
+      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.074380165 1.00000000 0.5854409        .base           .base
+      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.00000000 1.0000000        .base           .base
+      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.00000000        NA        .base           .base
+      5.4   groupIV      194493          5    groupX      267302         10     72809 0.111111111 1.00000000 0.5049851        .base           .base
+      6    groupVII      208605          6   groupVI      212436          7      3831 0.181818182 1.00000000 0.3937686        .base           .base
+      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.00000000 0.5581846        .base           .base
+      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.008264463 1.00000000 0.8557254        .base           .base
+      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.00000000 0.6625206        .base           .base
+      7     groupVI      212436          7  groupXXI      239621          8     27185 0.057142857 0.40000000 0.6325851        .base           .base
+      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.030769231 1.00000000 0.7257210        .base           .base
+      7.2   groupVI      212436          7    groupX      267302         10     54866 0.109090909 1.00000000 0.5088828        .base           .base
+      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.12500000 0.9061856        .base           .base
+      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.20000000 0.7655945        .base           .base
+      9   groupXVII      250065          9    groupX      267302         10     17237 0.020979021 1.00000000 0.7720590        .base           .base
       
       $LD$matrices
       $LD$matrices$.base
@@ -181,98 +135,52 @@
     Output
       $LD
       $LD$prox
-           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq    Dprime      pval sample.facet
-      1    groupXIX       67921          1   groupIX      100382          2     32461 0.353994002 0.9999389 0.2340669        .base
-      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.0000000 0.6102987        .base
-      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.0000000 0.6792776        .base
-      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.0000000 0.4362749        .base
-      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.0000000 0.5270893        .base
-      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.194966106 0.9997940 0.3771826        .base
-      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.011083805 0.1052797 0.8332312        .base
-      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.0000000 0.7257210        .base
-      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.108329998 0.4094221 0.5103644        .base
-      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.0000000 0.7518296        .base
-      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.0000000 0.7720590        .base
-      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.0000000 0.5790997        .base
-      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.0000000 0.7388827        .base
-      2.4   groupIX      100382          2   groupVI      212436          7    112054 0.259192408 0.9998711 0.3085740        .base
-      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.222194584 0.9999378 0.3458086        .base
-      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.0000000 0.7750970        .base
-      2.7   groupIX      100382          2    groupX      267302         10    166920 0.032582005 0.9815785 0.7180922        .base
-      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.0000000 0.8777310        .base
-      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.3333333 0.6625206        .base
-      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.0000000 0.8452520        .base
-      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.0000000 0.6170751        .base
-      3.4    groupX      101821          3  groupXXI      239621          8    137800 0.048813740 0.9985965 0.6585785        .base
-      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.0000000 0.7750970        .base
-      3.6    groupX      101821          3    groupX      267302         10    165481 0.034539801 0.9957009 0.7101179        .base
-      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.0000000        NA        .base
-      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.0000000        NA        .base
-      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.0000000 0.5218394        .base
-      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.0000000 0.6792776        .base
-      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.0000000 0.8557254        .base
-      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.0000000 0.7874065        .base
-      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.0000000        NA        .base
-      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.092592006 0.9998079 0.5428037        .base
-      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.0000000 1.0000000        .base
-      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.0000000        NA        .base
-      5.4   groupIV      194493          5    groupX      267302         10     72809 0.135706586 0.9998987 0.4612638        .base
-      6    groupVII      208605          6   groupVI      212436          7      3831 0.246370641 0.9999875 0.3208490        .base
-      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.0000000 0.5581846        .base
-      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.024023016 0.1549936 0.7565707        .base
-      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.0000000 0.6625206        .base
-      7     groupVI      212436          7  groupXXI      239621          8     27185 0.076875619 0.4295364 0.5792168        .base
-      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.047496855 0.9987162 0.6629271        .base
-      7.2   groupVI      212436          7    groupX      267302         10     54866 0.130421519 0.9999492 0.4701233        .base
-      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.1250000 0.9061856        .base
-      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.2000000 0.7655945        .base
-      9   groupXVII      250065          9    groupX      267302         10     17237 0.032582005 0.9815785 0.7180922        .base
-          sample.subfacet
-      1             .base
-      1.1           .base
-      1.2           .base
-      1.3           .base
-      1.4           .base
-      1.5           .base
-      1.6           .base
-      1.7           .base
-      1.8           .base
-      2             .base
-      2.1           .base
-      2.2           .base
-      2.3           .base
-      2.4           .base
-      2.5           .base
-      2.6           .base
-      2.7           .base
-      3             .base
-      3.1           .base
-      3.2           .base
-      3.3           .base
-      3.4           .base
-      3.5           .base
-      3.6           .base
-      4             .base
-      4.1           .base
-      4.2           .base
-      4.3           .base
-      4.4           .base
-      4.5           .base
-      5             .base
-      5.1           .base
-      5.2           .base
-      5.3           .base
-      5.4           .base
-      6             .base
-      6.1           .base
-      6.2           .base
-      6.3           .base
-      7             .base
-      7.1           .base
-      7.2           .base
-      8             .base
-      8.1           .base
-      9             .base
+           s1_group s1_position s1_.snp.id  s2_group s2_position s2_.snp.id proximity         rsq    Dprime      pval sample.facet sample.subfacet
+      1    groupXIX       67921          1   groupIX      100382          2     32461 0.353994002 0.9999389 0.2340669        .base           .base
+      1.1  groupXIX       67921          1    groupX      101821          3     33900 0.064935065 1.0000000 0.6102987        .base           .base
+      1.2  groupXIX       67921          1    groupI      182629          4    114708 0.042735043 1.0000000 0.6792776        .base           .base
+      1.3  groupXIX       67921          1   groupIV      194493          5    126572 0.151515152 1.0000000 0.4362749        .base           .base
+      1.4  groupXIX       67921          1  groupVII      208605          6    140684 0.100000000 1.0000000 0.5270893        .base           .base
+      1.5  groupXIX       67921          1   groupVI      212436          7    144515 0.194966106 0.9997940 0.3771826        .base           .base
+      1.6  groupXIX       67921          1  groupXXI      239621          8    171700 0.011083805 0.1052797 0.8332312        .base           .base
+      1.7  groupXIX       67921          1 groupXVII      250065          9    182144 0.030769231 1.0000000 0.7257210        .base           .base
+      1.8  groupXIX       67921          1    groupX      267302         10    199381 0.108329998 0.4094221 0.5103644        .base           .base
+      2     groupIX      100382          2    groupX      101821          3      1439 0.025000000 1.0000000 0.7518296        .base           .base
+      2.1   groupIX      100382          2    groupI      182629          4     82247 0.020979021 1.0000000 0.7720590        .base           .base
+      2.2   groupIX      100382          2   groupIV      194493          5     94111 0.076923077 1.0000000 0.5790997        .base           .base
+      2.3   groupIX      100382          2  groupVII      208605          6    108223 0.027777778 1.0000000 0.7388827        .base           .base
+      2.4   groupIX      100382          2   groupVI      212436          7    112054 0.259192408 0.9998711 0.3085740        .base           .base
+      2.5   groupIX      100382          2  groupXXI      239621          8    139239 0.222194584 0.9999378 0.3458086        .base           .base
+      2.6   groupIX      100382          2 groupXVII      250065          9    149683 0.020408163 1.0000000 0.7750970        .base           .base
+      2.7   groupIX      100382          2    groupX      267302         10    166920 0.032582005 0.9815785 0.7180922        .base           .base
+      3      groupX      101821          3    groupI      182629          4     80808 0.005917160 1.0000000 0.8777310        .base           .base
+      3.1    groupX      101821          3   groupIV      194493          5     92672 0.047619048 0.3333333 0.6625206        .base           .base
+      3.2    groupX      101821          3  groupVII      208605          6    106784 0.009523810 1.0000000 0.8452520        .base           .base
+      3.3    groupX      101821          3   groupVI      212436          7    110615 0.062500000 1.0000000 0.6170751        .base           .base
+      3.4    groupX      101821          3  groupXXI      239621          8    137800 0.048813740 0.9985965 0.6585785        .base           .base
+      3.5    groupX      101821          3 groupXVII      250065          9    148244 0.020408163 1.0000000 0.7750970        .base           .base
+      3.6    groupX      101821          3    groupX      267302         10    165481 0.034539801 0.9957009 0.7101179        .base           .base
+      4      groupI      182629          4   groupIV      194493          5     11864          NA 0.0000000        NA        .base           .base
+      4.1    groupI      182629          4  groupVII      208605          6     25976          NA 0.0000000        NA        .base           .base
+      4.2    groupI      182629          4   groupVI      212436          7     29807 0.102564103 1.0000000 0.5218394        .base           .base
+      4.3    groupI      182629          4  groupXXI      239621          8     56992 0.042735043 1.0000000 0.6792776        .base           .base
+      4.4    groupI      182629          4 groupXVII      250065          9     67436 0.008264463 1.0000000 0.8557254        .base           .base
+      4.5    groupI      182629          4    groupX      267302         10     84673 0.018181818 1.0000000 0.7874065        .base           .base
+      5     groupIV      194493          5  groupVII      208605          6     14112          NA 0.0000000        NA        .base           .base
+      5.1   groupIV      194493          5   groupVI      212436          7     17943 0.092592006 0.9998079 0.5428037        .base           .base
+      5.2   groupIV      194493          5  groupXXI      239621          8     45128 0.000000000 0.0000000 1.0000000        .base           .base
+      5.3   groupIV      194493          5 groupXVII      250065          9     55572          NA 0.0000000        NA        .base           .base
+      5.4   groupIV      194493          5    groupX      267302         10     72809 0.135706586 0.9998987 0.4612638        .base           .base
+      6    groupVII      208605          6   groupVI      212436          7      3831 0.246370641 0.9999875 0.3208490        .base           .base
+      6.1  groupVII      208605          6  groupXXI      239621          8     31016 0.085714286 1.0000000 0.5581846        .base           .base
+      6.2  groupVII      208605          6 groupXVII      250065          9     41460 0.024023016 0.1549936 0.7565707        .base           .base
+      6.3  groupVII      208605          6    groupX      267302         10     58697 0.047619048 1.0000000 0.6625206        .base           .base
+      7     groupVI      212436          7  groupXXI      239621          8     27185 0.076875619 0.4295364 0.5792168        .base           .base
+      7.1   groupVI      212436          7 groupXVII      250065          9     37629 0.047496855 0.9987162 0.6629271        .base           .base
+      7.2   groupVI      212436          7    groupX      267302         10     54866 0.130421519 0.9999492 0.4701233        .base           .base
+      8    groupXXI      239621          8 groupXVII      250065          9     10444 0.003472222 0.1250000 0.9061856        .base           .base
+      8.1  groupXXI      239621          8    groupX      267302         10     27681 0.022222222 0.2000000 0.7655945        .base           .base
+      9   groupXVII      250065          9    groupX      267302         10     17237 0.032582005 0.9815785 0.7180922        .base           .base
       
       $LD$matrices
       $LD$matrices$.base
