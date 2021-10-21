@@ -803,7 +803,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   else if(type == "pairwise"){
     # merge and return
     meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == "comparison"))], colnames(x@snp.meta))
-    starter.meta <- c("facet")
+    starter.meta <- meta.cols
     n.s <- smart.merge(stats, x@pairwise.stats, meta.cols, starter.meta)
     x@pairwise.stats <- n.s
   }
@@ -884,24 +884,14 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     }
   }
   else if(type == "pop"){
-    if(length(x@pop.stats) == 0){
-      x@pop.stats <- data.table::as.data.table(stats)
-    }
-    else{
-      meta.names <- c("facet", "subfacet")
-      starter.meta <- meta.names
-      x@pop.stats <- smart.merge(x@pop.stats, stats, meta.names, starter.meta)
-    }
+    meta.names <- c("facet", "subfacet")
+    starter.meta <- meta.names
+    x@pop.stats <- smart.merge(stats, x@pop.stats, meta.names, starter.meta)
   }
   else if(type == "weighted.means"){
-    if(nrow(x@weighted.means) == 0){
-      x@weighted.means <- as.data.table(stats)
-    }
-    else{
-      meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
-      starter.meta <- meta.names
-      x@weighted.means <- smart.merge(x@weighted.means, stats, meta.names, starter.meta)
-    }
+    meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
+    starter.meta <- meta.names
+    x@weighted.means <- smart.merge(stats, x@weighted.means, meta.names, starter.meta)
   }
   
   return(x)
@@ -913,7 +903,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #' @param meta.names names of the metadata columns, usually everything up to .snp.id
 #' @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 smart.merge <- function(n.s, o.s, meta.names, starter.meta){
-  .snp.id <- facet <- subfacet <- comparison <- NULL
+  .snp.id <- facet <- subfacet <- comparison <- ..new.ord <- NULL
   
   
   n.s <- data.table::as.data.table(n.s)
@@ -923,6 +913,15 @@ smart.merge <- function(n.s, o.s, meta.names, starter.meta){
   }
   
   if(nrow(o.s) == 0){
+    smc <- which(colnames(n.s) %in% starter.meta)
+    if(length(smc) > 0){
+      smc <- factor(colnames(n.s)[smc], levels = starter.meta)
+      smc <- sort(smc)
+      smc <- as.character(smc)
+      
+      new.ord <- c(match(smc, colnames(n.s)), which(!colnames(n.s) %in% starter.meta))
+      n.s <- .fix..call(n.s[,..new.ord])
+    }
     return(n.s)
   }
   
@@ -2259,6 +2258,109 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   return(am)
 }
 
+
+# Determine minor and major alleles and get allele counts from @geno.tables
+# 
+# @param gs @geno.tables part of a snpRdata object
+# @param m.al missing allele indicator
+# @param ref If not the .base facet, a two column data.frame with column names
+#   "major" and "minor" containing the allele idendities ("A", "C", etc.).
+#
+# @return A vector of the filenames for the new datasets.
+.maf_func <- function(gs, m.al, ref = NULL){
+  
+  # for the base facet, determine the major and minor then calculate maf
+  if(is.null(ref)){
+    # major alleles via max.col
+    fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
+    lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
+    
+    # minor alleles, via inversion, 0 replacement with -Inf, and max.col
+    inv.as <- gs$as * -1
+    inv.as[inv.as == 0] <- -Inf
+    fmin <- colnames(gs$as)[max.col(inv.as, ties.method = "last")]
+    lmin <- colnames(gs$as)[max.col(inv.as, ties.method = "first")]
+    
+    # special cases
+    match.freq <- which(fmax != lmax) # maf = 0.5
+    unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
+    np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
+    
+    # declair major and minor
+    major <- fmax
+    minor <- fmin
+    ## maf = 0.05
+    if(length(match.freq) != 0){
+      minor[match.freq] <- lmax[match.freq]
+    }
+    ## unsequenced
+    if(length(unseq) != 0){
+      major[unseq] <- "N"
+      minor[unseq] <- "N"
+    }
+    ## non-polymorphic
+    if(length(np) != 0){
+      minor[np] <- "N"
+    }
+    
+    # grab the actual maf
+    maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
+    maf[is.nan(maf)] <- 0
+    
+    # get the major and minor counts
+    # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
+    maj.count <- round(rowSums(gs$as)*(1-maf))
+    min.count <- round(rowSums(gs$as)*(maf))
+  }
+  
+  # for non-base facets, use the given major and minor to calculate maf
+  else{
+    # use a data.table function to get the major allele counts
+    adt <- as.data.table(gs$as)
+    rep.factor <- nrow(gs$as)/nrow(ref)
+    major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
+    adt$major <-  major
+    adt <- adt[, maj_count := .SD[[.BY[[1]]]], by=major] # get the counts of the major allele in each column
+    ac.rows <- 1:(which(colnames(adt) == "major") - 1)
+    total.allele.count <- rowSums(adt[,ac.rows, with = FALSE])
+    maf <- 1 - adt$maj_count/total.allele.count # get the maf
+    
+    # other things for return
+    minor <- rep(ref$minor, each = rep.factor)
+    maj.count <- adt$maj_count
+    min.count <- total.allele.count - maj.count
+  }
+  
+  # return
+  return(data.table(major = major, minor = minor, maj.count = maj.count, min.count = min.count, maf = maf, stringsAsFactors = F))
+}
+
+
+# Determine observed heterozygosity from @geno.tables
+# 
+# @param gs @geno.tables part of a snpRdata object
+# 
+# @return a vector of observed heterozygosity
+.ho_func <- function(gs){
+  #identify heterozygote rows in genotype matrix
+  genos <- colnames(gs$gs)
+  hets <- which(substr(genos, 1, 1) != substr(genos, 2,2))
+  
+  # calculate ho
+  ## if only one heterozygote...
+  if(length(hets) == 1){
+    ho <- gs$gs[,hets]/rowSums(gs$gs)
+  }
+  ## if no heterozygotes
+  else if(length(hets) == 0){
+    ho <- rep(0, nrow(gs$gs))
+  }
+  ## normally
+  else{
+    ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
+  }
+}
+
 # Generate random bootstraps of a genepop input file
 #
 # New files will have random names ending in .genepop in the working directory
@@ -2268,7 +2370,6 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
 #
 # @return A vector of the filenames for the new datasets.
 .boot_genepop <- function(gp_filepath, n){
-  browser()
   ..shuff <- NULL
   
   #=========parse gp file=========
@@ -2288,12 +2389,12 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   
   #=========boot=============
   rstrings <- stringi::stri_rand_strings(n, 10)
-  rstrings <- paste0(rstrings, ".genepop")
+  rstrings <- paste0(rstrings, ".txt")
   exists <- file.exists(rstrings)
   abort <- 0
   while(sum(exists) > 0){
     rstrings[exists] <- stringi::stri_rand_strings(sum(exists), 10)
-    rstrings <- paste0(rstrings, ".genepop")
+    rstrings <- paste0(rstrings, ".txt")
     exists <- file.exists(rstrings)
     abort <- abort + 1
     
@@ -2307,8 +2408,9 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   adj_pop_headers <- adj_pop_headers - 1:length(adj_pop_headers)
   adj_pop_headers <- c(adj_pop_headers, nrow(gp_file))
   for(i in 1:n){
-    shuff <- sample(ncol(gp_file), ncol(gp_file), replace = T)
-    tgp <- gp_file[,shuff]
+    shuff <- sample(nrow(gp_file), nrow(gp_file), replace = T)
+    tgp <- gp_file[shuff,]
+    rownames(tgp) <- rownames(gp_file)
     writeLines(header, rstrings[i], sep = "\n")
     for(j in 1:length(pop_headers)){
       write("POP", rstrings[i], append = TRUE)
@@ -2323,4 +2425,65 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   }
   
   return(rstrings)
+}
+
+
+# Generate random bootstraps in ac format
+# 
+# @param x snpRdata object to permute
+# @param n numeric, number of bootstrapped datasets to generate.
+# @param facet sample level facet to permute within
+#
+# @return A list containing permuted ac data.
+.boot_ac <- function(x, n, facet){
+  ..tm <- NULL
+
+  # function to conver the output of .maf_func into ac
+  maf.to.ac <- function(maf){
+    ac <- data.table::data.table(n_total = maf$maj.count + maf$min.count,
+                                 n_alleles = rowSums(maf[,c("maj.count", "min.count")] != 0),
+                                 ni1 = maf$maj.count,
+                                 ni2 = maf$min.count,
+                                 ho = maf$ho)
+    return(ac)
+  }
+  
+  out <- vector("list", n)
+  opts <- get.task.list(x, facet)
+  for(i in 1:n){
+    
+    # get the maf identities for the base facet
+    shuff <- genotypes(x)[,sample(ncol(x), ncol(x), replace = TRUE)]
+    shuff <- data.table::as.data.table(shuff)
+    colnames(shuff) <- colnames(genotypes(x))
+    tac <- vector("list", nrow(opts))
+    glob_tab <- tabulate_genotypes(shuff, x@mDat)
+    glob <- .maf_func(glob_tab, m.al = substr(x@mDat, 1, floor(nchar(x@mDat)/2)))
+    glob$ho <- .ho_func(glob_tab)
+
+    # if bootstrapping the base level, done
+    if(facet == ".base"){
+      out[[i]] <- maf.to.ac(glob)
+      out[[i]]$facet <- ".base"
+      out[[i]]$subfacet <- ".base"
+      out[[i]]$.snp.id <- 1:length(shuff)
+    }
+    # otherwise need to do for each facet level.
+    else{
+      for(j in 1:nrow(opts)){
+        tm <- fetch.sample.meta.matching.task.list(x, opts[j,])
+        ttab <- tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
+        tac[[j]] <- .maf_func(ttab, x@mDat, as.data.frame(glob[,c("major", "minor")]))
+        tac[[j]]$ho <- .ho_func(ttab)
+        tac[[j]] <- maf.to.ac(tac[[j]])
+        tac[[j]]$.snp.id <- x@snp.meta$.snp.id
+        tac[[j]]$subfacet <- opts[j,2]
+        tac[[j]]$facet <- facet
+      }
+      tac <- data.table::rbindlist(tac)
+      out[[i]] <- tac
+    }
+  }
+  
+  return(out)
 }

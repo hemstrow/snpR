@@ -4,7 +4,14 @@
 \alias{calc_pairwise_fst}
 \title{Pairwise FST from SNP data.}
 \usage{
-calc_pairwise_fst(x, facets, method = "WC", boot = FALSE, boot_par = FALSE)
+calc_pairwise_fst(
+  x,
+  facets,
+  method = "WC",
+  boot = FALSE,
+  boot_par = FALSE,
+  cleanup = TRUE
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -13,13 +20,17 @@ calc_pairwise_fst(x, facets, method = "WC", boot = FALSE, boot_par = FALSE)
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{method}{character, default "wc". Defines the FST estimator to use.
-Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: } Wier
-(1990) \item{Genepop: } Rousset (2008), uses the genepop package. }}
+Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: }
+Wier (1990) \item{Genepop: } Rousset (2008), uses the genepop package. }}
 
-\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do. See details.}
+\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do.
+See details.}
 
-\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will be processed in parallel
-using the supplied number of cores.}
+\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will
+be processed in parallel using the supplied number of cores.}
+
+\item{cleanup}{logical, default TRUE. If TRUE, any new files created during
+FST calculation will be automatically removed.}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total
@@ -31,22 +42,20 @@ A snpRdata object with pairwise FST as well as the number of total
 possible pairwise combination of populations.
 }
 \details{
-Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
-Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
-the genepop package (see references).
+Calculates FST according to either Wier and Cockerham 1984 or using the
+\code{\link[genepop]{Fst}} function from the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in
 the default temporary directory (see \code{\link{tempfile}}).
 
-The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
+The Wier and Cockerham (1984) and genepop methods tend to
 produce very similar results both per SNP and per population.
-Generally, either of the two former options are
-preferred for computational efficiency.
+Generally, the former option may be preferred for computational efficiency.
 
 P-values for group level comparisons can be calculated via bootstrapping
 using the boot option. Bootstraps are performed via randomly mixing
-individuals amongst different levels of the supplied facet, and so work under
-the null hypothesis that all groups are panmictic. P-values are calculated
+individuals amongst different levels of the supplied facet, and thus
+the null hypothesis is that all groups are panmictic. P-values are calculated
 according to \code{\link[ade4]{randtest}}, although that function is not
 directly called. 
 
@@ -55,7 +64,7 @@ as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
 Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
-\item{"wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
+item{"Genepop": }{As used in genepop, Rousset
 2008.}}
 }
 \examples{
