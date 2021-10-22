@@ -3077,19 +3077,8 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 
   # add sf overlay if requested.
   if(!is.null(sf)){
-    if(crop){
-      x <- c(xmin = min(pie_dat$long) - r,
-             xmax = max(pie_dat$long) + r)
-      y <- c(ymin = min(pie_dat$lat) - r,
-             ymax = max(pie_dat$lat) + r)
-      dummy <- sf::st_as_sf(data.frame(x = x, y = y), coords = c("x", "y"))
-      dummy <- sf::`st_crs<-`(dummy, use_crs)
-    }
     for(i in 1:length(sf)){
       sf[[i]] <- sf::st_transform(sf[[i]], use_crs)
-      if(crop){
-        sf[[i]] <- sf::st_crop(sf[[i]], y = dummy)
-      }
       
       if(is.poly[i]){
         mp <- mp + ggplot2::geom_sf(data = sf[[i]], fill = poly_pal[used_poly_pall + 1], color = sf_line_colors[i])
@@ -3100,7 +3089,6 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
       }
     }
   }
-    
   
   # add the scatterpie
   mp <- mp + ggplot2::theme_bw() +
@@ -3109,10 +3097,11 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     ggplot2::xlab("Longitude") + ggplot2::ylab("Latitude")
   
   if(crop){
+    xr <- c(min(pie_dat$long - r), max(pie_dat$long) + r)
+    yr <- c(min(pie_dat$lat - r), max(pie_dat$lat) + r)
     mp <- mp +
-      ggplot2::xlim(c(min(pie_dat$long - r), max(pie_dat$long) + r)) +
-      ggplot2::ylim(c(min(pie_dat$lat - r), max(pie_dat$lat) + r))
-
+      ggplot2::xlim(xr) +
+      ggplot2::ylim(yr)
   }
 
   if(!is.null(alt.palette)){
@@ -3138,12 +3127,31 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
       dummy <- pop_coordinates
     }
    
+    # grab limit info for cropped data...
+    b <- ggplot2::ggplot_build(mp)
+    lims <- list(x = b$layout$panel_scales_x[[1]]$limits,
+                 y = b$layout$panel_scales_y[[1]]$limits)
+    
+    
+    
     if(!is.null(scale_bar)){
       scale_bar$data <- dummy
+      if(crop){
+        if(!"anchor" %in% names(scale_bar)){
+          scale_bar$anchor <- c(x = lims$x[2], y = lims$y[1] + .1*abs(lims$y[1]))
+        }
+      }
       mp <- mp + do.call(ggsn::scalebar, args = scale_bar)
     }
+    
+    
     if(!is.null(compass)){
       compass$data <- dummy
+      if(crop){
+        if(!"anchor" %in% names(compass)){
+          compass$anchor <- c(x = lims$x[2] + abs(lims$x[2]*.05), y = lims$y[2] + abs(lims$y[2]*.05))
+        }
+      }
       mp <- mp + do.call(ggsn::north, args = compass)
     }
   }
