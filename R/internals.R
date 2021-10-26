@@ -1903,6 +1903,18 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   if(length(msg) > 0){
     stop(msg)
   }
+  #===========subfunc=======================
+  clean <- function(x){
+    bads <- is.na(x)
+    bads[is.infinite(x)] <- TRUE
+    bads[is.nan(x)] <- TRUE
+    ret <- 1:length(x)
+    if(any(bads)){
+      ret <- ret[-which(bads)]
+    }
+    return(ret)
+  }
+  
   
   #===========calculate weighted stats======
   # setup
@@ -2151,11 +2163,10 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
     
     #===================calculate weighted means using equation sum(w*s)/sum(w)=======================
     # override the group_key_tab if requested
-    weighted <- as.data.table(weights*selected_stats)
-    group_mean_weights <- tapply(weights, group_key_tab$key, sum, na.rm = T)
+    weighted <- data.table::as.data.table(selected_stats)
+    weighted$weights_col <- weights
     weighted$key <- group_key_tab$key
-    means <- weighted[,lapply(.SD, sum, na.rm = T), by = key] # lapply isn't ideal, but data.table is quite fast anyway. Could consider other options
-    set(means, j = 2:ncol(means), value = means[,-1]/group_mean_weights[match(means$key, names(group_mean_weights))])
+    means <- weighted[,.SDcols = stats_to_get, lapply(.SD, function(x, w) weighted.mean(x[clean(x)], w[clean(x)]), w = weights_col), by = key]
     
     # merge and return
     ## get the stats back in a format with facet and sub-facet, clean up, and return
