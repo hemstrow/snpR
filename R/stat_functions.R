@@ -270,6 +270,7 @@ calc_maf <- function(x, facets = NULL){
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE){
+  #===============sanity checks==========================
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.")
   }
@@ -284,8 +285,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   if(is.null(facets[1]) | ".base" %in% facets | "sample" %in% check.snpR.facet.request(x, facets, "none", TRUE)){
     warning("Tajima's D has little meaning of snps on different chromosomes are considered together. Consider adding a snp level facet.")
   }
-
-
+  
+  
+  #=================subfunction=========
   func <- function(ac, par, sigma, step, report){
     out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
@@ -357,6 +359,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
     return(out)
   }
 
+  
+  #=================prep==========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
@@ -368,6 +372,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   }
   facets <- check.snpR.facet.request(x, facets, remove.type = "none")
 
+  #=============run=============
   out <- apply.snpR.facets(x,
                            facets = facets,
                            req = "meta.ac",
@@ -377,12 +382,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
                            sigma = sigma,
                            step = step)
 
+  #===========merge and clean============
   x <- merge.snpR.stats(x, out, type = "window.stats")
   x <- update_calced_stats(x, facets, "tajimas_D")
-  x <- calc_weighted_stats(x, facets, type = "single.window", "ts.theta")
-  x <- calc_weighted_stats(x, facets, type = "single.window", "ws.theta")
-  x <- calc_weighted_stats(x, facets, type = "single.window", "D")
+  x <- calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
   
+  # calc weights ignoring any snp levels (for stuff like overal population means)
+  samp.facets <- check.snpR.facet.request(x, facets)
   return(x)
 
 }

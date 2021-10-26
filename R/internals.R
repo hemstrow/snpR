@@ -1886,9 +1886,9 @@ row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
 #' weighted averages for.
 #'
 #' @return A snpR data object with weighted statistics merged in.
-calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
+calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get, mean_facet_override = NULL){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- NULL
-  
+
   
   #===========sanity checks===============
   msg <- character(0)
@@ -1904,6 +1904,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
   }
   
   #===========calculate weighted stats======
+  # setup
   facets <- check.snpR.facet.request(x, facets, "none")
   x <- add.facets.snpR.data(x, facets)
   calced <- check_calced_stats(x, facets, "maf")
@@ -1913,15 +1914,21 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     x <- calc_maf(x, facets = names(calcedb)[which(!calcedb)])
   }
   
-  
   stats <- .get.snpR.stats(x, facets, type)
+  
   facets <- check.snpR.facet.request(x, facets, "none", T)
   if(any(facets[[2]] == "complex") & type %in% c("single.window")){
     facets[[1]] <- c(facets[[1]], facets[[1]][which(facets[[2]] == "complex")])
     facets[[2]] <- c(facets[[2]], rep("special", sum(facets[[2]] == "complex")))
   }
+  if(any(facets[[2]] == "snp") & type %in% c("single.window")){
+    facets[[1]] <- c(facets[[1]], facets[[1]][which(facets[[2]] == "snp")])
+    facets[[2]] <- c(facets[[2]], rep("regress.base", sum(facets[[2]] == "snp")))
+  }
   
+  # calc
   for(i in 1:length(facets[[1]])){
+
     split.part <- unlist(.split.facet(facets[[1]][i]))
     split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
     snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
@@ -1999,6 +2006,10 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       else if(facets[[2]][i] == "snp"){
         keep.rows <- which(stats$facet == ".base" & stats$snp.facet == facets[[1]][i])
         group_key <- c("snp.facet", "snp.subfacet")
+      }
+      else if(facets[[2]][i] == "regress.base"){
+        keep.rows <- which(stats$facet == ".base" & stats$snp.facet == facets[[1]][i])
+        group_key <- "facet"
       }
       else{
         keep.rows <- which(stats$facet == ".base" & stats$snp.facet == ".base")
@@ -2138,6 +2149,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     else{stop("calc_weighted_stats type not recognized.")}
     
     #===================calculate weighted means using equation sum(w*s)/sum(w)=======================
+    # override the group_key_tab if requested
     weighted <- as.data.table(weights*selected_stats)
     group_mean_weights <- tapply(weights, group_key_tab$key, sum, na.rm = T)
     weighted$key <- group_key_tab$key
@@ -2149,7 +2161,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
     mstats <- merge(means, unique(group_key_tab), by = "key")
     drop_col <- which(colnames(mstats) == "key")
     mstats <- .fix..call(mstats[,-..drop_col])
-    new.ord <- c(2:(ncol(selected_stats) + ncol(group_key_tab) - 1), 1:ncol(selected_stats))
+    new.ord <- c((length(stats_to_get) + 1):(ncol(selected_stats) + ncol(group_key_tab) - 1), 1:ncol(selected_stats))
     mstats <- .fix..call(mstats[,..new.ord])
     colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)] <- paste0("weighted_mean_", colnames(mstats)[(ncol(group_key_tab)):ncol(mstats)])
     
@@ -2163,6 +2175,11 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get)
       else{
         if(facets[[2]][i] == "special"){
           mstats$snp.subfacet <- ".base"
+        }
+        else if(facets[[2]][i] == "regress.base"){
+          mstats$subfacet <- ".base"
+          mstats$snp.subfacet <- ".OVERALL_MEAN"
+          mstats$snp.facet <- facets[[1]][i]
         }
         else if(length(split.snp.part) > 1){
           mstats$snp.subfacet <- do.call(paste, c(.fix..call(mstats[,..split.snp.part]), sep = "."))
