@@ -859,6 +859,11 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     res <- vector("list", length(cats))
     names(res) <- cats
     
+    not.pairwise <- which(is.na(fst$p1) | is.na(fst$p2))
+    if(length(not.pairwise) > 0){
+      fst <- fst[-not.pairwise,]
+    }
+    
     for(i in 1:length(cats)){
       if("weighted_mean_fst_p" %in% colnames(fst)){
         res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
