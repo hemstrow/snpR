@@ -822,6 +822,7 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   }
   else if(type == "sample.stats"){
     meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
+    meta.cols <- unique(meta.cols)
     starter.meta <- meta.cols
     n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
     
