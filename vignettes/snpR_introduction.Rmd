@@ -218,7 +218,7 @@ my.dat <- filter_snps(x = my.dat,
                          min_ind =  0.5, # remove all loci sequenced at less than half of the individuals.
                          min_loci = 0.5, # remove all individuals sequenced at less than half of the loci
                          re_run = "partial", # tell filter_snps to recheck that all loci are polymorphic after removing individuals. Could set to "full" to re-check maf and heterozygote frequency, or FALSE to skip.
-                         maf.facets = "pop", # we want to keep any SNPs that pass the maf filter in ANY population!
+                         maf_facets = "pop", # we want to keep any SNPs that pass the maf filter in ANY population!
                          non_poly = TRUE, # we want to remove non-polymorphic loci
                          bi_al = TRUE) # we want to remove non bi-allelic loci") # missing genotypes are listed as "NN"
 ```
@@ -335,7 +335,7 @@ If you have many different facet combinations and a large dataset, this may take
 
 ncores <- parallel::detectCores()
 ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
-my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop.group",
+my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop",
                                  sigma = 200, # using a window size of 200
                                  step = 50, # using a step size of 50 between windows
                                  par = ncores) # in parallel 
