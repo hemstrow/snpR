@@ -84,6 +84,9 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   # check facet types
   if(!is.null(facets)){
+    if(any(facets %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
+      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+    }
     facets <- check.snpR.facet.request(x, facets, "none", TRUE)
     if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
       msg <- c(msg, "Sample level facets cannot be provided alongside a vector of samples to retain/remove.\n")
@@ -176,7 +179,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       return(x[2])
     } )
     single.part <- !grepl("^c\\(", argnames[is.facet][has.negatives])
-    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], backports::str2lang)
+    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], str2lang)
     ## eval
     argnames[is.facet] <- lapply(argnames[is.facet], eval)
     
@@ -226,7 +229,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       for(j in 1:length(snp.subfacets)){
         new.matches <- fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
         if(length(new.matches) == 0){
-          warning(paste0("No sample found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
+          stop(paste0("No snp found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
           
         }
         if(which(facets[[2]] == "snp")[i] %in% has.negatives){
@@ -258,7 +261,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       for(j in 1:length(samp.subfacets)){
         new.matches <- fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
         if(length(new.matches) == 0){
-          warning(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
+          stop(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
         }
         if(which(facets[[2]] == "sample")[i] %in% has.negatives){
           .samps[new.matches] <- FALSE

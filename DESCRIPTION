@@ -17,7 +17,6 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
-    backports,
     bigmemory,
     bigtabulate,
     doSNOW,
@@ -38,7 +37,7 @@ Imports:
 Depends:
     data.table,
     foreach,
-    R (>= 2.10)
+    R (> 3.60)
 Suggests:
     ade4,
     adegenet,

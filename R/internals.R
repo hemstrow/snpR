@@ -621,7 +621,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         else{
           # grab the correct data columns from the pairwise stats dataset, and reorder so nk is first
           pos.col <- which(colnames(x@pairwise.stats) == "position")
-          start.col <- which(colnames(x@pairwise.stats) == "comparison") + 1
+          start.col <- which(colnames(x@pairwise.stats) == ".snp.id") + 1
           cols.to.use <- start.col:ncol(x@pairwise.stats)
           stats_to_use <- x@pairwise.stats[,cols.to.use, with = FALSE]
           nk.col <- which(colnames(stats_to_use) == "nk")
@@ -630,7 +630,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           task.list <- get.task.list(x, facets, source = "pairwise.stats")
           
           # re-order the meta and save
-          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")])
+          meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == ".snp.id")])
           facet.cols <- which(colnames(meta.to.use) == "facet")
           facet.cols <- c(facet.cols, which(colnames(meta.to.use) == "comparison"))
           n.col.ord <- c(facet.cols, (1:ncol(meta.to.use))[-facet.cols])
@@ -664,8 +664,8 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         
         
         cat("Begining run.\n")
-        
-        # run the LD calculations
+
+        # run the calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
         suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
                                                  .options.snow = opts, .export = "data.table", .packages = "snpR") %dopar% {
@@ -904,16 +904,8 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
 #' @param meta.names names of the metadata columns, usually everything up to .snp.id
 #' @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 smart.merge <- function(n.s, o.s, meta.names, starter.meta){
-  .snp.id <- facet <- subfacet <- comparison <- ..new.ord <- NULL
-  
-  
-  n.s <- data.table::as.data.table(n.s)
-  o.s <- data.table::as.data.table(o.s)
-  if(all(colnames(n.s) %in% colnames(o.s))){
-    if(isTRUE(all.equal(n.s, o.s, ignore.col.order = T, ignore.row.order = T, check.attributes = F))){return(n.s)}
-  }
-  
-  if(nrow(o.s) == 0){
+  # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
+  take_new <- function(n.s, starter.meta){
     smc <- which(colnames(n.s) %in% starter.meta)
     if(length(smc) > 0){
       smc <- factor(colnames(n.s)[smc], levels = starter.meta)
@@ -924,6 +916,23 @@ smart.merge <- function(n.s, o.s, meta.names, starter.meta){
       n.s <- .fix..call(n.s[,..new.ord])
     }
     return(n.s)
+  }
+  
+  
+  .snp.id <- facet <- subfacet <- comparison <- ..new.ord <- NULL
+  
+  
+  n.s <- data.table::as.data.table(n.s)
+  o.s <- data.table::as.data.table(o.s)
+  
+  if(all(colnames(n.s) %in% colnames(o.s))){
+    if(isTRUE(all.equal(n.s, o.s, ignore.col.order = T, ignore.row.order = T, check.attributes = F))){
+      return(take_new(n.s, starter.meta))
+    }
+  }
+  
+  if(nrow(o.s) == 0){
+    return(take_new(n.s, starter.meta))
   }
   
   # figure out which columns contain metadata
@@ -1458,7 +1467,7 @@ get.task.list <- function(x, facets, source = "stats"){
     meta.to.use <- x@facet.meta
   }
   else if (source == "pairwise.stats"){
-    meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == "comparison")], stringsAsFactors = F)
+    meta.to.use <- as.data.frame(x@pairwise.stats, stringsAsFactors = F)
     meta.to.use$subfacet <- meta.to.use$comparison
   }
   

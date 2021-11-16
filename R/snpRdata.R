@@ -39,10 +39,17 @@ check.snpRdata <- function(object){
 
     errors <- c(errors, msg)
   }
+  
+  restricted.names <- c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets")
+  bad.colnames.facet <- which(all.colnames %in% restricted.names)
+  if(length(bad.colnames.facet) > 0){
+    msg <- paste0("Some restricted column names detected in metadata. Restricted names: ", paste0(restricted.names, collapse = ", "), ".\n")
+    errors <- c(errors, msg)
+  }
 
   # check that the facet meta and snp meta column names match
   if(!identical(colnames(object@snp.meta), colnames(object@facet.meta)[-c(1:3)])){
-    errors <- c(errors, "Column names in the snp.meta and stored metadata for facets do not match. This is likely due to later change of the snp metadata which added or changed column names but didn't change facet.meta column names.\n")
+    errors <- c(errors, "Column names in the snp.meta and stored metadata for facets do not match. This is likely due to later change of the snp metadata which added or changed column names but didn't change facet.meta column names. Please re-initialize the snpRdata object using the metadata you require. This error should typically not appear.\n")
   }
 
   warns <- character()
@@ -66,6 +73,16 @@ check.snpRdata <- function(object){
       warns <- c(warns, msg)
     }
   }
+  
+  
+  # check .snp.id and .sample.id columns
+  if(colnames(object@snp.meta)[ncol(object@snp.meta)] != ".snp.id"){
+    errors <- c(errors, ".snp.id not last column in snp.meta. This is a developer error--please report on the github issues page with a reproducable example.\n")
+  }
+  if(colnames(object@sample.meta)[ncol(object@sample.meta)] != ".sample.id"){
+    errors <- c(errors, ".sample.id not last column in sample.meta. This is a developer error--please report on the github issues page with a reproducable example.\n")
+  }
+  
   if(length(warns) > 0){warning(paste0(warns, collapse = "\n"))}
 
   if(length(errors) == 0){return(TRUE)}
@@ -502,7 +519,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
   gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
-  
+
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
                     facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
                                                   subfacet = rep(".base", nrow(gs$gs)),

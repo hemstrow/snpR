@@ -24,3 +24,57 @@ test_that("index samps", {
   expect_equal(sample.meta(sub.x)$.sample.id, sample.meta(.internal.data$test_snps)[match(str1, str2),]$.sample.id)
   
 })
+
+#========by reference=========
+test_that("sample facet",{
+  id <- .internal.data$test_snps
+  
+  # error if using old syntax
+  expect_error(id[facet = "pop", subfacet = "ASP"], "Facets and subfacets are now desginated directly using")
+  
+  # correct parts, simple
+  ids <- id[pop = c("ASP", "PAL")]
+  check <- sample.meta(ids)
+  expect_equal(unique(check$pop), c("ASP", "PAL"))
+  
+  
+  # correct parts, complex
+  ids <- id[pop.fam = c("ASP.A", "PAL.B")]
+  check <- sample.meta(ids)
+  expect_equivalent(unique(check[,c(1:2)]), data.frame(pop = c("ASP", "PAL"),
+                                                      fam = c("A", "B")))
+})
+
+
+test_that("snp facet",{
+  id <- .internal.data$test_snps
+  
+  # error if using old syntax
+  expect_error(id[snp.facet = "group", snp.subfacet = "groupIX"], "Facets and subfacets are now desginated directly using")
+  
+  # correct parts, simple
+  ids <- id[group = c("groupIX", "groupIV")]
+  check <- snp.meta(ids)
+  expect_equal(unique(check$group), c("groupIX", "groupIV"))
+})
+
+
+test_that("complex facet",{
+  id <- .internal.data$test_snps
+  
+  # correct parts, simple
+  ids <- id[pop = c("ASP", "PAL"), group = c("groupIV")]
+  check <- sample.meta(ids)
+  expect_equal(unique(check$pop), c("ASP", "PAL"))
+  check <- snp.meta(ids)
+  expect_equal(unique(check$group), c("groupIV"))
+  
+  
+  # correct parts, complex
+  ids <- stickSNPs[pop.fam = c("ASP.A", "PAL.B"), group = c("groupIX", "groupIV", "groupXIX")]
+  check <- sample.meta(ids)
+  expect_equivalent(unique(check[,c(1:2)]), data.frame(pop = c("ASP", "PAL"),
+                                                       fam = c("A", "B")))
+  check <- snp.meta(ids)
+  expect_equal(sort(unique(check$group)), sort(c("groupIX", "groupIV", "groupXIX")))
+})
