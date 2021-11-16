@@ -176,7 +176,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       return(x[2])
     } )
     single.part <- !grepl("^c\\(", argnames[is.facet][has.negatives])
-    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], str2lang)
+    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], backports::str2lang)
     ## eval
     argnames[is.facet] <- lapply(argnames[is.facet], eval)
     
