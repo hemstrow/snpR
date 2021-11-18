@@ -26,8 +26,7 @@ other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance",
 
 
 #=============build lists for each stat====================
-statistic_index <- vector("list", length(c(single.stats, window.stats, pairwise.stats, sample.stats, pop.stats,
-                                           other.stats[[1]])))
+statistic_index <- vector("list", length(c(single.stats$stat, window.stats$stat, pairwise.stats$stat, sample.stats$stat, pop.stats$stat, other.stats$stat)))
 
 tracker <- 1
 for(i in 1:length(single.stats[[1]])){

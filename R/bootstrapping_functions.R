@@ -623,7 +623,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     }
   }
 
-  # bind and return
+  #=============bind and return====================
   out <- data.table::rbindlist(out)
   col.ord <- c(1, 2, ncol(out), 3:(ncol(out) - 1))
   out <- out[,col.ord, with = FALSE]
@@ -632,6 +632,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   if(do.p){
     x <- calc_p_from_bootstraps(x, facets, o.stats, alt = p.alt, par = par)
   }
+  x <- .update_citations(x, "Hohenlohe2010", "window_bootstraps", "Bootstrapping of statistics across windows for p-value generation")
 
   return(x)
 }

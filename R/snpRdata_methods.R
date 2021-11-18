@@ -177,5 +177,3 @@ setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop =
   return(do.call(subset_snpR_data, args = c(list(x = x, .snps = i, .samps = j), extra.args)))
 })
 
-
-

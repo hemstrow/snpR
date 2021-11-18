@@ -2705,3 +2705,84 @@ gap_snps <- function(x, facet = NULL, n){
   # subset
   return(x[ids,])
 }
+
+#' Gather citations for methods used with a snpRdata object
+#' 
+#' snpR will automatically track the methods used when for calculations on a
+#' snpRdata object. Using \code{\link{citations}} on that object will provide details 
+#' on the the methods used, and can optionally write a .bib bibtex formatted
+#' library containing citations for these methods.
+#' 
+#' Printed outputs contain the statistic calculated, the in-line citation for
+#' the method used, a bibtex key which corresponds to the .bib library written 
+#' if the outbib argument is used, and a quick note giving any details.
+#' 
+#' @param x snpRdata object
+#' @param outbib character, default FALSE. An optional file path to which a .bib
+#'   bibtex library containing all of the citations for the used methods will be
+#'   written.
+#' @param return_bib logical, default FALSE. If TRUE, returns a list containing
+#'   the bib entries and their details. The bib entries are formatted according
+#'   to \code{\link[RefManageR]{BibEntry}}.
+#'   
+#' @author William Hemstrom
+#' @returns  If return_bib is TRUE, a list containing four parts: 
+#' \itemize{\item{keys: } A vector of bibtex keys for each method.
+#' \item{stats: } A vector of the stats used.
+#' \item{details: } A vector of details for each method.
+#' \item{bib: } A \code{\link[RefManageR]{BibEntry}} for each citation.}
+#' 
+#' @export
+#' @examples 
+#' # calculate pi
+#' x <- calc_pi(stickSNPs)
+#' 
+#' # fetch citations
+#' citations(x)
+#' 
+#' # fetch citations and write bibtex .bib to citations.bib
+#' ## not run
+#' \dontrun{
+#' citations(x, outbib = "citations.bib")
+#' }
+citations <- function(x, outbib = FALSE, return_bib = FALSE){
+  #==========sanity checks=======
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  check.installed("bibtex")
+  check.installed("RefManageR")
+  
+  #==========grab bib============
+  bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
+  bib <- RefManageR::ReadBib(bib.file)
+  
+  #==========filter bib==========
+  keys <- as.character(unlist(purrr::map(x@citations, "key")))
+  bib <- bib[keys]
+  
+  #==========shout at the user=====
+  deets <- unlist(purrr::map(x@citations, "details"))
+  stats <- names(x@citations)
+  
+  cat("Citations for methods used thus far: \n")
+  for(i in 1:length(keys)){
+    cat("==============================================\n")
+    cat("Statistic: ", stats[i], "\n")
+    cat("Citation: ", RefManageR::Cite(bib[keys[i]]), "\n")
+    cat("Bibtex key: ", keys[i], "\n")
+    cat("Details: ", deets[i], "\n")
+  }
+  cat("==============================================\n\n")
+  
+  #==========print bib=============
+  if(!isFALSE(outbib)){
+    RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+    cat(".bib file can be found at: ", outbib, "\n")
+  }
+  
+  if(!isFALSE(return_bib)){
+    return(list(keys = keys, stats = stats, details = deets, bib = bib))
+  }
+}

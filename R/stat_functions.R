@@ -164,7 +164,8 @@ calc_pi <- function(x, facets = NULL){
   x <- merge.snpR.stats(x, out)
   x <- calc_weighted_stats(x, ofacets, type = "single", "pi")
   x <- update_calced_stats(x, facets, "pi", "snp")
-
+  x <- .update_citations(x, "Hohenlohe2010", "pi", "pi, number of pairwise differences")
+  
   return(x)
 }
 
@@ -386,6 +387,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   x <- merge.snpR.stats(x, out, type = "window.stats")
   x <- update_calced_stats(x, facets, "tajimas_D")
   x <- calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
+  x <- .update_citations(x, "Tajima1989", "Tajima's_D", "Tajima's D, as well as Watterson's and Tajima's Theta")
   
   # calc weights ignoring any snp levels (for stuff like overal population means)
   samp.facets <- check.snpR.facet.request(x, facets)
@@ -957,6 +959,12 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   # return
   x <- update_calced_stats(x, facets, "fst", "snp")
+  if(method == "wc"){
+    x <- .update_citations(x, "Weir1984", "fst", "Pairwise FST calculation")
+  }
+  else if(method == "genepop"){
+    x <- .update_citations(x, "Rousset2008", "fst", "Pairwise FST calculation")
+  }
 
   return(x)
 }
@@ -2422,22 +2430,33 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       }
     }
   }
+  
+  #======================update and return============
   out <- update_calced_stats(out, facets, "LD")
+  if(!isFALSE(CLD)){
+    out <- .update_citations(out, "Cockerham1977", "LD_CLD", "Burrows' Composite Linkage Disequlibrium")
+  }
+  if(CLD != "only"){
+    out <- .update_citations(out, "Lewontin1964", "LD_D", "D and D'")
+    if(use.ME){
+      out <- .update_citations(out, "Excoffier1995", "LD_MLE", "Maximization-Expectation Algorithim for caluculating haplotype frequencies")
+    }
+  }
 
   return(out)
 }
 
-#' Calculate Burrow's composite LD. Internal.
-#'
-#' Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the
-#' output needs to be in the same format as that function's and to support
-#' faceting without excessive recalculation.
-#'
-#' @param x snpRdata object
-#' @param facets facets to run
-#' @param par number of parallel cores
-#'
-#' @author William Hemstrom
+# Calculate Burrow's composite LD. Internal.
+#
+# Called in \code{\link{calc_pairwise_ld}}. Complex function purely because the
+# output needs to be in the same format as that function's and to support
+# faceting without excessive recalculation.
+#
+# @param x snpRdata object
+# @param facets facets to run
+# @param par number of parallel cores
+#
+# @author William Hemstrom
 calc_CLD <- function(x, facets = NULL, par = FALSE){
   proximity <- s1_position <- s2_position <- NULL
   
@@ -2818,6 +2837,9 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   
   x <- merge.snpR.stats(x, out)
   x <- update_calced_stats(x, facets, "hwe", "snp")
+  if(method == "exact"){
+    x <- .update_citations(x, "Wigginton2005", "HWE", "Hardy-Weinburg Equilibrium, p-values via exact test")
+  }
 
   return(x)
 }
@@ -3122,8 +3144,11 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   names(out) <- facets
   out <- dplyr::bind_rows(out, .id = "facet")
+  
+  #=============return===========
   x <- merge.snpR.stats(x, out, "pop")
   x <- update_calced_stats(x, facets, "ne")
+  x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
 
   return(x)
 }
@@ -3304,6 +3329,12 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   }
   
   y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method, "_", interpolate))
+  if(method == "Edwards"){
+    y <- .update_citations(y, "Edwards1971", "genetic_distance", "Edwards' Angular Genetic Distance")
+  }
+  else if(method == "Nei"){
+    y <- .update_citations(y, "Nei1978", "genetic_distance", "Nei's genetic distance")
+  }
   return(merge.snpR.stats(y, out, "genetic_distances"))
   
 }
@@ -3489,6 +3520,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   x <- merge.snpR.stats(x, geo_mats, "geo_dists")
   x <- merge.snpR.stats(x, ibd, "ibd")
   x <- update_calced_stats(x, facets, c("geo_dist", "ibd"))
+  x <- .update_citations(x, "Mantel209", "isolation_by_distance", "Mantel test used to generate p-value for genetic vs geographic distance.")
   
   return(x)
 }

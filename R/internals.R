@@ -2527,3 +2527,19 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   
   return(out)
 }
+
+# simple function to update citations
+# @param x snpRdata object
+# @param keys bibtex keys to use, corresponding to snpr_citations.bib in extdata
+# @param stats vector of stat names
+# @param details details on how each key was used 
+.update_citations <- function(x, keys, stats, details){
+  new.citations <- vector("list", length(keys))
+  names(new.citations) <- stats
+  for(i in 1:length(new.citations)){
+    new.citations[[i]] <- list(key = keys[i], details = details[i])
+  }
+  x@citations <- c(x@citations, new.citations)
+  x@citations <- x@citations[!duplicated(x@citations)]
+  return(x)
+}

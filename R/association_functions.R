@@ -213,6 +213,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   dplyr::arrange(stats, .snp.id, facet, subfacet)
   
   x <- merge.snpR.stats(x, stats)
+  x <- .update_citations(x, "Perez2014", "genomic_prediction", paste0("Genomic prediction against ", response, " via BGLR with model ", model, ". You may also want to cite the model you used (BayesB, etc.). Try ?BGLR::BGLR for details."))
   
 
   return(list(x = x, models = models))
@@ -223,7 +224,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
 #'
 #' Run genomic prediction given a single response variable (usually a phenotype)
 #' using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
-#' this returns the resulting model direcly, so overwrite with caution. This
+#' this returns the resulting model directly, so overwrite with caution. This
 #' will leave a specified portion of the samples out when running the model,
 #' then perform cross-validation.
 #'
@@ -249,7 +250,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
 #' create the model, the remaining portion will be left out. For example, if
 #' cross_percentage = 0.9, 90% of the samples will be used to run the model and
 #' the remaining 10% will be used for cross-validation. Alternatively, if
-#' cross_samples are provided, the specifed samples (by column index) will be
+#' cross_samples are provided, the specified samples (by column index) will be
 #' used used for cross validation instead. This may be useful for a systematic
 #' leave-one-out cross-validation.
 #'
@@ -762,12 +763,15 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
   if(method == "armitage"){
     out <- apply.snpR.facets(x, facets = facets, req = "cast.gs", case = "ps", fun = calc_armitage, response = response, w = w)
+    x <- .update_citations(x, "Armitage1955", "association", paste0("Association test against ", response, "."))
   }
   else if(method == "odds_ratio" | method == "chisq"){
     out <- apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
   }
   else if(method == "gmmat.score"){
     out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
+    x <- .update_citations(x, "Chen2016", "association", paste0("Association test against ", response, "."))
+    x <- .update_citations(x, "Yang2010", "association", paste0("G-matrix creation for association test against ", response, "."))
   }
   
   x <- update_calced_stats(x, facets, paste0("association_", method))
@@ -1044,6 +1048,8 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   
   stats <- data.table::rbindlist(purrr::map(out, "importance"))
   x <- merge.snpR.stats(x, stats)
+  x <- .update_citations(x, "Wright2017", "Random Forest", paste0("Random Forest test against ", response, "."))
+  
 
   return(list(x = x, models = models))
 }

@@ -164,7 +164,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        allele_frequency_matrices = "list",
                                        genetic_distances = "list",
                                        weighted.means = "data.frame",
-                                       other = "list"),
+                                       other = "list",
+                                       citations = "list"),
          contains = c(data = "data.frame"),
          validity = check.snpRdata)
 
@@ -363,7 +364,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
                              ...){
   position <- NULL
-  
+
   #======special cases========
   # sample and snp metadata
   if(is.character(sample.meta)){
@@ -487,12 +488,15 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   if(any(colnames(snp.meta) == ".snp.id")){
     if(any(duplicated(snp.meta$.snp.id))){stop("Duplicated .snp.id entries found in snp.meta.\n")}
+    snp.meta <- dplyr::relocate(snp.meta, .snp.id, .after = dplyr::last_col())
   }
   else{
     snp.meta <- cbind(snp.meta, .snp.id = 1:nrow(snp.meta))
   }
   if(any(colnames(sample.meta) == ".sample.id")){
     if(any(duplicated(sample.meta$.sample.id))){stop("Duplicated .sample.id entries found in sample.meta.\n")}
+    sample.meta <- dplyr::relocate(sample.meta, .sample.id, .after = dplyr::last_col())
+    
   }
   else{
     sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
@@ -541,7 +545,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     allele_frequency_matrices = list(),
                     genetic_distances = list(),
                     weighted.means = data.frame(),
-                    other = list())
+                    other = list(),
+                    citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   

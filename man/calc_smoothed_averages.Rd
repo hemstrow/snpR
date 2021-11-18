@@ -49,7 +49,7 @@ Averages for multiple statistics can be calculated at once. If the statistics
 argument is set to c("pairwise", "single"), all calculated stats will be run.
 If it is set to "single", then all non-pairwise statistics (pi, ho, maf, ect)
 will be bootstrapped, if it is set to "pairwise", then all pairwise statistics
-(fst) will be bootstrapped. Inidividual statistics currently cannot be
+(fst) will be bootstrapped. Individual statistics currently cannot be
 requested by name, since the computational differences to add additional types
 is minimal.
 
