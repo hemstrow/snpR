@@ -335,7 +335,7 @@ If you have many different facet combinations and a large dataset, this may take
 
 ncores <- parallel::detectCores()
 ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
-my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop",
+my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop.group",
                                  sigma = 200, # using a window size of 200
                                  step = 50, # using a step size of 50 between windows
                                  par = ncores) # in parallel 
@@ -343,10 +343,10 @@ my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop",
 
 ```
 
-We can view the results with get.snpR.stats as usual! Since the results are a different kind of data, we view them with a different "type" argument. For the single (non-pairwise) stats, we can use the "single.window" type: 
+We can view the results with get.snpR.stats as usual! Since the results are a different kind of data, we view them with a different "type" argument (stats = ). For the single (non-pairwise) stats, we can use the "single.window" type: 
 
 ```{r}
-stats <- get.snpR.stats(my.dat, "pop.group", "single.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "single.window")
 
 head(stats)
 
@@ -355,7 +355,7 @@ head(stats)
 And for the pairwise windows, we use "pairwise.window".
 
 ```{r}
-stats <- get.snpR.stats(my.dat, "pop.group", "pairwise.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "pairwise.window")
 
 head(stats)
 
@@ -366,7 +366,7 @@ head(stats)
 Next, we want to plot these variables. We'll use the ggplot2 package, and start with $\pi$:
 
 ```{r}
-stats <- get.snpR.stats(my.dat, "pop.group", "single.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "single.window")
 
 # Plot pi, pi works the same way!
 ggplot(stats, aes(x = position, y = pi, color = subfacet)) + geom_line() + theme_bw() +
@@ -377,7 +377,7 @@ Then we'll do Fst, but restrict to one linkage group to save some space.
 
 ```{r}
 
-stats <- get.snpR.stats(my.dat, "pop.group", "pairwise.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "pairwise.window")
 
 
 ggplot(stats[stats$snp.subfacet == "groupXIX",], aes(x = position, y = fst, color = subfacet)) + geom_line() + theme_bw()
@@ -420,7 +420,7 @@ my.dat <- calc_pairwise_ld(my.dat, facets = "group.pop",
 The results can be accessed as usual, although they are in a slightly different format!
 
 ```{r}
-stats <- get.snpR.stats(my.dat, "group.pop", "LD")
+stats <- get.snpR.stats(x = my.dat, facets = "group.pop", stats = "LD")
 
 str(stat)
 ```
@@ -444,7 +444,7 @@ would give us the CLD matrix for the ASP population on group IX.
 Heatmaps are a convenient way to visualize LD data. snpR contains a plotting utility using ggplot for any calculated LD data.
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(my.dat, "group.pop")
+p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "group.pop")
 
 p$plot
 ```
@@ -452,7 +452,7 @@ p$plot
 Specific plots can be requested using the snp.subfacet and sample.subfacet arguments. These will plot only the specified levels of the sample and snp-specific parts of the requested facet. For example, to plot only the ASP population:
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(my.dat, "group.pop", sample.subfacet = "ASP")
+p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "group.pop", sample.subfacet = "ASP")
 
 p$plot
 ```
@@ -468,10 +468,10 @@ This function can do multiple statistics at once. The random windows for each st
 Since this can be slow, the par argument can be used to run the calculations in parallel.
 
 ```{r, results='hide'}
-my.dat <- do_bootstraps(my.dat, "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all", par = 8)
+my.dat <- do_bootstraps(x = my.dat, facets = "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all", par = 8)
 ```
 ```{r}
-stats <- as.data.frame(get.snpR.stats(my.dat, "group.pop", "single.window"))
+stats <- as.data.frame(get.snpR.stats(x = my.dat, facets = "group.pop", stats = "single.window"))
 head(stats)
 ```
 
@@ -483,7 +483,7 @@ Most of the statistics above can be calculated in one step!
 
 ```{r, results='hide'}
 # not run, same as above
-# my.dat2 <- calc_basic_snp_stats(stickSNPs, "group.pop", sigma = 200, step = 50, par = 8)
+# my.dat2 <- calc_basic_snp_stats(x = stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = 8)
 
 ```
 
@@ -491,7 +491,7 @@ This will calculate $\pi$, Ho, HWE, mafs, private alleles, and pairwise Fst, and
 
 Stats are reviewed the same way as previously documented (more details in the get.snpR.stats documentation).
 ```{r}
-stats <- get.snpR.stats(my.dat2, "group.pop", "weighted.means")
+stats <- get.snpR.stats(x = my.dat2, facets = "group.pop", stats = "weighted.means")
 head(stats)
 ```
 
@@ -515,12 +515,10 @@ head(stats)
 ```
 
 ## Pedigree Construction and visualization
-snpR has a couple options for parentage assignment and pedigree construction. COLONY (Jones and Wang, 2010) is a well known program and works very well when much information is known about individuals in the sample dataset. snpR functions are designed to work with the commandline implementation of COLONY. Sequoia (Huisman, 2017) is designed to easily handle analyses with multi-generational samples.
+snpR has a couple options for parentage assignment and pedigree construction. COLONY (Jones and Wang, 2010) is a well known program and works very well when much information is known about individuals in the sample dataset. snpR functions are designed to work with the commandline implementation of COLONY. Sequoia (Huisman, 2017) is designed to easily handle analyses with multi-generational samples. snpR functions are designed to work with the R based implementation of Sequoia.
 
 #### COLONY
-Formatting data to run in COLONY can be difficult especially with complicated datasets, but snpR can help make the process easier. The function write_colony_input takes a snpR object and writes a file that can be pulled into the commandline based COLONY interface.
-
-write_colony_input writes a text file formatted for the COLONY commandline interface. This file is saved in a folder named 'colony' in your working directory. If the folder does not already exist, one will automatically be created. 
+Formatting data to run in COLONY can be difficult especially with complicated datasets, but snpR can help make the process easier. The function write_colony_input takes a snpR object and writes a text file formatted for the COLONY commandline interface. This file is saved in a folder named 'colony' in your working directory. If the folder does not already exist, one will automatically be created. 
 
 There are many parameters that can be specified for COLONY- check the COLONY manual and snpR documentation for more details. 
 
