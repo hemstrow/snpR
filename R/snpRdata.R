@@ -3,7 +3,7 @@
 NULL
 
 
-check.snpRdata <- function(object){
+.check.snpRdata <- function(object){
   errors <- character()
 
   # check that there are the correct number of snp and sample metadata rows
@@ -167,7 +167,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        other = "list",
                                        citations = "list"),
          contains = c(data = "data.frame"),
-         validity = check.snpRdata)
+         validity = .check.snpRdata)
 
 
 #'Import genotype and metadata into a snpRdata object.
