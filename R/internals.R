@@ -831,7 +831,7 @@ is.snpRdata <- function(x){
                                         starter.meta = start.meta)
       
       # Deal with matrices using the merge.lists utility in snpR.
-      x@pairwise.LD$LD_matrices <- merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
+      x@pairwise.LD$LD_matrices <- .merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
     }
   }
   else if(type == "genetic_distances"){
@@ -1573,7 +1573,7 @@ is.snpRdata <- function(x){
 #   (bottom level)
 #
 # @author William Hemstrom
-merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
+.merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
   # prunes and prepares data on the names and nest levels of a list
   prune.names <- function(list){
     ln <- utils::capture.output(utils::str(list))
