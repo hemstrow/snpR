@@ -18,7 +18,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   }
 
   #=====================sanity checks============
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
 
   msg <- character()
   # check methods
@@ -38,8 +38,8 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
     }
 
     # check and adjust gens
-    x <- add.facets.snpR.data(x, facets)
-    tl <- get.task.list(x, facets)
+    x <- .add.facets.snpR.data(x, facets)
+    tl <- .get.task.list(x, facets)
     if(nrow(temporal_gens) != nrow(tl)){
       msg <- c(msg, paste0("Not enough generation info provided. The number of rows of temporal_gens must equal the number
                            of unique options for the facets provided (", nrow(tl), ")."))
@@ -190,9 +190,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
 
   # fix pop names if possible
   if(!is.null(snpRdat)){
-    facets <- check.snpR.facet.request(snpRdat, facets)
-    snpRdat <- add.facets.snpR.data(snpRdat, facets)
-    opts <- get.task.list(snpRdat, facets)
+    facets <- .check.snpR.facet.request(snpRdat, facets)
+    snpRdat <- .add.facets.snpR.data(snpRdat, facets)
+    opts <- .get.task.list(snpRdat, facets)
     opts <- opts[,2] # these are the sorted options.
     tab <- data.frame(index = unique(out[[1]]$pop), ref = opts)
     out <- lapply(out, function(x){x$pop <- tab$ref[match(x$pop, tab$index)];return(x)})

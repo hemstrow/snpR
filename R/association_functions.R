@@ -90,7 +90,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   }
   msg <- character(0)
   
-  if(length(check.snpR.facet.request(x, facets)) == 1 & !isFALSE(par)){
+  if(length(.check.snpR.facet.request(x, facets)) == 1 & !isFALSE(par)){
     par <- FALSE
   }
   
@@ -105,7 +105,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   if(length(msg) > 0){
     stop(msg)
   }
-  check.installed("BGLR"); check.installed("stringi")
+  .check.installed("BGLR"); .check.installed("stringi")
   
   #===============function====================
   run_BGLR <- function(sub.x, ...){
@@ -175,12 +175,12 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   
   #===============apply===========
   # prep and run
-  facets <- check.snpR.facet.request(x, facets)
-  x <- add.facets.snpR.data(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
+  x <- .add.facets.snpR.data(x, facets)
 
   
   # apply
-  out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_BGLR, response = response,
+  out <- .apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_BGLR, response = response,
                            interpolate = interpolate,  par = par, ...)
   
   
@@ -212,7 +212,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   stats <- data.table::rbindlist(stats)
   dplyr::arrange(stats, .snp.id, facet, subfacet)
   
-  x <- merge.snpR.stats(x, stats)
+  x <- .merge.snpR.stats(x, stats)
   x <- .update_citations(x, "Perez2014", "genomic_prediction", paste0("Genomic prediction against ", response, " via BGLR with model ", model, ". You may also want to cite the model you used (BayesB, etc.). Try ?BGLR::BGLR for details."))
   
 
@@ -311,7 +311,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
     stop("x must be a snpRdata object.\n")
   }
   
-  check.installed("BGLR")
+  .check.installed("BGLR")
   #===============run======================
 
   # check that the response is numeric
@@ -360,7 +360,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
   }
   whole.sn <- x@sn$sn
   whole.sn <- whole.sn[,-(1:(ncol(x@snp.meta) - 1))]
-  whole.sn <- interpolate_sn(whole.sn)
+  whole.sn <- .interpolate_sn(whole.sn)
   new.sn <- whole.sn[,cross.samples]
   new.sn <- t(new.sn)
   pred.phenos <- new.sn%*%model$models$.base_.base$model$ETA[[1]]$b
@@ -563,8 +563,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
 
     if(!"GMMAT" %in% utils::installed.packages()){
-      check.installed("SeqVarTools", "bioconductor")
-      check.installed("GMMAT")
+      .check.installed("SeqVarTools", "bioconductor")
+      .check.installed("GMMAT")
       
       # msg <- c(msg,
       #          paste0("The gmmat.score method requires the GMMAT package. This can be installed via
@@ -572,7 +572,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
       #                 These can be installed via BiocManager::install(c('SeqVar', 'SeqVarTools')).
       #                 If BiocManager is not installed, it can be installed via install.packages('BiocManager')."))
     }
-    check.installed("AGHmatrix")
+    .check.installed("AGHmatrix")
 
   }
   
@@ -756,27 +756,27 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
   #==============run the function=========
   # check facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
   if(method == "armitage"){
-    out <- apply.snpR.facets(x, facets = facets, req = "cast.gs", case = "ps", fun = calc_armitage, response = response, w = w)
+    out <- .apply.snpR.facets(x, facets = facets, req = "cast.gs", case = "ps", fun = calc_armitage, response = response, w = w)
     x <- .update_citations(x, "Armitage1955", "association", paste0("Association test against ", response, "."))
   }
   else if(method == "odds_ratio" | method == "chisq"){
-    out <- apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
+    out <- .apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
   }
   else if(method == "gmmat.score"){
-    out <- apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
+    out <- .apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
     x <- .update_citations(x, "Chen2016", "association", paste0("Association test against ", response, "."))
     x <- .update_citations(x, "Yang2010", "association", paste0("G-matrix creation for association test against ", response, "."))
   }
   
-  x <- update_calced_stats(x, facets, paste0("association_", method))
+  x <- .update_calced_stats(x, facets, paste0("association_", method))
 
-  x <- merge.snpR.stats(x, out)
+  x <- .merge.snpR.stats(x, out)
   return(x)
 }
 
@@ -882,7 +882,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     stop("x must be a snpRdata object.\n")
   }
   
-  check.installed("ranger")
+  .check.installed("ranger")
   #==========run============
   
   
@@ -1029,12 +1029,12 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
 
-  out <- apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response,
+  out <- .apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response,
                            interpolate = interpolate,  par = par, ...)
   
   # process
@@ -1047,7 +1047,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   }
   
   stats <- data.table::rbindlist(purrr::map(out, "importance"))
-  x <- merge.snpR.stats(x, stats)
+  x <- .merge.snpR.stats(x, stats)
   x <- .update_citations(x, "Wright2017", "Random Forest", paste0("Random Forest test against ", response, "."))
   
 

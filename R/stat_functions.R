@@ -154,16 +154,16 @@ calc_pi <- function(x, facets = NULL){
 
   # add any missing facets
   ofacets <- facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
-  out <- apply.snpR.facets(x, facets, "ac", func, case = "ps")
+  out <- .apply.snpR.facets(x, facets, "ac", func, case = "ps")
   colnames(out)[ncol(out)] <- "pi"
-  x <- merge.snpR.stats(x, out)
-  x <- calc_weighted_stats(x, ofacets, type = "single", "pi")
-  x <- update_calced_stats(x, facets, "pi", "snp")
+  x <- .merge.snpR.stats(x, out)
+  x <- .calc_weighted_stats(x, ofacets, type = "single", "pi")
+  x <- .update_calced_stats(x, facets, "pi", "snp")
   x <- .update_citations(x, "Hohenlohe2010", "pi", "pi, number of pairwise differences")
   
   return(x)
@@ -182,13 +182,13 @@ calc_maf <- function(x, facets = NULL){
   }
   
   # add any missing facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
   
   if(facets[1] == ".base" & length(facets) == 1){
-    out <- apply.snpR.facets(x,
+    out <- .apply.snpR.facets(x,
                              facets = facets[1],
                              req = "gs",
                              fun = .maf_func,
@@ -197,13 +197,13 @@ calc_maf <- function(x, facets = NULL){
   }
   else{
     # calculate the base facet if not yet added
-    logi <- check_calced_stats(x, ".base", "maf")
+    logi <- .check_calced_stats(x, ".base", "maf")
     if(!logi[[".base"]]["maf"]){
       x <- calc_maf(x)
     }
     
     major_minor_base <- .get.snpR.stats(x)[,c("major", "minor")]
-    out <- apply.snpR.facets(x,
+    out <- .apply.snpR.facets(x,
                              facets = facets,
                              req = "gs",
                              fun = .maf_func,
@@ -213,8 +213,8 @@ calc_maf <- function(x, facets = NULL){
     
   }
   
-  x <- update_calced_stats(x, facets, "maf", "snp")
-  return(merge.snpR.stats(x, out))
+  x <- .update_calced_stats(x, facets, "maf", "snp")
+  return(.merge.snpR.stats(x, out))
 }
 
 #'Tajima's D from SNP data.
@@ -277,13 +277,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   }
   
   if(!is.null(sigma) & !is.null(step)){
-    sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+    .sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
   }
   else{
     sigma <- NULL
     step <- NULL
   }
-  if(is.null(facets[1]) | ".base" %in% facets | "sample" %in% check.snpR.facet.request(x, facets, "none", TRUE)){
+  if(is.null(facets[1]) | ".base" %in% facets | "sample" %in% .check.snpR.facet.request(x, facets, "none", TRUE)){
     warning("Tajima's D has little meaning of snps on different chromosomes are considered together. Consider adding a snp level facet.")
   }
   
@@ -367,14 +367,14 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   }
 
   # add any missing facets
-  add.facets <- check.snpR.facet.request(x, facets)
+  add.facets <- .check.snpR.facet.request(x, facets)
   if(!all(add.facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, add.facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, add.facets)))
   }
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
 
   #=============run=============
-  out <- apply.snpR.facets(x,
+  out <- .apply.snpR.facets(x,
                            facets = facets,
                            req = "meta.ac",
                            fun = func,
@@ -384,13 +384,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
                            step = step)
 
   #===========merge and clean============
-  x <- merge.snpR.stats(x, out, type = "window.stats")
-  x <- update_calced_stats(x, facets, "tajimas_D")
-  x <- calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
+  x <- .merge.snpR.stats(x, out, type = "window.stats")
+  x <- .update_calced_stats(x, facets, "tajimas_D")
+  x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
   x <- .update_citations(x, "Tajima1989", "Tajima's_D", "Tajima's D, as well as Watterson's and Tajima's Theta")
   
   # calc weights ignoring any snp levels (for stuff like overal population means)
-  samp.facets <- check.snpR.facet.request(x, facets)
+  samp.facets <- .check.snpR.facet.request(x, facets)
   return(x)
 
 }
@@ -476,7 +476,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   }
   
   if(method == "genepop"){
-    check.installed("genepop")
+    .check.installed("genepop")
   }
   
   if(any(x@ac$n_alleles > 2)){
@@ -492,13 +492,13 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   # add any missing facets
   ofacets <- facets
-  facets <- check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
+  facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   if(all(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
   
   
@@ -817,7 +817,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   real <- vector("list", length = length(facets))
   names(real) <- facets
   if(method == "wc"){
-    needed <- check_calced_stats(x, facets, "ho")
+    needed <- .check_calced_stats(x, facets, "ho")
     needed <- facets[which(!unlist(needed))]
     if(length(needed) > 0){
       x <- calc_ho(x, needed)
@@ -936,12 +936,12 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   colnames(real_wm)[which(colnames(real_wm) == "comparison")] <- "subfacet"
   real_wm$snp.facet <- ".base"
   real_wm$snp.subfacet <- ".base"
-  x <- merge.snpR.stats(x, real_wm, "weighted.means")
+  x <- .merge.snpR.stats(x, real_wm, "weighted.means")
   
   
   # merge the per-snp
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
-  x <- merge.snpR.stats(x, real_out, type = "pairwise")
+  x <- .merge.snpR.stats(x, real_out, type = "pairwise")
   
   # cleanup
   if(cleanup){
@@ -958,7 +958,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   
   # return
-  x <- update_calced_stats(x, facets, "fst", "snp")
+  x <- .update_calced_stats(x, facets, "fst", "snp")
   if(method == "wc"){
     x <- .update_citations(x, "Weir1984", "fst", "Pairwise FST calculation")
   }
@@ -980,21 +980,21 @@ calc_ho <- function(x, facets = NULL){
 
   # add any missing facets
   ofacets <- facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
-  out <- apply.snpR.facets(x,
+  out <- .apply.snpR.facets(x,
                            facets = facets,
                            req = "gs",
                            fun = .ho_func,
                            case = "ps")
   colnames(out)[ncol(out)] <- "ho"
   
-  x <- merge.snpR.stats(x, out)
-  x <- calc_weighted_stats(x, ofacets, type = "single", "ho")
-  x <- update_calced_stats(x, facets, "ho", "snp")
+  x <- .merge.snpR.stats(x, out)
+  x <- .calc_weighted_stats(x, ofacets, type = "single", "ho")
+  x <- .update_calced_stats(x, facets, "ho", "snp")
   return(x)
 }
 
@@ -1052,15 +1052,15 @@ calc_private <- function(x, facets = NULL){
   }
 
   # add any missing facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
-  out <- apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
+  out <- .apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
   colnames(out)[ncol(out)] <- "pa"
-  x <- merge.snpR.stats(x, out)
-  x <- update_calced_stats(x, facets, "pa", "snp")
+  x <- .merge.snpR.stats(x, out)
+  x <- .update_calced_stats(x, facets, "pa", "snp")
   return(x)
 }
 
@@ -1805,7 +1805,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     # pull out just the sample facets
-    sample.facets <- check.snpR.facet.request(x, facets) # the sample level facets that we are working with.
+    sample.facets <- .check.snpR.facet.request(x, facets) # the sample level facets that we are working with.
 
     # initialize the output list
     out <- vector(mode = "list", length(sample.facets))
@@ -1818,7 +1818,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     for(i in 1:length(facets)){
 
       # grab the facet level list we are writing to.
-      t.samp.facet <- check.snpR.facet.request(x, facets[i])
+      t.samp.facet <- .check.snpR.facet.request(x, facets[i])
       write.facet <- which(names(out) == t.samp.facet)
       if(length(write.facet) == 0){
         t.samp.facet <- ".base"
@@ -1981,9 +1981,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       else{
 
         # determine sample and snp parts
-        samp.facet <- check.snpR.facet.request(x, facets[i])
+        samp.facet <- .check.snpR.facet.request(x, facets[i])
         if(is.null(samp.facet)){samp.facet <- ".base"}
-        snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
+        snp.facet <- .check.snpR.facet.request(x, facets[i], remove.type = "sample")
         split.snp.facet <- unlist(strsplit(snp.facet, "\\."))
 
         # grab the matrices for the corresponding sample level facet
@@ -2313,9 +2313,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
   }
 
-  #========================prepare and pass the primary function to apply.snpR.facets==================
+  #========================prepare and pass the primary function to .apply.snpR.facets==================
   # add any missing facets
-  x <- add.facets.snpR.data(x, facets)
+  x <- .add.facets.snpR.data(x, facets)
 
   #subset data if requested:
   if(!(is.null(subfacets[1]))){
@@ -2323,7 +2323,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     ssfacets <- names(subfacets)
 
     # check complex facets
-    complex.sfacets <- check.snpR.facet.request(x, ssfacets, remove.type = "simple", fill_with_base = FALSE, return_base_when_empty = FALSE)
+    complex.sfacets <- .check.snpR.facet.request(x, ssfacets, remove.type = "simple", fill_with_base = FALSE, return_base_when_empty = FALSE)
     if(length(complex.sfacets) > 0){
       stop(paste0("Complex (snp and sample) level SUBFACETS not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels. Bad facets: ",
                   paste0(complex.sfacets, collapse = ", "), "\n"))
@@ -2345,7 +2345,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     # get subfacet types
-    ssfacet.types <- check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
+    ssfacet.types <- .check.snpR.facet.request(x, ssfacets, "none", T)[[2]]
     filter_snp_facets <- F
     filter_samp_facets <- F
     
@@ -2397,42 +2397,42 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   # run non-CLD LD components:
   if(CLD != "only"){
     # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.
-    facets_trad <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+    facets_trad <- .check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
 
     # run the function
     out <- func(x, facets = facets_trad, snp.facets = snp.facets, par = par, sr = sr)
 
     # add to snpRdata object and return
     if(exists("old.x")){
-      out <- merge.snpR.stats(old.x, out, "LD")
+      out <- .merge.snpR.stats(old.x, out, "LD")
 
     }
     else{
-      out <- merge.snpR.stats(x, out, "LD")
+      out <- .merge.snpR.stats(x, out, "LD")
     }
   }
   # run CLD components
   if(CLD != F){
     # run the function
-    out <- calc_CLD(x, facets, par)
+    out <- .calc_CLD(x, facets, par)
 
     # add to snpRdata object and return
     if(CLD != "only"){
-      out <- merge.snpR.stats(x, out, "LD")
+      out <- .merge.snpR.stats(x, out, "LD")
     }
     else{
       if(exists("old.x")){
-        out <- merge.snpR.stats(old.x, out, "LD")
+        out <- .merge.snpR.stats(old.x, out, "LD")
 
       }
       else{
-        out <- merge.snpR.stats(x, out, "LD")
+        out <- .merge.snpR.stats(x, out, "LD")
       }
     }
   }
   
   #======================update and return============
-  out <- update_calced_stats(out, facets, "LD")
+  out <- .update_calced_stats(out, facets, "LD")
   if(!isFALSE(CLD)){
     out <- .update_citations(out, "Cockerham1977", "LD_CLD", "Burrows' Composite Linkage Disequlibrium")
   }
@@ -2457,7 +2457,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 # @param par number of parallel cores
 #
 # @author William Hemstrom
-calc_CLD <- function(x, facets = NULL, par = FALSE){
+.calc_CLD <- function(x, facets = NULL, par = FALSE){
   proximity <- s1_position <- s2_position <- NULL
   
   #============subfunctions==============
@@ -2518,7 +2518,7 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
     facet.names <- gsub("^\\.", "", facet.names)
     for(i in 1:length(facet.names)){
       if(facet.names[1] != ""){
-        facet.names[i] <- check.snpR.facet.request(x, facet.names[i], remove.type = "none")
+        facet.names[i] <- .check.snpR.facet.request(x, facet.names[i], remove.type = "none")
       }
       else{
         facet.names[i] <- ".base"
@@ -2567,8 +2567,8 @@ calc_CLD <- function(x, facets = NULL, par = FALSE){
   # get task list and do a conversion to sn
   cat("Preparing data...\n")
 
-  suppressMessages(x <- add.facets.snpR.data(x, facets))
-  tasks <- get.task.list(x, facets)
+  suppressMessages(x <- .add.facets.snpR.data(x, facets))
+  tasks <- .get.task.list(x, facets)
   x@sn$sn <- format_snps(x, "sn", interpolate = F)
   x@sn$type <- "FALSE"
 
@@ -2819,24 +2819,24 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
 
   # add any missing facets
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- add.facets.snpR.data(x, facets)))
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
   }
 
-  out <- apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
+  out <- .apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
   colnames(out)[ncol(out)] <- "pHWE"
   
   # apply corrections
   if(length(facets) == 1 & facets[1] == ".base"){
     fwe_case <- "overall"
   }
-  out <- fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
+  out <- .fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
   
   
   
-  x <- merge.snpR.stats(x, out)
-  x <- update_calced_stats(x, facets, "hwe", "snp")
+  x <- .merge.snpR.stats(x, out)
+  x <- .update_calced_stats(x, facets, "hwe", "snp")
   if(method == "exact"){
     x <- .update_citations(x, "Wigginton2005", "HWE", "Hardy-Weinburg Equilibrium, p-values via exact test")
   }
@@ -2895,19 +2895,19 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   }
   
   if(!is.null(facets[1])){
-    facet.types <- check.snpR.facet.request(x, facets, "none", T)
+    facet.types <- .check.snpR.facet.request(x, facets, "none", T)
     snp.facets <- which(facet.types[[2]] == "snp")
   }
 
   if(!is.null(sigma)){
     if(is.null(facets[1])){
-      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
+      .sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
     }
     else if(any(facet.types[[2]] == "snp")){
-      sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
+      .sanity_check_window(x, sigma, step, nk = nk, stats.type = "single", facets = facets)
     }
     else{
-      sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "single"), facets = facets)
+      .sanity_check_window(x, sigma, step, nk = nk, stats.type =  c("pairwise", "single"), facets = facets)
     }
   }
 
@@ -2917,7 +2917,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   x <- calc_pi(x, facets)
   x <- calc_hwe(x, facets)
   x <- calc_ho(x, facets)
-  if(!is.null(facets[1]) & !any(check.snpR.facet.request(x, facets, return.type = TRUE)[[2]] == ".base")){
+  if(!is.null(facets[1]) & !any(.check.snpR.facet.request(x, facets, return.type = TRUE)[[2]] == ".base")){
     x <- calc_pairwise_fst(x, facets, method = fst.method)
     x <- calc_private(x, facets)
   }
@@ -3009,16 +3009,16 @@ calc_het_hom_ratio <- function(x, facets = NULL, complex_averages = FALSE){
   # add any missing facets
   ofacets <- facets
   if(!complex_averages){
-    ofacets <- check.snpR.facet.request(x, facets, "complex")
+    ofacets <- .check.snpR.facet.request(x, facets, "complex")
   }
-  facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
 
-  out <- apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
+  out <- .apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
   colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
-  x <- merge.snpR.stats(x, out, "sample.stats")
-  x <- calc_weighted_stats(x, ofacets, "sample", "Het/Hom")
+  x <- .merge.snpR.stats(x, out, "sample.stats")
+  x <- .calc_weighted_stats(x, ofacets, "sample", "Het/Hom")
   
-  x <- update_calced_stats(x, facets, "ho_he_ratio")
+  x <- .update_calced_stats(x, facets, "ho_he_ratio")
 
   return(x)
 }
@@ -3110,7 +3110,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     msg <- c(msg, "NeEstimator executable not found at provided path.\n")
   }
   
-  facets <- check.snpR.facet.request(x, facets, remove.type = "snp")
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
   if(length(msg) > 0){
     stop(msg)
   }
@@ -3146,8 +3146,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   out <- dplyr::bind_rows(out, .id = "facet")
   
   #=============return===========
-  x <- merge.snpR.stats(x, out, "pop")
-  x <- update_calced_stats(x, facets, "ne")
+  x <- .merge.snpR.stats(x, out, "pop")
+  x <- .update_calced_stats(x, facets, "ne")
   x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
 
   return(x)
@@ -3231,7 +3231,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
   }
   
   # get the allele frequencies if not already provided
-  facets <- check.snpR.facet.request(x, facets, "none", T)
+  facets <- .check.snpR.facet.request(x, facets, "none", T)
   snp_lev <- which(facets[[2]] == "snp" | facets[[2]] == ".base")
   snp_facets <- facets[[1]][snp_lev]
   all_facets <- facets[[1]]
@@ -3244,7 +3244,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     else{
       facets <- facets[[1]]
     }
-    needed.facets <- check_calced_stats(x, facets, "allele_frequency_matrix")
+    needed.facets <- .check_calced_stats(x, facets, "allele_frequency_matrix")
     needed.facets <- facets[which(!unlist(needed.facets))]
     if(length(needed.facets) > 0){
       x <- tabulate_allele_frequency_matrix(x, needed.facets)
@@ -3302,7 +3302,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
       }
       else{
         # get tasks
-        tasks <- get.task.list(y, snp_facets[i])
+        tasks <- .get.task.list(y, snp_facets[i])
         out_snp[[i]] <- vector("list", nrow(tasks))
         names(out_snp[[i]]) <- tasks[,4]
         snp_columns <- unlist(.split.facet(tasks[,3][1]))
@@ -3328,14 +3328,14 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     out <- out_snp
   }
   
-  y <- update_calced_stats(y, all_facets, paste0("genetic_distance_", method, "_", interpolate))
+  y <- .update_calced_stats(y, all_facets, paste0("genetic_distance_", method, "_", interpolate))
   if(method == "Edwards"){
     y <- .update_citations(y, "Edwards1971", "genetic_distance", "Edwards' Angular Genetic Distance")
   }
   else if(method == "Nei"){
     y <- .update_citations(y, "Nei1978", "genetic_distance", "Nei's genetic distance")
   }
-  return(merge.snpR.stats(y, out, "genetic_distances"))
+  return(.merge.snpR.stats(y, out, "genetic_distances"))
   
 }
 
@@ -3410,10 +3410,10 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
     msg <- c(msg, "Latitude values greater 90 or less than -90 detected. Note that the first value in 'x_y' must specify longitude, the second must specify latitude!")
   }
   
-  pkg.check <- check.installed("geosphere")
+  pkg.check <- .check.installed("geosphere")
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
-  pkg.check <- check.installed("ade4")
+  pkg.check <- .check.installed("ade4")
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
   
@@ -3422,11 +3422,11 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   }
   
   #================prep and get genetic dist matrices========================
-  facets <- check.snpR.facet.request(x, facets, "none")
-  x <- add.facets.snpR.data(x, facets)
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  x <- .add.facets.snpR.data(x, facets)
   
   # calc gds if needed and fetch
-  cs <- check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method, "_", interpolate))
+  cs <- .check_calced_stats(x, facets, paste0("genetic_distance_", genetic_distance_method, "_", interpolate))
   missing <- which(!unlist(cs))
   if(length(missing) > 0){
     x <- calc_genetic_distances(x, names(cs)[missing], genetic_distance_method, interpolate)
@@ -3435,14 +3435,14 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   
   #===============fetch geo dist matrices=======================
   # get the geo dist matrices
-  snp.levs <- check.snpR.facet.request(x, facets)
+  snp.levs <- .check.snpR.facet.request(x, facets)
   geo_mats <- vector("list", length(snp.levs))
   names(geo_mats) <- snp.levs
   
   # get the geo matrices for each comparison. note that the same geo matrix is re-used across snp level facets.
   for(i in 1:length(geo_mats)){
     # get the categories for this
-    categories <- get.task.list(x, names(geo_mats)[i])[,1:2, drop = F]
+    categories <- .get.task.list(x, names(geo_mats)[i])[,1:2, drop = F]
     
     # if the categories are all base, easy peasy
     if(all(categories[,1] == ".base")){
@@ -3452,7 +3452,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
       # otherwise need to break it down by sample level facet
       # find geographic mean coordiantes for each facet level
       gmeans <- t(apply(categories, 1, function(row){
-        matches <- fetch.sample.meta.matching.task.list(x, row)
+        matches <- .fetch.sample.meta.matching.task.list(x, row)
         matches <- x@sample.meta[matches,, drop = FALSE]
         matches <- matches[,x_y, drop = FALSE]
         if(nrow(matches) == 1){
@@ -3483,7 +3483,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
       
       for(k in 1:length(gd[[i]][[j]])){
         
-        tsampfacet <- check.snpR.facet.request(x, names(gd)[i])
+        tsampfacet <- .check.snpR.facet.request(x, names(gd)[i])
         
         # quick check for NAs
         if(any(is.na(gd[[i]][[j]][[k]]))){
@@ -3517,9 +3517,9 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   }
   
   #===============return================================
-  x <- merge.snpR.stats(x, geo_mats, "geo_dists")
-  x <- merge.snpR.stats(x, ibd, "ibd")
-  x <- update_calced_stats(x, facets, c("geo_dist", "ibd"))
+  x <- .merge.snpR.stats(x, geo_mats, "geo_dists")
+  x <- .merge.snpR.stats(x, ibd, "ibd")
+  x <- .update_calced_stats(x, facets, c("geo_dist", "ibd"))
   x <- .update_citations(x, "Mantel209", "isolation_by_distance", "Mantel test used to generate p-value for genetic vs geographic distance.")
   
   return(x)

@@ -87,7 +87,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     if(any(facets %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
       stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
     }
-    facets <- check.snpR.facet.request(x, facets, "none", TRUE)
+    facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
     if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
       msg <- c(msg, "Sample level facets cannot be provided alongside a vector of samples to retain/remove.\n")
     }
@@ -227,7 +227,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     for(i in 1:length(snp.facets)){
       snp.subfacets <- argnames[[is.facet[which(facets[[2]] == "snp")][i]]]
       for(j in 1:length(snp.subfacets)){
-        new.matches <- fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
+        new.matches <- .fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
         if(length(new.matches) == 0){
           stop(paste0("No snp found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
           
@@ -259,7 +259,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     for(i in 1:length(samp.facets)){
       samp.subfacets <- argnames[[is.facet[which(facets[[2]] == "sample")][i]]]
       for(j in 1:length(samp.subfacets)){
-        new.matches <- fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
+        new.matches <- .fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
         if(length(new.matches) == 0){
           stop(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
         }
@@ -385,7 +385,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     }
     dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,], sample.meta = sample.meta(x)[samps,], mDat = x@mDat)
     if(any(x@facets != ".base")){
-      dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
+      dat <- .add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
 
     if(length(x@sn$sn) != 0){
@@ -572,7 +572,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
     }
     
     if(!isFALSE(hwe_facets)){
-      hwe_facets <- check.snpR.facet.request(x, hwe_facets)
+      hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
     }
   }
 
@@ -613,14 +613,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
   }
 
   if(!is.null(maf_facets[1])){
-    maf_facets <- check.snpR.facet.request(x, maf_facets, "none")
+    maf_facets <- .check.snpR.facet.request(x, maf_facets, "none")
 
     # add any needed facets...
     miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
     if(length(miss.facets) != 0){
       cat("Adding missing facets...\n")
       # need to fix any multivariate facets (those with a .)
-      x <- add.facets.snpR.data(x, miss.facets)
+      x <- .add.facets.snpR.data(x, miss.facets)
     }
 
     # check for bad facets to remove (those that don't just consider samples)
@@ -788,7 +788,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       # no facets, easy
       if(isFALSE(hwe_facets)){
         
-        if(!check_calced_stats(x, ".base", "hwe")$.base){
+        if(!.check_calced_stats(x, ".base", "hwe")$.base){
           invisible(utils::capture.output(x <- calc_hwe(x)))
         }
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
@@ -801,7 +801,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       # facets, slightly more complicated
       else{
         
-        run.facets <- check_calced_stats(x, hwe_facets, "hwe")
+        run.facets <- .check_calced_stats(x, hwe_facets, "hwe")
         run.facets <- names(run.facets)[!unlist(run.facets)]
         if(length(run.facets) > 0){
           invisible(utils::capture.output(x <- calc_hwe(x, run.facets)))
@@ -839,7 +839,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       x <- x[,-rejects]
       cat("Re-calculating and adding facets.\n")
       if(any(old.facets != ".base")){
-        x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+        x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
 
       warning("Any calculated stats will be removed, since individuals were filtered out!\n")
@@ -1269,7 +1269,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
   }
   else if(output == "plink"){
-    check.installed("genio")
+    .check.installed("genio")
     if(is.null(input_format)){
       if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
         stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
@@ -1348,7 +1348,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   
   if(interpolate == "iPCA"){
-    check.installed("missMDA")
+    .check.installed("missMDA")
   }
 
   #======================put data into snpRdata object if not in that format to start with================
@@ -1382,7 +1382,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       x <- process_ms(x, chr.length)
       snp.meta <- x$meta
       x <- x$x
-      x <- convert_2_to_1_column(x)
+      x <- .convert_2_to_1_column(x)
       cat(" done.\n")
 
       input_format <- "sn"
@@ -1512,7 +1512,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
 
     if(!is.null(facets)){
-      x <- add.facets.snpR.data(x, facets)
+      x <- .add.facets.snpR.data(x, facets)
     }
 
     # if this is the desired output, we're done.
@@ -1542,7 +1542,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(!all(facets %in% x@facets)){
       cat("Adding missing facets.\n")
       new.facets <- facets[which(!(facets %in% x@facets))]
-      x <- add.facets.snpR.data(x, new.facets)
+      x <- .add.facets.snpR.data(x, new.facets)
     }
   }
 
@@ -1589,7 +1589,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #=========apply to requested facets=======
     # get missing maf info
-    mafs_to_calc <- check_calced_stats(x, unique(c(".base", facets)), "maf")
+    mafs_to_calc <- .check_calced_stats(x, unique(c(".base", facets)), "maf")
     if(any(!unlist(mafs_to_calc))){
       x <- calc_maf(x, names(mafs_to_calc[which(!unlist(mafs_to_calc))]))
     }
@@ -1716,7 +1716,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
         
         #prep pop numbers
-        facets <- check.snpR.facet.request(x, facets)
+        facets <- .check.snpR.facet.request(x, facets)
         facets <- unlist(.split.facet(facets))
         
         struc.meta <- as.numeric(as.factor(
@@ -2016,13 +2016,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       # interpolate?
       if(interpolate == "bernoulli"){
-        rdata <- interpolate_sn(rdata, "bernoulli")
+        rdata <- .interpolate_sn(rdata, "bernoulli")
       }
       else if(interpolate == "af"){
-        rdata <- interpolate_sn(rdata, "af")
+        rdata <- .interpolate_sn(rdata, "af")
       }
       else if(interpolate == "iPCA"){
-        rdata <- interpolate_sn(rdata, "iPCA", ncp = ncp, ncp.max = ncp.max)
+        rdata <- .interpolate_sn(rdata, "iPCA", ncp = ncp, ncp.max = ncp.max)
       }
 
       # bind and save
@@ -2132,7 +2132,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn[hets] <- draws
 
     # assign major or minor back
-    maf.check <- check_calced_stats(x, ".base", stats = "maf")
+    maf.check <- .check_calced_stats(x, ".base", stats = "maf")
     if(!unlist(maf.check)){
       x <- calc_maf(x)
     }
@@ -2508,16 +2508,16 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   msg <- character()
   
   # check facets and get maf
-  facets <- check.snpR.facet.request(x, facets, "none", T)
+  facets <- .check.snpR.facet.request(x, facets, "none", T)
   facet_types <- facets[[2]]
   facets <- facets[[1]]
-  needed.sample.facets <- check.snpR.facet.request(x, facets)
+  needed.sample.facets <- .check.snpR.facet.request(x, facets)
   if(any(facet_types == "snp")){
     needed.sample.facets <- c(needed.sample.facets, ".base")
     needed.sample.facets <- unique(needed.sample.facets)
   }
   ## add any missing maf data
-  missing_mafs <- check_calced_stats(x, needed.sample.facets, "maf")
+  missing_mafs <- .check_calced_stats(x, needed.sample.facets, "maf")
   if(any(!unlist(missing_mafs))){
     x <- calc_maf(x, names(missing_mafs)[which(!unlist(missing_mafs))])
   }
@@ -2564,10 +2564,10 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
         t.samp.facet <- ".base"
       }
       else{
-        t.samp.facet <- check.snpR.facet.request(x, facets[i], "snp")
+        t.samp.facet <- .check.snpR.facet.request(x, facets[i], "snp")
       }
-      t.snp.facet <- check.snpR.facet.request(x, facets[i], "sample")
-      snp.parts <- get.task.list(x, t.snp.facet)[,-c(1:2)]
+      t.snp.facet <- .check.snpR.facet.request(x, facets[i], "sample")
+      snp.parts <- .get.task.list(x, t.snp.facet)[,-c(1:2)]
       
       tout <- vector("list", length = nrow(snp.parts))
       names(tout) <- snp.parts[,2]
@@ -2583,7 +2583,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
       out[[i]] <- tout
     }
     else{
-      if(is.null(check.snpR.facet.request(x, facets[i]))){
+      if(is.null(.check.snpR.facet.request(x, facets[i]))){
         facets[i] <- ".base"
       }
       out[[i]] <- list(.base = sample_facet_freqs[[which(needed.sample.facets == facets[i])]])
@@ -2591,8 +2591,8 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   }
   
   #=================return============
-  x <- update_calced_stats(x, facets, "allele_frequency_matrix")
-  return(merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
+  x <- .update_calced_stats(x, facets, "allele_frequency_matrix")
+  return(.merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
 }
 
 
@@ -2639,13 +2639,13 @@ gap_snps <- function(x, facet = NULL, n){
   msg <- character()
   
   
-  ffacet <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = TRUE)
+  ffacet <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = TRUE)
   
   if(any(ffacet[[2]] %in% c("sample", "complex"))){
     msg <- c(msg, "Non SNP facets are not permitted.\n")
   }
   
-  facet <- check.snpR.facet.request(x, facet, "sample")
+  facet <- .check.snpR.facet.request(x, facet, "sample")
   
   if(length(facet) != 1){
     msg <- c(msg, "Only one facet may be provided to gap_snps. Note that complex
@@ -2686,12 +2686,12 @@ gap_snps <- function(x, facet = NULL, n){
   
   #==============find the SNPs to retain=====================
   # get a task list, then run for each task
-  task.list <- get.task.list(x, facet)
+  task.list <- .get.task.list(x, facet)
   keep.snps <- numeric()
   
   # no par option for now, should usually be quick. Can add if requested.
   for(i in 1:nrow(task.list)){
-    tsm <- snp.meta(x)[fetch.snp.meta.matching.task.list(x, task.list[i,]),]
+    tsm <- snp.meta(x)[.fetch.snp.meta.matching.task.list(x, task.list[i,]),]
     ret <- retained(tsm$position, n)
     keep.snps <- c(keep.snps, tsm$.snp.id[ret])
   }
@@ -2751,8 +2751,8 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
     stop("x must be a snpRdata object.\n")
   }
   
-  check.installed("bibtex")
-  check.installed("RefManageR")
+  .check.installed("bibtex")
+  .check.installed("RefManageR")
   
   #==========grab bib============
   bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")

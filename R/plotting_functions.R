@@ -75,9 +75,9 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   if(is.null(facets)){facets <- ".base"}
 
   # check facets
-  snp.facet <- check.snpR.facet.request(x, facets, remove.type = "sample")[[1]]
-  sample.facet <- check.snpR.facet.request(x, facets, remove.type = "snp")[[1]]
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  snp.facet <- .check.snpR.facet.request(x, facets, remove.type = "sample")[[1]]
+  sample.facet <- .check.snpR.facet.request(x, facets, remove.type = "snp")[[1]]
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   facet.type <- facets[[2]]
   facets <- facets[[1]]
   bad.facets <- facets[!(facets %in% names(x@pairwise.LD$LD_matrices))]
@@ -514,7 +514,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
 
   # facets
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   if(length(facets[[1]]) > 1){
     msg <- c(msg, "Only one facet may be specified at a time. This facet may be complex, with up to two sample levels (e.g. pop.family).")
   }
@@ -526,7 +526,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
   facets <- facets[[1]]
   facets <- unlist(.split.facet(facets))
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
 
   plot_type <- tolower(plot_type)
   good_plot_types <- c("pca", "tsne", "umap")
@@ -535,20 +535,20 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
 
   if("umap" %in% plot_type){
-    pkg.check <- check.installed("umap")
+    pkg.check <- .check.installed("umap")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   }
   
   if("tsne" %in% plot_type){
-    pkg.check <- check.installed("Rtsne")
+    pkg.check <- .check.installed("Rtsne")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
     
-    pkg.check <- check.installed("mmtsne")
+    pkg.check <- .check.installed("mmtsne")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   }
   
   if(interpolation_method == "iPCA"){
-    check.installed("missMDA")
+    .check.installed("missMDA")
   }
   if(isFALSE(interpolation_method)){
     stop("All methods require no missing data. Please enable interpolation.\n")
@@ -915,9 +915,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   #=============sanity checks==============================
   msg <- character()
-  pkg.check <- check.installed("ggrepel")
+  pkg.check <- .check.installed("ggrepel")
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
-  pkg.check <- check.installed("viridis")
+  pkg.check <- .check.installed("viridis")
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
   if(length(msg) > 0){
@@ -928,21 +928,21 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #====if a snpRdata object========
   if(class(x) == "snpRdata"){
     if(window == FALSE){
-      facets <- check.snpR.facet.request(x, facets)
+      facets <- .check.snpR.facet.request(x, facets)
     }
     else{
       if(chr != "chr"){
         warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
       }
       if(!is.null(facets)){
-        pop.facets <- check.snpR.facet.request(x, facets, "snp")
+        pop.facets <- .check.snpR.facet.request(x, facets, "snp")
         facets <- paste0(pop.facets, ".", chr)
       }
       else{
         facets <- chr
       }
 
-      facets <- check.snpR.facet.request(x, facets, "none")
+      facets <- .check.snpR.facet.request(x, facets, "none")
     }
     if(plot_var %in% colnames(x@stats)){
       if(window){
@@ -1204,7 +1204,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
   
   # snpRdata
   if(class(x) == "snpRdata"){
-    facets <- check.snpR.facet.request(x, facets)
+    facets <- .check.snpR.facet.request(x, facets)
     
     if(plot_var %in% colnames(x@stats)){
       stats <- data.table::as.data.table(.get.snpR.stats(x, facets = facets))
@@ -1611,7 +1611,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   msg <- character()
   provided_qlist <- FALSE
 
-  check.installed("pophelper", "github", "royfrancis/pophelper")
+  .check.installed("pophelper", "github", "royfrancis/pophelper")
   
   if(!is.null(facet.order)){
     if(is.null(facet)){
@@ -1753,17 +1753,17 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   # checks for snpRdata objects only
   if(isFALSE(provided_qlist)){
-    x <- add.facets.snpR.data(x, facet)
+    x <- .add.facets.snpR.data(x, facet)
     good.methods <- c("snapclust", "snmf", "admixture", "structure")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
     }
     
     if(method == "snmf"){
-      check.installed("LEA", "bioconductor")
+      .check.installed("LEA", "bioconductor")
     }
     if(method == "snapclust"){
-      check.installed("adegenet")
+      .check.installed("adegenet")
     }
     if(method == "admixture"){
       if(!file.exists(admixture_path)){
@@ -1791,14 +1791,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       msg <- c(msg, "Only one facet may be plotted at once.\n")
     }
     if(!is.null(facet[[1]])){
-      fcheck <- check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+      fcheck <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
       if(any(fcheck[[2]] != "sample")){
         stop("Only simple, sample level facets allowed.\n")
       }
-      facets <- check.snpR.facet.request(x, facet, remove.type = "snp")
+      facets <- .check.snpR.facet.request(x, facet, remove.type = "snp")
     }
     if(!is.null(facet.order)){
-      cats <- get.task.list(x, facet)
+      cats <- .get.task.list(x, facet)
       num.cats <- length(unique(cats[,2]))
       if(num.cats != length(unique(facet.order))){
         msg <- c(msg, "The number of categories provided in facet.order must equal the number of categories in the provided facet.\n")
@@ -2391,7 +2391,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         stop("Cannot use pop info across multiple values of k. Please set k equal to the number of levels of the provided facet.\n")
       }
       else{
-        cats <- get.task.list(x, facet)
+        cats <- .get.task.list(x, facet)
         num.cats <- length(unique(cats[,2]))
         if(num.cats != kmax & use_pop_info){
           stop(paste0("k must be set to the same value as the number of levels of the provided facet (", num.cats, ").\n"))
@@ -2999,10 +2999,10 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 
   #===================sanity checks=================
   msg <- character()
-  pkg.check <- check.installed("scatterpie")
-  pkg.check <- c(pkg.check, check.installed("sf"))
-  if(!is.null(compass) | !is.null(scale_bar)){pkg.check <- c(pkg.check, check.installed("ggsn"))}
-  pkg.check <- c(pkg.check, check.installed("viridis"))
+  pkg.check <- .check.installed("scatterpie")
+  pkg.check <- c(pkg.check, .check.installed("sf"))
+  if(!is.null(compass) | !is.null(scale_bar)){pkg.check <- c(pkg.check, .check.installed("ggsn"))}
+  pkg.check <- c(pkg.check, .check.installed("viridis"))
   
   if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   
@@ -3252,8 +3252,8 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     stop("x is not a snpRdata object.\n")
   }
   
-  facets <- check.snpR.facet.request(x, facets, remove.type = "none")
-  x <- add.facets.snpR.data(x, facets)
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
+  x <- .add.facets.snpR.data(x, facets)
   
   msg <- character(0)
   
@@ -3270,7 +3270,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     }
   }
   
-  if(check.installed("ggtree")){
+  if(.check.installed("ggtree")){
     if(utils::packageVersion("ggtree") < numeric_version("3.1.2")){
       msg <- c(msg, "Package ggtree version 3.1.2+ required. The most recent development version can be installed via remotes::install_github('YuLab-SMU/ggtree')")
     }
@@ -3288,7 +3288,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     stop(msg)
   }
   
-  check.installed("ape")
+  .check.installed("ape")
   
   #=======function=========
   # expects 
@@ -3322,16 +3322,16 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     
     #=============fetch data==============
     #=========raw afms, for non-snp facets===============
-    snp.facet <- check.snpR.facet.request(x, tfacet, "sample", fill_with_base = FALSE, return_base_when_empty = FALSE)
-    samp.facet <- check.snpR.facet.request(x, tfacet, "snp", fill_with_base = FALSE, return_base_when_empty = FALSE)
+    snp.facet <- .check.snpR.facet.request(x, tfacet, "sample", fill_with_base = FALSE, return_base_when_empty = FALSE)
+    samp.facet <- .check.snpR.facet.request(x, tfacet, "snp", fill_with_base = FALSE, return_base_when_empty = FALSE)
     if(!is.null(snp.facet) & is.null(samp.facet)){
-      opts <- get.task.list(x, snp.facet)
+      opts <- .get.task.list(x, snp.facet)
       amfs <- vector("list", nrow(opts))
       sn <- format_snps(x, "sn", interpolate = interpolate)
       sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
       
       for(i in 1:nrow(opts)){
-        tsn <- fetch.snp.meta.matching.task.list(x, opts[i,])
+        tsn <- .fetch.snp.meta.matching.task.list(x, opts[i,])
         amfs[[i]] <- t(sn[tsn,])
       }
       names(amfs) <- opts[,4]
@@ -3412,7 +3412,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   }
   
   #=======run==============
-  needed_dists <- check_calced_stats(x, facets, paste0("genetic_distance", "_", distance_method, "_", interpolate))
+  needed_dists <- .check_calced_stats(x, facets, paste0("genetic_distance", "_", distance_method, "_", interpolate))
   needed_dists <- which(!unlist(needed_dists))
   if(length(needed_dists) > 0){
     invisible(utils::capture.output(
@@ -3489,7 +3489,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   }
   msg <- character(0)
   
-  facets <- check.snpR.facet.request(x, facets, return.type = T)
+  facets <- .check.snpR.facet.request(x, facets, return.type = T)
   facets <- facets[[1]][which(facets[[2]] == "sample")]
   if(length(facets) == 0){
     msg <- c(msg, "No sample-level facets requested.\n")

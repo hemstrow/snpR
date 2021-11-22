@@ -98,7 +98,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   #================sanity checks================
   msg <- character(0)
   o.facets <- facets
-  facets <- check.snpR.facet.request(x, facets, "none")
+  facets <- .check.snpR.facet.request(x, facets, "none")
 
   # figure out which stats we are using!
   pairwise.types <- c("fst")
@@ -126,17 +126,17 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 
   # get mafs if doing any normal stats. Can make this more efficient by adding only where missing in the future.
   if("single" %in% stats.type & nk){
-    what.stats <- check_calced_stats(x, check.snpR.facet.request(x, facets), "maf")
+    what.stats <- .check_calced_stats(x, .check.snpR.facet.request(x, facets), "maf")
     if(any(!unlist(what.stats))){
-      x <- calc_maf(x,  check.snpR.facet.request(x, facets)[which(!unlist(what.stats))])
+      x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(what.stats))])
     }
     x@stats$nk <- x@stats$maj.count + x@stats$min.count
   }
   
   # check that we've actually calculated windowed stats for the facet we are doing!
-  facet_details <- check.snpR.facet.request(x, facets, "none", "TRUE")
+  facet_details <- .check.snpR.facet.request(x, facets, "none", "TRUE")
   for(i in 1:length(facets)){
-    split.facet <- check.snpR.facet.request(x, unlist(.split.facet(facets[i])), "none", TRUE)
+    split.facet <- .check.snpR.facet.request(x, unlist(.split.facet(facets[i])), "none", TRUE)
     snp.part <- which(split.facet[[2]] == "snp")
     snp.part <- split.facet[[1]][snp.part]
     if(length(snp.part) == 0){
@@ -185,7 +185,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   }
   
   # run basic sanity checks
-  sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
+  .sanity_check_window(x, sigma, 200, stats.type, nk, facets, statistics, good.types = all.types)
   
 
   #===========subfunctions=======
@@ -520,11 +520,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 
   #===========initialize=========
   # figure out what different snp level facets we have, and figure out which facets have which snp levels
-  snp.facets <- check.snpR.facet.request(x, facets, remove.type = "sample")
+  snp.facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
   snp.facet.matches <- lapply(snp.facets, grep, x = facets)
   names(snp.facet.matches) <- snp.facets
   snp.facet.matches <- lapply(snp.facet.matches, function(y){
-    lapply(facets[y], function(z) check.snpR.facet.request(x, z))
+    lapply(facets[y], function(z) .check.snpR.facet.request(x, z))
   })
   snp.facet.matches <- lapply(snp.facet.matches, unlist) # this is now a list with an entry for each snp level facet containing the pop level facets to run.
   
@@ -532,7 +532,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   snp.facet.matches <- Filter(Negate(is.null), snp.facet.matches)
   
   # add in .base if needed, for sample level only facets
-  samp.facets <- check.snpR.facet.request(x, facets, "none", T)
+  samp.facets <- .check.snpR.facet.request(x, facets, "none", T)
   samp.facets <- samp.facets[[1]][which(samp.facets[[2]] == "sample")]
   if(length(samp.facets) > 0){
      snp.facet.matches <- c(snp.facet.matches, .base = samp.facets)
@@ -795,7 +795,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   if(facets[1] != "all"){
 
     keep.rows <- logical(nrow(u.rows))
-    facets <- check.snpR.facet.request(x, facets, "none", T)
+    facets <- .check.snpR.facet.request(x, facets, "none", T)
 
     # loop through each facet
     for(i in 1:length(facets[[1]])){
@@ -807,7 +807,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       # for complex facets
       else if(facets[[2]][[i]] == "complex"){
         u.facet <-  unlist(.split.facet(facets[[1]][[i]]))
-        split.parts <- check.snpR.facet.request(x, u.facet, remove.type = "none", return.type = T)
+        split.parts <- .check.snpR.facet.request(x, u.facet, remove.type = "none", return.type = T)
         samp.part <- split.parts[[1]][which(split.parts[[2]] == "sample")]
         snp.part <- split.parts[[1]][which(split.parts[[2]] == "snp")]
 
@@ -881,8 +881,8 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)] <- paste0("p_", colnames(cout)[(which(colnames(cout) == "nk.status") + 1):ncol(cout)])
     
     # do fwe
-    cout <- fwe_correction(cout, levs = c("facet", "subfacet"), pcol = "p_fst", methods = fwe_method, case = fwe_case)
-    x <- merge.snpR.stats(x, cout, type = "pairwise.window.stats")
+    cout <- .fwe_correction(cout, levs = c("facet", "subfacet"), pcol = "p_fst", methods = fwe_method, case = fwe_case)
+    x <- .merge.snpR.stats(x, cout, type = "pairwise.window.stats")
   }
   if(any(out$stat != "fst")){
 
@@ -894,11 +894,11 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     p_cols <- colnames(cout)[grep("p_", colnames(cout))]
     cout_comb <- vector("list", length(p_cols))
     for(i in 1:length(p_cols)){
-      cout_comb[[i]] <- fwe_correction(cout, levs = c("facet", "subfacet"), pcol = p_cols[i], methods = fwe_method, case = fwe_case)
+      cout_comb[[i]] <- .fwe_correction(cout, levs = c("facet", "subfacet"), pcol = p_cols[i], methods = fwe_method, case = fwe_case)
     }
     invisible(suppressMessages(cout <- purrr::reduce(cout_comb, dplyr::left_join)))
     
-    x <- merge.snpR.stats(x, cout, type = "window.stats")
+    x <- .merge.snpR.stats(x, cout, type = "window.stats")
   }
 
 

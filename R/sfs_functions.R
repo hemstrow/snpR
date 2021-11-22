@@ -88,7 +88,7 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
     if(length(facet) > 1){
       msg <- c(msg, "For now, only a single facet is allowed at a time.\n")
     }
-    check_facet <- check.snpR.facet.request(x, facet, "none", T)
+    check_facet <- .check.snpR.facet.request(x, facet, "none", T)
     if(any(check_facet[[2]] != "sample")){
       msg <- c(msg, "For now, only sample level facets are allowed.\n")
     }

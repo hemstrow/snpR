@@ -60,7 +60,7 @@ A list containing: \itemize{ \item{model: } The results from
 \description{
 Run genomic prediction given a single response variable (usually a phenotype)
 using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
-this returns the resulting model direcly, so overwrite with caution. This
+this returns the resulting model directly, so overwrite with caution. This
 will leave a specified portion of the samples out when running the model,
 then perform cross-validation.
 }
@@ -87,7 +87,7 @@ cross_percentage argument. Specifically, the proportion given will be used to
 create the model, the remaining portion will be left out. For example, if
 cross_percentage = 0.9, 90% of the samples will be used to run the model and
 the remaining 10% will be used for cross-validation. Alternatively, if
-cross_samples are provided, the specifed samples (by column index) will be
+cross_samples are provided, the specified samples (by column index) will be
 used used for cross validation instead. This may be useful for a systematic
 leave-one-out cross-validation.
 

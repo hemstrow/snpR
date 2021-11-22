@@ -278,7 +278,7 @@ process_ms <- function(x, chr.length){
 #' @author William Hemstrom
 process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks, part 1=============
-  check.installed("vcfR")
+  .check.installed("vcfR")
   
   #========import data=======================
   if(!"vcfR" %in% class(vcf_file)){
@@ -516,7 +516,7 @@ process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat 
 process_plink <- function(plink_file){
   o1 <- ref <- o2 <- alt <- o3 <- NULL
   
-  check.installed("genio")
+  .check.installed("genio")
   
   
   #======use genio to read in data===========
@@ -537,7 +537,7 @@ process_plink <- function(plink_file){
     lookup[,o2 := paste0(ref, alt)]
     lookup[,o3 := paste0(alt,alt)]
     lookup <- lookup[,-c(1:2)]
-    genotypes <- row_specific_gsub(res$X, lookup, c(0, 1, 2))
+    genotypes <- .row_specific_gsub(res$X, lookup, c(0, 1, 2))
     genotypes[is.na(genotypes)] <- "NN"
     
     return(import.snpR.data(genotypes, 

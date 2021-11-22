@@ -137,7 +137,7 @@ read.FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 #' @describeIn snpR_import_wrappers Import plink bed, bim, and fam data.
 read.plink <- function(file){
   if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
-    check.installed("tools")
+    .check.installed("tools")
     return(process_plink(tools::file_path_sans_ext(file)))
   }
   else{

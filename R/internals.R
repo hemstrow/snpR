@@ -13,22 +13,22 @@ is.snpRdata <- function(x){
 }
 
 
-#'Add facets to snpRdata objects
-#'
-#'Adds facets to snpRdata objects, following the rules described in
-#'\code{\link{Facets_in_snpR}}. Internal, called by many other functions when
-#'facets are requested.
-#'
-#'@param x snpRdata object
-#'@param facets character. Facets to use.
-#'
-add.facets.snpR.data <- function(x, facets = NULL){
+# Add facets to snpRdata objects
+# 
+# Adds facets to snpRdata objects, following the rules described in
+# \code{\link{Facets_in_snpR}}. Internal, called by many other functions when
+# facets are requested.
+# 
+# @param x snpRdata object
+# @param facets character. Facets to use.
+# 
+.add.facets.snpR.data <- function(x, facets = NULL){
   #===========================binding issues for unquoted variables============
   .snp.id <- facet <- subfacet <- NULL
   
   
   if(is.null(facets[1])){return(x)}
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
   if(is.null(facets[1])){return(x)}
   #===========================turn into list========
   # need to fix any multivariate facets (those with a .)
@@ -111,7 +111,7 @@ add.facets.snpR.data <- function(x, facets = NULL){
     for(i in 1:nrow(sample.opts)){
       matches <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[i,]))))
       t.x <- genotypes(x)[,matches]
-      tgs <- tabulate_genotypes(t.x, x@mDat)
+      tgs <- .tabulate_genotypes(t.x, x@mDat)
       gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
       gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
       gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
@@ -171,70 +171,55 @@ add.facets.snpR.data <- function(x, facets = NULL){
   return(x)
 }
 
-#'Grab information of the facets present in snpRdata objects.
-#'
-#'Internal, grabs via reference to face.meta socket rather than the facets
-#'socket.
-#'
-#'@param x snpRdata object.
-#'  
-find.snpR.facets <- function(x){
-  facets <- vector("list", length(x@facets))
-  names(facets) <- x@facets
-  for(i in 1:length(facets)){
-    facets[[i]] <- unique(x@facet.meta[x@facet.meta$facet == names(facets)[i],]$subfacet)
-  }
-  return(facets)
-}
 
-#'Apply functions across snpR facets.
-#'
-#'Internal function to apply functions across snpR data. Facet desicnations
-#'follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
-#'designations follow typical rules.
-#'
-#'This function should never be called externally. Raw statistics with metadata
-#'are returned and are not automatically merged into x.
-#'
-#'For examples, look at how this function is called in functions such as
-#'calc_pi, calc_pairwise_fst, ect.
-#'
-#'Options:
-#'
-#'req:
-#'
-#'\itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
-#'\item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
-#'\item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
-#'snp metadata. \item{snpRdata: } subset snpRdata object. }
-#'
-#'case:
-#'
-#'\itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
-#'per snp, but split per facet (such as for private alleles, comparisons only
-#'exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
-#'between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per snp,
-#'but per both sample and snp facet. }
-#'
-#'@param x snpRdata object
-#'@param facets character or NULL, default NULL. Facets to add.
-#'@param req character. Data type required by fun. See description.
-#'@param fun function. Function to apply to data.
-#'@param case character, default "ps". Type of statistic required by fun. See
-#'  description.
-#'@param par numeric or FALSE, default FALSE. Number of parallel computing cores
-#'  to use. Works for some cases/reqs.
-#'@param ... other arguments to be passed to fun.
-#'@param stats.type character, default "all". Other options "pairwise" or
-#'  "stats". Type of statistic under to pull under the ps.pf.psf option.
-#'@param response character, default NULL. Possible response variable name
-#'  passed to specific functions.
-#'@param maf numeric, defualt NULL. Possible maf, passed to some functions.
-#'@param interpolate character, default NULL. Possible interpolation option,
-#'  passed to some functions.
-#'
-#'@author William Hemstrom
-apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
+# Apply functions across snpR facets.
+# 
+# Internal function to apply functions across snpR data. Facet desicnations
+# follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
+# designations follow typical rules.
+# 
+# This function should never be called externally. Raw statistics with metadata
+# are returned and are not automatically merged into x.
+# 
+# For examples, look at how this function is called in functions such as
+# calc_pi, calc_pairwise_fst, ect.
+# 
+# Options:
+# 
+# req:
+# 
+# \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
+# \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
+# \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
+# snp metadata. \item{snpRdata: } subset snpRdata object. }
+# 
+# case:
+# 
+# \itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
+# per snp, but split per facet (such as for private alleles, comparisons only
+# exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
+# between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per snp,
+# but per both sample and snp facet. }
+# 
+# @param x snpRdata object
+# @param facets character or NULL, default NULL. Facets to add.
+# @param req character. Data type required by fun. See description.
+# @param fun function. Function to apply to data.
+# @param case character, default "ps". Type of statistic required by fun. See
+#   description.
+# @param par numeric or FALSE, default FALSE. Number of parallel computing cores
+#   to use. Works for some cases/reqs.
+# @param ... other arguments to be passed to fun.
+# @param stats.type character, default "all". Other options "pairwise" or
+#   "stats". Type of statistic under to pull under the ps.pf.psf option.
+# @param response character, default NULL. Possible response variable name
+#   passed to specific functions.
+# @param maf numeric, defualt NULL. Possible maf, passed to some functions.
+# @param interpolate character, default NULL. Possible interpolation option,
+#   passed to some functions.
+# 
+# @author William Hemstrom
+.apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
   #=====global bindings====
 
   if(!is.null(facets)){
@@ -248,7 +233,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
   
   
   if(case == "ps"){
-    facets <- check.snpR.facet.request(x, facets)
+    facets <- .check.snpR.facet.request(x, facets)
     if(req == "gs"){
       # subset
       gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
@@ -300,16 +285,16 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       base.pheno.facets <- grep("^\\.base", pheno.facets)
       if(length(base.pheno.facets) > 0){
         if(length(base.pheno.facets) != length(pheno.facets)){
-          pheno.facets <- c(check.snpR.facet.request(x, pheno.facets[-base.pheno.facets]), response)
+          pheno.facets <- c(.check.snpR.facet.request(x, pheno.facets[-base.pheno.facets]), response)
         }
         else{
           pheno.facets <- response
         }
       }
       else{
-        pheno.facets <- check.snpR.facet.request(x, pheno.facets)
+        pheno.facets <- .check.snpR.facet.request(x, pheno.facets)
       }
-      x <- add.facets.snpR.data(x, pheno.facets)
+      x <- .add.facets.snpR.data(x, pheno.facets)
       if(req == "cast.gs"){
         gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
       }
@@ -335,7 +320,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
         subfacet <- unlist(lapply(subfacet, FUN = paste, collapse = "."))
         tgs$subfacet <- subfacet
         tgs$phenotype <- uid[p.vals]
-        tgs$facet.type <- check.snpR.facet.request(x, facets[i], "none", T)[[2]]
+        tgs$facet.type <- .check.snpR.facet.request(x, facets[i], "none", T)[[2]]
         
         # fix for .base
         tgs$subfacet[tgs$subfacet == ""] <- ".base"
@@ -399,10 +384,10 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       }
       #==========run===============
       # check facets
-      facets <- check.snpR.facet.request(x, facets)
+      facets <- .check.snpR.facet.request(x, facets)
       
       # get options
-      opts.list <- get.task.list(x, facets)
+      opts.list <- .get.task.list(x, facets)
       
       # run in serial
       if(par == FALSE | nrow(opts.list) == 1){
@@ -589,7 +574,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       # get the statistics needed by the function and the task list. For now, expects only meta cbound to ac or snp-wise statistics.
       if(req == "meta.ac"){
         stats_to_use <- x@ac
-        task.list <- get.task.list(x, facets)
+        task.list <- .get.task.list(x, facets)
         meta.to.use <- x@facet.meta
       }
       else{
@@ -614,7 +599,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           numeric.cols <- which(sapply(stats_to_use, class) %in% c("numeric", "integer"))
           ## save
           stats_to_use <- stats_to_use[,numeric.cols, with = FALSE]
-          task.list <- get.task.list(x, facets)
+          task.list <- .get.task.list(x, facets)
           meta.to.use <- x@facet.meta
           
         }
@@ -627,7 +612,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
           nk.col <- which(colnames(stats_to_use) == "nk")
           n.col.ord <- c(nk.col, (1:ncol(stats_to_use))[-nk.col])
           stats_to_use <- stats_to_use[,n.col.ord, with = FALSE]
-          task.list <- get.task.list(x, facets, source = "pairwise.stats")
+          task.list <- .get.task.list(x, facets, source = "pairwise.stats")
           
           # re-order the meta and save
           meta.to.use <- as.data.frame(x@pairwise.stats[,1:which(colnames(x@pairwise.stats) == ".snp.id")])
@@ -727,7 +712,7 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
       }
       else{
         out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
-        opt.names <- check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
+        opt.names <- .check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
         opt.names <- unlist(.split.facet(opt.names))
         out[[i]]$snp.subfacet <- do.call(paste, c(opts[[i]][,opt.names, drop = F], sep = "."))
         out[[i]]$facet <- ".base"
@@ -748,27 +733,27 @@ apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FAL
   
 }
 
-#'Merge newly calculated stats into a snpRdata object.
-#'
-#'Internal function to quickly and accurately merge newly calculated statistics
-#'into a snpRdata object. This should never be called externally. Takes and
-#'returns the same snpRdata object, with new data.
-#'
-#'Mostly relies on the smart.merge subfunction, which must be edited with care
-#'and testing. LD merging is independant.
-#'
-#'Type options: stats, pairwise, window.stats, pairwise.window.stats, and LD,
-#'corresponding to slots of the snpRdata S4 object class.
-#'
-#'For examples, see functions that use merge.snpR.stats, such as calc_pi or
-#'calc_pairwise_ld.
-#'
-#'@param x snpRdata object
-#'@param stats data.frame/table/list. New data to be added to the existing
-#'  snpRdata object, x.
-#'@param type character, default "stats". The type of statistic to merge, see
-#'  list in description.
-merge.snpR.stats <- function(x, stats, type = "stats"){
+# Merge newly calculated stats into a snpRdata object.
+# 
+# Internal function to quickly and accurately merge newly calculated statistics
+# into a snpRdata object. This should never be called externally. Takes and
+# returns the same snpRdata object, with new data.
+# 
+# Mostly relies on the .smart.merge subfunction, which must be edited with care
+# and testing. LD merging is independant.
+# 
+# Type options: stats, pairwise, window.stats, pairwise.window.stats, and LD,
+# corresponding to slots of the snpRdata S4 object class.
+# 
+# For examples, see functions that use .merge.snpR.stats, such as calc_pi or
+# calc_pairwise_ld.
+# 
+# @param x snpRdata object
+# @param stats data.frame/table/list. New data to be added to the existing
+#   snpRdata object, x.
+# @param type character, default "stats". The type of statistic to merge, see
+#   list in description.
+.merge.snpR.stats <- function(x, stats, type = "stats"){
   .snp.id <- facet <- subfacet <- comparison <- NULL
   
   # note: not my code, pulled from:
@@ -797,34 +782,34 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
     # merge and return
     meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == ".snp.id"))], colnames(x@snp.meta))
     starter.meta <- c("facet", "subfacet", "facet.type")
-    n.s <- smart.merge(stats, x@stats, meta.cols, starter.meta)
+    n.s <- .smart.merge(stats, x@stats, meta.cols, starter.meta)
     x@stats <- n.s
   }
   else if(type == "pairwise"){
     # merge and return
     meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == "comparison"))], colnames(x@snp.meta))
     starter.meta <- meta.cols
-    n.s <- smart.merge(stats, x@pairwise.stats, meta.cols, starter.meta)
+    n.s <- .smart.merge(stats, x@pairwise.stats, meta.cols, starter.meta)
     x@pairwise.stats <- n.s
   }
   else if(type == "window.stats"){
     # merge and return
     meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
     starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
-    n.s <- smart.merge(stats, x@window.stats, meta.cols, starter.meta)
+    n.s <- .smart.merge(stats, x@window.stats, meta.cols, starter.meta)
     x@window.stats <- n.s
   }
   else if(type == "pairwise.window.stats"){
     meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
     starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
-    n.s <- smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
+    n.s <- .smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
     x@pairwise.window.stats <- n.s
   }
   else if(type == "sample.stats"){
     meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
     meta.cols <- unique(meta.cols)
     starter.meta <- meta.cols
-    n.s <- smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
+    n.s <- .smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
     
     # fix NAs that result from adding new facets
     meta.cols <- which(colnames(n.s) %in% colnames(x@snp.meta))
@@ -839,9 +824,9 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
       x@pairwise.LD <- stats
     }
     else{
-      # deal with prox table using smart.merge
+      # deal with prox table using .smart.merge
       start.meta <- colnames(stats$prox)[1:which(colnames(stats$prox) == "proximity")]
-      x@pairwise.LD$prox <- smart.merge(stats$prox, x@pairwise.LD$prox,
+      x@pairwise.LD$prox <- .smart.merge(stats$prox, x@pairwise.LD$prox,
                                         meta.names = c(start.meta, "sample.facet", "sample.subfacet"),
                                         starter.meta = start.meta)
       
@@ -887,23 +872,23 @@ merge.snpR.stats <- function(x, stats, type = "stats"){
   else if(type == "pop"){
     meta.names <- c("facet", "subfacet")
     starter.meta <- meta.names
-    x@pop.stats <- smart.merge(stats, x@pop.stats, meta.names, starter.meta)
+    x@pop.stats <- .smart.merge(stats, x@pop.stats, meta.names, starter.meta)
   }
   else if(type == "weighted.means"){
     meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
     starter.meta <- meta.names
-    x@weighted.means <- smart.merge(stats, x@weighted.means, meta.names, starter.meta)
+    x@weighted.means <- .smart.merge(stats, x@weighted.means, meta.names, starter.meta)
   }
   
   return(x)
 }
 
-#' Merging function used in merge.snpR.stats and elsewhere
-#' @param n.s new stats
-#' @param o.s old stats
-#' @param meta.names names of the metadata columns, usually everything up to .snp.id
-#' @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
-smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+# Merging function used in .merge.snpR.stats and elsewhere
+# @param n.s new stats
+# @param o.s old stats
+# @param meta.names names of the metadata columns, usually everything up to .snp.id
+# @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
+.smart.merge <- function(n.s, o.s, meta.names, starter.meta){
   # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
   take_new <- function(n.s, starter.meta){
     smc <- which(colnames(n.s) %in% starter.meta)
@@ -1009,30 +994,30 @@ smart.merge <- function(n.s, o.s, meta.names, starter.meta){
   return(m.s)
 }
 
-#'Get details on and clean up facet arguments.
-#'
-#'Given a snpRdata object, this function cleans up and determines the types of
-#'requested facets. Internal. If requested, can clean facet requests to purge a
-#'specific facet type (snp, sample, complex). Used in functions that run only on
-#'a specific type of facet.
-#'
-#'Facet designation of NULL or "all" follows the typical rules.
-#'
-#'Facets designated as described in \code{\link{Facets_in_snpR}}.
-#'
-#'@param x snpRdata object to compare to
-#'@param facets character. facets to check.
-#'@param remove.type character. "snp", "sample", "complex", "simple" or anything
-#'  else, typically "none". Type of facet to remove.
-#'@param return.type logical, default FALSE. If true, returns both facets and
-#'  facet types ("snp", "sample", "complex", or ".base") as a length two list.
-#'@param fill_with_base logical, default TRUE. If true, fills the returned facets
-#'  with .base if nothing is left after facets are removed. Otherwise returns null in this case.
-#'@param return_base_when_empty logical, default TRUE. If not facets pass filters,
-#'  will pass .base if true.
-#'
-#'@author William Hemstrom
-check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE, return_base_when_empty = TRUE){
+# Get details on and clean up facet arguments.
+# 
+# Given a snpRdata object, this function cleans up and determines the types of
+# requested facets. Internal. If requested, can clean facet requests to purge a
+# specific facet type (snp, sample, complex). Used in functions that run only on
+# a specific type of facet.
+# 
+# Facet designation of NULL or "all" follows the typical rules.
+# 
+# Facets designated as described in \code{\link{Facets_in_snpR}}.
+# 
+# @param x snpRdata object to compare to
+# @param facets character. facets to check.
+# @param remove.type character. "snp", "sample", "complex", "simple" or anything
+#   else, typically "none". Type of facet to remove.
+# @param return.type logical, default FALSE. If true, returns both facets and
+#   facet types ("snp", "sample", "complex", or ".base") as a length two list.
+# @param fill_with_base logical, default TRUE. If true, fills the returned facets
+#   with .base if nothing is left after facets are removed. Otherwise returns null in this case.
+# @param return_base_when_empty logical, default TRUE. If not facets pass filters,
+#   will pass .base if true.
+# 
+# @author William Hemstrom
+.check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE, return_base_when_empty = TRUE){
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -1167,24 +1152,24 @@ check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type
   }
 }
 
-#'Tabulate allele and genotype counts at each locus.
-#'
-#'\code{tabulate_genotypes} creates matricies containing counts of observed
-#'alleles and genotypes at each locus.
-#'
-#'This function is pirmarily used interally in several other funcitons.
-#'
-#'@param x Input raw genotype data, where columns are individuals and rows are
-#'  snps. No metadata.
-#'@param mDat Character. How are missing \emph{genotypes} noted?
-#'@param verbose Logical. Should the function report progress?
-#'
-#'@return A list of matrices. gs is the genotype matrix, as is the allele
-#'  matrix, and wm is the genotype matrix with missing genotypes.
-#'
-#'@author William Hemstrom
-#'
-tabulate_genotypes <- function(x, mDat, verbose = F){
+# Tabulate allele and genotype counts at each locus.
+# 
+# \code{.tabulate_genotypes} creates matricies containing counts of observed
+# alleles and genotypes at each locus.
+# 
+# This function is pirmarily used interally in several other funcitons.
+# 
+# @param x Input raw genotype data, where columns are individuals and rows are
+#   snps. No metadata.
+# @param mDat Character. How are missing \emph{genotypes} noted?
+# @param verbose Logical. Should the function report progress?
+# 
+# @return A list of matrices. gs is the genotype matrix, as is the allele
+#   matrix, and wm is the genotype matrix with missing genotypes.
+# 
+# @author William Hemstrom
+# 
+.tabulate_genotypes <- function(x, mDat, verbose = F){
 
   # fix for if x is a vector (only one individual) and convert to data.table
   if(!is.data.frame(x)){
@@ -1244,45 +1229,45 @@ tabulate_genotypes <- function(x, mDat, verbose = F){
 
 
 
-#'Interpolate sn formatted data.
-#'
-#'An internal function to interpolate sn formatted data using either the
-#'bernoulli or expected minor allele count approaches. Typically entirely
-#'internal, called via format_snps.
-#'
-#'Interpolating missing data in sn formatted data is useful for PCA, genomic
-#'prediction, tSNE, and other methods. Specify method = "af" to insert the
-#'expected number of minor alleles given SNP allele frequency or "bernoulli" to
-#'do binomial draws to determine the number of minor alleles at each missing
-#'data point, where the probability of drawing a minor allele is equal to the
-#'minor allele frequency. The expected number of minor alleles based on the
-#'later method is equal to the interpolated value from the former, but the later
-#'allows for multiple runs to determine the impact of stochastic draws and is
-#'generally prefered and required for some downstream analysis. It is therefore
-#'the default. As a slower but more accurate alternative to "af" interpolation,
-#'"iPCA" may be selected. This an iterative PCA approach to interpolate based on
-#'SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument
-#'is not defined, the number of components used for interpolation will be
-#'estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method
-#'is much slower than the other methods, especially for large datasets. Setting
-#'an ncp of 2-5 generally results in reasonable interpolations without the time
-#'constraint.
-#'
-#'@param sn data.frame. Input sn formatted data, as produced by
-#'  \code{\link{format_snps}}. Note that \code{\link{format_snps}} has an option
-#'  to automatically call this function during formatting.
-#'@param method character, default "bernoulli". Method to used for
-#'  interpolation, either bernoulli or af. See details.
-#'@param ncp numeric or NULL, default NULL. Number of components to consider for
-#'  iPCA sn format interpolations of missing data. If null, the optimum number
-#'  will be estimated, with the maximum specified by ncp.max. This can be very
-#'  slow.
-#'@param ncp.max numeric, default 5. Maximum number of components to check for
-#'  when determining the optimum number of components to use when interpolating
-#'  sn data using the iPCA approach.
-#'
-#'@author William Hemstrom
-interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
+# Interpolate sn formatted data.
+# 
+# An internal function to interpolate sn formatted data using either the
+# bernoulli or expected minor allele count approaches. Typically entirely
+# internal, called via format_snps.
+# 
+# Interpolating missing data in sn formatted data is useful for PCA, genomic
+# prediction, tSNE, and other methods. Specify method = "af" to insert the
+# expected number of minor alleles given SNP allele frequency or "bernoulli" to
+# do binomial draws to determine the number of minor alleles at each missing
+# data point, where the probability of drawing a minor allele is equal to the
+# minor allele frequency. The expected number of minor alleles based on the
+# later method is equal to the interpolated value from the former, but the later
+# allows for multiple runs to determine the impact of stochastic draws and is
+# generally prefered and required for some downstream analysis. It is therefore
+# the default. As a slower but more accurate alternative to "af" interpolation,
+# "iPCA" may be selected. This an iterative PCA approach to interpolate based on
+# SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument
+# is not defined, the number of components used for interpolation will be
+# estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method
+# is much slower than the other methods, especially for large datasets. Setting
+# an ncp of 2-5 generally results in reasonable interpolations without the time
+# constraint.
+# 
+# @param sn data.frame. Input sn formatted data, as produced by
+#   \code{\link{format_snps}}. Note that \code{\link{format_snps}} has an option
+#   to automatically call this function during formatting.
+# @param method character, default "bernoulli". Method to used for
+#   interpolation, either bernoulli or af. See details.
+# @param ncp numeric or NULL, default NULL. Number of components to consider for
+#   iPCA sn format interpolations of missing data. If null, the optimum number
+#   will be estimated, with the maximum specified by ncp.max. This can be very
+#   slow.
+# @param ncp.max numeric, default 5. Maximum number of components to check for
+#   when determining the optimum number of components to use when interpolating
+#   sn data using the iPCA approach.
+# 
+# @author William Hemstrom
+.interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
   if(!method %in% c("bernoulli", "af", "iPCA")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
   }
@@ -1342,27 +1327,27 @@ interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
   return(t(sn))
 }
 
-#'Do sanity checks for many window specific functions in snpR.
-#'
-#'Internal function only. Since many window related functions have similar
-#'sanity checks, they have been integrated here. For examples, see use in
-#'functions like \code{\link{do_bootstraps}}.
-#'
-#'@param x snpRdata object.
-#'@param sigma numeric. Window size, in kilobases.
-#'@param step numeric or NULL. Step size, in kilobases
-#'@param stats.type character, either "single" or "pairwise". The type of stats
-#'  being checked, see documentation for \code{\link{calc_smoothed_averages}}.
-#'@param nk Logical. Determines if nk values are to be used.
-#'@param facets character or NULL. Defines facets to run, following typical
-#'  rules as described in \code{\link{Facets_in_snpR}}.
-#'@param stats character or NULL, default NULL. Statistics (pi, etc.) used,
-#'  really only for bootstrapping.
-#'@param good.types character or NULL, default NULL. Good statistics, for use
-#'  with the stats arguement.
-#'
-#'@author William Hemstrom
-sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = NULL, good.types = NULL){
+# Do sanity checks for many window specific functions in snpR.
+# 
+# Internal function only. Since many window related functions have similar
+# sanity checks, they have been integrated here. For examples, see use in
+# functions like \code{\link{do_bootstraps}}.
+# 
+# @param x snpRdata object.
+# @param sigma numeric. Window size, in kilobases.
+# @param step numeric or NULL. Step size, in kilobases
+# @param stats.type character, either "single" or "pairwise". The type of stats
+#   being checked, see documentation for \code{\link{calc_smoothed_averages}}.
+# @param nk Logical. Determines if nk values are to be used.
+# @param facets character or NULL. Defines facets to run, following typical
+#   rules as described in \code{\link{Facets_in_snpR}}.
+# @param stats character or NULL, default NULL. Statistics (pi, etc.) used,
+#   really only for bootstrapping.
+# @param good.types character or NULL, default NULL. Good statistics, for use
+#   with the stats arguement.
+# 
+# @author William Hemstrom
+.sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = NULL, good.types = NULL){
   #================sanity checks=============
   msg <- character()
   warn.msg <- character()
@@ -1415,7 +1400,7 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
   if(is.null(facets[1]) & any(stats.type == "pairwise")){
     msg <- c(msg, "If no facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type or statistics = 'single'")
   }
-  facet.types <- check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
+  facet.types <- .check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
   if(any(facet.types[[2]] == "snp") & any(stats.type == "pairwise")){
     msg <- c(msg, "If snp facets are provided, pairwise statistics cannot be smoothed. Please specify stats.type or statistics = 'single'")
   }
@@ -1447,20 +1432,20 @@ sanity_check_window <- function(x, sigma, step, stats.type, nk, facets, stats = 
 
 
 
-#' List unique tasks/options for facets. Internal function to get a list of
-#' tasks to run (one task per unique sample/snp level facet!). The source
-#' arguement specifies what kind of statistics are being grabbed.
-#'
-#' @param x snpRdata
-#' @param facets Facets to generate tasks for
-#' @param source "stats" or "pairwise.stats", default "stats". Type of
-#'   comparison to get jobs for. Note that the latter only works if pairwise
-#'   stats have actually been calculated.
-#' @author William Hemstrom
-get.task.list <- function(x, facets, source = "stats"){
+# List unique tasks/options for facets. Internal function to get a list of
+# tasks to run (one task per unique sample/snp level facet!). The source
+# arguement specifies what kind of statistics are being grabbed.
+#
+# @param x snpRdata
+# @param facets Facets to generate tasks for
+# @param source "stats" or "pairwise.stats", default "stats". Type of
+#   comparison to get jobs for. Note that the latter only works if pairwise
+#   stats have actually been calculated.
+# @author William Hemstrom
+.get.task.list <- function(x, facets, source = "stats"){
   ..use.facet <- NULL
   
-  facets <- check.snpR.facet.request(x, facets, "none", F)
+  facets <- .check.snpR.facet.request(x, facets, "none", F)
   task.list <- matrix("", ncol = 4, nrow = 0) # sample facet, sample subfacet, snp facet, snp.subfacet
   
   if(source == "stats"){
@@ -1475,11 +1460,11 @@ get.task.list <- function(x, facets, source = "stats"){
   for(i in 1:length(facets)){
     t.facet <- facets[i]
     t.facet <- unlist(.split.facet(t.facet))
-    t.facet.type <- check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
+    t.facet.type <- .check.snpR.facet.request(x, t.facet, remove.type = "none", return.type = T)[[2]]
     
     # sample facets
     if(any(t.facet.type == "sample")){
-      t.sample.facet <- check.snpR.facet.request(x, facets[i], remove.type = "snp")
+      t.sample.facet <- .check.snpR.facet.request(x, facets[i], remove.type = "snp")
       t.sample.meta <- meta.to.use[meta.to.use$facet == t.sample.facet, c("subfacet")]
       sample.opts <- unique(t.sample.meta)
       t.sample.meta <- meta.to.use[,c("facet", "subfacet")]
@@ -1503,7 +1488,7 @@ get.task.list <- function(x, facets, source = "stats"){
       meta.to.use <- as.data.table(meta.to.use)
       t.snp.meta <- .fix..call(meta.to.use[,..use.facet])
       snp.opts <- unique(t.snp.meta)
-      t.snp.facet <- check.snpR.facet.request(x, facets[i], remove.type = "sample")
+      t.snp.facet <- .check.snpR.facet.request(x, facets[i], remove.type = "sample")
       if(is.null(nrow(snp.opts))){
         snp.opts <- as.data.frame(snp.opts)
         t.snp.meta <- as.data.frame(t.snp.meta)
@@ -1531,11 +1516,11 @@ get.task.list <- function(x, facets, source = "stats"){
   return(task.list)
 }
 
-#' Internal to find which sample metadata rows match a row from a task list.
-#' @param x snpRdata object to check
-#' @param task.list.row A row of an object created by
-#'   \code{\link{get.task.list}} to look up info about.
-fetch.sample.meta.matching.task.list <- function(x, task.list.row){
+# Internal to find which sample metadata rows match a row from a task list.
+# @param x snpRdata object to check
+# @param task.list.row A row of an object created by
+#   \code{\link{.get.task.list}} to look up info about.
+.fetch.sample.meta.matching.task.list <- function(x, task.list.row){
   task.list.row <- unlist(task.list.row) # in case it is passed with drop = F for some reason
   
   if(task.list.row[1] == ".base"){
@@ -1549,11 +1534,11 @@ fetch.sample.meta.matching.task.list <- function(x, task.list.row){
   return(matches)
 }
 
-#' Internal to find which snp metadata rows match a row from a task list.
-#' @param x snpRdata object to check
-#' @param task.list.row A row of an object created by
-#'   \code{\link{get.task.list}} to look up info about.
-fetch.snp.meta.matching.task.list <- function(x, task.list.row){
+# Internal to find which snp metadata rows match a row from a task list.
+# @param x snpRdata object to check
+# @param task.list.row A row of an object created by
+#   \code{\link{.get.task.list}} to look up info about.
+.fetch.snp.meta.matching.task.list <- function(x, task.list.row){
   task.list.row <- unlist(task.list.row) # in case it is passed with drop = F for some reason
   
   if(task.list.row[3] == ".base"){
@@ -1568,26 +1553,26 @@ fetch.snp.meta.matching.task.list <- function(x, task.list.row){
 }
 
 
-#' Merge lists element-to-element
-#'
-#' Merges list 1 into list 2, adding any elements without matching equivalents
-#' to list 2.
-#'
-#' Merges element to element. Elements in list 1 with matching elements in list
-#' 2 will be replaced.
-#'
-#' Do this by getting the names and "pathways" of all of the deepest level
-#' objects, then looping through list 2 data and adding from list 1 that isn't
-#' present at the same "pathway".
-#'
-#' @param list1 list. The first list. Elements with identical names at all
-#'   levels in list 2 will be *replaced*.
-#' @param list2 list. The second list. Elements in list 2 with identical names
-#'   found in list 1 will replace those elements.
-#' @param possible_end_level_names vector of possible stopping point names
-#'   (bottom level)
-#'
-#' @author William Hemstrom
+# Merge lists element-to-element
+#
+# Merges list 1 into list 2, adding any elements without matching equivalents
+# to list 2.
+#
+# Merges element to element. Elements in list 1 with matching elements in list
+# 2 will be replaced.
+#
+# Do this by getting the names and "pathways" of all of the deepest level
+# objects, then looping through list 2 data and adding from list 1 that isn't
+# present at the same "pathway".
+#
+# @param list1 list. The first list. Elements with identical names at all
+#   levels in list 2 will be *replaced*.
+# @param list2 list. The second list. Elements in list 2 with identical names
+#   found in list 1 will replace those elements.
+# @param possible_end_level_names vector of possible stopping point names
+#   (bottom level)
+#
+# @author William Hemstrom
 merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
   # prunes and prepares data on the names and nest levels of a list
   prune.names <- function(list){
@@ -1653,19 +1638,19 @@ merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rs
 
 
 
-#' Update list of calculated stats for a vector of facet names
-#'
-#' @param x snpRdata object to update
-#' @param facets character. Facets to update, see \code{\link{Facets_in_snpR}}
-#' @param stats character. Name of the facet to update as calculated.
-#' @param remove.type character, default none. If provided, will grab only the
-#'   remove the requested facet type (omit the snp part, for example).
-#'
-#' @return A snpRdata object identical to x but with calced stats updated.
-#'
-#' @author William Hemstrom
-update_calced_stats <- function(x, facets, stats, remove.type = "none"){
-  facets <- check.snpR.facet.request(x, facets, remove.type = remove.type)
+# Update list of calculated stats for a vector of facet names
+#
+# @param x snpRdata object to update
+# @param facets character. Facets to update, see \code{\link{Facets_in_snpR}}
+# @param stats character. Name of the facet to update as calculated.
+# @param remove.type character, default none. If provided, will grab only the
+#   remove the requested facet type (omit the snp part, for example).
+#
+# @return A snpRdata object identical to x but with calced stats updated.
+#
+# @author William Hemstrom
+.update_calced_stats <- function(x, facets, stats, remove.type = "none"){
+  facets <- .check.snpR.facet.request(x, facets, remove.type = remove.type)
   
   for(i in 1:length(facets)){
     
@@ -1684,18 +1669,18 @@ update_calced_stats <- function(x, facets, stats, remove.type = "none"){
   return(x)
 }
 
-#' Check if a given stat or vector of stats have been calculated any number of
-#' facets.
-#'
-#' @param x snpRdata object to check
-#' @param facets character. See \code{\link{Facets_in_snpR}}
-#' @param stats character. Names of stats to check.
-#'
-#' @return A named list with an entry for each facet containing a named logical
-#'   vector indicating if the provided stats have been calculated yet.
-#'
-#' @author William Hemstrom
-check_calced_stats <- function(x, facets, stats){
+# Check if a given stat or vector of stats have been calculated any number of
+# facets.
+#
+# @param x snpRdata object to check
+# @param facets character. See \code{\link{Facets_in_snpR}}
+# @param stats character. Names of stats to check.
+#
+# @return A named list with an entry for each facet containing a named logical
+#   vector indicating if the provided stats have been calculated yet.
+#
+# @author William Hemstrom
+.check_calced_stats <- function(x, facets, stats){
   # init storage
   out <- vector("list", length(facets))
   names(out) <- facets
@@ -1709,14 +1694,14 @@ check_calced_stats <- function(x, facets, stats){
 }
 
 
-#' Utility to check if a required package is installed and install it if needed
-#' @param pkg character, name of the package to check.
-#' @param install.type character, default "basic". Where should the package be
-#'   sourced from? Options: "basic": CRAN, "github": github, "bioconductor":
-#'   bioconductor.
-#' @param source character, default NULL. If install.type = 'github', gives the
-#'   source from which to install.
-check.installed <- function(pkg, install.type = "basic", source = NULL){
+# Utility to check if a required package is installed and install it if needed
+# @param pkg character, name of the package to check.
+# @param install.type character, default "basic". Where should the package be
+#   sourced from? Options: "basic": CRAN, "github": github, "bioconductor":
+#   bioconductor.
+# @param source character, default NULL. If install.type = 'github', gives the
+#   source from which to install.
+.check.installed <- function(pkg, install.type = "basic", source = NULL){
   if(!pkg %in% rownames(utils::installed.packages())){
     say <- paste0("Package '", pkg, "' not found.")
     cat(say, "")
@@ -1751,14 +1736,14 @@ check.installed <- function(pkg, install.type = "basic", source = NULL){
   else{return(TRUE)}
 }
 
-#' Correct for multiple testing.
-#' @param p data.frame/data.table containing p values and any facets to split by
-#' @param pcol name of the column containing p values
-#' @param levs names of the columns containing facet info to split by
-#' @param methods methods to use
-#' @param case case (overall, within each subfacet, or within each facet) at
-#'   which to apply corrections
-fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), methods = c("bonferroni", "holm", "BH", "BY"), 
+# Correct for multiple testing.
+# @param p data.frame/data.table containing p values and any facets to split by
+# @param pcol name of the column containing p values
+# @param levs names of the columns containing facet info to split by
+# @param methods methods to use
+# @param case case (overall, within each subfacet, or within each facet) at
+#   which to apply corrections
+.fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), methods = c("bonferroni", "holm", "BH", "BY"), 
                            case = c("overall", "by_facet", "by_subfacet")){
 
   if(is.null(ncol(p))){
@@ -1830,27 +1815,27 @@ fwe_correction <- function(p, pcol = NULL, levs = c("subfacet", "facet"), method
   return(out)
 }
 
-#' Tiny internal used when converting from a phased, transposed dataset (like
-#' from an MS output)
-#' @param x input matrix
-convert_2_to_1_column <- function(x){
+# Tiny internal used when converting from a phased, transposed dataset (like
+# from an MS output)
+# @param x input matrix
+.convert_2_to_1_column <- function(x){
   if(!is.matrix(x)){x <- as.matrix(x)}
   ind.genos <- x[,seq(1,ncol(x), by = 2)] + x[,seq(2,ncol(x), by = 2)]
   ind.genos <- matrix(ind.genos, ncol = ncol(x)/2) # rematrix and transpose!
   return(ind.genos)
 }
 
-#' Perform a row-specific gsub/match given a key table
-#' 
-#' @param x input data
-#' @param lookup table of matches. Each column is something that can be gsub-ed
-#'   and each row corresponds to the rows of x
-#' @param lookup_match a character vector with length equal to the number of columns
-#'   of lookup. In order, the matches in x for the contents of each column
-#'   in lookup.
-#' @param patch A character string that will be used to join row ID to contents.
-#'   SHOULD NOT BE FOUND ANYWHERE IN X, LOOKUP, OR LOOKUP_MATCH.
-row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
+# Perform a row-specific gsub/match given a key table
+# 
+# @param x input data
+# @param lookup table of matches. Each column is something that can be gsub-ed
+#   and each row corresponds to the rows of x
+# @param lookup_match a character vector with length equal to the number of columns
+#   of lookup. In order, the matches in x for the contents of each column
+#   in lookup.
+# @param patch A character string that will be used to join row ID to contents.
+#   SHOULD NOT BE FOUND ANYWHERE IN X, LOOKUP, OR LOOKUP_MATCH.
+.row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
   ident <- NULL
   
   # make the lookup table row-specific
@@ -1869,34 +1854,34 @@ row_specific_gsub <- function(x, lookup, lookup_match, patch = "_"){
 }
 
 
-#' Calculate weighted averages of previously genetic statistics. Internal.
-#'
-#' Calculates a weighted average for a statistic, weighted by the number of
-#' called genotypes at each locus. Works for single or pairwise statistics (pi,
-#' ho, fst, etc.). Automatically calculates weighted statistic for every
-#' previously calculated statistic.
-#'
-#' Weights are calculated using the equation \deqn{ M_{s} = \frac{\sum_{i =
-#' 1}^{n} s_{i} * w_{i}}{\sum_{i = 1}^{n} w_{i}}} Where\eqn{n} is the number of
-#' SNPs, \eqn{s_{i}} is the value of the statistic in SNP \eqn{i}, and
-#' \eqn{w_{i}} is the number of times that SNP was genotyped. Note that this
-#' will correct for a range in sequencing depth within samples, but does not
-#' really correct for variance in sequencing depth between populations or other
-#' facet levels.
-#'
-#' @param x snpRdata object.
-#' @param facets character, default NULL. Facets for which to calculate weighted
-#'   stats (broken down by category). See \code{\link{Facets_in_snpR}} for
-#'   details.
-#' @param type character, default "single". Type of statistic to weight:
-#'   \itemize{\item{single: } Statistics calculated in a single subfacet, such
-#'   as pi. \item{pairwise: } Statistics calculated pairwise between subfacets,
-#'   such as Fst. }
-#' @param stats_to_get character vector, names of the statistics to fetch 
-#' weighted averages for.
-#'
-#' @return A snpR data object with weighted statistics merged in.
-calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get, mean_facet_override = NULL){
+#  Calculate weighted averages of previously genetic statistics. Internal.
+# 
+#  Calculates a weighted average for a statistic, weighted by the number of
+#  called genotypes at each locus. Works for single or pairwise statistics (pi,
+#  ho, fst, etc.). Automatically calculates weighted statistic for every
+#  previously calculated statistic.
+# 
+#  Weights are calculated using the equation \deqn{ M_{s} = \frac{\sum_{i =
+#  1}^{n} s_{i} * w_{i}}{\sum_{i = 1}^{n} w_{i}}} Where\eqn{n} is the number of
+#  SNPs, \eqn{s_{i}} is the value of the statistic in SNP \eqn{i}, and
+#  \eqn{w_{i}} is the number of times that SNP was genotyped. Note that this
+#  will correct for a range in sequencing depth within samples, but does not
+#  really correct for variance in sequencing depth between populations or other
+#  facet levels.
+# 
+#  @param x snpRdata object.
+#  @param facets character, default NULL. Facets for which to calculate weighted
+#    stats (broken down by category). See \code{\link{Facets_in_snpR}} for
+#    details.
+#  @param type character, default "single". Type of statistic to weight:
+#    \itemize{\item{single: } Statistics calculated in a single subfacet, such
+#    as pi. \item{pairwise: } Statistics calculated pairwise between subfacets,
+#    such as Fst. }
+#  @param stats_to_get character vector, names of the statistics to fetch 
+#  weighted averages for.
+# 
+#  @return A snpR data object with weighted statistics merged in.
+.calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get, mean_facet_override = NULL){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- NULL
 
   
@@ -1927,9 +1912,9 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   
   #===========calculate weighted stats======
   # setup
-  facets <- check.snpR.facet.request(x, facets, "none")
-  x <- add.facets.snpR.data(x, facets)
-  calced <- check_calced_stats(x, facets, "maf")
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  x <- .add.facets.snpR.data(x, facets)
+  calced <- .check_calced_stats(x, facets, "maf")
   calcedb <- unlist(calced)
   names(calcedb) <- names(calced)
   if(sum(calcedb) != length(calcedb)){
@@ -1938,7 +1923,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   
   stats <- .get.snpR.stats(x, facets, type)
   
-  facets <- check.snpR.facet.request(x, facets, "none", T)
+  facets <- .check.snpR.facet.request(x, facets, "none", T)
   if(any(facets[[2]] == "complex") & type %in% c("single.window")){
     facets[[1]] <- c(facets[[1]], facets[[1]][which(facets[[2]] == "complex")])
     facets[[2]] <- c(facets[[2]], rep("special", sum(facets[[2]] == "complex")))
@@ -1952,7 +1937,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   for(i in 1:length(facets[[1]])){
 
     split.part <- unlist(.split.facet(facets[[1]][i]))
-    split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
+    split.part <- .check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
     snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
     split.snp.part <- unlist(.split.facet(split.part[[1]][which(split.part[[2]] == "snp")]))
     samp.part <- split.part[[1]][which(split.part[[2]] == "sample")]
@@ -1967,7 +1952,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
       
       if(facets[[2]][i] == "complex"){
         split.part <- unlist(.split.facet(facets[[1]][i]))
-        split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
+        split.part <- .check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         if(length(split.part[[1]]) > 2){
           snp.partp <- paste(snp.part, collapse = ".")
           samp.partp <- paste(samp.part, collapse = ".")
@@ -2110,7 +2095,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
         group_key_tab$key <- group_key_tab$snp.subfacet
         
         
-        tl <- get.task.list(x, facets[[1]][i])
+        tl <- .get.task.list(x, facets[[1]][i])
         weights <- numeric(nrow(group_key_tab))
         for(j in 1:nrow(tl)){
           snps_in_set <- which(unlist(do.call(paste, c(snp.meta(x)[,split.snp.part, drop = F], sep = "."))) ==
@@ -2135,19 +2120,19 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
         
         
         
-        tl <- get.task.list(x, facets[[1]][i])
+        tl <- .get.task.list(x, facets[[1]][i])
         weights <- stats[keep.rows,]
         for(j in 1:nrow(tl)){
           
           snps_in_set <- which(unlist(do.call(paste, c(snp.meta(x)[,split.snp.part, drop = F], sep = "."))) ==
                                  tl[j,4])
-          samps_in_set <- fetch.sample.meta.matching.task.list(x, tl[j,])
+          samps_in_set <- .fetch.sample.meta.matching.task.list(x, tl[j,])
           if(length(snps_in_set) > 0 & length(samps_in_set) > 0){
             tweights <- length(snps_in_set) - matrixStats::colSums2(genotypes(x)[snps_in_set, samps_in_set, drop = F] == x@mDat)
             m <- data.table(weights = tweights, facet = tl[j,1], subfacet = tl[j,2], snp.facet = tl[j,3], snp.subfacet = tl[j,4])
             m <- cbind(m, sample.meta(x)[samps_in_set,])
             mn <- c("snp.subfacet", "snp.subfacet", colnames(x@sample.meta))
-            weights <- smart.merge(m, weights, mn, mn)
+            weights <- .smart.merge(m, weights, mn, mn)
           }
         }
         
@@ -2168,7 +2153,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
       
       selected_stats <- stats[keep.rows, stats_to_get, drop = F]
     }
-    else{stop("calc_weighted_stats type not recognized.")}
+    else{stop(".calc_weighted_stats type not recognized.")}
     
     #===================calculate weighted means using equation sum(w*s)/sum(w)=======================
     # override the group_key_tab if requested
@@ -2219,7 +2204,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
         mstats <- mstats[,snp.facet := ".base"]
       }
       else{
-        mstats <- mstats[,snp.facet := check.snpR.facet.request(x, paste0(split.snp.part, collapse = "."), remove.type = "sample")]
+        mstats <- mstats[,snp.facet := .check.snpR.facet.request(x, paste0(split.snp.part, collapse = "."), remove.type = "sample")]
       }
     }
     if(!"subfacet" %in% colnames(mstats)){
@@ -2237,7 +2222,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
     good.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", paste0("weighted_mean_", stats_to_get))
     mstats <- .fix..call(mstats[,..good.cols])
     mstats[,1:4] <- dplyr::mutate_all(mstats[,1:4], as.character)
-    x <- merge.snpR.stats(x, mstats, type = "weighted.means")
+    x <- .merge.snpR.stats(x, mstats, type = "weighted.means")
   }
   
   
@@ -2489,7 +2474,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
   }
   
   out <- vector("list", n)
-  opts <- get.task.list(x, facet)
+  opts <- .get.task.list(x, facet)
   for(i in 1:n){
     
     # get the maf identities for the base facet
@@ -2497,7 +2482,7 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
     shuff <- data.table::as.data.table(shuff)
     colnames(shuff) <- colnames(genotypes(x))
     tac <- vector("list", nrow(opts))
-    glob_tab <- tabulate_genotypes(shuff, x@mDat)
+    glob_tab <- .tabulate_genotypes(shuff, x@mDat)
     glob <- .maf_func(glob_tab, m.al = substr(x@mDat, 1, floor(nchar(x@mDat)/2)))
     glob$ho <- .ho_func(glob_tab)
 
@@ -2511,8 +2496,8 @@ calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get,
     # otherwise need to do for each facet level.
     else{
       for(j in 1:nrow(opts)){
-        tm <- fetch.sample.meta.matching.task.list(x, opts[j,])
-        ttab <- tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
+        tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
+        ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
         tac[[j]] <- .maf_func(ttab, x@mDat, as.data.frame(glob[,c("major", "minor")]))
         tac[[j]]$ho <- .ho_func(ttab)
         tac[[j]] <- maf.to.ac(tac[[j]])

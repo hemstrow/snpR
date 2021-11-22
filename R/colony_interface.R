@@ -582,7 +582,7 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
     msg <- c(msg, "x is not a snpRdata object.\n")
   }
   
-  check.installed("readr")
+  .check.installed("readr")
   
   if(length(msg) > 0){
     stop(msg)

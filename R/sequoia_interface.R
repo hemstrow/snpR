@@ -67,10 +67,10 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     stop("Not a snpRdata object.\n")
   }
   
-  check.installed("sequoia", "github", "JiscaH/sequoia")
+  .check.installed("sequoia", "github", "JiscaH/sequoia")
   if(utils::packageVersion("sequoia") < as.package_version("2.2")){
     cat("Sequoia version is too old, version 2.2 or greater is required.\n")
-    check.installed("remotes")
+    .check.installed("remotes")
     remotes::install_github("JiscaH/sequoia", ref = "stable")
   }
   
@@ -115,9 +115,9 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   
   #===================prep=========================
   # prep facets
-  facets <- check.snpR.facet.request(x, facets, "none")
-  x <- add.facets.snpR.data(x, facets)
-  tasks <- get.task.list(x, facets = facets)
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  x <- .add.facets.snpR.data(x, facets)
+  tasks <- .get.task.list(x, facets = facets)
   
   # initialize
   out <- vector("list", nrow(tasks))
@@ -130,7 +130,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     
     
     # subset the data
-    tmatches <- fetch.sample.meta.matching.task.list(x, tasks[i,])
+    tmatches <- .fetch.sample.meta.matching.task.list(x, tasks[i,])
     if(tasks[i,3] == ".base"){
       snpmatches <- 1:nsnps(x)
     }

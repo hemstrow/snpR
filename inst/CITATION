@@ -1,0 +1,9 @@
+citHeader("To cite snpR in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
+  author   = "William Hemstrom and Melissa Jones",
+  journal  = "Authorea",
+  year     = "2021"
+)

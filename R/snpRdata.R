@@ -413,7 +413,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
         return(process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
       }
       else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
-        check.installed("tools")
+        .check.installed("tools")
         return(process_plink(tools::file_path_sans_ext(genotypes)))
       }
       else{
@@ -522,7 +522,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
-  gs <- tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
+  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
 
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
                     facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
@@ -672,7 +672,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     facets <- x@facets
   }
   
-  facets <- check.snpR.facet.request(x, facets, "none")
+  facets <- .check.snpR.facet.request(x, facets, "none")
   
   if(!all(stats %in% names(.internal.data$statistic_index))){
     msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(.internal.data$statistic_index))], collapse = ", "),
@@ -743,7 +743,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
   
-  facets <- check.snpR.facet.request(x, facets, "none")
+  facets <- .check.snpR.facet.request(x, facets, "none")
   # bad.facets <- which(!facets %in% x@facets)
   # if(length(bad.facets) > 0){
   #   stop("No data statistics calculated for facets: ", paste0(facets[bad.facets], collapse = ", "), ".\n")
@@ -761,7 +761,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       keep.cols <- which(!colnames(y) %in% c("facet.type"))
     }
     else if(type == "window"){
-      facets <- check.snpR.facet.request(x, facets, "none", T)
+      facets <- .check.snpR.facet.request(x, facets, "none", T)
       keep.rows <- numeric()
       keep.cols <- 1:ncol(y)
       
@@ -778,25 +778,25 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
         }
         else{
           tfacet <- unlist(.split.facet(facets[[1]][i]))
-          tfacet <- check.snpR.facet.request(x, tfacet, "none", T)
+          tfacet <- .check.snpR.facet.request(x, tfacet, "none", T)
           
           # need to paste together any snp or sample faces
           sample.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "sample")], collapse = ".")
-          sample.facets <- check.snpR.facet.request(x, sample.facets)
+          sample.facets <- .check.snpR.facet.request(x, sample.facets)
           snp.facets <- paste0(tfacet[[1]][which(tfacet[[2]] == "snp")], collapse = ".")
-          snp.facets <- check.snpR.facet.request(x, snp.facets, remove.type = "none")
+          snp.facets <- .check.snpR.facet.request(x, snp.facets, remove.type = "none")
           
           keep.rows <- c(keep.rows, which(y$snp.facet == snp.facets & y$facet == sample.facets))
         }
       }
     }
     else if(type == "comingled"){ # this type has facet and snp.facet info, mingles everything (as in weighted.means)
-      facets <- check.snpR.facet.request(x, facets, "none", T)
+      facets <- .check.snpR.facet.request(x, facets, "none", T)
       
       keep.rows <- numeric()
       for(i in 1:length(facets[[1]])){
         split.part <- unlist(.split.facet(facets[[1]][i]))
-        split.part <- check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
+        split.part <- .check.snpR.facet.request(x, split.part, remove.type = "none", TRUE)
         snp.part <- split.part[[1]][which(split.part[[2]] == "snp")]
         if(length(snp.part) == 0){
           snp.part <- ".base"
@@ -853,7 +853,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   
   extract.LD <- function(y, facets){
     # get sample facets
-    samp.facets <- check.snpR.facet.request(x, facets)
+    samp.facets <- .check.snpR.facet.request(x, facets)
     if(length(samp.facets) != length(facets)){
       samp.facets <- c(samp.facets, ".base")
     }
@@ -870,7 +870,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
   extract.fst.matrix <- function(x, facets = NULL){
-    facets <- check.snpR.facet.request(x, facets, "complex", return_base_when_empty = F, fill_with_base = F)
+    facets <- .check.snpR.facet.request(x, facets, "complex", return_base_when_empty = F, fill_with_base = F)
     if(length(facets) == 0){
       return(NULL)
     }
@@ -909,15 +909,15 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     facets <- ".base"
   }
   
-  facets <- check.snpR.facet.request(x, facets, "none")
+  facets <- .check.snpR.facet.request(x, facets, "none")
   
   #========extract data======
   if(type == "single"){
-    facets <- check.snpR.facet.request(x, facets)
+    facets <- .check.snpR.facet.request(x, facets)
     return(extract.basic(x@stats, facets, col_pattern = col_pattern))
   }
   else if(type == "pairwise"){
-    facets <- check.snpR.facet.request(x, facets)
+    facets <- .check.snpR.facet.request(x, facets)
     base.facets <- which(facets == ".base")
     if(length(base.facets) > 0){
       stop("Cannot find pairwise statistics without any facets (facets = NULL or '.base').\n")
@@ -943,13 +943,13 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     return(extract.gd.afm(x@allele_frequency_matrices, facets))
   }
   else if(type == "geo_dist"){
-    return(extract.gd.afm(x@other$geo_dist, check.snpR.facet.request(x, facets)))
+    return(extract.gd.afm(x@other$geo_dist, .check.snpR.facet.request(x, facets)))
   }
   else if(type == "ibd"){
     return(extract.gd.afm(x@other$ibd, facets))
   }
   else if(type == "sample"){
-    facets <- check.snpR.facet.request(x, facets, "sample")
+    facets <- .check.snpR.facet.request(x, facets, "sample")
     return(extract.basic(x@sample.stats, facets, 
                          col_pattern = col_pattern, 
                          type = "comingled"))
