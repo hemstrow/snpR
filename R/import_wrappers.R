@@ -4,8 +4,8 @@
 #'snpRdata format from a range of file or object sources.
 #'
 #'These functions are all wrappers for \code{\link{import.snpR.data}}, and all
-#'are technically cross-compatable save read.ms: each other function can
-#'actually be called with any of the supported formats (read.vcf can be handed a
+#'are technically cross-compatable save read_ms: each other function can
+#'actually be called with any of the supported formats (read_vcf can be handed a
 #'genlight object without failure). These are supported as seperate funcitons
 #'for code readability and for ease of discovery.
 #'
@@ -42,7 +42,7 @@
 #'
 #'  Sample and snp metadata can also be provided via file path, and will be read
 #'  in using \code{\link[data.table]{fread}} \emph{with the default settings}
-#'  using \code{\link{read.delimited.snps}}.
+#'  using \code{\link{read_delimited_snps}}.
 #'  If these settings are not correct, please read in the metadata manually and
 #'  provide to import.snpR.data.
 #'
@@ -86,13 +86,13 @@
 #'@param mDat character, default "0000". Note, if the default is set but the
 #'  data has genotypes stored in 6 characters, mDat will be set to "000000".
 #'
-#'@aliases read.vcf read.ms read.delimited.snps read.genepop read.FSTAT convert.genlight convert.genind
+#'@aliases read_vcf read_ms read_delimited_snps read_genepop read_FSTAT convert_genlight convert_genind
 #'@name snpR_import_wrappers
 NULL
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .vcf or .vcf.gz files.
-read.vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
+read_vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
   if(!grepl("\\.vcf$", genotypes) | !grepl("\\.vcf\\.gz$", genotypes)){
     stop("File extension is not .vcf or .vcf.gz. Please check that the correct file has been entered and rename if needed.\n")
   }
@@ -101,7 +101,7 @@ read.vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .ms files.
-read.ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
+read_ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
   if(!grepl("\\.ms$", file)){
     stop("File extension is not .ms. Please check that the correct file has been entered and rename if needed.\n")
   }
@@ -111,13 +111,13 @@ read.ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
 #' @export
 #' @describeIn snpR_import_wrappers Import tab delimited data where genotypes
 #'   are stored as: NN, 0000, or snp_tab format.
-read.delimited.snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
+read_delimited_snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
   return(import.snpR.data(file, snp.meta, sample.meta, mDat = mDat))
 }
 
 #' @export
 #' @describeIn snpR_import_wrappers Import genepop formatted data. 
-read.genepop <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+read_genepop <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
   if(!grepl("\\.genepop$", file)){
     stop("File extension is not .genepop. Please check that the correct file has been entered and rename if needed.\n")
   }
@@ -126,7 +126,7 @@ read.genepop <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000
 
 #' @export
 #' @describeIn snpR_import_wrappers Import FSTAT formatted data. 
-read.FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+read_FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
   if(!grepl("\\.fstat$", file)){
     stop("File extension is not .fstat. Please check that the correct file has been entered and rename if needed.\n")
   }
@@ -135,7 +135,7 @@ read.FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
 #' @export
 #' @describeIn snpR_import_wrappers Import plink bed, bim, and fam data.
-read.plink <- function(file){
+read_plink <- function(file){
   if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
     .check.installed("tools")
     return(process_plink(tools::file_path_sans_ext(file)))
@@ -147,19 +147,19 @@ read.plink <- function(file){
 
 #' @export
 #' @describeIn snpR_import_wrappers Convert adegenet genlight objects.
-convert.genlight <- function(genlight, snp.meta = NULL, sample.meta = NULL){
+convert_genlight <- function(genlight, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(file, snp.meta, sample.meta))
 }
 
 #' @export
 #' @describeIn snpR_import_wrappers Convert adegenet genind objects
-convert.genind <- function(genind, snp.meta = NULL, sample.meta = NULL){
+convert_genind <- function(genind, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(file, snp.meta, sample.meta))
 }
 
 #' @export
 #' @describeIn snpR_import_wrappers Convert adegenet vcfR objects
-convert.vcfR <- function(vcfR, snp.meta = NULL, sample.meta = NULL){
+convert_vcfR <- function(vcfR, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(vcfR, snp.meta, sample.meta))
 }
 

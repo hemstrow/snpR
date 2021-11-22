@@ -2,34 +2,34 @@
 % Please edit documentation in R/import_wrappers.R
 \name{snpR_import_wrappers}
 \alias{snpR_import_wrappers}
-\alias{read.vcf}
-\alias{read.ms}
-\alias{read.delimited.snps}
-\alias{read.genepop}
-\alias{read.FSTAT}
-\alias{convert.genlight}
-\alias{convert.genind}
-\alias{read.plink}
-\alias{convert.vcfR}
+\alias{read_vcf}
+\alias{read_ms}
+\alias{read_delimited_snps}
+\alias{read_genepop}
+\alias{read_FSTAT}
+\alias{convert_genlight}
+\alias{convert_genind}
+\alias{read_plink}
+\alias{convert_vcfR}
 \title{snpRdata Import Wrappers}
 \usage{
-read.vcf(file, snp.meta = NULL, sample.meta = NULL)
+read_vcf(file, snp.meta = NULL, sample.meta = NULL)
 
-read.ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
+read_ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
 
-read.delimited.snps(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN")
+read_delimited_snps(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN")
 
-read.genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
+read_genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
-read.FSTAT(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
+read_FSTAT(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
-read.plink(file)
+read_plink(file)
 
-convert.genlight(genlight, snp.meta = NULL, sample.meta = NULL)
+convert_genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 
-convert.genind(genind, snp.meta = NULL, sample.meta = NULL)
+convert_genind(genind, snp.meta = NULL, sample.meta = NULL)
 
-convert.vcfR(vcfR, snp.meta = NULL, sample.meta = NULL)
+convert_vcfR(vcfR, snp.meta = NULL, sample.meta = NULL)
 }
 \arguments{
 \item{file}{character, path to a file containing genotype data to import.}
@@ -65,8 +65,8 @@ snpRdata format from a range of file or object sources.
 }
 \details{
 These functions are all wrappers for \code{\link{import.snpR.data}}, and all
-are technically cross-compatable save read.ms: each other function can
-actually be called with any of the supported formats (read.vcf can be handed a
+are technically cross-compatable save read_ms: each other function can
+actually be called with any of the supported formats (read_vcf can be handed a
 genlight object without failure). These are supported as seperate funcitons
 for code readability and for ease of discovery.
 
@@ -74,24 +74,24 @@ See \code{\link{import.snpR.data}} for more detail.
 }
 \section{Functions}{
 \itemize{
-\item \code{read.vcf}: Import .vcf or .vcf.gz files.
+\item \code{read_vcf}: Import .vcf or .vcf.gz files.
 
-\item \code{read.ms}: Import .ms files.
+\item \code{read_ms}: Import .ms files.
 
-\item \code{read.delimited.snps}: Import tab delimited data where genotypes
+\item \code{read_delimited_snps}: Import tab delimited data where genotypes
 are stored as: NN, 0000, or snp_tab format.
 
-\item \code{read.genepop}: Import genepop formatted data.
+\item \code{read_genepop}: Import genepop formatted data.
 
-\item \code{read.FSTAT}: Import FSTAT formatted data.
+\item \code{read_FSTAT}: Import FSTAT formatted data.
 
-\item \code{read.plink}: Import plink bed, bim, and fam data.
+\item \code{read_plink}: Import plink bed, bim, and fam data.
 
-\item \code{convert.genlight}: Convert adegenet genlight objects.
+\item \code{convert_genlight}: Convert adegenet genlight objects.
 
-\item \code{convert.genind}: Convert adegenet genind objects
+\item \code{convert_genind}: Convert adegenet genind objects
 
-\item \code{convert.vcfR}: Convert adegenet vcfR objects
+\item \code{convert_vcfR}: Convert adegenet vcfR objects
 }}
 
 \section{File import}{
@@ -126,7 +126,7 @@ are stored as: NN, 0000, or snp_tab format.
 
  Sample and snp metadata can also be provided via file path, and will be read
  in using \code{\link[data.table]{fread}} \emph{with the default settings}
- using \code{\link{read.delimited.snps}}.
+ using \code{\link{read_delimited_snps}}.
  If these settings are not correct, please read in the metadata manually and
  provide to import.snpR.data.
 }

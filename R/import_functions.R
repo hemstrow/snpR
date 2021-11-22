@@ -282,7 +282,7 @@ process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
   
   #========import data=======================
   if(!"vcfR" %in% class(vcf_file)){
-    vcf <- vcfR::read.vcfR(vcf_file)
+    vcf <- vcfR::read_vcfR(vcf_file)
   }
   else{
     vcf <- vcf_file
