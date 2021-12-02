@@ -33,6 +33,11 @@
 #'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @references Gutenkunst et al (2009). Inferring the joint demographic history
 #'   of multiple populations from multidimensional SNP frequency data.
@@ -71,7 +76,8 @@
 #' plot_sfs(dat, projection = 100)
 #'
 #' 
-calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
+calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE, 
+                     update_bib = FALSE){
   #=============sanity checks=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -133,7 +139,7 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 
   # get sfs
   if(is.null(pops)){pops <- ".base"}
-  sfs <- make_SFS(y, pops, projection, fold)
+  sfs <- make_SFS(y, pops, projection, fold, update_bib)
 
   return(sfs)
 }
@@ -165,6 +171,11 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 #'   containing few or no SNPs.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @references Gutenkunst et al (2009). Inferring the joint demographic history
 #'   of multiple populations from multidimensional SNP frequency data.
@@ -179,7 +190,7 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 #'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
 #'   rows.
 #'   
-make_SFS <- function(x, pops, projection, fold = FALSE){
+make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
   #================sanity checks=========
   msg <- character()
   if(!is.data.frame(x)){
@@ -392,6 +403,9 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
   }
   
   cat("SFS completed with", sum(masked, na.rm = T), "segrgating sites.\n")
+  
+  .yell_citation("Gutenkunst2009", "SFS", "Used to project and possibly fold SFS data. Code is a direct R re-implementation.", outbib = update_bib)
+  
   return(sfs)
 }
 
@@ -423,6 +437,11 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #'   documentation there for details. Ignored if a sfs is provided.
 #' @param projection numeric, default NULL. Passed to \code{\link{calc_sfs}} --
 #'   see documentation there for details. Ignored if a sfs is provided.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @export
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
@@ -438,7 +457,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #' sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 #' calc_directionality(sfs = sfs)
 #' 
-calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL){
+calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL, update_bib = FALSE){
   #==========sanity checks=============
   msg <- character(0)
   if(!is.null(x)){
@@ -495,6 +514,8 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
     attr(directionality, "direction") <- paste0(pops[1], "<-", pops[2])
 
   }
+  
+  .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
 
   return(directionality)
 }

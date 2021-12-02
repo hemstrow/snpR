@@ -457,6 +457,11 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' @param ncp.max numeric, default 5. Maximum number of components to check for
 #'   when determining the optimum number of components to use when interpolating
 #'   sn data using the iPCA approach.
+#'@param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'   \code{\link[umap]{umap}}.
 #'
@@ -491,7 +496,7 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
-                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, ...){
+                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, update_bib = FALSE, ...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -756,6 +761,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     }
     plots[[i]] <- out
   }
+  
+  # cite
+  keys <- character(0)
+  stats <- character(0)
+  details <- character(0)
+  if("tsne" %in% c(plot_type)){
+    keys <- c(keys, "Krijthe2015", "Maatan2008")
+    stats <- c(stats, "RtSNE", "tSNE")
+    details <- c(details, "R package used to conduct tSNE", "t-stochastic Neighbor Embedding (tSNE) citation")
+  }
+  .yell_citation()
+  
   return(list(data = plot_dats, plots = plots))
 }
 
@@ -1324,6 +1341,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
   
   return(out)
 }
+
+
 #' Create STRUCTURE-like cluster plots
 #'
 #' Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
@@ -1404,7 +1423,12 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   Requires a local STRUCTURE executable. many additional options are
 #'   available for STRUCTURE via other arguments.}
 #' @param reps numeric, default 1. The number of independent clustering
-#'   repititions to run.
+#'   repetitions to run.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #' @param iterations numeric or Inf, default 1000. For snapclust, the maximum
 #'   number of iterations to run. For STRUCTURE the number of MCMC steps, should
 #'   be in the 10,000+ range.
@@ -1588,9 +1612,11 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' # basic snapclust
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
 #' 
-plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, iterations = 1000, burnin = 100,
+plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, update_bib = FALSE,
+                           iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
-                           clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture", admixture_cv = 5, ID = NULL, viridis.option = "viridis",
+                           clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture", 
+                           admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
                            no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
                            infer_alpha = TRUE, separate_pop_alphas = FALSE, infer_lambda = FALSE, 
@@ -2773,7 +2799,43 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   else{
     return(list(plot = p, data = qlist, plot_data = pdat))
   }
-
+  
+  
+  # cite
+  keys <- character(0)
+  stats <- character(0)
+  details <- character(0)
+  if(clumpp == TRUE & reps > 1){
+    keys <- c(keys, "Jakobsson2007")
+    stats <- c(stats, "CLUMPP")
+    details <- c(details, paste0("CLUMPP on ", method, " results."))
+  }
+  if(method == "snmf"){
+    keys <- c(keys, "Frichot973")
+    stats <- c(stats, "sNMF")
+    details <- c(details, "sparse Non-Negative Matrix Factorization (sNMF)")
+  }
+  else if(method == "structure"){
+    keys <- c(keys, "Pritchard945")
+    stats <- c(stats, "STRUCTURE")
+    details <- c(details, "STRUCTURE assignment clustering")
+  }
+  else if(method == "admixture"){
+    keys <- c(keys, "Alexander2011")
+    stats <- c(stats, "ADMIXTURE")
+    details <- c(details, "ADMIXTURE assignment clustering")
+  }
+  else if(method == "snapclust"){
+    keys <- c(keys, "Beugin2018")
+    stats <- c(stats, "snapclust")
+    details <- c(details, "snapclust assignment clustering")
+  }
+  keys <- c(keys, "Francis2017")
+  stats <- c(stats, "pophelper")
+  details <- c(details, "pophelper R package, used to assist file handling during structure-like plot generation")
+  
+  
+  .yell_citation(keys, stats, details, update_bib)
 
 }
 
@@ -2823,6 +2885,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references. Ignored if a
+#'   SFS is provided.
 #'
 #' @return A ggplot2 plot object of the provided SFS.
 #'
@@ -2842,12 +2910,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
 #' plot_sfs(sfs = sfs)
 plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "inferno", log = TRUE,
-                     pops = NULL, projection = NULL, fold = TRUE){
+                     pops = NULL, projection = NULL, fold = TRUE, update_bib = FALSE){
   p1 <- p2 <- N <- NULL
   
   
   if(is.snpRdata(x)){
-    sfs <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold)
+    sfs <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold, update_bib = update_bib)
   }
   
   # add column names, row names, and melt
@@ -2898,7 +2966,6 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
       ggplot2::xlab(pops[1]) +
       ggplot2::scale_x_continuous(expand = c(0, 0))
   }
-
 
   return(p)
 }

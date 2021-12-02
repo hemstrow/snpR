@@ -2528,3 +2528,62 @@ is.snpRdata <- function(x){
   x@citations <- x@citations[!duplicated(x@citations)]
   return(x)
 }
+
+# simple function to yell citation info and add to an external .bib
+#
+# For when a snpRdata object is not returned
+# @param keys bibtex keys to use, corresponding to snpr_citations.bib in extdata
+# @param stats vector of stat names
+# @param details details on how each key was used
+# @param bib_path FALSE or path to bib file to update
+.yell_citation <- function(keys, stats, details, outbib = FALSE){
+  #==========sanity checks=======
+  
+  .check.installed("bibtex")
+  .check.installed("RefManageR")
+  
+  #==========shout at the user=====
+  cat("Citations for methods used thus far: \n")
+  for(i in 1:length(keys)){
+    cat("==============================================\n")
+    cat("Statistic: ", stats[i], "\n")
+    cat("Citation: ", RefManageR::Cite(bib[keys[i]]), "\n")
+    cat("Bibtex key: ", keys[i], "\n")
+    cat("Details: ", details[i], "\n")
+  }
+  cat("==============================================\n\n")
+  
+  #==========print bib=============
+  if(!isFALSE(outbib)){
+    bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
+    bib <- RefManageR::ReadBib(bib.file)
+    
+    if(file.exists(outbib)){
+      current_bib <- RefManageR::ReadBib(outbib)
+      not_in_current <- which(!keys %in% names(current_bib))
+      
+      
+      if(length(not_in_current) > 0){
+        #==========filter bib==========
+        bib <- bib[keys[not_in_current]]
+        
+        current_bib <- c(current_bib, bib)
+        
+        RefManageR::WriteBib(current_bib, outbib, verbose = FALSE)
+        
+        cat(".bib file ", outbib, "updated with new citations.\n")
+        
+      }
+      else{
+        cat(".bib file ", outbib, "not updated, no new citations.\n")
+      }
+    }
+    
+    else {
+      bib <- bib[keys]
+      RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+      
+      cat(".bib file ", outbib, "written.\n")
+    }
+  }
+}
