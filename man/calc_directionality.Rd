@@ -9,7 +9,8 @@ calc_directionality(
   sfs = NULL,
   facet = NULL,
   pops = NULL,
-  projection = NULL
+  projection = NULL,
+  update_bib = FALSE
 )
 }
 \arguments{
@@ -30,6 +31,12 @@ documentation there for details. Ignored if a sfs is provided.}
 
 \item{projection}{numeric, default NULL. Passed to \code{\link{calc_sfs}} --
 see documentation there for details. Ignored if a sfs is provided.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
 A numeric value giving the directionality with a "direction"

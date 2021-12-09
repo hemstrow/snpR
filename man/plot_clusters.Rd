@@ -21,6 +21,7 @@ plot_clusters(
   alt.palette = NULL,
   ncp = NULL,
   ncp.max = 5,
+  update_bib = FALSE,
   ...
 )
 }
@@ -91,6 +92,12 @@ be very slow.}
 \item{ncp.max}{numeric, default 5. Maximum number of components to check for
 when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 \code{\link[umap]{umap}}.}

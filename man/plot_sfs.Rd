@@ -12,7 +12,8 @@ plot_sfs(
   log = TRUE,
   pops = NULL,
   projection = NULL,
-  fold = TRUE
+  fold = TRUE,
+  update_bib = FALSE
 )
 }
 \arguments{
@@ -47,6 +48,13 @@ vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
 left polarized.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references. Ignored if a
+SFS is provided.}
 }
 \value{
 A ggplot2 plot object of the provided SFS.

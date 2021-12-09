@@ -120,6 +120,11 @@
 #' @param path character. Path to the directory containing colony results.
 #' @param x snpRdata object from which metadata for colony results can be found.
 #' @param prefix character. The prefix for the colony files to be parsed.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #' @param cleanup logical, default FALSE. If TRUE, colony files will be removed
 #'   after parsing.
 #'
@@ -196,7 +201,8 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                                known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
-                               excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL){
+                               excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL,
+                               update_bib = FALSE){
 
 
   #=====================initialize===============
@@ -464,7 +470,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 #' Call a prepared colony infile.
 #' @describeIn colony_interface Call a colony executable to run a prepared colony input file.
 #' @export
-call_colony <- function(infile, colony_path){
+call_colony <- function(infile, colony_path, update_bib){
 
   # check system type
   sys.type <- Sys.info()["sysname"]
@@ -490,6 +496,8 @@ call_colony <- function(infile, colony_path){
   }
   
   file.rename(files, paste0("./colony/", files))
+  
+  .yell_citation("Jones2010", "parentage", "parentage or sibship reconstruction with COLONY2", update_bib)
 }
 
 #' Parse colony data.
@@ -573,7 +581,7 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
                        known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                        known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                        maternal_exclusions = NULL, paternal_exclusions = NULL,
-                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL, cleanup = FALSE){
+                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL, update_bib = FALSE, cleanup = FALSE){
   msg <- character(0)
   if(!file.exists(colony_path)){
     msg <- c(msg, "Cannot find colony executable.\n")
@@ -625,7 +633,7 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
 
   # run
   call_colony(infile = paste0("./colony/", outfile, ".dat"),
-              colony_path = colony_path)
+              colony_path = colony_path, update_bib = update_bib)
 
   # parse some basics
   return(parse_colony(prefix = outfile,

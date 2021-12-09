@@ -12,7 +12,8 @@ plot_tree(
   tree_method = "nj",
   root = FALSE,
   boot = FALSE,
-  boot_par = FALSE
+  boot_par = FALSE,
+  update_bib = FALSE
 )
 }
 \arguments{
@@ -49,19 +50,16 @@ for each facet. See details.}
 
 \item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will
 be processed in parallel using the supplied number of cores.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
 A nested, named list containing plots, trees, and bootstraps for each
   facet and facet level.
-
-  #' @references Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
-  Approach Using the Bootstrap. Evolution, 39(4), 783–791.
-  https://doi.org/10.2307/2408678 Gascuel, O. (1997). BIONJ: an improved
-  version of the NJ algorithm based on a simple model of sequence data.
-  Molecular Biology and Evolution, 14(7), 685–695.
-  https://doi.org/10.1093/oxfordjournals.molbev.a025808 Paradis, E., Claude,
-  J. and Strimmer, K. (2004). APE: analyses of phylogenetics and evolution in
-  R language. Bioinformatics, 20, 289–290.
 }
 \description{
 Generate and plot dendritic trees in the style of a phylogenetic tree for
@@ -102,6 +100,18 @@ tp <- plot_tree(stickSNPs, "pop", root = "PAL", boot = 5)
 tp$pop$.base$plot # nodes now have a bootstrap support indicator
 }
 
+}
+\references{
+Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
+  Approach Using the Bootstrap. Evolution, 39(4), 783–791.
+  https://doi.org/10.2307/2408678 
+  
+  Gascuel, O. (1997).BIONJ: an improved version of the NJ algorithm based on a simple model of
+  sequence data. Molecular Biology and Evolution, 14(7), 685–695.
+  https://doi.org/10.1093/oxfordjournals.molbev.a025808
+
+  Paradis, E., Claude, J. and Strimmer, K. (2004). APE: analyses of
+  phylogenetics and evolution in R language. Bioinformatics, 20, 289–290.
 }
 \author{
 William Hemstrom

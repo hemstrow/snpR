@@ -766,12 +766,17 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   keys <- character(0)
   stats <- character(0)
   details <- character(0)
-  if("tsne" %in% c(plot_type)){
+  if("tsne" %in% plot_type){
     keys <- c(keys, "Krijthe2015", "Maatan2008")
     stats <- c(stats, "RtSNE", "tSNE")
     details <- c(details, "R package used to conduct tSNE", "t-stochastic Neighbor Embedding (tSNE) citation")
   }
-  .yell_citation()
+  if("umap" %in% plot_type){
+    keys <- c(keys, "McInnes2018")
+    stats <- c(stats, "UMAP")
+    details <- c(details, "Uniform Manifold Approximation and Projection (UMAP)")
+  }
+  .yell_citation(keys, stats, details, update_bib)
   
   return(list(data = plot_dats, plots = plots))
 }
@@ -3279,6 +3284,11 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #'   for each facet. See details.
 #' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
 #'   be processed in parallel using the supplied number of cores.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @author William Hemstrom
 #' @export
@@ -3286,14 +3296,16 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #' @return A nested, named list containing plots, trees, and bootstraps for each
 #'   facet and facet level.
 #'
-#'   #' @references Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
+#' @references Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
 #'   Approach Using the Bootstrap. Evolution, 39(4), 783–791.
-#'   https://doi.org/10.2307/2408678 Gascuel, O. (1997). BIONJ: an improved
-#'   version of the NJ algorithm based on a simple model of sequence data.
-#'   Molecular Biology and Evolution, 14(7), 685–695.
-#'   https://doi.org/10.1093/oxfordjournals.molbev.a025808 Paradis, E., Claude,
-#'   J. and Strimmer, K. (2004). APE: analyses of phylogenetics and evolution in
-#'   R language. Bioinformatics, 20, 289–290.
+#'   https://doi.org/10.2307/2408678 
+#'   
+#'   Gascuel, O. (1997).BIONJ: an improved version of the NJ algorithm based on a simple model of
+#'   sequence data. Molecular Biology and Evolution, 14(7), 685–695.
+#'   https://doi.org/10.1093/oxfordjournals.molbev.a025808
+#'
+#'   Paradis, E., Claude, J. and Strimmer, K. (2004). APE: analyses of
+#'   phylogenetics and evolution in R language. Bioinformatics, 20, 289–290.
 #'   
 #' 
 #' @examples 
@@ -3312,7 +3324,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 
 plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate = "bernoulli", 
                       tree_method = "nj", root = FALSE,
-                      boot = FALSE, boot_par = FALSE){
+                      boot = FALSE, boot_par = FALSE, update_bib = FALSE){
   y <- label <- isTip <- NULL
   #=======sanity checks==========
   if(!is.snpRdata(x)){
@@ -3492,6 +3504,50 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     out[[i]] <- fun(x, facets[i], distance_method, tree_method, interpolate, root[i], boot, boot_par)
   }
   names(out) <- facets
+  
+  
+  # update bib
+  keys <- character()
+  stats <- character()
+  details <- character()
+  
+  if(distance_method == "Edwards"){
+    keys <- c(keys, "Edwards1971")
+    stats <- c(stats, "genetic_distance")
+    details <- c(details, "Edwards' Angular Genetic Distance")
+  }
+  else if(distance_method == "Nei"){
+    keys <- c(keys, "Nei1978")
+    stats <- c(stats, "genetic_distance")
+    details <- c(details, "Nei's genetic distance")
+  }
+  
+  if(tree_method == "nj"){
+    keys <- c(keys, "Felsenstein1985")
+    stats <- c(stats, "tree")
+    details <- c(details, "Neighbor-joining tree construction method")
+  }
+  else if(tree_method == "bionj"){
+    keys <- c(keys, "Gascuel1997")
+    stats <- c(stats, "tree")
+    details <- c(details, "BIONJ tree construction method")
+  }
+  else if(tree_method == "upgma"){
+    keys <- c(keys, "Sokal1958")
+    stats <- c(stats, "tree")
+    details <- c(details, "UPGMA tree construction method")
+  }
+  
+  keys <- c(keys, "Paradis2004")
+  stats <- c(stats, "tree")
+  if(!isFALSE(boot)){
+    details <- c(details, "tree construction and bootstrapping")
+  }
+  else{
+    details <- c(details, "tree construction")
+  }
+  
+  .yell_citation(keys, stats, details, outbib)
   
   # return
   return(out)

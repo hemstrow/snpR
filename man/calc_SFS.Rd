@@ -4,7 +4,14 @@
 \alias{calc_sfs}
 \title{Generate a 1-2d site frequency spectrum from a snpRdata object.}
 \usage{
-calc_sfs(x, facet = NULL, pops = NULL, projection, fold = TRUE)
+calc_sfs(
+  x,
+  facet = NULL,
+  pops = NULL,
+  projection,
+  fold = TRUE,
+  update_bib = FALSE
+)
 }
 \arguments{
 \item{x}{snpRdata object. The SNP metadata must contain "ref" and "anc" data.}
@@ -24,6 +31,12 @@ vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
 left polarized.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
 A matrix or vector containing the site frequency spectrum with a

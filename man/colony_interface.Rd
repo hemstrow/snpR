@@ -43,10 +43,11 @@ write_colony_input(
   maternal_exclusions = NULL,
   paternal_exclusions = NULL,
   excluded_maternal_siblings = NULL,
-  excluded_paternal_siblings = NULL
+  excluded_paternal_siblings = NULL,
+  update_bib = FALSE
 )
 
-call_colony(infile, colony_path)
+call_colony(infile, colony_path, update_bib)
 
 parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE)
 
@@ -87,6 +88,7 @@ run_colony(
   paternal_exclusions = NULL,
   excluded_maternal_siblings = NULL,
   excluded_paternal_siblings = NULL,
+  update_bib = FALSE,
   cleanup = FALSE
 )
 }
@@ -214,6 +216,12 @@ siblings, column 3 the IDs of excluded siblings separated by spaces.}
 \item{excluded_paternal_siblings}{character, default NULL. Data.frame or
 matrix with column 1 the offspring ID, column 2 the number of excluded
 siblings, column 3 the IDs of excluded siblings separated by spaces.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 
 \item{infile}{character. Path to the pre-written colony input file to be run.}
 

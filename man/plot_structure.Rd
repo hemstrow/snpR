@@ -11,6 +11,7 @@ plot_structure(
   k = 2,
   method = "snmf",
   reps = 1,
+  update_bib = FALSE,
   iterations = 1000,
   burnin = 100,
   I = NULL,
@@ -86,7 +87,13 @@ Requires a local STRUCTURE executable. many additional options are
 available for STRUCTURE via other arguments.}}
 
 \item{reps}{numeric, default 1. The number of independent clustering
-repititions to run.}
+repetitions to run.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 
 \item{iterations}{numeric or Inf, default 1000. For snapclust, the maximum
 number of iterations to run. For STRUCTURE the number of MCMC steps, should
