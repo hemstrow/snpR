@@ -1016,7 +1016,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'  such as genepop, additional lines will be added to the output to allow them
 #'  to be immediately run on commonly used programs.
 #'@param ped data.frame default NULL. Optional argument for the "plink" output
-#'  format. A six column data frame containg Family ID, Individual ID, Paternal
+#'  format. A six column data frame containing Family ID, Individual ID, Paternal
 #'  ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
 #'  outputs will contain information contained in ped. See plink documentation
 #'  for more details.
@@ -1120,7 +1120,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", 
 #'             ped = ped, chr = "group")
 #' #note that a column in the sample metadata containing phenotypic information
-#' #can be provided to the "phenotype" arugment if wished.
+#' #can be provided to the "phenotype" argument if wished.
 #'
 #' }
 #'
@@ -1893,7 +1893,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         Phenotype <- x@sample.meta[,which(colnames(x@sample.meta) == phenotype)]
       }
       else{
-        Phenotype <- rep("NA", ncol(x))
+        Phenotype <- rep("-9", ncol(x))
       }
       if(any(lower.sample.cols == "matid")){
         MatID <- x@sample.meta[,which(lower.sample.cols == "matid")]
@@ -1908,6 +1908,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         Sex = Sex,
                         Phenotype = Phenotype)
     }
+    
 
     # save .fam
     fam <- ped
@@ -2778,8 +2779,28 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   
   #==========print bib=============
   if(!isFALSE(outbib)){
-    RefManageR::WriteBib(bib, outbib, verbose = FALSE)
-    cat(".bib file can be found at: ", outbib, "\n")
+    
+    if(file.exists(outbib)){
+      current_bib <- RefManageR::ReadBib(outbib)
+      not_in_current <- which(!keys %in% names(current_bib))
+      
+      
+      if(length(not_in_current) > 0){
+        #==========filter bib==========
+        bib <- bib[keys[not_in_current]]
+        
+        current_bib <- c(current_bib, bib)
+        
+        RefManageR::WriteBib(current_bib, outbib, verbose = FALSE)
+      }
+    }
+    
+    
+    else{
+      RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+      cat(".bib file can be found at: ", outbib, "\n")
+    }
+    
   }
   
   if(!isFALSE(return_bib)){

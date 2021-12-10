@@ -50,7 +50,7 @@ such as genepop, additional lines will be added to the output to allow them
 to be immediately run on commonly used programs.}
 
 \item{ped}{data.frame default NULL. Optional argument for the "plink" output
-format. A six column data frame containg Family ID, Individual ID, Paternal
+format. A six column data frame containing Family ID, Individual ID, Paternal
 ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
 outputs will contain information contained in ped. See plink documentation
 for more details.}
@@ -260,7 +260,7 @@ ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420,
 format_snps(stickSNPs, "plink", outfile = "plink_out", 
             ped = ped, chr = "group")
 #note that a column in the sample metadata containing phenotypic information
-#can be provided to the "phenotype" arugment if wished.
+#can be provided to the "phenotype" argument if wished.
 
 }
 

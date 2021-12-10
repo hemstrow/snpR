@@ -2543,6 +2543,9 @@ is.snpRdata <- function(x){
   .check.installed("RefManageR")
   
   #==========shout at the user=====
+  bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
+  bib <- RefManageR::ReadBib(bib.file)
+  
   cat("Citations for methods used thus far: \n")
   for(i in 1:length(keys)){
     cat("==============================================\n")
@@ -2555,8 +2558,7 @@ is.snpRdata <- function(x){
   
   #==========print bib=============
   if(!isFALSE(outbib)){
-    bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
-    bib <- RefManageR::ReadBib(bib.file)
+    
     
     if(file.exists(outbib)){
       current_bib <- RefManageR::ReadBib(outbib)
