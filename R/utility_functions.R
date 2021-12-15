@@ -1890,9 +1890,24 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         Sex <- rep("NA", ncol(x))
       }
       if(any(colnames(x@sample.meta) == phenotype)){
+        cat("Using phenotype column as phenotype.")
         Phenotype <- x@sample.meta[,which(colnames(x@sample.meta) == phenotype)]
+        if(length(unique(na.omit(Phenotype))) == 2){
+          uf <- factor(Phenotype)
+          cat("Two phenotypes detected, options encoded as: \n\t",
+              levels(uf)[1], " = 0\n\t",
+              levles(uf)[2], " = 1\n\t",
+              "\n\tNA as -9.\n")
+          uf <- as.numeric(uf)
+          uf[is.na(uf)] <- -9
+          Phenotype <- uf
+        }
+        else{
+          warning("Plink does not typically support more than two phenotypes. Phenotypes left as-is, with missing data as NA (plink requires -9).\n")
+        }
       }
       else{
+        cat("No phenotype column in sample metadata detected, filling with missing.\n")
         Phenotype <- rep("-9", ncol(x))
       }
       if(any(lower.sample.cols == "matid")){
@@ -1907,6 +1922,25 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         MatID = MatID,
                         Sex = Sex,
                         Phenotype = Phenotype)
+    }
+    else{
+      if(any(colnames(ped) == "Phenotype")){
+        Phenotype <- ped$Phenotype
+        if(length(unique(na.omit(Phenotype))) == 2){
+          uf <- factor(Phenotype)
+          cat("Two phenotypes detected, options encoded as: \n\t",
+              levels(uf)[1], " = 0\n\t",
+              levles(uf)[2], " = 1\n\t",
+              "\n\tNA as -9.\n")
+          uf <- as.numeric(uf)
+          uf[is.na(uf)] <- -9
+          Phenotype <- uf
+          ped$Phenotype <- Phenotype
+        }
+        else{
+          warning("Plink does not typically support more than two phenotypes. Phenotypes left as-is, with missing data as NA (plink requires -9).\n")
+        }
+      }
     }
     
 
