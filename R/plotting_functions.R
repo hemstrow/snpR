@@ -1853,16 +1853,16 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   if(!is.null(alt.palette[1])){
 
     # is it long enough?
-    if(length(alt.palette) < length(k)){
+    if(length(alt.palette) < max(k)){
       msg <- c(msg, "Provided alternative palette must contain at least as many colors
                as the requested k values.\n")
     }
 
     # is everything a valid color (can ggplot work with it)?
     else{
-      alt.palette <- alt.palette[seq_along(k)]
-      tpd <- matrix(stats::rnorm(kmax*2, 0, 1), kmax, 2)
-      tpd <- cbind(as.data.frame(tpd), col = seq_along(k))
+      alt.palette <- alt.palette[1:max(k)]
+      tpd <- matrix(stats::rnorm(length(alt.palette)*2, 0, 1), length(alt.palette), 2)
+      tpd <- cbind(as.data.frame(tpd), col = 1:max(k))
 
       color.check <- ggplot2::ggplot(tpd, ggplot2::aes(V1, V2, color = as.factor(col))) +
         ggplot2::geom_point() + ggplot2::scale_color_manual(values = alt.palette)
