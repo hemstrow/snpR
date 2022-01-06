@@ -73,8 +73,8 @@ each individual (populations, etc.).}
 \item{facet.order}{character, default NULL. Optional order in which the
 levels of the provided facet should appear on the plot, left to right.}
 
-\item{k}{numeric, default 2. The maximum of k (number of clusters) for which
-to run the clustering/assignment algorithm. The values 2:k will be run.}
+\item{k}{numeric vector, default 2. The k value (number of clusters) for which
+to run the clustering/assignment algorithm. Each provided k value will be run.}
 
 \item{method}{character, default "snmf". The clustering/assignment method to
 run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix

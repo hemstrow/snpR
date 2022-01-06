@@ -1416,8 +1416,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   each individual (populations, etc.).
 #' @param facet.order character, default NULL. Optional order in which the
 #'   levels of the provided facet should appear on the plot, left to right.
-#' @param k numeric, default 2. The maximum of k (number of clusters) for which
-#'   to run the clustering/assignment algorithm. The values 2:k will be run.
+#' @param k numeric vector, default 2. The k value (number of clusters) for which
+#'   to run the clustering/assignment algorithm. Each provided k value will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
@@ -2781,7 +2781,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   
   #=============clean-up and return============
-  if(cleanup){
+  if(cleanup & isFALSE(provided_qlist)){
     if(method == "snmf"){
       file.remove("lea_input.geno", "lea_input.snmfProject")
       unlink("lea_input.snmf", recursive = T)
