@@ -1726,7 +1726,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       else if(provided_qlist == "parse"){
-        lev1 <- list.files(pattern = x)[1]
+        all.files <- list.files(pattern = x)
+        
+        concerning_extinsions <- which(!grepl(".qopt$", all.files))
+        if(length(concerning_extinsions) > 0){
+          warning(paste0("Some files do not end in .qopt, and may not be the expected format:\n",
+                  paste0(all.files[concerning_extinsions], collapse = "\n\t")))
+        }
+        
+        lev1 <- all.files[1]
         if(!length(lev1) > 0 | is.na(lev1)){
           msg <- c(msg, paste0("No q files matching '", x, "' located.\n"))
         }
@@ -2046,6 +2054,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ## run
     pophelper::clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
     dirs <- list.files(".", "pop")
+    run_dir <- logical(length(dirs))
+    for(i in 1:length(k)){
+      run_dir[grepl(paste0("_K", k[i]), dirs)] <- TRUE
+    }
+    dirs <- dirs[run_dir]
+    
     for(i in 1:length(dirs)){
       file.copy(clumpp_path, paste0("./", dirs[i], "/"))
       setwd(dirs[i])
