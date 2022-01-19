@@ -1881,10 +1881,10 @@ is.snpRdata <- function(x){
 #  weighted averages for.
 # 
 #  @return A snpR data object with weighted statistics merged in.
-.calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get, mean_facet_override = NULL){
+.calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- NULL
 
-  
+
   #===========sanity checks===============
   msg <- character(0)
   if(!is.snpRdata(x)){
@@ -2180,7 +2180,7 @@ is.snpRdata <- function(x){
       }
       else{
         if(facets[[2]][i] == "special"){
-          mstats$snp.subfacet <- ".base"
+          mstats$snp.subfacet <- ".OVERALL_MEAN"
         }
         else if(facets[[2]][i] == "regress.base"){
           mstats$subfacet <- ".base"
