@@ -838,7 +838,15 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       grep.cols <- colnames(y)[grep.cols]
       
       keep.cols <- which(colnames(y) %in% c(good.cols, grep.cols))
+      
+      # remove any rows that only contain NA values for the grep cols
+      empty.rows <- which(rowSums(is.na(.fix..call(y[keep.rows, ..grep.cols]))) == length(grep.cols))
+      if(length(empty.rows) > 0){
+        keep.rows <- keep.rows[-empty.rows]
+      }
     }
+    
+
     
     if(length(keep.rows) == 0){
       warning("No statistics calculated for this facet and statistics type.\n")
