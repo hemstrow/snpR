@@ -826,7 +826,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(!is.null(col_pattern)){
       keep.cols <- colnames(y)[keep.cols]
       
-      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison",
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop",
                                                     colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
@@ -841,13 +841,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       
       # remove any rows that only contain NA values for the grep cols
       empty.rows <- which(rowSums(is.na(.fix..call(y[keep.rows, ..grep.cols]))) == length(grep.cols))
-<<<<<<< HEAD
       if(length(empty.rows) > 0){
         keep.rows <- keep.rows[-empty.rows]
       }
-=======
-      keep.rows <- keep.rows[-empty.rows]
->>>>>>> 4e0107332f54ab0a3053370b66917a28e7b2a562
     }
     
 
