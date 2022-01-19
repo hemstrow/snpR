@@ -841,9 +841,13 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       
       # remove any rows that only contain NA values for the grep cols
       empty.rows <- which(rowSums(is.na(.fix..call(y[keep.rows, ..grep.cols]))) == length(grep.cols))
+<<<<<<< HEAD
       if(length(empty.rows) > 0){
         keep.rows <- keep.rows[-empty.rows]
       }
+=======
+      keep.rows <- keep.rows[-empty.rows]
+>>>>>>> 4e0107332f54ab0a3053370b66917a28e7b2a562
     }
     
 
