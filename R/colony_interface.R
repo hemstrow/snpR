@@ -470,7 +470,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 #' Call a prepared colony infile.
 #' @describeIn colony_interface Call a colony executable to run a prepared colony input file.
 #' @export
-call_colony <- function(infile, colony_path, update_bib){
+call_colony <- function(infile, colony_path, update_bib = FALSE){
 
   # check system type
   sys.type <- Sys.info()["sysname"]
