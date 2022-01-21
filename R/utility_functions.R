@@ -63,13 +63,30 @@ NULL
 #' @describeIn subset_snpRdata subset_snpR_data
 subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   #============extract facet info===============
-  argnames <- match.call()
-  argnames <- as.list(argnames)
-  argnames <- argnames[-1]
+  .argnames <- match.call()
+  .argnames <- as.list(.argnames)
+  .argnames <- .argnames[-1]
   
-  is.facet <- which(!names(argnames) %in% c("x", ".snps", ".samps"))
-  if(length(is.facet) > 0){
-    facets <- names(argnames)[is.facet]
+  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps"))
+  if(length(.is.facet) > 0){
+    facets <- names(.argnames)[.is.facet]
+    
+    # eval the facets
+    ## check for negatives, fix, and note
+    .has.negatives <- grep("-", .argnames[.is.facet])
+    .argnames[.is.facet][.has.negatives] <- lapply(.argnames[.is.facet][.has.negatives], function(x){
+      x <- gsub("-", "", x)
+      if(any(length(x) > 2)){stop("Negative subscripts cannot be provided inside c() calls. Please place negative subscripts outside c() calls.\n")}
+      return(x[2])
+    } )
+    .single.part <- !grepl("^c\\(", .argnames[.is.facet][.has.negatives])
+    .argnames[.is.facet][.has.negatives][!.single.part] <- lapply(.argnames[.is.facet][.has.negatives][!.single.part], str2lang)
+    ## eval
+    for(.candidate_facets in 1:length(.is.facet)){
+      .argnames[.is.facet][.candidate_facets] <- eval(parse(text = .argnames[.is.facet][.candidate_facets]))
+    }
+    
+    
   }
   else{
     facets <- NULL
@@ -170,28 +187,15 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   #===========subset===========================
   if(!is.null(facets)){
-    # eval the facets
-    ## check for negatives, fix, and note
-    has.negatives <- grep("-", argnames[is.facet])
-    argnames[is.facet][has.negatives] <- lapply(argnames[is.facet][has.negatives], function(x){
-      x <- gsub("-", "", x)
-      if(any(length(x) > 2)){stop("Negative subscripts cannot be provided inside c() calls. Please place negative subscripts outside c() calls.\n")}
-      return(x[2])
-    } )
-    single.part <- !grepl("^c\\(", argnames[is.facet][has.negatives])
-    argnames[is.facet][has.negatives][!single.part] <- lapply(argnames[is.facet][has.negatives][!single.part], str2lang)
-    ## eval
-    argnames[is.facet] <- lapply(argnames[is.facet], eval)
-    
     
     # check to see if there are mixed negative and positive subsets
     if(any(facets[[2]] == "snp")){
-      if(!all(which(facets[[2]] == "snp") %in% has.negatives) & !all(!which(facets[[2]] == "snp") %in% has.negatives)){
+      if(!all(which(facets[[2]] == "snp") %in% .has.negatives) & !all(!which(facets[[2]] == "snp") %in% .has.negatives)){
         stop("Cannot mix negative and positive subscripts in SNP subfacets.\n")
       }
     }
     if(any(facets[[2]] == "sample")){
-      if(!all(which(facets[[2]] == "sample") %in% has.negatives) & !all(!which(facets[[2]] == "sample") %in% has.negatives)){
+      if(!all(which(facets[[2]] == "sample") %in% .has.negatives) & !all(!which(facets[[2]] == "sample") %in% .has.negatives)){
         stop("Cannot mix negative and positive subscripts in sample subfacets.\n")
       }
     }
@@ -199,16 +203,16 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     
     
     # check for flipped facet orders
-    ord.flipped <- which(facets[[1]] != names(argnames[is.facet]))
+    ord.flipped <- which(facets[[1]] != names(.argnames[.is.facet]))
     ## if any flipped, need to flip subfacets as well
     if(any(ord.flipped)){
       for(i in 1:length(ord.flipped)){
         split.ord.facet <- unlist(.split.facet(facets[[1]][i]))
-        split.raw.facet <- unlist(.split.facet(names(argnames[is.facet])[i]))
+        split.raw.facet <- unlist(.split.facet(names(.argnames[.is.facet])[i]))
         re_ord <- match(split.raw.facet, split.ord.facet)
-        for(j in 1:length(argnames[is.facet][[i]])){
-          split.lev <-  unlist(.split.facet(argnames[is.facet][[i]][j]))
-          argnames[is.facet][[i]][j] <- paste0(split.lev[re_ord], collapse = ".")
+        for(j in 1:length(.argnames[.is.facet][[i]])){
+          split.lev <-  unlist(.split.facet(.argnames[.is.facet][[i]][j]))
+          .argnames[.is.facet][[i]][j] <- paste0(split.lev[re_ord], collapse = ".")
         }
       }
     }
@@ -216,7 +220,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   #====================snps====================
   if("snp" %in% facets[[2]]){
-    if(any(which(facets[[2]] == "snp") %in% has.negatives)){
+    if(any(which(facets[[2]] == "snp") %in% .has.negatives)){
       .snps <- rep(TRUE, nsnps(x))
     }
     else{
@@ -225,14 +229,14 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     
     snp.facets <- facets[[1]][which(facets[[2]] == "snp")]
     for(i in 1:length(snp.facets)){
-      snp.subfacets <- argnames[[is.facet[which(facets[[2]] == "snp")][i]]]
+      snp.subfacets <- .argnames[[.is.facet[which(facets[[2]] == "snp")][i]]]
       for(j in 1:length(snp.subfacets)){
         new.matches <- .fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
         if(length(new.matches) == 0){
           stop(paste0("No snp found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
           
         }
-        if(which(facets[[2]] == "snp")[i] %in% has.negatives){
+        if(which(facets[[2]] == "snp")[i] %in% .has.negatives){
           .snps[new.matches] <- FALSE
         }
         else{
@@ -247,7 +251,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   if("sample" %in% facets[[2]]){
     
-    if(any(which(facets[[2]] == "sample") %in% has.negatives)){
+    if(any(which(facets[[2]] == "sample") %in% .has.negatives)){
       .samps <- rep(TRUE, nsamps(x))
     }
     else{
@@ -257,13 +261,13 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     
     samp.facets <- facets[[1]][which(facets[[2]] == "sample")]
     for(i in 1:length(samp.facets)){
-      samp.subfacets <- argnames[[is.facet[which(facets[[2]] == "sample")][i]]]
+      samp.subfacets <- .argnames[[.is.facet[which(facets[[2]] == "sample")][i]]]
       for(j in 1:length(samp.subfacets)){
         new.matches <- .fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
         if(length(new.matches) == 0){
           stop(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
         }
-        if(which(facets[[2]] == "sample")[i] %in% has.negatives){
+        if(which(facets[[2]] == "sample")[i] %in% .has.negatives){
           .samps[new.matches] <- FALSE
         }
         else{
