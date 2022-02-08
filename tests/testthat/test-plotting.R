@@ -25,7 +25,7 @@ test_that("structure",{
 test_that("snmf",{
   skip_if_not_installed("LEA")
   
-  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3)
+  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE)
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(as.character(unique(p$plot_data$K)), c("K = 2", "K = 3"))
@@ -38,7 +38,7 @@ test_that("snmf",{
 test_that("snapclust",{
   skip_if_not_installed("adegenet")
   
-  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "snapclust")
+  expect_warning(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "snapclust", clumpp = FALSE), "adegenet maintainers do not")
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(as.character(unique(p$plot_data$K)), c("K = 2", "K = 3"))
@@ -61,7 +61,7 @@ test_that("structure map",{
   psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 
   # get the assignments
-  assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3) # get structure-like results
+  assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE) # get structure-like results
 
   # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
   background <- maps::map("state", "oregon")
@@ -110,10 +110,10 @@ test_that("manhattan plots", {
   skip_if_not_installed(c("GMMAT", "AGHmatrix"))
   asso <- stickSNPs[pop = "ASP"]
   set.seed(1212)
-  sample.meta(asso)$cat_phenotype <- sample(c("A", "B"), ncol(asso), replace = TRUE)
-  asso <- calc_association(asso, response = "cat_phenotype")
+  sample.meta(asso)$cat_phenotype <- sample(c("case", "control"), ncol(asso), replace = TRUE)
+  expect_warning(asso <- calc_association(asso, response = "cat_phenotype"), "Variance estimate on the boundary of the parameter space observed, refitting model")
   
-  p <- plot_manhattan(asso, "gmmat_pval_cat_phenotype", chr = "group", log.p = TRUE)
+  p <- plot_manhattan(asso, "gmmat_pval_cat_phenotype", chr = "chr", log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
 })
 
@@ -130,14 +130,14 @@ test_that("manhattan plots", {
 
 #=================LD======================
 test_that("LD heatmap", {
-  ld <- calc_pairwise_ld(stickSNPs, "pop.group", subfacets = list(pop = c("ASP", "PAL"), group = c("groupXIX", "groupIV")))
-  p <- plot_pairwise_LD_heatmap(ld, "pop.group")
+  ld <- calc_pairwise_ld(stickSNPs, "pop.chr", subfacets = list(pop = c("ASP", "PAL"), chr = c("groupXIX", "groupIV")))
+  p <- plot_pairwise_LD_heatmap(ld, "pop.chr")
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(unique(p$plot$data$snp.subfacet), c("groupXIX", "groupIV"))
   expect_equal(unique(p$plot$data$var), c("ASP", "PAL"))
   
-  p2 <- plot_pairwise_LD_heatmap(ld, "pop.group", snp.subfacet = "groupIV", sample.subfacet = "ASP")
+  p2 <- plot_pairwise_LD_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
   expect_true(ggplot2::is.ggplot(p2$plot))
   expect_equal(unique(p2$plot$data$snp.subfacet), c("groupIV"))
   expect_equal(unique(p2$plot$data$var), c("ASP"))
@@ -165,21 +165,21 @@ test_that("tree plot",{
   }
   
   
-  tree <- plot_tree(stickSNPs)
+  tree <- plot_tree(stickSNPs, update_bib = FALSE)
   
   expect_true(ggplot2::is.ggplot(tree$.base$.base$plot))
   expect_true(all(colnames(stickSNPs) %in% tree$.base$.base$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, facets = "pop")
+  tree <- plot_tree(stickSNPs, facets = "pop", update_bib = FALSE)
   expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
   expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$pop$.base$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, "pop.group")
-  expect_true(all(unlist(lapply(purrr::map(tree$group.pop, "plot"), ggplot2::is.ggplot))))
-  expect_equal(names(tree$group.pop), unique(snp.meta(stickSNPs)$group))
-  expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$group.pop$groupV$plot$data$label))
+  tree <- plot_tree(stickSNPs, "pop.chr", update_bib = FALSE)
+  expect_true(all(unlist(lapply(purrr::map(tree$chr.pop, "plot"), ggplot2::is.ggplot))))
+  expect_equal(names(tree$chr.pop), unique(snp.meta(stickSNPs)$chr))
+  expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$chr.pop$groupV$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, "pop", boot = 3)
+  tree <- plot_tree(stickSNPs, "pop", boot = 3, update_bib = FALSE)
   expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
   vals <- as.numeric(gsub("%", "", tree$pop$.base$plot$data$label[-which(tree$pop$.base$plot$data$label %in% sample.meta(stickSNPs)$pop)]))
   expect_true(all(vals <= 100 & vals >= 0 & !is.na(vals)))
@@ -189,25 +189,25 @@ test_that("tree plot",{
 #============sfs========
 test_that("sfs plot",{
   # 1D
-  sfs <- plot_sfs(stickSNPs, projection = 100)
+  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
   expect_true(ggplot2::is.ggplot(sfs))
   expect_true(sum(sfs$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(unique(sfs$data$p1), 0)
   expect_true(max(sfs$data$p2[which(!is.na(sfs$data$N))]) <= 100/2) # folded
 
   # 2D
-  sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  expect_warning(sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
   expect_true(ggplot2::is.ggplot(sfs2))
   expect_true(sum(sfs2$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 50) # folded
   
   
   # works with sfs provided
-  sfsp <- calc_sfs(stickSNPs, projection = 100)
+  expect_warning(sfsp <- calc_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
   sfsp <- plot_sfs(sfs = sfsp)
   expect_identical(sfs$data, sfsp$data)
   
-  sfsp2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  expect_warning(sfsp2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
   sfsp2 <- plot_sfs(sfs = sfsp2)
   expect_identical(sfs2$data, sfsp2$data)
 })

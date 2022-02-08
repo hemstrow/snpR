@@ -68,7 +68,7 @@ test_that("random forest",{
   expect_equal(length(rf$models), 1)
   expect_equal(unique(rfstats$single$subfacet), c(".base"))
   expect_equal(unique(rfstats$single$facet), c(".base"))
-  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "group", "position", "phenotype_RF_importance"))
+  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
 
   # several facets
   rf <- run_random_forest(asdat, facets = "pop", response = "phenotype", pvals = FALSE)
@@ -81,8 +81,8 @@ test_that("random forest",{
   expect_equal(unique(rfstats$single$subfacet), c("ASP", "PAL"))
   expect_equal(unique(rfstats$single$facet), c("pop"))
   expect_true("phenotype_RF_importance" %in% colnames(rfstats$single))
-  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "group", "position", "phenotype_RF_importance"))
-  str <- .paste.by.facet(rfstats$single, c("group", "position"))
+  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
+  str <- .paste.by.facet(rfstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
   
   
@@ -92,7 +92,7 @@ test_that("random forest",{
   expect_equal(rf$models$.base_.base$covariate_importance$variable, "phenotype")
   
   # pvals
-  rf <- run_random_forest(asdat, response = "cat_phenotype", formula = cat_phenotype ~ phenotype, pvals = TRUE)
+  expect_warning(rf <- run_random_forest(asdat, response = "cat_phenotype", formula = cat_phenotype ~ phenotype, pvals = TRUE), "Consider the 'altmann' approach.")
   expect_true("p_val" %in% colnames(rf$models$.base_.base$covariate_importance))
   expect_true("cat_phenotype_RF_importance_pvals" %in% colnames(get.snpR.stats(rf$x, stats = "random_forest")$single))
   rfstats <- get.snpR.stats(rf$x, stats = "random_forest")
@@ -114,7 +114,7 @@ test_that("genomic prediction",{
   expect_equal(length(gp$models), 1)
   expect_equal(unique(gpstats$single$subfacet), c(".base"))
   expect_equal(unique(gpstats$single$facet), c(".base"))
-  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "group", "position", "phenotype_gp_effect"))
+  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", "phenotype_gp_effect"))
 
   # with facets
   gp <- run_genomic_prediction(asdat, facets = "pop", response = "phenotype", iterations = 200, burn_in = 100, thin = 10)
@@ -126,8 +126,8 @@ test_that("genomic prediction",{
   expect_equal(dim(gp$models$pop_PAL$predictions), c(5, 2))
   expect_equal(unique(gpstats$single$subfacet), c("ASP", "PAL"))
   expect_equal(unique(gpstats$single$facet), c("pop"))
-  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "group", "position", "phenotype_gp_effect"))
-  str <- .paste.by.facet(gpstats$single, c("group", "position"))
+  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", "phenotype_gp_effect"))
+  str <- .paste.by.facet(gpstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
   
   
@@ -135,11 +135,11 @@ test_that("genomic prediction",{
   gp <- run_genomic_prediction(asdat, response = "phenotype", iterations = 200, burn_in = 100, thin = 10)
   gp <- run_genomic_prediction(gp$x, facets = "pop", response = "phenotype", iterations = 200, burn_in = 100, thin = 10)
   gpstats <- get.snpR.stats(gp$x, facets = "pop", stats = "genomic_prediction")
-  str <- .paste.by.facet(gpstats$single, c("group", "position"))
+  str <- .paste.by.facet(gpstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
   
   gpstats <- get.snpR.stats(gp$x, stats = "genomic_prediction")
-  str <- .paste.by.facet(gpstats$single, c("group", "position"))
+  str <- .paste.by.facet(gpstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(1, nrow(asdat))) # each snp has calcs for each pop
   
   

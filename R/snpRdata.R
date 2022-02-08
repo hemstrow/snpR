@@ -352,7 +352,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' ## not run:
 #' # from plink:
 #' # make plink data
-#' format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "group")
+#' format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "chr")
 #'
 #' # read plink
 #' dat <- import.snpR.data("plink_test.bed")
@@ -649,8 +649,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' get.snpR.stats(dat, "pop", c("pi", "fst"))
 #' 
 #' # return a type of statistic instead of specific statistics
-#' dat <- calc_ho(stickSNPs, "group.pop")
-#' get.snpR.stats(dat, "group.pop", "weighted.means")
+#' dat <- calc_ho(stickSNPs, "chr.pop")
+#' get.snpR.stats(dat, "chr.pop", "weighted.means")
 #' 
 get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALSE){
   if(length(stats) == 1 & stats[1] %in% 

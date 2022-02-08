@@ -94,9 +94,9 @@ NULL
 #'facet can contain multiple snp and/or sample levels. Multiple facets can be
 #'run with a single line of code.
 #'
-#'For example, c("group.pop", "pop") would split the data first by both group
+#'For example, c("chr.pop", "pop") would split the data first by both chr
 #'and pop and then by pop alone. This will produce the same result as running
-#'the function with both "group.pop" and then again with "pop", although the
+#'the function with both "chr.pop" and then again with "pop", although the
 #'former is typically more computationally efficient.
 #'
 #'If multiple sample or snp levels are provided in a single facet, the data is
@@ -253,8 +253,8 @@ calc_maf <- function(x, facets = NULL){
 #'
 #' @examples
 #' # broken by population, windows across linkage group
-#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
-#' get.snpR.stats(x, "group.pop", "single.window")
+#' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
+#' get.snpR.stats(x, "chr.pop", "single.window")
 #'
 #' # the entire population at once, note that sigma and step are NULL and 
 #' # no chromosome/linkage group/scaffold/etc set.
@@ -263,9 +263,9 @@ calc_maf <- function(x, facets = NULL){
 #' get.snpR.stats(x, "pop", "single.window")
 #'
 #' # for the overall dataset, note that sigma and step are NULL
-#' # this will calculate overall tajima's D for each group/pop
-#' x <- calc_tajimas_d(stickSNPs, facets = "group.pop")
-#' get.snpR.stats(x, "pop.group", "single.window")
+#' # this will calculate overall tajima's D for each chr/pop
+#' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
+#' get.snpR.stats(x, "pop.chr", "single.window")
 #'
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
@@ -1139,28 +1139,28 @@ calc_private <- function(x, facets = NULL){
 #' \dontrun{
 #' # not run, slow
 #' ## CLD
-#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
-#' get.snpR.stats(x, "group.pop", "LD")
+#' x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop")
+#' get.snpR.stats(x, "chr.pop", "LD")
 #'
 #' ## standard haplotype frequency estimation
-#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
-#' get.snpR.stats(x, "group.pop", "LD")
+#' x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop", CLD = FALSE)
+#' get.snpR.stats(x, "chr.pop", "LD")
 #' }
 #'
 #' # subset for specific subfacets (ASP and OPL, chromosome IX)
-#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop",
+#' x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop",
 #'                       subfacets = list(pop = c("ASP", "OPL"), 
-#'                                        group = "groupIX"))
-#' get.snpR.stats(x, "group.pop", "LD")
+#'                                        chr = "groupIX"))
+#' get.snpR.stats(x, "chr.pop", "LD")
 #' 
 #' \dontrun{
 #' ## not run, really slow
 #' # ME haplotype estimation
-#' x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", 
+#' x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop", 
 #'                       CLD = FALSE, use.ME = TRUE,
 #'                       subfacets = list(pop = c("ASP", "OPL"), 
-#'                                        group = "groupIX"))
-#' get.snpR.stats(x, "group.pop", "LD")
+#'                                        chr = "groupIX"))
+#' get.snpR.stats(x, "chr.pop", "LD")
 #' }
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                              par = FALSE, sr = FALSE, CLD = "only", use.ME = FALSE, sigma = 0.0001){
@@ -2198,12 +2198,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #=====================facets=================
     # approach/psuedo-code:
-    # Each facet is a level to break down by. "pop" means break by pop, c("pop", "group") means break twice, once by pop, once by group,
-    # c("pop.group") means to break by pop and group.
+    # Each facet is a level to break down by. "pop" means break by pop, c("pop", "chr") means break twice, once by pop, once by chr,
+    # c("pop.chr") means to break by pop and chr.
     # For each sample level facet, we must loop through all snps, since D values will be different depending on what samples we look at.
     # These must be looped through seperately!
     # If there are multiple snp level facets requested, there is no reason to do re-do snp/snp comparisons within each sample level facet. Just do the all of the relevent snp/snp comparisons.
-    # If there are complex facets with repeated sample levels (c("pop.group", "pop.subgroup")), then same deal.
+    # If there are complex facets with repeated sample levels (c("pop.chr", "pop.subchr")), then same deal.
 
     # So:
     #     For each sample level facet:
@@ -2798,7 +2798,6 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 
     # otherwise we have to use the looped version:
     else if(method == "exact"){
-      cat("Using exact test from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005).\n")
       out <- numeric(nrow(gs))
       for(i in 1:nrow(gs)){
         out[i] <- exact.hwe(oqq[i], opp[i], o2pq[i])
@@ -2982,8 +2981,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' get.snpR.stats(x, stats = "het_hom_ratio")
 #'
 #' # facet by chromosome
-#' x <- calc_het_hom_ratio(stickSNPs, "group")
-#' get.snpR.stats(x, "group", stats = "het_hom_ratio")
+#' x <- calc_het_hom_ratio(stickSNPs, "chr")
+#' get.snpR.stats(x, "chr", stats = "het_hom_ratio")
 #'
 #'
 #' 
@@ -3087,8 +3086,8 @@ calc_het_hom_ratio <- function(x, facets = NULL, complex_averages = FALSE){
 #' \dontrun{
 #' # not run, since the path to NeEstimator may vary
 #' # calculate Ne, noting not to use LD between SNPs on the 
-#' # same chromosome equivalent ("group") for every population.
-#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
+#' # same chromosome equivalent ("chr") for every population.
+#' ne <- calc_ne(stickSNPs, facets = "pop", chr = "chr")
 #' get.snpR.stats(ne, "pop", type = "pop")}
 #' 
 #' @export
@@ -3202,15 +3201,15 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 #' get.snpR.stats(y, "pop", "genetic_distance")
 #'
-#' # by group and pop jointly
-#' y <- calc_genetic_distances(stickSNPs, facets = "pop.group", 
+#' # by chr and pop jointly
+#' y <- calc_genetic_distances(stickSNPs, facets = "pop.chr", 
 #'                             method = "Edwards")
-#' get.snpR.stats(y, "pop.group", "genetic_distance")
+#' get.snpR.stats(y, "pop.chr", "genetic_distance")
 #'
 #' # by pop and fam seperately
 #' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
 #'                             method = "Edwards")
-#' get.snpR.stats(y, c("pop", "group"), "genetic_distance")
+#' get.snpR.stats(y, c("pop", "chr"), "genetic_distance")
 #'
 #' # individuals across all snps + plot
 #' y <- calc_genetic_distances(stickSNPs)
@@ -3389,10 +3388,10 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #' @examples # calculate ibd for several different facets
 #' y <- stickSNPs
 #' sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
-#' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
-#' res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results
+#' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
+#' res <- get.snpR.stats(y, "pop.chr", "ibd") # fetch results
 #' res
-#' plot(res$group.pop$groupV$Edwards) # plot perms vs observed
+#' plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
 #' 
 calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", interpolate = "bernoulli", ...){
   #================sanity checks=============================================

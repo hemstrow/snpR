@@ -76,13 +76,13 @@ efficiency (see Hohenlohe (2010)).
 }
 \examples{
 # add a few statistics
-x <- calc_pi(stickSNPs, "group.pop")
-x <- calc_ho(x, "group.pop")
-x <- calc_pairwise_fst(x, "group.pop")
+x <- calc_pi(stickSNPs, "chr.pop")
+x <- calc_ho(x, "chr.pop")
+x <- calc_pairwise_fst(x, "chr.pop")
 # smooth with a fixed slide between window centers.
-x <- calc_smoothed_averages(x, "group.pop", sigma = 200, step = 50)
-get.snpR.stats(x, "group.pop", "single.window") # pi, ho
-get.snpR.stats(x, "group.pop", "pairwise.window") # fst
+x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
+get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
+get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
 
 }
 \references{

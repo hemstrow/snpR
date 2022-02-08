@@ -4,7 +4,7 @@ tdm <- calc_basic_snp_stats(.internal.data$test_snps, c("pop", ".base"))
 
 test_that("maf",{
   # run function
-  expect_true(check_calced_stats(tdm, "pop", "maf")$pop["maf"])
+  expect_true(.check_calced_stats(tdm, "pop", "maf")$pop["maf"])
   maf <- head(get.snpR.stats(tdm, "pop", "maf")$single, 2)
   
   # test
@@ -19,7 +19,7 @@ test_that("maf",{
 
 test_that("pi",{
   # run function
-  expect_true(all(unlist(check_calced_stats(tdm, c(".base", "pop"), "pi"))))
+  expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "pi"))))
   pi <- get.snpR.stats(tdm, c(".base", "pop"), "pi")$single
 
   # test
@@ -28,7 +28,7 @@ test_that("pi",{
 
 test_that("ho", {
   # run function
-  expect_true(all(unlist(check_calced_stats(tdm, c(".base", "pop"), "ho"))))
+  expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "ho"))))
   ho <- get.snpR.stats(tdm, c("pop", ".base"), "ho")$single
   
   rs <- rowSums(tdm@geno.tables$gs)
@@ -39,7 +39,7 @@ test_that("ho", {
 
 test_that("private", {
   tdm <- calc_private(tdm, "pop")
-  expect_true(all(unlist(check_calced_stats(tdm, c("pop"), "pa"))))
+  expect_true(all(unlist(.check_calced_stats(tdm, c("pop"), "pa"))))
   pa <- get.snpR.stats(tdm, "pop", "private")$single
   
   expect_equal(pa$pa, c(1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0)) # hand calced
@@ -49,7 +49,7 @@ test_that("hwe", {
   # bigger sample size needed
   suppressWarnings(tdhwe <- subset_snpR_data(stickSNPs, 1:10, 1:10))
   tdhwe <- calc_hwe(tdhwe, ".base")
-  expect_true(all(unlist(check_calced_stats(tdhwe, ".base", "hwe"))))
+  expect_true(all(unlist(.check_calced_stats(tdhwe, ".base", "hwe"))))
   hwe.exact <- get.snpR.stats(tdhwe, ".base", "hwe")$single
   
   # exact

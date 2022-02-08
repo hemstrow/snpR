@@ -83,8 +83,8 @@ for NeEstimator v2.
 \dontrun{
 # not run, since the path to NeEstimator may vary
 # calculate Ne, noting not to use LD between SNPs on the 
-# same chromosome equivalent ("group") for every population.
-ne <- calc_ne(stickSNPs, facets = "pop", chr = "group")
+# same chromosome equivalent ("chr") for every population.
+ne <- calc_ne(stickSNPs, facets = "pop", chr = "chr")
 get.snpR.stats(ne, "pop", type = "pop")}
 
 }

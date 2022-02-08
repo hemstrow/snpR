@@ -62,7 +62,7 @@ designated as described in \code{\link{Facets_in_snpR}}.
 # Keep only individuals in the ASP and PAL populations 
 # and on the LGIX or LGIV chromosome.
 subset_snpR_data(stickSNPs, pop = c("ASP", "PAL"), 
-                 group = c("groupIX", "groupIV"))
+                 chr = c("groupIX", "groupIV"))
                  
 # keep individuals/SNPs in the first 10 columns/rows.
 subset_snpR_data(stickSNPs, 1:10, 1:10)
@@ -73,10 +73,10 @@ subset_snpR_data(stickSNPs, fam = -"B")
 # negative subscripts: remove individuals in pop PAL AND fam B or C, 
 # and keep only SNPs on LGIV
 subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
-                 group = "groupIV")
+                 chr = "groupIV")
                  
 # using the bracket operator, same as example 1
-stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
+stickSNPs[pop = c("ASP", "PAL"), chr = c("groupIX", "groupIV")]
 
 # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
 # fam = B

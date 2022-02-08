@@ -63,10 +63,10 @@ values.
 # calculate ibd for several different facets
 y <- stickSNPs
 sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
-y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
-res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results
+y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
+res <- get.snpR.stats(y, "pop.chr", "ibd") # fetch results
 res
-plot(res$group.pop$groupV$Edwards) # plot perms vs observed
+plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
 
 }
 \seealso{

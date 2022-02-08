@@ -13,7 +13,7 @@ calc_pairwise_ld(
   sr = FALSE,
   CLD = "only",
   use.ME = FALSE,
-  sigma = 1e-04
+  sigma = 0.0001
 )
 }
 \arguments{
@@ -90,28 +90,28 @@ Heatmaps of the resulting data can be easily plotted using
 \dontrun{
 # not run, slow
 ## CLD
-x <- calc_pairwise_ld(stickSNPs, facets = "group.pop")
-get.snpR.stats(x, "group.pop", "LD")
+x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop")
+get.snpR.stats(x, "chr.pop", "LD")
 
 ## standard haplotype frequency estimation
-x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", CLD = FALSE)
-get.snpR.stats(x, "group.pop", "LD")
+x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop", CLD = FALSE)
+get.snpR.stats(x, "chr.pop", "LD")
 }
 
 # subset for specific subfacets (ASP and OPL, chromosome IX)
-x <- calc_pairwise_ld(stickSNPs, facets = "group.pop",
+x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop",
                       subfacets = list(pop = c("ASP", "OPL"), 
-                                       group = "groupIX"))
-get.snpR.stats(x, "group.pop", "LD")
+                                       chr = "groupIX"))
+get.snpR.stats(x, "chr.pop", "LD")
 
 \dontrun{
 ## not run, really slow
 # ME haplotype estimation
-x <- calc_pairwise_ld(stickSNPs, facets = "group.pop", 
+x <- calc_pairwise_ld(stickSNPs, facets = "chr.pop", 
                       CLD = FALSE, use.ME = TRUE,
                       subfacets = list(pop = c("ASP", "OPL"), 
-                                       group = "groupIX"))
-get.snpR.stats(x, "group.pop", "LD")
+                                       chr = "groupIX"))
+get.snpR.stats(x, "chr.pop", "LD")
 }
 }
 \references{

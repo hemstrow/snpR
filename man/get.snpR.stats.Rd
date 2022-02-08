@@ -92,8 +92,8 @@ get.snpR.stats(dat, "pop", "fst")
 get.snpR.stats(dat, "pop", c("pi", "fst"))
 
 # return a type of statistic instead of specific statistics
-dat <- calc_ho(stickSNPs, "group.pop")
-get.snpR.stats(dat, "group.pop", "weighted.means")
+dat <- calc_ho(stickSNPs, "chr.pop")
+get.snpR.stats(dat, "chr.pop", "weighted.means")
 
 }
 \author{

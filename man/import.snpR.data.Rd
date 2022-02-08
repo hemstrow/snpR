@@ -206,7 +206,7 @@ dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt",
 ## not run:
 # from plink:
 # make plink data
-format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "group")
+format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "chr")
 
 # read plink
 dat <- import.snpR.data("plink_test.bed")

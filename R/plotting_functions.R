@@ -52,13 +52,13 @@
 #'
 #' @examples
 #' # get LD data
-#' dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
+#' dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 #'
 #' # produce plots for linkage group IX in the ASP and CLF populations.
-#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIX", c("ASP", "CLF"))
+#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
 #'
 #' # produce plots for every population for linkage group IV
-#' plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIV")
+#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
 #'
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
@@ -776,7 +776,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     stats <- c(stats, "UMAP")
     details <- c(details, "Uniform Manifold Approximation and Projection (UMAP)")
   }
-  .yell_citation(keys, stats, details, update_bib)
+  
+  if(length(keys) > 0){
+    .yell_citation(keys, stats, details, update_bib)
+  }
   
   return(list(data = plot_dats, plots = plots))
 }
@@ -887,33 +890,33 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' x <- stickSNPs
 #' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
-#' plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
 #'                log.p = TRUE)
 #' 
 #' 
 #' # other types of stats:
 #' # make some data
-#' x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
+#' x <- calc_basic_snp_stats(stickSNPs, "pop.chr", sigma = 200, step = 50)
 #'
 #' # plot pi, breaking apart by population, keeping only the groupIX and
 #' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
 #' # significant and suggestive lines plotted and SNPs
 #' # with pi below the significance level labeled.
 #' plot_manhattan(x, "pi", facets = "pop",
-#' chr = "group", chr.subfacet = c("groupIX", "groupIV"),
+#' chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
 #' sample.subfacet = c("ASP", "OPL", "SMR"),
 #' significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 #'
 #' # plot FST for the ASP/PAL comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
-#' plot_manhattan(x, "fst", facets = "pop.group",
+#' plot_manhattan(x, "fst", facets = "pop.chr",
 #' sample.subfacet = "ASP~PAL", highlight = 1:20,
-#' chr = "group", snp = ".snp.id")
+#' chr = "chr", snp = ".snp.id")
 #'
 #' # plot sliding-window FST between ASP and CLF
 #' # and between OPL and SMR
-#' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
-#' chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+#' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
+#' chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 #' significant = .29, suggestive = .2)
 #'
 #' # plot using a data.frame,
@@ -921,7 +924,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' ## grab data
 #' y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 #' ## plot
-#' plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
+#' plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 #' significant = 0.0001, suggestive = 0.001,
 #' log.p = TRUE, highlight = FALSE)
 #' 
@@ -3326,7 +3329,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #' # Calculate nj trees for the base facet, each chromosome, and for each population.
 #' # Note: Examples not run due to odd ape interaction. Work interactively.
 #' \dontrun{
-#' tp <- plot_tree(stickSNPs, c(".base", "pop", "group"), 
+#' tp <- plot_tree(stickSNPs, c(".base", "pop", "chr"), 
 #'                 root = c(FALSE, "PAL", FALSE))
 #' tp$pop$.base$plot # View the resulting plot
 #' 
@@ -3561,7 +3564,9 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     details <- c(details, "tree construction")
   }
   
-  .yell_citation(keys, stats, details, outbib)
+  if(length(keys) > 0){
+    .yell_citation(keys, stats, details, update_bib)
+  }
   
   # return
   return(out)

@@ -743,11 +743,12 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     # run the test
     nmeta.col <- 2 + ncol(sub.x@snp.meta)
     utils::write.table(asso.in, "asso_in.txt", sep = "\t", quote = F, col.names = F, row.names = F)
-    score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
-                                   "asso_out_score.txt",
-                                   infile.ncol.skip = nmeta.col,
-                                   infile.ncol.print = 1:nmeta.col,
-                                   infile.header.print = colnames(asso.in)[1:nmeta.col])
+    pkgcond::suppress_warnings(score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
+                                                              "asso_out_score.txt",
+                                                              infile.ncol.skip = nmeta.col,
+                                                              infile.ncol.print = 1:nmeta.col,
+                                                              infile.header.print = colnames(asso.in)[1:nmeta.col]), 
+                               pattern = "Assuming the order of individuals in infile matches")
     score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
     file.remove(c("asso_in.txt", "asso_out_score.txt"))

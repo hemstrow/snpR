@@ -150,33 +150,33 @@ named by the "snp" argument.
 x <- stickSNPs
 sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 x <- calc_association(x, response = "phenotype", method = "armitage")
-plot_manhattan(x, "p_armitage_phenotype", chr = "group", 
+plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
                log.p = TRUE)
 
 
 # other types of stats:
 # make some data
-x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
+x <- calc_basic_snp_stats(stickSNPs, "pop.chr", sigma = 200, step = 50)
 
 # plot pi, breaking apart by population, keeping only the groupIX and
 # groupIV chromosomes and the ASP, PAL, and SMR populations, with
 # significant and suggestive lines plotted and SNPs
 # with pi below the significance level labeled.
 plot_manhattan(x, "pi", facets = "pop",
-chr = "group", chr.subfacet = c("groupIX", "groupIV"),
+chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
 sample.subfacet = c("ASP", "OPL", "SMR"),
 significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 
 # plot FST for the ASP/PAL comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID
-plot_manhattan(x, "fst", facets = "pop.group",
+plot_manhattan(x, "fst", facets = "pop.chr",
 sample.subfacet = "ASP~PAL", highlight = 1:20,
-chr = "group", snp = ".snp.id")
+chr = "chr", snp = ".snp.id")
 
 # plot sliding-window FST between ASP and CLF
 # and between OPL and SMR
-plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
-chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
+chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 significant = .29, suggestive = .2)
 
 # plot using a data.frame,
@@ -184,7 +184,7 @@ significant = .29, suggestive = .2)
 ## grab data
 y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 ## plot
-plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
+plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 significant = 0.0001, suggestive = 0.001,
 log.p = TRUE, highlight = FALSE)
 

@@ -180,7 +180,7 @@ For snpRdata GWAS results, this can be done by handing plot_manhattan() a snpRda
 colnames(get.snpR.stats(x, stats = "association")$single) # a reminder of the statistics we calculated earlier.
 p <- plot_manhattan(x, 
                plot_var = "gmmat_pval_phenotype", # value to plot 
-               chr = "group", # specify the snp metadata column containing chr info
+               chr = "chr", # specify the snp metadata column containing chr info
                bp = "position",
                log.p = T) # plot the -log10 of the p-values
 
@@ -193,7 +193,7 @@ Results from RFs of GPs can be plotted as well (as well as any other SNP statist
 # plot
 p <- plot_manhattan(rf$x, 
                plot_var = "weight_RF_importance", # value to plot 
-               chr = "group", # specify the snp metadata column containing chr info
+               chr = "chr", # specify the snp metadata column containing chr info
                bp = "position")
 p$plot
 
@@ -208,7 +208,7 @@ plot_dat <- get.snpR.stats(rf$x, stats = "random_forest")$single
 head(plot_dat)
 
 # plot
-p <- plot_manhattan(plot_dat, plot_var = "weight_RF_importance", chr = "group", bp = "position")
+p <- plot_manhattan(plot_dat, plot_var = "weight_RF_importance", chr = "chr", bp = "position")
 p$plot # looks the same!
 ```
 

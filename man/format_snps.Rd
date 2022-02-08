@@ -249,7 +249,7 @@ format_snps(dat, "dadi", facets = "pop")
 
 #PLINK! format, not run to avoid file creation
 \dontrun{
-format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
+format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
 
 
 #PLINK! format with provided ped
@@ -258,7 +258,7 @@ ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420,
                   sex = sample(1:2, 420, replace = TRUE), 
                   pheno = sample(1:2, 420, replace = TRUE))
 format_snps(stickSNPs, "plink", outfile = "plink_out", 
-            ped = ped, chr = "group")
+            ped = ped, chr = "chr")
 #note that a column in the sample metadata containing phenotypic information
 #can be provided to the "phenotype" argument if wished.
 
@@ -276,7 +276,7 @@ format_snps(x=a, output = "sequoia")
 
 
 # VCF format
-test <- format_snps(stickSNPs, "vcf", chr = "group")
+test <- format_snps(stickSNPs, "vcf", chr = "chr")
 }
 \author{
 William Hemstrom

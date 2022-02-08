@@ -37,7 +37,7 @@
 #' # Keep only individuals in the ASP and PAL populations 
 #' # and on the LGIX or LGIV chromosome.
 #' subset_snpR_data(stickSNPs, pop = c("ASP", "PAL"), 
-#'                  group = c("groupIX", "groupIV"))
+#'                  chr = c("groupIX", "groupIV"))
 #'                  
 #' # keep individuals/SNPs in the first 10 columns/rows.
 #' subset_snpR_data(stickSNPs, 1:10, 1:10)
@@ -48,10 +48,10 @@
 #' # negative subscripts: remove individuals in pop PAL AND fam B or C, 
 #' # and keep only SNPs on LGIV
 #' subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
-#'                  group = "groupIV")
+#'                  chr = "groupIV")
 #'                  
 #' # using the bracket operator, same as example 1
-#' stickSNPs[pop = c("ASP", "PAL"), group = c("groupIX", "groupIV")]
+#' stickSNPs[pop = c("ASP", "PAL"), chr = c("groupIX", "groupIV")]
 #' 
 #' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
 #' # fam = B
@@ -83,7 +83,15 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     .argnames[.is.facet][.has.negatives][!.single.part] <- lapply(.argnames[.is.facet][.has.negatives][!.single.part], str2lang)
     ## eval
     for(.candidate_facets in 1:length(.is.facet)){
-      .argnames[.is.facet][.candidate_facets] <- eval(parse(text = .argnames[.is.facet][.candidate_facets]))
+      if(any(names(.argnames[.is.facet][.candidate_facets]) %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
+        stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+      }
+      
+      # the eval won't work if a string is given without "c()", so fix that
+      if(!grepl("c\\(", .argnames[.is.facet][.candidate_facets])){
+        .argnames[.is.facet][.candidate_facets] <- paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")")
+      }
+      .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = .argnames[.is.facet][.candidate_facets])))
     }
     
     
@@ -1113,7 +1121,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'
 #' #PLINK! format, not run to avoid file creation
 #' \dontrun{
-#' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "group")
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
 #' 
 #' 
 #' #PLINK! format with provided ped
@@ -1122,7 +1130,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'                   sex = sample(1:2, 420, replace = TRUE), 
 #'                   pheno = sample(1:2, 420, replace = TRUE))
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", 
-#'             ped = ped, chr = "group")
+#'             ped = ped, chr = "chr")
 #' #note that a column in the sample metadata containing phenotypic information
 #' #can be provided to the "phenotype" argument if wished.
 #'
@@ -1140,7 +1148,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'
 #'
 #' # VCF format
-#' test <- format_snps(stickSNPs, "vcf", chr = "group")
+#' test <- format_snps(stickSNPs, "vcf", chr = "chr")
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
@@ -2665,11 +2673,11 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
 #' 
 #' @examples 
 #' # put large gaps inbetween the example data
-#' gapped <- gap_snps(stickSNPs, "group", 100000)
+#' gapped <- gap_snps(stickSNPs, "chr", 100000)
 #'
 #' # filter first to grab only very good SNPs
 #' vgood <- filter_snps(stickSNPs, min_ind = .8)
-#' gapped <- gap_snps(vgood, "group", 100000)
+#' gapped <- gap_snps(vgood, "chr", 100000)
 gap_snps <- function(x, facet = NULL, n){
   #==========sanity checks=========
   if(!is.snpRdata(x)){
@@ -2688,7 +2696,7 @@ gap_snps <- function(x, facet = NULL, n){
   
   if(length(facet) != 1){
     msg <- c(msg, "Only one facet may be provided to gap_snps. Note that complex
-             SNP facets may be used (e.g. chr.group).")
+             SNP facets may be used (e.g. chr.scaffold).")
   }
   
   if(!"position" %in% colnames(snp.meta(x))){

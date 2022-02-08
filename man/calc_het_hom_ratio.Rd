@@ -30,8 +30,8 @@ x <- calc_het_hom_ratio(stickSNPs)
 get.snpR.stats(x, stats = "het_hom_ratio")
 
 # facet by chromosome
-x <- calc_het_hom_ratio(stickSNPs, "group")
-get.snpR.stats(x, "group", stats = "het_hom_ratio")
+x <- calc_het_hom_ratio(stickSNPs, "chr")
+get.snpR.stats(x, "chr", stats = "het_hom_ratio")
 
 
 

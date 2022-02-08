@@ -17,6 +17,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
+    bibtex,
     bigmemory,
     bigtabulate,
     doSNOW,
@@ -28,6 +29,7 @@ Imports:
     plyr,
     pkgcond,
     purrr,
+    RefManageR,
     reshape2,
     rlang,
     snow,

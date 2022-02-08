@@ -220,7 +220,6 @@ is.snpRdata <- function(x){
 # 
 # @author William Hemstrom
 .apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
-  #=====global bindings====
 
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -371,14 +370,14 @@ is.snpRdata <- function(x){
                                                                               snp.facets = opts[i,3], snp.subfacets = opts[i,4]))))
         }
         
-        suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, maf = maf))))
+        suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, non_poly = FALSE, maf = maf))))
         out <- fun(sub.x = sub.x,  ...)
         if(!is.data.frame(out)){
-          out$.fm <- cbind(facet = opts[i,1], subfacet = opts[i,2])
+          out$.fm <- cbind(facet = opts[i,1], subfacet = opts[i,2], row.names = NULL)
           return(out)
         }
         else{
-          out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out)
+          out <- cbind(facet = opts[i,1], subfacet = opts[i,2], out, row.names = NULL)
           return(out)
         }
       }
@@ -2230,24 +2229,24 @@ is.snpRdata <- function(x){
   return(x)
 }
 
-#' Split a single or multiple compound facet into parts
-#' 
-#' @param facet compound facet(s) to split
+# Split a single or multiple compound facet into parts
+# 
+# @param facet compound facet(s) to split
 .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T)
 
-#' Paste together metadata according to a list of column names
-#' 
-#' @param df data.frame with data do paste
-#' @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
-#' @param sep character, default ".". Pasted facets will be split by this.
+# Paste together metadata according to a list of column names
+# 
+# @param df data.frame with data do paste
+# @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
+# @param sep character, default ".". Pasted facets will be split by this.
 .paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))
 
 
-#' Fixes calling scope warning in .. calls with data.table
-#' 
-#' Needed since ..x vars need to be defined as global variables for CRAN, which data.table will throw a warning about.
-#' 
-#' @param fun function to run
+# Fixes calling scope warning in .. calls with data.table
+# 
+# Needed since ..x vars need to be defined as global variables for CRAN, which data.table will throw a warning about.
+# 
+# @param fun function to run
 .fix..call <- function(fun){
   return(pkgcond::suppress_warnings(fun,"variable in calling scope for clarity"))
 }

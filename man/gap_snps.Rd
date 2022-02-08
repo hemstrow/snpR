@@ -36,11 +36,11 @@ produce undesired results.
 }
 \examples{
 # put large gaps inbetween the example data
-gapped <- gap_snps(stickSNPs, "group", 100000)
+gapped <- gap_snps(stickSNPs, "chr", 100000)
 
 # filter first to grab only very good SNPs
 vgood <- filter_snps(stickSNPs, min_ind = .8)
-gapped <- gap_snps(vgood, "group", 100000)
+gapped <- gap_snps(vgood, "chr", 100000)
 }
 \author{
 William Hemstrom

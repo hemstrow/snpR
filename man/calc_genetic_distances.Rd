@@ -54,15 +54,15 @@ interpolated according to the method provided to the 'interpolate' argument.
 y <- calc_genetic_distances(stickSNPs, facets = "pop", method = "Edwards")
 get.snpR.stats(y, "pop", "genetic_distance")
 
-# by group and pop jointly
-y <- calc_genetic_distances(stickSNPs, facets = "pop.group", 
+# by chr and pop jointly
+y <- calc_genetic_distances(stickSNPs, facets = "pop.chr", 
                             method = "Edwards")
-get.snpR.stats(y, "pop.group", "genetic_distance")
+get.snpR.stats(y, "pop.chr", "genetic_distance")
 
 # by pop and fam seperately
 y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
                             method = "Edwards")
-get.snpR.stats(y, c("pop", "group"), "genetic_distance")
+get.snpR.stats(y, c("pop", "chr"), "genetic_distance")
 
 # individuals across all snps + plot
 y <- calc_genetic_distances(stickSNPs)

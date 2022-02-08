@@ -79,18 +79,18 @@
 #'
 #' @examples
 #' # add statistics
-#' dat <- calc_basic_snp_stats(stickSNPs, "group", sigma = 200, step = 150)
+#' dat <- calc_basic_snp_stats(stickSNPs, "chr", sigma = 200, step = 150)
 #' 
 #' # do bootstraps
-#' dat <- do_bootstraps(dat, facets = "group", boots = 1000, 
+#' dat <- do_bootstraps(dat, facets = "chr", boots = 1000, 
 #'                      sigma = 200, step = 150)
 #' 
 #' # fetch results, bootstraps and then p-values on original stats
-#' get.snpR.stats(dat, "group", "bootstraps")
-#' get.snpR.stats(dat, "group", "single.window")
+#' get.snpR.stats(dat, "chr", "bootstraps")
+#' get.snpR.stats(dat, "chr", "single.window")
 #' 
 do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = TRUE, par = FALSE, do.p = TRUE, p.alt = "two-sided"){
-  #note: it is possible to run all sample level facets at once, so something like c("pop.fam.group", "pop.group") can
+  #note: it is possible to run all sample level facets at once, so something like c("pop.fam.chr", "pop.chr") can
   #      be run simultainously, with no need to loop across facets.
   #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
   #      we need to do everything once for each unique snp level facet defined in the data.
@@ -697,11 +697,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'
 #' @examples
 #' # add statistics and generate bootstraps
-#' x <- calc_basic_snp_stats(stickSNPs, c("group.pop"), sigma = 200, step = 150)
-#' x <- do_bootstraps(x, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+#' x <- calc_basic_snp_stats(stickSNPs, c("chr.pop"), sigma = 200, step = 150)
+#' x <- do_bootstraps(x, facets = c("chr.pop"), boots = 1000, sigma = 200, step = 150)
 #' x <- calc_p_from_bootstraps(x)
-#' get.snpR.stats(x, "group.pop", "single.window") # pi, ho, etc
-#' get.snpR.stats(x, "group.pop", "pairwise.window") # fst
+#' get.snpR.stats(x, "chr.pop", "single.window") # pi, ho, etc
+#' get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
 #'
 calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE,
                                    fwe_method = "BY", 

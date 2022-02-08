@@ -79,10 +79,10 @@ Importing data into snpR can also be done using the format_snps function. This f
 head(stickFORMATs$`0000`)[,1:6]
 
 # get sample metadata, as before.
-sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:3)], 1, 3), stringsAsFactors = F)
 
 # import
-my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 3, input_mDat = "0000", sample.meta = sample_meta)
 ```
 
 The result will be the same as import.snpR.data! There are a handful of other possible data imports that format_snps can handle, these are described in the function's documentation.
@@ -155,7 +155,7 @@ head(ho)
 Facets are a fundamental feature of snpR. Often, SNP data must be separated by population/chromosome/family/year etc. before statistics are calculated. Additionally, many statistics, like Fst, need to be calculated *pairwise* by comparing each population to every other population. Facets allow you to easily do this without the need for direct data manipulation. 
 
 #### Basic Facets
-Facets are defined by reference to column names in either the snp or sample metadata that was provided when creating a snpRdata object. For example, the facet "pop" would split my.dat apart by the pop column in the sample metadata and run the requested function or calculation for each of the levels/subfacets within that facet (eg. the facet pop comprises 6 levels/subfacets - ASP, CLF, OPL, PAL, SMR, UPD). Whereas the facet "group" would split my.dat apart by the "group" column in the snp metadata (21 levels/subfacets) and run any specified calculation for each unique level/subfacet. 
+Facets are defined by reference to column names in either the snp or sample metadata that was provided when creating a snpRdata object. For example, the facet "pop" would split my.dat apart by the pop column in the sample metadata and run the requested function or calculation for each of the levels/subfacets within that facet (eg. the facet pop comprises 6 levels/subfacets - ASP, CLF, OPL, PAL, SMR, UPD). Whereas the facet "chr" would split my.dat apart by the "chr" column in the snp metadata (21 levels/subfacets) and run any specified calculation for each unique level/subfacet. 
 
 To calculate observed heterozygosity at each SNP within each population, for example, one can supply the "pop" facet.
 
@@ -167,18 +167,18 @@ head(get.snpR.stats(my.dat, facets = "pop", stats = "single")) #retrieving the r
 
 #### Complex Facets
 
-Facets can define more than one column at once, in which case the data is split by *both* columns! Within a single facet, column names are separated by a '.'.  For example, if there was both a pop and fam (or family) column in the sample metadata, the facet "pop.fam" would split by both the pop and the fam columns simultaneously, so it would have categories like "popA.famB" for an individual from population A, family B. These "complex" facets can also note both SNP and sample-specific categories simultaneously, for example, "pop.group" would split the data by the pop column in the sample metadata and the group column in the SNP metadata simultaneously. 
+Facets can define more than one column at once, in which case the data is split by *both* columns! Within a single facet, column names are separated by a '.'.  For example, if there was both a pop and fam (or family) column in the sample metadata, the facet "pop.fam" would split by both the pop and the fam columns simultaneously, so it would have categories like "popA.famB" for an individual from population A, family B. These "complex" facets can also note both SNP and sample-specific categories simultaneously, for example, "pop.chr" would split the data by the pop column in the sample metadata and the chr column in the SNP metadata simultaneously. 
 
 ```{r}
 my.dat <- calc_ho(my.dat, "pop.fam") #running the calculation
 head(get.snpR.stats(my.dat, "pop.fam", stats = "single")) #retrieving the results
 ```
 
-The order of the categories given in a facet do not matter--"pop.group" will produce the same result as "group.pop".
+The order of the categories given in a facet do not matter--"pop.chr" will produce the same result as "chr.pop".
 
 #### Multiple facets
 
-Most functions can also take several facets at once, given as a character vector. For example, to split by both population, then by population and group simultaneously, c("pop", "pop.group") could be given.
+Most functions can also take several facets at once, given as a character vector. For example, to split by both population, then by population and chr simultaneously, c("pop", "pop.chr") could be given.
 
 
 ```{r}
@@ -187,13 +187,13 @@ head(get.snpR.stats(my.dat, c("pop.fam", "pop"), stats = "single")) # will show 
 tail(get.snpR.stats(my.dat, c("pop.fam", "pop"), stats = "single")) # both facets are contained in the dataset.
 ```
 
-A handful of functions only work with either SNP or sample specific facets, but this is fixed "under the hood." For example, since observed heterozygosity is calculated independently for each SNP, it makes no sense to calculate it split up by chromosome. Using the "pop.group" facet with calc_ho, therefore, will internally default to "pop".
+A handful of functions only work with either SNP or sample specific facets, but this is fixed "under the hood." For example, since observed heterozygosity is calculated independently for each SNP, it makes no sense to calculate it split up by chromosome. Using the "pop.chr" facet with calc_ho, therefore, will internally default to "pop".
 
 
 ```{r}
 # same as just doing "pop" as a facet.
-my.dat <- calc_ho(my.dat, "pop.group") 
-head(get.snpR.stats(my.dat, "pop.group", stats = "single"))
+my.dat <- calc_ho(my.dat, "pop.chr") 
+head(get.snpR.stats(my.dat, "pop.chr", stats = "single"))
 ```
 
 Most of the time, giving NULL (the usual default) to a facets argument will run the data without splitting it up at all. Resulting stats will belong to the ".base" facet, a special, internally used facet that implies no splitting! Giving "all" to a facets argument, on the other hand, will run the data splitting by all previously run facets!
@@ -227,29 +227,26 @@ Note that we use the facet notation defined above to define maf.facets.
 
 ## PCA plots
 
-A common first analytical step for new data is to run a PCA to look for any evidence of population structure/sequencing errors. snpR has a function to do this in a streamlined way. We'll also make a t-stochastic neighbor embedding (tSNE) plot as well. tSNE is a machine learning method that compresses more PCA axes onto a single two dimensional plot, and can be really nice for showing higher-order structure such as family groups within the sequenced individuals. Another algorithm uniform manifold approximation and projection (UMAP) can be used with the plot_clusters function call, but we will not be using umap for these examples. 
+A common first analytical step for new data is to run a PCA to look for any evidence of population structure/sequencing errors. snpR has a function to do this in a streamlined way.
 
-Note 
+Note:
 
-* A PCA cannot be constructed with missing data, so we interpolate with the average number of each allele across all individuals as the default ("bernoulli"). There are other interpolation methods available in this package (see plot_clusters documentation for more details). 
-* Filtering data to remove poorly sequenced individuals and loci before PCA is recommended. 
-* tSNE and UMAP require installation of additional libraries in order to run (see documentation for more details).
-
-Both the PCA and tSNE plotting functions can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that. If you recall, "fam" was created earlier for my.dat in the snpRdata objects section.  
+* A PCA cannot be constructed with missing data, so we interpolate with the average number of each allele across all individuals as the default ("bernoulli"). There are other interpolation methods available in this package (see plot_clusters documentation for more details).
+*The PCA plotting function can work with a column of population IDs (as well as one additional info column, such as sex). The stickSNPs dataset has an additional sample metadata column called "fam", which relates to family, so we'll use that. If you recall, "fam" was created earlier for my.dat in the snpRdata objects section.  
 
 ```{r}
 head(sample.meta(my.dat))
 ```
 
-To run a PCA and tSNE, we can use the plot_clusters function. Note that this function, unlike all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!** so, save it to a new variable. If you do not supply a plot_type argument all possible plot types will run (PCA, tSNE, UMAP) which can be time and computationally intensive depending on the dataset. 
+To run a PCA we can use the plot_clusters function. Note that this function, like all other snpR plotting functions, **does not return a snpRdata object** and we should **not overwrite our data!** so, save it to a new variable.
 
 
 ```{r, results='hide'}
 # generate both tSNE and PCA plots
-p <- plot_clusters(my.dat, facets = c("pop.fam"), plot_type = c("pca", "tsne"))
+p <- plot_clusters(my.dat, facets = c("pop.fam"))
 ```
 
-To view the plots, we can call two objects under the "plots" element in the list that plot_clusters returned.
+To view the plots, we can call the object under the "plots" element in the list that plot_clusters returned.
 
 ```{r}
 # View the PCA
@@ -257,20 +254,15 @@ p$plots$pca
 
 ```
 
-```{r}
-# view the tSNE
-p$plots$tsne
-```
-
 plot_clusters also returns the raw plot data under the data element.
 
-There are other parameters that can also be tweaked in the t-SNE function, such as perplexity and theta. For more information, check out the documentation for Rtsne::Rtsne.
+plot_clusters also supports a few other plotting tools (UMAP and tSNE), but these are not currently recommended due to reproduceability issues.
 
-Tip: you can specify viridis palette option for your plot! Or, if you want more customization, save the plot to a new object and use your preferred plotting library package. For example:
+Tip: you can specify viridis palette option for your plot! Or, if you want more customization, save the data to a new object and use your preferred plotting library package. For example:
 
 ```{r, echo=TRUE, eval=FALSE}
 a <- p$data$pca
-ggplot2::ggplot(a, aes(PC1, PC2, color=pop))+geom_point() # a simple example
+ggplot2::ggplot(a, aes(PC1, PC2, color=pop)) + geom_point() # a simple example
 
 ```
 ## Calculate minor allele frequencies, $\pi$, Ho, check for private alleles and HWE.
@@ -335,7 +327,7 @@ If you have many different facet combinations and a large dataset, this may take
 
 ncores <- parallel::detectCores()
 ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
-my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop.group",
+my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop.chr",
                                  sigma = 200, # using a window size of 200
                                  step = 50, # using a step size of 50 between windows
                                  par = ncores) # in parallel 
@@ -346,7 +338,7 @@ my.dat <- calc_smoothed_averages(x = my.dat, facets = "pop.group",
 We can view the results with get.snpR.stats as usual! Since the results are a different kind of data, we view them with a different "type" argument (stats = ). For the single (non-pairwise) stats, we can use the "single.window" type: 
 
 ```{r}
-stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "single.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.chr", stats = "single.window")
 
 head(stats)
 
@@ -355,7 +347,7 @@ head(stats)
 And for the pairwise windows, we use "pairwise.window".
 
 ```{r}
-stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "pairwise.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.chr", stats = "pairwise.window")
 
 head(stats)
 
@@ -366,18 +358,18 @@ head(stats)
 Next, we want to plot these variables. We'll use the ggplot2 package, and start with $\pi$:
 
 ```{r}
-stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "single.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.chr", stats = "single.window")
 
 # Plot pi, pi works the same way!
 ggplot(stats, aes(x = position, y = pi, color = subfacet)) + geom_line() + theme_bw() +
-  facet_wrap(~snp.subfacet, scales = "free_x") # facet wrap on group to split by linkage group/chromosome.
+  facet_wrap(~snp.subfacet, scales = "free_x") # facet wrap on chr to split by linkage chr/chromosome.
 ```
 
 Then we'll do Fst, but restrict to one linkage group to save some space.
 
 ```{r}
 
-stats <- get.snpR.stats(x = my.dat, facets = "pop.group", stats = "pairwise.window")
+stats <- get.snpR.stats(x = my.dat, facets = "pop.chr", stats = "pairwise.window")
 
 
 ggplot(stats[stats$snp.subfacet == "groupXIX",], aes(x = position, y = fst, color = subfacet)) + geom_line() + theme_bw()
@@ -392,13 +384,13 @@ Now, we'll calculate pairwise LD for one population. We'll use Burrow's Composit
 Since LD comparisons take a while, it can be worthwhile to run only a few different categories of a given facet. The snpR LD function can do this with the "subfacet" argument. This argument takes a named list, where each entry contains the categories to run for a specific facet. For example:
 
 ```{r, results="hide"}
-list(pop = "ASP", group = "groupIX") #
+list(pop = "ASP", chr = "groupIX") #
 
 ```
 would run the ASP population for the groupIX chromosome, whereas
 
 ```{r}
-list(pop = c("SMR", "OPL"), group = c("groupIX", "groupIV"))
+list(pop = c("SMR", "OPL"), chr = c("groupIX", "groupIV"))
 
 ```
 
@@ -412,15 +404,15 @@ would run only samples in family A and the ASP population.
 In this case, let's run the ASP and OPL populations for groupIX:
 
 ```{r}
-my.dat <- calc_pairwise_ld(my.dat, facets = "group.pop", 
-                           subfacets =  list(pop = c("ASP", "OPL"), group = "groupIX"))
+my.dat <- calc_pairwise_ld(my.dat, facets = "chr.pop", 
+                           subfacets =  list(pop = c("ASP", "OPL"), chr = "groupIX"))
 
 ```
 
 The results can be accessed as usual, although they are in a slightly different format!
 
 ```{r}
-stats <- get.snpR.stats(x = my.dat, facets = "group.pop", stats = "LD")
+stats <- get.snpR.stats(x = my.dat, facets = "chr.pop", stats = "LD")
 
 str(stat)
 ```
@@ -444,7 +436,7 @@ would give us the CLD matrix for the ASP population on group IX.
 Heatmaps are a convenient way to visualize LD data. snpR contains a plotting utility using ggplot for any calculated LD data.
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "group.pop")
+p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "chr.pop")
 
 p$plot
 ```
@@ -452,7 +444,7 @@ p$plot
 Specific plots can be requested using the snp.subfacet and sample.subfacet arguments. These will plot only the specified levels of the sample and snp-specific parts of the requested facet. For example, to plot only the ASP population:
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "group.pop", sample.subfacet = "ASP")
+p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "chr.pop", sample.subfacet = "ASP")
 
 p$plot
 ```
@@ -468,10 +460,10 @@ This function can do multiple statistics at once. The random windows for each st
 Since this can be slow, the par argument can be used to run the calculations in parallel.
 
 ```{r, results='hide'}
-my.dat <- do_bootstraps(x = my.dat, facets = "group.pop", boots = 1000, sigma = 200, step = 50, statistics = "all", par = 8)
+my.dat <- do_bootstraps(x = my.dat, facets = "chr.pop", boots = 1000, sigma = 200, step = 50, statistics = "all", par = 8)
 ```
 ```{r}
-stats <- as.data.frame(get.snpR.stats(x = my.dat, facets = "group.pop", stats = "single.window"))
+stats <- as.data.frame(get.snpR.stats(x = my.dat, facets = "chr.pop", stats = "single.window"))
 head(stats)
 ```
 
@@ -483,7 +475,7 @@ Most of the statistics above can be calculated in one step!
 
 ```{r, results='hide'}
 # not run, same as above
-# my.dat2 <- calc_basic_snp_stats(x = stickSNPs, facets = "group.pop", sigma = 200, step = 50, par = 8)
+# my.dat2 <- calc_basic_snp_stats(x = stickSNPs, facets = "chr.pop", sigma = 200, step = 50, par = 8)
 
 ```
 
@@ -491,7 +483,7 @@ This will calculate $\pi$, Ho, HWE, mafs, private alleles, and pairwise Fst, and
 
 Stats are reviewed the same way as previously documented (more details in the get.snpR.stats documentation).
 ```{r}
-stats <- get.snpR.stats(x = my.dat2, facets = "group.pop", stats = "weighted.means")
+stats <- get.snpR.stats(x = my.dat2, facets = "chr.pop", stats = "weighted.means")
 head(stats)
 ```
 
@@ -591,7 +583,7 @@ Running the plot_pedigree function will run sequoia and construct a pedigree if 
 
 ```{r}
 #example with stickSNPs snpR object (reminder: we made an oject stk - with additional needed metadata in the prior example)
-a <- plot_pedigree(stk)
+# a <- plot_pedigree(stk)
 
 ```
 
@@ -612,6 +604,6 @@ function pedigree
 snpR can export data in a wide array of commonly used formats.
 
 ```{r, echo=FALSE, results='asis'}
-tbl <- read.csv("~/R/snpR/vignettes/exportstable.csv", header = T)
-print(knitr::kable(tbl))
+# tbl <- read.csv("vignettes/exportstable.csv", header = T)
+# print(knitr::kable(tbl))
 ```

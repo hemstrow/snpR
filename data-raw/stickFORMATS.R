@@ -31,7 +31,7 @@ stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(stickSNPs, "rafm", facet
 
 #dadi
 ## add ref and anc snp meta data columns to stickSNPs
-dat <- as.data.frame(stickSNPs)
+dat <- genotypes(stickSNPs)
 dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
 stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(dat, "dadi", facets = "pop")
 
@@ -52,7 +52,7 @@ a <- stickSNPs
 a@sample.meta <- b
 a@sample.meta$newID <- paste0(a@sample.meta$pop, a@sample.meta$fam, a@sample.meta$ID)
 
-stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(x=a, output = "sequoia", sample_id = "newID")
+stickFORMATs[[length(stickFORMATs) + 1]] <- format_snps(x=a, output = "sequoia")
 
 
 

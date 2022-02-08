@@ -91,7 +91,7 @@ support parallel runs on Windows machines.
 # Calculate nj trees for the base facet, each chromosome, and for each population.
 # Note: Examples not run due to odd ape interaction. Work interactively.
 \dontrun{
-tp <- plot_tree(stickSNPs, c(".base", "pop", "group"), 
+tp <- plot_tree(stickSNPs, c(".base", "pop", "chr"), 
                 root = c(FALSE, "PAL", FALSE))
 tp$pop$.base$plot # View the resulting plot
 

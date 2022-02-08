@@ -4,8 +4,8 @@ test_that("basic",{
   skip_on_cran()
   # smooth
   check <- calc_ho(stickSNPs, "pop")
-  check <- calc_smoothed_averages(check, facets = c("group.pop"), stats.type = "single", sigma = 250, step = 250)
-  check <- get.snpR.stats(check, "group.pop", "maf")$single.window
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250, step = 250)
+  check <- get.snpR.stats(check, "chr.pop", "maf")$single.window
   
   # tests
   expect_true("maf" %in% colnames(check))
@@ -19,8 +19,8 @@ test_that("pairwise",{
   skip_on_cran()
   # smooth
   check <- calc_pairwise_fst(stickSNPs, "pop")
-  check <- calc_smoothed_averages(check, facets = c("group.pop"), stats.type = "pairwise", sigma = 250, step = 250)
-  check <- get.snpR.stats(check, "group.pop", "fst")$pairwise.window
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "pairwise", sigma = 250, step = 250)
+  check <- get.snpR.stats(check, "chr.pop", "fst")$pairwise.window
   
   # tests
   expect_true("fst" %in% colnames(check))

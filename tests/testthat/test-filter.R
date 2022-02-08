@@ -33,7 +33,7 @@ test_that("hf_hets", {
   # correct removed
   alld <- format_snps(.internal.data$test_snps, "sn", interpolate = FALSE)
   check <- filter_snps(.internal.data$test_snps, hf_hets = 0.4)
-  goods <- all$position[which(rowSums(alld[, -c(1:2)] == 1, na.rm = T)/rowSums(!is.na(alld[,-c(1:2)])) <= 0.4)] # gets the position of loci with less than 40% hets
+  goods <- alld$position[which(rowSums(alld[, -c(1:2)] == 1, na.rm = T)/rowSums(!is.na(alld[,-c(1:2)])) <= 0.4)] # gets the position of loci with less than 40% hets
   expect_equal(goods, snp.meta(check)$position)
 })
 
@@ -88,3 +88,4 @@ test_that("min_loci", {
   
   expect_true(all(!snp.meta(td)$position[c(1, 5, 8)] %in% snp.meta(check)$position))
 })
+

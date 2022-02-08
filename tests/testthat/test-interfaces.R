@@ -9,7 +9,7 @@ test_that("NeEstimator",{
   ne_path <- "C://usr/bin/Ne2-1.exe"
   skip_if(!file.exists(ne_path))
   
-  ne <- calc_ne(stickSNPs[pop = "ASP"], NeEstimator_path = ne_path, chr = "group", facets = "pop")
+  ne <- calc_ne(stickSNPs[pop = "ASP"], NeEstimator_path = ne_path, chr = "chr", facets = "pop")
   ne <- get.snpR.stats(ne, "pop", "ne")
   unlink("NeEstimator", recursive = T)
   
