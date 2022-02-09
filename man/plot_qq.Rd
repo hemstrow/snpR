@@ -28,22 +28,26 @@ facets, using either a snpRdata object or a data.frame. Produces a
 
 # from a snpRdata object directly
 x <- stickSNPs
-sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
-x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype", 
+sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype",
                       method = "armitage")
-facets <- c("pop.fam", "pop", ".base")
-p <- plot_qq(x, "p_armitage_phenotype", facets)
-
-
+p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"))
+                      
+                      
 # from a data.frame
-y <- get.snpR.stats(x, facets, "association")
+y <- get.snpR.stats(x, c("pop.fam", "pop", ".base"), "association")
 y <- y$single
+
+
+# with facet/subfacet columns:
 p <- plot_qq(y, "p_armitage_phenotype", c("fam.pop", "pop", ".base"))
+
+
+# from raw data with only one faceting column
 z <- y[y$facet == "pop",]
 z <- z[,c(1, 5)]
 colnames(z)[1] <- "pop"
 p <- plot_qq(z, "p_armitage_phenotype", "pop")
-
 }
 \author{
 William Hemstrom

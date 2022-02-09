@@ -4,6 +4,7 @@
 \name{snpRdata-class}
 \alias{snpRdata-class}
 \alias{snpRdata}
+\alias{show}
 \title{Storage class for snpR data and calculated statistics.}
 \description{
 \code{\link{import.snpR.data}} creates and defines the snpRdata class to store
@@ -72,7 +73,7 @@ calculated}
 \item{\code{genetic_distances}}{list of matrices, genetic distance matrices if
 calculated}
 
-\item{\code{other}}{list, contains other miscellanious calculated statistics that do
+\item{\code{other}}{list, contains other miscellaneous calculated statistics that do
 not fit cleanly elsewhere.}
 }}
 

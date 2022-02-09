@@ -135,12 +135,14 @@ NULL
 #'  calculated
 #'@slot genetic_distances list of matrices, genetic distance matrices if
 #'  calculated
-#'@slot other list, contains other miscellanious calculated statistics that do
+#'@slot other list, contains other miscellaneous calculated statistics that do
 #'  not fit cleanly elsewhere.
 #'
 #'@author William Hemstrom
 #'
 #'@importFrom methods new
+#'
+#'@aliases show
 #'  
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",

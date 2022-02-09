@@ -203,12 +203,12 @@ from the simulation program ms.}}
 #import data to a snpRdata object
 ## get sample meta data
 sample_meta <- 
-    data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), 
+    data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:3)], 1, 3), 
                fam = rep(c("A", "B", "C", "D"), 
-                         length = ncol(stickFORMATs$`0000`) - 4), 
+                         length = ncol(stickFORMATs$`0000`) - 3), 
                stringsAsFactors = FALSE)
 format_snps(stickFORMATs$`0000`, input_format = "0000", 
-            input_meta_columns = 4, 
+            input_meta_columns = 3, 
 input_mDat = "0000", sample.meta = sample_meta)
 
 #allele count, seperated by the pop facet.

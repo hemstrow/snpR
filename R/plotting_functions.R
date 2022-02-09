@@ -1207,22 +1207,26 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' 
 #' # from a snpRdata object directly
 #' x <- stickSNPs
-#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
-#' x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype", 
+#' sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+#' x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype",
 #'                       method = "armitage")
-#' facets <- c("pop.fam", "pop", ".base")
-#' p <- plot_qq(x, "p_armitage_phenotype", facets)
-#' 
-#' 
+#' p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"))
+#'                       
+#'                       
 #' # from a data.frame
-#' y <- get.snpR.stats(x, facets, "association")
+#' y <- get.snpR.stats(x, c("pop.fam", "pop", ".base"), "association")
 #' y <- y$single
+#' 
+#' 
+#' # with facet/subfacet columns:
 #' p <- plot_qq(y, "p_armitage_phenotype", c("fam.pop", "pop", ".base"))
+#' 
+#' 
+#' # from raw data with only one faceting column
 #' z <- y[y$facet == "pop",]
 #' z <- z[,c(1, 5)]
 #' colnames(z)[1] <- "pop"
 #' p <- plot_qq(z, "p_armitage_phenotype", "pop")
-#' 
 plot_qq <- function(x, plot_var, facets = NULL){
   #=============sanity checks and prep============
   msg <- character(0)
@@ -1286,9 +1290,13 @@ plot_qq <- function(x, plot_var, facets = NULL){
   }
   #==============plot===========================
   # prep p values
-  stats <- stats[-which(is.na(stats[[plot_var]]) | is.nan(stats[[plot_var]]) |
-                          stats[[plot_var]] < 0 | stats[[plot_var]] > 1 |
-                          is.nan(stats[[plot_var]]))]
+  rm_rows <- which(is.na(stats[[plot_var]]) | is.nan(stats[[plot_var]]) |
+                     stats[[plot_var]] < 0 | stats[[plot_var]] > 1 |
+                     is.nan(stats[[plot_var]]))
+  if(length(rm_rows) > 0){
+    stats <- stats[-rm_rows,]
+  }
+  
   colnames(stats)[which(colnames(stats) == plot_var)] <- ".p"
   
   out <- vector("list", length(facets))
@@ -3272,7 +3280,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
 #' them and the actual method (e.g. Edwards, A. W. F. (1971)) alongside the
 #' tree-building approach.
 #'
-#' Bootstrapping is done via \code{\link[ape]{boot.phlyo}}, and as such does not
+#' Bootstrapping is done via the boot.phylo function in the ape package, and as such does not
 #' support parallel runs on Windows machines.
 #'
 #' @param x snpRdata object.

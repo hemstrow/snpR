@@ -1075,12 +1075,12 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #' #import data to a snpRdata object
 #' ## get sample meta data
 #' sample_meta <- 
-#'     data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), 
+#'     data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:3)], 1, 3), 
 #'                fam = rep(c("A", "B", "C", "D"), 
-#'                          length = ncol(stickFORMATs$`0000`) - 4), 
+#'                          length = ncol(stickFORMATs$`0000`) - 3), 
 #'                stringsAsFactors = FALSE)
 #' format_snps(stickFORMATs$`0000`, input_format = "0000", 
-#'             input_meta_columns = 4, 
+#'             input_meta_columns = 3, 
 #' input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
@@ -2798,12 +2798,12 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
     stop("x must be a snpRdata object.\n")
   }
   
-  .check.installed("bibtex")
+  .check.installed("rbibutils")
   .check.installed("RefManageR")
   
   #==========grab bib============
   bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
-  bib <- RefManageR::ReadBib(bib.file)
+  bib <- rbibutils::readBib(bib.file)
   
   #==========filter bib==========
   keys <- as.character(unlist(purrr::map(x@citations, "key")))
@@ -2827,7 +2827,7 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   if(!isFALSE(outbib)){
     
     if(file.exists(outbib)){
-      current_bib <- RefManageR::ReadBib(outbib)
+      current_bib <- rbibutils::readBib(outbib)
       not_in_current <- which(!keys %in% names(current_bib))
       
       

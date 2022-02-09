@@ -2538,12 +2538,12 @@ is.snpRdata <- function(x){
 .yell_citation <- function(keys, stats, details, outbib = FALSE){
   #==========sanity checks=======
   
-  .check.installed("bibtex")
+  .check.installed("rbibutils")
   .check.installed("RefManageR")
   
   #==========shout at the user=====
   bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
-  bib <- RefManageR::ReadBib(bib.file)
+  bib <- rbibutils::readBib(bib.file)
   
   cat("Citations for methods used thus far: \n")
   for(i in 1:length(keys)){
@@ -2560,7 +2560,7 @@ is.snpRdata <- function(x){
     
     
     if(file.exists(outbib)){
-      current_bib <- RefManageR::ReadBib(outbib)
+      current_bib <- rbibutils::readBib(outbib)
       not_in_current <- which(!keys %in% names(current_bib))
       
       

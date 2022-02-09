@@ -84,7 +84,7 @@ function uses code derived from \code{\link[adegenet]{adegenet}}. Please cite
 them and the actual method (e.g. Edwards, A. W. F. (1971)) alongside the
 tree-building approach.
 
-Bootstrapping is done via \code{\link[ape]{boot.phlyo}}, and as such does not
+Bootstrapping is done via the boot.phylo function in the ape package, and as such does not
 support parallel runs on Windows machines.
 }
 \examples{
