@@ -824,7 +824,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
         bad.loci <- tapply(phwe$low.p, phwe[,".snp.id"], sum, na.rm = TRUE)
         bad.loci <- reshape2::melt(bad.loci)
-        bad.loci <- na.omit(bad.loci)
+        bad.loci <- stats::na.omit(bad.loci)
         bad.loci <- bad.loci[which(bad.loci$value > 0),]
         bad.loci <- which(snp.meta(x)$.snp.id %in% bad.loci$Var1)
         cat("\t", length(bad.loci), " bad loci\n")
@@ -1072,6 +1072,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'@author Melissa Jones
 #'
 #' @examples
+#' \dontrun{
 #' #import data to a snpRdata object
 #' ## get sample meta data
 #' sample_meta <- 
@@ -1120,7 +1121,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #' format_snps(dat, "dadi", facets = "pop")
 #'
 #' #PLINK! format, not run to avoid file creation
-#' \dontrun{
 #' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
 #' 
 #' 
@@ -1133,8 +1133,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'             ped = ped, chr = "chr")
 #' #note that a column in the sample metadata containing phenotypic information
 #' #can be provided to the "phenotype" argument if wished.
-#'
-#' }
 #'
 #' #Sequoia format
 #' b <- sample.meta(stickSNPs)
@@ -1149,6 +1147,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'
 #' # VCF format
 #' test <- format_snps(stickSNPs, "vcf", chr = "chr")
+#' }
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
@@ -1904,11 +1903,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       if(any(colnames(x@sample.meta) == phenotype)){
         cat("Using phenotype column as phenotype.")
         Phenotype <- x@sample.meta[,which(colnames(x@sample.meta) == phenotype)]
-        if(length(unique(na.omit(Phenotype))) == 2){
+        if(length(unique(stats::na.omit(Phenotype))) == 2){
           uf <- factor(Phenotype)
           cat("Two phenotypes detected, options encoded as: \n\t",
               levels(uf)[1], " = 0\n\t",
-              levles(uf)[2], " = 1\n\t",
+              levels(uf)[2], " = 1\n\t",
               "\n\tNA as -9.\n")
           uf <- as.numeric(uf)
           uf[is.na(uf)] <- -9
@@ -1938,11 +1937,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     else{
       if(any(colnames(ped) == "Phenotype")){
         Phenotype <- ped$Phenotype
-        if(length(unique(na.omit(Phenotype))) == 2){
+        if(length(unique(stats::na.omit(Phenotype))) == 2){
           uf <- factor(Phenotype)
           cat("Two phenotypes detected, options encoded as: \n\t",
               levels(uf)[1], " = 0\n\t",
-              levles(uf)[2], " = 1\n\t",
+              levels(uf)[2], " = 1\n\t",
               "\n\tNA as -9.\n")
           uf <- as.numeric(uf)
           uf[is.na(uf)] <- -9
@@ -2403,11 +2402,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @author William Hemstrom
 #' @export
 #' @examples
+#' \dontrun{
 #' # check for duplicates with sample 1
 #' check_duplicates(stickSNPs, 1)
 #'
 #' # check duplicates using the .samp.id column as sample IDs
 #' check_duplicates(stickSNPs, 1, id.col = ".sample.id")
+#' }
 check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   #============sanity checks============
   msg <- character()

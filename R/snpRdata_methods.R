@@ -1,6 +1,15 @@
 #' @include snpRdata.R
 NULL
 
+#' Display snpRdata objects
+#' 
+#' @aliases show,snpRdata-method
+#' 
+#' @docType methods
+#' 
+#' @param object A \code{snpRdata} object.
+#' @exportMethod show
+#' @importFrom methods show
 #' @export
 setMethod("show", "snpRdata", function(object) {
   

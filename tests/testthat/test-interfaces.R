@@ -13,7 +13,7 @@ test_that("NeEstimator",{
   ne <- get.snpR.stats(ne, "pop", "ne")
   unlink("NeEstimator", recursive = T)
   
-  expect_snapshot(ne) # not internally calced, just a check for proper prep and parsing
+  expect_snapshot_output(ne) # not internally calced, just a check for proper prep and parsing
 })
 
 
@@ -31,9 +31,9 @@ test_that("colony",{
   expect_identical(colnames(col$clusters), c("ClusterIndex", "ClusterProbability", "OffspringID", "FatherID", "MotherID"))
   snap_check <- col$dyads[col$dyads$Probability > .5, -3]
   rownames(snap_check) <- 1:nrow(snap_check)
-  expect_snapshot(snap_check)
+  expect_snapshot_output(snap_check)
   expect_true(is.snpRdata(col$x))
-  expect_snapshot(col$clusters[col$clusters$ClusterProbability > .8, 3]) # not internally calced, just a check for proper prep and parsing
+  expect_snapshot_output(col$clusters[col$clusters$ClusterProbability > .8, 3]) # not internally calced, just a check for proper prep and parsing
 })
 
 

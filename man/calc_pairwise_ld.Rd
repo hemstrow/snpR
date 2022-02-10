@@ -13,7 +13,7 @@ calc_pairwise_ld(
   sr = FALSE,
   CLD = "only",
   use.ME = FALSE,
-  sigma = 1e-04
+  sigma = 0.0001
 )
 }
 \arguments{

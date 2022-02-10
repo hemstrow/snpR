@@ -51,6 +51,7 @@
 #'@export
 #'
 #' @examples
+#' \dontrun{
 #' # get LD data
 #' dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 #'
@@ -59,7 +60,7 @@
 #'
 #' # produce plots for every population for linkage group IV
 #' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
-#'
+#' }
 #'
 plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
                                      l.text = "CLD", viridis.option = "inferno",
@@ -885,6 +886,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'
 #'
 #' @examples
+#' \dontrun{
 #' # association testing:
 #' # add a dummy phenotype and run an association test.
 #' x <- stickSNPs
@@ -927,7 +929,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 #' significant = 0.0001, suggestive = 0.001,
 #' log.p = TRUE, highlight = FALSE)
-#' 
+#' }
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
@@ -1202,9 +1204,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' @author William Hemstrom
 #' 
 #' @examples
-#'
-#'
-#' 
+#' \dontrun{
 #' # from a snpRdata object directly
 #' x <- stickSNPs
 #' sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
@@ -1227,9 +1227,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' z <- z[,c(1, 5)]
 #' colnames(z)[1] <- "pop"
 #' p <- plot_qq(z, "p_armitage_phenotype", "pop")
+#' }
 plot_qq <- function(x, plot_var, facets = NULL){
   #=============sanity checks and prep============
   msg <- character(0)
+  
+  .o <- .p <- .e <- NULL
   
   # snpRdata
   if(class(x) == "snpRdata"){
@@ -1319,7 +1322,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
     
     # get the x axis
     tstats[,.o := -log10(sort(.p)), by = c(split.facet.part)]
-    tstats[,.e := -log10(ppoints(length(.p))), by = c(split.facet.part)]
+    tstats[,.e := -log10(stats::ppoints(length(.p))), by = c(split.facet.part)]
     
     # fix facet names to avoid quasiquoting stuff
     colnames(tstats)[colnames(tstats) %in% split.facet.part] <- paste0("facet_", 1:length(split.facet.part))
@@ -1622,12 +1625,13 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   selection vs K value for the selected method.}
 #'  
 #' @examples
+#' \dontrun{
 #' # basic sNMF, k = 2 and 3
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
 #' 
 #' # basic snapclust
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
-#' 
+#' }
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, update_bib = FALSE,
                            iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
@@ -3401,18 +3405,18 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     #============define tree method===========
     if(tree_method == "nj"){
       if(!isFALSE(root)){
-        tree_fun <- function(x, root) ape::root(ape::nj(x), outgroup = root)
+        tree_fun <- function(x, root = NULL, ...) ape::root(ape::nj(x), outgroup = root)
       }
       else{
-        tree_fun <- function(x, ...) ape::nj(x)
+        tree_fun <- function(x, root = NULL, ...) ape::nj(x)
       }
     }
     else if(tree_method == "bionj"){
       if(!isFALSE(root)){
-        tree_fun <- function(x, root) ape::root(ape::bionj(x), outgroup = root)
+        tree_fun <- function(x, root = NULL, ...) ape::root(ape::bionj(x), outgroup = root)
       }
       else{
-        tree_fun <- function(x, ...) ape::bionj(x)
+        tree_fun <- function(x, root = NULL, ...) ape::bionj(x)
       }
     }
     else if(tree_method == "upgma"){
@@ -3420,7 +3424,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
         warning("UPGMA trees are always rooted.")
         root <- TRUE
       }     
-      tree_fun <- function(x, ...) ape::as.phylo(stats::hclust(x, "average"))
+      tree_fun <- function(x, root = NULL, ...) ape::as.phylo(stats::hclust(x, "average"))
     }
     
     
@@ -3455,10 +3459,10 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     }
     #=============make a tree=============
     if(is.snp.only){
-      tdf <- function(part, ...) stats::dist(part)
+      tdf <- function(part, distance_method = NULL, ...) stats::dist(part)
     }
     else{
-      tdf <- function(part, distance_method) .get_dist(part, distance_method)[[1]]
+      tdf <- function(part, distance_method = NULL, ...) .get_dist(part, distance_method)[[1]]
     }
     
     tree <- lapply(amfs, function(y) tree_fun(tdf(y, distance_method), root))

@@ -863,7 +863,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #' @export
 #'
 #' @examples
-#' #' # run and plot a basic rf
+#' \dontrun{
+#' # run and plot a basic rf
 #' ## add some dummy phenotypic data.
 #' dat <- stickSNPs
 #' sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
@@ -872,7 +873,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #' rf$models
 #' ## dummy phenotypes vs. predicted
 #' with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
-#'
+#' }
 #'
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,

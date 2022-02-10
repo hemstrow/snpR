@@ -72,6 +72,7 @@ gaussian_weight <- function(p, c, s) {
 #'  merged into the window.stats or pairwise.window.stats slots.
 #'
 #'@examples
+#'\dontrun{
 #'# add a few statistics
 #'x <- calc_pi(stickSNPs, "chr.pop")
 #'x <- calc_ho(x, "chr.pop")
@@ -80,7 +81,7 @@ gaussian_weight <- function(p, c, s) {
 #'x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
 #'get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
 #'get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
-#'
+#'}
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
   #==============sanity checks============
   if(!is.snpRdata(x)){

@@ -252,6 +252,8 @@ calc_maf <- function(x, facets = NULL){
 #'  for each window merged in to the window.stats slot.
 #'
 #' @examples
+#' # slow, so not run
+#' \dontrun{
 #' # broken by population, windows across linkage group
 #' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
 #' get.snpR.stats(x, "chr.pop", "single.window")
@@ -266,7 +268,7 @@ calc_maf <- function(x, facets = NULL){
 #' # this will calculate overall tajima's D for each chr/pop
 #' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
 #' get.snpR.stats(x, "pop.chr", "single.window")
-#'
+#' }
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
@@ -457,6 +459,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' x <- calc_pairwise_fst(stickSNPs, "pop")
 #' get.snpR.stats(x, "pop", "fst")
 #'
+#' \dontrun{
 #' # Using genepop
 #' x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
 #' get.snpR.stats(x, "pop", "fst")
@@ -464,7 +467,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' # bootstrap p-values for overall pairwise-Fst values
 #' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 #' get.snpR.stats(x, "pop", "fst")
-#' 
+#' }
 calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE,
                               cleanup = TRUE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
@@ -827,7 +830,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   for(i in 1:length(facets)){
     if(method == "genepop"){
-      invisible(capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt"))))
+      invisible(utils::capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt"))))
     }
     
     real[[i]] <- one_run(x,

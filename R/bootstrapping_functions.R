@@ -696,13 +696,14 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'@author William Hemstrom
 #'
 #' @examples
+#' \dontrun{
 #' # add statistics and generate bootstraps
 #' x <- calc_basic_snp_stats(stickSNPs, c("chr.pop"), sigma = 200, step = 150)
 #' x <- do_bootstraps(x, facets = c("chr.pop"), boots = 1000, sigma = 200, step = 150)
 #' x <- calc_p_from_bootstraps(x)
 #' get.snpR.stats(x, "chr.pop", "single.window") # pi, ho, etc
 #' get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
-#'
+#' }
 calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = "two-sided", par = FALSE,
                                    fwe_method = "BY", 
                                    fwe_case = c("by_facet", "overall")){

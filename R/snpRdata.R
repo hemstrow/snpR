@@ -93,10 +93,9 @@ NULL
 
 #'Storage class for snpR data and calculated statistics.
 #'
-#'\code{\link{import.snpR.data}} creates and defines the snpRdata class to store
-#'both raw genotype data, sample and locus specific metadata, useful data
-#'summaries, repeatedly internally used tables, calculated summary statistics,
-#'and smoothed statistic data.
+#'The snpRdata class stores both raw genotype data, sample and locus specific
+#'metadata, useful data summaries, repeatedly internally used tables, calculated
+#'summary statistics, and smoothed statistic data. Used by most snpR functions.
 #'
 #'The snpRdata class is built to contain SNP genotype data for use by functions
 #'in the snpR package. It also stores sample and locus specific metadata,
@@ -141,8 +140,6 @@ NULL
 #'@author William Hemstrom
 #'
 #'@importFrom methods new
-#'
-#'@aliases show
 #'  
 snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",
@@ -365,7 +362,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
                              ...){
-  position <- NULL
+  position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
   # sample and snp metadata
@@ -725,7 +722,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
 # 
 # See documentation for get.snpR.stats.
 .get.snpR.stats <- function(x, facets = NULL, type = "single", col_pattern = NULL){
-  ..keep.cols <- subfacet <- facet <- NULL
+  ..keep.cols <- subfacet <- facet <- ..grep.cols <- NULL
   
   # sanity check
   if(!is.snpRdata(x)){

@@ -1881,7 +1881,7 @@ is.snpRdata <- function(x){
 # 
 #  @return A snpR data object with weighted statistics merged in.
 .calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
-  ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- NULL
+  ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- weights_col <- NULL
 
 
   #===========sanity checks===============
@@ -2159,7 +2159,7 @@ is.snpRdata <- function(x){
     weighted <- data.table::as.data.table(selected_stats)
     weighted$weights_col <- weights
     weighted$key <- group_key_tab$key
-    means <- weighted[,.SDcols = stats_to_get, lapply(.SD, function(x, w) weighted.mean(x[clean(x)], w[clean(x)]), w = weights_col), by = key]
+    means <- weighted[,.SDcols = stats_to_get, lapply(.SD, function(x, w) stats::weighted.mean(x[clean(x)], w[clean(x)]), w = weights_col), by = key]
     
     # merge and return
     ## get the stats back in a format with facet and sub-facet, clean up, and return
@@ -2273,7 +2273,7 @@ is.snpRdata <- function(x){
     d <- d/vec[col(d)]
     d <- d/vec[row(d)]
     d <- -log(d)
-    d <- as.dist(d)
+    d <- stats::as.dist(d)
   }
   am <- list(am)
   names(am) <- method
@@ -2290,6 +2290,8 @@ is.snpRdata <- function(x){
 #
 # @return A vector of the filenames for the new datasets.
 .maf_func <- function(gs, m.al, ref = NULL){
+  
+  maj_count <- NULL
   
   # for the base facet, determine the major and minor then calculate maf
   if(is.null(ref)){

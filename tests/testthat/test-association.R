@@ -3,7 +3,7 @@ context("association")
 set.seed(1212)
 asdat <- .internal.data$test_snps
 sample.meta(asdat)$phenotype <- rnorm(ncol(asdat))
-sample.meta(asdat)$cat_phenotype <- sample(c("A", "B"), ncol(asdat), replace = TRUE)
+sample.meta(asdat)$cat_phenotype <- sample(c("case", "control"), ncol(asdat), replace = TRUE)
 
 #=========association=========
 test_that("correct gmmat", {
@@ -11,7 +11,7 @@ test_that("correct gmmat", {
   skip_on_cran()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
-  expect_snapshot(asgmmat) # note, run off of gmmat, not internally calced. Thus checked, but should not change.
+  expect_snapshot_output(asgmmat$single) # note, run off of gmmat, not internally calced. Thus checked, but should not change.
 })
 
 test_that("correct armitage", {
@@ -44,7 +44,7 @@ test_that("correct odds", {
   skip_on_cran()
   asodds <- calc_association(asdat, response = "cat_phenotype", method = "odds_ratio")
   asodds <- get.snpR.stats(asodds, stats = "association")
-  expect_snapshot(asodds) # Hand checked, should not change.
+  expect_snapshot_output(asodds$single) # Hand checked, should not change.
 })
 
 
@@ -53,9 +53,8 @@ test_that("correct chisq", {
   skip_on_cran()
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
-  expect_snapshot(aschi) # Hand checked, should not change.
+  expect_snapshot_output(aschi$single) # Hand checked, should not change.
 })
-
 
 #=========random forest========
 test_that("random forest",{
@@ -155,7 +154,7 @@ test_that("genomic prediction CV",{
   set.seed(1212)
   dat <- stickSNPs
   sample.meta(dat)$phenotype <- rnorm(ncol(dat))
-  sample.meta(dat)$cat_phenotype <- sample(c("A", "B"), ncol(dat), replace = TRUE)
+  sample.meta(dat)$cat_phenotype <- sample(c("case", "control"), ncol(dat), replace = TRUE)
   ## run cross_validation
   res <-cross_validate_genomic_prediction(dat, response = "phenotype", iterations = 200, burn_in = 100, thin = 10)
   

@@ -1,9 +1,9 @@
-citHeader("To cite snpR in publications use:")
+citHeader("To cite snpR, use:")
 
-citEntry(
-  entry    = "Article",
-  title    = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
-  author   = "William Hemstrom and Melissa Jones",
-  journal  = "Authorea",
-  year     = "2021"
+bibentry(bibtype = "Article",
+         title = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
+         author = c(person("William", "Hemstrom"),
+                    person("Melissa", "Jones")),
+         year = 2021,
+         journal = "Authorea"
 )

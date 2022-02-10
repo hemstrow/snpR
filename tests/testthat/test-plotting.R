@@ -64,7 +64,7 @@ test_that("structure map",{
   assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE) # get structure-like results
 
   # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
-  background <- maps::map("state", "oregon")
+  background <- maps::map("state", "oregon", plot = FALSE)
   background <- sf::st_as_sf(background)
   
   p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
@@ -72,14 +72,14 @@ test_that("structure map",{
 })
 
 #==================plot_clusters=====================
+
 test_that("pca",{
   local_edition(3)
-  skip_on_cran()
   
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
   expect_true(ggplot2::is.ggplot(p$plots$pca))
-  expect_snapshot(p$data$pca) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_output(p$data$pca[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("tsne",{
@@ -91,7 +91,7 @@ test_that("tsne",{
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
   
   expect_true(ggplot2::is.ggplot(p$plots$tsne))
-  expect_snapshot(p$data$tsne) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_output(p$data$tsne[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("umap",{
@@ -102,7 +102,7 @@ test_that("umap",{
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
-  expect_snapshot(p$data$umap) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_output(p$data$umap[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 #==================plot_manhattan==========
