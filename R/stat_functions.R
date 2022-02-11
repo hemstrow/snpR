@@ -78,8 +78,10 @@
 #' get.snpR.stats(x, c("pop", "pop.fam"))
 #'
 #' # HWE with family-wise error correction
-#' x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+#' \dontrun{
+#' x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"))
 #' get.snpR.stats(x, c("pop", "pop.fam"))
+#' }
 NULL
 
 
@@ -3389,13 +3391,14 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #' @export
 #'
 #' @examples # calculate ibd for several different facets
+#' \dontrun{
 #' y <- stickSNPs
 #' sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
 #' y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
 #' res <- get.snpR.stats(y, "pop.chr", "ibd") # fetch results
 #' res
 #' plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
-#' 
+#' }
 calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), genetic_distance_method = "Edwards", interpolate = "bernoulli", ...){
   #================sanity checks=============================================
   if(!is.snpRdata(x)){

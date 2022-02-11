@@ -52,7 +52,7 @@ plot_structure(
   alpha_prop_sd = 0.025,
   start_at_pop_info = FALSE,
   metro_update_freq = 10,
-  seed = sample(100000, 1),
+  seed = sample(1e+05, 1),
   strip_col_names = NULL,
   cleanup = TRUE,
   ...
@@ -354,12 +354,13 @@ Note that several files will be created in the working directory when using
 this function that are not automatically cleaned after use.
 }
 \examples{
+\dontrun{
 # basic sNMF, k = 2 and 3
 plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
 
 # basic snapclust
 plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
-
+}
 }
 \references{
 Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.

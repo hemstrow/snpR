@@ -145,6 +145,7 @@ highlighted SNPs will be either chr_bp by default or given in the column
 named by the "snp" argument.
 }
 \examples{
+\dontrun{
 # association testing:
 # add a dummy phenotype and run an association test.
 x <- stickSNPs
@@ -187,7 +188,7 @@ y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 significant = 0.0001, suggestive = 0.001,
 log.p = TRUE, highlight = FALSE)
-
+}
 }
 \author{
 William Hemstrom

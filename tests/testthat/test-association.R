@@ -11,7 +11,7 @@ test_that("correct gmmat", {
   skip_on_cran()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
-  expect_snapshot_output(asgmmat$single) # note, run off of gmmat, not internally calced. Thus checked, but should not change.
+  expect_snapshot_value(asgmmat$single, style = "serialize") # note, run off of gmmat, not internally calced. Thus checked, but should not change.
 })
 
 test_that("correct armitage", {
@@ -27,10 +27,10 @@ test_that("correct armitage", {
   for(i in 1:nrow(sn)){
     nas <- which(is.na(sn[i,]))
     if(length(nas) > 0){
-      comp[i] <- CATT::CATT(cc[-nas], sn[i,-nas])$p.value
+      suppressWarnings(comp[i] <- CATT::CATT(cc[-nas], sn[i,-nas])$p.value)
     }
     else{
-      comp[i] <- CATT::CATT(cc, sn[i,])$p.value
+      suppressWarnings(comp[i] <- CATT::CATT(cc, sn[i,])$p.value)
     }
   }
 
@@ -44,7 +44,7 @@ test_that("correct odds", {
   skip_on_cran()
   asodds <- calc_association(asdat, response = "cat_phenotype", method = "odds_ratio")
   asodds <- get.snpR.stats(asodds, stats = "association")
-  expect_snapshot_output(asodds$single) # Hand checked, should not change.
+  expect_snapshot_value(asodds$single, style = "serialize") # Hand checked, should not change.
 })
 
 
@@ -53,7 +53,7 @@ test_that("correct chisq", {
   skip_on_cran()
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
-  expect_snapshot_output(aschi$single) # Hand checked, should not change.
+  expect_snapshot_value(aschi$single, style = "serialize") # Hand checked, should not change.
 })
 
 #=========random forest========

@@ -61,13 +61,14 @@ values.
 }
 \examples{
 # calculate ibd for several different facets
+\dontrun{
 y <- stickSNPs
 sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
 y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
 res <- get.snpR.stats(y, "pop.chr", "ibd") # fetch results
 res
 plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
-
+}
 }
 \seealso{
 \code{\link[ade4]{mantel.randtest}},

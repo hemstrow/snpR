@@ -200,6 +200,7 @@ genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
 from the simulation program ms.}}
 }
 \examples{
+\dontrun{
 #import data to a snpRdata object
 ## get sample meta data
 sample_meta <- 
@@ -248,7 +249,6 @@ snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 format_snps(dat, "dadi", facets = "pop")
 
 #PLINK! format, not run to avoid file creation
-\dontrun{
 format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
 
 
@@ -261,8 +261,6 @@ format_snps(stickSNPs, "plink", outfile = "plink_out",
             ped = ped, chr = "chr")
 #note that a column in the sample metadata containing phenotypic information
 #can be provided to the "phenotype" argument if wished.
-
-}
 
 #Sequoia format
 b <- sample.meta(stickSNPs)
@@ -277,6 +275,7 @@ format_snps(x=a, output = "sequoia")
 
 # VCF format
 test <- format_snps(stickSNPs, "vcf", chr = "chr")
+}
 }
 \author{
 William Hemstrom

@@ -100,7 +100,8 @@ For more detail on the random forest model and ranger arguments, see
 \code{\link[ranger]{ranger}}.
 }
 \examples{
-#' # run and plot a basic rf
+\dontrun{
+# run and plot a basic rf
 ## add some dummy phenotypic data.
 dat <- stickSNPs
 sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
@@ -109,7 +110,7 @@ rf <- run_random_forest(dat, response = "weight", pvals = FALSE)
 rf$models
 ## dummy phenotypes vs. predicted
 with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
-
+}
 
 }
 \references{

@@ -2,9 +2,8 @@ context("Interfaces")
 
 
 test_that("NeEstimator",{
-  skip_on_cran()
   local_edition(3)
-  
+  skip_on_cran()
   
   ne_path <- "C://usr/bin/Ne2-1.exe"
   skip_if(!file.exists(ne_path))
@@ -13,14 +12,14 @@ test_that("NeEstimator",{
   ne <- get.snpR.stats(ne, "pop", "ne")
   unlink("NeEstimator", recursive = T)
   
-  expect_snapshot_output(ne) # not internally calced, just a check for proper prep and parsing
+  expect_snapshot_value(ne, style = "serialize") # not internally calced, just a check for proper prep and parsing
 })
 
 
 
 test_that("colony",{
-  skip_on_cran()
   local_edition(3)
+  skip_on_cran()
   
   
   col_path <- "C://usr/bin/Colony/colony2s.exe"
@@ -31,9 +30,9 @@ test_that("colony",{
   expect_identical(colnames(col$clusters), c("ClusterIndex", "ClusterProbability", "OffspringID", "FatherID", "MotherID"))
   snap_check <- col$dyads[col$dyads$Probability > .5, -3]
   rownames(snap_check) <- 1:nrow(snap_check)
-  expect_snapshot_output(snap_check)
+  expect_snapshot_value(snap_check, style = "serialize")
   expect_true(is.snpRdata(col$x))
-  expect_snapshot_output(col$clusters[col$clusters$ClusterProbability > .8, 3]) # not internally calced, just a check for proper prep and parsing
+  expect_snapshot_value(col$clusters[col$clusters$ClusterProbability > .8, 3], style = "serialize") # not internally calced, just a check for proper prep and parsing
 })
 
 

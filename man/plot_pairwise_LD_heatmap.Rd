@@ -79,6 +79,7 @@ not accepted.
 Note that NA LD values will be colored white in the resulting plot.
 }
 \examples{
+\dontrun{
 # get LD data
 dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 
@@ -87,7 +88,7 @@ plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
 
 # produce plots for every population for linkage group IV
 plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
-
+}
 
 }
 \author{

@@ -74,10 +74,9 @@ Suggests:
     umap,
     vcfR,
     viridis,
-    visPedigree,
     testthat
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Collate: 
     'NeEstimator_interface.R'
     'association_functions.R'

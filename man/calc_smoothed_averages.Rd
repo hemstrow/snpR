@@ -75,6 +75,7 @@ window average would be very small, and so they are dropped for computational
 efficiency (see Hohenlohe (2010)).
 }
 \examples{
+\dontrun{
 # add a few statistics
 x <- calc_pi(stickSNPs, "chr.pop")
 x <- calc_ho(x, "chr.pop")
@@ -83,7 +84,7 @@ x <- calc_pairwise_fst(x, "chr.pop")
 x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
 get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
 get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
-
+}
 }
 \references{
 Hohenlohe et al. (2010). \emph{PLOS Genetics}

@@ -75,11 +75,12 @@ test_that("structure map",{
 
 test_that("pca",{
   local_edition(3)
+  # skip_on_cran()
   
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
   expect_true(ggplot2::is.ggplot(p$plots$pca))
-  expect_snapshot_output(p$data$pca[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("tsne",{
@@ -91,7 +92,7 @@ test_that("tsne",{
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
   
   expect_true(ggplot2::is.ggplot(p$plots$tsne))
-  expect_snapshot_output(p$data$tsne[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_value(p$data$tsne[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("umap",{
@@ -102,7 +103,7 @@ test_that("umap",{
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
-  expect_snapshot_output(p$data$umap[,c("PC1", "PC2")]) # run entirely via R's prcomp function, shouldn't change with a set seed.
+  expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 #==================plot_manhattan==========

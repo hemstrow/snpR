@@ -5,7 +5,7 @@ test_that("correct genepop", {
   skip_on_cran()
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
-  expect_snapshot_output(tdfst) # note, run off of genepop, not internally calced. Thus checked, but should not change.
+  expect_snapshot_value(tdfst, style = "serialize") # note, run off of genepop, not internally calced. Thus checked, but should not change.
 })
 
 test_that("correct wc", {
@@ -45,8 +45,8 @@ test_that("correct traditional ld",{
   tdld <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE)
   tdld <- get.snpR.stats(tdld, stats = "ld")
   prox <- tdld$LD$prox
-  expect_snapshot_output(tdld$LD$matrices) # hand checked
-  expect_snapshot_output(prox)
+  expect_snapshot_value(tdld$LD$matrices, style = "serialize") # hand checked
+  expect_snapshot_value(prox, style = "serialize")
 })
 
 test_that("correct ME ld",{
@@ -56,7 +56,7 @@ test_that("correct ME ld",{
   tdldme <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE, use.ME = TRUE)
   tdldme <- get.snpR.stats(tdldme, stats = "ld")
   prox <- tdldme$LD$prox
-  expect_snapshot_output(tdldme$LD$matrices) # hand checked
-  expect_snapshot_output(prox)
+  expect_snapshot_value(tdldme$LD$matrices, style = "serialize") # hand checked
+  expect_snapshot_value(prox, style = "serialize")
 })
 

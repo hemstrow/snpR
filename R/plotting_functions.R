@@ -3378,7 +3378,7 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     }
   }
   
-  if(.check.installed("ggtree")){
+  if(.check.installed("ggtree", "github", "YuLab-SMU/ggtree")){
     if(utils::packageVersion("ggtree") < numeric_version("3.1.2")){
       msg <- c(msg, "Package ggtree version 3.1.2+ required. The most recent development version can be installed via remotes::install_github('YuLab-SMU/ggtree')")
     }

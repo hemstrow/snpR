@@ -72,6 +72,7 @@ item{"Genepop": }{As used in genepop, Rousset
 x <- calc_pairwise_fst(stickSNPs, "pop")
 get.snpR.stats(x, "pop", "fst")
 
+\dontrun{
 # Using genepop
 x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
 get.snpR.stats(x, "pop", "fst")
@@ -79,7 +80,7 @@ get.snpR.stats(x, "pop", "fst")
 # bootstrap p-values for overall pairwise-Fst values
 x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 get.snpR.stats(x, "pop", "fst")
-
+}
 }
 \references{
 Wier and Cockerham (1984). \emph{Evolution}
