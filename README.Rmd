@@ -11,11 +11,17 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+
+version <- as.vector(read.dcf('DESCRIPTION')[, 'Version'])
+version <- gsub('-', '.', version)
 ```
 
 # snpR
 
 <!-- badges: start -->
+[![license](https://img.shields.io/badge/license-MIT + file LICENSE-lightgrey.svg)](https://choosealicense.com/)
+[![packageversion](https://img.shields.io/badge/Package%20version-`r version`-orange.svg?style=flat-square)](commits/master)
+[![CRAN status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 <!-- badges: end -->
 
 snpR is an R package for analyzing call Single Nucleotide Polymorphism (SNP) genotypes containing most basic stats including pairwise LD, gaussian sliding window analysis tools, plotting options, clustering analysis, colony interface, Ne estimation, formatting, filtering, and more!
