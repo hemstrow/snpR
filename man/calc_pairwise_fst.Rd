@@ -20,8 +20,8 @@ calc_pairwise_fst(
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{method}{character, default "wc". Defines the FST estimator to use.
-Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: }
-Wier (1990) \item{Genepop: } Rousset (2008), uses the genepop package. }}
+Options: \itemize{ \item{wc: } Wier and Cockerham (1984).
+\item{Genepop: } Rousset (2008), uses the genepop package. }}
 
 \item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do.
 See details.}

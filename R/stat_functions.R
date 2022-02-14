@@ -436,8 +436,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' @param facets character. Categorical metadata variables by which to break up
 #'   analysis. See \code{\link{Facets_in_snpR}} for more details.
 #' @param method character, default "wc". Defines the FST estimator to use.
-#'   Options: \itemize{ \item{wc: } Wier and Cockerham (1984). \item{wier: }
-#'   Wier (1990) \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'   Options: \itemize{ \item{wc: } Wier and Cockerham (1984).
+#'   \item{Genepop: } Rousset (2008), uses the genepop package. }
 #' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do.
 #'   See details.
 #' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
@@ -680,7 +680,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
       for (j in j:length(pops)){#j is pop being compared
         jdat <- x[subfacet == pops[j]] #get data for second pop
 
-        if(method == "wc" | method == "wier"){
+        if(method == "wc"){
 
           #allele frequencies in both i and jdat.
           ps1_1 <- idat$ni1/idat$n_total
@@ -708,36 +708,40 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
             inner2 <- ((r-1)/r)*ssq
             inner3 <- .25*hbar
             
-            if(method == "wc"){
-              inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
-              a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
-              b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
-              c <- .5*hbar
-              # check_dat <- data.frame(a = a, b = b, c = c, nbar = nbar, nc = nc, CV = CV, ssq = ssq, hbar = hbar, pbar = pbar, ps1 = ps1, ps2 = ps2, FST = Fst, FIS = Fis)
-              # saveRDS(check_dat, "check_dat_temp.RDS")
-              return(list(a = a, b = b, c = c))
-            }
-            else{
-              S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
-              S2i1 <- ((r*(nbar - nc))/nbar)*inner1
-              S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
-              S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
-              S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
-              return(list(S1 = S1, S2 = S2))
-            }
+            inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
+            a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
+            b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
+            c <- .5*hbar
+            
+            
+            return(list(a = a, b = b, c = c))
+            
+            # weir--exactly the same
+            # else{
+            #   S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
+            #   S2i1 <- ((r*(nbar - nc))/nbar)*inner1
+            #   S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
+            #   S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
+            #   S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
+            #   return(list(S1 = S1, S2 = S2))
+            # }
+            
+            
           }
           parts_1 <- per_al(intot, jntot, ps1_1, ps2_1, r, nbar, nc)
           parts_2 <- per_al(intot, jntot, ps1_2, ps2_2, r, nbar, nc)
          
           # compute Fst
-          if(method == "wc"){
-            a <- cbind(parts_1$a, parts_2$a)
-            b <- cbind(parts_1$b, parts_2$b)
-            c <- cbind(parts_1$c, parts_2$c)
-            Fst <- rowSums(a)/rowSums(a + b + c)
-            Fit <- 1 - rowSums(c)/rowSums(a + b + c)
-            Fis <- 1 - rowSums(c)/rowSums(b + c)
-          }
+          a <- cbind(parts_1$a, parts_2$a)
+          b <- cbind(parts_1$b, parts_2$b)
+          c <- cbind(parts_1$c, parts_2$c)
+          Fst <- rowSums(a)/rowSums(a + b + c)
+          Fit <- 1 - rowSums(c)/rowSums(a + b + c)
+          Fis <- 1 - rowSums(c)/rowSums(b + c)
+          
+          
+          
+          
           # Wier-- comes out exactly the same
           # else{
           #   S1 <- cbind(parts_1$S1, parts_2$S1)
