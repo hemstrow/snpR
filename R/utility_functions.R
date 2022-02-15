@@ -87,11 +87,14 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
         stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
       }
       
-      # the eval won't work if a string is given without "c()", so fix that
-      if(!grepl("c\\(", .argnames[.is.facet][.candidate_facets])){
-        .argnames[.is.facet][.candidate_facets] <- paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")")
+      # try to eval text in two ways: once for a basic string, once for code the evaluates to a string
+      .res1 <- try(list(eval(parse(text = .argnames[.is.facet][.candidate_facets]))), silent = TRUE)
+      if(class(.res1) == "try-error"){
+        .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")"))))
       }
-      .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = .argnames[.is.facet][.candidate_facets])))
+      else{
+        .argnames[.is.facet][.candidate_facets] <- .res1
+      }
     }
     
     
