@@ -698,38 +698,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
           comb_ntots <- cbind(intot, jntot)
           CV <- matrixStats::rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
-          per_al <- function(intot, jntot, ps1, ps2, r, nbar, nc){
-            pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
-            ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
-            hbar <- ((intot*idat$ho) + (jntot*jdat$ho))/(r*nbar) #average heterozygote frequencies
-            
-            #equation parts used in both
-            inner1 <- pbar*(1-pbar)
-            inner2 <- ((r-1)/r)*ssq
-            inner3 <- .25*hbar
-            
-            inner4 <- ((2*nbar - 1)/(4*nbar))*hbar
-            a <- (nbar/nc) * (ssq - (1/(nbar - 1))*(inner1 - inner2 - inner3))
-            b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
-            c <- .5*hbar
-            
-            
-            return(list(a = a, b = b, c = c))
-            
-            # weir--exactly the same
-            # else{
-            #   S1 <- ssq - (1/(nbar-1))*(inner1 - inner2 - inner3)
-            #   S2i1 <- ((r*(nbar - nc))/nbar)*inner1
-            #   S2i2 <- (1/nbar)*((nbar-1)+(r-1)*(nbar-nc))*ssq
-            #   S2i3 <- ((nbar-nc)/(4*nc^2))*hbar
-            #   S2 <- inner1 - (nbar/(r*(nbar-1)))*(S2i1 -S2i2 - S2i3)
-            #   return(list(S1 = S1, S2 = S2))
-            # }
-            
-            
-          }
-          parts_1 <- per_al(intot, jntot, ps1_1, ps2_1, r, nbar, nc)
-          parts_2 <- per_al(intot, jntot, ps1_2, ps2_2, r, nbar, nc)
+          parts_1 <- .per_all_f_stat_components(intot, jntot, ps1_1, ps2_1, r, nbar, nc, idat$ho, jdat$ho)
+          parts_2 <- .per_all_f_stat_components(intot, jntot, ps1_2, ps2_2, r, nbar, nc, idat$ho, jdat$ho)
          
           # compute Fst
           a <- cbind(parts_1$a, parts_2$a)
@@ -979,6 +949,9 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 }
 
 
+# calc_single_fst <- function(x, facets = NULL, method = "WC"){
+#   
+# }
 
 #'@export
 #'@describeIn calc_single_stats observed heterozygosity

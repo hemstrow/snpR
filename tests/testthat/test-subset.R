@@ -43,6 +43,11 @@ test_that("sample facet",{
   check <- sample.meta(ids)
   expect_equivalent(unique(check[,c(1:2)]), data.frame(pop = c("ASP", "PAL"),
                                                       fam = c("A", "B")))
+  
+  # correct parts, via reference to environmental variables
+  pops <- data.frame(pop = c("ASP", "PAL"), fam = c("A", "B"))
+  tdat <- id[pop.fam = paste0(pops[, 1], ".", pops[, 2])]
+  expect_identical(ids, tdat)
 })
 
 
