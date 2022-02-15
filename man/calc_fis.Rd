@@ -13,19 +13,19 @@ calc_fis(x, facets = NULL)
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 }
 \description{
-Calculates FIS for each individual level in each provided sample facet 
+Calculates FIS for each individual level in each provided sample facet
 according to Weir and Cockerham (1984).
 }
 \details{
-Note that FIS is calculated by considering \emph{only data from 
-individual sample levels}! This means that individual and subpopulation 
-variances are only considered within each subpopulation. If snp facets are provided,
-weighted means will be provided for each snp facet level, although raw FIS values are
-calculated on a per-snp basis and thus ignore these levels. 
+Note that FIS is calculated by considering \emph{only data from individual
+sample levels}! This means that individual and subpopulation variances are
+only considered within each subpopulation. If snp facets are provided,
+weighted means will be provided for each snp facet level, although raw FIS
+values are calculated on a per-snp basis and thus ignore these levels.
 
-If the base facet
-(facets = NULL or facets = ".base") is requested, FIS will compare individual to total
-variance across all samples instead (equivalent to overall FIT).
+If the base facet (facets = NULL or facets = ".base") is requested, FIS will
+compare individual to total variance across all samples instead (equivalent
+to overall FIT).
 }
 \examples{
 x <- calc_fis(stickSNPs, c("pop", "pop.chr"))
