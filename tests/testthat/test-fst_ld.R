@@ -21,7 +21,45 @@ test_that("correct wc", {
                        -0.12957696,
                        -0.03529412,
                        0.16666667,
-                       -0.08172128), 4)) # values from pegas, also double checked by hand. Note that heifstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+                       -0.08172128), 4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+})
+
+test_that("correct fis",{
+  # check
+  x <- calc_fis(stickSNPs[1:10, pop = "ASP"], c("pop"))
+  fis <- get.snpR.stats(x, facets = "pop", stats =  "fis")
+  
+  # peg <- snpR::format_snps(x, facets = "pop", output = "adegenet")
+  # peg <- pegas::genind2loci(peg)
+  # peg_fis_ASP <- pegas::Fst(peg[peg$population == "ASP",])
+  # peg_fis_ASP <- pegas::Fst(peg[peg$population == "ASP",])[2:10,]
+  
+  
+  # checked vs pegas with above code
+  expect_equivalent(round(fis$single$fis, 3), round(c(-0.05179856,
+                                                      -0.02272727,
+                                                      -0.03703704,
+                                                      0.02222222,
+                                                      -0.08641975,
+                                                      -0.11904762,
+                                                      -0.06976744,
+                                                      -0.23888183,
+                                                      -0.01492537), 3))
+  
+  # check means are working correctly
+  fis <- calc_fis(.internal.data$test_snps, c("pop", "pop.chr", ".base"))
+  fis_p <- get.snpR.stats(fis, "pop", "fis")$weighted.means
+  expect_equal(fis_p$subfacet, c("ASP", "PAL"))
+  
+  fis_pc <- get.snpR.stats(fis, "pop.chr", "fis")$weighted.means
+  expect_equal(unique(fis_pc$subfacet), c("ASP", "PAL"))
+  expect_equal(sort(unique(fis_pc$snp.subfacet)), sort(unique(snp.meta(fis)$chr)))
+  
+  # check that base worked
+  fis_b <- get.snpR.stats(fis, stats = "fis")
+  expect_equal(nrow(fis_b$single), 10)
+  expect_equal(unique(unlist(fis_b$weighted.means[1,1:4, drop = TRUE])),
+               ".base")
 })
 
 

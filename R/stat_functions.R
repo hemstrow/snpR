@@ -706,8 +706,8 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
           b <- cbind(parts_1$b, parts_2$b)
           c <- cbind(parts_1$c, parts_2$c)
           Fst <- rowSums(a)/rowSums(a + b + c)
-          Fit <- 1 - rowSums(c)/rowSums(a + b + c)
-          Fis <- 1 - rowSums(c)/rowSums(b + c)
+          # Fit <- 1 - rowSums(c)/rowSums(a + b + c)
+          # Fis <- 1 - rowSums(c)/rowSums(b + c)
           
           
           
@@ -948,10 +948,136 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   return(x)
 }
 
+#' Calculate FIS for individual populations.
+#' 
+#' Calculates FIS for each individual level in each provided sample facet 
+#' according to Weir and Cockerham (1984).
+#' 
+#' Note that FIS is calculated by considering \emph{only data from 
+#' individual sample levels}! This means that individual and subpopulation 
+#' variances are only considered within each subpopulation. If snp facets are provided,
+#' weighted means will be provided for each snp facet level, although raw FIS values are
+#' calculated on a per-snp basis and thus ignore these levels. 
+#' 
+#' If the base facet
+#' (facets = NULL or facets = ".base") is requested, FIS will compare individual to total
+#' variance across all samples instead (equivalent to overall FIT).
+#' 
+#' @param x snpRdata. Input SNP data.
+#' @param facets character. Categorical metadata variables by which to break up
+#'   analysis. See \code{\link{Facets_in_snpR}} for more details.
+#' 
+#' @export
+#' @author William Hemstrom
+#' @references Wier and Cockerham (1984). \emph{Evolution}
+#' 
+#' @examples 
+#' x <- calc_fis(stickSNPs, c("pop", "pop.chr"))
+#' get.snpR.stats(x, c("pop", "pop.chr"), "fis")
+#' 
+calc_fis <- function(x, facets = NULL){
+  #============================sanity and facet checks========================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  if(any(x@ac$n_alleles > 2)){
+    vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
+    vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
+    stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
+  }
+  
+  # add any missing facets
+  ofacets <- facets
+  facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
+  facets <- facets[[1]]
+  if(!all(facets %in% x@facets)){
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+  }
+  
+  #===========subfunctions=====================================================
+  func <- function(ac_i, ho_i){
+    intot <- ac_i$n_total/2
+    ps1 <- ac_i$ni1/ac_i$n_total
+    ps2 <- ac_i$ni2/ac_i$n_total
+    iho <- ho_i
 
-# calc_single_fst <- function(x, facets = NULL, method = "WC"){
-#   
-# }
+    r <- 1
+    nbar <- intot
+    nc <- 0
+    
+    jntot <- NA
+    ps2 <- NA
+    jho <- NA
+    # browser()
+    # write.table(data.frame(intot = intot, ps1 = ps1, ps2 = ps2, iho = ho_i, r = r, nbar = nbar, nc = nc), "fis_temp1.txt")
+    
+    fcomp <- .per_all_f_stat_components(intot = intot,
+                                        jntot = jntot,
+                                        ps1 = ps1,
+                                        ps2 = ps2,
+                                        r = r,
+                                        nbar = nbar, 
+                                        nc = nc, 
+                                        iho = iho, 
+                                        jho = jho)
+    
+    fis <- 1 - fcomp$c/(fcomp$b + fcomp$c)
+    
+    return(fis)
+  }
+  
+  #===========run=============================================================
+  # add ho
+  needed <- .check_calced_stats(x, facets, "ho")
+  needed <- facets[which(!unlist(needed))]
+  if(length(needed) > 0){
+    x <- calc_ho(x, needed)
+  }
+  
+  
+  tl <- .get.task.list(x, facets)
+  out <- vector("list", length = nrow(tl))
+  wm_out <- out
+  
+  for(i in 1:nrow(tl)){
+    
+    # fetch and sort ac
+    snp.matches <- .fetch.snp.meta.matching.task.list(x, tl[i,])
+    meta.match <- which(x@facet.meta$facet == tl[i,1] & 
+                          x@facet.meta$subfacet == tl[i,2] &
+                          x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[snp.matches])
+    tac <- x@ac[meta.match,]
+    tac.ord <- order(x@facet.meta[meta.match,]$.snp.id)
+    tac <- tac[tac.ord,]
+    
+    # fetch and sort ho
+    stat.match <- which(x@stats$facet == tl[i,1] & 
+                          x@stats$subfacet == tl[i,2] &
+                          x@stats$.snp.id %in% x@snp.meta$.snp.id[snp.matches])
+    tho <- x@stats$ho[stat.match]
+    tho.ord <- order(x@stats[stat.match,]$.snp.id)
+    tho <- tho[tho.ord]
+    
+    # run func
+    out[[i]] <- func(tac, tho)
+    
+    # add metadata
+    out[[i]] <- cbind(x@facet.meta[meta.match,], fis = out[[i]])
+    out[[i]]$nk <- tac$n_total
+  }
+  
+  # bind results
+  out <- dplyr::bind_rows(out)
+  
+  #========return==============
+  x <- .merge.snpR.stats(x, out[,-which(colnames(out) == "nk")])
+  x <- .calc_weighted_stats(x, ofacets, "single", "fis")
+  x <- .update_calced_stats(x, ofacets, "fis")
+  x <- .update_citations(x, "Weir1984", "fis", "FIS calculation")
+  
+  return(x)
+}
 
 #'@export
 #'@describeIn calc_single_stats observed heterozygosity
