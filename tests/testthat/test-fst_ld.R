@@ -26,7 +26,7 @@ test_that("correct wc", {
 
 test_that("correct fis",{
   # check
-  x <- calc_fis(stickSNPs[1:10, pop = "ASP"], c("pop"))
+  x <- calc_fis(stickSNPs[1:10, pop = c("ASP")], c("pop"))
   fis <- get.snpR.stats(x, facets = "pop", stats =  "fis")
   
   # peg <- snpR::format_snps(x, facets = "pop", output = "adegenet")
@@ -45,6 +45,12 @@ test_that("correct fis",{
                                                       -0.06976744,
                                                       -0.23888183,
                                                       -0.01492537), 3))
+  
+  # check that the means are the same if we do additional facets at the same time
+  fis_mf <- calc_fis(stickSNPs[1:10, pop = c("ASP", "PAL")], c("pop", "pop.fam"))
+  fis_mf <- get.snpR.stats(fis_mf, facets = c("pop", "pop.fam"), stats = "fis")
+  expect_equal(fis_mf$weighted.means[which(fis_mf$weighted.means$subfacet == "ASP"),]$weighted_mean_fis,
+               fis$weighted.means$weighted_mean_fis)
   
   # check means are working correctly
   fis <- calc_fis(.internal.data$test_snps, c("pop", "pop.chr", ".base"))

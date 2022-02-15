@@ -1035,43 +1035,29 @@ calc_fis <- function(x, facets = NULL){
     x <- calc_ho(x, needed)
   }
   
+  # grab inputs
+  samp.facets <- .check.snpR.facet.request(x, facets, fill_with_base = TRUE, return_base_when_empty = TRUE)
+  meta.match <- which(x@facet.meta$facet %in% samp.facets)
   
-  tl <- .get.task.list(x, facets)
-  out <- vector("list", length = nrow(tl))
-  wm_out <- out
+  tac <- cbind(as.data.table(x@ac[meta.match,]), as.data.table(x@facet.meta[meta.match,]))
   
-  for(i in 1:nrow(tl)){
-    
-    # fetch and sort ac
-    snp.matches <- .fetch.snp.meta.matching.task.list(x, tl[i,])
-    meta.match <- which(x@facet.meta$facet == tl[i,1] & 
-                          x@facet.meta$subfacet == tl[i,2] &
-                          x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[snp.matches])
-    tac <- x@ac[meta.match,]
-    tac.ord <- order(x@facet.meta[meta.match,]$.snp.id)
-    tac <- tac[tac.ord,]
-    
-    # fetch and sort ho
-    stat.match <- which(x@stats$facet == tl[i,1] & 
-                          x@stats$subfacet == tl[i,2] &
-                          x@stats$.snp.id %in% x@snp.meta$.snp.id[snp.matches])
-    tho <- x@stats$ho[stat.match]
-    tho.ord <- order(x@stats[stat.match,]$.snp.id)
-    tho <- tho[tho.ord]
-    
-    # run func
-    out[[i]] <- func(tac, tho)
-    
-    # add metadata
-    out[[i]] <- cbind(x@facet.meta[meta.match,], fis = out[[i]])
-    out[[i]]$nk <- tac$n_total
-  }
+  stat.match <- which(x@stats$facet %in% samp.facets)
+  ho <- as.data.table(x@stats[stat.match,])
   
-  # bind results
-  out <- dplyr::bind_rows(out)
+  input <- merge(tac, ho, by = c("facet", "subfacet", colnames(x@snp.meta)))
+  
+  # run and finish
+  ac.cols <- which(colnames(input) %in% c("n_total", "n_alleles", "ni1", "ni2"))
+  out <- func(.fix..call(input[,..ac.cols]), input$ho)
+  
+  meta.cols <- which(colnames(input) %in% colnames(x@facet.meta))
+  out <- cbind(.fix..call(input[,..meta.cols]), fis = out)
+  out$nk <- tac$n_total
+  
   
   #========return==============
-  x <- .merge.snpR.stats(x, out[,-which(colnames(out) == "nk")])
+  nk.col <- which(colnames(out) == "nk")
+  x <- .merge.snpR.stats(x, .fix..call(out[,-..nk.col]))
   x <- .calc_weighted_stats(x, ofacets, "single", "fis")
   x <- .update_calced_stats(x, ofacets, "fis")
   x <- .update_citations(x, "Weir1984", "fis", "FIS calculation")
