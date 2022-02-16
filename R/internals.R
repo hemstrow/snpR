@@ -2550,7 +2550,7 @@ is.snpRdata <- function(x){
   
   # browser()
   # write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "fis_temp2.txt")
-  # 
+
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same

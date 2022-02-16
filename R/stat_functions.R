@@ -997,6 +997,7 @@ calc_fis <- function(x, facets = NULL){
   
   #===========subfunctions=====================================================
   func <- function(ac_i, ho_i){
+    # browser()
     intot <- ac_i$n_total/2
     ps1 <- ac_i$ni1/ac_i$n_total
     ps2 <- ac_i$ni2/ac_i$n_total
@@ -1007,22 +1008,33 @@ calc_fis <- function(x, facets = NULL){
     nc <- 0
     
     jntot <- NA
-    ps2 <- NA
     jho <- NA
-    # browser()
     # write.table(data.frame(intot = intot, ps1 = ps1, ps2 = ps2, iho = ho_i, r = r, nbar = nbar, nc = nc), "fis_temp1.txt")
-    
-    fcomp <- .per_all_f_stat_components(intot = intot,
+
+    fcomp1 <- .per_all_f_stat_components(intot = intot,
                                         jntot = jntot,
                                         ps1 = ps1,
-                                        ps2 = ps2,
+                                        ps2 = NA,
                                         r = r,
                                         nbar = nbar, 
                                         nc = nc, 
                                         iho = iho, 
                                         jho = jho)
     
-    fis <- 1 - fcomp$c/(fcomp$b + fcomp$c)
+    fcomp2 <- .per_all_f_stat_components(intot = intot,
+                                         jntot = jntot,
+                                         ps1 = ps2,
+                                         ps2 = NA,
+                                         r = r,
+                                         nbar = nbar, 
+                                         nc = nc, 
+                                         iho = iho, 
+                                         jho = jho)
+    # Fis <- 1 - rowSums(c)/rowSums(b + c)
+    fcomp1 <- lapply(fcomp1, function (x) ifelse(is.na(x), 0, x))
+    fcomp2 <- lapply(fcomp2, function (x) ifelse(is.na(x), 0, x))
+    
+    fis <- 1 - (fcomp1$c + fcomp2$c)/(fcomp1$b + fcomp2$b + fcomp1$c + fcomp2$c)
     
     return(fis)
   }
