@@ -976,6 +976,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 #' get.snpR.stats(x, c("pop", "pop.chr"), "fis")
 #' 
 calc_fis <- function(x, facets = NULL){
+  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- NULL
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

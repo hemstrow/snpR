@@ -10,7 +10,8 @@ import.snpR.data(
   sample.meta = NULL,
   mDat = "NN",
   chr.length = NULL,
-  ...
+  ...,
+  header_cols = 0
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ for each chromosome in order.}
 
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
 \emph{genotype} file name is passed that is not a vcf or ms file.}
+
+\item{header_cols}{Number of header columns on passed delimited file. Mostly
+for internal use with \code{\link{read_delimited_snps}}.}
 }
 \description{
 \code{import.snpR.data} converts genotype and meta data to the snpRdata class,

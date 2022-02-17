@@ -83,8 +83,10 @@
 #'@param chr.length numeric, Specifies chromosome lengths. Note that a single
 #'  value assumes that each chromosome is of equal length whereas a vector of
 #'  values gives the length for each chromosome in order.
-#'@param mDat character, default "0000". Note, if the default is set but the
+#'@param mDat character, defaults "0000" or "NN". Note, if the default is set but the
 #'  data has genotypes stored in 6 characters, mDat will be set to "000000".
+#'@param header_cols numeric, default 0. The number of snp metadata columns prior
+#'  to snp genotypes when importing delimited snps.
 #'
 #'@aliases read_vcf read_ms read_delimited_snps read_genepop read_FSTAT convert_genlight convert_genind
 #'@name snpR_import_wrappers
@@ -111,8 +113,8 @@ read_ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
 #' @export
 #' @describeIn snpR_import_wrappers Import tab delimited data where genotypes
 #'   are stored as: NN, 0000, or snp_tab format.
-read_delimited_snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN"){
-  return(import.snpR.data(file, snp.meta, sample.meta, mDat = mDat))
+read_delimited_snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN", header_cols = 0){
+  return(import.snpR.data(file, snp.meta, sample.meta, mDat = mDat, header_cols = header_cols))
 }
 
 #' @export

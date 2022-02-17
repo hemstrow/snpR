@@ -32,6 +32,11 @@ test_that("sample facet",{
   # error if using old syntax
   expect_error(id[facet = "pop", subfacet = "ASP"], "Facets and subfacets are now desginated directly using")
   
+  # correct parts, very simple
+  ids <- id[pop = "ASP"]
+  check <- sample.meta(ids)
+  expect_equal(unique(check$pop), "ASP")
+  
   # correct parts, simple
   ids <- id[pop = c("ASP", "PAL")]
   check <- sample.meta(ids)
@@ -44,9 +49,17 @@ test_that("sample facet",{
   expect_equivalent(unique(check[,c(1:2)]), data.frame(pop = c("ASP", "PAL"),
                                                       fam = c("A", "B")))
   
+  
   # correct parts, via reference to environmental variables
-  pops <- data.frame(pop = c("ASP", "PAL"), fam = c("A", "B"))
+  skip_on_cran()
+  # need to assign up to the global environment, otherwise it won't find pops when testing. 
+  # Very not ideal, but with the way testthat works I can't think of a better way. Skipped on cran for this reason.
+  # This should always work with a normal script or interactive use, where objects are set to the global environment automatically.
+  pops <<- data.frame(pop = c("ASP", "PAL"), fam = c("A", "B")) 
+  
   tdat <- id[pop.fam = paste0(pops[, 1], ".", pops[, 2])]
+  rm(pops, envir = globalenv()) # clean from global afterwards, don't actually want to pass this up out of the test
+  
   expect_identical(ids, tdat)
 })
 

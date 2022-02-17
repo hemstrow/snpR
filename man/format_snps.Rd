@@ -186,9 +186,6 @@ the "plink" option is selected and an outfile is designated, R will generate a
 ".sh" shell file with the same name given in the outfile argument. Running
 this file will create a plink.bed file.
 
-Example datasets in each format are available in \code{\link{stickFORMATs}} in
-elements named for output options.
-
 Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
 default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 "CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
@@ -204,11 +201,11 @@ from the simulation program ms.}}
 #import data to a snpRdata object
 ## get sample meta data
 sample_meta <- 
-    data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:3)], 1, 3), 
+    data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
                fam = rep(c("A", "B", "C", "D"), 
-                         length = ncol(stickFORMATs$`0000`) - 3), 
+                         length = ncol(stickRAW) - 3), 
                stringsAsFactors = FALSE)
-format_snps(stickFORMATs$`0000`, input_format = "0000", 
+format_snps(stickRAW, input_format = "0000", 
             input_meta_columns = 3, 
 input_mDat = "0000", sample.meta = sample_meta)
 

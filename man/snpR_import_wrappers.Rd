@@ -17,7 +17,13 @@ read_vcf(file, snp.meta = NULL, sample.meta = NULL)
 
 read_ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
 
-read_delimited_snps(file, snp.meta = NULL, sample.meta = NULL, mDat = "NN")
+read_delimited_snps(
+  file,
+  snp.meta = NULL,
+  sample.meta = NULL,
+  mDat = "NN",
+  header_cols = 0
+)
 
 read_genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
@@ -49,8 +55,11 @@ named columns.}
 value assumes that each chromosome is of equal length whereas a vector of
 values gives the length for each chromosome in order.}
 
-\item{mDat}{character, default "0000". Note, if the default is set but the
+\item{mDat}{character, defaults "0000" or "NN". Note, if the default is set but the
 data has genotypes stored in 6 characters, mDat will be set to "000000".}
+
+\item{header_cols}{numeric, default 0. The number of snp metadata columns prior
+to snp genotypes when importing delimited snps.}
 
 \item{genlight}{genlight object to convert, see
 \code{\link[adegenet]{genlight}}.}

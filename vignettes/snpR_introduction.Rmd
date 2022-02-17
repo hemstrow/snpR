@@ -31,13 +31,14 @@ Here, we will walk through a basic analysis of the example three-spined stickleb
 
 snpR can take a variety of SNP data formats. The basic input format is a tab-delimited SNP dataset, where each row contains metadata and genotypes for a single SNP. Genotypes are noted with two characters, such as "GG" or "GA" for a G/G homozygote and a G/A heterozygote, respectively. The missing data format can be user-defined, but is "NN" by default. For example, see the stick_NN_input.txt distributed with this package.
 ```{r}
-system.file("extdata", "stick_NN_input.txt", package = "snpR")
+NNfile <- system.file("extdata", "stick_NN_input.txt", package = "snpR")
 ```
 
 Note that this is identical to the format output by, for example, the ANGSD software package. Ensure that genotypes are not stored as factors during import. The resulting data looks like:
 
 ```{r echo=FALSE}
-print(head(stickFORMATs$NN)[,1:6], row.names = F)
+NN <- read.table(NNfile, header = TRUE)
+head(NN)[,1:6]
 ```
 
 Note that snpR can also import data where genotypes are stored as four numbers (ex. "GG", "GA", and "NN" as "0101", "0102", and "0000", respectively), and as a single numeric character that represents the count of the minor allele (0 or 2 for homozygotes, 1 for heterozygotes). 
@@ -45,16 +46,15 @@ Note that snpR can also import data where genotypes are stored as four numbers (
 Data in the "NN" format, as shown above, can be imported directly into a snpRdata set alongside any corresponding metadata using import.snpR.data function:
 
 ```{r}
-# example data is present in stickRAW 
 # the first three characters of the column names are the population, so let's grab that.
 # since the first three columns contain snp.metadata, we need to remove those before import!
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(NN[-c(1:3)]), 1, 3), stringsAsFactors = F)
 
 # grab our sample metadata
-snp_meta <- stickRAW[,1:3]
+snp_meta <- NN[,1:3]
 
 # grab the genetic data
-gen_data <- stickRAW[,4:ncol(stickRAW)]
+gen_data <- NN[,4:ncol(NN)]
 
 # import, remember to remove metadata from the genotypes!
 my.dat <- import.snpR.data(genotypes = gen_data, 
@@ -70,22 +70,15 @@ Note:
 
 * Shared metadata levels across different columns can cause issues if statistics are calculated for both of the two categories (for example, if both a population and a family are both named "A").
 
-* If you have data in the *adegenet* genind or genlight formats, these can also be automatically imported using import.snpR.data! There are examples for this in the import.snpR.data function documentation. More common formats are planned for future support. 
+* If you have existing objects in the *adegenet* genind or genlight format, the vcfR format, or a vcf file, plink files, FSTAT file, or genepop file, these can also be automatically imported! Look for the "read_vcf()" or "convert_genind()" style functions.
 
-Importing data into snpR can also be done using the format_snps function. This function takes a few extra arguments. First, it takes the data and a note of the input format, then it needs information on the number of snp metadata columns, the missing data notation, and any sample metadata.
+* Most delimited genotype formats (such as NN or 0000) can also be automatically imported with the read_delimited_snps() function.
 
 ```{r}
-# Import numeric formatted data.
-head(stickFORMATs$`0000`)[,1:6]
-
-# get sample metadata, as before.
-sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:3)], 1, 3), stringsAsFactors = F)
-
-# import
-my.dat2 <- format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 3, input_mDat = "0000", sample.meta = sample_meta)
+my.dat2 <- read_delimited_snps(NNfile, sample.meta = sample_meta, header_cols = 3)
+identical(my.dat, my.dat2)
 ```
 
-The result will be the same as import.snpR.data! There are a handful of other possible data imports that format_snps can handle, these are described in the function's documentation.
 
 ## snpRdata objects and facets
 
@@ -94,8 +87,8 @@ snpRdata objects store a range of variables internally in order to minimize repe
 
 Calling a snpRdata object will show a summary of the calculations done on the object and the metadata categories available.
 
-```{r}
-#my.dat #except for when knitting this document, apparently
+```{r, eval=FALSE}
+my.dat
 ```
 
 By and large, snpRdata objects should be accessed via accessor functions:

@@ -299,6 +299,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  for each chromosome in order.
 #'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
+#'@param header_cols Number of header columns on passed delimited file. Mostly
+#'  for internal use with \code{\link{read_delimited_snps}}.
 #'  
 #'@examples
 #' # import example data as a snpRdata object
@@ -361,7 +363,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ...){
+                             ..., header_cols = 0){
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
@@ -427,6 +429,12 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   #=================check input format for non-special case=============================
   # NN, no need to do anything, just read in and proceed as normal.
+  if(header_cols > 0){
+    header_cols <- 1:header_cols
+    snp.meta <- genotypes[,header_cols]
+    genotypes <- genotypes[,-header_cols]
+    
+  }
   if(genotypes[1,1] %in% 
      c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
     cat("Assuming data is in NN format.\n")
