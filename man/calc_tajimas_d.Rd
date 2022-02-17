@@ -47,20 +47,23 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}.
 }
 \examples{
+# slow, so not run
+\dontrun{
 # broken by population, windows across linkage group
-x <- calc_tajimas_d(stickSNPs, facets = "group.pop", sigma = 200, step = 50)
-get.snpR.stats(x, "group.pop", "single.window")
+x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
+get.snpR.stats(x, "chr.pop", "single.window")
 
-# the entire population at once, note that sigma and step are NULL and no chromosome/linkage group/scaffold/etc set.
+# the entire population at once, note that sigma and step are NULL and 
+# no chromosome/linkage group/scaffold/etc set.
 # this will calculate overall tajima's D without a window for each population.
 x <- calc_tajimas_d(stickSNPs, facets = "pop")
 get.snpR.stats(x, "pop", "single.window")
 
 # for the overall dataset, note that sigma and step are NULL
-# this will calculate overall tajima's D for each group/pop
-x <- calc_tajimas_d(stickSNPs, facets = "group.pop")
-get.snpR.stats(x, "pop.group", "single.window")
-
+# this will calculate overall tajima's D for each chr/pop
+x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
+get.snpR.stats(x, "pop.chr", "single.window")
+}
 }
 \references{
 Tajima, F. (1989). \emph{Genetics}

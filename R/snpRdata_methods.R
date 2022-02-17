@@ -1,7 +1,16 @@
 #' @include snpRdata.R
 NULL
 
-
+#' Display snpRdata objects
+#' 
+#' @aliases show,snpRdata-method
+#' 
+#' @docType methods
+#' 
+#' @param object A \code{snpRdata} object.
+#' @exportMethod show
+#' @importFrom methods show
+#' @export
 setMethod("show", "snpRdata", function(object) {
   
   calced_stats_print <- character(0)
@@ -14,11 +23,11 @@ setMethod("show", "snpRdata", function(object) {
   
   mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
   
-  cat(is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
+  cat(methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
       "==============================================\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
-      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),])/nrow(object@sample.meta))), "\n",
+      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),, drop = F])/nrow(object@sample.meta))), "\n",
       "==============================================\n",
       "Possible sample metadata facets:\n", paste0(colnames(object@sample.meta), collapse = "\t"), "\n\n",
       "Possible SNP metadata facets:\n", paste0(colnames(object@snp.meta), collapse = "\t"), "\n\n",
@@ -71,7 +80,6 @@ setMethod("ncol", "snpRdata", function(x) {
 
 
 
-
 #' @export
 #' @describeIn snpRdata_dims get the number of SNPs and samples
 setMethod("dim", "snpRdata", function(x) {
@@ -103,11 +111,16 @@ setMethod("dim", "snpRdata", function(x) {
 #'
 #' # show or overwrite snp meta
 #' snp.meta(test)
-#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
+#' snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE),
+#'                              chr = sample(LETTERS[1:4], nrow(test), 
+#'                                           replace = TRUE))
 #'
 #' #show or overwrite sample meta
 #' sample.meta(test)
-#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
+#' sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), 
+#'                                              replace = TRUE), 
+#'                                 pop = sample(LETTERS[5:8], ncol(test), 
+#'                                              replace = TRUE))
 NULL
 
 
@@ -151,4 +164,25 @@ setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set sample meta
 setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
+
+#' @export
+#' @describeIn subset_snpRdata extraction operator
+#' @aliases [,snpRdata-method
+#' @docType methods
+setMethod("[", c("snpRdata", "ANY", "ANY", "ANY"), function(x, i, j, ..., drop = FALSE){
+  if(rlang::is_missing(i)){
+    i <- 1:nsnps(x)
+  }
+  if(rlang::is_missing(j)){
+    j <- 1:nsamps(x)
+  }
+  
+  # expand dots: for some reason extra calls don't get passed correctly without doing this...
+  extra.args <- match.call()
+  extra.args <- as.list(extra.args)
+  extra.args <- extra.args[which(!names(extra.args) %in% c("x", "i", "j", "drop"))][-1]
+  
+  # pass to subset_snpR_data and return
+  return(do.call(subset_snpR_data, args = c(list(x = x, .snps = i, .samps = j), extra.args)))
+})
 

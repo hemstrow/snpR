@@ -3,8 +3,12 @@
 
 # snpR
 
-
 <!-- badges: start -->
+
+[![license](https://img.shields.io/badge/license-MIT%20+%20file%20LICENSE-lightgrey.svg)](https://choosealicense.com/)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.0.9000-orange.svg?style=flat-square)](commits/master)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 <!-- badges: end -->
 
 snpR is an R package for analyzing call Single Nucleotide Polymorphism
@@ -51,10 +55,7 @@ population/family combination is easy!
 ``` r
 library(snpR)
 #> Loading required package: data.table
-#> Loading required package: doParallel
 #> Loading required package: foreach
-#> Loading required package: iterators
-#> Loading required package: parallel
 ## basic example code
 
 x <- calc_pi(stickSNPs, facets = c("pop")) # split by pop (stickSNPs is an example dataset included in snpR)
@@ -68,23 +69,23 @@ get.snpR.stats handler.
 
 ``` r
 head(get.snpR.stats(x))
-#>   facet subfacet  snp    group position .snp.id major minor maj.count min.count
-#> 1 .base    .base 4529   groupV    42825       1     C     T       791        23
-#> 2 .base    .base 6829 groupXIX    67921       2     C     G       515       213
-#> 3 .base    .base 1674  groupIX   100382       3     G     A       739        53
-#> 4 .base    .base 9790   groupX   101821       4     C     T       752        46
-#> 5 .base    .base 5803 groupXIV   175941       5     G     A       719        53
-#> 6 .base    .base 2366   groupI   182629       6     C     T       642        22
-#>          maf pi
-#> 1 0.02825553 NA
-#> 2 0.29258242 NA
-#> 3 0.06691919 NA
-#> 4 0.05764411 NA
-#> 5 0.06865285 NA
-#> 6 0.03313253 NA
+#>   facet subfacet      chr position .snp.id pi major minor maj.count min.count
+#> 1 .base    .base   groupV    42825       1 NA     C     T       791        23
+#> 2 .base    .base groupXIX    67921       2 NA     C     G       515       213
+#> 3 .base    .base  groupIX   100382       3 NA     G     A       739        53
+#> 4 .base    .base   groupX   101821       4 NA     C     T       752        46
+#> 5 .base    .base groupXIV   175941       5 NA     G     A       719        53
+#> 6 .base    .base   groupI   182629       6 NA     C     T       642        22
+#>          maf
+#> 1 0.02825553
+#> 2 0.29258242
+#> 3 0.06691919
+#> 4 0.05764411
+#> 5 0.06865285
+#> 6 0.03313253
 ```
 
-For a full introduction, check the snpR\_introduction vignette.
+For a full introduction, check the snpR_introduction vignette.
 
 ``` r
 # remotes::install_github("hemstrow/snpR", ref = "dev", build_vignettes = T, build_opts = c("--no-resave-data", "--no-manual"))

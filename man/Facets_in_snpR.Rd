@@ -14,9 +14,9 @@ which to seperate the data. Levels within a facet are seperated by a '.'. Each
 facet can contain multiple snp and/or sample levels. Multiple facets can be
 run with a single line of code.
 
-For example, c("group.pop", "pop") would split the data first by both group
+For example, c("chr.pop", "pop") would split the data first by both chr
 and pop and then by pop alone. This will produce the same result as running
-the function with both "group.pop" and then again with "pop", although the
+the function with both "chr.pop" and then again with "pop", although the
 former is typically more computationally efficient.
 
 If multiple sample or snp levels are provided in a single facet, the data is

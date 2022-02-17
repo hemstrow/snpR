@@ -57,23 +57,23 @@ A snpRdata object with bootstrapped windows merged in to the
 }
 \description{
 \code{do_bootstraps} creates a distribution of bootstrapped smoothed values
-for requested statistcs.
+for requested statistics.
 }
 \details{
-Bootstrapps are conducted as described by Hohenlohe et al. (2010). For each
+Bootstraps are conducted as described by Hohenlohe et al. (2010). For each
 bootstrap, this function draws random window position, then draws random
 statistics from all provided SNPs to fill each observed position on that
 window and calculates a smoothed statistic for that window using
-gaussian-smoothing. Note that a "position" column \emph{must} be present in
+Gaussian-smoothing. Note that a "position" column \emph{must} be present in
 the snp metadata of the snpRdata object to do any window calculations.
 
 Bootstraps for multiple statistics can be calculated at once. If the
 statistics argument is set to "all", all calculated stats will be run. If it
 is set to "single", then all non-pairwise statistics will be bootstrapped, if
 it is set to "pairwise", then all pairwise statistics will be bootstrapped.
-Inidividual statistics can also be requested by name ("pi", "ho", etc.). All
+Individual statistics can also be requested by name ("pi", "ho", etc.). All
 statistics bootstrapped at the same time will be calculated using \emph{the
-same randomly filled windows}, and thus do not represent independant
+same randomly filled windows}, and thus do not represent independent
 observations between statistics. This is still computationally more efficient,
 however.
 
@@ -92,19 +92,28 @@ every step kilobases from the 0 position of each snp level facet category
 
 If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
 upon the bootstrapped null distribution of that statistic using an empirical 
-continuous distribution function.
+continuous distribution function. Note that in this case, the minimum possible
+p-value for a window depends upon the number of bootstraps calculated (if only
+a 1000 bootstraps were performed, the minimum possible p-value is about .001, 
+or one in a thousand.)
+
+Note that this function will return an error if equivalent windowed statistics
+have not first been calculated for the designated facets (if the "chromosome"
+facet is requested with a sigma of 200 and a step of 50, do_bootstraps will
+error unless \code{\link{calc_smoothed_averages}} has not yet been run with
+the same facet, sigma, and step values).
 }
 \examples{
 # add statistics
-dat <- calc_basic_snp_stats(stickSNPs, "group", sigma = 200, step = 150)
+dat <- calc_basic_snp_stats(stickSNPs, "chr", sigma = 200, step = 150)
 
 # do bootstraps
-dat <- do_bootstraps(dat, facets = "group", boots = 1000, 
+dat <- do_bootstraps(dat, facets = "chr", boots = 1000, 
                      sigma = 200, step = 150)
 
 # fetch results, bootstraps and then p-values on original stats
-get.snpR.stats(dat, "group", "bootstraps")
-get.snpR.stats(dat, "group", "single.window")
+get.snpR.stats(dat, "chr", "bootstraps")
+get.snpR.stats(dat, "chr", "single.window")
 
 }
 \references{

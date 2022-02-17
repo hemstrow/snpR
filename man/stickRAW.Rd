@@ -16,7 +16,7 @@ Stickleback collected in 2015 from several locations in the Deschutes River,
 Oregon, USA. For more information, see Hemstrom et al (in prep).
 }
 \details{
-Genotypes noted as two characters repesenting bases sequenced at a specific
+Genotypes noted as two characters representing bases sequenced at a specific
 site (e.g. "CC" or "GT"). Each SNP occupies one row, each sample occupies on
 column. Missing data coded as "NN".
 
@@ -24,7 +24,7 @@ Column names refer to the population of origin (first three characters) and
 the sample ID.
 
 The first three columns contain snp specific meta data: \itemize{ \item{snp: }
-SNP ID. \item{group: } Linkage group, essentially chromosome. \item{position:
+SNP ID. \item{chr: } Linkage group, essentially chromosome. \item{position:
 } Position of the SNP along the linkage group, in base pairs. }
 }
 \references{

@@ -23,7 +23,8 @@ plot_manhattan(
   viridis.option = "plasma",
   viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10),
-  colors = c("black", "slategray3")
+  colors = c("black", "slategray3"),
+  abbreviate_labels = FALSE
 )
 }
 \arguments{
@@ -97,6 +98,12 @@ c(strip.title, axis, axis.ticks).}
 
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
+
+\item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
+x-axis chromosome names will be abbreviated using 
+\code{\link[base]{abbreviate}}, with each abbreviated label having the
+minimum length specified. Helpful when chromosome/scaffold/etc names are
+very long.}
 }
 \value{
 A list containing \itemize{\item{plot: } A ggplot manhattan plot.
@@ -138,39 +145,50 @@ highlighted SNPs will be either chr_bp by default or given in the column
 named by the "snp" argument.
 }
 \examples{
+\dontrun{
+# association testing:
+# add a dummy phenotype and run an association test.
+x <- stickSNPs
+sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+x <- calc_association(x, response = "phenotype", method = "armitage")
+plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
+               log.p = TRUE)
+
+
+# other types of stats:
 # make some data
-x <- calc_basic_snp_stats(stickSNPs, "pop.group", sigma = 200, step = 50)
+x <- calc_basic_snp_stats(stickSNPs, "pop.chr", sigma = 200, step = 50)
 
 # plot pi, breaking apart by population, keeping only the groupIX and
 # groupIV chromosomes and the ASP, PAL, and SMR populations, with
 # significant and suggestive lines plotted and SNPs
 # with pi below the significance level labeled.
 plot_manhattan(x, "pi", facets = "pop",
-chr = "group", chr.subfacet = c("groupIX", "groupIV"),
+chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
 sample.subfacet = c("ASP", "OPL", "SMR"),
 significant = 0.05, suggestive = 0.15, sig_below = TRUE)
 
 # plot FST for the ASP/PAL comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID
-plot_manhattan(x, "fst", facets = "pop.group",
+plot_manhattan(x, "fst", facets = "pop.chr",
 sample.subfacet = "ASP~PAL", highlight = 1:20,
-chr = "group", snp = ".snp.id")
+chr = "chr", snp = ".snp.id")
 
 # plot sliding-window FST between ASP and CLF
 # and between OPL and SMR
-plot_manhattan(x, "fst", window = TRUE, facets = c("pop.group"),
-chr = "group", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
+chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
 significant = .29, suggestive = .2)
 
 # plot using a data.frame,
 # using log-transformed p-values
 ## grab data
-y <- get.snpR.stats(x, "pop")
+y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 ## plot
-plot_manhattan(y, "pHWE", facets = "pop", chr = "group",
+plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 significant = 0.0001, suggestive = 0.001,
 log.p = TRUE, highlight = FALSE)
-
+}
 }
 \author{
 William Hemstrom

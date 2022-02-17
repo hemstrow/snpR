@@ -9,6 +9,7 @@ calc_isolation_by_distance(
   facets = NULL,
   x_y = c("x", "y"),
   genetic_distance_method = "Edwards",
+  interpolate = "bernoulli",
   ...
 )
 }
@@ -25,6 +26,11 @@ should be latitude.}
 
 \item{genetic_distance_method}{character, default "Edwards". The genetic
 distance method to use, see \code{\link{calc_genetic_distances}}.}
+
+\item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
+"sn" format, notes the interpolation method to be used to fill missing data.
+Options are "bernoulli", "af", "iPCA", or FALSE. See 
+\code{\link{format_snps}} for details.}
 
 \item{...}{Additional arguments passed to \code{\link[ade4]{mantel.randtest}}}
 }
@@ -55,13 +61,14 @@ values.
 }
 \examples{
 # calculate ibd for several different facets
+\dontrun{
 y <- stickSNPs
 sample.meta(y) <- cbind(sample.meta(y), x = rnorm(ncol(y)), y = rnorm(ncol(y)))
-y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.group","pop.group.fam"))
-res <- get.snpR.stats(y, "pop.group", "ibd") # fetch results
+y <-calc_isolation_by_distance(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
+res <- get.snpR.stats(y, "pop.chr", "ibd") # fetch results
 res
-plot(res$group.pop$groupV$Edwards) # plot perms vs observed
-
+plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
+}
 }
 \seealso{
 \code{\link[ade4]{mantel.randtest}},

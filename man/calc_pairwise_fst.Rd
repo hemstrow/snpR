@@ -4,7 +4,14 @@
 \alias{calc_pairwise_fst}
 \title{Pairwise FST from SNP data.}
 \usage{
-calc_pairwise_fst(x, facets, method = "WC")
+calc_pairwise_fst(
+  x,
+  facets,
+  method = "WC",
+  boot = FALSE,
+  boot_par = FALSE,
+  cleanup = TRUE
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -12,58 +19,73 @@ calc_pairwise_fst(x, facets, method = "WC")
 \item{facets}{character. Categorical metadata variables by which to break up
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{method}{character, default "WC". Defines the FST estimator to use.
-Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
-(1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
-package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
+\item{method}{character, default "wc". Defines the FST estimator to use.
+Options: \itemize{ \item{wc: } Wier and Cockerham (1984).
+\item{Genepop: } Rousset (2008), uses the genepop package. }}
+
+\item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do.
+See details.}
+
+\item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will
+be processed in parallel using the supplied number of cores.}
+
+\item{cleanup}{logical, default TRUE. If TRUE, any new files created during
+FST calculation will be automatically removed.}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total
  observations at each SNP in each comparison merged in to the pairwise.stats
- socket.
+ slot.
 }
 \description{
 \code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
 possible pairwise combination of populations.
 }
 \details{
-Calculates FST according to either Wier and Cockerham 1984, Wier 1990,
-Hohenlohe et al 2010, or using the \code{\link[genepop]{Fst}} function from
-the genepop package (see references).
+Calculates FST according to either Wier and Cockerham 1984 or using the
+\code{\link[genepop]{Fst}} function from the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in
-the current working directory, which are not cleaned automatically.
-\code{calc_pairwise_fst} will ask for permission to continue if these files
-already exist.
+the default temporary directory (see \code{\link{tempfile}}).
 
-The Wier and Cockerham (1984), Wier (1990), and genepop methods tend to
-produce very similar results. Generally, either of the two former options are
-prefered for computational efficieny.
+The Wier and Cockerham (1984) and genepop methods tend to
+produce very similar results both per SNP and per population.
+Generally, the former option may be preferred for computational efficiency.
+
+P-values for group level comparisons can be calculated via bootstrapping
+using the boot option. Bootstraps are performed via randomly mixing
+individuals amongst different levels of the supplied facet, and thus
+the null hypothesis is that all groups are panmictic. P-values are calculated
+according to \code{\link[ade4]{randtest}}, although that function is not
+directly called. 
 
 The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
-Method Options: \itemize{ \item{"WC": }{Wier and Cockerham 1984.}
-\item{"Wier": }{Wier 1990.} \item{"Genepop": }{As used in genepop, Rousset
-2008.} \item{"Hohenlohe": }{Hohenlohe 2010.} }
+Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
+item{"Genepop": }{As used in genepop, Rousset
+2008.}}
 }
 \examples{
 # Using Wier and Cockerham 1984's method
 x <- calc_pairwise_fst(stickSNPs, "pop")
-get.snpR.stats(x, "pop", "pairwise")
+get.snpR.stats(x, "pop", "fst")
 
-# Using genepop, note that the overall value is part 2 of the returned list
+\dontrun{
+# Using genepop
 x <- calc_pairwise_fst(stickSNPs, "pop", "genepop")
-get.snpR.stats(x[[1]], "pop", "pairwise")
-x[[2]] # overall fst
+get.snpR.stats(x, "pop", "fst")
+
+# bootstrap p-values for overall pairwise-Fst values
+x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
+get.snpR.stats(x, "pop", "fst")
+}
 }
 \references{
 Wier and Cockerham (1984). \emph{Evolution}
 
 Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
-
-Hohenlohe et al. (2010). \emph{PLOS Genetics}
 
 Rousset (2008). \emph{Molecular Ecology Resources}
 }

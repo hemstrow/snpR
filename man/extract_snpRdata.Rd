@@ -4,7 +4,7 @@
 \name{extract_snpRdata}
 \alias{extract_snpRdata}
 \alias{genotypes}
-\alias{geontypes<-}
+\alias{genotypes<-}
 \alias{snp.meta}
 \alias{snp.meta<-}
 \alias{sample.meta}
@@ -63,9 +63,14 @@ genotypes(test)
 
 # show or overwrite snp meta
 snp.meta(test)
-snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE), chr = sample(LETTERS[1:4], nrow(test), replace = TRUE))
+snp.meta(test) <- data.frame(pos = sample(10000, nrow(test), replace = TRUE),
+                             chr = sample(LETTERS[1:4], nrow(test), 
+                                          replace = TRUE))
 
 #show or overwrite sample meta
 sample.meta(test)
-sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), replace = TRUE), pop = sample(LETTERS[5:8], ncol(test), replace = TRUE))
+sample.meta(test) <- data.frame(fam = sample(LETTERS[1:4], ncol(test), 
+                                             replace = TRUE), 
+                                pop = sample(LETTERS[5:8], ncol(test), 
+                                             replace = TRUE))
 }

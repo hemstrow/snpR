@@ -1,0 +1,17 @@
+Format,Argument,Description
+Allele Count,ac,"allele count format, allele counts tabulated for all samples or within populations. Used in bayescan and others."
+Genepop,genepop,"genepop format, genotypes stored as four numeric characters (e.g. ""0101"", ""0204""), transposed, and formatted for genepop. Rownames are individual IDs in genepop format, colnames are SNP ids, matching the first metadata column in input."
+STRUCTURE,structure,"STRUCTURE format, two lines per individual (one for each allele) with genotypes formatted as 1, 2, 3, or 4 for each nucleotide."
+Four-number numeric,0,"numeric genotype tab format, genotypes stored as four numeric characters (e.g. ""0101"", ""0204"")."
+Migrate-n hapmap,hapmap,"Migrate-n hapmap, allele counts tabulated within populations, in migrate-n hapmap format. Since this migrate-n implementation is iffy, this probably shouldn't be used much."
+Two-Character,NN,"character genotype tab format, genotypes stored as actual base calls (e.g. ""AA"", ""CT"")."
+Allele presence/absence,pa,"allele presence/absence format, presence or absence of each possible allele at each possible genotype noted. Interpolation possible, with missing data substituted with allele freqency in all samples or each population."
+RAFM,rafm,"RAFM format, two allele calls at each locus stored in subsequent columns, e.g. locus1.1 locus1.2."
+fastSTRUCTURE,faststructure,"fastSTRUCTURE format, identical to STRUCTURE format save with the addition of filler columns proceeding data such that exactly 6 columns proceed data. These columns can be filled with metadata if desired."
+dadi,dadi,"dadi format SNP data format, requires two columns named ""ref"" and ""anc"" with the flanking bases around the SNP, e.g. ""ACT"" where the middle location is the A/C snp."
+PLINK! .bed,plink,"PLINK! binary input format, requires columns named ""group"", ""snp"", and ""position"", and may contain a column named ""cM"", ""cm"", or ""morgans"", containing linkage group/chr, snp ID, position in bp, and distance in cM in order to create .bim extended map file."
+Single Number Numeric,sn,"Single character numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the 'interpolate' argument."
+Sequoia,sequoia,"sequoia format. Each genotype is converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia. For more information see sequoia documentation."
+Variant Call Format,vcf,"Variant Call Format. Each genotype is converted into 0/0, 0/1, or 1/1, with SNP specific metadata in first few columns."
+COLONY input files,colony,"Colony input files, including genotype files for both male parents, female parents, and offspring."
+snpRdata,snpRdata,a snpRdata object.

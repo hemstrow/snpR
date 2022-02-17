@@ -64,7 +64,7 @@ a snpRdata object.
 \details{
 Since the output is a ggplot object, options can be added or changed by adding
 "+ function()" to the end of \code{LD_pairwise_heatmap}. Some common options
-are also built into this function as agruments, but can be overwritten freely.
+are also built into this function as arguments, but can be overwritten freely.
 
 Specific facets and facet levels can be requested as long as LD data for those
 facets has been previously calculated. Facets should be provided as described
@@ -79,15 +79,16 @@ not accepted.
 Note that NA LD values will be colored white in the resulting plot.
 }
 \examples{
+\dontrun{
 # get LD data
-dat <- calc_pairwise_ld(stickSNPs, c("pop.group"))
+dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 
 # produce plots for linkage group IX in the ASP and CLF populations.
-plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIX", c("ASP", "CLF"))
+plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
 
 # produce plots for every population for linkage group IV
-plot_pairwise_LD_heatmap(dat, c("pop.group"), "groupIV")
-
+plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
+}
 
 }
 \author{

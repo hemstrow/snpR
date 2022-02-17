@@ -4,7 +4,7 @@
 \alias{make_SFS}
 \title{Generate a 1-2d site frequency spectrum from a dadi input file.}
 \usage{
-make_SFS(x, pops, projection, fold = FALSE)
+make_SFS(x, pops, projection, fold = FALSE, update_bib = FALSE)
 }
 \arguments{
 \item{x}{character or data.frame. Either a path to a dadi formatted input
@@ -19,6 +19,12 @@ containing few or no SNPs.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
 left polarized.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
 A matrix or vector containing the site frequency spectrum with a

@@ -21,7 +21,8 @@ format_snps(
   ncp = 2,
   ncp.max = 5,
   chr = "chr",
-  position = "position"
+  position = "position",
+  phenotype = "phenotype"
 )
 }
 \arguments{
@@ -41,7 +42,7 @@ or a numeric vector of loci to use.}
 
 \item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
 "sn" format, notes the interpolation method to be used to fill missing data.
-Options are "bernoulli", "af", or FALSE. See details.}
+Options are "bernoulli", "af", "iPCA", or FALSE. See details.}
 
 \item{outfile}{character vector, default FALSE. If a filepath is provided, a
 copy of the output will be saved to that location. For some output styles,
@@ -49,7 +50,7 @@ such as genepop, additional lines will be added to the output to allow them
 to be immediately run on commonly used programs.}
 
 \item{ped}{data.frame default NULL. Optional argument for the "plink" output
-format. A six column data frame containg Family ID, Individual ID, Paternal
+format. A six column data frame containing Family ID, Individual ID, Paternal
 ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
 outputs will contain information contained in ped. See plink documentation
 for more details.}
@@ -87,10 +88,13 @@ when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
 
 \item{chr}{character, default "chr". Name of column containing chromosome
-information, for VCF output.}
+information, for VCF or plink! output.}
 
 \item{position}{character, default "position". Name of column containing
 position information, for VCF output.}
+
+\item{phenotype}{character, default "phenotype". Optional name of column
+containing phenotype information, for plink! output.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
@@ -105,9 +109,14 @@ While this function can accept a few non-snpRdata input formats, it will
 reformat to a snpRdata object internally. As such, it takes a facets argument
 that works identically to elsewhere in the package, as described in
 \code{\link{Facets_in_snpR}}. This argument is only used for output formats
-where facets are important, such as the genepop format. Additionally, this
-function can therefore be used as an alternative to
-\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
+where facets are important, such as the genepop format.
+
+While this function can be used as an alternative to
+\code{\link{import.snpR.data}} when the output argument is set to "snpRdata",
+this is more complicated and not recommended. Instead, it is simpler
+\code{\link{import.snpR.data}} or one of the wrappers in
+\code{\link{snpR_import_wrappers}}. The option is kept for backwards
+compatability and internal use.
 
 If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 metadata may either be provided in the first few columns of x, the number of
@@ -138,19 +147,20 @@ that exactly 6 columns proceed data. These columns can be filled with metadata
 if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
 named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
 the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
-format, requires columns named "group", "snp", and "position", and may contain
-a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
-position in bp, and distance in cM in order to create .bim extended map file.}
-\item{sn: }{Single character numeric format. Each genotype will be listed as
-0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
-remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
-format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
-Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
-For more information see sequoia documentation.} \item{fasta: }{fasta sequence
-format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
-other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
-missing values), with a healthy serving of additional metadata but very little
-sample metadata.} \item{snpRdata: }{a snpRdata object.} }
+format, requires columns named "position" and one matching the name designated
+with the 'chr' argument, and may contain a column named "cM", "cm", or
+"morgans", containing linkage group/chr, snp ID, position in bp, and distance
+in cM in order to create .bim extended map file.} \item{sn: }{Single character
+numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
+0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
+'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
+BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata 
+for running Sequoia. For more information see sequoia documentation.} \item{fasta: }
+{fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format 
+for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. 
+(for missing values), with a healthy serving of additional metadata but very 
+little sample metadata.}\item{snpRdata: }{a snpRdata object.} }
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -176,9 +186,6 @@ the "plink" option is selected and an outfile is designated, R will generate a
 ".sh" shell file with the same name given in the outfile argument. Running
 this file will create a plink.bed file.
 
-Example datasets in each format are available in \code{\link{stickFORMATs}} in
-elements named for output options.
-
 Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
 default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 "CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
@@ -190,10 +197,17 @@ genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
 from the simulation program ms.}}
 }
 \examples{
+\dontrun{
 #import data to a snpRdata object
 ## get sample meta data
-sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
-format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+sample_meta <- 
+    data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
+               fam = rep(c("A", "B", "C", "D"), 
+                         length = ncol(stickRAW) - 3), 
+               stringsAsFactors = FALSE)
+format_snps(stickRAW, input_format = "0000", 
+            input_meta_columns = 3, 
+input_mDat = "0000", sample.meta = sample_meta)
 
 #allele count, seperated by the pop facet.
 format_snps(stickSNPs, "ac", facets = "pop")
@@ -228,17 +242,22 @@ format_snps(stickSNPs, "rafm", facets = "pop", n_samp = 100)
 #dadi
 ## add ref and anc snp meta data columns to stickSNPs
 dat <- as.data.frame(stickSNPs)
-dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 format_snps(dat, "dadi", facets = "pop")
 
-#PLINK! format
-format_snps(stickSNPs, "plink", outfile = "plink_out")
-#from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
+#PLINK! format, not run to avoid file creation
+format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
+
 
 #PLINK! format with provided ped
-ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
-format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
-#from command line, then run plink_out.sh to generate plink_out.bed.
+ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, 
+                  mat = 1:420, pat = 1:420, 
+                  sex = sample(1:2, 420, replace = TRUE), 
+                  pheno = sample(1:2, 420, replace = TRUE))
+format_snps(stickSNPs, "plink", outfile = "plink_out", 
+            ped = ped, chr = "chr")
+#note that a column in the sample metadata containing phenotypic information
+#can be provided to the "phenotype" argument if wished.
 
 #Sequoia format
 b <- sample.meta(stickSNPs)
@@ -252,7 +271,8 @@ format_snps(x=a, output = "sequoia")
 
 
 # VCF format
-test <- format_snps(stickSNPs, "vcf", chr = "group")
+test <- format_snps(stickSNPs, "vcf", chr = "chr")
+}
 }
 \author{
 William Hemstrom

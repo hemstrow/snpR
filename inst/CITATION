@@ -1,0 +1,9 @@
+citHeader("To cite snpR, use:")
+
+bibentry(bibtype = "Article",
+         title = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
+         author = c(person("William", "Hemstrom"),
+                    person("Melissa", "Jones")),
+         year = 2021,
+         journal = "Authorea"
+)

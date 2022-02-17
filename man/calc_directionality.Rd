@@ -9,7 +9,8 @@ calc_directionality(
   sfs = NULL,
   facet = NULL,
   pops = NULL,
-  projection = NULL
+  projection = NULL,
+  update_bib = FALSE
 )
 }
 \arguments{
@@ -22,14 +23,20 @@ c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 the second to matrix rows. These objects can be produced from a dadi input
 file using \code{\link{make_SFS}}.}
 
-\item{facet}{character, default NULL. Passed to \code{\link{calc_SFS}} -- see
+\item{facet}{character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 documentation there for details. Ignored if a sfs is provided.}
 
-\item{pops}{character, default NULL. cPassed to \code{\link{calc_SFS}} -- see
+\item{pops}{character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 documentation there for details. Ignored if a sfs is provided.}
 
-\item{projection}{numeric, default NULL. Passed to \code{\link{calc_SFS}} --
+\item{projection}{numeric, default NULL. Passed to \code{\link{calc_sfs}} --
 see documentation there for details. Ignored if a sfs is provided.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
 A numeric value giving the directionality with a "direction"
@@ -37,7 +44,7 @@ A numeric value giving the directionality with a "direction"
 }
 \description{
 Calculates the directionality index based on a 2d SFS according to Peter and
-Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
+Slatkin (2013). Input spectra can be created using the \code{\link{calc_sfs}}
 function, using a provided snpRdata object, or passed from other programs.
 \emph{Spectra must be not be folded}.
 }
@@ -46,16 +53,16 @@ Essentially, the directionality index measures the difference in derived
 allele frequency between two populations to determine the directionality of
 population spread between the two. Since the "destination" population is
 sourced from but experienced more genetic drift than the "source" population,
-it should have relativley more high-frequency derived alleles \emph{after the
+it should have relatively more high-frequency derived alleles \emph{after the
 removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 details.
 }
 \examples{
 # directionality can be calculated without first calculating a SFS
-calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
+calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(20, 20))
 
-#an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
-sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
+# an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
+sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 calc_directionality(sfs = sfs)
 
 }

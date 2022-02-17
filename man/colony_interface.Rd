@@ -43,12 +43,13 @@ write_colony_input(
   maternal_exclusions = NULL,
   paternal_exclusions = NULL,
   excluded_maternal_siblings = NULL,
-  excluded_paternal_siblings = NULL
+  excluded_paternal_siblings = NULL,
+  update_bib = FALSE
 )
 
-call_colony(infile, colony_path)
+call_colony(infile, colony_path, update_bib = FALSE)
 
-parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL)
+parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE)
 
 run_colony(
   x,
@@ -86,7 +87,9 @@ run_colony(
   maternal_exclusions = NULL,
   paternal_exclusions = NULL,
   excluded_maternal_siblings = NULL,
-  excluded_paternal_siblings = NULL
+  excluded_paternal_siblings = NULL,
+  update_bib = FALSE,
+  cleanup = FALSE
 )
 }
 \arguments{
@@ -214,6 +217,12 @@ siblings, column 3 the IDs of excluded siblings separated by spaces.}
 matrix with column 1 the offspring ID, column 2 the number of excluded
 siblings, column 3 the IDs of excluded siblings separated by spaces.}
 
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
+
 \item{infile}{character. Path to the pre-written colony input file to be run.}
 
 \item{colony_path}{character. Path to the colony executable.}
@@ -221,6 +230,9 @@ siblings, column 3 the IDs of excluded siblings separated by spaces.}
 \item{prefix}{character. The prefix for the colony files to be parsed.}
 
 \item{path}{character. Path to the directory containing colony results.}
+
+\item{cleanup}{logical, default FALSE. If TRUE, colony files will be removed
+after parsing.}
 }
 \description{
 Interfaces with the command-line version of the COLONY pedigree program.
@@ -233,20 +245,22 @@ specified parameters. Requires that the COLONY program is installed locally. Inp
 will be stored in a colony folder created in the current working directory.
 }
 \details{
-Requires that the COLONY program is installed locally. Input and output files
-will be stored in a colony folder created in the current working directory.
-The functions documented here can write input files, call them using colony,
-and parse some parts of the results given the original snpRdata object. Note
-that no facet support is currently available here due to the complexity and
-number of possible input parameters that are difficult to handle across
-multiple facets and facet levels. Facet support for the basic, default
-operation with few additional options may be added in the future. For now,
-facets can be handled during parentage and pedigree creation in snpR using
-the \code{\link{run_sequoia}} function, which runs a notably simpler (with
-respect to implementation) pedigree toolkit.
+Requires that the COLONY program is installed locally if running within snpR.
+Text files exported from write_colony_input command can also be imported to
+non-local command line versions of COLONY (eg. on a compute cluster). Input
+and output files will be stored in a colony folder created in the current 
+working directory. The functions documented here can write input files, call 
+them using COLONY, and parse some parts of the results given the original 
+snpRdata object. Note that no facet support is currently available here due 
+to the complexity and number of possible input parameters that are difficult 
+to handle across multiple facets and facet levels. Facet support for the 
+basic, default operation with few additional options may be added in the 
+future. For now, facets can be handled during parentage and pedigree creation 
+in snpR using the \code{\link{run_sequoia}} function, which runs a notably 
+simpler (with respect to implementation) pedigree toolkit.
 
-These functions includes many commonly used options but not all possible
-parameters for colony inputs. See Colony User Guide for using extra features.
+These functions include many commonly used options but not all possible
+parameters for COLONY inputs. See COLONY User Guide for using extra features.
 
 This is still in development. The defaults and the most commonly used options
 have been tested and work well, but some of the more esoteric options haven't
@@ -264,27 +278,50 @@ been fully tested yet.
 }}
 
 \examples{
-# A simple example for running all individuals in the snpR object as siblings in colony.
-write_colony_input(x = stickSNPs, outfile = "stk.col")
 
-# A more complex example requires 1) creating and adding variables to the stickSNPs example dataset and 2) creating subset snpR objects.
+# A simple example for running all individuals in the snpR object as siblings 
+# in colony. Not run to avoid clutter.
+\dontrun{
+  write_colony_input(x = stickSNPs, outfile = "stk.col")
+ }
+  
+# A more complex example requires 1) creating and adding variables to the 
+# stickSNPs example dataset and 2) creating subset snpR objects.
 a <- 2013:2015 #create a vector of possible birthyears
 b <- c("M", "F", "U") #create a vector of possible sexes
 stk <- stickSNPs
-sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
+sample.meta(stk)$BirthYear <- 
+    sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
-#generating snpR objects for male and female potential parents and offspring (no U sexes in the potential parents in for this example)
-sir <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("M", "2013"))
-dam <- subset_snpR_data(stk, facets = c("Sex", "BirthYear"), subfacets = c("F", "2013"))
-off <- subset_snpR_data(stk, facets = c("BirthYear"), subfacets = c("2014", "2015"))
-write_colony_input(x = off, outfile = "parents_example.col", maternal_genotypes = dam, paternal_genotypes = sir)
+sample.meta(stk)$Sex <- 
+    sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+#generating snpR objects for male and female potential parents and offspring 
+# (no U sexes in the potential parents in for this example)
+# get list of samples which are now "M" for subsetting
+lsir <- which(stk@sample.meta$Sex =="M" & 
+              stk@sample.meta$BirthYear == "2013") #list sires
+ldam <- which(stk@sample.meta$Sex =="F" & 
+              stk@sample.meta$BirthYear == "2013") #list dams
+loff <- which(stk@sample.meta$BirthYear \%in\% c("2014","2015")) #list offspr
+
+
+#creating new snpR objects for Colony formatting
+sir <- subset_snpR_data(x = stk, .samps = lsir) 
+dam <- subset_snpR_data(x = stk, .samps = ldam)
+off <- subset_snpR_data(x = stk, .samps = loff)
+# not run to avoid clutter
+\dontrun{
+  write_colony_input(x = off, outfile = "parents_example.col", 
+                     maternal_genotypes = dam, paternal_genotypes = sir)
+}
 
 # running a simple model
 \dontrun{
-## intentionally shorter run, with a small subset of the samples
-test_dat <- subset_snpR_data(stickSNPs, facets = "pop", subfacets = "ASP")
-run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", method = "PLS", run_length = 1) # intentionally a short, quick and dirty run.
+  ## intentionally shorter run, with a small subset of the samples
+  asp <- which(stickSNPs@sample.meta$pop == "ASP")
+  test_dat <- subset_snpR_data(stickSNPs, .samps = asp)
+  run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", 
+             method = "PLS", run_length = 1) 
 }
 }
 \references{

@@ -123,8 +123,10 @@ x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
 get.snpR.stats(x, c("pop", "pop.fam"))
 
 # HWE with family-wise error correction
-x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"), method = "exact")
+\dontrun{
+x <- calc_hwe(stickSNPs, facets = c("pop", "pop.fam"))
 get.snpR.stats(x, c("pop", "pop.fam"))
+}
 }
 \references{
 Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American

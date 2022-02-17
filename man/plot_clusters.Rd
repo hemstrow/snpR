@@ -6,8 +6,8 @@
 \usage{
 plot_clusters(
   x,
-  facets = FALSE,
-  plot_type = c("PCA", "tSNE", "umap"),
+  facets = NULL,
+  plot_type = "pca",
   check_duplicates = FALSE,
   minimum_percent_coverage = FALSE,
   minimum_genotype_percentage = FALSE,
@@ -21,6 +21,7 @@ plot_clusters(
   alt.palette = NULL,
   ncp = NULL,
   ncp.max = 5,
+  update_bib = FALSE,
   ...
 )
 }
@@ -31,8 +32,13 @@ plot_clusters(
 variables by which to color points. Up to two different sample-specific
 facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{plot_type}{character, default c("PCA", "tSNE", "umap"). Types of plots
-to be produced, see description.}
+\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap"). Types of
+plots to be produced. Options \itemize{\item{pca: } Principal Component
+Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
+Neighbor Embedding, which collapses dims (see argument) dimensions of
+variance into two. \item{umap: } Uniform Manifold Approximation and
+Projection, which collapses multiple dimensions of variance into two. } See
+description for details.}
 
 \item{check_duplicates}{logical, default FALSE. Checks for any duplicated
 individuals, which will cause errors. Since these rarely exist and
@@ -48,7 +54,14 @@ a sample must be sequenced at in order to be used in plots.}
 method to use for missing data. Options: \itemize{\item{bernoulli:
 }{Interpolated via binomial draw for each allele against minor allele
 frequency.} \item{af: }{Interpolated by inserting the expected number of
-minor alleles at missing data points given loci minor allele frequencies.}}}
+minor alleles at missing data points given loci minor allele frequencies.}
+\item{iPCA: }{This an iterative PCA approach to interpolate based on
+SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp
+argument is not defined, the number of components used for interpolation
+will be estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case,
+this method is much slower than the other methods, especially for large
+datasets. Setting an ncp of 2-5 generally results in reasonable
+interpolations without the time constraint.}}}
 
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
@@ -79,6 +92,12 @@ be very slow.}
 \item{ncp.max}{numeric, default 5. Maximum number of components to check for
 when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 \code{\link[umap]{umap}}.}
@@ -113,7 +132,14 @@ Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
 UMAP similarly attempts to reduce multi-dimensional results to a two
 dimensional visualization.
 
-For more details on tSNE aruments, \code{\link[Rtsne]{Rtsne}} should be
+Note that clusters and relative positions of samples from both tSNE and UMAP 
+may not reliably represent the relationships present in the higher PCA
+dimensions from which they are created. As such, it is probably not wise to
+use these methods to draw conclusions about relationships. They are useful
+exploratory tools, however, and so are kept available here.
+
+
+For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.
 
 Additional arguments to the UMAP can be also be provided. Additional
@@ -123,14 +149,14 @@ information on these arguments can be found in
 Data points for individuals can be automatically colored by any sample-level
 facet categories. Facets should be provided as described in
 \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-automatically plotted simultaniously.
+automatically plotted simultaneously.
 }
 \examples{
 # plot colored by population
 plot_clusters(stickSNPs, "pop")
 
 # plot colored by population and family
-plot_clusters(stickSNPs, "pop", "umap")
+plot_clusters(stickSNPs, "pop.fam")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor

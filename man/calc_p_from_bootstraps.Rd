@@ -69,13 +69,14 @@ statistical data have both been calculated will be run. By default, all stats
 for which a bootstrap null distribution has been generated will be run.
 }
 \examples{
+\dontrun{
 # add statistics and generate bootstraps
-x <- calc_basic_snp_stats(stickSNPs, c("group.pop"), sigma = 200, step = 150)
-x <- do_bootstraps(x, facets = c("group.pop"), boots = 1000, sigma = 200, step = 150)
+x <- calc_basic_snp_stats(stickSNPs, c("chr.pop"), sigma = 200, step = 150)
+x <- do_bootstraps(x, facets = c("chr.pop"), boots = 1000, sigma = 200, step = 150)
 x <- calc_p_from_bootstraps(x)
-get.snpR.stats(x, "group.pop", "single.window") # pi, ho, etc
-get.snpR.stats(x, "group.pop", "pairwise.window") # fst
-
+get.snpR.stats(x, "chr.pop", "single.window") # pi, ho, etc
+get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
+}
 }
 \seealso{
 ecdf

@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-genome analysis tools for use with SNP data
-Version: 1.1.2.0
+Version: 1.2.0.9001
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
@@ -26,29 +26,39 @@ Imports:
     methods,
     ggplot2,
     plyr,
+    pkgcond,
     purrr,
+    rbibutils,
+    RefManageR,
     reshape2,
+    rlang,
     snow,
+    stringi,
     stringr,
     tidyr
 Depends:
     data.table,
-    foreach
+    foreach,
+    R (>= 3.60)
 Suggests:
     ade4,
     adegenet,
     AGHmatrix,
+    ape,
     BGLR,
+    CATT,
     BiocManager,
-    BMS,
     forcats,
     genepop,
+    genio,
     geosphere,
     ggrepel,
     ggsn,
+    ggtree,
     GMMAT,
     knitr,
     LEA,
+    maps,
     markdown,
     missMDA,
     mmtsne,
@@ -66,13 +76,15 @@ Suggests:
     viridis,
     testthat
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Collate: 
     'NeEstimator_interface.R'
     'association_functions.R'
     'bootstrapping_functions.R'
     'colony_interface.R'
     'dataset_documentation.R'
+    'import_functions.R'
+    'import_wrappers.R'
     'internals.R'
     'plotting_functions.R'
     'sequoia_interface.R'
@@ -82,3 +94,5 @@ Collate:
     'snpRdata_methods.R'
     'stat_functions.R'
     'utility_functions.R'
+Remotes: JiscaH/sequoia, 
+    royfrancis/pophelper

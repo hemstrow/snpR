@@ -1,419 +1,327 @@
-#' Convert genind object to snpRdata.
-#'
-#' Convert genind object to snpRdata. Internal, called by import.snpR.data when
-#' provided a adegenet genind object.
-#'
-#' @param genind genind object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
-#'   genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual
-#'   sample, IDs and pops from genind may be added.
-#'
-#' @author William Hemstrom
-genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
-  #========sanity checks=============
-  msg <- character(0)
-
-  nal <- lapply(adegenet::alleles(genind), length) > 2
-  if(any(nal)){
-    msg <- c(msg, paste0("Some non-SNP alleles (>2 loci) detected in genind object: ",
-                         paste0(adegenet::locNames(genind)[which(nal)], collapse = ", "),
-                         "\nsnpR is designed to only work with SNP data.\n")
-    )
-  }
-  
-  unique.alleles <- unique(unlist(adegenet::alleles(genind)))
-  if(any(!unique.alleles %in% c("A", "T", "C", "G"))){
-    msg <- c(msg, "Some invalid allele names in the provided genind object. For now, alleles must be named A, C, G, or T.\n Names can be updated with adegenet::alleles(genotypes) <- .\n")
-  }
-  
-  if(!is.null(snp.meta)){
-    
-    if(nrow(snp.meta) != adegenet::nLoc(genind)){
-      snp.meta <- NULL
-      warning("Provided SNP metadata does not have the same number of rows as the number of loci in provided genind object, will be discarded.\n")
-    }
-  }
-  
-  if(!is.null(sample.meta)){
-    if(nrow(sample.meta) != adegenet::nInd(genind)){
-      sample.meta <- NULL
-      warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
-    }
-  }
-  if(any(adegenet::ploidy(genind) != 2)){
-    msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
-  }
-  
-  
-  if(length(msg) > 0){
-    stop(msg)
-  }
-  
-  #==========pull out stuff for snpR=====
-  # genotypes
-  ## approach: figure out where we have homozygotes and fill new genotype calls with correct identity, then do hets and missing.
-  genotypes <- adegenet::tab(genind)
-  alleles <- adegenet::alleles(genind)
-  allele1ident <- rep(unlist(purrr::map(alleles, 1)), each = nrow(genotypes))
-  allele2ident <- rep(unlist(purrr::map(alleles, 2)), each = nrow(genotypes))
-  a1c <- genotypes[,seq(1, ncol(genotypes), by = 2)]
-  a2c <- genotypes[,seq(2, ncol(genotypes), by = 2)]
-  new.genotypes <- character(length(a1c))
-  
-  ## where we have a homozygote allele 1, fill
-  a1homs <- which(a1c == 2)
-  a2homs <- which(a2c == 2)
-  nas <- which(is.na(a1c))
-  not_hets <- union(union(a1homs, a2homs), nas)
-  new.genotypes[a1homs] <- paste0(allele1ident[a1homs], allele1ident[a1homs])
-  new.genotypes[a2homs] <- paste0(allele2ident[a2homs], allele2ident[a2homs])
-  new.genotypes[nas] <- "NN"
-  new.genotypes[-not_hets] <- paste0(allele1ident[-not_hets], allele2ident[-not_hets])
-  genotypes <- as.data.frame(t(matrix(new.genotypes, nrow(genotypes), ncol(genotypes)/2)), stringsAsFactors = F)
-  
-  
-  # snp metadata, needs to be provided, albeit we can add on snp names
-  if(is.null(snp.meta)){
-    snp.meta <- data.frame(snpID = adegenet::locNames(genind))
-  }
-  else if(!"snpID" %in% colnames(snp.meta)){
-    snp.meta$ID <- adegenet::locNames(genind)
-  }
-  
-  # sample metadata
-  if(is.null(sample.meta)){
-    sample.meta <- data.frame(sampID = adegenet::indNames(genind))
-    sample.meta$pop <- adegenet::pop(genind)
-  }
-  else{
-    if(!"sampID" %in% colnames(sample.meta)){
-      sample.meta$sampID <- adegenet::indNames(genind)
-    }
-    if(!"pop" %in% colnames(sample.meta)){
-      sample.meta$pop <- adegenet::pop(genind)
-    }
-  }
-  
-  #=======format and return=========
-  return(import.snpR.data(genotypes, snp.meta, sample.meta))
-}
-
-#' Convert genlight object to snpRdata.
-#'
-#' Convert genlight object to snpRdata. Internal, called by import.snpR.data
-#' when provided a adegenet genlight object.
-#'
-#' @param genlight genlight object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
-#'   genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual
-#'   sample, IDs and pops from genind may be added.
-#'
-#' @author William Hemstrom
-genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
-  #========sanity checks=============
-  msg <- character(0)
-  
-  unique.alleles <- unique(adegenet::alleles(genlight))
-  unique.alleles <- unique(unlist(strsplit(unique.alleles, "/")))
-  unique.alleles <- toupper(unique.alleles)
-  if(any(!unique.alleles %in% c("A", "T", "C", "G"))){
-    msg <- c(msg, "Some invalid allele names in the provided genind object. For now, alleles must be named A, C, G, or T.\n Names can be updated with adegenet::alleles(genotypes) <- .\n")
-  }
-  
-  if(!is.null(snp.meta)){
-    if(nrow(snp.meta) != adegenet::nLoc(genlight)){
-      snp.meta <- NULL
-      warning("Provided SNP metadata does not have the same number of rows as the number of loci in provided genind object, will be discarded.\n")
-    }
-  }
-  
-  if(!is.null(sample.meta)){
-    if(nrow(sample.meta) != adegenet::nInd(genlight)){
-      sample.meta <- NULL
-      warning("Provided sample metadata does not have the same number of rows as the number of samples in provided genind object, will be discarded.\n")
-    }
-  }
-  
-  if(any(adegenet::ploidy(genlight) != 2)){
-    msg <- msg <- c(msg, "For now, snpR only converts diploid genind objects to snpRdata automatically.\n")
-  }
-  
-  
-  if(length(msg) > 0){
-    stop(msg)
-  }
-  
-  #=========pull out parts for snpRdata========
-  # genotypes
-  ## get alleles at each locus
-  genotypes <- adegenet::tab(genlight, NA.method = "asis")
-  als <- adegenet::alleles(genlight)
-  a1s <- gsub("/.", "", als)
-  a1s <- rep(a1s, each = nrow(genotypes))
-  a2s <- gsub("./", "", als)
-  a2s <- rep(a2s, each = nrow(genotypes))
-  
-  ## fill in homs and hets with correct alleles.
-  hom_a1s <- which(genotypes == 0)
-  hets <- which(genotypes == 1)
-  hom_a2s <- which(genotypes == 2)
-  new_genos <- character(length(genotypes))
-  new_genos[hom_a1s] <- paste0(a1s[hom_a1s], a1s[hom_a1s])
-  new_genos[hets] <- paste0(a1s[hets], a2s[hets])
-  new_genos[hom_a2s] <- paste0(a2s[hom_a2s], a2s[hom_a2s])
-  new_genos[which(is.na(genotypes))] <- "NN"
-  new_genos <- toupper(new_genos)
-  genotypes <- data.frame(t(matrix(new_genos, nrow(genotypes), ncol(genotypes))), stringsAsFactors = F)
-  
-  
-  # snp metadata, whatever possible
-  if(is.null(snp.meta)){
-    snp.meta <- data.frame(snpID = adegenet::locNames(genlight))
-  }
-  have.meta.cols <- colnames(snp.meta)
-  
-  if(!"snpID" %in% have.meta.cols){
-    snp.meta$snpID <- adegenet::locNames(genlight)
-  }
-  
-  if(!"chr" %in% have.meta.cols){
-    snp.meta$chr <- adegenet::chr(genlight)
-  }
-  if(!"position" %in% have.meta.cols){
-    snp.meta$position <- adegenet::position(genlight)
-  }
-  
-  # sample metadata, whatever possible
-  if(is.null(sample.meta)){
-    sample.meta <- data.frame(sampID = adegenet::indNames(genlight))
-  }
-  have.meta.cols <- colnames(sample.meta)
-  
-  if(!"sampID" %in% have.meta.cols){
-    sample.meta$sampID <- adegenet::indNames(genlight)
-  }
-  if(!"pop" %in% have.meta.cols){
-    sample.meta$pop <- adegenet::pop(genlight)
-  }
-  
-  #=========format and return===========
-  return(import.snpR.data(genotypes, snp.meta, sample.meta, mDat = "NN"))
-}
-
-
-#' Internal to process a ms file
-#' @param x filepath to ms file
-#' @param chr.length length of the chromosome. If a single value, assumes all
-#'   the same length. If a vector of the same length as number of chr, assumes
-#'   those are the chr lengths in order of apperance in ms file.
-#' @author William Hemstrom
-process_ms <- function(x, chr.length){
-  infile <- x #infile
-  lines <- readLines(x)
-  lines <- lines[-which(lines == "")] #remove empty entries
-  lines <- lines[-c(1,2)] #remove header info
-  nss <- grep("segsites", lines) #get the number of segsites per chr
-  chrls <- gsub("segsites: ", "", lines[nss]) #parse this to get the lengths
-  chrls <- as.numeric(chrls)
-  lines <- lines[-nss] #remove the segsites lines
-  pos <- lines[grep("positions:", lines)] #find the positions
-  lines <- lines[-grep("positions:", lines)] #remove the position
-  div <- grep("//", lines) #find the seperators
-  gc <- div[2] - div[1] - 1 #find the number of gene copies per chr
-  if(is.na(gc)){gc <- length(lines) - 1} #if there's only one chr
-  dat <- lines[-div] #get the data only
-  dat <- strsplit(dat, "") #split the lines by individual snp calls
-  x <- matrix(NA, nrow = sum(chrls), ncol = gc) #prepare output
-  meta <- matrix(NA, nrow = sum(chrls), 2)
-  
-  #process this into workable data
-  pchrls <- c(0, chrls)
-  pchrls <- cumsum(pchrls)
-  
-  # check lengths input
-  if(length(chr.length) != 1){
-    if(length(chr.length) != length(chrls)){
-      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
-    }
-  }
-  
-  for(i in 1:length(chrls)){
-    cat("\n\tChr ", i)
-    tg <- dat[(gc*(i-1) + 1):(gc*i)] #get only this data
-    tg <- unlist(tg) #unlist
-    tg <- matrix(as.numeric(tg), ncol = chrls[i], nrow = gc, byrow = T) #put into a matrix
-    tg <- t(tg) #transpose. rows are now snps, columns are gene copies
-    tpos <- unlist(strsplit(pos[i], " ")) #grap and process the positions
-    tpos <- tpos[-1]
-    meta[(pchrls[i] + 1):pchrls[i + 1],] <- cbind(paste0(rep("chr", length = nrow(tg)), i), tpos)
-    x[(pchrls[i] + 1):pchrls[i + 1],] <- tg #add data to output
-  }
-  
-  meta <- as.data.frame(meta, stringsAsFactors = F)
-  meta[,2] <- as.numeric(meta[,2])
-  if(length(chr.length) == 1){
-    meta[,2] <- meta[,2] * chr.length
-  }
-  else{
-    meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
-  }
-  
-  colnames(meta) <- c("group", "position")
-  colnames(x) <- paste0("gc_", 1:ncol(x))
-  
-  return(list(x = x, meta = meta))
-}
-
-#' Convert a vcf file/vcfR object into a snpRdata object
-#'
-#' @param vcf_file character or vcfR object. Either a path to a vcf file or a
-#'   vcfR object.
-#' @param snp.meta data.frame or null, default null. snp metadata, will
-#'   overwrite data in vcf if provided.
-#' @param sample.meta data.frame or null, default null. sample metadata, will
-#'   overwrite sample names in vcf if provided.
-#'
-#' @author William Hemstrom
-process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
-  #========sanity checks, part 1=============
-  check.installed("vcfR")
-  
-  #========import data=======================
-  if(!"vcfR" %in% class(vcf_file)){
-    vcf <- vcfR::read.vcfR(vcf_file)
-  }
-  else{
-    vcf <- vcf_file
-    rm(vcf_file)
-  }
-  
-  #========sanity checks, part2==============
-  msg <- character(0)
-  warn <- character(0)
-  
-  # initialize bad loci storage
-  good.loci <- logical(vcfR::nrow(vcf))
-  good.loci <- !good.loci
-  
-  # check for lack of called genotypes
-  formats <- vcf@gt[,"FORMAT"]
-  no.genotypes <- which(!grepl("GT", formats))
-  if(length(no.genotypes) > 0){
-    warn <- c(warn, paste0(length(no.genotypes), " loci removed due to missing called genotypes.\n"))
-    good.loci[no.genotypes] <- F
-  }
-  rm(formats)
-  
-  # check for not snps
-  ref <- vcfR::getREF(vcf)
-  alt <- vcfR::getALT(vcf)
-  ok.alleles <- c(".", "A", "C", "G", "T")
-  bad.ref <- !ref %in% ok.alleles
-  bad.alt <- !alt %in% ok.alleles
-  bad.either <- which(bad.ref | bad.alt)
-  if(length(bad.either) > 1){
-    warn <- c(warn, paste0(length(bad.either), " loci removed due to improper alleles (not ., A, C, T, or G).\n"))
-    good.loci[bad.either] <- F
-  }
-  rm(ref, alt, ok.alleles, bad.ref, bad.alt, bad.either)
-  
-  # anything left?
-  if(sum(good.loci) == 0){
-    msg <- c(msg, "No loci remain after filtering.\n")
-  }
-  
-  # check metadata
-  if(!is.null(snp.meta)){
-    if(nrow(snp.meta) != vcfR::nrow(vcf)){
-      msg <- c(msg, "Number of rows in provided SNP meta not equal to number of SNPs in vcf.\n")
-    }
-  }
-  if(!is.null(sample.meta)){
-    if(nrow(sample.meta) != (ncol(vcf@gt)) - 1){
-      msg <- c(msg, "Number of rows in provided sample meta not equal to number of samples in vcf.\n")
-    }
-  }
-  
-  if(length(msg) > 0){
-    stop(msg)
-  }
-  
-  #==========convert================
-  # prep genotypes
-  genos <- vcfR::extract.gt(vcf, element = "GT", return.alleles = T,  IDtoRowNames = F)
-  genos <- genos[good.loci,]
-  genos <- gsub("\\|", "", genos)
-  genos <- gsub("\\/", "", genos)
-  genos[is.na(genos)] <- "NN"
-  
-  # prep metadata
-  if(is.null(snp.meta)){
-    snp.meta <- vcfR::getFIX(vcf)
-    snp.meta.col <- which(colnames(snp.meta) == "POS")
-    colnames(snp.meta)[snp.meta.col] <- "position" # fix this specifically, since many functions want this name
-    snp.meta.col <- which(colnames(snp.meta) == "POS")
-  }
-  snp.meta <- snp.meta[good.loci,]
-  
-  if(is.null(sample.meta)){
-    sample.meta <- data.frame(sampID = colnames(genos))
-  }
-  
-  # make the snpRdata object
-  return(import.snpR.data(as.data.frame(genos), 
-                          as.data.frame(snp.meta), 
-                          as.data.frame(sample.meta), "NN"))
-}
 
 #'Subset snpRdata objects
 #'
 #'Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
-#'Throws away as few calculated stats as possible.
+#'Statistics will need to be recalculated after subsetting to avoid confusion. 
+#'The bracket operators can be alternatively, following the same syntax.
 #'
-#'This function exists to intelligently subset snpRdata. While the typical
-#'bracket notation can be used to subset snpRdata, that method is inherited from
-#'the data.frame S3 object class for consistancy. As such, the result will be a
-#'data.frame, not a snpRdata object. This function keeps the data in a snpRdata
-#'object, and retains as much previously calculated data as possible.
-#'
-#'If \emph{samples} are removed, most statistics will be thrown away, since
-#'values like pi will change. In contrast, if \emph{snps} are removed, many
-#'statistics will simply be subset. LD, bootstraps, and window stats will
-#'\emph{always} be discarded, so overwrite with caution.
-#'
-#'Sample and snp facets to subset over can be provided. Facet levels to keep are
-#'provided in the corresponding subfacet arguments. Facets designated as
-#'described in \code{\link{Facets_in_snpR}}.
+#'Sample and snp facets to subset over can be provided. Filtering by facet
+#'categories is performed by naming the facet as an argument name, then
+#'providing the levels to keep or remove to that argument. See examples. Facets
+#'designated as described in \code{\link{Facets_in_snpR}}.
 #'
 #'@param x snpRdata object.
-#'@param snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep.
-#'@param samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
-#'  to samples to keep.
-#'@param facets character, default NULL. \emph{sample specific} facets over
-#'  which subsetting will occur.
-#'@param subfacets character, default NULL. Levels of the specified sample level
-#'  facet to keep. Samples in other levels will be removed.
-#'@param snp.facets characet, default NULL. \emph{snp specific} facets over
-#'  which subsetting will occur.
-#'@param snp.subfacets character, default NULL. Levels of the specified snp facets
-#'  to keep. SNPs in other levels will be removed.
+#'@param .snps numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep. Negative subscripts allowed.
+#'@param .samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
+#'  to samples to keep. Negative subscripts allowed.
+#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep. Negative subscripts allowed.
+#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to
+#'  SNPs to keep. Negative subscripts allowed.
+#'@param ... Facet subsetting may be specified by providing the facet as an 
+#'  argument and then providing the levels to keep or remove. Setting
+#'  pop = "ASP", for example, would keep only samples in the "ASP" level of the
+#'  pop facet, and setting pop.fam = "ASP.A" would keep only samples the ASP
+#'  pop and the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL")
+#'  would remove samples in the ASP or PAL pops. Subsetting by 
+#'  multiple facets is supported, although negative and positive subscripts
+#'  cannot be mixed across sample or SNP facets. They may be mixed between the
+#'  two.
+#'@param drop logical, default FALSE. Deprecated.
 #'
-#'@export
+#'@name subset_snpRdata
+#'@aliases subset_snpR_data [
 #'
 #' @examples
-#' # Keep only individuals in the ASP and PAL populations and on the LGIX or LGIV chromosome.
-#' subset_snpR_data(stickSNPs, facets = "pop", subfacets = c("ASP", "PAL"), snp.facets = "group", snp.subfacets = c("groupIX", "groupIV"))
-#'
-#' # Keep only individuals and SNPs 1 through 10
-#' subset_snpR_data(stickSNPs, snps = 1:10, samps = 1:10)
-#'
-#' # Keep SNPs 1:100, individuals in the ASP population
-#' subset_snpR_data(stickSNPs, snps = 1:100, facets = "pop", subfacets = "ASP")
-subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+#' # Keep only individuals in the ASP and PAL populations 
+#' # and on the LGIX or LGIV chromosome.
+#' subset_snpR_data(stickSNPs, pop = c("ASP", "PAL"), 
+#'                  chr = c("groupIX", "groupIV"))
+#'                  
+#' # keep individuals/SNPs in the first 10 columns/rows.
+#' subset_snpR_data(stickSNPs, 1:10, 1:10)
+#' 
+#' # negative subscripts: remove individuals in family B
+#' subset_snpR_data(stickSNPs, fam = -"B")
+#' 
+#' # negative subscripts: remove individuals in pop PAL AND fam B or C, 
+#' # and keep only SNPs on LGIV
+#' subset_snpR_data(stickSNPs, pop.fam = -c("PAL.B", "PAL.C"),
+#'                  chr = "groupIV")
+#'                  
+#' # using the bracket operator, same as example 1
+#' stickSNPs[pop = c("ASP", "PAL"), chr = c("groupIX", "groupIV")]
+#' 
+#' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
+#' # fam = B
+#' stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
+NULL
 
+
+#' @export
+#' @describeIn subset_snpRdata subset_snpR_data
+subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
+  #============extract facet info===============
+  .argnames <- match.call()
+  .argnames <- as.list(.argnames)
+  .argnames <- .argnames[-1]
+  
+  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps"))
+  if(length(.is.facet) > 0){
+    facets <- names(.argnames)[.is.facet]
+    
+    # eval the facets
+    ## check for negatives, fix, and note
+    .has.negatives <- grep("-", .argnames[.is.facet])
+    .argnames[.is.facet][.has.negatives] <- lapply(.argnames[.is.facet][.has.negatives], function(x){
+      x <- gsub("-", "", x)
+      if(any(length(x) > 2)){stop("Negative subscripts cannot be provided inside c() calls. Please place negative subscripts outside c() calls.\n")}
+      return(x[2])
+    } )
+    .single.part <- !grepl("^c\\(", .argnames[.is.facet][.has.negatives])
+    .argnames[.is.facet][.has.negatives][!.single.part] <- lapply(.argnames[.is.facet][.has.negatives][!.single.part], str2lang)
+    ## eval
+    for(.candidate_facets in 1:length(.is.facet)){
+      if(any(names(.argnames[.is.facet][.candidate_facets]) %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
+        stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+      }
+      
+      # try to eval text in two ways: once for a basic string, once for code the evaluates to a string
+      .res1 <- try(list(eval(parse(text = .argnames[.is.facet][.candidate_facets]))), silent = TRUE)
+
+      if(class(.res1) == "try-error"){
+        .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")"))))
+      }
+      else{
+        .argnames[.is.facet][.candidate_facets] <- .res1
+      }
+    }
+    
+    
+  }
+  else{
+    facets <- NULL
+  }
+  
+  #===========sanity checks====================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  msg <- character(0)
+  
+  # check facet types
+  if(!is.null(facets)){
+    if(any(facets %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
+      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+    }
+    facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
+    if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
+      msg <- c(msg, "Sample level facets cannot be provided alongside a vector of samples to retain/remove.\n")
+    }
+    if(any(c("snp", "complex") %in% facets[[2]]) %in% facets[[2]] & !identical(.snps, 1:nsnps(x))){
+      msg <- c(msg, "SNP level facets cannot be provided alongside a vector of SNPs to retain/remove.\n")
+    }
+    if("complex" %in% facets[[2]]){
+      msg <- c(msg, "Complex (sample + SNP) facets cannot be used for subsetting. Please split into SNP and sample components and rerun.\n")
+    }
+    # if(length(facets[[1]]) > 1){
+    #   valid <- logical(length(facets[[1]]))
+    #   for(i in 1:length(facets[[1]])){
+    #     valid[i] <- ifelse(length(grep(facets[[1]][i], facets[[1]][-i])) == 0, TRUE, FALSE)
+    #   }
+    #   
+    #   if(sum(valid) < length(valid)){
+    #     msg <- c(msg, paste0("Some facets are listed more than once amongst arguments: ", paste0(facets[[1]][which(!valid)], collapse = ", "),
+    #                          ". Each facet may only be listed once. Joint facets (such as pop.fam) will return only cases true in both, seperate facets will return cases true in either.\n"))
+    #   }
+    # }
+    
+  }
+  
+  # .snps and .samps
+  if(is.logical(.snps)){
+    if(length(.snps) != nsnps(x)){
+      if(length(.snps) > nsnps(x)){
+        warning("More .snps/j requested than present in data")
+      }
+      if(length(.snps) %% nsnps != 0){
+        warning("Length of .snps/i is not a multiple of number of SNPs in x.\n")
+      }
+      .snps <- rep(.snps, length.out = nsnps(x))
+    }
+    .snps <- which(.snps)
+  }
+  if(is.logical(.samps)){
+    if(length(.samps) != nsamps(x)){
+      if(length(.samps) > nsamps(x)){
+        warning("More .samps/j requested than present in data")
+      }
+      if(length(.samps) %% nsamps != 0){
+        warning("Length of .samps/i is not a multiple of number of samples in x.\n")
+      }
+      .samps <- rep(.samps, length.out = nsamps(x))
+    }
+    .samps <- which(.samps)
+  }
+  
+  if(!is.numeric(.snps) & !is.integer(.snps)){
+    msg <- c(msg, ".snps/i must be a numeric vector.\n")
+  }
+  else{
+    if(!all(.snps == as.integer(.snps))){
+      msg <- c(msg, ".snps/i must only contain integers.\n")
+    }
+    if(max(.snps) > nrow(x)){
+      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+    }
+  }
+  
+  if(!is.numeric(.samps) & !is.integer(.samps)){
+    msg <- c(msg, ".samps/j must be a numeric vector.\n")
+  }
+  else{
+    if(!all(.samps == as.integer(.samps))){
+      msg <- c(msg, ".samps/j must only contain integers.\n")
+    }
+    if(max(.samps) > ncol(x)){
+      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+    }
+  }
+
+  
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  
+  #===========subset===========================
+  if(!is.null(facets)){
+    
+    # check to see if there are mixed negative and positive subsets
+    if(any(facets[[2]] == "snp")){
+      if(!all(which(facets[[2]] == "snp") %in% .has.negatives) & !all(!which(facets[[2]] == "snp") %in% .has.negatives)){
+        stop("Cannot mix negative and positive subscripts in SNP subfacets.\n")
+      }
+    }
+    if(any(facets[[2]] == "sample")){
+      if(!all(which(facets[[2]] == "sample") %in% .has.negatives) & !all(!which(facets[[2]] == "sample") %in% .has.negatives)){
+        stop("Cannot mix negative and positive subscripts in sample subfacets.\n")
+      }
+    }
+    
+    
+    
+    # check for flipped facet orders
+    ord.flipped <- which(facets[[1]] != names(.argnames[.is.facet]))
+    ## if any flipped, need to flip subfacets as well
+    if(any(ord.flipped)){
+      for(i in 1:length(ord.flipped)){
+        split.ord.facet <- unlist(.split.facet(facets[[1]][i]))
+        split.raw.facet <- unlist(.split.facet(names(.argnames[.is.facet])[i]))
+        re_ord <- match(split.raw.facet, split.ord.facet)
+        for(j in 1:length(.argnames[.is.facet][[i]])){
+          split.lev <-  unlist(.split.facet(.argnames[.is.facet][[i]][j]))
+          .argnames[.is.facet][[i]][j] <- paste0(split.lev[re_ord], collapse = ".")
+        }
+      }
+    }
+  }
+  
+  #====================snps====================
+  if("snp" %in% facets[[2]]){
+    if(any(which(facets[[2]] == "snp") %in% .has.negatives)){
+      .snps <- rep(TRUE, nsnps(x))
+    }
+    else{
+      .snps <- logical(nsnps(x))
+    }
+    
+    snp.facets <- facets[[1]][which(facets[[2]] == "snp")]
+    for(i in 1:length(snp.facets)){
+      snp.subfacets <- .argnames[[.is.facet[which(facets[[2]] == "snp")][i]]]
+      for(j in 1:length(snp.subfacets)){
+        new.matches <- .fetch.snp.meta.matching.task.list(x, c(NA, NA, snp.facets[i], snp.subfacets[j]))
+        if(length(new.matches) == 0){
+          stop(paste0("No snp found matching: ", snp.facets[i], " -- ", snp.subfacets[j], "\n"))
+          
+        }
+        if(which(facets[[2]] == "snp")[i] %in% .has.negatives){
+          .snps[new.matches] <- FALSE
+        }
+        else{
+          .snps[new.matches] <- TRUE
+        }
+      }
+    }
+    .snps <- which(.snps)
+  }
+  
+  
+  
+  if("sample" %in% facets[[2]]){
+    
+    if(any(which(facets[[2]] == "sample") %in% .has.negatives)){
+      .samps <- rep(TRUE, nsamps(x))
+    }
+    else{
+      .samps <- logical(nsamps(x))
+    }
+    
+    
+    samp.facets <- facets[[1]][which(facets[[2]] == "sample")]
+    for(i in 1:length(samp.facets)){
+      samp.subfacets <- .argnames[[.is.facet[which(facets[[2]] == "sample")][i]]]
+      for(j in 1:length(samp.subfacets)){
+        new.matches <- .fetch.sample.meta.matching.task.list(x, c(samp.facets[i], samp.subfacets[j], NA, NA))
+        if(length(new.matches) == 0){
+          stop(paste0("No sample found matching: ", samp.facets[i], " -- ", samp.subfacets[j], "\n"))
+        }
+        if(which(facets[[2]] == "sample")[i] %in% .has.negatives){
+          .samps[new.matches] <- FALSE
+        }
+        else{
+          .samps[new.matches] <- TRUE
+        }
+      }
+    }
+    
+    .samps <- which(.samps)
+  }
+  
+  #===============return================
+  nsampm <- sample.meta(x)[.samps,]
+
+  nsnpm <- snp.meta(x)[.snps,]
+  return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
+                          sample.meta = nsampm, mDat = x@mDat))
+}
+
+
+
+
+# Old subset version with different facet specification. For internal use.
+.subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+  #=========sanity checks========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  msg <- character(0)
+  
+  if(max(snps) > nrow(x)){
+    msg <- c(msg, "All requested snps must be within 1:nrow(x).\n")
+  }
+  if(max(samps) > ncol(x)){
+    msg <- c(msg, "All requested samps must be within 1:ncol(x).\n")
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
   #=========subfunctions=========
   fix.for.one.snp <- function(x){
     if(nrow(x) == 1){
@@ -442,10 +350,9 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
         complex.snp.facets <- snp.facets[grep("(?<!^)\\.", snp.facets, perl = T)]
         if(length(complex.snp.facets) > 0){
           for(i in 1:length(complex.snp.facets)){
-            tfacets <- unlist(strsplit(complex.snp.facets[i], "(?<!^)\\.", perl = T))
+            tfacets <- unlist(.split.facet(complex.snp.facets[i]))
             tcols <- t.snp.meta[colnames(t.snp.meta) %in% tfacets]
-            tcols <- tcols[,match(colnames(tcols), tfacets)]
-            t.snp.meta <- cbind(t.snp.meta, do.call(paste, c(tcols, sep=".")))
+            t.snp.meta <- cbind(t.snp.meta, .paste.by.facet(tcols, match(colnames(tcols), tfacets)))
           }
           colnames(t.snp.meta)[(ncol(t.snp.meta) - length(complex.snp.facets) + 1):ncol(t.snp.meta)] <- complex.snp.facets
         }
@@ -466,10 +373,10 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
         complex.samp.facets <- facets[grep("(?<!^)\\.", facets, perl = T)]
         if(length(complex.samp.facets) > 0){
           for(i in 1:length(complex.samp.facets)){
-            tfacets <- unlist(strsplit(complex.samp.facets[i], "(?<!^)\\.", perl = T))
+            tfacets <- unlist(.split.facet(complex.samp.facets[i]))
             tcols <- t.samp.meta[colnames(t.samp.meta) %in% tfacets]
-            tcols <- tcols[,match(colnames(tcols), tfacets)]
-            t.samp.meta <- cbind(t.samp.meta, do.call(paste, c(tcols, sep=".")))
+            t.samp.meta <- cbind(t.samp.meta, .paste.by.facet(tcols, match(colnames(tcols), tfacets)))
+            
           }
           colnames(t.samp.meta)[(ncol(t.samp.meta) - length(complex.samp.facets) + 1):ncol(t.samp.meta)] <- complex.samp.facets
         }
@@ -494,10 +401,10 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
     }
     dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,], sample.meta = sample.meta(x)[samps,], mDat = x@mDat)
     if(any(x@facets != ".base")){
-      dat <- add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
+      dat <- .add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
 
-    if(length(x@sn) != 0){
+    if(length(x@sn$sn) != 0){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps, samps]
       sn <- cbind(dat@snp.meta[,-ncol(dat@snp.meta)], sn)
@@ -550,6 +457,8 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 }
 
 
+
+
 #'Filter SNPs in snpRdata objects.
 #'
 #'\code{filter_snps} filters snpRdata objects to remove SNPs or individuals
@@ -568,7 +477,9 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 #'loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
 #'non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
 #'SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
-#'two observed alleles.} }
+#'two observed alleles. This is mostly an internal argument, since the various
+#'snpRdata import options use it automatically to prevent downstream errors in
+#'other snpR functions. } }
 #'
 #'Note that filtering out poorly sequenced individuals creates a possible
 #'conflict with the loci filters, since after individuals are removed, some loci
@@ -580,62 +491,79 @@ subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NU
 #'To counter this, the "re_run" argument can be used to pass the data through a
 #'second filtering step after individuals are removed. By default, the "partial"
 #'re-run option is used, which re-runs only the non-polymorphic filter (if it
-#'was originally set), since these may cause downstream analysis errors. The
-#'"full" option re-runs all set filters. Note that re-running any of these
-#'filters may cause individuals to fail the individual filter after loci
-#'removal, and so subsequent tertiary re-running of the individual filters,
-#'followed by the loci filters, and so on, could be justified. This function
-#'stops after the second loci re-filtering, since that step is likely to be the
-#'most important to prevent downstream analytical errors.
+#'was originally set). The "full" option re-runs all set filters. Note that
+#'re-running any of these filters may cause individuals to fail the individual
+#'filter after loci removal, and so subsequent tertiary re-running of the
+#'individual filters, followed by the loci filters, and so on, could be
+#'justified. This is not done automatically here.
 #'
-#'Via the "maf.filter" argument, this function can filter by minor allele
+#'Via the "maf_facets" argument, this function can filter by minor allele
 #'frequencies in either \emph{all} samples or \emph{each level of a supplied
 #'sample specific facet and the entire dataset}. In the latter case, any SNPs
 #'that pass the maf filter in \emph{any} facet level are considered to pass the
-#'filter. The latter should be used in instances where populaiton sizes are very
-#'different or there are \emph{many} populations, and thus common alleles of
-#'interest in one population might be otherwise filtered out. With very small
-#'populations, however, this may leave noise in the sample! In most cases,
-#'filtering the entire dataset is sufficient. Facets should be provided as
-#'described in \code{\link{Facets_in_snpR}}.
+#'filter. The latter should be used in instances where population sizes are very
+#'different, there are \emph{many} populations, and/or allele frequencies are
+#'very different between populations and thus common alleles of interest in one
+#'population might be otherwise filtered out.
+#'
+#'The "hwe_facets" argument is the inverse of this: loci will be removed if they
+#'fail the provided hwe filter in any facet level. In both cases, Facets should
+#'be provided as described in \code{\link{Facets_in_snpR}}.
 #'
 #'
 #'@param x snpRdata object.
-#'@param maf FALSE or numeric between 0 and 1, default FALSE. Minimum acceptable
-#'  minor allele frequency
-#'@param hf_hets FALSE or numeric between 0 and 1, default FALSE. Maximum
+#'@param maf numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
+#'  minor allele frequency.
+#'@param hf_hets numeric between 0 and 1 or FALSE, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
-#'@param HWE FALSE or numeric between 0 and 1, default FALSE. SNPs with a HWE
-#'  violation p-value below this will be rejected.
-#'@param min_ind FALSE or integer, default FALSE. Minimum number of individuals
-#'  in which a loci must be sequenced.
-#'@param min_loci FALSE or numeric between 0 and 1, default FALSE. Minimum
-#'  proportion of SNPs an individual must be genotyped at.
-#'@param re_run FALSE, "partial", or "full", default "partial". How should loci
-#'  be re_filtered after individuals are filtered?
-#'@param maf.facets FALSE or character, default FALSE. Sample-specific facets
-#'  over which the maf filter can be checked.
-#'@param non_poly boolean, default TRUE. Should non-polymorphic loci be removed?
-#'@param bi_al boolean, default TRUE. Should non-biallelic SNPs be removed?
+#'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
+#'  HWE p-value.
+#'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
+#'  proportion of individuals in which a loci must be sequenced.
+#'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
+#'  proportion of SNPs at which an individual must be genotyped.
+#'@param re_run character or FALSE, default "partial". When individuals are
+#'  removed via min_ind, it is possible that some SNPs that initially passed
+#'  filtering steps will now violate some filters. SNP filters can be re-run
+#'  automatically via several methods: \itemize{ \item{partial: } Refilters for
+#'  non-polymorphic loci (non_poly) only, if that filter was requested
+#'  initially. \item{full: } Re-runs the full filtering scheme (save for
+#'  min_loci).}
+#'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
+#'  overwhich the minor allele frequency can be checked. SNPs will only fail the
+#'  maf filter if they fail in every level of every provided facet.
+#'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
+#'  overwhich the hwe filter can be checked. SNPs will fail the hwe filter if
+#'  they fail in any level of any provided facet.
+#'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
+#'  removed.
+#'@param bi_al logical, default TRUE. If TRUE, loci with more than two alleles
+#'  will be removed. Note that this is mostly an internal argument and should
+#'  rarely be used directly, since import.snpR.data and other snpRdata object
+#'  creation functions all pass SNPs through this filter because many snpR
+#'  functions will fail to work if there are more than two alleles at a locus.
 #'
 #'@return A data.frame in the same format as the input, with SNPs and
 #'  individuals not passing the filters removed.
 #'
 #'@export
 #'@author William Hemstrom
-#'
+#'  
 #' @examples
-#' # Filter with a minor allele frequency of 0.05, maximum heterozygote frequency
-#' # of 0.55, 50% minimum individuals, and at least 75% of loci sequenced per
-#' # individual.
-#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75)
+#' # Filter with a minor allele frequency of 0.05, maximum heterozygote 
+#' # frequency of 0.55, 50% minimum individuals, and at least 75% of loci 
+#' # sequenced per individual.
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, 
+#'             min_ind = 0.5, min_loci = 0.75)
 #'
 #' # The same filters, but with minor allele frequency considered per-population
 #' # and a full re-run of loci filters after individual removal.
-#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, min_loci = 0.75, re_run = "full", maf.facets = "pop")
+#' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
+#'             min_loci = 0.75, re_run = "full", maf_facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", maf.facets = NULL,
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = FALSE,
+                        min_loci = FALSE, re_run = "partial", maf_facets = NULL,
+                        hwe_facets = FALSE,
                         non_poly = TRUE, bi_al = TRUE){
 
   #==============do sanity checks====================
@@ -648,15 +576,19 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
   }
 
-  if(HWE){
-    if(!is.numeric(HWE)){
-      stop("HWE must be a numeric value.")
+  if(hwe){
+    if(!is.numeric(hwe)){
+      stop("hwe must be a numeric value.")
     }
-    if(length(HWE) != 1){
-      stop("HWE must be a numeric vector of length 1.")
+    if(length(hwe) != 1){
+      stop("hwe must be a numeric vector of length 1.")
     }
-    if(HWE <= 0 | HWE >= 1){
-      stop("HWE must be a value between 0 and 1.")
+    if(hwe <= 0 | hwe >= 1){
+      stop("hwe must be a value between 0 and 1.")
+    }
+    
+    if(!isFALSE(hwe_facets)){
+      hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
     }
   }
 
@@ -696,23 +628,23 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
     }
   }
 
-  if(!is.null(maf.facets[1])){
-    maf.facets <- check.snpR.facet.request(x, maf.facets, "none")
+  if(!is.null(maf_facets[1])){
+    maf_facets <- .check.snpR.facet.request(x, maf_facets, "none")
 
     # add any needed facets...
-    miss.facets <- maf.facets[which(!(maf.facets %in% x@facets))]
+    miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
     if(length(miss.facets) != 0){
       cat("Adding missing facets...\n")
       # need to fix any multivariate facets (those with a .)
-      x <- add.facets.snpR.data(x, miss.facets)
+      x <- .add.facets.snpR.data(x, miss.facets)
     }
 
     # check for bad facets to remove (those that don't just consider samples)
-    if(any(x@facet.type[x@facets %in% maf.facets] != "sample")){
-      vio.facets <- x@facets[match(maf.facets, x@facets)]
-      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf.facets] != "sample")]
+    if(any(x@facet.type[x@facets %in% maf_facets] != "sample")){
+      vio.facets <- x@facets[match(maf_facets, x@facets)]
+      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf_facets] != "sample")]
       warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
-      maf.facets <- maf.facets[-which(maf.facets %in% vio.facets)]
+      maf_facets <- maf_facets[-which(maf_facets %in% vio.facets)]
     }
   }
 
@@ -736,6 +668,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
+    # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
+    
     #==========================run filters========================
     vio.snps <- logical(nrow(x)) #vector to track status
 
@@ -752,37 +686,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
       if(bi_al){
         cat("Filtering non-biallelic loci...\n")
-        bi <- ifelse(rowSums(bimat) > 2, T, F) # if true, should keep the allele
-        bi.vio <- x@snp.meta$.snp.id[which(bi)] # IDs of violating snps.
-        cat(paste0("\t", length(bi.vio), " bad loci\n"))
+        bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
+        cat(paste0("\t", sum(bi), " bad loci\n"))
         vio.snps[which(bi)] <- T
       }
 
       if(non_poly){
         cat("Filtering non_polymorphic loci...\n")
-        np <- ifelse(rowSums(bimat) < 2, T, F) # if true, should keep the allele
-        np.vio <- x@snp.meta$.snp.id[which(np)]
-        cat(paste0("\t", length(np.vio), " bad loci\n"))
+        np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
+        cat(paste0("\t", sum(np), " bad loci\n"))
         vio.snps[which(np)] <- T
       }
-
-      #some tests require this, so subset the matrices and redefine things if true and some are multi-allelic
-      # if((maf | hf_hets) &  sum(bi) != 0){
-      #   x <- x[bi,]
-      #   xv <-   xv <- as.vector(t(x))
-      #   gs <- unique(xv)
-      #   hs <- substr(gs,1,snp_form/2) != substr(gs, (snp_form/2 + 1), snp_form*2)
-      #   mpos <- which(gs == mDat)
-      #   as <- unique(c(substr(gs,1,snp_form/2), substr(gs, (snp_form/2 + 1), snp_form*2)))
-      #   as <- as[as != substr(mDat, 1, snp_form/2)] #that aren't N?
-      #   gmat <- gmat[bi,]
-      #   tmat <- tmat[bi,]
-      #   amat <- amat[bi,]
-      #   headers <- headers[bi,]
-      # }
-      # else{
-      #   keep <- keep + bi
-      # }
     }
 
     #========min inds=======
@@ -790,15 +704,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
       cat("Filtering loci sequenced in few individuals...\n")
       mi <- wmat[,colnames(wmat) == mDat]
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
-      mi.vio <- x@snp.meta$.snp.id[which(mi)]
-      vio.snps[mi.vio] <- T
-      cat(paste0("\t", length(mi.vio), " bad loci\n"))
+      vio.snps[which(mi)] <- T
+      cat(paste0("\t", sum(mi), " bad loci\n"))
     }
 
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
     if(maf){
       #if not filtering with multiple pops
-      if(is.null(maf.facets)){
+      if(is.null(maf_facets)){
         cat("Filtering low minor allele frequencies, no pops...\n")
 
         # check to see if we need to calculate mafs:
@@ -817,8 +730,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
-        maf.vio <- x@snp.meta$.snp.id[which(mafs)]
-        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+        cat(paste0("\t", sum(mafs), " bad loci\n"))
 
 
         vio.snps[which(mafs)] <- T
@@ -832,21 +744,21 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
           # get mafs for any uncalculated facets
 
           # if mafs have been calculated, but not for of the requested any facets...
-          if(!any(x@stats$facet %in% maf.facets)){
-            x <- calc_maf(x, facets = maf.facets)
+          if(!any(x@stats$facet %in% maf_facets)){
+            x <- calc_maf(x, facets = maf_facets)
           }
           #if mafs have been calculated for some but not all of our facets
-          else if(any(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))){
-            run.facets <- unique(x@stats$facet[which(is.na(x@stats$maf[x@stats$facet %in% maf.facets]))])
+          else if(any(is.na(x@stats$maf[x@stats$facet %in% maf_facets]))){
+            run.facets <- unique(x@stats$facet[which(is.na(x@stats$maf[x@stats$facet %in% maf_facets]))])
             x <- calc_maf(x, facets = run.facets)
           }
         }
         else{
-          x <- calc_maf(x, facets = maf.facets)
+          x <- calc_maf(x, facets = maf_facets)
         }
 
         # grab mafs
-        mafs <- x@stats[x@stats$facet %in% maf.facets,]
+        mafs <- x@stats[x@stats$facet %in% maf_facets,]
         mafs$maf <- mafs$maf < maf
 
         # now, figure out in how many subfacets the maf is too low. If all, the loci violates the filter
@@ -865,9 +777,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
         cmafs$maf <- cmafs$maf + a.mafs
 
         # check vio and report
-        maf.vio <- x@snp.meta$.snp.id[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))]
+        maf.vio <- which(cmafs$maf == (1 + length(unique(mafs$subfacet))))
         cat(paste0("\t", length(maf.vio), " bad loci\n"))
-        vio.snps[which(cmafs$maf == (1 + length(unique(mafs$subfacet))))] <- T
+        vio.snps[maf.vio] <- T
       }
     }
 
@@ -881,42 +793,54 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
-      het_f.vio <- x@snp.meta$.snp.id[which(het_f)]
-      cat(paste0("\t", length(het_f.vio), " bad loci\n"))
+      cat(paste0("\t", sum(het_f), " bad loci\n"))
       vio.snps[which(het_f)] <- T
     }
 
-    #========HWE violation======================================
-    if(HWE){
-      cat("Filtering loci out of HWE...\n")
-      invisible(capture.output(x <- calc_hwe(x)))
-      phwe <- x@stats$pHWE[x@stats$facet == ".base"]
-      phwe <- which(phwe < HWE)
-      cat("\t", length(phwe), " bad loci\n")
-      vio.snps[phwe] <- T
+    #========hwe violation======================================
+    if(hwe){
+      cat("Filtering loci out of hwe...\n")
+      
+      # no facets, easy
+      if(isFALSE(hwe_facets)){
+        
+        if(!.check_calced_stats(x, ".base", "hwe")$.base){
+          invisible(utils::capture.output(x <- calc_hwe(x)))
+        }
+        phwe <- x@stats$pHWE[x@stats$facet == ".base"]
+        phwe <- which(phwe < hwe)
+        cat("\t", length(phwe), " bad loci\n")
+        vio.snps[phwe] <- T
+        
+      }
+      
+      # facets, slightly more complicated
+      else{
+        
+        run.facets <- .check_calced_stats(x, hwe_facets, "hwe")
+        run.facets <- names(run.facets)[!unlist(run.facets)]
+        if(length(run.facets) > 0){
+          invisible(utils::capture.output(x <- calc_hwe(x, run.facets)))
+        }
+        
+        # get the per-facet hwe stats, check against threshold, then condense by snp.
+        phwe <- get.snpR.stats(x, hwe_facets)
+        phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
+        bad.loci <- tapply(phwe$low.p, phwe[,".snp.id"], sum, na.rm = TRUE)
+        bad.loci <- reshape2::melt(bad.loci)
+        bad.loci <- stats::na.omit(bad.loci)
+        bad.loci <- bad.loci[which(bad.loci$value > 0),]
+        bad.loci <- which(snp.meta(x)$.snp.id %in% bad.loci$Var1)
+        cat("\t", length(bad.loci), " bad loci\n")
+        
+        vio.snps[bad.loci] <- TRUE
+      }
     }
 
     #==========remove violating loci==================
     if(any(vio.snps)){
-      vio.ids <- x@snp.meta$.snp.id[which(vio.snps)]
-      ngs <- x@geno.tables$gs[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      nas <- x@geno.tables$as[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      nwm <- x@geno.tables$wm[-which(x@facet.meta$.snp.id %in% x@snp.meta$.snp.id[which(vio.snps)]),]
-      ngs <- list(gs = ngs, as = nas, wm = nwm)
-      ngs <- lapply(ngs, fix.one.loci)
-      rm(nas, nwm)
-      invisible(capture.output(x <- snpRdata(.Data = as.data.frame(x[-which(vio.snps),], stringsAsFactors = F),
-                                             sample.meta = x@sample.meta,
-                                             snp.meta = x@snp.meta[-which(vio.snps),],
-                                             facet.meta = x@facet.meta[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                             geno.tables = ngs,
-                                             ac = x@ac[-which(x@facet.meta$.snp.id %in% vio.ids),],
-                                             stats = x@stats[-which(x@stats$.snp.id %in% vio.ids),],
-                                             window.stats = x@window.stats,
-                                             facets = x@facets,
-                                             facet.type = x@facet.type,
-                                             row.names = x@row.names[-which(vio.snps)])))
-      x@stats <- data.table::as.data.table(x@stats) # I'm not sure why this is needed, since the object passed to the constructor function above is already a data.table...
+
+      x <- x[-which(vio.snps),]
     }
     return(x)
   }
@@ -924,17 +848,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
   #funciton to filter by individuals.
   min_loci_filt <- function(){
     cat("Filtering out individuals sequenced in few kept loci...\n")
-    mcounts <- matrixStats::colSums2(ifelse(x == mDat, 1, 0))
-    rejects <- which(mcounts/nrow(x) >= (1 - min_loci))
+    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    rejects <- which(mcounts/nrow(x) < min_loci)
     if(length(rejects) > 0){
       old.facets <- x@facets
-      invisible(capture.output(x <- import.snpR.data(x[,-rejects],
-                                                     snp.meta = x@snp.meta,
-                                                     sample.meta = x@sample.meta[-rejects,],
-                                                     mDat = mDat)))
+      x <- x[,-rejects]
       cat("Re-calculating and adding facets.\n")
       if(any(old.facets != ".base")){
-        x <- add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
+        x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
 
       warning("Any calculated stats will be removed, since individuals were filtered out!\n")
@@ -975,6 +896,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
           hf_hets <- FALSE
           min_ind <- FALSE
           bi_al <- FALSE
+          hwe <- FALSE
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
           x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys ect.
@@ -1000,9 +922,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'reformat to a snpRdata object internally. As such, it takes a facets argument
 #'that works identically to elsewhere in the package, as described in
 #'\code{\link{Facets_in_snpR}}. This argument is only used for output formats
-#'where facets are important, such as the genepop format. Additionally, this
-#'function can therefore be used as an alternative to
-#'\code{\link{import.snpR.data}} when the output arugment is set to "snpRdata".
+#'where facets are important, such as the genepop format.
+#'
+#'While this function can be used as an alternative to
+#'\code{\link{import.snpR.data}} when the output argument is set to "snpRdata",
+#'this is more complicated and not recommended. Instead, it is simpler
+#'\code{\link{import.snpR.data}} or one of the wrappers in
+#'\code{\link{snpR_import_wrappers}}. The option is kept for backwards
+#'compatability and internal use.
 #'
 #'If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 #'metadata may either be provided in the first few columns of x, the number of
@@ -1033,19 +960,20 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
 #'named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
 #'the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
-#'format, requires columns named "group", "snp", and "position", and may contain
-#'a column named "cM", "cm", or "morgans", containing linkage group/chr, snp ID,
-#'position in bp, and distance in cM in order to create .bim extended map file.}
-#'\item{sn: }{Single character numeric format. Each genotype will be listed as
-#'0, 1, or 2, corresponding to 0, 1, or 2 minor alleles. Can be interpolated to
-#'remove missing data with the 'interpolate' argument.} \item{sequoia: }{sequoia
-#'format. Each genotype is converted to 0/1/2/ or -9 (for missing values).
-#'Requires columns ID, Sex, BirthYear in sample metadata for running Sequoia.
-#'For more information see sequoia documentation.} \item{fasta: }{fasta sequence
-#'format.} \item{vcf: }{Variant Call Format, a standard format for SNPs and
-#'other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for
-#'missing values), with a healthy serving of additional metadata but very little
-#'sample metadata.} \item{snpRdata: }{a snpRdata object.} }
+#'format, requires columns named "position" and one matching the name designated
+#'with the 'chr' argument, and may contain a column named "cM", "cm", or
+#'"morgans", containing linkage group/chr, snp ID, position in bp, and distance
+#'in cM in order to create .bim extended map file.} \item{sn: }{Single character
+#'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
+#'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
+#''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+#'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
+#'BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata 
+#'for running Sequoia. For more information see sequoia documentation.} \item{fasta: }
+#'{fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format 
+#'for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. 
+#'(for missing values), with a healthy serving of additional metadata but very 
+#'little sample metadata.}\item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1071,9 +999,6 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'".sh" shell file with the same name given in the outfile argument. Running
 #'this file will create a plink.bed file.
 #'
-#'Example datasets in each format are available in \code{\link{stickFORMATs}} in
-#'elements named for output options.
-#'
 #'Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
 #'default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 #'"CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
@@ -1083,6 +1008,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
 #'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
 #'from the simulation program ms.}}
+#'
 #'
 #'
 #'@param x snpRdata object or data.frame. Input data, in any of the above listed
@@ -1097,13 +1023,13 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  or a numeric vector of loci to use.
 #'@param interpolate Character or FALSE, default "bernoulli". If transforming to
 #'  "sn" format, notes the interpolation method to be used to fill missing data.
-#'  Options are "bernoulli", "af", or FALSE. See details.
+#'  Options are "bernoulli", "af", "iPCA", or FALSE. See details.
 #'@param outfile character vector, default FALSE. If a filepath is provided, a
 #'  copy of the output will be saved to that location. For some output styles,
 #'  such as genepop, additional lines will be added to the output to allow them
 #'  to be immediately run on commonly used programs.
 #'@param ped data.frame default NULL. Optional argument for the "plink" output
-#'  format. A six column data frame containg Family ID, Individual ID, Paternal
+#'  format. A six column data frame containing Family ID, Individual ID, Paternal
 #'  ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
 #'  outputs will contain information contained in ped. See plink documentation
 #'  for more details.
@@ -1132,9 +1058,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'  when determining the optimum number of components to use when interpolating
 #'  sn data using the iPCA approach.
 #'@param chr character, default "chr". Name of column containing chromosome
-#'  information, for VCF output.
+#'  information, for VCF or plink! output.
 #'@param position character, default "position". Name of column containing
 #'  position information, for VCF output.
+#'@param phenotype character, default "phenotype". Optional name of column
+#'  containing phenotype information, for plink! output.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1145,10 +1073,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'@author Melissa Jones
 #'
 #' @examples
+#' \dontrun{
 #' #import data to a snpRdata object
 #' ## get sample meta data
-#' sample_meta <- data.frame(pop = substr(colnames(stickFORMATs$`0000`)[-c(1:4)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickFORMATs$`0000`) - 4), stringsAsFactors = FALSE)
-#' format_snps(stickFORMATs$`0000`, input_format = "0000", input_meta_columns = 4, input_mDat = "0000", sample.meta = sample_meta)
+#' sample_meta <- 
+#'     data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
+#'                fam = rep(c("A", "B", "C", "D"), 
+#'                          length = ncol(stickRAW) - 3), 
+#'                stringsAsFactors = FALSE)
+#' format_snps(stickRAW, input_format = "0000", 
+#'             input_meta_columns = 3, 
+#' input_mDat = "0000", sample.meta = sample_meta)
 #'
 #' #allele count, seperated by the pop facet.
 #' format_snps(stickSNPs, "ac", facets = "pop")
@@ -1183,17 +1118,22 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #' #dadi
 #' ## add ref and anc snp meta data columns to stickSNPs
 #' dat <- as.data.frame(stickSNPs)
-#' dat <- import.snpR.data(dat, snp.meta = cbind(ref = "ATA", anc = "ACT", stickSNPs@snp.meta), sample.meta = stickSNPs@sample.meta, mDat = stickSNPs@mDat)
+#' snp.meta(dat) <- cbind(ref = "ATA", anc = "ACT", snp.meta(stickSNPs))
 #' format_snps(dat, "dadi", facets = "pop")
 #'
-#' #PLINK! format
-#' format_snps(stickSNPs, "plink", outfile = "plink_out")
-#' #from command line, then run the snpR generated plink_out.sh to generate plink_out.bed.
-#'
+#' #PLINK! format, not run to avoid file creation
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", chr = "chr")
+#' 
+#' 
 #' #PLINK! format with provided ped
-#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, mat = 1:420, pat = 1:420, sex = sample(1:2, 420, replace = TRUE), pheno = sample(1:2, 420, replace = TRUE))
-#' format_snps(stickSNPs, "plink", outfile = "plink_out", ped = ped)
-#' #from command line, then run plink_out.sh to generate plink_out.bed.
+#' ped <- data.frame(fam = c(rep(1, 210), rep("FAM2", 210)), ind = 1:420, 
+#'                   mat = 1:420, pat = 1:420, 
+#'                   sex = sample(1:2, 420, replace = TRUE), 
+#'                   pheno = sample(1:2, 420, replace = TRUE))
+#' format_snps(stickSNPs, "plink", outfile = "plink_out", 
+#'             ped = ped, chr = "chr")
+#' #note that a column in the sample metadata containing phenotypic information
+#' #can be provided to the "phenotype" argument if wished.
 #'
 #' #Sequoia format
 #' b <- sample.meta(stickSNPs)
@@ -1207,13 +1147,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, HWE = FALSE, min_ind = 
 #'
 #'
 #' # VCF format
-#' test <- format_snps(stickSNPs, "vcf", chr = "group")
+#' test <- format_snps(stickSNPs, "vcf", chr = "chr")
+#' }
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        ncp = 2, ncp.max = 5, chr = "chr", position = "position"){
+                        ncp = 2, ncp.max = 5, chr = "chr", position = "position",
+                        phenotype = "phenotype"){
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -1292,6 +1234,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("Too many facets selected for fastSTRUCTURE. Limit 5.\n")
       }
     }
+    else{
+      if(length(facets) > 1){
+        stop("Only one facet permitted for structure format. Complex, sample only facets are allowed.\n")
+      }
+    }
   }
   else if(output == "0000"){
     cat("Converting to numeric 2 character format.\n")
@@ -1334,13 +1281,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
   }
   else if(output == "plink"){
+    .check.installed("genio")
     if(is.null(input_format)){
-      if(!all(c("position") %in% colnames(x@snp.meta)) | !any(c("group", "chr") %in% colnames(x@snp.meta))){
-        stop("Columns named position, group/chr, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in snp metadata!")
+      if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
+        stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
       }
     }
-    else if(!all(c("position") %in% colnames(x)) | !any(c("group", "chr") %in% colnames(x@snp.meta))){
-      stop("Columns named position, group, and snp containing position in bp, chr/linkage group/scaffold, and snp ID must be present in x!")
+    else if(!all(c("position") %in% colnames(x)) | !any(chr %in% colnames(x))){
+      stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in x!")
     }
     if(!is.null(ped)){
       if(!is.data.frame(ped)){
@@ -1350,13 +1298,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }
-    cat("Converting to PLINK! binary format.")
+    cat("Converting to PLINK! binary format.\n\tThis relies on the genio package--please cite this for publication.\n")
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
       facets <- facets[-c(snp.facets, both.facets)]
-    }
-    if(any(colnames(x@snp.meta) == "chr")){
-      colnames(x@snp.meta)[which(colnames(x@snp.meta) == "chr")] <- "group"
     }
   }
   else if(output == "sn"){
@@ -1415,7 +1360,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   
   if(interpolate == "iPCA"){
-    check.installed("missMDA")
+    .check.installed("missMDA")
   }
 
   #======================put data into snpRdata object if not in that format to start with================
@@ -1449,7 +1394,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       x <- process_ms(x, chr.length)
       snp.meta <- x$meta
       x <- x$x
-      x <- convert_2_to_1_column(ms.in$x)
+      x <- .convert_2_to_1_column(x)
       cat(" done.\n")
 
       input_format <- "sn"
@@ -1533,7 +1478,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       #rebind to matrix and remake data.
       if(output == "NN"){
-        rdata <- cbind(header, x) #all done if just converting to NN
+        rdata <- cbind(sample.meta, x) #all done if just converting to NN
       }
       else{
         x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
@@ -1550,7 +1495,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       xv[xv == input_mDat] <- "NN" #replace with correct missing data
       x <- as.data.frame(xv, stringsAsFactors = F)
       if(output == "NN"){
-        rdata <- cbind(header, x)
+        rdata <- cbind(headers, x)
       }
       else{
         x <- import.snpR.data(x, sample.meta = sample.meta, snp.meta = headers, mDat = "NN")
@@ -1559,10 +1504,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #convert "sn" format to NN
     if(input_format == "sn"){
-      # save for plink if that's the destination format!
-      if(output == "plink"){
-        pl_0g_dat <- x
-      }
       xv <- as.matrix(x)
       xv[xv == 0] <- "AA"
       xv[xv == 1] <- "AC"
@@ -1583,7 +1524,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
 
     if(!is.null(facets)){
-      x <- add.facets.snpR.data(x, facets)
+      x <- .add.facets.snpR.data(x, facets)
     }
 
     # if this is the desired output, we're done.
@@ -1599,21 +1540,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(outfile != FALSE){
     if(is.character(outfile) & length(outfile) == 1){
       cat("Printing results to:", outfile, "\n")
-      if(file.exists(outfile)){
-        #ask for confirmation before proceeding, since shit will be overwritten.
-        cat("Outfile already exits. ")
-        resp <- "empty"
-        while(resp != "y" & resp != "n"){
-          cat("Overwrite? (y or n)\n")
-          resp <- readLines(n = 1)
-        }
-        if(resp == "n"){
-          stop("Please provide acceptable path to file for output.\n")
-        }
-        else{
-          cat("\tProceeding with conversion...\n")
-        }
-      }
     }
     else{
       stop("Outfile must be a character vector of length 1.\n")
@@ -1628,7 +1554,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(!all(facets %in% x@facets)){
       cat("Adding missing facets.\n")
       new.facets <- facets[which(!(facets %in% x@facets))]
-      x <- add.facets.snpR.data(x, new.facets)
+      x <- .add.facets.snpR.data(x, new.facets)
     }
   }
 
@@ -1675,12 +1601,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
     #=========apply to requested facets=======
     # get missing maf info
-    mafs_to_calc <- check_calced_stats(x, unique(c(".base", facets)), "maf")
+    mafs_to_calc <- .check_calced_stats(x, unique(c(".base", facets)), "maf")
     if(any(!unlist(mafs_to_calc))){
       x <- calc_maf(x, names(mafs_to_calc[which(!unlist(mafs_to_calc))]))
     }
 
     # grab the major and minors for each snp in the analysis.
+    .snp.id <- facet <- subfacet <- NULL
     x@stats <- dplyr::arrange(x@stats, .snp.id, facet, subfacet)
     maj <- x@stats$major[x@stats$facet == ".base"]
     min <- x@stats$minor[x@stats$facet == ".base"]
@@ -1702,9 +1629,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       rdata <- cbind(ref = x@snp.meta$ref, # since everything is sorted by .snp.id, this will match.
                      anc = x@snp.meta$anc,
                      Allele1 = x@stats[x@stats$facet == ".base", "major"],
-                     ni1[order(ni1$.snp.id), 3:ncol(ni1)],
+                     ni1[order(ni1$.snp.id), 3:ncol(ni1), drop = FALSE],
                      Allele2 = x@stats[x@stats$facet == ".base", "minor"],
-                     ni2[order(ni2$.snp.id), 3:ncol(ni2)],
+                     ni2[order(ni2$.snp.id), 3:ncol(ni2), drop = FALSE],
                      x@snp.meta[,which(!(colnames(x@snp.meta) %in% c("ref", "anc", ".snp.id")))])
       rdata <- as.data.frame(rdata)
       colnames(rdata)[c(3,3 + length(3:ncol(ni1)) + 1)] <- c("Allele1", "Allele2")
@@ -1792,13 +1719,35 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       snames <- character(nrow(outm))
       snames[seq(1,nrow(outm),2)] <- x@names
       snames[seq(2,nrow(outm),2)] <- x@names
+      
+      # fix missing to -9
+      outm[outm == 0] <- -9
+
+      
       if(output == "structure"){ # bind sample and metadata for structure
-        rdata <- cbind(ind = snames,
-                       x@sample.meta[,colnames(x@sample.meta) %in% facets],
+
+        
+        #prep pop numbers
+        facets <- .check.snpR.facet.request(x, facets)
+        facets <- unlist(.split.facet(facets))
+        
+        struc.meta <- as.numeric(as.factor(
+          .paste.by.facet(sample.meta(x)[rep(1:nsamps(x), each = 2),], colnames(sample.meta(x)) %in% facets)))
+        
+        
+        if(length(struc.meta) > 0){
+          rdata <- cbind(ind = snames,
+                       struc.meta,
                        as.data.frame(outm, stringsAsFactors = F))
+        }
+        else{
+          rdata <- cbind(ind = snames,
+                         as.data.frame(outm, stringsAsFactors = F))
+        }
+        
+        colnames(rdata)[2] <- paste(facets, collapse = ".")
       }
       else{ #add a bunch of filler columns for faststructure and change missing data to -9
-        outm[outm == 0] <- -9
         if(length(facets) == 1 & facets[1] == ".base"){
           rdata <- cbind(ind = snames,
                          matrix("filler", nrow(outm), 5),
@@ -1915,112 +1864,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   #PLINK format
   if(output == "plink"){
-    #======================make a vector containing the bits for each genotype============
-    # much easier with sn!
-    if(exists("pl_0g_dat")){
-      # convert to vector
-      xv <- as.vector(t(pl_0g_dat))
-
-      # add a few filler genotype calls to fill in the empty bits later on.
-      x.dup <- ncol(pl_0g_dat) %% 4
-      if(x.dup  != 0){
-        x.dup <- 4 - x.dup
-      }
-      x.dup <- matrix("FF", nrow(pl_0g_dat), x.dup)
-      x.dup <- cbind(pl_0g_dat, x.dup)
-      xv.dup <- as.vector(t(x.dup))
-
-      # define the vector that we're going to fill with bits for each genotype
-      xvt <- character(length(xv.dup))
-
-      xvt[xv.dup == "0"] <- "00"
-      xvt[xv.dup == "1"] <- "01"
-      xvt[xv.dup == "2"] <- "11"
-      xvt[xv.dup == miss] <- "10"
-      xvt[xv.dup == "FF"] <- "00"
-
-      # get allele names for map file down the line
-      a.names <- matrix(c(0,1), nrow(header), 2, T)
+    #===============make a bed file using genio==========
+    # remove any snps with no data
+    sn <- as.matrix(format_snps(x, "sn", interpolate = FALSE)[,-c(1:(ncol(snp.meta(x)) - 1))])
+    bads <- which(rowSums(is.na(sn)) == ncol(sn))
+    if(length(bads) > 0){
+      sn <- sn[-bads,]
+      warning("Removed some loci without any called genotypes.\n")
     }
-
-    # harder for the NN format
-    else{
-      # convert to vector
-      xv <- as.vector(t(x))
-
-      # add a few filler genotype calls to fill in the empty bits later on.
-      x.dup <- ncol(x) %% 4
-      if(x.dup  != 0){
-        x.dup <- 4 - x.dup
-      }
-      x.dup <- matrix("FF", nrow(x), x.dup)
-      x.dup <- cbind(x, x.dup)
-      xv.dup <- as.vector(t(x.dup))
-
-      # define the vector that we're going to fill with bits for each genotype
-      xvt <- character(length(xv.dup))
-
-      # pull allele table to check for violations
-      as <- x@geno.tables$as[x@facet.meta$facet == ".base",]
-
-      # if there are any alleles without any data, warn and remove
-      if(any(rowSums(as) == 0)){
-        missing.dat <- which(rowSums(as) == 0)
-        warning(paste0("Removed ", length(missing.dat), "SNPs with no called genotypes.!\n"),
-                "Removed SNPs:\n", missing.dat)
-        x <- x[-missing.dat,]
-        as <- as[-missing.dat,]
-        xv <- as.vector(t(x))
-      }
-
-      # get the unique alleles for each loci, fixing for loci with one allele.
-      unique.as <- cbind(as, N1 = rep(0, nrow(as))) # put in dummies for rows with missing haplotypes
-      unique.as <- ifelse(unique.as != 0, TRUE, FALSE) # convert to logical
-      if(any(rowSums(unique.as) != 2)){
-        unique.as[rowSums(unique.as) != 2, 5] <- TRUE # add one missing allele note
-      }
-      unique.as <- which(t(unique.as)) %% ncol(unique.as) # get the column for each TRUE
-      unique.as[unique.as == 0] <- 5 # fix for sixth column
-      unique.as <- c(colnames(as), "M")[unique.as] # add column names.
-
-      # match to observed genotypes
-      ## these lines generate a vector equal in length to xv that has the correct genotype options per loci for all three genotypes.
-      v00 <- paste0(unique.as[seq(1, length(unique.as), 2)],
-                    unique.as[seq(1, length(unique.as), 2)])
-      v00 <- rep(v00, each = ncol(x.dup))
-      v11 <- paste0(unique.as[seq(2, length(unique.as), 2)],
-                    unique.as[seq(2, length(unique.as), 2)])
-      v11 <- rep(v11, each = ncol(x.dup))
-      v01a <- paste0(unique.as[seq(1, length(unique.as), 2)],
-                     unique.as[seq(2, length(unique.as), 2)])
-      v01a <- rep(v01a, each = ncol(x.dup))
-      v01b <- paste0(unique.as[seq(2, length(unique.as), 2)],
-                     unique.as[seq(1, length(unique.as), 2)])
-      v01b <- rep(v01b, each = ncol(x.dup))
-
-      ## these lines create xvt, which has the correct binary doublets.
-      xvt[xv.dup == v00] <- "00"
-      xvt[xv.dup == v11] <- "11"
-      xvt[xv.dup == v01a] <- "01"
-      xvt[xv.dup == v01b] <- "01"
-      xvt[xv.dup == "NN"] <- "10"
-      xvt[xv.dup == "FF"] <- "00"
-
-      # get allele names for map file down the line
-      a.names <- matrix(unique.as, nrow(x), 2, T)
+    
+    if(isFALSE(outfile)){
+      genio::write_bed("plink_out.bed", sn, verbose = FALSE)
+      cat("Wrote bed file to plink_out.bed\n")
     }
-
-    #=====================add magic numbers and reorder vector==============
-
-    # order correctly for plink (weird reversed bytes)
-    xvt <- paste0(xvt[seq(4, length(xvt), 4)],
-                  xvt[seq(3, length(xvt), 4)],
-                  xvt[seq(2, length(xvt), 4)],
-                  xvt[seq(1, length(xvt), 4)])
-
-    # add magic number and SNP-major identifier
-    bed <- c("01101100", "00011011", "00000001", xvt)
-
+    genio::write_bed(paste0(outfile, ".bed"), sn, verbose = FALSE)
 
     #===============make a ped file=================
     # make an empty set of ped header columns if not provided
@@ -2044,11 +1901,26 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       else{
         Sex <- rep("NA", ncol(x))
       }
-      if(any(lower.sample.cols == "phenotype")){
-        Phenotype <- x@sample.meta[,which(lower.sample.cols == "phenotype")]
+      if(any(colnames(x@sample.meta) == phenotype)){
+        cat("Using phenotype column as phenotype.")
+        Phenotype <- x@sample.meta[,which(colnames(x@sample.meta) == phenotype)]
+        if(length(unique(stats::na.omit(Phenotype))) == 2){
+          uf <- factor(Phenotype)
+          cat("Two phenotypes detected, options encoded as: \n\t",
+              levels(uf)[1], " = 0\n\t",
+              levels(uf)[2], " = 1\n\t",
+              "\n\tNA as -9.\n")
+          uf <- as.numeric(uf)
+          uf[is.na(uf)] <- -9
+          Phenotype <- uf
+        }
+        else{
+          warning("Plink does not typically support more than two phenotypes. Phenotypes left as-is, with missing data as NA (plink requires -9).\n")
+        }
       }
       else{
-        Phenotype <- rep("NA", ncol(x))
+        cat("No phenotype column in sample metadata detected, filling with missing.\n")
+        Phenotype <- rep("-9", ncol(x))
       }
       if(any(lower.sample.cols == "matid")){
         MatID <- x@sample.meta[,which(lower.sample.cols == "matid")]
@@ -2063,6 +1935,26 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         Sex = Sex,
                         Phenotype = Phenotype)
     }
+    else{
+      if(any(colnames(ped) == "Phenotype")){
+        Phenotype <- ped$Phenotype
+        if(length(unique(stats::na.omit(Phenotype))) == 2){
+          uf <- factor(Phenotype)
+          cat("Two phenotypes detected, options encoded as: \n\t",
+              levels(uf)[1], " = 0\n\t",
+              levels(uf)[2], " = 1\n\t",
+              "\n\tNA as -9.\n")
+          uf <- as.numeric(uf)
+          uf[is.na(uf)] <- -9
+          Phenotype <- uf
+          ped$Phenotype <- Phenotype
+        }
+        else{
+          warning("Plink does not typically support more than two phenotypes. Phenotypes left as-is, with missing data as NA (plink requires -9).\n")
+        }
+      }
+    }
+    
 
     # save .fam
     fam <- ped
@@ -2076,19 +1968,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     ped <- cbind(ped, matrix(x.np, nrow(ped), nrow(x)), stringsAsFactors = F)
 
     #===============make an extended map file=================
+    a.names <- get.snpR.stats(x, stats = "maf")$single[,c("major", "minor")]
     # with morgans
     if(any(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))){
-      bim <- data.frame(chr = x@snp.meta$group,
+      bim <- data.frame(chr = x@snp.meta[,chr],
                         rs = x@snp.meta$.snp.id,
-                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))],
+                        cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))][,1],
                         bp = x@snp.meta$position,
                         a1 = a.names[,1],
                         a2 = a.names[,2])
     }
     # without morgans
     else{
-      bim <- data.frame(chr = x@snp.meta$group,
-                        rs = x@snp.meta$snp,
+      bim <- data.frame(chr = x@snp.meta[,chr],
+                        rs = x@snp.meta$.snp.id,
                         cM = 0,
                         bp = x@snp.meta$position,
                         a1 = a.names[,1],
@@ -2098,11 +1991,16 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # recode chr
     bim$chr <- as.numeric(as.factor(bim$chr))
 
+    # remove bads
+    if(length(bads) > 0){
+      bim <- bim[-bads,]
+    }
+    
     # grab normal map file
     map <- bim[,1:4]
 
     # name output
-    rdata <- list(ped = ped, bed = bed, map = map, bim = bim, fam = fam)
+    rdata <- list(ped = ped, map = map, bim = bim, fam = fam)
   }
 
   # colony format for 01234
@@ -2135,14 +2033,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     maj <- x@stats$major[x@stats$facet == ".base"]
 
     # check to see if each allele is the minor, assign a one if so
-    a1 <- substr(unlist(t(x)), 1, 1)
-    a2 <- substr(unlist(t(x)), 2, 2)
+    a1 <- substr(unlist(t(genotypes(x))), 1, 1)
+    a2 <- substr(unlist(t(genotypes(x))), 2, 2)
 
     a1 <- a1 == rep(min, each = ncol(x))
     a2 <- a2 == rep(min, each = ncol(x))
 
     rdata <- t(a1 + a2)
-    rdata[as.matrix(x) == x@mDat] <- NA
+    rdata[as.matrix(genotypes(x)) == x@mDat] <- NA
 
 
     # sn
@@ -2165,13 +2063,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       # interpolate?
       if(interpolate == "bernoulli"){
-        rdata <- interpolate_sn(rdata, "bernoulli")
+        rdata <- .interpolate_sn(rdata, "bernoulli")
       }
       else if(interpolate == "af"){
-        rdata <- interpolate_sn(rdata, "af")
+        rdata <- .interpolate_sn(rdata, "af")
       }
       else if(interpolate == "iPCA"){
-        rdata <- interpolate_sn(rdata, "iPCA", ncp = ncp, ncp.max = ncp.max)
+        rdata <- .interpolate_sn(rdata, "iPCA", ncp = ncp, ncp.max = ncp.max)
       }
 
       # bind and save
@@ -2184,9 +2082,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       rdata <- t(rdata)
       rdata <- matrix(as.numeric(rdata), ncol = ncol(rdata))
       colnames(rdata) <- 1:ncol(rdata)
-      #for lifehistory data input needs id, sex, year born
-      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
-        ID <- x@sample.meta$ID
+      
+      fix.sex.sequoia <- function(y){
         #format sex for sequoia (1 = F,2 = M,3 = U,4 = H,NA)
         sexes <- c("F", "M", "U", "H", "1", "2", "3", "4")
         sex <- x@sample.meta$Sex
@@ -2195,15 +2092,39 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         sex[which(sex == "M")] <- 2
         sex[which(sex == "U")] <- 3
         sex[which(sex == "H")] <- 4
+        return(sex)
+      }
+      
+      #for lifehistory data input needs id, sex, year born
+      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
+        if(all(c("BY.min", "BY.max") %in% colnames(sample.meta(x)))){
+          warning("BirthYear, BY.max, and BY.min columns all found in sample metadata. Defaulting to use BirthYear.\n")
+        }
+        ID <- x@sample.meta$ID
+        sex <- fix.sex.sequoia(x)
+        
         #ACTUALLY MAKE THE TABLE
         lhtable <- data.frame(ID=ID,
                               Sex = as.numeric(sex),
                               BirthYear = x@sample.meta$BirthYear,
                               stringsAsFactors = F)
-        rownames(rdata) <- ID
-        rdata = list(dat=rdata, lh=lhtable)
+        
       }
-      else{stop("Needs columns 'ID','Sex', 'BirthYear' in sample metadata for Sequoia Life History Data. \n")}
+      else if(all(c("BY.min", "BY.max", "ID", "Sex") %in% colnames(sample.meta(x)))){
+        ID <- x@sample.meta$ID
+        sex <- fix.sex.sequoia(x)
+        
+        #ACTUALLY MAKE THE TABLE
+        lhtable <- data.frame(ID=ID,
+                              Sex = as.numeric(sex),
+                              BY.min = sample.meta(x)$BY.min,
+                              BY.max = sample.meta(x)$BY.max,
+                              stringsAsFactors = F)
+      }
+      else{stop("Needs 'ID' and 'Sex' and either 'BirthYear' or 'BY.min' and 'BY.max' columns in sample metadata. \n")}
+      
+      rownames(rdata) <- ID
+      rdata = list(dat=rdata, lh=lhtable)
     }
 
     # lea
@@ -2253,13 +2174,16 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn <- as.matrix(sn)
     hets <- which(sn == 1)
     nhets <- length(hets)
-    draws <- rbinom(nhets, 1, .5)
+    draws <- stats::rbinom(nhets, 1, .5)
     draws[draws == 1] <- 2
     sn[hets] <- draws
 
     # assign major or minor back
-    x <- calc_maf(x)
-    s <- get.snpR.stats(x)
+    maf.check <- .check_calced_stats(x, ".base", stats = "maf")
+    if(!unlist(maf.check)){
+      x <- calc_maf(x)
+    }
+    s <- .get.snpR.stats(x)
 
     # majors
     sn[is.na(sn)] <- "N"
@@ -2277,8 +2201,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn[mins] <- rmins
 
     # paste together by columns
-    rdat <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
-    names(rdat) <- colnames(sn)
+    rdata <- do.call(paste0, as.data.frame(t(sn), stringsAsFactors = F)) # faster than the tidyr version!
+    names(rdata) <- colnames(sn)
   }
   
   # VCF
@@ -2295,12 +2219,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
                             POS = snp.meta(x)[,position],
-                            REF = get.snpR.stats(x)$major,
-                            ALT = get.snpR.stats(x)$minor,
+                            REF = .get.snpR.stats(x)$major,
+                            ALT = .get.snpR.stats(x)$minor,
                             QUAL = ".",
                             FILTER = "PASS",
-                            INFO = paste0("NS=", get.snpR.stats(x)$maj.count + get.snpR.stats(x)$min.count,
-                                          ";AC=", get.snpR.stats(x)$min.count),
+                            INFO = paste0("NS=", .get.snpR.stats(x)$maj.count + .get.snpR.stats(x)$min.count,
+                                          ";AC=", .get.snpR.stats(x)$min.count),
                             FORMAT = "GT")
     colnames(data_meta)[1] <- "#CHROM"
     malt <- which(data_meta$ALT == "N")
@@ -2341,17 +2265,17 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       llist[length(llist)] <- paste0("SNP_", ncol(rdata))
 
       # write output
-      cat(paste0(unlist(strsplit(outfile, split =  "(?<!^)\\.", perl = T))[1], "_genepop\n"), file = outfile)
-      cat(llist, "\nPOP\n", file = outfile, append = T) # keming, this is the line that writes the snps. Put a conditonal in to behave differently depending on if we are writing a genepop or a baps, and write a new line or two to write the snps in a column for baps.
+      cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
+      cat(llist, "\nPOP\n", file = outfile, append = T) 
 
       # write the tables, splitting by pop if requested:
       if(length(facets) > 0){
         cat("\tWriting genepop file seperated by populations. First provided facet is treated as pop.\t")
 
         # sort by pop
-        write.facets <- sort(unlist(strsplit(facets, split = "(?<!^)\\.", perl = T)))
+        write.facets <- sort(unlist(.split.facet(facets)))
         facet.cols <- match(write.facets, colnames(x@sample.meta))
-        pop <- do.call(paste, as.data.frame(x@sample.meta[,facet.cols]))
+        pop <- .paste.by.facet(sample.meta(x), facet.cols)
         pop <- gsub(" ", ".", pop)
         rdata$pop <- pop
 
@@ -2414,22 +2338,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = "\t", row.names = F)
     }
     else if(output == "plink"){
-      t2 <- as.logical(as.numeric(unlist(strsplit(bed, "")))) # merge the data and convert it to a logical.
-      t2 <- BMS::bin2hex(t2) # convet to hex codes
-      t2 <- unlist(strsplit(t2,"")) # unlist
-      t2 <- paste0("\\\\x",
-                   t2[seq(1,length(t2),2)],
-                   t2[seq(2,length(t2),2)],
-                   collapse = "")
-
-
-      # system type
-      sys.type <- Sys.info()["sysname"]
-
-      # call
-      writeLines(paste0("#!/bin/bash\n\n",
-                        "echo -n -e ", t2, " > ", outfile, ".bed"), paste0(outfile, ".sh"))
-      cat(paste0("To get PLINK .bed file, run ", outfile, ".sh.\n"))
       data.table::fwrite(map, paste0(outfile, ".map"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(fam, paste0(outfile, ".fam"), quote = F, col.names = F, sep = "\t", row.names = F)
       data.table::fwrite(ped, paste0(outfile, ".ped"), quote = F, col.names = F, sep = "\t", row.names = F)
@@ -2439,11 +2347,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       saveRDS(rdata, paste0(outfile, ".RDS"))
     }
     else if(output == "fasta"){
-      writeobj <- c(rbind(paste0(">", names(rdat)), rdat))
+      writeobj <- c(rbind(paste0(">", names(rdata)), rdata))
       writeLines(writeobj, outfile)
     }
     else if(output == "lea"){
-      write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
+      utils::write.table(rdata, outfile, quote = FALSE, col.names = F, sep = "", row.names = F)
     }
     else if(output == "colony"){
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = F, sep = " ", row.names = F)
@@ -2495,11 +2403,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @author William Hemstrom
 #' @export
 #' @examples
-#' # check for duplicates with samples 1, 3, and 5
-#' check_duplicates(stickSNPs, c(1, 3, 5))
+#' \dontrun{
+#' # check for duplicates with sample 1
+#' check_duplicates(stickSNPs, 1)
 #'
 #' # check duplicates using the .samp.id column as sample IDs
-#' check_duplicates(stickSNPs, c(1, 3, 5), id.col = ".sample.id")
+#' check_duplicates(stickSNPs, 1, id.col = ".sample.id")
+#' }
 check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
   #============sanity checks============
   msg <- character()
@@ -2569,7 +2479,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
 
     #figure out which values are "NN"
-    t.samp <- x[,t.samp.id]
+    t.samp <- genotypes(x)[,t.samp.id]
     miss <- t.samp == "NN"
 
     # finish initializing
@@ -2594,7 +2504,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
       }
 
       # compare only loci non "NN" in both samples
-      c.samp <- x[,j]
+      c.samp <- genotypes(x)[,j]
       c.miss <- c.samp == "NN"
       u.miss <- which(c.miss | miss)
 
@@ -2640,26 +2550,30 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){
+  
+  ..ord <- NULL
+  
   #==================prep and sanity check==================
   msg <- character()
   
   # check facets and get maf
-  facets <- check.snpR.facet.request(x, facets, "none", T)
+  facets <- .check.snpR.facet.request(x, facets, "none", T)
   facet_types <- facets[[2]]
   facets <- facets[[1]]
-  needed.sample.facets <- check.snpR.facet.request(x, facets)
+  needed.sample.facets <- .check.snpR.facet.request(x, facets)
   if(any(facet_types == "snp")){
     needed.sample.facets <- c(needed.sample.facets, ".base")
+    needed.sample.facets <- unique(needed.sample.facets)
   }
   ## add any missing maf data
-  missing_mafs <- check_calced_stats(x, needed.sample.facets, "maf")
+  missing_mafs <- .check_calced_stats(x, needed.sample.facets, "maf")
   if(any(!unlist(missing_mafs))){
     x <- calc_maf(x, names(missing_mafs)[which(!unlist(missing_mafs))])
   }
-  am <- get.snpR.stats(x, needed.sample.facets)
+  am <- .get.snpR.stats(x, needed.sample.facets)
   
   # grab column names
-  maj_min <- get.snpR.stats(x)
+  maj_min <- .get.snpR.stats(x)
   maj_min <- paste0(rep(unique(maj_min$.snp.id), each = 2), "_",
                     c(maj_min$major, maj_min$minor)[rep(1:nrow(maj_min), each = 2) + (0:1) * nrow(maj_min)])
   
@@ -2684,7 +2598,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
     
     # interleve major and minor frequencies and save
     ord <- rep(1:ncol(tam), each = 2) + (0:1) * ncol(tam)
-    amc <- cbind(amb, tam)[,..ord]
+    amc <- .fix..call(cbind(amb, tam)[,..ord])
     colnames(amc) <- maj_min
     amc <- as.data.frame(amc)
     rownames(amc) <- unlist(pops)
@@ -2699,10 +2613,10 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
         t.samp.facet <- ".base"
       }
       else{
-        t.samp.facet <- check.snpR.facet.request(x, facets[i], "snp")
+        t.samp.facet <- .check.snpR.facet.request(x, facets[i], "snp")
       }
-      t.snp.facet <- check.snpR.facet.request(x, facets[i], "sample")
-      snp.parts <- get.task.list(x, t.snp.facet)[,-c(1:2)]
+      t.snp.facet <- .check.snpR.facet.request(x, facets[i], "sample")
+      snp.parts <- .get.task.list(x, t.snp.facet)[,-c(1:2)]
       
       tout <- vector("list", length = nrow(snp.parts))
       names(tout) <- snp.parts[,2]
@@ -2711,14 +2625,14 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
         include_snps <- unique(am$.snp.id[which(am[,snp.parts[j,1]] == snp.parts[j,2])])
         
         # grab just those snps
-        tout[[j]] <- sample_facet_freqs[[which(needed.sample.facets == t.samp.facet)]] # add everything
+        tout[[j]] <- sample_facet_freqs[[which(needed.sample.facets == t.samp.facet)[1]]] # add everything
         tout[[j]] <- tout[[j]][,which(as.numeric(gsub("_.+", "", colnames(tout[[j]]))) %in% include_snps), drop = F] # subset the requested snps only
       }
       # assign back, nesting with the snp facet name
       out[[i]] <- tout
     }
     else{
-      if(is.null(check.snpR.facet.request(x, facets[i]))){
+      if(is.null(.check.snpR.facet.request(x, facets[i]))){
         facets[i] <- ".base"
       }
       out[[i]] <- list(.base = sample_facet_freqs[[which(needed.sample.facets == facets[i])]])
@@ -2726,6 +2640,218 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   }
   
   #=================return============
-  x <- update_calced_stats(x, facets, "allele_frequency_matrix")
-  return(merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
+  x <- .update_calced_stats(x, facets, "allele_frequency_matrix")
+  return(.merge.snpR.stats(x, stats = out, type = "allele_frequency_matrices"))
+}
+
+
+
+#' Filter down to one SNPs every \emph{n} bases.
+#'
+#' Selects one SNPs every \emph{n} bases. This can be
+#' used to filter for SNPs in tight LD, such as when only one SNP per RAD-tag is
+#' desired.
+#' 
+#' Note that this approach takes the first SNP every \emph{n} bases, and so is
+#' non-random. \code{\link{filter_snps}} can be used beforehand to ensure that
+#' the selected SNPs are above a desired quality threshold to ensure that poor
+#' SNPs are not selected over loci with more robust genotyping data.
+#' 
+#' It is strongly recommended to provide a SNP facet to the facet argument. This
+#' will define "chromosomes" for the purpose of selecting SNPs. If not set, snpR
+#' will assume that \emph{all SNPs are on the same chromosome}, which may
+#' produce undesired results.
+#'
+#' @param x snpRdata object
+#' @param facet character, default NULL. SNP facet specifying chromosomes or 
+#'   scaffolds. SNP positions will be independantly considered depending on the
+#'   facet level.
+#' @param n Integer. Specifies the minium distance between selected SNPs.
+#' 
+#' @return A snpRdata object containing the selected SNPs.
+#' 
+#' @author William Hemstrom
+#' @export
+#' 
+#' @examples 
+#' # put large gaps inbetween the example data
+#' gapped <- gap_snps(stickSNPs, "chr", 100000)
+#'
+#' # filter first to grab only very good SNPs
+#' vgood <- filter_snps(stickSNPs, min_ind = .8)
+#' gapped <- gap_snps(vgood, "chr", 100000)
+gap_snps <- function(x, facet = NULL, n){
+  #==========sanity checks=========
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  msg <- character()
+  
+  
+  ffacet <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = TRUE)
+  
+  if(any(ffacet[[2]] %in% c("sample", "complex"))){
+    msg <- c(msg, "Non SNP facets are not permitted.\n")
+  }
+  
+  facet <- .check.snpR.facet.request(x, facet, "sample")
+  
+  if(length(facet) != 1){
+    msg <- c(msg, "Only one facet may be provided to gap_snps. Note that complex
+             SNP facets may be used (e.g. chr.scaffold).")
+  }
+  
+  if(!"position" %in% colnames(snp.meta(x))){
+    msg <- c(msg, "There must be a 'position' column in the SNP metadata to use gap_snps!")
+  }
+  
+  if(facet[1] == ".base"){
+    warning("Gapping SNPs by the base facet is not recommended. Consider using a SNP facet instead.\n")
+  }
+  
+  if(".tfacet.ext" %in% colnames(snp.meta(x))){
+    msg <- c(msg, "A column named '.tfacet.ext' cannot be in the SNP metadata.\n")
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #==============subfunction==============
+  retained <- function(pos, n){
+    fsnp <- which.min(pos)
+    cs <- pos[fsnp]
+    # use a while loop to grab the snps
+    # should be a fairly quick loop, since it loops through each gap, not each 
+    # snp. Might still be a bit slow with really large data, can fix later if
+    # I get requests...
+    while(cs[length(cs)] + n <= max(pos)){
+      cs <- c(cs,
+              min(pos[pos >= cs[length(cs)] + n]))
+    }
+    ret <- match(cs, pos)
+    return(ret)
+  }
+  
+  #==============find the SNPs to retain=====================
+  # get a task list, then run for each task
+  task.list <- .get.task.list(x, facet)
+  keep.snps <- numeric()
+  
+  # no par option for now, should usually be quick. Can add if requested.
+  for(i in 1:nrow(task.list)){
+    tsm <- snp.meta(x)[.fetch.snp.meta.matching.task.list(x, task.list[i,]),]
+    ret <- retained(tsm$position, n)
+    keep.snps <- c(keep.snps, tsm$.snp.id[ret])
+  }
+  
+  #==============subset and return========
+  
+  # grab the snp indexes to keep
+  ids <- sort(match(keep.snps, snp.meta(x)$.snp.id))
+  cat("Selected ", length(ids), "out of ", nrow(x), "SNPs.\n")
+  
+  # subset
+  return(x[ids,])
+}
+
+#' Gather citations for methods used with a snpRdata object
+#' 
+#' snpR will automatically track the methods used when for calculations on a
+#' snpRdata object. Using \code{\link{citations}} on that object will provide details 
+#' on the the methods used, and can optionally write a .bib bibtex formatted
+#' library containing citations for these methods.
+#' 
+#' Printed outputs contain the statistic calculated, the in-line citation for
+#' the method used, a bibtex key which corresponds to the .bib library written 
+#' if the outbib argument is used, and a quick note giving any details.
+#' 
+#' @param x snpRdata object
+#' @param outbib character, default FALSE. An optional file path to which a .bib
+#'   bibtex library containing all of the citations for the used methods will be
+#'   written.
+#' @param return_bib logical, default FALSE. If TRUE, returns a list containing
+#'   the bib entries and their details. The bib entries are formatted according
+#'   to \code{\link[RefManageR]{BibEntry}}.
+#'   
+#' @author William Hemstrom
+#' @returns  If return_bib is TRUE, a list containing four parts: 
+#' \itemize{\item{keys: } A vector of bibtex keys for each method.
+#' \item{stats: } A vector of the stats used.
+#' \item{details: } A vector of details for each method.
+#' \item{bib: } A \code{\link[RefManageR]{BibEntry}} for each citation.}
+#' 
+#' @export
+#' @examples 
+#' # calculate pi
+#' x <- calc_pi(stickSNPs)
+#' 
+#' # fetch citations
+#' citations(x)
+#' 
+#' # fetch citations and write bibtex .bib to citations.bib
+#' ## not run
+#' \dontrun{
+#' citations(x, outbib = "citations.bib")
+#' }
+citations <- function(x, outbib = FALSE, return_bib = FALSE){
+  #==========sanity checks=======
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  .check.installed("rbibutils")
+  .check.installed("RefManageR")
+  
+  #==========grab bib============
+  bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
+  bib <- rbibutils::readBib(bib.file)
+  
+  #==========filter bib==========
+  keys <- as.character(unlist(purrr::map(x@citations, "key")))
+  bib <- bib[keys]
+  
+  #==========shout at the user=====
+  deets <- unlist(purrr::map(x@citations, "details"))
+  stats <- names(x@citations)
+  
+  cat("Citations for methods used thus far: \n")
+  for(i in 1:length(keys)){
+    cat("==============================================\n")
+    cat("Statistic: ", stats[i], "\n")
+    cat("Citation: ", RefManageR::Cite(bib[keys[i]]), "\n")
+    cat("Bibtex key: ", keys[i], "\n")
+    cat("Details: ", deets[i], "\n")
+  }
+  cat("==============================================\n\n")
+  
+  #==========print bib=============
+  if(!isFALSE(outbib)){
+    
+    if(file.exists(outbib)){
+      current_bib <- rbibutils::readBib(outbib)
+      not_in_current <- which(!keys %in% names(current_bib))
+      
+      
+      if(length(not_in_current) > 0){
+        #==========filter bib==========
+        bib <- bib[keys[not_in_current]]
+        
+        current_bib <- c(current_bib, bib)
+        
+        RefManageR::WriteBib(current_bib, outbib, verbose = FALSE)
+      }
+    }
+    
+    
+    else{
+      RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+      cat(".bib file can be found at: ", outbib, "\n")
+    }
+    
+  }
+  
+  if(!isFALSE(return_bib)){
+    return(list(keys = keys, stats = stats, details = deets, bib = bib))
+  }
 }

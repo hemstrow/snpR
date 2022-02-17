@@ -11,18 +11,50 @@ plot_structure(
   k = 2,
   method = "snmf",
   reps = 1,
+  update_bib = FALSE,
   iterations = 1000,
+  burnin = 100,
   I = NULL,
-  alpha = 10,
+  alpha = 5,
   qsort = "last",
   qsort_K = "last",
-  clumpp = T,
+  clumpp = TRUE,
   clumpp_path = "/usr/bin/CLUMPP.exe",
   clumpp.opt = "greedy",
+  structure_path = "/usr/bin/structure",
+  admixture_path = "/usr/bin/admixture",
+  admixture_cv = 5,
   ID = NULL,
   viridis.option = "viridis",
   alt.palette = NULL,
   t.sizes = c(12, 12, 12),
+  separator_thickness = 1,
+  separator_color = "white",
+  no_admix = FALSE,
+  use_pop_info = FALSE,
+  loc_prior = FALSE,
+  correlated_frequencies = TRUE,
+  infer_alpha = TRUE,
+  separate_pop_alphas = FALSE,
+  infer_lambda = FALSE,
+  infer_pop_specific_lambda = FALSE,
+  lambda = 1,
+  f_prior_mean = 0.01,
+  f_prior_sd = 0.05,
+  uniform_alpha_prior = TRUE,
+  alpha_max = 10,
+  alpha_prior_a = 1,
+  alpha_prior_b = 2,
+  gens_back = 2,
+  mig_prior = 0.01,
+  locprior_init_r = 1,
+  locprior_max_r = 20,
+  alpha_prop_sd = 0.025,
+  start_at_pop_info = FALSE,
+  metro_update_freq = 10,
+  seed = sample(1e+05, 1),
+  strip_col_names = NULL,
+  cleanup = TRUE,
   ...
 )
 }
@@ -41,29 +73,46 @@ each individual (populations, etc.).}
 \item{facet.order}{character, default NULL. Optional order in which the
 levels of the provided facet should appear on the plot, left to right.}
 
-\item{k}{numeric, default 2. The maximum of k (number of clusters) for which
-to run the clustering/assignment algorithm. The values 2:k will be run.}
+\item{k}{numeric vector, default 2. The k value (number of clusters) for which
+to run the clustering/assignment algorithm. Each provided k value will be run.}
 
 \item{method}{character, default "snmf". The clustering/assignment method to
 run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-See \code{\link[LEA]{main_sNMF}} or
-\code{\link[adegenet]{snapclust.choose.k}} for details, respectively.}
+Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
+Maximum-likelihood genetic clustering. See
+\code{\link[adegenet]{snapclust.choose.k}}. \item{admixture: } The
+ADMIXTURE program. Requires a local admixture executable, and thus cannot
+run on a Windows platform. \item{ structure: } The STRUCTURE program.
+Requires a local STRUCTURE executable. many additional options are
+available for STRUCTURE via other arguments.}}
 
 \item{reps}{numeric, default 1. The number of independent clustering
-repititions to run.}
+repetitions to run.}
+
+\item{update_bib}{character or FALSE, default FALSE. If a file path to an
+existing .bib library or to a valid path for a new one, will update or
+create a .bib file including any new citations for methods used. Useful
+given that this function does not return a snpRdata object, so a
+\code{\link{citations}} cannot be used to fetch references.}
 
 \item{iterations}{numeric or Inf, default 1000. For snapclust, the maximum
-number of iterations to run.}
+number of iterations to run. For STRUCTURE the number of MCMC steps, should
+be in the 10,000+ range.}
+
+\item{burnin}{numeric, default 100. For STRUCTURE, the number of burnin
+iterations to do prior to the main run. This should usually be in the
+10,000+ range.}
 
 \item{I}{numeric or NULL, default NULL. For snmf, how many SNPs should be
 used to initialize the search? Initializing with a subset of the total SNPs
 can radically speed up computation time for large datasets.}
 
-\item{alpha}{numeric, default 10. For sNMF, determines the regularization
-parameter. For small datasets, this can have a large effect, and should
-probably be larger than the default. See documentation for
-\code{\link[LEA]{main_sNMF}}.}
+\item{alpha}{numeric, default 10. If method = "sNMF", determines the
+regularization parameter. For small datasets, this can have a large effect,
+and should probably be larger than the default. See documentation for
+\code{\link[LEA]{main_sNMF}}. If method = "structure", changes the ALPHA
+flag, which determines the degree of admixture. If infer_alpha = TRUE,
+instead sets the starting point for the alpha inference.}
 
 \item{qsort}{character, numeric, or FALSE, default "last". Determines if
 individuals should be sorted (possibly within facet levels) by cluster
@@ -87,6 +136,15 @@ configurations. Slow. \item{greedy: } The standard approach. Slow for large
 datasets at high k values. \item{large.k.greedy: } A fast but less accurate
 approach. } See CLUMPP documentation for details.}
 
+\item{structure_path}{character, default "/usr/bin/structure". Path to the
+STRUCTURE executable, required if method = "structure".}
+
+\item{admixture_path}{character, default "/usr/bin/admixture". Path to the
+admixture executable, required if method = "admixture".}
+
+\item{admixture_cv}{numeric, default 5. Fold to use for cross-validation for
+admixture, used to determine the optimum k.}
+
 \item{ID}{character or NULL, default NULL. Designates a column in the sample
 metadata containing sample IDs.}
 
@@ -98,6 +156,135 @@ to use instead of the viridis palette.}
 
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
 c(strip.title, axis, axis.ticks).}
+
+\item{separator_thickness}{numeric, default 1. Thickness of facet level
+separator lines. If 0, no separators drawn. Since separators currently
+overlap with samples somewhat, this may be desirable.}
+
+\item{separator_color}{character, default "white". Color of facet level
+separator lines.}
+
+\item{no_admix}{logical, default FALSE. Used if method = "structure". If TRUE,
+the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
+will be assumed between clusters.}
+
+\item{use_pop_info}{logical, default FALSE. Used if method = "structure". If
+TRUE, the USEPOPINFO flag in STRUCTURE will be set to 1, meaning that
+individuals are assumed to come from the populations that they have been
+assigned in the facet provided, and the migrant status of individuals and
+their parents, grandparents, etc (going back n generations according to the
+gens_back argument) will be returned instead of ancestry proportions. The
+resulting plot will not be a typical structure plot.}
+
+\item{loc_prior}{logical, default FALSE. Used if method = "structure". If
+TRUE, the LOCPRIOR flag in STRUCTURE will be set to 1. This will place a
+strong population prior on samples according to the facet provided. Useful
+with weak data when the population info is known to be robust.}
+
+\item{correlated_frequencies}{logical, default TRUE. Used if method =
+"structure". If TRUE, the FREQSCORR flag in STRUCTURE will be set to 1.
+This assumes allele frequencies are correlated between populations. Usually
+true when populations have some degree of admixture.}
+
+\item{infer_alpha}{logical, default TRUE. Used if method = "structure". If
+TRUE, the INFERALPHA flag in STRUCTURE will be set to 1, allowing the
+optimum alpha to be inferred. Large alpha values imply that most
+individuals are admixed.}
+
+\item{separate_pop_alphas}{logical, default FALSE.  Used if method =
+"structure". If TRUE, the POPALPHAS flag in STRUCTURE will be set to 1,
+allowing populations to have different alpha values. Usually not
+recommended.}
+
+\item{infer_lambda}{logical, default FALSE.  Used if method = "structure". If
+TRUE, the INFERLAMBDA flag in STRUCTURE will be set to 1, allowing the
+optimum lambda to be inferred. Smaller values imply that most alleles have
+either very low or very high frequencies. Not usually recommended.}
+
+\item{infer_pop_specific_lambda}{logical, default FALSE.  Used if method =
+"structure". If TRUE, the POPSPECIFICLAMBDA flag in STRUCTURE will be set
+to 1, allowing for different pops to have different lambda values.}
+
+\item{lambda}{numeric, default 1. Used if method = "structure". Changes the
+LAMBDA flag. Smaller values imply that most alleles have either very low or
+very high frequencies. Used if method = "structure". The default works well
+in most cases.}
+
+\item{f_prior_mean}{numeric, default 0.01. Used if method = "structure".
+Changes the FPRIORMEAN flag. F values for each k cluster are drawn from a
+gamma prior with this mean. The default value tends to perform well for
+detecting small amounts of structure, although it can slightly overestimate
+k.}
+
+\item{f_prior_sd}{numeric, default 0.05. Used if method = "structure".
+Changes the FPRIORSD flag. F values for each k cluster are drawn from a
+gamma prior with this sd. The default value tends to perform well for
+detecting small amounts of structure, although it can slightly overestimate
+k.}
+
+\item{uniform_alpha_prior}{logical, default TRUE. Used if method =
+"structure". If TRUE, the UNIFPRIORALPHA flag in STRUCTURE will be set to
+1, thus using a uniform prior for alpha between 0 and alpha_max. Usually
+works well. If FALSE, uses a gamma prior with mean alpha_prior_a *
+alpha_prior_b and variance alpha_prior_a*alpha_prior_b^2.}
+
+\item{alpha_max}{numeric, default 10. Used if method = "structure". Changes
+the ALPHAMAX flag. If uniform_alpha_prior is TRUE, alpha will be drawn from
+a uniform prior for alpha between 0 and alpha_max.}
+
+\item{alpha_prior_a}{numeric, default 1. Used if method = "structure".
+Changes the ALPHAPRIORA flag. If uniform_alpha_prior is FALSE, alpha will
+be drawn from a gamma prior with mean alpha_prior_a * alpha_prior_b and
+variance alpha_prior_a*alpha_prior_b^2.}
+
+\item{alpha_prior_b}{numeric, default 2. Used if method = "structure".
+Changes the ALPHAPRIORA flag. If uniform_alpha_prior is FALSE, alpha will
+be drawn from a gamma prior with mean alpha_prior_a * alpha_prior_b and
+variance alpha_prior_a*alpha_prior_b^2.}
+
+\item{gens_back}{numeric, default 2. Used if method = "structure". Changes
+the GENSBACK flag. If use_pop_info is TRUE, migration probabilities for
+individuals will be determined for the individual themselves plus gens_back
+generations prior (parents, grandparents, etc).}
+
+\item{mig_prior}{numeric, default 0.01. Used if method = "structure". Changes
+the MIGRPRIOR flag. Changes the prior value for the migration rate
+hyperparameter. Values between 0.001 and 0.01 are usually reasonable.}
+
+\item{locprior_init_r}{numeric, default 1. Used if method = "structure".
+Changes the LOCPRIORINIT flag. Sets the initial strength of the location
+prior (r). The default is often reasonable.}
+
+\item{locprior_max_r}{numeric, default 20. Used if method = "structure".
+Changes the MAXLOCPRIOR flag. Sets the maximum value of the location prior
+(r). The minimum is always 0. The default is usually reasonable.}
+
+\item{alpha_prop_sd}{numeric, default 0.025. Used if method = "structure".
+Changes the ALPHAPROPSD flag. Changes the sd of the Metropolis-Hastings
+alpha drawn during update steps.}
+
+\item{start_at_pop_info}{logical, default FALSE. If TRUE, the STARTATPOPINFO
+flag in STRUCTURE will be set to 1, in which case the clusters will start
+at populations during the Metropolis-Hastings search rather than randomly.
+Requires a defined facet.}
+
+\item{metro_update_freq}{numeric, default 10. Used if method = "structure".
+Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
+updates are used. If 0, updates are never used.}
+
+\item{seed}{integer, default sample(100000, 1). Used if method = "structure".
+Starting seed for analysis runs. Each additional run (k value or rep) will
+use a successive seed.}
+
+\item{strip_col_names}{string, default NULL. An optional regular expression
+indicating a way to process the column names prior to plotting. Parts of 
+names matching the strings provided will be cut. Useful for when the facet
+argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
+part off. A vector of strings will strip multiple patterns.}
+
+\item{cleanup}{logical, default TRUE. If TRUE, extra files created during
+assignment, clumpp, and plot construction will be removed. If FALSE, they
+will be left in the working directory.}
 
 \item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 or \code{\link[adegenet]{snapclust.choose.k}}.}
@@ -112,19 +299,28 @@ A list containing: \itemize{\item{plot: } A ggplot object.
 \description{
 Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
 an arbitrary 'k' number of clusters like those produced by the program
-STRUCTURE. Runs for each value of k between 2 and the given number.
+STRUCTURE. Files containing prior results can be parsed and plotted, or new
+results can be generated via a suite of different methods. Many k values and
+reps can be run at once, and results can be collapsed across reps using
+CLUMPP.
 }
 \details{
 Individual cluster assignment probabilities can be calculated using several
 different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.}
-These methods are not re-implemented in R, instead, this function calls the
-\code{\link[LEA]{main_sNMF}} and \code{\link[adegenet]{snapclust.choose.k}}
-functions instead. Please cite the references noted in those functions if
-using this function. For snapclust, the "ward" method is used to initialize
-clusters if one rep is requested, otherwise the clusters are started randomly
-each rep. Other methods can be used by providing pop.ini as an additional
-argument as long as only one rep is requested.
+Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.
+\item{admixture: } The ADMIXTURE program. Requires a local admixture
+executable, and thus cannot run on a Windows platform. \item{ structure: }
+The STRUCTURE program. Requires a local STRUCTURE executable. many additional
+options are available for STRUCTURE via other arguments.} These methods are
+not re-implemented in R, instead, this function calls the
+\code{\link[LEA]{main_sNMF}}, \code{\link[adegenet]{snapclust.choose.k}}, or
+a local executable for the ADMIXTURE or STRUCTURE program instead. Please
+cite the references noted in those functions. For snapclust, the "ward"
+method is used to initialize clusters if one rep is requested, otherwise the
+clusters are started randomly each rep. Other methods can be used by
+providing pop.ini as an additional argument as long as only one rep is
+requested. Note that at this moment, the snapclust method /emph{is not
+recommended for use} by the adegenet package maintainers.
 
 Multiple different runs can be conducted using the 'reps' argument, and the
 results can be combined for plotting across all of these reps using the
@@ -158,9 +354,13 @@ Note that several files will be created in the working directory when using
 this function that are not automatically cleaned after use.
 }
 \examples{
-# basic sNMF
-plot_structure(stickSNPs, "pop")
+\dontrun{
+# basic sNMF, k = 2 and 3
+plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
 
+# basic snapclust
+plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
+}
 }
 \references{
 Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.

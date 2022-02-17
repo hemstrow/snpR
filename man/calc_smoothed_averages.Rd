@@ -49,7 +49,7 @@ Averages for multiple statistics can be calculated at once. If the statistics
 argument is set to c("pairwise", "single"), all calculated stats will be run.
 If it is set to "single", then all non-pairwise statistics (pi, ho, maf, ect)
 will be bootstrapped, if it is set to "pairwise", then all pairwise statistics
-(fst) will be bootstrapped. Inidividual statistics currently cannot be
+(fst) will be bootstrapped. Individual statistics currently cannot be
 requested by name, since the computational differences to add additional types
 is minimal.
 
@@ -75,15 +75,16 @@ window average would be very small, and so they are dropped for computational
 efficiency (see Hohenlohe (2010)).
 }
 \examples{
+\dontrun{
 # add a few statistics
-x <- calc_pi(stickSNPs, "group.pop")
-x <- calc_ho(x, "group.pop")
-x <- calc_pairwise_fst(x, "group.pop")
+x <- calc_pi(stickSNPs, "chr.pop")
+x <- calc_ho(x, "chr.pop")
+x <- calc_pairwise_fst(x, "chr.pop")
 # smooth with a fixed slide between window centers.
-x <- calc_smoothed_averages(x, "group.pop", sigma = 200, step = 50)
-get.snpR.stats(x, "group.pop", "single.window") # pi, ho
-get.snpR.stats(x, "group.pop", "pairwise.window") # fst
-
+x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
+get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
+get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
+}
 }
 \references{
 Hohenlohe et al. (2010). \emph{PLOS Genetics}

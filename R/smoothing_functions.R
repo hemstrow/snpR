@@ -23,7 +23,7 @@ gaussian_weight <- function(p, c, s) {
 #'argument is set to c("pairwise", "single"), all calculated stats will be run.
 #'If it is set to "single", then all non-pairwise statistics (pi, ho, maf, ect)
 #'will be bootstrapped, if it is set to "pairwise", then all pairwise statistics
-#'(fst) will be bootstrapped. Inidividual statistics currently cannot be
+#'(fst) will be bootstrapped. Individual statistics currently cannot be
 #'requested by name, since the computational differences to add additional types
 #'is minimal.
 #'
@@ -72,15 +72,16 @@ gaussian_weight <- function(p, c, s) {
 #'  merged into the window.stats or pairwise.window.stats slots.
 #'
 #'@examples
+#'\dontrun{
 #'# add a few statistics
-#'x <- calc_pi(stickSNPs, "group.pop")
-#'x <- calc_ho(x, "group.pop")
-#'x <- calc_pairwise_fst(x, "group.pop")
+#'x <- calc_pi(stickSNPs, "chr.pop")
+#'x <- calc_ho(x, "chr.pop")
+#'x <- calc_pairwise_fst(x, "chr.pop")
 #'# smooth with a fixed slide between window centers.
-#'x <- calc_smoothed_averages(x, "group.pop", sigma = 200, step = 50)
-#'get.snpR.stats(x, "group.pop", "single.window") # pi, ho
-#'get.snpR.stats(x, "group.pop", "pairwise.window") # fst
-#'
+#'x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
+#'get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
+#'get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
+#'}
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
   #==============sanity checks============
   if(!is.snpRdata(x)){
@@ -104,9 +105,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   sig <- 1000*sigma
   cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
 
-  sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
+  .sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
   
-  x <- add.facets.snpR.data(x, facets)
+  x <- .add.facets.snpR.data(x, facets)
   #================subfunction========
   # funciton to do a sliding window analysis on a data set.
   # x: a data frame containing one column with positions and one for each column to be smoothed
@@ -218,7 +219,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 
   if("single" %in% stats.type){
     cat("\nSmoothing single group stats...")
-    out <- apply.snpR.facets(x = x,
+    out <- .apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
                              fun = func,
@@ -229,11 +230,11 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                              stats.type = "stats",
                              nk = nk)
 
-    x <- merge.snpR.stats(x, out, "window.stats")
+    x <- .merge.snpR.stats(x, out, "window.stats")
 
     if("pairwise" %in% stats.type){
       cat("\nSmoothing pairwise stats...")
-      out <- apply.snpR.facets(x = x,
+      out <- .apply.snpR.facets(x = x,
                                facets = facets,
                                req =  "pos.all.stats",
                                fun = func,
@@ -243,7 +244,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                                sig = sig,
                                stats.type = "pairwise",
                                nk = nk)
-      return(merge.snpR.stats(x, out, "pairwise.window.stats"))
+      return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
     }
     else{
       return(x)
@@ -252,7 +253,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 
   else{
     cat("Smoothing pairwise stats...")
-    out <- apply.snpR.facets(x = x,
+    out <- .apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
                              fun = func,
@@ -262,6 +263,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                              sig = sig,
                              stats.type = "pairwise",
                              nk = nk)
-    return(merge.snpR.stats(x, out, "pairwise.window.stats"))
+    return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
   }
 }

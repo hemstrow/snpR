@@ -33,6 +33,11 @@
 #'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @references Gutenkunst et al (2009). Inferring the joint demographic history
 #'   of multiple populations from multidimensional SNP frequency data.
@@ -52,21 +57,27 @@
 #' @examples
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 #' dat <- calc_maf(stickSNPs)
-#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") # note, this is done by default if these columns don't exist!
-#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A") # note, this is done by default if these columns don't exist!
+#' # note, setting ref and anc is done by default if these columns don't exist!
+#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") 
+#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
+#' 
 #' # run for two populations
 #' ## call calc_sfs()
-#' sfs <- calc_SFS(dat, "pop", c("ASP", "CLF"), c(30,30))
+#' sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(30,30))
 #' ## plot
-#' plot_sfs(sfs)
+#' plot_sfs(sfs = sfs)
 #'
 #' # run for the overall dataset
-#' sfs <- calc_SFS(dat, projection = 100)
+#' sfs <- calc_sfs(dat, projection = 100)
 #' ## plot
-#' plot_sfs(sfs)
+#' plot_sfs(sfs = sfs)
+#' 
+#' # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
+#' plot_sfs(dat, projection = 100)
 #'
 #' 
-calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
+calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE, 
+                     update_bib = FALSE){
   #=============sanity checks=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -83,11 +94,11 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
     if(length(facet) > 1){
       msg <- c(msg, "For now, only a single facet is allowed at a time.\n")
     }
-    check_facet <- check.snpR.facet.request(x, facet, "none", T)
+    check_facet <- .check.snpR.facet.request(x, facet, "none", T)
     if(any(check_facet[[2]] != "sample")){
       msg <- c(msg, "For now, only sample level facets are allowed.\n")
     }
-    if(length(strsplit(facet, "(?<!^)\\.", perl = T)[[1]]) > 1){
+    if(length(.split.facet(facet)[[1]]) > 1){
       msg <- c(msg, "For now, only facets referring to only one column of metadata are allowed.\n")
     }
   }
@@ -101,11 +112,11 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   
   if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
     warning("ref and anc columns are suggested in snp metadata. See documentation for details. The major allele will be subsituted for the ancestral state.\n")
-    x@snp.meta$ref <- paste0("A", get.snpR.stats(x)$minor, "A")
-    x@snp.meta$anc <- paste0("A", get.snpR.stats(x)$major, "A")
+    x@snp.meta$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
+    x@snp.meta$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
 
-    if(fold == T){
-      warning("Without ancestral and derived character states, folded spectra will be misleading.\n")
+    if(fold == FALSE){
+      warning("Without ancestral and derived character states, unfolded spectra will be misleading.\n")
     }
   }
   else{
@@ -120,7 +131,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
   #==============run=========================
   # subset
   if(!is.null(pops)){
-    x <- subset_snpR_data(x, facets = facet, subfacets = pops)
+    suppressWarnings(x <- .subset_snpR_data(x, facets = facet, subfacets = pops))
   }
 
   # get dadi formatted data
@@ -128,7 +139,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 
   # get sfs
   if(is.null(pops)){pops <- ".base"}
-  sfs <- make_SFS(y, pops, projection, fold)
+  sfs <- make_SFS(y, pops, projection, fold, update_bib)
 
   return(sfs)
 }
@@ -160,6 +171,11 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 #'   containing few or no SNPs.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
 #'   left polarized.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @references Gutenkunst et al (2009). Inferring the joint demographic history
 #'   of multiple populations from multidimensional SNP frequency data.
@@ -174,7 +190,7 @@ calc_SFS <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE){
 #'   a 2d SFS, the first pop is the matrix columns and the second is the matrix
 #'   rows.
 #'   
-make_SFS <- function(x, pops, projection, fold = FALSE){
+make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
   #================sanity checks=========
   msg <- character()
   if(!is.data.frame(x)){
@@ -185,7 +201,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
       msg <- c(msg, "x must either be either a dadi formatted data file or a data.frame derived from such.\n")
     }
     else{
-      x <- read.table(x, header = T, stringsAsFactors = F)
+      x <- utils::read.table(x, header = T, stringsAsFactors = F)
     }
   }
   if(length(msg) > 0){
@@ -292,7 +308,6 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
   # index lists the pop
   # input is a dadi formatted data.frame
   get_counts <- function(x, pops){
-    browser
     # figure out which allele is the outgroup/derived in each row and figure out polarization status
     anc.als <- substr(x$anc, 2, 2)
     ref.als <- substr(x$ref, 2, 2)
@@ -311,7 +326,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
     for(i in 1:length(pops)){
       x <- data.table::as.data.table(x)
       dat.cols <- grep(pops[i], colnames(x))
-      tdat <- x[,..dat.cols]
+      tdat <- x[,dat.cols, with = FALSE]
       tdat <- as.matrix(tdat)
       out[,1,i] <- rowSums(tdat) # total count
       t.index <- 2 * (1:nrow(tdat))
@@ -373,14 +388,31 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
   attr(sfs, which = "pop") <- pops
 
   # return
-  cat("SFS completed with", sum(sfs, na.rm = T), "segrgating sites.\n")
+  masked <- sfs
+  if(is.matrix(masked)){
+    masked[1,1] <- 0
+    if(!fold){
+      masked[nrow(masked), ncol(masked)] <- 0
+    }
+  }
+  else{
+    masked[1] <- 0
+    if(!fold){
+      masked[length(masked)] <- 0
+    }
+  }
+  
+  cat("SFS completed with", sum(masked, na.rm = T), "segrgating sites.\n")
+  
+  .yell_citation("Gutenkunst2009", "SFS", "Used to project and possibly fold SFS data. Code is a direct R re-implementation.", outbib = update_bib)
+  
   return(sfs)
 }
 
 #' Calculate the directionality index from a 2d site frequency spectrum.
 #'
 #' Calculates the directionality index based on a 2d SFS according to Peter and
-#' Slatkin (2013). Input spectra can be created using the \code{\link{calc_SFS}}
+#' Slatkin (2013). Input spectra can be created using the \code{\link{calc_sfs}}
 #' function, using a provided snpRdata object, or passed from other programs.
 #' \emph{Spectra must be not be folded}.
 #'
@@ -388,7 +420,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #' allele frequency between two populations to determine the directionality of
 #' population spread between the two. Since the "destination" population is
 #' sourced from but experienced more genetic drift than the "source" population,
-#' it should have relativley more high-frequency derived alleles \emph{after the
+#' it should have relatively more high-frequency derived alleles \emph{after the
 #' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 #' details.
 #'
@@ -399,12 +431,17 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #'   c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 #'   the second to matrix rows. These objects can be produced from a dadi input
 #'   file using \code{\link{make_SFS}}.
-#' @param facet character, default NULL. Passed to \code{\link{calc_SFS}} -- see
+#' @param facet character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
-#' @param pops character, default NULL. cPassed to \code{\link{calc_SFS}} -- see
+#' @param pops character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 #'   documentation there for details. Ignored if a sfs is provided.
-#' @param projection numeric, default NULL. Passed to \code{\link{calc_SFS}} --
+#' @param projection numeric, default NULL. Passed to \code{\link{calc_sfs}} --
 #'   see documentation there for details. Ignored if a sfs is provided.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
 #'
 #' @export
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
@@ -412,15 +449,16 @@ make_SFS <- function(x, pops, projection, fold = FALSE){
 #'
 #' @return A numeric value giving the directionality with a "direction"
 #'   attribute designating the direction between the two populations.
+#'   
 #' @examples
 #' # directionality can be calculated without first calculating a SFS
-#' calc_directionality(stickSNPs, NULL, "pop", c("ASP", "PAL"), c(20, 20))
+#' calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(20, 20))
 #'
-#' #an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
-#' sfs <- calc_SFS(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
+#' # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
+#' sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 #' calc_directionality(sfs = sfs)
 #' 
-calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL){
+calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL, update_bib = FALSE){
   #==========sanity checks=============
   msg <- character(0)
   if(!is.null(x)){
@@ -452,7 +490,7 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
   }
   #===========prep if a SFS not provided===========
   if(is.null(sfs)){
-    sfs <- calc_SFS(x, facet, pops, projection, fold = F)
+    sfs <- calc_sfs(x, facet, pops, projection, fold = F)
   }
   
   # flip everthing, since i should be pop 1 and j should be pop 2, and the
@@ -477,6 +515,8 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
     attr(directionality, "direction") <- paste0(pops[1], "<-", pops[2])
 
   }
+  
+  .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
 
   return(directionality)
 }

@@ -18,7 +18,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   }
 
   #=====================sanity checks============
-  facets <- check.snpR.facet.request(x, facets)
+  facets <- .check.snpR.facet.request(x, facets)
 
   msg <- character()
   # check methods
@@ -38,8 +38,8 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
     }
 
     # check and adjust gens
-    x <- add.facets.snpR.data(x, facets)
-    tl <- get.task.list(x, facets)
+    x <- .add.facets.snpR.data(x, facets)
+    tl <- .get.task.list(x, facets)
     if(nrow(temporal_gens) != nrow(tl)){
       msg <- c(msg, paste0("Not enough generation info provided. The number of rows of temporal_gens must equal the number
                            of unique options for the facets provided (", nrow(tl), ")."))
@@ -72,7 +72,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   # write a chr input file
   if(!is.null(chr[1])){
     chrs <- cbind(paste0("c", as.numeric(as.factor(x@snp.meta[,chr]))), paste0("SNP_", 1:nrow(x)))
-    write.table(chrs, "chrinput.map", quote = F, sep = " ", col.names = F, row.names = F)
+    utils::write.table(chrs, "chrinput.map", quote = F, sep = " ", col.names = F, row.names = F)
   }
 
 
@@ -110,7 +110,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
 
   # if we are doing temporal, need to add stuff
   if("temporal" %in% methods){
-    write.table(temporal_gens, "info", col.names = F, row.names = F, sep = " ", append = T, quote = F)
+    utils::write.table(temporal_gens, "info", col.names = F, row.names = F, sep = " ", append = T, quote = F)
     write("0", "info", append = T)
   }
 
@@ -190,9 +190,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
 
   # fix pop names if possible
   if(!is.null(snpRdat)){
-    facets <- check.snpR.facet.request(snpRdat, facets)
-    snpRdat <- add.facets.snpR.data(snpRdat, facets)
-    opts <- get.task.list(snpRdat, facets)
+    facets <- .check.snpR.facet.request(snpRdat, facets)
+    snpRdat <- .add.facets.snpR.data(snpRdat, facets)
+    opts <- .get.task.list(snpRdat, facets)
     opts <- opts[,2] # these are the sorted options.
     tab <- data.frame(index = unique(out[[1]]$pop), ref = opts)
     out <- lapply(out, function(x){x$pop <- tab$ref[match(x$pop, tab$index)];return(x)})

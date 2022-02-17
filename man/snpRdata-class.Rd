@@ -6,10 +6,9 @@
 \alias{snpRdata}
 \title{Storage class for snpR data and calculated statistics.}
 \description{
-\code{\link{import.snpR.data}} creates and defines the snpRdata class to store
-both raw genotype data, sample and locus specific metadata, useful data
-summaries, repeatedly internally used tables, calculated summary statistics,
-and smoothed statistic data.
+The snpRdata class stores both raw genotype data, sample and locus specific
+metadata, useful data summaries, repeatedly internally used tables, calculated
+summary statistics, and smoothed statistic data. Used by most snpR functions.
 }
 \details{
 The snpRdata class is built to contain SNP genotype data for use by functions
@@ -72,7 +71,7 @@ calculated}
 \item{\code{genetic_distances}}{list of matrices, genetic distance matrices if
 calculated}
 
-\item{\code{other}}{list, contains other miscellanious calculated statistics that do
+\item{\code{other}}{list, contains other miscellaneous calculated statistics that do
 not fit cleanly elsewhere.}
 }}
 

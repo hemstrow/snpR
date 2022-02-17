@@ -57,9 +57,9 @@ or "all" to the facets argument works as described in
 \code{\link{Facets_in_snpR}}.
 }
 \examples{
-x <- calc_basic_snp_stats(stickSNPs, c("pop"))
-get.snpR.stats(x, "pop") # view basic stats
-get.snpR.stats(x, "pop", type = "pairwise") # view fst
+x <- calc_basic_snp_stats(stickSNPs, "pop")
+get.snpR.stats(x, "pop", stats = "single") # view basic stats
+get.snpR.stats(x, "pop", stats = "fst") # view fst
 
 
 }

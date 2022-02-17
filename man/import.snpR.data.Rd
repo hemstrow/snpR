@@ -10,7 +10,8 @@ import.snpR.data(
   sample.meta = NULL,
   mDat = "NN",
   chr.length = NULL,
-  ...
+  ...,
+  header_cols = 0
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ for each chromosome in order.}
 
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
 \emph{genotype} file name is passed that is not a vcf or ms file.}
+
+\item{header_cols}{Number of header columns on passed delimited file. Mostly
+for internal use with \code{\link{read_delimited_snps}}.}
 }
 \description{
 \code{import.snpR.data} converts genotype and meta data to the snpRdata class,
@@ -67,7 +71,19 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
  but only a single nucleotide noted if homozygote and two nucleotides
  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
- (heterozygous), or 2 (homozyogus allele 2).}
+ (heterozygous), or 2 (homozyogus allele 2). \item{.genepop: } genepop file
+ format, with genotypes stored as either 4 or 6 numeric characters. Works
+ only with bi-allelic data. Genotypes will be converted (internally) to NN:
+ the first allele (numerically) will be coded as A, the second as C.
+ \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
+ numeric characters. Works only with bi-allelic data. Genotypes will be
+ converted (internally) to NN: the first allele (numerically) will be coded
+ as A, the second as C. \item{plink: } plink .bed, .fam, and .bim files, via
+ \code{\link[genio]{read_plink}}. If any of these file types is provided,
+ snpR via \code{\link[genio]{read_plink}} will look for the other file types
+ automatically. Sample metadata should be contained in the .fam file and
+ SNP metadata in the .bim file, so sample or snp meta data provided here will
+ be ignored.}
 
  Additional arguments can be provided to import.snpR.data that will be passed
  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -148,22 +164,32 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 # produces data identical to that contained in the stickSNPs example dataset.
 genos <- stickRAW[,-c(1:3)]
 snp_meta <- stickRAW[,1:3]
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), fam = rep(c("A", "B", "C", "D"), length = ncol(stickRAW) - 3), stringsAsFactors = FALSE)
-import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, mDat = "NN")
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
+                          fam = rep(c("A", "B", "C", "D"), 
+                                    length = ncol(stickRAW) - 3), 
+                          stringsAsFactors = FALSE)
+import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, 
+                 mDat = "NN")
 
 # from an adegenet genind object
-ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), ncode = 1, NA.char = "N") # get genind data
-import.snpR.data(ex.genind, snp_meta, sample_meta) # note, will add whatever metadata data is in the genind object to the snpRdata object. Could be run without the snp or sample metadatas.
+ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), 
+                                  ncode = 1, NA.char = "N") # get genind data
+# note, will add whatever metadata data is in the genind object to the 
+# snpRdata object. 
+# Could be run without the snp or sample metadatas.
+import.snpR.data(ex.genind, snp_meta, sample_meta) 
 
 # from an adegenet genlight object
 ## create a dummy dataset, add some metadata
-dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, prob=c(.25, .49, .25, .01), replace=TRUE))
+dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, 
+              prob=c(.25, .49, .25, .01), replace=TRUE))
 names(dat) <- paste("indiv", 1:length(dat))
 print(object.size(dat), unit="aut") # size of the original data
-genlight <- new("genlight", dat) # conversion
+genlight <- methods::new("genlight", dat) # conversion
 newalleles <- character(adegenet::nLoc(genlight))
 for(i in 1:length(newalleles)){
-  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), collapse = "/")
+  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), 
+                          collapse = "/")
 }
 adegenet::alleles(genlight) <- newalleles
 adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
@@ -174,9 +200,20 @@ adegenet::chr(genlight) <- sample(10, 1000, TRUE)
 dat <- import.snpR.data(genlight)
 
 \dontrun{
+## not run:
 # from a file:
-dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", package = "snpR"), drop = 1:3) # note that the drop argument is passed to data.table::fread!
+# note that the drop argument is passed to data.table::fread!
+dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", 
+                                    package = "snpR"), drop = 1:3) 
 # if wanted, snp and sample metadata could be provided as usual.
+
+## not run:
+# from plink:
+# make plink data
+format_snps(stickSNPs, "plink", outfile = "plink_test", chr = "chr")
+
+# read plink
+dat <- import.snpR.data("plink_test.bed")
 }
 
 }
