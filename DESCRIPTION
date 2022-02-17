@@ -1,18 +1,18 @@
 Package: snpR
 Type: Package
-Title: Whole-genome analysis tools for use with SNP data
-Version: 1.2.0.9001
+Title: Whole-Genome Analysis Tools for Use with Single Nucleotide Polymorphism Data
+Version: 1.2.0
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
   person("Avani", "Chitre", email = "aachitre@ucdavis.edu", role = "ctb"),
   person("Keming", "Su", email = "kmsu@ucdavis.edu", role = "ctb"))
-Description: This package contains functions for analyzing SNP whole-genome data in a user-friendly way,
+Description: A toolkit for analyzing Single Nucleotide Polymorphism whole-genome data in a user-friendly way,
     allowing for the data to be automatically split and calculated across multiple metadata categories simultaneously.
-    This includes functions to get most summary statistics and gaussian smooth them, map pairwise LD, 
+    This includes functions to get most summary statistics and smooth them, map pairwise linkage disequilibrium, 
     determine the significance of smoothed statistics via bootstrapping, do association testing, plot many
     kinds of results, convert to many common output formats, 
-    and filter raw SNP genotypes. 
+    and filter raw data. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -20,7 +20,6 @@ Imports:
     bigmemory,
     bigtabulate,
     doSNOW,
-    doParallel,
     dplyr,
     matrixStats,
     methods,

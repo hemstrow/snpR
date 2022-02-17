@@ -2937,12 +2937,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' # unfolded, 1D, one specific population
 #' plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
 #' 
+#' \dontrun{
 #' # unfolded, two poplations
 #' plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
 #' 
 #' # via a sfs matrix, useful for pulling in spectra from elsewhere
 #' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
 #' plot_sfs(sfs = sfs)
+#' }
 plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "inferno", log = TRUE,
                      pops = NULL, projection = NULL, fold = TRUE, update_bib = FALSE){
   p1 <- p2 <- N <- NULL

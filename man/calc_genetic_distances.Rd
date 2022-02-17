@@ -59,6 +59,7 @@ y <- calc_genetic_distances(stickSNPs, facets = "pop.chr",
                             method = "Edwards")
 get.snpR.stats(y, "pop.chr", "genetic_distance")
 
+\dontrun{
 # by pop and fam seperately
 y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
                             method = "Edwards")
@@ -68,7 +69,7 @@ get.snpR.stats(y, c("pop", "chr"), "genetic_distance")
 y <- calc_genetic_distances(stickSNPs)
 dat <- get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards
 heatmap(as.matrix(dat))
-
+}
 }
 \references{
 Edwards, A. W. F. (1971). Distances between populations on the

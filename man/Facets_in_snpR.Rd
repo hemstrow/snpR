@@ -45,8 +45,9 @@ See examples.
 x <- calc_pi(stickSNPs)
 get.snpR.stats(x)
 
+\dontrun{
 # multiple facets
 x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
 get.snpR.stats(x, c("pop", "pop.fam"))
-
+}
 }

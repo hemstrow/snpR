@@ -85,10 +85,12 @@ plot_sfs(stickSNPs, projection = 100)
 # unfolded, 1D, one specific population
 plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
 
+\dontrun{
 # unfolded, two poplations
 plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
 
 # via a sfs matrix, useful for pulling in spectra from elsewhere
 sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
 plot_sfs(sfs = sfs)
+}
 }

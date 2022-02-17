@@ -55,6 +55,8 @@
 #' @author William Hemstrom
 #'
 #' @examples
+#' 
+#' \dontrun{
 #' # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 #' dat <- calc_maf(stickSNPs)
 #' # note, setting ref and anc is done by default if these columns don't exist!
@@ -66,7 +68,8 @@
 #' sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(30,30))
 #' ## plot
 #' plot_sfs(sfs = sfs)
-#'
+#' 
+#' 
 #' # run for the overall dataset
 #' sfs <- calc_sfs(dat, projection = 100)
 #' ## plot
@@ -74,7 +77,7 @@
 #' 
 #' # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
 #' plot_sfs(dat, projection = 100)
-#'
+#' }
 #' 
 calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE, 
                      update_bib = FALSE){
@@ -451,13 +454,14 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
 #'   attribute designating the direction between the two populations.
 #'   
 #' @examples
+#' \dontrun{
 #' # directionality can be calculated without first calculating a SFS
 #' calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(20, 20))
 #'
 #' # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
 #' sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 #' calc_directionality(sfs = sfs)
-#' 
+#' }
 calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL, update_bib = FALSE){
   #==========sanity checks=============
   msg <- character(0)
