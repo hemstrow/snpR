@@ -73,7 +73,8 @@ Suggests:
     umap,
     vcfR,
     viridis,
-    testthat
+    testthat,
+    covr
 VignetteBuilder: knitr
 RoxygenNote: 7.1.2
 Collate: 
