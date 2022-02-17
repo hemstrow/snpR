@@ -20,7 +20,6 @@ Imports:
     bigmemory,
     bigtabulate,
     doSNOW,
-    doParallel,
     dplyr,
     matrixStats,
     methods,
