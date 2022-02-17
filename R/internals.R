@@ -217,6 +217,7 @@ is.snpRdata <- function(x){
 # @param maf numeric, defualt NULL. Possible maf, passed to some functions.
 # @param interpolate character, default NULL. Possible interpolation option,
 #   passed to some functions.
+# @param formula formula for run_random_forest only.
 # 
 # @author William Hemstrom
 .apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
@@ -371,7 +372,11 @@ is.snpRdata <- function(x){
         }
         
         suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, non_poly = FALSE, maf = maf))))
-        out <- fun(sub.x = sub.x,  ...)
+        
+
+        out <- fun(sub.x = sub.x, ...)
+        
+        # return
         if(!is.data.frame(out)){
           out$.fm <- cbind(facet = opts[i,1], subfacet = opts[i,2], row.names = NULL)
           return(out)

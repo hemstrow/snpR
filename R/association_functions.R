@@ -879,6 +879,8 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity_corrected",
                               interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
+  .formula <- formula
+  rm(formula)
   #=========sanity checks=======================
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -888,7 +890,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   #==========run============
   
   
-  run_ranger <- function(sub.x, opts.list, ...){
+  run_ranger <- function(sub.x, .formula = NULL, par = FALSE,...){
 
     #================grab data=====================
     ## sn format
@@ -908,21 +910,21 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
     ## attach phenotype, anything else in the formula if given.
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       msg <- character()
-      res <- try(formula(formula), silent = T)
+      res <- try(formula(.formula), silent = T)
       if(class(res) == "try-error"){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
       else{
-        if(all.vars(formula)[1] != response){
+        if(all.vars(.formula)[1] != response){
           msg <- c(msg,
                    "The response variable in the provided formula must be the same as that provided to the response argument.\n")
         }
 
         # see which covariates we need
-        cvars <- stats::terms(formula(formula))
+        cvars <- stats::terms(formula(.formula))
         cvars <- attr(cvars, "term.labels")
         bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
         if(length(bad.cvars) > 0){
@@ -939,9 +941,19 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         sn <- as.data.frame(sn)
         sn <- cbind(sub.x@sample.meta[,response], sub.x@sample.meta[,cvars], sn)
         colnames(sn)[1:(length(cvars) + 1)] <- c(response, cvars)
-
-        # reset formula:
-        formula <- formula(paste0(as.character(formula), "+", paste0(ocn, collapse = " + ")))
+        
+        myterms <- all.vars(res)
+        .formula <- as.formula(paste0(myterms[1], " ~ ", paste0(cvars, collapse = " + "), " + ", paste0(ocn, collapse = " + ")))
+        
+        # cat("Model:\n")
+        # print(paste0(as.character(res), " + ", paste0(ocn, collapse = " + ")))
+        # cat("\nFitting...\n")
+        # if(length(paste0(as.character(res), " + ", paste0(ocn, collapse = " + "))) > 1){
+        #   browser()
+        # }
+        # 
+        # # reset formula:
+        # .formula <- formula(paste0(as.character(res), " + ", paste0(ocn, collapse = " + ")))
       }
     }
     else{
@@ -959,17 +971,9 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     if(par == FALSE){
       tpar <- NULL
     }
-    else{
-      if(nrow(opts.list) == 1){
-        tpar <- par
-      }
-      else{
-        tpar <- NULL
-      }
-    }
 
     # run with or without formula
-    if(is.null(formula)){
+    if(is.null(.formula)){
       rout <- ranger::ranger(dependent.variable.name = response,
                              data = sn,
                              num.trees = num.trees,
@@ -977,7 +981,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                              importance = importance, num.threads = tpar, verbose = T, ...)
     }
     else{
-      rout <- ranger::ranger(formula = formula,
+      rout <- ranger::ranger(formula = .formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
@@ -997,7 +1001,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
     # prepare objects for return
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       imp.out <- cbind(sub.x@snp.meta, rout$variable.importance[which(!names(rout$variable.importance) %in% cvars)])
       colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
       covariate_importance <- data.frame(variable = cvars, importance = rout$variable.importance[which(names(rout$variable.importance) %in% cvars)])
@@ -1021,7 +1025,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
                            stringsAsFactors = F)
 
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       return(list(importance = imp.out, predictions = pred.out, model = rout, covariate_importance = covariate_importance))
     }
     else{
@@ -1035,9 +1039,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   }
 
   facets <- .check.snpR.facet.request(x, facets)
-
-  out <- .apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response,
-                           interpolate = interpolate,  par = par, ...)
+  # run for each task
+  tl <- .get.task.list(x, facets)
+  out <- vector("list", nrow(tl))
+  for(i in 1:nrow(tl)){
+    out[[i]] <- run_ranger(suppressWarnings(.subset_snpR_data(x, facets = tl[i,1], subfacets = tl[i,2], snp.facets = tl[i,3], snp.subfacets = tl[i,4])),
+                           .formula = .formula, par = par, ...)
+    out[[i]]$.fm <- cbind(facet = tl[i,1], subfacet = tl[i,2], row.names = NULL)
+  }
   
   # process
   models <- vector("list", length(out))
