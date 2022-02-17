@@ -129,10 +129,11 @@ NULL
 #' x <- calc_pi(stickSNPs)
 #' get.snpR.stats(x)
 #'
+#' \dontrun{
 #' # multiple facets
 #' x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
 #' get.snpR.stats(x, c("pop", "pop.fam"))
-#'
+#' }
 NULL
 
 #'@export
@@ -3313,6 +3314,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'                             method = "Edwards")
 #' get.snpR.stats(y, "pop.chr", "genetic_distance")
 #'
+#' \dontrun{
 #' # by pop and fam seperately
 #' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
 #'                             method = "Edwards")
@@ -3322,7 +3324,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' y <- calc_genetic_distances(stickSNPs)
 #' dat <- get.snpR.stats(y, stats = "genetic_distance")$.base$.base$Edwards
 #' heatmap(as.matrix(dat))
-#' 
+#' }
 calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpolate = "bernoulli"){
   #============sanity checks=========
   msg <- character()

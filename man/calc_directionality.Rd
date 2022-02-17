@@ -58,13 +58,14 @@ removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 details.
 }
 \examples{
+\dontrun{
 # directionality can be calculated without first calculating a SFS
 calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(20, 20))
 
 # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
 sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
 calc_directionality(sfs = sfs)
-
+}
 }
 \references{
 Peter, B. M., & Slatkin, M. (2013). Detecting range expansions

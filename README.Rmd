@@ -28,7 +28,7 @@ snpR is an R package for analyzing call Single Nucleotide Polymorphism (SNP) gen
 
 ## Installation
 
-snpR can be installed from [GitHub](https://github.com/):
+snpR can be installed from [GitHub](https://github.com/hemstrow/snpR):
 
 ``` r
 # install.packages("remotes")
@@ -43,7 +43,7 @@ remotes::install_github("hemstrow/snpR", ref = "dev", build_vignettes = T, build
 
 ```
 
-The dev version can be installed from [GitHub](https://github.com/) as well:
+The dev version can be installed from [GitHub](https://github.com/hemstrow/snpR) as well:
 
 ``` r
 # install.packages("remotes")

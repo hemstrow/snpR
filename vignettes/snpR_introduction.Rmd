@@ -507,18 +507,17 @@ head(stats$bootstraps)
 
 Most of the statistics above can be calculated in one step!
 
-```{r, results='hide'}
+```{r, results='hide', eval = FALSE}
 # not run, same as above
-# my.dat2 <- calc_basic_snp_stats(x = stickSNPs, facets = "chr.pop", sigma = 200, step = 50, par = 8)
+my.dat2 <- calc_basic_snp_stats(x = stickSNPs, facets = "chr.pop", sigma = 200, step = 50, par = 8)
 
 ```
 
 This will calculate $\pi$, Ho, HWE, mafs, private alleles, and pairwise Fst, and calculate smoothed windows for these stats in one easy step!
 
 Stats are reviewed the same way as previously documented (more details in the get.snpR.stats documentation).
-```{r}
-stats <- get.snpR.stats(x = my.dat2, facets = "chr.pop", stats = "weighted.means")
-head(stats)
+```{r, eval = FALSE}
+stats <- get.snpR.stats(x = my.dat2, facets = "chr.pop", stats = "pi")
 ```
 
 ## Genetic Association (GWAS)

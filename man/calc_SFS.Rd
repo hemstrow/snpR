@@ -67,6 +67,8 @@ alleles will be substituted. Unfolded spectra will be misleading in this
 case.
 }
 \examples{
+
+\dontrun{
 # add the needed ref and anc columns, using the major and minor alleles (will fold later)
 dat <- calc_maf(stickSNPs)
 # note, setting ref and anc is done by default if these columns don't exist!
@@ -79,6 +81,7 @@ sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(30,30))
 ## plot
 plot_sfs(sfs = sfs)
 
+
 # run for the overall dataset
 sfs <- calc_sfs(dat, projection = 100)
 ## plot
@@ -86,7 +89,7 @@ plot_sfs(sfs = sfs)
 
 # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
 plot_sfs(dat, projection = 100)
-
+}
 
 }
 \references{

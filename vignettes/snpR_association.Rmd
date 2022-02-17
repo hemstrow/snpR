@@ -36,7 +36,7 @@ It also supports a mlm, family and population structure corrected method based o
 
 Running calc_association using the GMMAT option will automatically prompt the user to install these packages if they haven't been already.
 
-For the most part, running a GWAS with snpR uses the standard snpR syntax, explained in [the snpR introduction](snpR_introduction.html). However, for the GMMAT option, it also takes a formula and family argument using R's typical formula/distribution family notation. This allows GMMAT to use covariates when calculating associations. For details, see [GMMAT's vignette](https://cran.r-project.org/web/packages/GMMAT/vignettes/GMMAT.pdf).
+For the most part, running a GWAS with snpR uses the standard snpR syntax, explained in [the snpR introduction](snpR_introduction.html). However, for the GMMAT option, it also takes a formula and family argument using R's typical formula/distribution family notation. This allows GMMAT to use covariates when calculating associations. For details, see [GMMAT's vignette](https://CRAN.R-project.org/package=GMMAT/vignettes/GMMAT.pdf).
 
 The syntax for running a GWAS with snpR is very similar to elsewhere in the package. First, a phenotype is needed. Here we will use a categorical phenotype, but a continuous one can be used instead.
 
