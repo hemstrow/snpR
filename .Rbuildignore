@@ -5,3 +5,4 @@
 ^R_dev$
 ^cran-comments\.md$
 ^NEWS\.md
+^\.github$
