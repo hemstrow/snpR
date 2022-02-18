@@ -374,8 +374,10 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
       ggplot2::geom_point() +
       ggplot2::geom_smooth(method = "lm") +
       ggplot2::theme_bw()
-
-    print(tplot)
+    
+    return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
+                rsq = summary(stats::lm(observed~predicted, pdat))$r.squared,
+                plot = tplot))
   }
 
   return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
@@ -891,7 +893,6 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   
   
   run_ranger <- function(sub.x, .formula = NULL, par = FALSE,...){
-
     #================grab data=====================
     ## sn format
     if(length(sub.x@sn$sn) != 0){

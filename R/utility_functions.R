@@ -321,7 +321,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   if(length(msg) > 0){
     stop(msg)
   }
-  
+
   #=========subfunctions=========
   fix.for.one.snp <- function(x){
     if(nrow(x) == 1){
@@ -415,7 +415,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     return(dat)
   }
   else{
-    if(length(x@sn) != 0){
+    if(!is.null(x@sn$sn)){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps,]
       sn <- cbind(snp.meta(x)[snps,-ncol(x@snp.meta)], sn)
