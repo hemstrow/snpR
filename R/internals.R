@@ -658,7 +658,7 @@ is.snpRdata <- function(x){
           opts <- list(progress=progress)
         }
         else{
-          opts <- lis()
+          opts <- list()
         }
         
         
