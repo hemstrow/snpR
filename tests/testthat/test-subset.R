@@ -51,7 +51,7 @@ test_that("sample facet",{
   
   
   # correct parts, via reference to environmental variables
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   # need to assign up to the global environment, otherwise it won't find pops when testing. 
   # Very not ideal, but with the way testthat works I can't think of a better way. Skipped on cran for this reason.
   # This should always work with a normal script or interactive use, where objects are set to the global environment automatically.

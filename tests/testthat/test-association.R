@@ -8,7 +8,7 @@ sample.meta(asdat)$cat_phenotype <- sample(c("case", "control"), ncol(asdat), re
 #=========association=========
 test_that("correct gmmat", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
   expect_snapshot_value(asgmmat$single, style = "serialize") # note, run off of gmmat, not internally calced. Thus checked, but should not change.
@@ -41,7 +41,7 @@ test_that("correct armitage", {
 
 test_that("correct odds", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   asodds <- calc_association(asdat, response = "cat_phenotype", method = "odds_ratio")
   asodds <- get.snpR.stats(asodds, stats = "association")
   expect_snapshot_value(asodds$single, style = "serialize") # Hand checked, should not change.
@@ -50,7 +50,7 @@ test_that("correct odds", {
 
 test_that("correct chisq", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
   expect_snapshot_value(aschi$single, style = "serialize") # Hand checked, should not change.
@@ -149,7 +149,7 @@ test_that("genomic prediction",{
 
 test_that("genomic prediction CV",{
   skip_if_not_installed("BGLR")
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   
   set.seed(1212)
   dat <- stickSNPs

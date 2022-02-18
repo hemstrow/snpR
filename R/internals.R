@@ -217,10 +217,10 @@ is.snpRdata <- function(x){
 # @param maf numeric, defualt NULL. Possible maf, passed to some functions.
 # @param interpolate character, default NULL. Possible interpolation option,
 #   passed to some functions.
-# @param formula formula for run_random_forest only.
+# @param verbose If TRUE, will cat updates to console.
 # 
 # @author William Hemstrom
-.apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL){
+.apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL, verbose = FALSE){
 
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -411,11 +411,16 @@ is.snpRdata <- function(x){
         
         #prepare reporting function
         ntasks <- nrow(opts.list)
-        progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
+        if(verbose){
+          progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
+          opts <- list(progress=progress)
+        }
+        else{
+          opts <- list()
+        }
         
         
-        cat("Begining run.\n")
+        if(verbose){cat("Begining run.\n")}
         
         # run the LD calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
@@ -533,7 +538,7 @@ is.snpRdata <- function(x){
       
       ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
-        if(par == FALSE){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
+        if(par == FALSE & verbose){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
         
         # get comps and run
         ## figure out which data rows contain matching sample facets
@@ -648,11 +653,16 @@ is.snpRdata <- function(x){
         
         #prepare reporting function
         ntasks <- nrow(task.list)
-        progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
+        if(verbose){
+          progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
+          opts <- list(progress=progress)
+        }
+        else{
+          opts <- lis()
+        }
         
         
-        cat("Begining run.\n")
+        if(verbose){cat("Begining run.\n")}
 
         # run the calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
