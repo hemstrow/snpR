@@ -66,6 +66,22 @@ test_that("correct fis",{
   expect_equal(nrow(fis_b$single), 10)
   expect_equal(unique(unlist(fis_b$weighted.means[1,1:4, drop = TRUE])),
                ".base")
+  
+  # check that merging works fine
+  fis <- calc_pi(.internal.data$test_snps)
+  fis <- calc_fis(fis)
+  fis <- calc_fis(fis, "pop")
+  fisr <- get.snpR.stats(fis, "pop", c("fis", "ho"))$single
+  a <- unique(cbind.data.frame(subfacet = fisr$subfacet, lev = .paste.by.facet(fisr, c("chr", "position"))))
+  a <- dplyr::mutate_all(a, as.character)
+  a <- dplyr::arrange(a, subfacet, lev)
+  b <- unique(expand.grid(subfacet = unique(sample.meta(fis)$pop),
+                          lev = .paste.by.facet(unique(snp.meta(fis)[,1:2]), c("chr", "position"))))
+  b <- dplyr::mutate_all(b, as.character)
+  b <- dplyr::arrange(b, subfacet, lev)
+  expect_equivalent(a,b)
+  expect_true(all(c("ho", "fis") %in% colnames(fisr)))
+  
 })
 
 

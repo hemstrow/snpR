@@ -1062,7 +1062,7 @@ calc_fis <- function(x, facets = NULL){
   stat.match <- which(x@stats$facet %in% samp.facets)
   ho <- as.data.table(x@stats[stat.match,])
   
-  input <- merge(tac, ho, by = c("facet", "subfacet", colnames(x@snp.meta)))
+  input <- merge(tac, ho, by = c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))
   
   # run and finish
   ac.cols <- which(colnames(input) %in% c("n_total", "n_alleles", "ni1", "ni2"))
