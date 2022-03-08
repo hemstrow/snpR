@@ -138,13 +138,13 @@ test_that("manhattan plots", {
 #=================LD======================
 test_that("LD heatmap", {
   ld <- calc_pairwise_ld(stickSNPs, "pop.chr", subfacets = list(pop = c("ASP", "PAL"), chr = c("groupXIX", "groupIV")))
-  p <- plot_pairwise_LD_heatmap(ld, "pop.chr")
+  p <- plot_pairwise_ld_heatmap(ld, "pop.chr")
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(unique(p$plot$data$snp.subfacet), c("groupXIX", "groupIV"))
   expect_equal(unique(p$plot$data$var), c("ASP", "PAL"))
   
-  p2 <- plot_pairwise_LD_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
+  p2 <- plot_pairwise_ld_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
   expect_true(ggplot2::is.ggplot(p2$plot))
   expect_equal(unique(p2$plot$data$snp.subfacet), c("groupIV"))
   expect_equal(unique(p2$plot$data$var), c("ASP"))

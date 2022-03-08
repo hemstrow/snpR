@@ -13,6 +13,7 @@ vignette: >
 
 ```{r, include=FALSE}
 library(snpR); library(ggplot2)
+set.seed(1241)
 ```
 # Association Overview:
 Several different association testing methods are available with snpR. These fall into three general categories:
