@@ -43,6 +43,8 @@
 #' @param par numeric or FALSE, default FALSE. If a number specifies the number
 #'   of processing cores to use \emph{across facet levels}. Not used if only one
 #'   facet level.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   printed to the console.
 #' @param ... additional arguments passed to \code{\link[BGLR]{BGLR}}
 #'
 #' @export
@@ -541,7 +543,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
     else{
       res <- try(formula(formula), silent = T)
-      if(is(res, "try-error")){
+      if(methods::is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
@@ -918,7 +920,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     if(!is.null(.formula)){
       msg <- character()
       res <- try(formula(.formula), silent = T)
-      if(is(res, "try-error")){
+      if(methods::is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }

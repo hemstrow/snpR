@@ -47,6 +47,9 @@ minor allele. \item{af: } insertion of the average allele frequency}.}
 of processing cores to use \emph{across facet levels}. Not used if only one
 facet level.}
 
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+printed to the console.}
+
 \item{...}{additional arguments passed to \code{\link[BGLR]{BGLR}}}
 }
 \value{

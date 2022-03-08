@@ -62,6 +62,8 @@ gaussian_weight <- function(p, c, s) {
 #'  "pairwise"). See details.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   printed to the console.
 #'
 #'@export
 #'@author William Hemstrom
