@@ -14,6 +14,7 @@ run_genomic_prediction(
   model = "BayesB",
   interpolate = "bernoulli",
   par = FALSE,
+  verbose = FALSE,
   ...
 )
 }

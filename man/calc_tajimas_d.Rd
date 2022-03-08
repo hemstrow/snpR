@@ -4,7 +4,14 @@
 \alias{calc_tajimas_d}
 \title{Tajima's D from SNP data.}
 \usage{
-calc_tajimas_d(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE)
+calc_tajimas_d(
+  x,
+  facets = NULL,
+  sigma = NULL,
+  step = NULL,
+  par = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -25,6 +32,9 @@ subfacet will be done at once (for example, the whole chromosome).}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{verbose}{Logical, default FALSE. If TRUE progress will be printed to the
+console.}
 }
 \value{
 snpRdata object, with Waterson's Theta, Tajima's Theta, and Tajima's D
@@ -53,7 +63,7 @@ as described in \code{\link{Facets_in_snpR}}.
 x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
 get.snpR.stats(x, "chr.pop", "single.window")
 
-# the entire population at once, note that sigma and step are NULL and 
+# the entire population at once, note that sigma and step are NULL and
 # no chromosome/linkage group/scaffold/etc set.
 # this will calculate overall tajima's D without a window for each population.
 x <- calc_tajimas_d(stickSNPs, facets = "pop")

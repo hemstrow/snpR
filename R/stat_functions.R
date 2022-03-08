@@ -1206,7 +1206,7 @@ calc_private <- function(x, facets = NULL){
 #'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'Heatmaps of the resulting data can be easily plotted using
-#'\code{\link{plot_pairwise_LD_heatmap}}
+#'\code{\link{plot_pairwise_ld_heatmap}}
 #'
 #'@param x snpRdata. Input SNP data. Note that a SNP column containing snp
 #'  position in base pairs named 'position' is required.

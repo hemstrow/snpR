@@ -15,7 +15,8 @@ calc_association(
   maxiter = 500,
   sampleID = NULL,
   Gmaf = 0,
-  par = FALSE
+  par = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -42,8 +43,8 @@ the Armitage association method. See description for details.}
 \item{formula}{charcter, default set to response ~ 1. Null formula for the
 response variable, as described in \code{\link[stats]{formula}}.}
 
-\item{family.override}{character, default NULL. Provides an alternative
-model family object to use for GMMAT GWAS regression. By default, uses
+\item{family.override}{character, default NULL. Provides an alternative model
+family object to use for GMMAT GWAS regression. By default, uses
 \code{\link[stats]{gaussian}}, link = "identity" for a quantitative
 phenotype and \code{\link[stats]{binomial}}, link = "logit" for a
 categorical phenotype.}
@@ -60,6 +61,9 @@ relatedness matrix.}
 
 \item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use
 for computation.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+printed to the console.}
 }
 \value{
 A snpRdata object with the resulting association test results merged

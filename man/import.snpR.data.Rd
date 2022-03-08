@@ -11,7 +11,8 @@ import.snpR.data(
   mDat = "NN",
   chr.length = NULL,
   ...,
-  header_cols = 0
+  header_cols = 0,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -41,6 +42,8 @@ for each chromosome in order.}
 
 \item{header_cols}{Number of header columns on passed delimited file. Mostly
 for internal use with \code{\link{read_delimited_snps}}.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, will print a few status updates and checks.}
 }
 \description{
 \code{import.snpR.data} converts genotype and meta data to the snpRdata class,

@@ -4,6 +4,9 @@
 * Added a verbose option to many functions to avoid putting quite so much noise onto the console.
 
 ## Features
+### Major
+### Minor
+* Renamed calc_SFS and calc_pairwise_LD_heatmap to lowercase for consistency.
 
 ## Documentation
 * Added a `NEWS.md` file to track changes to the package.
