@@ -530,7 +530,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
-  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
+  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
 
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
                     facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
@@ -905,14 +905,24 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       fst <- fst[-not.pairwise,]
     }
     
+    empties <- numeric(0)
     for(i in 1:length(cats)){
-      if("weighted_mean_fst_p" %in% colnames(fst)){
+      if(sum(fst$facet == cats[i]) == 0){
+        empties <- c(empties, i)
+        next
+      }
+      else if("weighted_mean_fst_p" %in% colnames(fst)){
         res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
                          p = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst_p"))
       }
       else{
         res[[i]] <- data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst")
       }
+    }
+    
+    # remove any empty elements
+    if(length(empties) > 0){
+      res[[empties]] <- NULL
     }
     
     return(res)
