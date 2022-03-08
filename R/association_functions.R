@@ -541,7 +541,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
     else{
       res <- try(formula(formula), silent = T)
-      if(class(res) == "try-error"){
+      if(is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
@@ -918,7 +918,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     if(!is.null(.formula)){
       msg <- character()
       res <- try(formula(.formula), silent = T)
-      if(class(res) == "try-error"){
+      if(is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }

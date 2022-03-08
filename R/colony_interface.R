@@ -353,14 +353,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     ## then a newline before first parental genotypes
   write("\n", outfile, append = T) # adding a newline between offspring genotypes and parents
   par_nums <- numeric(2)
-  if(class(paternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(paternal_genotypes)){
 
     par_nums[1] <- ncol(paternal_genotypes) #ncol not nrow!
   }
   else{
     paternal_inclusion_prob <- 0
   }
-  if(class(maternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(maternal_genotypes)){
     par_nums[2] <- ncol(maternal_genotypes) #ncol not nrow!
   }
   else{
@@ -370,14 +370,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   write(par_nums, outfile, append = T, sep = " ") # OPS and OMS sample sizes
   write("\n", outfile, append = T) #added newline after number parents and probs parents
   # paternal and maternal genotypes
-  if(class(paternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(paternal_genotypes)){
     male_colony <- format_snps(paternal_genotypes, "colony")
     utils::write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating genotypes
   }
   write("\n", outfile, append = T) #added newline
 
-  if(class(maternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(maternal_genotypes)){
     female_colony <- format_snps(maternal_genotypes, "colony")
     utils::write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating stuff

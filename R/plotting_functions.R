@@ -956,7 +956,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   #=============grab the desired stats=====================
   #====if a snpRdata object========
-  if(class(x) == "snpRdata"){
+  if(is.snpRdata(x)){
     if(window == FALSE){
       facets <- .check.snpR.facet.request(x, facets)
     }
@@ -1238,7 +1238,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
   .o <- .p <- .e <- NULL
   
   # snpRdata
-  if(class(x) == "snpRdata"){
+  if(is.snpRdata(x)){
     facets <- .check.snpR.facet.request(x, facets)
     
     if(plot_var %in% colnames(x@stats)){
