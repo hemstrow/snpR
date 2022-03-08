@@ -56,13 +56,13 @@
 #' dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 #'
 #' # produce plots for linkage group IX in the ASP and CLF populations.
-#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
+#' plot_pairwise_ld_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
 #'
 #' # produce plots for every population for linkage group IV
-#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
+#' plot_pairwise_ld_heatmap(dat, c("pop.chr"), "groupIV")
 #' }
 #'
-plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
+plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
                                      l.text = "CLD", viridis.option = "inferno",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){

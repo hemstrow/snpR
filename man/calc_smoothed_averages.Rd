@@ -11,7 +11,8 @@ calc_smoothed_averages(
   step = NULL,
   nk = TRUE,
   stats.type = c("single", "pairwise"),
-  par = FALSE
+  par = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
