@@ -196,26 +196,49 @@ test_that("tree plot",{
 #============sfs========
 test_that("sfs plot",{
   # 1D
-  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
+  sfs <- plot_sfs(stickSNPs, projection = 100)
   expect_true(ggplot2::is.ggplot(sfs))
   expect_true(sum(sfs$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(unique(sfs$data$p1), 0)
   expect_true(max(sfs$data$p2[which(!is.na(sfs$data$N))]) <= 100/2) # folded
 
   # 2D
-  expect_warning(sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
+  sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
   expect_true(ggplot2::is.ggplot(sfs2))
   expect_true(sum(sfs2$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 50) # folded
   
   
   # works with sfs provided
-  expect_warning(sfsp <- calc_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
-  sfsp <- plot_sfs(sfs = sfsp)
-  expect_identical(sfs$data, sfsp$data)
+  sfs_provided <- calc_sfs(stickSNPs, projection = 100)
+  sfs_provided_plot <- plot_sfs(sfs_provided)
+  expect_identical(sfs$data, sfs_provided_plot$data)
   
-  expect_warning(sfsp2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
-  sfsp2 <- plot_sfs(sfs = sfsp2)
-  expect_identical(sfs2$data, sfsp2$data)
+  sfs_provided2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  sfs_provided2_plot <- plot_sfs(sfs_provided2)
+  expect_identical(sfs2$data, sfs_provided2_plot$data)
+  
+  # sanity checks
+  attr(sfs_provided, "pop") <- NULL
+  expect_error(plot_sfs(sfs_provided), regexp = "1D SFS must have a pop attribute with length 1")
+  attr(sfs_provided, "pop") <- c("check1", "check2")
+  expect_error(plot_sfs(sfs_provided), regexp = "1D SFS pop attribute must be length 1")
+  
+  attr(sfs_provided2, "pop") <- NULL
+  expect_error(plot_sfs(sfs_provided2), regexp = "2D SFS must have a pop attribute with length 2")
+  attr(sfs_provided2, "pop") <- c("check1")
+  expect_error(plot_sfs(sfs_provided2), regexp = "2D SFS pop attribute must be length 2")
+  
+  expect_error(plot_sfs(sfs2), "x must be either a snpRdata object, a matrix containing a 2D SFS, or a numeric vector containing a 1D sfs")
+  
+  attr(sfs_provided, "pop") <- "check"
+  p1 <- plot_sfs(sfs_provided)
+  attr(sfs_provided, "pops") <- "check"
+  attr(sfs_provided, "pop") <- NULL
+  p2 <- plot_sfs(sfs_provided)
+  expect_equal(p1, p2)
+  
+  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100, fold = FALSE), "Without ancestral and derived character states, unfolded spectra will be misleading")
+  
 })
 

@@ -2897,8 +2897,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' the SFS construction methods implemented in the program \emph{dadi} (see
 #' Gutenkunst et al (2009)).
 #' 
-#'
-#' @param sfs matrix or numeric. Either a 2d site frequency spectra stored in a
+#' @param x snpRdata object, matrix, or numeric vector. If a snpRdata object, 
+#'   The SNP metadata should contain "ref" and "anc" data. 
+#'   If it does not, the major allele will be assumed to be the ancestral. 
+#'   Alternatively, either a 2d site frequency spectra stored in a
 #'   matrix, with an additional "pops" attribute containing population IDs, such
 #'   as c("POP1", "POP2"), where the first pop is the matrix columns and the
 #'   second is the matrix rows, or a 1d site frequency spectra stored as a
@@ -2909,7 +2911,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
 #'   cell is log transformed.
-#' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
 #' @param facet character, default NULL. Name of the sample metadata column
 #'   which specifies the source population of individuals. For now, allows only
 #'   a single simple facet (one column).If NULL, runs the entire dataset.
@@ -2946,27 +2947,36 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' 
 #' # via a sfs matrix, useful for pulling in spectra from elsewhere
 #' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(sfs)
 #' }
-plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "inferno", log = TRUE,
+plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = TRUE,
                      pops = NULL, projection = NULL, fold = TRUE, update_bib = FALSE){
   p1 <- p2 <- N <- NULL
-  
-  
+
+  #==================sanity checks=============
+  msg <- character()
   if(is.snpRdata(x)){
-    sfs <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold, update_bib = update_bib)
+    x <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold, update_bib = update_bib)
+  }
+  else{
+    msg <- .sanity_check_sfs(x, 1:2)
   }
   
-  # add column names, row names, and melt
-  pops <- attr(sfs, "pop")
-  sfs <- as.data.frame(sfs)
-  if(length(pops) == 1){
-    sfs <- as.data.frame(t(sfs))
+  if(length(msg) > 0){
+    stop(msg)
   }
-  colnames(sfs) <- 0:(ncol(sfs) - 1)
-  sfs$count <- 0:(nrow(sfs) - 1)
-  sfs[1,1] <- NA # mask the first entry
-  msfs <- reshape2::melt(sfs, id.vars = "count")
+  #=======================================================
+
+  # add column names, row names, and melt
+  pops <- attr(x, "pop")
+  x <- as.data.frame(x)
+  if(length(pops) == 1){
+    x <- as.data.frame(t(x))
+  }
+  colnames(x) <- 0:(ncol(x) - 1)
+  x$count <- 0:(nrow(x) - 1)
+  x[1,1] <- NA # mask the first entry
+  msfs <- reshape2::melt(x, id.vars = "count")
   colnames(msfs) <- c("p1", "p2", "N")
   msfs$p1 <- as.integer(as.character(msfs$p1))
   msfs$p2 <- as.integer(as.character(msfs$p2))
@@ -2975,7 +2985,7 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 
   # plot
   ## 2D
-  if(nrow(sfs) > 1){
+  if(nrow(x) > 1){
     if(log){
       p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = log10(N), color = log10(N)))
     }

@@ -5,8 +5,7 @@
 \title{Calculate the directionality index from a 2d site frequency spectrum.}
 \usage{
 calc_directionality(
-  x = NULL,
-  sfs = NULL,
+  x,
   facet = NULL,
   pops = NULL,
   projection = NULL,
@@ -14,11 +13,9 @@ calc_directionality(
 )
 }
 \arguments{
-\item{x}{snpRdata object, default NULL. If provided, snpRdata from which to
-calculate a SFS. Ignored if a sfs is provided directly.}
-
-\item{sfs}{numeric matrix. A 2d site frequency spectra stored in a matrix,
-with an additional "pops" attribute containing population IDs, such as
+\item{x}{snpRdata object or matrix, default NULL. A snpRdata from which to
+calculate a SFS. Alternatively, a 2d site frequency spectra stored in a matrix,
+with an additional "pop" or "pops" attribute containing population IDs, such as
 c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 the second to matrix rows. These objects can be produced from a dadi input
 file using \code{\link{make_SFS}}.}
@@ -64,7 +61,7 @@ calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection 
 
 # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
 sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
-calc_directionality(sfs = sfs)
+calc_directionality(sfs)
 }
 }
 \references{
