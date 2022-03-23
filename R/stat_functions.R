@@ -835,20 +835,20 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         gp.filenames <- .boot_genepop(paste0(facets[f], "_genepop_input.txt"), boot)
         wc.inputs <- NULL
       }
-      else if(method == "wc"){
-        gp.filenames <- NULL
-        wc.inputs <- .boot_ac(x, boot, facets[f])
-      }
       
       
       cat("Done.\nCalculating Fst...\n")
       
       # do the bootstrapps
-      if(isFALSE(boot_par)){    
+      if(isFALSE(boot_par)){
         boots <- vector("list", boot)
         for(i in 1:boot){
           cat("Boot", i, "out of", boot, "\n")
-          boots[[i]] <- one_run(x, method = method, facet = facets[f], gp.filenames[i], wc.inputs[[i]])$real_wm
+          if(method == "wc"){
+            gp.filenames <- NULL
+            wc.inputs <- .boot_ac(x, 1, facets[f])
+          }
+          boots[[i]] <- one_run(x, method = method, facet = facets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
         }
       }
       
@@ -881,8 +881,12 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
                                     
                                     boots <- vector("list", length(pboot[[q]]))
                                     for(i in 1:length(pboot[[q]])){
+                                      if(method == "wc"){
+                                        gp.filenames <- NULL
+                                        wc.inputs <- .boot_ac(x, 1, facets[f])
+                                      }
                                       boots[[i]] <- one_run(x, method = method, facet = facets[f], 
-                                                            gp.filenames[pboot[[q]][i]], wc.inputs[[pboot[[q]][i]]])$real_wm
+                                                            gp.filenames[pboot[[q]][i]], wc.inputs[[1]])$real_wm
                                     }
                                     boots
                                   }

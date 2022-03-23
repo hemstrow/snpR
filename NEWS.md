@@ -7,6 +7,8 @@
 ### Major
 ### Minor
 * Renamed calc_SFS and calc_pairwise_LD_heatmap to lowercase for consistency.
+* Got rid of sfs arguments in plot_sfs and calc_direcitonality. They now just take provided sfs objects as x, consistent with other functions.
+* Reworked calc_pairwise_fst bootstrapping to be more memory efficient.
 
 ## Documentation
 * Added a `NEWS.md` file to track changes to the package.
