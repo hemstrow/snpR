@@ -18,3 +18,4 @@
 ## Bug fixes
 * Fixed a bug in run_random_forest() where formulas would be incorrectly specified the first time a line of code was run due to a weird environment scope issue.
 * Fixed a bug in get.snpR.stats() when requesting fst values from both a facet with and without fst calculated would throw an error during fst matrix construction. Implemented a test.
+* Added ggtree citation to plot_tree.

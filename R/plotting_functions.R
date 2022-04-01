@@ -3591,6 +3591,11 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
     details <- c(details, "tree construction")
   }
   
+  
+  keys <- c(keys, "Yu2017")
+  stats <- c(stats, "tree")
+  details <- c(details, "tree plotting")
+  
   if(length(keys) > 0){
     .yell_citation(keys, stats, details, update_bib)
   }
