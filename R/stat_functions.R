@@ -1313,6 +1313,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   if(!"position" %in% colnames(x@snp.meta)){
     stop("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
   }
+  
+  
+  if(par > 1 & (is.null(facets) | facets == ".base")){
+    .check.installed("bigmemory")
+    .check.installed("bigtabulate")
+  }
 
   #========================sub-functions=============
   #function to do LD with SNPs
@@ -2519,7 +2525,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #subset
     x <- subset_snpR_data(x, ss)
   }
-
+  
+  
   # run non-CLD LD components:
   if(CLD != "only"){
     # typical facet check, keeping all facet types but removing duplicates. Also returns the facet type for later use.

@@ -8,3 +8,4 @@
 ^\.github$
 ^\.covrignore$
 ^codecov\.yml$
+^inst\shiny*$

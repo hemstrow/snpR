@@ -17,8 +17,6 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
-    bigmemory,
-    bigtabulate,
     doSNOW,
     dplyr,
     matrixStats,
@@ -45,9 +43,10 @@ Suggests:
     AGHmatrix,
     ape,
     BGLR,
+    bigmemory,
+    bigtabulate,
     CATT,
     BiocManager,
-    forcats,
     genepop,
     genio,
     geosphere,
@@ -70,6 +69,7 @@ Suggests:
     scatterpie,
     sequoia,
     sf,
+    shiny,
     umap,
     vcfR,
     viridis,
