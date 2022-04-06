@@ -24,7 +24,7 @@ test_that("directionality",{
   expect_equal(attr(res, "direction"), "ASP<-CLF")
   
   # provided sfs
-  sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(50, 50), fold = FALSE)
+  sfs <-  expect_warning(calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(50, 50), fold = FALSE), "Without ancestral and derived character states, unfolded spectra will be misleading.")
   res2 <- calc_directionality(sfs)
   expect_identical(res, res2)
   

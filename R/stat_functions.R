@@ -1314,10 +1314,19 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     stop("A column named 'postion' containing SNP positions in bp is required in the SNP metadata.\n")
   }
   
-  
-  if(par > 1 & (is.null(facets) | facets == ".base")){
-    .check.installed("bigmemory")
-    .check.installed("bigtabulate")
+  if(par > 1){
+    cinst <- FALSE
+    if(is.null(facets)){
+      cinst <- TRUE
+    }
+    else if(any(facets == ".base")){
+      cinst <- TRUE
+    }
+    
+    if(cinst){
+      .check.installed("bigmemory")
+      .check.installed("bigtabulate")
+    }
   }
 
   #========================sub-functions=============
