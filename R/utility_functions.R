@@ -1063,6 +1063,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'  position information, for VCF output.
 #'@param phenotype character, default "phenotype". Optional name of column
 #'  containing phenotype information, for plink! output.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'  reported.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1155,7 +1157,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
-                        phenotype = "phenotype"){
+                        phenotype = "phenotype", verbose = FALSE){
+  if(!isTRUE(verbose)){
+    cat <- function(...){}
+  }
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -2265,8 +2270,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       llist[length(llist)] <- paste0("SNP_", ncol(rdata))
 
       # write output
-      cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
-      cat(llist, "\nPOP\n", file = outfile, append = T) 
+      base::cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
+      base::cat(llist, "\nPOP\n", file = outfile, append = T) 
 
       # write the tables, splitting by pop if requested:
       if(length(facets) > 0){
@@ -2294,7 +2299,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
           cat(pop[i], "\t")
           data.table::fwrite(rdata[pop.rows == pop[i],], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
           if(i != length(pop)){
-            cat("POP\n", file = outfile, append = T)
+            base::cat("POP\n", file = outfile, append = T)
           }
         }
         cat("\t Done.\n")
@@ -2316,11 +2321,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         trdat <- rdata[rdata$facet == facets[1], c("subfacet", ".snp.id", "n_total", "n_alleles", "ni1", "ni2")]
 
         #write the header
-        cat("[loci]=", nrow(x), "\n\n[populations]=", length(u.pops), "\n\n", file = outfile, sep = "")
+        base::cat("[loci]=", nrow(x), "\n\n[populations]=", length(u.pops), "\n\n", file = outfile, sep = "")
 
         #write the data for each population.
         for(i in 1:length(u.pops)){
-          cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
+          base::cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
 
           tdat <- trdat[trdat$subfacet == u.pops[i],]
 
@@ -2330,7 +2335,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                              outfile, col.names = F, row.names = F, quote = F, sep = "\t",
                              append = T) # write the data for this population.
 
-          cat("\n", file = outfile, append = T) # add a line break
+          base::cat("\n", file = outfile, append = T) # add a line break
         }
       }
     }

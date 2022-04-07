@@ -449,6 +449,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'   be processed in parallel using the supplied number of cores.
 #' @param cleanup logical, default TRUE. If TRUE, any new files created during
 #'   FST calculation will be automatically removed.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   reported.
 #'
 #'@return A snpRdata object with pairwise FST as well as the number of total
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
@@ -476,10 +478,14 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' get.snpR.stats(x, "pop", "fst")
 #' }
 calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE,
-                              cleanup = TRUE){
+                              cleanup = TRUE, verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
   
 
+  if(!isTRUE(verbose)){
+    cat <- function(...){}
+  }
+  
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -492,7 +498,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   if(any(x@ac$n_alleles > 2)){
     vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
     vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
-    stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
+    stop(base::cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
   }
   
   method <- tolower(method)
@@ -503,7 +509,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   # add any missing facets
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
-  if(all(facets[[2]] == ".base")){
+  if(any(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
   facets <- facets[[1]]
