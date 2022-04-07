@@ -10,7 +10,8 @@ calc_pairwise_fst(
   method = "WC",
   boot = FALSE,
   boot_par = FALSE,
-  cleanup = TRUE
+  cleanup = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,9 @@ be processed in parallel using the supplied number of cores.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, any new files created during
 FST calculation will be automatically removed.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+reported.}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total
