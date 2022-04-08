@@ -964,6 +964,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
       }
     }
     else{
+      cvars <- character()
       sn <- cbind.data.frame(sub.x@sample.meta[,response], sn, stringsAsFactors = F)
     }
     colnames(sn)[1] <- response
@@ -1002,7 +1003,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         op <- ranger::importance_pvalues(rout, "janitza")[,2]
       }
       else{
-        warning("No p-values calcuated. P-values must be done via permutation, and only when a quantitative response is used. See ?ranger::importance_pvalues for help.\n")
+        warning("No p-values calcuated. When a quantitative response or more than 2 categorical response options are present, p-values must be done via permutation. We suggest running this with ranger directly. See ?ranger::importance_pvalues for help.\n")
       }
     }
 

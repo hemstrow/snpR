@@ -60,7 +60,8 @@ test_that("correct chisq", {
 test_that("random forest",{
   skip_if_not_installed("ranger")
   # basic
-  rf <- run_random_forest(asdat, response = "phenotype", pvals = FALSE)
+  expect_warning(rf <- run_random_forest(asdat, response = "phenotype"), 
+                 regexp = "No p-values calcuated. When a quantitative")
   rfstats <- get.snpR.stats(rf$x, stats = "random_forest")
   expect_s3_class(rf$models$.base_.base$model, "ranger")
   expect_equal(dim(rf$models$.base_.base$predictions), c(nsamps(asdat), 2))
@@ -68,6 +69,12 @@ test_that("random forest",{
   expect_equal(unique(rfstats$single$subfacet), c(".base"))
   expect_equal(unique(rfstats$single$facet), c(".base"))
   expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
+  
+  # check importance
+  suppressWarnings(rf2 <- run_random_forest(asdat, response = "cat_phenotype")) # will sometimes throw an inaccurate p-values warning from ranger
+  imp <- get.snpR.stats(rf2$x, stats = "random_forest")$single
+  expect_true(all(imp$cat_phenotype_RF_importance_pvals >= 0))
+  expect_true(is.numeric(imp$cat_phenotype_RF_importance))
 
   # several facets
   rf <- run_random_forest(asdat, facets = "pop", response = "phenotype", pvals = FALSE)
