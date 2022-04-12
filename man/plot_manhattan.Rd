@@ -17,6 +17,7 @@ plot_manhattan(
   significant = NULL,
   suggestive = NULL,
   highlight = "significant",
+  highlight_style = "label",
   sig_below = FALSE,
   log.p = FALSE,
   abs = FALSE,
@@ -76,6 +77,10 @@ level will also be labeled.}
 Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 above those respetive values will be highlighted. If a numeric vector, SNPs
 corresponding to vector entries will be highlighted. See details.}
+
+\item{highlight_style}{character, default "label". Highlighting options:
+\itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
+(word or hex) to color points by.}}}
 
 \item{sig_below}{logical, default FALSE. If TRUE, treats values lower than
 the significance threshold as significant.}

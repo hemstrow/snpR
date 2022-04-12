@@ -865,6 +865,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 #'   above those respetive values will be highlighted. If a numeric vector, SNPs
 #'   corresponding to vector entries will be highlighted. See details.
+#' @param highlight_style character, default "label". Highlighting options:
+#'   \itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
+#'   (word or hex) to color points by.}}
 #' @param viridis.option character, default "plasma". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
 #'   \code{\link[ggplot2]{scale_gradient}} for details.
@@ -940,6 +943,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
+                           highlight_style = "label",
                            sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3"),
@@ -948,10 +952,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   #=============sanity checks==============================
   msg <- character()
-  pkg.check <- .check.installed("ggrepel")
-  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
-  pkg.check <- .check.installed("viridis")
-  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  if(highlight_style == "label" & !isFALSE(highlight)){
+    pkg.check <- .check.installed("ggrepel")
+  }
+  
+  .check.installed("viridis")
   
   if(length(msg) > 0){
     stop(msg, collapse = "\n")
@@ -1174,9 +1179,16 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   # highlight
   if(do.highlight){
     highlight.label <- NULL
-    p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
-                                       mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
-                                       force = 1.3)
+    if(highlight_style == "label"){
+      p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
+                                         mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
+                                         force = 1.3)
+    }
+    else{
+      p <- p + ggplot2::geom_point(data = stats[which(stats$highlight == 1),],
+                                         color = highlight_style)
+    }
+    
   }
 
   # abbreviate
