@@ -114,13 +114,11 @@ test_that("umap",{
 
 #==================plot_manhattan==========
 test_that("manhattan plots", {
-  skip_if_not_installed(c("GMMAT", "AGHmatrix"))
-  asso <- stickSNPs[pop = "ASP"]
-  set.seed(1212)
-  sample.meta(asso)$cat_phenotype <- sample(c("case", "control"), ncol(asso), replace = TRUE)
-  expect_warning(asso <- calc_association(asso, response = "cat_phenotype"), "Variance estimate on the boundary of the parameter space observed, refitting model")
-  
-  p <- plot_manhattan(asso, "gmmat_pval_cat_phenotype", chr = "chr", log.p = TRUE)
+  x <- stickSNPs
+  sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+  x <- calc_association(x, response = "phenotype", method = "armitage")
+  p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                      log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
 })
 

@@ -24,6 +24,7 @@ plot_manhattan(
   viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10),
   colors = c("black", "slategray3"),
+  chr_order = NULL,
   abbreviate_labels = FALSE
 )
 }
@@ -98,6 +99,9 @@ c(strip.title, axis, axis.ticks).}
 
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
+
+\item{chr_order}{character, default NULL. If provided, an ordered vector of
+chromosome/scaffold/etc names by which to sort ouput.}
 
 \item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
 x-axis chromosome names will be abbreviated using 

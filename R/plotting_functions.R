@@ -875,6 +875,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   c(strip.title, axis, axis.ticks).
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
+#' @param chr_order character, default NULL. If provided, an ordered vector of
+#'   chromosome/scaffold/etc names by which to sort ouput.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
 #'   x-axis chromosome names will be abbreviated using 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
@@ -941,6 +943,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3"),
+                           chr_order = NULL,
                            abbreviate_labels = FALSE){
 
   #=============sanity checks==============================
@@ -1051,6 +1054,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stats[,chr] <- as.character(stats[,chr])
   }
 
+  if(!is.null(chr_order)){
+    stats[,chr] <- factor(stats[,chr], levels = chr_order)
+  }
+  
   # get adjusted x axis positions and figure out where chromsome tick marks should be placed.
   chr.info <- tapply(stats[,bp], stats[,chr], max) # chromosome lengths
   chr.centers <- (chr.info - tapply(stats[,bp], stats[,chr], min))/2 # chromosome centers
