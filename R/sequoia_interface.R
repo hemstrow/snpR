@@ -96,13 +96,13 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   
   # check columns in metadata
   col_logi <- sum(c("BirthYear" %in% colnames(sample.meta(x)),
-                    sum(c("BY.min", "BY.max") %in% colnames(sample.meta(x))) == 2))
+                    sum(c("BYmin", "BYmax") %in% colnames(sample.meta(x))) == 2))
   
   if(col_logi == 0){
-    msg <- c(msg, "Columns named either BirthYear or both BY.min and BY.max are required in sample meta.\n")
+    msg <- c(msg, "Columns named either BirthYear or both BYmin and BYmax are required in sample meta.\n")
   }
   else if(col_logi == 2){
-    warn <- c("Both BirthYear, BY.min, and BY.max are contained in the sample metadata, defaulting to BirthYear. To change this behavior, remove the BirthYear column.\n")
+    warn <- c("Both BirthYear, BYmin, and BYmax are contained in the sample metadata, defaulting to BirthYear. To change this behavior, remove the BirthYear column.\n")
   }
   
   if(length(warn) > 0){
