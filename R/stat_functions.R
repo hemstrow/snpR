@@ -8,26 +8,33 @@
 #'The data can be broken up categorically by sample metadata, as described in
 #'\code{\link{Facets_in_snpR}}.
 #'
-#'@section pi:
+#'@section \eqn{\pi}:
 #'
-#'  Calculates pi (genetic diversity/average number of pairwise differences)
-#'  according to Hohenlohe et al. (2010).
+#'  Calculates \eqn{\pi} (nucleotide diversity/average number of pairwise
+#'  differences) according to Hohenlohe et al. (2010).
+#'
+#'@section \ifelse{html}{\out{H<sub>E</sub>}}{\eqn{H_E}}: 
+#'  
+#'  Calculates traditional
+#'  expected heterozygosity \eqn{2pq}. Note that this will produce results
+#'  almost identical to \eqn{\pi}.
+#'
+#'@section \ifelse{html}{\out{H<sub>O</sub>}}{\eqn{H_O}}:
+#'
+#'  Calculates observed heterozygosity.
 #'
 #'@section maf:
 #'
 #'  Calculates minor allele frequencies and note identities and counts of major
 #'  and minor alleles.
 #'
-#'@section ho:
-#'
-#'  Calculates observed heterozygosity.
-#'
+#'  
 #'@section private alleles:
 #'
 #'  Determines if each SNP is a private allele across all levels in each sample
 #'  facet. Will return an error of no sample  facets are provided.
 #'
-#'@section HWE:
+#'@section hwe:
 #'
 #'  Calculates a p-value for the null hypothesis that a population is in HWE at
 #'  a given locus. Several methods available: \itemize{ \item{"exact"} Exact
@@ -55,7 +62,7 @@
 #'  each subfacet is treated as a seperate set of tests. \item{"overall":} All
 #'  tests are treated as a set.}
 #'
-#'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf
+#'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf calc_he
 #'
 #'@return snpRdata object with requested stats merged into the stats socket
 #'
@@ -137,7 +144,7 @@ NULL
 NULL
 
 #'@export
-#'@describeIn calc_single_stats pi (average number of pairwise differences/expected heterozygosity)
+#'@describeIn calc_single_stats \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
     nt <- as.numeric(x[,"n_total"])
@@ -1113,7 +1120,7 @@ calc_ho <- function(x, facets = NULL){
                            fun = .ho_func,
                            case = "ps")
   colnames(out)[ncol(out)] <- "ho"
-  
+
   x <- .merge.snpR.stats(x, out)
   x <- .calc_weighted_stats(x, ofacets, type = "single", "ho")
   x <- .update_calced_stats(x, facets, "ho", "snp")
@@ -2999,7 +3006,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'Caluclate basic SNP statistics
 #'
 #'Automatically calculate most basic statistics from snpRdata. Calculates maf,
-#'pi, ho, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
+#'pi, ho, he, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
 #'smoothing to produce per-window averages of all of these.
 #'
 #'The data can be broken up categorically by sample or SNP metadata, as
@@ -3069,6 +3076,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   x <- calc_pi(x, facets)
   x <- calc_hwe(x, facets)
   x <- calc_ho(x, facets)
+  x <- calc_he(x, facets)
   if(!is.null(facets[1]) & !any(.check.snpR.facet.request(x, facets, return.type = TRUE)[[2]] == ".base")){
     x <- calc_pairwise_fst(x, facets, method = fst.method)
     x <- calc_private(x, facets)
@@ -3681,7 +3689,39 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
 
 
 
-
-
-
-
+#'@export
+#'@describeIn calc_single_stats expected heterozygosity
+calc_he <- function(x, facets = NULL){
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  he_func <- function(maf){
+    return(2 * maf$maf * (1 - maf$maf))
+  }
+  
+  # add any missing facets
+  
+  ofacets <- facets
+  facets <- .check.snpR.facet.request(x, facets)
+  if(!all(facets %in% x@facets)){
+    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+  }
+  
+  
+  # add missing maf
+  has_maf <- .check_calced_stats(x, facets, "maf")
+  if(any(!unlist(has_maf))){
+    x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+  }
+  
+  # calculate he
+  out <- .get.snpR.stats(x, facets = facets, type = "single")
+  out$he <- he_func(out)
+  out <- out[,c("facet", "subfacet", colnames(snp.meta(x)), "he")]
+  
+  x <- .merge.snpR.stats(x, out)
+  x <- .calc_weighted_stats(x, ofacets, type = "single", "he")
+  x <- .update_calced_stats(x, facets, "he", "snp")
+  return(x)
+}

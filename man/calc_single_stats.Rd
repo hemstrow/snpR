@@ -7,6 +7,7 @@
 \alias{calc_ho}
 \alias{calc_private}
 \alias{calc_maf}
+\alias{calc_he}
 \title{Calculate standard single-SNP genetic statistics}
 \usage{
 calc_pi(x, facets = NULL)
@@ -24,6 +25,8 @@ calc_hwe(
   fwe_method = "BY",
   fwe_case = c("by_facet", "overall")
 )
+
+calc_he(x, facets = NULL)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -62,7 +65,7 @@ The data can be broken up categorically by sample metadata, as described in
 }
 \section{Functions}{
 \itemize{
-\item \code{calc_pi}: pi (average number of pairwise differences/expected heterozygosity)
+\item \code{calc_pi}: \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 
 \item \code{calc_maf}: minor allele frequency
 
@@ -71,13 +74,29 @@ The data can be broken up categorically by sample metadata, as described in
 \item \code{calc_private}: find private alleles
 
 \item \code{calc_hwe}: p-values for Hardy-Wienberg Equilibrium divergence
+
+\item \code{calc_he}: expected heterozygosity
 }}
 
-\section{pi}{
+\section{\eqn{\pi}}{
 
 
- Calculates pi (genetic diversity/average number of pairwise differences)
- according to Hohenlohe et al. (2010).
+ Calculates \eqn{\pi} (nucleotide diversity/average number of pairwise
+ differences) according to Hohenlohe et al. (2010).
+}
+
+\section{\ifelse{html}{\out{H<sub>E</sub>}}{\eqn{H_E}}}{
+ 
+ 
+ Calculates traditional
+ expected heterozygosity \eqn{2pq}. Note that this will produce results
+ almost identical to \eqn{\pi}.
+}
+
+\section{\ifelse{html}{\out{H<sub>O</sub>}}{\eqn{H_O}}}{
+
+
+ Calculates observed heterozygosity.
 }
 
 \section{maf}{
@@ -87,12 +106,6 @@ The data can be broken up categorically by sample metadata, as described in
  and minor alleles.
 }
 
-\section{ho}{
-
-
- Calculates observed heterozygosity.
-}
-
 \section{private alleles}{
 
 
@@ -100,7 +113,7 @@ The data can be broken up categorically by sample metadata, as described in
  facet. Will return an error of no sample  facets are provided.
 }
 
-\section{HWE}{
+\section{hwe}{
 
 
  Calculates a p-value for the null hypothesis that a population is in HWE at

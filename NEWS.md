@@ -5,12 +5,14 @@
 
 ## Features
 ### Major
+* Added `calc_he()` for traditional H<sub>E</sub> = 2pq calculation. Note that this produces results *almost* identical to `calc_pi()`.
+
 ### Minor
-* Renamed calc_SFS and calc_pairwise_LD_heatmap to lowercase for consistency.
-* Got rid of sfs arguments in plot_sfs and calc_direcitonality. They now just take provided sfs objects as x, consistent with other functions.
-* Reworked calc_pairwise_fst bootstrapping to be more memory efficient.
-* Added a chr_order argument to plot_manhattan() to allow for manual resorting of chromosomes (since factors are coerced away in snpRdata objects).
-* Added a highlight_style argument to plot_manhattan() to allow for coloring SNPs instead of labeling them if highlighted.
+* Renamed `calc_SFS()` and `calc_pairwise_LD_heatmap()` to lowercase for consistency.
+* Got rid of `sfs` arguments in `plot_sfs()` and `calc_direcitonality()`. They now just take provided sfs objects as x, consistent with other functions.
+* Reworked `calc_pairwise_fst()` bootstrapping to be more memory efficient.
+* Added a `chr_order` argument to `plot_manhattan()` to allow for manual resorting of chromosomes (since factors are coerced away in `snpRdata` objects).
+* Added a `highlight_style` argument to `plot_manhattan()` to allow for coloring SNPs instead of labeling them if highlighted.
 
 ## Documentation
 * Added a `NEWS.md` file to track changes to the package.
@@ -18,7 +20,7 @@
 
 
 ## Bug fixes
-* Fixed a bug in run_random_forest() where formulas would be incorrectly specified the first time a line of code was run due to a weird environment scope issue.
-* Fixed a bug in get.snpR.stats() when requesting fst values from both a facet with and without fst calculated would throw an error during fst matrix construction. Implemented a test.
+* Fixed a bug in `run_random_forest()` where formulas would be incorrectly specified the first time a line of code was run due to a weird environment scope issue.
+* Fixed a bug in `get.snpR.stats()` when requesting fst values from both a facet with and without fst calculated would throw an error during fst matrix construction. Implemented a test.
 * Added ggtree citation to plot_tree.
-* Fixed a bug where running no formula but generating importance estimates would throw an error in run_random_forest()
+* Fixed a bug where running no formula but generating importance estimates would throw an error in `run_random_forest()`.

@@ -1,8 +1,9 @@
 #===========================statistic_index================
 #=============possible calculated statistics===============
-single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", "fis"),
+single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", "fis"),
                      col_pattern = list("ho", 
-                                "pi", 
+                                "pi",
+                                "he",
                                 c("maf", "major", "minor", "maj.count", "min.count"),
                                 "pa",
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),

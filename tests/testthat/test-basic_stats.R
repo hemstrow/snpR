@@ -26,6 +26,15 @@ test_that("pi",{
   expect_equal(pi$pi, 1 - (choose(tdm@ac$ni1, 2) + choose(tdm@ac$ni2, 2) )/choose(tdm@ac$n_total, 2)) # equ from hohenlohe
 })
 
+test_that("he",{
+  # run function
+  expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "he"))))
+  he <- get.snpR.stats(tdm, c(".base", "pop"), "he")$single
+  
+  # test
+  expect_equal(he$he, 2 * (tdm@ac$ni1/tdm@ac$n_total) * (tdm@ac$ni2/tdm@ac$n_total)) # check against 2pq from another source
+})
+
 test_that("ho", {
   # run function
   expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "ho"))))
