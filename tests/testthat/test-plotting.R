@@ -115,7 +115,7 @@ test_that("umap",{
 #==================plot_manhattan==========
 test_that("manhattan plots", {
   x <- stickSNPs
-  sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+  sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
   x <- calc_association(x, response = "phenotype", method = "armitage")
   p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                       log.p = TRUE)

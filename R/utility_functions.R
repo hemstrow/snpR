@@ -186,7 +186,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       msg <- c(msg, ".samps/j must only contain integers.\n")
     }
     if(max(.samps) > ncol(x) | min(.samps) == 0){
-      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+      msg <- c(msg, "All requested samples must be within 1:nsnps(x).\n")
     }
   }
 
