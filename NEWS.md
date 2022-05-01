@@ -26,3 +26,4 @@
 * Added ggtree citation to plot_tree.
 * Fixed a bug where running no formula but generating importance estimates would throw an error in `run_random_forest()`.
 * Fixed a bug where filtering a `snpRdata` object with `filter_snps()` such that no individuals or SNPs remained would result in an uninformative error. Added a test to check error messages here and in `susbet_snpR_data()` for this.
+* Fixed a bug in `format_snps()` to allow for BYmax and BYmin columns to get translated to BY.max and BY.min, since periods aren't allowed in snpRdata metadata columns.
