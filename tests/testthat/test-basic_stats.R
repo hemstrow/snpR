@@ -70,8 +70,44 @@ test_that("hwe", {
   expect_equal(round(hwe.chsq$pHWE, 3), c(1, 0.284, 1, 1, .839, .659, .577, .860, .134, 1)) # from pegas
 })
 
+test_that("hs", {
+  hs <- calc_hs(.internal.data$test_snps)
+  hs <- get.snpR.stats(hs, stats = "hs")
+  expect_equal(round(hs$sample$hs, 3), 
+               round(c(1.2761109, 0.7468880, 1.9240313, 0.8304498, 1.2761109, 
+                       1.2761109, 0.3190277, 1.1464968, 0.6380555, 0.6933553), 3)) # hand calced
+  expect_equal(nrow(hs$weighted.means), 1)
+  
+  hs <- calc_hs(.internal.data$test_snps, "pop")
+  hs <- get.snpR.stats(hs, "pop", "hs")
+  expect_equal(nrow(hs$weighted.means), 2)
+  
+  hs <- calc_hs(.internal.data$test_snps, "pop.chr", complex_averages = TRUE)
+  hs <- get.snpR.stats(hs, "pop.chr", "hs")
+  expect_equal(sort(.paste.by.facet(hs$weighted.means, c("subfacet", "snp.subfacet"), "_")),
+               sort(.paste.by.facet(expand.grid(unique(sample.meta(.internal.data$test_snps)$pop),
+                                                unique(snp.meta(.internal.data$test_snps)$chr)),
+                                    c("Var1", "Var2"), "_"))) # every level accounted for?
+})
 
-
-
+test_that("het_hom", {
+  het_hom_ratio <- calc_het_hom_ratio(.internal.data$test_snps)
+  het_hom_ratio <- get.snpR.stats(het_hom_ratio, stats = "het_hom_ratio")
+  expect_equal(round(het_hom_ratio$sample$`Het/Hom`, 3),
+               c(0.667 ,0.333 ,1.333 ,0.400 ,0.667 ,0.667 ,0.111 ,0.600 ,0.250 ,0.286))# hand calced
+  
+  expect_equal(nrow(het_hom_ratio$weighted.means), 1)
+  
+  het_hom_ratio <- calc_het_hom_ratio(.internal.data$test_snps, "pop")
+  het_hom_ratio <- get.snpR.stats(het_hom_ratio, "pop", "het_hom_ratio")
+  expect_equal(nrow(het_hom_ratio$weighted.means), 2)
+  
+  het_hom_ratio <- calc_het_hom_ratio(.internal.data$test_snps, "pop.chr", complex_averages = TRUE)
+  het_hom_ratio <- get.snpR.stats(het_hom_ratio, "pop.chr", "het_hom_ratio")
+  expect_equal(sort(.paste.by.facet(het_hom_ratio$weighted.means, c("subfacet", "snp.subfacet"), "_")),
+               sort(.paste.by.facet(expand.grid(unique(sample.meta(.internal.data$test_snps)$pop),
+                                                unique(snp.meta(.internal.data$test_snps)$chr)),
+                                    c("Var1", "Var2"), "_"))) # every level accounted for?
+})
 
   

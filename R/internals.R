@@ -173,34 +173,35 @@ is.snpRdata <- function(x){
 
 
 # Apply functions across snpR facets.
-# 
+#
 # Internal function to apply functions across snpR data. Facet desicnations
 # follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
 # designations follow typical rules.
-# 
+#
 # This function should never be called externally. Raw statistics with metadata
 # are returned and are not automatically merged into x.
-# 
+#
 # For examples, look at how this function is called in functions such as
 # calc_pi, calc_pairwise_fst, ect.
-# 
+#
 # Options:
-# 
+#
 # req:
-# 
+#
 # \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
 # \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
 # \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
 # snp metadata. \item{snpRdata: } subset snpRdata object. }
-# 
+#
 # case:
-# 
+#
 # \itemize{ \item{ps: } stat calculated per snp. \item{ps.pf: } stat calculated
 # per snp, but split per facet (such as for private alleles, comparisons only
 # exist within a facet!) \item{facet.pairwise: } stat calculated pairwise
 # between facets, per snp otherwise. \item{ps.pf.psf: } stat calculated per snp,
-# but per both sample and snp facet. }
-# 
+# but per both sample and snp facet. \item{psamp:} calculated individually in
+# each sample, may be different across snp facets.}
+#
 # @param x snpRdata object
 # @param facets character or NULL, default NULL. Facets to add.
 # @param req character. Data type required by fun. See description.
@@ -218,7 +219,7 @@ is.snpRdata <- function(x){
 # @param interpolate character, default NULL. Possible interpolation option,
 #   passed to some functions.
 # @param verbose If TRUE, will cat updates to console.
-# 
+#
 # @author William Hemstrom
 .apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL, verbose = FALSE){
 
@@ -686,63 +687,66 @@ is.snpRdata <- function(x){
       return(out)
     }
   }
-  else if(case == "per_sample"){
-
-    split_facets <- .split.facet(facets)
-    names(split_facets) <- facets
-    
-    # options across all facets
-    opts <- lapply(split_facets, function(y){
-      levs <- data.frame(unique(x@snp.meta[,which(colnames(x@snp.meta) %in% y)]))
-      if(ncol(levs) == 1){colnames(levs) <- y}
-      return(levs)
-    })
-    
-    # loop function
-    loop.func <- function(x, opts, fname){
-      out <- vector("list", nrow(opts))
-      for(i in 1:nrow(opts)){
-        ident <- which(apply(x@snp.meta[,colnames(opts),drop = F], 1, function(x) identical(as.character(x), as.character(opts[i,]))))
-        if(length(ident) > 0){
-          genotypes <- genotypes(x)[ident,, drop = FALSE]
-          suppressWarnings(out[[i]] <- cbind.data.frame(snp.facet = fname,
-                                                        x@sample.meta,
-                                                        opts[i,,drop = F],
-                                                        stat = fun(genotypes, ...),
-                                                        stringsAsFactors = F))
+  
+  
+  else if(case == "psamp"){
+    if(req == "genotypes"){
+      split_facets <- .split.facet(facets)
+      names(split_facets) <- facets
+      
+      # options across all facets
+      opts <- lapply(split_facets, function(y){
+        levs <- data.frame(unique(x@snp.meta[,which(colnames(x@snp.meta) %in% y)]))
+        if(ncol(levs) == 1){colnames(levs) <- y}
+        return(levs)
+      })
+      
+      # loop function
+      loop.func <- function(x, opts, fname){
+        out <- vector("list", nrow(opts))
+        for(i in 1:nrow(opts)){
+          ident <- which(apply(x@snp.meta[,colnames(opts),drop = F], 1, function(x) identical(as.character(x), as.character(opts[i,]))))
+          if(length(ident) > 0){
+            genotypes <- genotypes(x)[ident,, drop = FALSE]
+            suppressWarnings(out[[i]] <- cbind.data.frame(snp.facet = fname,
+                                                          x@sample.meta,
+                                                          opts[i,,drop = F],
+                                                          stat = fun(genotypes, ...),
+                                                          stringsAsFactors = F))
+          }
+        }
+        return(dplyr::bind_rows(out))
+      }
+      
+      # run
+      out <- vector("list", length(facets))
+      for(i in 1:length(facets)){
+        if(facets[i] == ".base"){
+          out[[i]] <- cbind.data.frame(facet = ".base", subfacet = ".base", snp.facet = ".base", snp.subfacet = ".base",
+                                       x@sample.meta,
+                                       stat = fun(x, ...),
+                                       stringsAsFactors = F)
+        }
+        else{
+          out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
+          opt.names <- .check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
+          opt.names <- unlist(.split.facet(opt.names))
+          out[[i]]$snp.subfacet <- do.call(paste, c(opts[[i]][,opt.names, drop = F], sep = "."))
+          out[[i]]$facet <- ".base"
+          out[[i]]$subfacet <- ".base"
+          out[[i]] <- out[[i]][,c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@sample.meta), "stat")]
         }
       }
-      return(dplyr::bind_rows(out))
+      suppressWarnings(out <- dplyr::bind_rows(out))
+      
+      # re-order and fix NAs from missing stats
+      stat.col <- (which(colnames(out) == "stat"))
+      out <- out[,c((1:ncol(out))[-stat.col], stat.col)]
+      meta <- out[,-ncol(out)]
+      meta[is.na(meta)] <- ".base"
+      out[,1:(ncol(out) - 1)] <- meta
+      return(out)
     }
-    
-    # run
-    out <- vector("list", length(facets))
-    for(i in 1:length(facets)){
-      if(facets[i] == ".base"){
-        out[[i]] <- cbind.data.frame(facet = ".base", subfacet = ".base", snp.facet = ".base", snp.subfacet = ".base",
-                                     x@sample.meta,
-                                     stat = fun(x, ...),
-                                     stringsAsFactors = F)
-      }
-      else{
-        out[[i]] <- loop.func(x, opts[[i]], names(opts)[i])
-        opt.names <- .check.snpR.facet.request(x, paste0(colnames(opts[[i]]), collapse = "."), remove.type = "sample")
-        opt.names <- unlist(.split.facet(opt.names))
-        out[[i]]$snp.subfacet <- do.call(paste, c(opts[[i]][,opt.names, drop = F], sep = "."))
-        out[[i]]$facet <- ".base"
-        out[[i]]$subfacet <- ".base"
-        out[[i]] <- out[[i]][,c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@sample.meta), "stat")]
-      }
-    }
-    suppressWarnings(out <- dplyr::bind_rows(out))
-    
-    # re-order and fix NAs from missing stats
-    stat.col <- (which(colnames(out) == "stat"))
-    out <- out[,c((1:ncol(out))[-stat.col], stat.col)]
-    meta <- out[,-ncol(out)]
-    meta[is.na(meta)] <- ".base"
-    out[,1:(ncol(out) - 1)] <- meta
-    return(out)
   }
   
 }
@@ -2659,4 +2663,31 @@ is.snpRdata <- function(x){
 }
 
 
-
+.heterozygosity <- function(x, mDat, method){
+  # make x into a logical for heterozygous
+  xv <- as.matrix(x)
+  logix <- substr(xv, 1, 1) != substr(xv, 2, 2) # true if het
+  logix[xv == mDat] <- NA # NA when missing data!
+  
+  # get counts of hets and homs
+  hets <- matrixStats::colSums2(logix, na.rm = T) # number heterozygous sites
+  homs <- matrixStats::colSums2(!logix, na.rm = T) # number homozygous sites
+  
+  # if the raw ratio is desired:
+  if(method == "ratio"){
+    ratio <- hets/homs
+    return(ratio)
+  }
+  
+  # else if hs is desired, more of a pain since we need to do a loop because we omit different loci for each individual sample
+  else if(method == "hs"){
+    ind_percent <- (hets/(hets + homs))
+    pop_means <- numeric(length(hets))
+    for(i in 1:length(pop_means)){
+      pop_means[i] <- mean(rowMeans(logix[which(!is.na(logix[,i])),, drop = FALSE], na.rm = TRUE))
+    }
+    hs <- ind_percent/pop_means
+    return(hs)
+  }
+  
+}

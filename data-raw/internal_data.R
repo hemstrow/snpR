@@ -15,8 +15,9 @@ window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
 pairwise.stats <- list(stat = "fst",
                     col_pattern = list(c("fst", "nk")))
-sample.stats <- list(stat = "het_hom_ratio",
-                  col_pattern = list(c("Het/Hom")))
+sample.stats <- list(stat = c("het_hom_ratio", "hs"),
+                  col_pattern = list("Het/Hom",
+                                     "hs"))
 pop.stats <- list(stat = "ne",
                col_pattern = list(c("LDNe")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance"),

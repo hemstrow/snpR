@@ -6,6 +6,7 @@
 ## Features
 ### Major
 * Added `calc_he()` for traditional H<sub>E</sub> = 2pq calculation. Note that this produces results *almost* identical to `calc_pi()`.
+* Added `calc_hs()` for Coltman et al (1999)'s individual heterozygosity.
 
 ### Minor
 * Renamed `calc_SFS()` and `calc_pairwise_LD_heatmap()` to lowercase for consistency.
@@ -27,3 +28,4 @@
 * Fixed a bug where running no formula but generating importance estimates would throw an error in `run_random_forest()`.
 * Fixed a bug where filtering a `snpRdata` object with `filter_snps()` such that no individuals or SNPs remained would result in an uninformative error. Added a test to check error messages here and in `susbet_snpR_data()` for this.
 * Fixed a bug in `format_snps()` to allow for BYmax and BYmin columns to get translated to BY.max and BY.min, since periods aren't allowed in snpRdata metadata columns.
+* Fixed a bug in `calc_het_hom_ratio()` complex facets would throw an error.

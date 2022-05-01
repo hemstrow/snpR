@@ -143,6 +143,7 @@ NULL
 #' }
 NULL
 
+
 #'@export
 #'@describeIn calc_single_stats \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 calc_pi <- function(x, facets = NULL){
@@ -3118,70 +3119,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   return(x)
 }
 
-#' Calculate the ratio of heterozygous/homozygous sites per individual.
-#'
-#' Calculates the ratio of heterozygotes to homozygous sites across all SNPs
-#' within each individual.
-#'
-#' @param x snpRdata object
-#' @param facets facets over which to split snps within samples. Takes only SNP
-#'   level facets. See \code{\link{Facets_in_snpR}} for details.
-#' @param complex_averages logical, default FALSE. If TRUE, will compute weighted averages for
-#'   complex (snp + sample metadata) facets. This can be quite time consuming, and so is generally
-#'   not recommended.
-#'
-#' @return A snpRdata object with heterozygote/homozygote ratios merged into the
-#'   sample.stats slot.
-#'
-#' @author William Hemstrom
-#' @export
-#'
-#' @examples
-#' # base facet
-#' x <- calc_het_hom_ratio(stickSNPs)
-#' get.snpR.stats(x, stats = "het_hom_ratio")
-#'
-#' # facet by chromosome
-#' x <- calc_het_hom_ratio(stickSNPs, "chr")
-#' get.snpR.stats(x, "chr", stats = "het_hom_ratio")
-#'
-#'
-#' 
-calc_het_hom_ratio <- function(x, facets = NULL, complex_averages = FALSE){
-  func <- function(x, mDat){
-    # make x into a logical for heterozygous
-    xv <- as.matrix(x)
-    logix <- substr(xv, 1, 1) != substr(xv, 2, 2) # true if het
-    logix[xv == mDat] <- NA # NA when missing data!
 
-    # get counts of hets and homs, then ratio
-    hets <- matrixStats::colSums2(logix, na.rm = T) # number heterozygous sites
-    homs <- matrixStats::colSums2(!logix, na.rm = T) # number homozygous sites
-    ratio <- hets/homs
-    return(ratio)
-  }
 
-  #============run for each facet================
-  if(!is.snpRdata(x)){
-    stop("x is not a snpRdata object.\n")
-  }
-  
-  # add any missing facets
-  ofacets <- facets
-  if(!complex_averages){
-    ofacets <- .check.snpR.facet.request(x, facets, "complex")
-  }
-  facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
-
-  out <- .apply.snpR.facets(x, facets, "genotypes", func, case = "per_sample", mDat = x@mDat)
-  colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
-  x <- .merge.snpR.stats(x, out, "sample.stats")
-  x <- .calc_weighted_stats(x, ofacets, "sample", "Het/Hom")
-  
-  x <- .update_calced_stats(x, facets, "ho_he_ratio")
-
-  return(x)
-}
 
 
 
@@ -3723,5 +3662,121 @@ calc_he <- function(x, facets = NULL){
   x <- .merge.snpR.stats(x, out)
   x <- .calc_weighted_stats(x, ofacets, type = "single", "he")
   x <- .update_calced_stats(x, facets, "he", "snp")
+  return(x)
+}
+
+#' Calculate individual based heterozygosity.
+#'
+#' Calculates heterozygosity within individuals across all SNPs by either a
+#' simple ratio of heterozygous to homozygous sites or standardized for
+#' differences in genotyping success according to Coltman et al (1999).
+#'
+#' @section Het:Hom ratio:
+#'
+#'   Individual heterozygosity calculated as the number of heterozygous sites
+#'   divided by the number of homozygous sites.
+#'
+#' @section \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}:
+#'
+#'   Calculates \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, the mean
+#'   heterozygosity of an individual standardized for unequal genotyping across
+#'   individuals by dividing by the mean heterozygosity across all individuals
+#'   *for the loci sequenced in that individual* (Coltman et al 1999). As a
+#'   result, the global mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}
+#'   should be roughly equal to 1, and that in `snpR` specifically the
+#'   denominator is calculated across *all individuals in all facet levels* if
+#'   facets are specified instead of within populaitons. As a result, the
+#'   weighted mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}} in a specific
+#'   population can be substantially different from one if a population is much
+#'   less heterozygous.
+#'
+#' @param x snpRdata object
+#' @param facets facets over which to split snps within samples. Takes only SNP
+#'   level facets. See \code{\link{Facets_in_snpR}} for details.
+#' @param complex_averages logical, default FALSE. If TRUE, will compute
+#'   weighted averages for complex (snp + sample metadata) facets. This can be
+#'   quite time consuming, and so is generally not recommended unless needed.
+#'
+#' @return A snpRdata object with heterozygote/homozygote ratios merged into the
+#'   sample.stats slot.
+#'   
+#' @author William Hemstrom
+#' 
+#' @aliases calc_het_hom_ratio calc_hs
+#' @name individual_heterozygosity
+#' 
+#' @references 
+#' Coltman, D. W., Pilkington, J. G., Smith, J. A., & Pemberton, J.
+#' M. (1999). Parasite-mediated selection against inbred Soay sheep in a
+#' free-living, island population. Evolution, 53(4), 1259–1267. doi:
+#' 10.1111/j.1558-5646.1999.tb04538.x
+#' 
+#' @examples
+#' # base facet
+#' x <- calc_het_hom_ratio(stickSNPs)
+#' get.snpR.stats(x, stats = "het_hom_ratio")
+#'
+#' # facet by chromosome
+#' x <- calc_het_hom_ratio(stickSNPs, "chr")
+#' get.snpR.stats(x, "chr", stats = "het_hom_ratio")
+#' 
+#' # Getting population means:
+#' x <- calc_hs(stickSNPs, "pop")
+#' get.snpR.stats(x, "pop", stats = "hs")
+#'
+NULL
+
+#'@export
+#'@describeIn individual_heterozygosity Ratio of heterozygous to homozygous sites.
+calc_het_hom_ratio <- function(x, facets = NULL, complex_averages = FALSE){
+  
+  #============run for each facet================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  # add any missing facets
+  ofacets <- facets
+  if(!complex_averages){
+    ofacets <- .check.snpR.facet.request(x, facets, "none")
+  }
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
+  
+  out <- .apply.snpR.facets(x, facets, "genotypes", .heterozygosity, case = "psamp", mDat = x@mDat, method = "ratio")
+  colnames(out)[which(colnames(out) == "stat")] <- "Het/Hom"
+  x <- .merge.snpR.stats(x, out, "sample.stats")
+  x <- .calc_weighted_stats(x, ofacets, "sample", "Het/Hom")
+  
+  x <- .update_calced_stats(x, facets, "ho_he_ratio")
+  
+  return(x)
+}
+
+#'@export
+#'@describeIn individual_heterozygosity \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, Individual Heterozygosity
+calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  
+  # add any missing facets
+  ofacets <- facets
+  if(!complex_averages){
+    ofacets <- .check.snpR.facet.request(x, facets, "none")
+  }
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
+  
+  # calculate hs
+  # workign here, need to make a sample.pf option
+  out <- .apply.snpR.facets(x, facets, "genotypes", .heterozygosity, case = "psamp", mDat = x@mDat, method = "hs")
+
+  colnames(out)[which(colnames(out) == "stat")] <- "hs"
+  x <- .merge.snpR.stats(x, out, "sample.stats")
+  x <- .calc_weighted_stats(x, ofacets, "sample", "hs")
+  x <- .update_calced_stats(x, facets, "hs")
+  
+  x <- .update_citations(x, keys = "Coltman1999", stats = "Hs", details = "Individual Heterozygosity")
+  
   return(x)
 }
