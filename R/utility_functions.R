@@ -407,7 +407,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   if(length(snps) == 0){
     stop("No SNPs remain after subsetting!\n")
   }
-  if(length(samps == 0)){
+  if(length(samps) == 0){
     stop("No samples remain after subsetting!\n")
   }
   
