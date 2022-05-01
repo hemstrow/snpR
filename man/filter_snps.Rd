@@ -15,7 +15,8 @@ filter_snps(
   maf_facets = NULL,
   hwe_facets = FALSE,
   non_poly = TRUE,
-  bi_al = TRUE
+  bi_al = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -60,6 +61,9 @@ will be removed. Note that this is mostly an internal argument and should
 rarely be used directly, since import.snpR.data and other snpRdata object
 creation functions all pass SNPs through this filter because many snpR
 functions will fail to work if there are more than two alleles at a locus.}
+
+\item{verbose}{Logical, default TRUE. If TRUE, some progress updates and
+filtering notes will be printed to the console.}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and

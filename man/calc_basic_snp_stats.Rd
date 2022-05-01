@@ -43,7 +43,7 @@ A snpRdata object with all of the described statistics merged into the
 }
 \description{
 Automatically calculate most basic statistics from snpRdata. Calculates maf,
-pi, ho, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
+pi, ho, he, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
 smoothing to produce per-window averages of all of these.
 }
 \details{

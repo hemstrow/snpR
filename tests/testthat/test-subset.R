@@ -96,3 +96,16 @@ test_that("complex facet",{
   check <- snp.meta(ids)
   expect_equal(sort(unique(check$chr)), sort(c("groupIX", "groupIV", "groupXIX")))
 })
+
+
+#========errors=========
+test_that("errors",{
+  
+  id <- .internal.data$test_snps
+  expect_error(id[0,1:10], regexp = "All requested snps must be within 1:nsnps")
+  expect_error(id[1:10,0], regexp = "All requested snps must be within 1:nsnps(x)")
+  expect_error(id[pop = "MAF"], regexp = "No sample found matching: pop -- MAF")
+  expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
+  expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
+  
+})
