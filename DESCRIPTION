@@ -86,6 +86,7 @@ Collate:
     'import_wrappers.R'
     'internals.R'
     'plotting_functions.R'
+    'pophelper_redistribution.R'
     'sequoia_interface.R'
     'sfs_functions.R'
     'smoothing_functions.R'
