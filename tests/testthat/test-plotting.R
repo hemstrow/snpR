@@ -3,12 +3,13 @@ context("plots")
 #===================plot_structure================
 test_that("structure",{
   skip_on_cran(); skip_on_ci()
-  skip_if_not_installed("pophelper")
   
   str_path <- "C://usr/bin/structure.exe"
+  clumpp_path <- "C://usr/bin/CLUMPP.exe"
   skip_if(!file.exists(str_path))
+  skip_if(!file.exists(clumpp_path))
   
-  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE)
+  p <- plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE)
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(as.character(unique(p$plot_data$K)), c("K = 2", "K = 3"))
@@ -17,16 +18,22 @@ test_that("structure",{
   expect_equal(as.character(unique(p$plot_data$pop)), c("ASP", "PAL"))
   # not internally calced, just a check for proper prep and parsing. Note that the K plot details were all checked against structure harvester
   
-  expect_error(plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE, iterations = 1),
+  expect_error(plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE, iterations = 1),
                regexp = "one or fewer iterations")
+  
+  
+  # clumpp
+  invisible(utils::capture.output(p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2, reps = 2, method = "structure", 
+                        structure_path = str_path, clumpp = TRUE, clumpp_path = clumpp_path)))
+  expect_true(ggplot2::is.ggplot(p2$plot))
+  expect_true(all(c("r_1", "r_2", "clumpp") %in% names(p2$data$K_2)))
 })
 
 
 test_that("snmf",{
   skip_on_cran(); skip_on_ci()
   skip_if_not_installed("LEA")
-  skip_if_not_installed("pophelper")
-  
+
   p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE)
   
   expect_true(ggplot2::is.ggplot(p$plot))
@@ -40,8 +47,7 @@ test_that("snmf",{
 test_that("snapclust",{
   skip_on_cran(); skip_on_ci()
   skip_if_not_installed("adegenet")
-  skip_if_not_installed("pophelper")
-  
+
   
   expect_warning(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "snapclust", clumpp = FALSE), "adegenet maintainers do not")
   
@@ -56,7 +62,7 @@ test_that("snapclust",{
 #===================plot_structure_map===================
 test_that("structure map",{
   skip_on_cran(); skip_on_ci()
-  skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps", "pophelper"))
+  skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps"))
   
   lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
   lat_long <- t(lat_long)

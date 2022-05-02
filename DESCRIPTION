@@ -60,7 +60,6 @@ Suggests:
     markdown,
     missMDA,
     mmtsne,
-    pophelper,
     ranger,
     rmarkdown,
     readr,
@@ -94,5 +93,4 @@ Collate:
     'snpRdata_methods.R'
     'stat_functions.R'
     'utility_functions.R'
-Remotes: JiscaH/sequoia, 
-    royfrancis/pophelper
+Remotes: JiscaH/sequoia

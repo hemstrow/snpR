@@ -1679,8 +1679,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   msg <- character()
   provided_qlist <- FALSE
 
-  .check.installed("pophelper", "github", "royfrancis/pophelper")
-  
   if(!is.null(facet.order)){
     if(is.null(facet)){
       msg <- c(msg, "A faceting variable must be provided if a facet.order is.\n")
@@ -1778,7 +1776,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         else{
           if(method == "structure"){
             if(!use_pop_info){
-              lev1 <- pophelper::readQStructure(lev1)[[1]]
+              lev1 <- .readQStructure(lev1)[[1]]
               good <- nrow(lev1) != length(facet)
             }
             else{
@@ -1787,7 +1785,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
             }
           }
           else{
-            lev1 <- pophelper::readQ(lev1)[[1]]
+            lev1 <- .readQ(lev1)[[1]]
             good <- nrow(lev1) == length(facet)
           }
           if(!good){
@@ -2075,7 +2073,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   run_clumpp <- function(pattern = "qopt"){
     # prepare files and run clumpp
     qfiles <- list.files(full.names = T, pattern = pattern)
-    qlist <- pophelper::readQ(qfiles)
+    qlist <- .readQ(qfiles)
     if(clumpp.opt == "large.k.greedy"){
       clumpp.opt <- 3
     }
@@ -2089,7 +2087,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
     qlist <- qlist[which(ks %in% k)]
     ## run
-    pophelper::clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
+    .clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
     dirs <- list.files(".", "pop")
     run_dir <- logical(length(dirs))
     for(i in 1:length(k)){
@@ -2103,11 +2101,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       system(basename(clumpp_path))
       setwd("..")
     }
-    pophelper::collectClumppOutput(filetype = "both", runsdir = getwd(), newdir = "pop-both")
+    .collectClumppOutput(filetype = "both", runsdir = getwd(), newdir = "pop-both")
 
 
     # import results
-    mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
+    mq <- .readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
 
     # get only the correct k values (in case this is re-running in a previous directory)
     ks <- unlist(lapply(mq, function(x) attr(x, "k")))
@@ -2272,14 +2270,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     qfiles <- list.files(full.names = T, pattern = pattern)
     if(method == "structure"){
       if(!use_pop_info){
-        qlist <- pophelper::readQStructure(qfiles)
+        qlist <- .readQStructure(qfiles)
       }
       else{
         return(parse_qfiles_usepopinfo(pattern))
       }
     }
     else{
-      qlist <- pophelper::readQ(qfiles)
+      qlist <- .readQ(qfiles)
     }
 
     # get k values
