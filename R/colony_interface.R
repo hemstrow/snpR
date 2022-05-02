@@ -9,15 +9,15 @@
 #' Requires that the COLONY program is installed locally if running within snpR.
 #' Text files exported from write_colony_input command can also be imported to
 #' non-local command line versions of COLONY (eg. on a compute cluster). Input
-#' and output files will be stored in a colony folder created in the current 
-#' working directory. The functions documented here can write input files, call 
-#' them using COLONY, and parse some parts of the results given the original 
-#' snpRdata object. Note that no facet support is currently available here due 
-#' to the complexity and number of possible input parameters that are difficult 
-#' to handle across multiple facets and facet levels. Facet support for the 
-#' basic, default operation with few additional options may be added in the 
-#' future. For now, facets can be handled during parentage and pedigree creation 
-#' in snpR using the \code{\link{run_sequoia}} function, which runs a notably 
+#' and output files will be stored in a colony folder created in the current
+#' working directory. The functions documented here can write input files, call
+#' them using COLONY, and parse some parts of the results given the original
+#' snpRdata object. Note that no facet support is currently available here due
+#' to the complexity and number of possible input parameters that are difficult
+#' to handle across multiple facets and facet levels. Facet support for the
+#' basic, default operation with few additional options may be added in the
+#' future. For now, facets can be handled during parentage and pedigree creation
+#' in snpR using the \code{\link{run_sequoia}} function, which runs a notably
 #' simpler (with respect to implementation) pedigree toolkit.
 #'
 #' These functions include many commonly used options but not all possible
@@ -127,6 +127,8 @@
 #'   \code{\link{citations}} cannot be used to fetch references.
 #' @param cleanup logical, default FALSE. If TRUE, colony files will be removed
 #'   after parsing.
+#' @param verbose Logical, default TRUE. If TRUE, colony progress will be
+#'   reported to console.
 #'
 #' @author William Hemstrom
 #' @author Melissa Jones
@@ -140,50 +142,50 @@
 #'   551–555.
 #'
 #' @examples
-#' 
-#' # A simple example for running all individuals in the snpR object as siblings 
+#'
+#' # A simple example for running all individuals in the snpR object as siblings
 #' # in colony. Not run to avoid clutter.
 #' \dontrun{
 #'   write_colony_input(x = stickSNPs, outfile = "stk.col")
 #'  }
-#'   
-#' # A more complex example requires 1) creating and adding variables to the 
+#'
+#' # A more complex example requires 1) creating and adding variables to the
 #' # stickSNPs example dataset and 2) creating subset snpR objects.
 #' a <- 2013:2015 #create a vector of possible birthyears
 #' b <- c("M", "F", "U") #create a vector of possible sexes
 #' stk <- stickSNPs
-#' sample.meta(stk)$BirthYear <- 
+#' sample.meta(stk)$BirthYear <-
 #'     sample(x = a, size = nsamps(stk), replace = TRUE) #create birthyears
 #' sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-#' sample.meta(stk)$Sex <- 
+#' sample.meta(stk)$Sex <-
 #'     sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
-#' #generating snpR objects for male and female potential parents and offspring 
+#' #generating snpR objects for male and female potential parents and offspring
 #' # (no U sexes in the potential parents in for this example)
 #' # get list of samples which are now "M" for subsetting
-#' lsir <- which(stk@sample.meta$Sex =="M" & 
+#' lsir <- which(stk@sample.meta$Sex =="M" &
 #'               stk@sample.meta$BirthYear == "2013") #list sires
-#' ldam <- which(stk@sample.meta$Sex =="F" & 
+#' ldam <- which(stk@sample.meta$Sex =="F" &
 #'               stk@sample.meta$BirthYear == "2013") #list dams
 #' loff <- which(stk@sample.meta$BirthYear %in% c("2014","2015")) #list offspr
-#' 
-#' 
+#'
+#'
 #' #creating new snpR objects for Colony formatting
-#' sir <- subset_snpR_data(x = stk, .samps = lsir) 
+#' sir <- subset_snpR_data(x = stk, .samps = lsir)
 #' dam <- subset_snpR_data(x = stk, .samps = ldam)
 #' off <- subset_snpR_data(x = stk, .samps = loff)
 #' # not run to avoid clutter
 #' \dontrun{
-#'   write_colony_input(x = off, outfile = "parents_example.col", 
+#'   write_colony_input(x = off, outfile = "parents_example.col",
 #'                      maternal_genotypes = dam, paternal_genotypes = sir)
 #' }
-#' 
+#'
 #' # running a simple model
 #' \dontrun{
 #'   ## intentionally shorter run, with a small subset of the samples
 #'   asp <- which(stickSNPs@sample.meta$pop == "ASP")
 #'   test_dat <- subset_snpR_data(stickSNPs, .samps = asp)
-#'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe", 
-#'              method = "PLS", run_length = 1) 
+#'   run_colony(x = test_dat, colony_path = "/usr/bin/colony2s.exe",
+#'              method = "PLS", run_length = 1)
 #' }
 NULL
 
@@ -351,14 +353,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
     ## then a newline before first parental genotypes
   write("\n", outfile, append = T) # adding a newline between offspring genotypes and parents
   par_nums <- numeric(2)
-  if(class(paternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(paternal_genotypes)){
 
     par_nums[1] <- ncol(paternal_genotypes) #ncol not nrow!
   }
   else{
     paternal_inclusion_prob <- 0
   }
-  if(class(maternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(maternal_genotypes)){
     par_nums[2] <- ncol(maternal_genotypes) #ncol not nrow!
   }
   else{
@@ -368,14 +370,14 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
   write(par_nums, outfile, append = T, sep = " ") # OPS and OMS sample sizes
   write("\n", outfile, append = T) #added newline after number parents and probs parents
   # paternal and maternal genotypes
-  if(class(paternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(paternal_genotypes)){
     male_colony <- format_snps(paternal_genotypes, "colony")
     utils::write.table(male_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating genotypes
   }
   write("\n", outfile, append = T) #added newline
 
-  if(class(maternal_genotypes) == "snpRdata"){
+  if(is.snpRdata(maternal_genotypes)){
     female_colony <- format_snps(maternal_genotypes, "colony")
     utils::write.table(female_colony, outfile, T, quote = F, sep = " ", row.names = F, col.names = F)
     write("\n", outfile, append = T) #added newline for separating stuff
@@ -470,7 +472,7 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
 #' Call a prepared colony infile.
 #' @describeIn colony_interface Call a colony executable to run a prepared colony input file.
 #' @export
-call_colony <- function(infile, colony_path, update_bib = FALSE){
+call_colony <- function(infile, colony_path, update_bib = FALSE, verbose = TRUE){
 
   # check system type
   sys.type <- Sys.info()["sysname"]
@@ -480,10 +482,21 @@ call_colony <- function(infile, colony_path, update_bib = FALSE){
 
   # call
   if(sys.type == "Windows"){
-    shell(call)
+    if(verbose){
+      shell(call)
+    }
+    else{
+      invisible(utils::capture.output(shell(call)))
+    }
+    
   }
   else{
-    system(call)
+    if(verbose){
+      invisible(utils::capture.output(system(call)))
+    }
+    else{
+      system(call)
+    }
   }
 
   # move results
@@ -581,7 +594,8 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
                        known_maternal_max_mismatches = 0, known_paternal_max_mismatches = 0,
                        known_maternal_sibships = NULL, known_paternal_sibships = NULL,
                        maternal_exclusions = NULL, paternal_exclusions = NULL,
-                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL, update_bib = FALSE, cleanup = FALSE){
+                       excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL, update_bib = FALSE, 
+                       cleanup = FALSE, verbose = TRUE){
   msg <- character(0)
   if(!file.exists(colony_path)){
     msg <- c(msg, "Cannot find colony executable.\n")
@@ -633,7 +647,8 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
 
   # run
   call_colony(infile = paste0("./colony/", outfile, ".dat"),
-              colony_path = colony_path, update_bib = update_bib)
+              colony_path = colony_path, 
+              update_bib = update_bib, verbose = verbose)
 
   # parse some basics
   return(parse_colony(prefix = outfile,

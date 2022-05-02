@@ -8,7 +8,7 @@ sample.meta(asdat)$cat_phenotype <- sample(c("case", "control"), ncol(asdat), re
 #=========association=========
 test_that("correct gmmat", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
   expect_snapshot_value(asgmmat$single, style = "serialize") # note, run off of gmmat, not internally calced. Thus checked, but should not change.
@@ -41,7 +41,7 @@ test_that("correct armitage", {
 
 test_that("correct odds", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   asodds <- calc_association(asdat, response = "cat_phenotype", method = "odds_ratio")
   asodds <- get.snpR.stats(asodds, stats = "association")
   expect_snapshot_value(asodds$single, style = "serialize") # Hand checked, should not change.
@@ -50,7 +50,7 @@ test_that("correct odds", {
 
 test_that("correct chisq", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   aschi <- calc_association(asdat, response = "cat_phenotype", method = "chisq")
   aschi <- get.snpR.stats(aschi, stats = "association")
   expect_snapshot_value(aschi$single, style = "serialize") # Hand checked, should not change.
@@ -60,7 +60,8 @@ test_that("correct chisq", {
 test_that("random forest",{
   skip_if_not_installed("ranger")
   # basic
-  rf <- run_random_forest(asdat, response = "phenotype", pvals = FALSE)
+  expect_warning(rf <- run_random_forest(asdat, response = "phenotype"), 
+                 regexp = "No p-values calcuated. When a quantitative")
   rfstats <- get.snpR.stats(rf$x, stats = "random_forest")
   expect_s3_class(rf$models$.base_.base$model, "ranger")
   expect_equal(dim(rf$models$.base_.base$predictions), c(nsamps(asdat), 2))
@@ -68,6 +69,12 @@ test_that("random forest",{
   expect_equal(unique(rfstats$single$subfacet), c(".base"))
   expect_equal(unique(rfstats$single$facet), c(".base"))
   expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
+  
+  # check importance
+  suppressWarnings(rf2 <- run_random_forest(asdat, response = "cat_phenotype")) # will sometimes throw an inaccurate p-values warning from ranger
+  imp <- get.snpR.stats(rf2$x, stats = "random_forest")$single
+  expect_true(all(imp$cat_phenotype_RF_importance_pvals >= 0))
+  expect_true(is.numeric(imp$cat_phenotype_RF_importance))
 
   # several facets
   rf <- run_random_forest(asdat, facets = "pop", response = "phenotype", pvals = FALSE)
@@ -83,7 +90,7 @@ test_that("random forest",{
   expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
   str <- .paste.by.facet(rfstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
-  
+
   
   
   # formula specification
@@ -149,7 +156,7 @@ test_that("genomic prediction",{
 
 test_that("genomic prediction CV",{
   skip_if_not_installed("BGLR")
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   
   set.seed(1212)
   dat <- stickSNPs

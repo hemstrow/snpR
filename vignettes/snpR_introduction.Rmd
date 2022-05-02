@@ -15,6 +15,7 @@ vignette: >
 
 ```{r include=FALSE}
 library(snpR); library(ggplot2); #library(kableExtra)
+set.seed(1241)
 ```
 
 # snpR Introduction
@@ -460,7 +461,7 @@ would give us the CLD matrix for the ASP population on group IX.
 Heatmaps are a convenient way to visualize LD data. snpR contains a plotting utility using ggplot for any calculated LD data.
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "chr.pop")
+p <- plot_pairwise_ld_heatmap(x = my.dat, facets = "chr.pop")
 
 p$plot
 ```
@@ -468,12 +469,12 @@ p$plot
 Specific plots can be requested using the snp.subfacet and sample.subfacet arguments. These will plot only the specified levels of the sample and snp-specific parts of the requested facet. For example, to plot only the ASP population:
 
 ```{r}
-p <- plot_pairwise_LD_heatmap(x = my.dat, facets = "chr.pop", sample.subfacet = "ASP")
+p <- plot_pairwise_ld_heatmap(x = my.dat, facets = "chr.pop", sample.subfacet = "ASP")
 
 p$plot
 ```
 
-Multiple levels can be requested by providing a vector of requested levels, for example c("ASP", "OPL"). See the documentation for plot_pairwise_LD_heatmap for more information!
+Multiple levels can be requested by providing a vector of requested levels, for example c("ASP", "OPL"). See the documentation for plot_pairwise_ld_heatmap for more information!
 
 ## Bootstraps
 

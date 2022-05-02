@@ -11,7 +11,8 @@ calc_smoothed_averages(
   step = NULL,
   nk = TRUE,
   stats.type = c("single", "pairwise"),
-  par = FALSE
+  par = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -35,6 +36,9 @@ statistic(s) to smooth, either "single",  "pairwise", or c("single",
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+printed to the console.}
 }
 \value{
 snpRdata object with smoothed averages for any requested statistics

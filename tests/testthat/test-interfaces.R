@@ -3,7 +3,7 @@ context("Interfaces")
 
 test_that("NeEstimator",{
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   
   ne_path <- "C://usr/bin/Ne2-1.exe"
   skip_if(!file.exists(ne_path))
@@ -19,7 +19,7 @@ test_that("NeEstimator",{
 
 test_that("colony",{
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   
   
   col_path <- "C://usr/bin/Colony/colony2s.exe"

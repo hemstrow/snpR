@@ -56,13 +56,13 @@
 #' dat <- calc_pairwise_ld(stickSNPs, c("pop.chr"))
 #'
 #' # produce plots for linkage group IX in the ASP and CLF populations.
-#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
+#' plot_pairwise_ld_heatmap(dat, c("pop.chr"), "groupIX", c("ASP", "CLF"))
 #'
 #' # produce plots for every population for linkage group IV
-#' plot_pairwise_LD_heatmap(dat, c("pop.chr"), "groupIV")
+#' plot_pairwise_ld_heatmap(dat, c("pop.chr"), "groupIV")
 #' }
 #'
-plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
+plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
                                      l.text = "CLD", viridis.option = "inferno",
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
@@ -365,128 +365,130 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   return(out)
 }
 
-#' PCA, tSNE, and umap plots from snpRdata.
+#'PCA, tSNE, and umap plots from snpRdata.
 #'
-#' Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
-#' theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-#' Approximation and Projection approach implemented in
-#' \code{\link[umap]{umap}}. Works by conversion to the "sn" format described in
-#' \code{\link{format_snps}} with interpolated missing genotypes.
+#'Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
+#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
+#'Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
+#'Works by conversion to the "sn" format described in \code{\link{format_snps}}
+#'with interpolated missing genotypes.
 #'
-#' Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
-#' coordinates are calculated using \code{\link{prcomp}}. By default, the first
-#' two principal coordinates are plotted. A PC matrix will also be returned for
-#' easy plotting of other PCs. tSNE coordinates are calculated via
-#' \code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
-#' about this method. Stated simply, tSNE attempts to compress a
-#' multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
-#' information as possible. As such, a tSNE plot can be seen as a representation
-#' of many different PC axis compressed into a single two-dimensional plot. This
-#' compression process is stochastic, and so plots will vary somewhat between
-#' runs, and multiple runs are recommended. Uniform Manifold Approximation and
-#' Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
-#' UMAP similarly attempts to reduce multi-dimensional results to a two
-#' dimensional visualization.
-#' 
-#' Note that clusters and relative positions of samples from both tSNE and UMAP 
-#' may not reliably represent the relationships present in the higher PCA
-#' dimensions from which they are created. As such, it is probably not wise to
-#' use these methods to draw conclusions about relationships. They are useful
-#' exploratory tools, however, and so are kept available here.
-#' 
+#'Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
+#'coordinates are calculated using \code{\link{prcomp}}. By default, the first
+#'two principal coordinates are plotted. A PC matrix will also be returned for
+#'easy plotting of other PCs. tSNE coordinates are calculated via
+#'\code{\link[Rtsne]{Rtsne}}, which should be consulted to for more details
+#'about this method. Stated simply, tSNE attempts to compress a
+#'multi-dimensional PCA (PCs 1:n) into fewer dimensions while retaining as much
+#'information as possible. As such, a tSNE plot can be seen as a representation
+#'of many different PC axis compressed into a single two-dimensional plot. This
+#'compression process is stochastic, and so plots will vary somewhat between
+#'runs, and multiple runs are recommended. Uniform Manifold Approximation and
+#'Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
+#'UMAP similarly attempts to reduce multi-dimensional results to a two
+#'dimensional visualization.
 #'
-#' For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
-#' consulted.
+#'Note that clusters and relative positions of samples from both tSNE and UMAP
+#'may not reliably represent the relationships present in the higher PCA
+#'dimensions from which they are created. As such, it is probably not wise to
+#'use these methods to draw conclusions about relationships. They are useful
+#'exploratory tools, however, and so are kept available here.
 #'
-#' Additional arguments to the UMAP can be also be provided. Additional
-#' information on these arguments can be found in
-#' \code{\link[umap]{umap.defaults}}.
 #'
-#' Data points for individuals can be automatically colored by any sample-level
-#' facet categories. Facets should be provided as described in
-#' \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-#' automatically plotted simultaneously.
+#'For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
+#'consulted.
 #'
-#' @param x snpRdata object.
-#' @param facets character, default NULL. Categorical sample-level metadata
-#'   variables by which to color points. Up to two different sample-specific
-#'   facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#' @param plot_type character, default "pca". c("pca", "tSNE", "umap"). Types of
-#'   plots to be produced. Options \itemize{\item{pca: } Principal Component
-#'   Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
-#'   Neighbor Embedding, which collapses dims (see argument) dimensions of
-#'   variance into two. \item{umap: } Uniform Manifold Approximation and
-#'   Projection, which collapses multiple dimensions of variance into two. } See
-#'   description for details.
-#' @param check_duplicates logical, default FALSE. Checks for any duplicated
-#'   individuals, which will cause errors. Since these rarely exist and
-#'   drastically slow down function run-time, this defaults to FALSE.
-#' @param minimum_percent_coverage numeric, default FALSE. Proportion of samples
-#'   a SNP must be sequenced in to be used in generating plots.
-#' @param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
-#'   a sample must be sequenced at in order to be used in plots.
-#' @param interpolation_method character, default "bernoulli". Interpolation
-#'   method to use for missing data. Options: \itemize{\item{bernoulli:
-#'   }{Interpolated via binomial draw for each allele against minor allele
-#'   frequency.} \item{af: }{Interpolated by inserting the expected number of
-#'   minor alleles at missing data points given loci minor allele frequencies.}
-#'   \item{iPCA: }{This an iterative PCA approach to interpolate based on
-#'   SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp
-#'   argument is not defined, the number of components used for interpolation
-#'   will be estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case,
-#'   this method is much slower than the other methods, especially for large
-#'   datasets. Setting an ncp of 2-5 generally results in reasonable
-#'   interpolations without the time constraint.}}
-#' @param dims numeric, default 2. Output dimensionality, default 2.
-#' @param initial_dims numeric, default 50. The number of dimensions retained in
-#'   the initial PCA step during tSNE.
-#' @param perplexity numeric, default FALSE. Perplexity parameter, by default
-#'   found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
-#' @param theta numeric, default 0. Theta parameter from
-#'   \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
-#' @param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
-#'   perform.
-#' @param viridis.option character, default "viridis". Viridis color scale
-#'   option to use for significance lines and SNP labels. See
-#'   \code{\link[ggplot2]{scale_gradient}} for details.
-#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
-#'   to use instead of the viridis palette.
-#' @param ncp numeric or NULL, default NULL. Number of components to consider
-#'   for iPCA sn format interpolations of missing data. If null, the optimum
-#'   number will be estimated, with the maximum specified by ncp.max. This can
-#'   be very slow.
-#' @param ncp.max numeric, default 5. Maximum number of components to check for
-#'   when determining the optimum number of components to use when interpolating
-#'   sn data using the iPCA approach.
+#'Additional arguments to the UMAP can be also be provided. Additional
+#'information on these arguments can be found in
+#'\code{\link[umap]{umap.defaults}}.
+#'
+#'Data points for individuals can be automatically colored by any sample-level
+#'facet categories. Facets should be provided as described in
+#'\code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
+#'automatically plotted simultaneously.
+#'
+#'@param x snpRdata object.
+#'@param facets character, default NULL. Categorical sample-level metadata
+#'  variables by which to color points. Up to two different sample-specific
+#'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
+#'@param plot_type character, default "pca". c("pca", "tSNE", "umap"). Types of
+#'  plots to be produced. Options \itemize{\item{pca: } Principal Component
+#'  Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
+#'  Neighbor Embedding, which collapses dims (see argument) dimensions of
+#'  variance into two. \item{umap: } Uniform Manifold Approximation and
+#'  Projection, which collapses multiple dimensions of variance into two. } See
+#'  description for details.
+#'@param check_duplicates logical, default FALSE. Checks for any duplicated
+#'  individuals, which will cause errors. Since these rarely exist and
+#'  drastically slow down function run-time, this defaults to FALSE.
+#'@param minimum_percent_coverage numeric, default FALSE. Proportion of samples
+#'  a SNP must be sequenced in to be used in generating plots.
+#'@param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
+#'  a sample must be sequenced at in order to be used in plots.
+#'@param interpolation_method character, default "bernoulli". Interpolation
+#'  method to use for missing data. Options: \itemize{\item{bernoulli:
+#'  }{Interpolated via binomial draw for each allele against minor allele
+#'  frequency.} \item{af: }{Interpolated by inserting the expected number of
+#'  minor alleles at missing data points given loci minor allele frequencies.}
+#'  \item{iPCA: }{This an iterative PCA approach to interpolate based on SNP/SNP
+#'  covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
+#'  defined, the number of components used for interpolation will be estimated
+#'  using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+#'  slower than the other methods, especially for large datasets. Setting an ncp
+#'  of 2-5 generally results in reasonable interpolations without the time
+#'  constraint.}}
+#'@param dims numeric, default 2. Output dimensionality, default 2.
+#'@param initial_dims numeric, default 50. The number of dimensions retained in
+#'  the initial PCA step during tSNE.
+#'@param perplexity numeric, default FALSE. Perplexity parameter, by default
+#'  found by \code{\link[mmtsne]{hbeta}}, with beta = 1.
+#'@param theta numeric, default 0. Theta parameter from
+#'  \code{\link[Rtsne]{Rtsne}}. Default an exhaustive search.
+#'@param iter numeric, default 1000. Number of tSNE iterations/umap epochs to
+#'  perform.
+#'@param viridis.option character, default "viridis". Viridis color scale option
+#'  to use for significance lines and SNP labels. See
+#'  \code{\link[ggplot2]{scale_gradient}} for details.
+#'@param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'  to use instead of the viridis palette.
+#'@param ncp numeric or NULL, default NULL. Number of components to consider for
+#'  iPCA sn format interpolations of missing data. If null, the optimum number
+#'  will be estimated, with the maximum specified by ncp.max. This can be very
+#'  slow.
+#'@param ncp.max numeric, default 5. Maximum number of components to check for
+#'  when determining the optimum number of components to use when interpolating
+#'  sn data using the iPCA approach.
 #'@param update_bib character or FALSE, default FALSE. If a file path to an
-#'   existing .bib library or to a valid path for a new one, will update or
-#'   create a .bib file including any new citations for methods used. Useful
-#'   given that this function does not return a snpRdata object, so a
-#'   \code{\link{citations}} cannot be used to fetch references.
-#' @param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
-#'   \code{\link[umap]{umap}}.
+#'  existing .bib library or to a valid path for a new one, will update or
+#'  create a .bib file including any new citations for methods used. Useful
+#'  given that this function does not return a snpRdata object, so a
+#'  \code{\link{citations}} cannot be used to fetch references.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates may be
+#'  reported.
+#'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
+#'  \code{\link[umap]{umap}}.
 #'
-#' @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
-#'   plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
-#'   these two lists may contain one, two, or three objects, one for each PCA,
-#'   tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
-#'   respectively.
+#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
+#'  plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
+#'  these two lists may contain one, two, or three objects, one for each PCA,
+#'  tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+#'  respectively.
 #'
-#' @author William Hemstrom
-#' @author Matt Thorstensen
+#'@author William Hemstrom
+#'@author Matt Thorstensen
 #'
-#' @references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
-#'   Embedding using a Barnes-Hut Implementation, URL:
-#'   \url{https://github.com/jkrijthe/Rtsne}.
-#' @references Van Der Maaten, L. & Hinton, G. (2008) Visualizing
-#'   high-dimensional data using t-SNE. journal of machine learning research.
-#'   \emph{Journal of Machine Learning Research}.
-#' @references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
-#'   and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#'@references Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
+#'  Embedding using a Barnes-Hut Implementation, URL:
+#'  \url{https://github.com/jkrijthe/Rtsne}.
+#'@references Van Der Maaten, L. & Hinton, G. (2008) Visualizing
+#'  high-dimensional data using t-SNE. journal of machine learning research.
+#'  \emph{Journal of Machine Learning Research}.
+#'@references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
+#'  and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 #'
-#' @seealso \code{\link[mmtsne]{mmtsne}}
+#'@seealso \code{\link[mmtsne]{mmtsne}}
 #'
-#' @export
+#'@export
 #'
 #' @examples
 #' # plot colored by population
@@ -497,7 +499,8 @@ plot_pairwise_LD_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
                           minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
-                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, update_bib = FALSE, ...){
+                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, 
+                          update_bib = FALSE, verbose = FALSE,...){
 
   #=============sanity checks============
   msg <- character(0)
@@ -611,11 +614,11 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
 
   if(check_duplicates){
-    cat("Checking for duplicates...\n")
+    if(verbose){cat("Checking for duplicates...\n")}
     sn <- as.data.table(t(sn))
     dups <- which(duplicated(sn) | duplicated(sn, fromLast=TRUE))
     if(length(dups) > 0){
-      cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")
+      if(verbose){cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")}
       sn <- sn[-dups,]
       meta <- meta[-dups,]
     }
@@ -637,7 +640,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     warning("Few remaining SNPs after filtering! Remaining SNPs:", rm.snps, ".\n")
   }
 
-  cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")
+  if(verbose){cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")}
   sn <- t(sn)
 
   #=============prepare plot data=============
@@ -645,7 +648,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   names(plot_dats) <- plot_type
 
   if("pca" %in% plot_type){
-    cat("Preparing pca...\n")
+    if(verbose){cat("Preparing pca...\n")}
     pca_r <- stats::prcomp(as.matrix(sn))
     pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
     plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
@@ -653,22 +656,22 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   if("tsne" %in% plot_type){
     #get perplexity if not provided
     if(perplexity == FALSE){
-      cat("Estimating perplexity...\n")
+      if(verbose){cat("Estimating perplexity...\n")}
       perp <- mmtsne::hbeta(sn, beta = 1)
       perplexity <- perp$H
     }
 
     #run the tSNE
-    cat("Running tSNE...\n")
+    if(verbose){cat("Running tSNE...\n")}
     tsne.out <- Rtsne::Rtsne(X = sn, dims = dims, initial_dims = initial_dims, perplexity = perplexity,
                              theta = theta, max_iter = iter, check_duplicates = FALSE,
-                             verbose=TRUE, ...)
+                             verbose=verbose, ...)
     colnames(tsne.out$Y) <- paste0("PC", 1:ncol(tsne.out$Y))
     plot_dats$tsne <- cbind(meta, as.data.frame(tsne.out$Y))
   }
   if("umap" %in% plot_type){
-    cat("Preparing umap...\n")
-    umap_r <- umap::umap(as.matrix(sn), n_epochs = iter, verbose = T, ...)
+    if(verbose){cat("Preparing umap...\n")}
+    umap_r <- umap::umap(as.matrix(sn), n_epochs = iter, verbose = verbose, ...)
     colnames(umap_r$layout) <- paste0("PC", 1:ncol(umap_r$layout))
     plot_dats$umap <- cbind(meta, as.data.frame(umap_r$layout))
   }
@@ -862,6 +865,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 #'   above those respetive values will be highlighted. If a numeric vector, SNPs
 #'   corresponding to vector entries will be highlighted. See details.
+#' @param highlight_style character, default "label". Highlighting options:
+#'   \itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
+#'   (word or hex) to color points by.}}
 #' @param viridis.option character, default "plasma". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
 #'   \code{\link[ggplot2]{scale_gradient}} for details.
@@ -872,6 +878,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   c(strip.title, axis, axis.ticks).
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
+#' @param chr_order character, default NULL. If provided, an ordered vector of
+#'   chromosome/scaffold/etc names by which to sort ouput.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
 #'   x-axis chromosome names will be abbreviated using 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
@@ -935,17 +943,20 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
+                           highlight_style = "label",
                            sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3"),
+                           chr_order = NULL,
                            abbreviate_labels = FALSE){
 
   #=============sanity checks==============================
   msg <- character()
-  pkg.check <- .check.installed("ggrepel")
-  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
-  pkg.check <- .check.installed("viridis")
-  if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+  if(highlight_style == "label" & !isFALSE(highlight)){
+    pkg.check <- .check.installed("ggrepel")
+  }
+  
+  .check.installed("viridis")
   
   if(length(msg) > 0){
     stop(msg, collapse = "\n")
@@ -953,7 +964,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   #=============grab the desired stats=====================
   #====if a snpRdata object========
-  if(class(x) == "snpRdata"){
+  if(is.snpRdata(x)){
     if(window == FALSE){
       facets <- .check.snpR.facet.request(x, facets)
     }
@@ -1048,6 +1059,10 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stats[,chr] <- as.character(stats[,chr])
   }
 
+  if(!is.null(chr_order)){
+    stats[,chr] <- factor(stats[,chr], levels = chr_order)
+  }
+  
   # get adjusted x axis positions and figure out where chromsome tick marks should be placed.
   chr.info <- tapply(stats[,bp], stats[,chr], max) # chromosome lengths
   chr.centers <- (chr.info - tapply(stats[,bp], stats[,chr], min))/2 # chromosome centers
@@ -1164,9 +1179,16 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   # highlight
   if(do.highlight){
     highlight.label <- NULL
-    p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
-                                       mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
-                                       force = 1.3)
+    if(highlight_style == "label"){
+      p <- p + ggrepel::geom_label_repel(data = stats[which(stats$highlight == 1),],
+                                         mapping = ggplot2::aes(label = highlight.label), color = add.palette[3],
+                                         force = 1.3)
+    }
+    else{
+      p <- p + ggplot2::geom_point(data = stats[which(stats$highlight == 1),],
+                                         color = highlight_style)
+    }
+    
   }
 
   # abbreviate
@@ -1235,7 +1257,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
   .o <- .p <- .e <- NULL
   
   # snpRdata
-  if(class(x) == "snpRdata"){
+  if(is.snpRdata(x)){
     facets <- .check.snpR.facet.request(x, facets)
     
     if(plot_var %in% colnames(x@stats)){
@@ -2894,8 +2916,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' the SFS construction methods implemented in the program \emph{dadi} (see
 #' Gutenkunst et al (2009)).
 #' 
-#'
-#' @param sfs matrix or numeric. Either a 2d site frequency spectra stored in a
+#' @param x snpRdata object, matrix, or numeric vector. If a snpRdata object, 
+#'   The SNP metadata should contain "ref" and "anc" data. 
+#'   If it does not, the major allele will be assumed to be the ancestral. 
+#'   Alternatively, either a 2d site frequency spectra stored in a
 #'   matrix, with an additional "pops" attribute containing population IDs, such
 #'   as c("POP1", "POP2"), where the first pop is the matrix columns and the
 #'   second is the matrix rows, or a 1d site frequency spectra stored as a
@@ -2906,7 +2930,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
 #' @param log logical, default TRUE. If TRUE, the number of SNPs in each SFS
 #'   cell is log transformed.
-#' @param x snpRdata object. The SNP metadata must contain "ref" and "anc" data.
 #' @param facet character, default NULL. Name of the sample metadata column
 #'   which specifies the source population of individuals. For now, allows only
 #'   a single simple facet (one column).If NULL, runs the entire dataset.
@@ -2943,27 +2966,36 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' 
 #' # via a sfs matrix, useful for pulling in spectra from elsewhere
 #' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(sfs)
 #' }
-plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "inferno", log = TRUE,
+plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = TRUE,
                      pops = NULL, projection = NULL, fold = TRUE, update_bib = FALSE){
   p1 <- p2 <- N <- NULL
-  
-  
+
+  #==================sanity checks=============
+  msg <- character()
   if(is.snpRdata(x)){
-    sfs <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold, update_bib = update_bib)
+    x <- calc_sfs(x, facet, pops = pops, projection = projection, fold = fold, update_bib = update_bib)
+  }
+  else{
+    msg <- .sanity_check_sfs(x, 1:2)
   }
   
-  # add column names, row names, and melt
-  pops <- attr(sfs, "pop")
-  sfs <- as.data.frame(sfs)
-  if(length(pops) == 1){
-    sfs <- as.data.frame(t(sfs))
+  if(length(msg) > 0){
+    stop(msg)
   }
-  colnames(sfs) <- 0:(ncol(sfs) - 1)
-  sfs$count <- 0:(nrow(sfs) - 1)
-  sfs[1,1] <- NA # mask the first entry
-  msfs <- reshape2::melt(sfs, id.vars = "count")
+  #=======================================================
+
+  # add column names, row names, and melt
+  pops <- attr(x, "pop")
+  x <- as.data.frame(x)
+  if(length(pops) == 1){
+    x <- as.data.frame(t(x))
+  }
+  colnames(x) <- 0:(ncol(x) - 1)
+  x$count <- 0:(nrow(x) - 1)
+  x[1,1] <- NA # mask the first entry
+  msfs <- reshape2::melt(x, id.vars = "count")
   colnames(msfs) <- c("p1", "p2", "N")
   msfs$p1 <- as.integer(as.character(msfs$p1))
   msfs$p2 <- as.integer(as.character(msfs$p2))
@@ -2972,7 +3004,7 @@ plot_sfs <- function(x = NULL, facet = NULL, sfs = NULL, viridis.option = "infer
 
   # plot
   ## 2D
-  if(nrow(sfs) > 1){
+  if(nrow(x) > 1){
     if(log){
       p <- ggplot2::ggplot(msfs, ggplot2::aes(x = p1, y = p2, fill = log10(N), color = log10(N)))
     }
@@ -3577,6 +3609,11 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   else{
     details <- c(details, "tree construction")
   }
+  
+  
+  keys <- c(keys, "Yu2017")
+  stats <- c(stats, "tree")
+  details <- c(details, "tree plotting")
   
   if(length(keys) > 0){
     .yell_citation(keys, stats, details, update_bib)

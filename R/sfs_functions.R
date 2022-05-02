@@ -114,7 +114,6 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
   
   
   if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
-    warning("ref and anc columns are suggested in snp metadata. See documentation for details. The major allele will be subsituted for the ancestral state.\n")
     x@snp.meta$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
     x@snp.meta$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
 
@@ -427,10 +426,9 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
 #' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
 #' details.
 #'
-#' @param x snpRdata object, default NULL. If provided, snpRdata from which to
-#'   calculate a SFS. Ignored if a sfs is provided directly.
-#' @param sfs numeric matrix. A 2d site frequency spectra stored in a matrix,
-#'   with an additional "pops" attribute containing population IDs, such as
+#' @param x snpRdata object or matrix, default NULL. A snpRdata from which to
+#'   calculate a SFS. Alternatively, a 2d site frequency spectra stored in a matrix,
+#'   with an additional "pop" or "pops" attribute containing population IDs, such as
 #'   c("POP1", "POP2"), where the first pop corresponds to matrix columns and
 #'   the second to matrix rows. These objects can be produced from a dadi input
 #'   file using \code{\link{make_SFS}}.
@@ -460,58 +458,54 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
 #'
 #' # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
 #' sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
-#' calc_directionality(sfs = sfs)
+#' calc_directionality(sfs)
 #' }
-calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL, projection = NULL, update_bib = FALSE){
+calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL, update_bib = FALSE){
   #==========sanity checks=============
   msg <- character(0)
-  if(!is.null(x)){
-    if(!is.null(sfs)){
-      x <- NULL
-    }
-    else{
-      if(!is.snpRdata(x)){
-        msg <- c(msg, "x is not a snpRdata object.\n")
-      }
-      if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
+  
+  if(is.snpRdata(x)){
+    
+    if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
         msg <- c(msg, "facet, pops, and projection arguments must all be provided if an sfs is not.")
-      }
-      if(!is.null(pops)){
-        if(length(pops) != 2){
-          msg <- c(msg, "Exactly two pops must be listed.\n")
-        }
+    }
+    
+    if(!is.null(pops)){
+      if(length(pops) != 2){
+        msg <- c(msg, "Exactly two pops must be listed.\n")
       }
     }
+    
+    x <- calc_sfs(x, facet, pops, projection, fold = F)
   }
+  
   else{
-    if(is.null(sfs)){
-      msg <- c("A SFS must be provided if snpRdata is not.\n")
+    msg <- c(msg, .sanity_check_sfs(x, 2))
+    if(any(is.na(x))){
+      msg <- c(msg, "NAs found in provided sfs. This most likely means that the SFS is folded, which is not permitted for directionality calculation.\n")
     }
   }
   
   if(length(msg) > 0){
     stop(msg)
   }
-  #===========prep if a SFS not provided===========
-  if(is.null(sfs)){
-    sfs <- calc_sfs(x, facet, pops, projection, fold = F)
-  }
+  #===========calc direcitonality===========
   
   # flip everthing, since i should be pop 1 and j should be pop 2, and the
   # matrix is set up so that rows are pop 1 and columns are pop 2. Transposing fixes it.
-  pops <- attr(sfs, "pop")
-  sfs <- t(sfs)
+  pops <- attr(x, "pop")
+  x <- t(x)
 
   # normalize, exluding fixed sites
-  sfs <- sfs[-1,-1] # remove fixed sites
-  sfs <- sfs/sum(sfs)
+  x <- x[-1,-1] # remove fixed sites
+  x <- x/sum(x)
 
   # get all of the allele frequencies in each cell
-  freqs.i <- (1:(nrow(sfs)))/(nrow(sfs))
-  freqs.j <- (1:(ncol(sfs)))/(ncol(sfs))
+  freqs.i <- (1:(nrow(x)))/(nrow(x))
+  freqs.j <- (1:(ncol(x)))/(ncol(x))
 
   # do the math, this is equ 1b (i - j times sfs)
-  directionality <- sum(outer(freqs.i, freqs.j, "-") * sfs)
+  directionality <- sum(outer(freqs.i, freqs.j, "-") * x)
   if(directionality > 0){
     attr(directionality, "direction") <- paste0(pops[1], "->", pops[2])
   }
@@ -523,4 +517,52 @@ calc_directionality <- function(x = NULL, sfs = NULL, facet = NULL, pops = NULL,
   .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
 
   return(directionality)
+}
+
+
+.sanity_check_sfs <- function(x, allowed_dimensions = c(1, 2)){
+  msg <- character(0)
+  if("pops" %in% names(attributes(x))){
+    attr(x, "pop") <- attr(x, "pops")
+    attr(x, "pops") <- NULL
+  }
+  
+  dims <- length(dim(x))
+  if(dims == 0){dims <- 1}
+  if(!dims %in% allowed_dimensions){
+    msg <- c(msg, paste0("SFS dimensionality ", dims, " not allowed for this function. Allowed dimensionalities: ", paste0(allowed_dimensions, collapse = ", ")))
+    return(msg)
+  }
+  
+  if(is.matrix(x)){
+    if("pop" %in% names(attributes(x))){
+      if(length(attr(x, "pop")) == 2){
+        sfs <- x
+      }
+      else{
+        msg <- c(msg, "2D SFS pop attribute must be length 2.\n")
+      }
+    }
+    else{
+      msg <- c(msg, "2D SFS must have a pop attribute with length 2.\n")
+    }
+  }
+  else if(is.numeric(x)){
+    if("pop" %in% names(attributes(x))){
+      if(length(attr(x, "pop")) == 1){
+        sfs <- x
+      }
+      else{
+        msg <- c(msg, "1D SFS pop attribute must be length 1.\n")
+      }
+    }
+    else{
+      msg <- c(msg, "1D SFS must have a pop attribute with length 1.\n")
+    }
+  }
+  else{
+    msg <- c(msg, "x must be either a snpRdata object, a matrix containing a 2D SFS, or a numeric vector containing a 1D sfs.\n")
+  }
+  
+  return(msg)
 }

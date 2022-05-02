@@ -14,6 +14,7 @@ run_genomic_prediction(
   model = "BayesB",
   interpolate = "bernoulli",
   par = FALSE,
+  verbose = FALSE,
   ...
 )
 }
@@ -45,6 +46,9 @@ minor allele. \item{af: } insertion of the average allele frequency}.}
 \item{par}{numeric or FALSE, default FALSE. If a number specifies the number
 of processing cores to use \emph{across facet levels}. Not used if only one
 facet level.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+printed to the console.}
 
 \item{...}{additional arguments passed to \code{\link[BGLR]{BGLR}}}
 }

@@ -7,7 +7,6 @@
 plot_sfs(
   x = NULL,
   facet = NULL,
-  sfs = NULL,
   viridis.option = "inferno",
   log = TRUE,
   pops = NULL,
@@ -17,19 +16,20 @@ plot_sfs(
 )
 }
 \arguments{
-\item{x}{snpRdata object. The SNP metadata must contain "ref" and "anc" data.}
-
-\item{facet}{character, default NULL. Name of the sample metadata column
-which specifies the source population of individuals. For now, allows only
-a single simple facet (one column).If NULL, runs the entire dataset.}
-
-\item{sfs}{matrix or numeric. Either a 2d site frequency spectra stored in a
+\item{x}{snpRdata object, matrix, or numeric vector. If a snpRdata object, 
+The SNP metadata should contain "ref" and "anc" data. 
+If it does not, the major allele will be assumed to be the ancestral. 
+Alternatively, either a 2d site frequency spectra stored in a
 matrix, with an additional "pops" attribute containing population IDs, such
 as c("POP1", "POP2"), where the first pop is the matrix columns and the
 second is the matrix rows, or a 1d site frequency spectra stored as a
 numeric vector with a similar pops attribute giving the population name.
 These objects can be produced from a dadi input file using
 \code{\link{make_SFS}}.}
+
+\item{facet}{character, default NULL. Name of the sample metadata column
+which specifies the source population of individuals. For now, allows only
+a single simple facet (one column).If NULL, runs the entire dataset.}
 
 \item{viridis.option}{character, default "inferno". Viridis color scale
 option. See \code{\link[ggplot2]{scale_gradient}} for details.}
@@ -91,6 +91,6 @@ plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40
 
 # via a sfs matrix, useful for pulling in spectra from elsewhere
 sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
-plot_sfs(sfs = sfs)
+plot_sfs(sfs)
 }
 }

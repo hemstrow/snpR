@@ -90,7 +90,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       # try to eval text in two ways: once for a basic string, once for code the evaluates to a string
       .res1 <- try(list(eval(parse(text = .argnames[.is.facet][.candidate_facets]))), silent = TRUE)
 
-      if(class(.res1) == "try-error"){
+      if(methods::is(.res1, "try-error")){
         .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")"))))
       }
       else{
@@ -173,7 +173,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     if(!all(.snps == as.integer(.snps))){
       msg <- c(msg, ".snps/i must only contain integers.\n")
     }
-    if(max(.snps) > nrow(x)){
+    if(max(.snps) > nrow(x) | min(.snps) == 0){
       msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
     }
   }
@@ -185,8 +185,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     if(!all(.samps == as.integer(.samps))){
       msg <- c(msg, ".samps/j must only contain integers.\n")
     }
-    if(max(.samps) > ncol(x)){
-      msg <- c(msg, "All requested snps must be within 1:nsnps(x).\n")
+    if(max(.samps) > ncol(x) | min(.samps) == 0){
+      msg <- c(msg, "All requested samples must be within 1:nsnps(x).\n")
     }
   }
 
@@ -292,6 +292,16 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   }
   
   #===============return================
+
+  # check that we still have data
+  if(length(.snps) == 0){
+    stop("No SNPs remain after subsetting!\n")
+  }
+  if(length(.samps) == 0){
+    stop("No samples remain after subsetting!\n")
+  }
+  
+  
   nsampm <- sample.meta(x)[.samps,]
 
   nsnpm <- snp.meta(x)[.snps,]
@@ -321,7 +331,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   if(length(msg) > 0){
     stop(msg)
   }
-  
+
   #=========subfunctions=========
   fix.for.one.snp <- function(x){
     if(nrow(x) == 1){
@@ -393,6 +403,14 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   snps <- snps[order(x@snp.meta$.snp.id[snps])]
   samps <- samps[order(x@sample.meta$.sample.id[samps])]
 
+  # check that we still have data
+  if(length(snps) == 0){
+    stop("No SNPs remain after subsetting!\n")
+  }
+  if(length(samps) == 0){
+    stop("No samples remain after subsetting!\n")
+  }
+  
   # subset
   if(!identical(samps, 1:ncol(x))){
     dat <- genotypes(x)[snps, samps]
@@ -415,7 +433,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     return(dat)
   }
   else{
-    if(length(x@sn) != 0){
+    if(!is.null(x@sn$sn)){
       sn <- x@sn$sn[,-c(1:(ncol(x@snp.meta) - 1))]
       sn <- sn[snps,]
       sn <- cbind(snp.meta(x)[snps,-ncol(x@snp.meta)], sn)
@@ -542,6 +560,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  rarely be used directly, since import.snpR.data and other snpRdata object
 #'  creation functions all pass SNPs through this filter because many snpR
 #'  functions will fail to work if there are more than two alleles at a locus.
+#'@param verbose Logical, default TRUE. If TRUE, some progress updates and
+#'  filtering notes will be printed to the console.
 #'
 #'@return A data.frame in the same format as the input, with SNPs and
 #'  individuals not passing the filters removed.
@@ -564,7 +584,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = FALSE,
                         min_loci = FALSE, re_run = "partial", maf_facets = NULL,
                         hwe_facets = FALSE,
-                        non_poly = TRUE, bi_al = TRUE){
+                        non_poly = TRUE, bi_al = TRUE,
+                        verbose = TRUE){
 
   #==============do sanity checks====================
   if(maf){
@@ -624,7 +645,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
   if(re_run != FALSE){
     if(re_run != "partial" & re_run != "full"){
-      cat("re_run must be set to partial or full if not FALSE.\n")
+      if(verbose){cat("re_run must be set to partial or full if not FALSE.\n")}
     }
   }
 
@@ -634,7 +655,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
     # add any needed facets...
     miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
     if(length(miss.facets) != 0){
-      cat("Adding missing facets...\n")
+      if(verbose){cat("Adding missing facets...\n")}
       # need to fix any multivariate facets (those with a .)
       x <- .add.facets.snpR.data(x, miss.facets)
     }
@@ -649,7 +670,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
   }
 
   #==============set up, get values used later, clean up data a bit,define subfunctions==========
-  cat("Initializing...\n")
+  if(verbose){cat("Initializing...\n")}
 
   #get headers
   headers <- x@snp.meta
@@ -685,34 +706,34 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       bimat <- ifelse(amat, TRUE, FALSE)
 
       if(bi_al){
-        cat("Filtering non-biallelic loci...\n")
+        if(verbose){cat("Filtering non-biallelic loci...\n")}
         bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
-        cat(paste0("\t", sum(bi), " bad loci\n"))
+        if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
         vio.snps[which(bi)] <- T
       }
 
       if(non_poly){
-        cat("Filtering non_polymorphic loci...\n")
+        if(verbose){cat("Filtering non_polymorphic loci...\n")}
         np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
-        cat(paste0("\t", sum(np), " bad loci\n"))
+        if(verbose){cat(paste0("\t", sum(np), " bad loci\n"))}
         vio.snps[which(np)] <- T
       }
     }
 
     #========min inds=======
     if(min_ind){
-      cat("Filtering loci sequenced in few individuals...\n")
+      if(verbose){cat("Filtering loci sequenced in few individuals...\n")}
       mi <- wmat[,colnames(wmat) == mDat]
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
       vio.snps[which(mi)] <- T
-      cat(paste0("\t", sum(mi), " bad loci\n"))
+      if(verbose){cat(paste0("\t", sum(mi), " bad loci\n"))}
     }
 
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
     if(maf){
       #if not filtering with multiple pops
       if(is.null(maf_facets)){
-        cat("Filtering low minor allele frequencies, no pops...\n")
+        if(verbose){cat("Filtering low minor allele frequencies, no pops...\n")}
 
         # check to see if we need to calculate mafs:
         if(any(colnames(x@stats) == "maf")){ # check that mafs have been calculated, the all facet must exist
@@ -730,13 +751,13 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
         mafs <- mafs < maf #less than required, set to true and reject.
         mafs[is.na(mafs)] <- TRUE
-        cat(paste0("\t", sum(mafs), " bad loci\n"))
+        if(verbose){cat(paste0("\t", sum(mafs), " bad loci\n"))}
 
 
         vio.snps[which(mafs)] <- T
       }
       else{
-        cat("Filtering low minor allele frequencies by facet.\n")
+        if(verbose){cat("Filtering low minor allele frequencies by facet.\n")}
         # pmafs <- logical(nrow(x))
 
         # see if we need to calculate mafs
@@ -778,14 +799,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
         # check vio and report
         maf.vio <- which(cmafs$maf == (1 + length(unique(mafs$subfacet))))
-        cat(paste0("\t", length(maf.vio), " bad loci\n"))
+        if(verbose){cat(paste0("\t", length(maf.vio), " bad loci\n"))}
         vio.snps[maf.vio] <- T
       }
     }
 
     #========hf_hets. Should only run if bi_al = TRUE.==========
     if(hf_hets){
-      cat("Filtering high frequency heterozygote loci...\n")
+      if(verbose){cat("Filtering high frequency heterozygote loci...\n")}
 
       # get heterozygote frequency
       hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
@@ -793,13 +814,13 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
-      cat(paste0("\t", sum(het_f), " bad loci\n"))
+      if(verbose){cat(paste0("\t", sum(het_f), " bad loci\n"))}
       vio.snps[which(het_f)] <- T
     }
 
     #========hwe violation======================================
     if(hwe){
-      cat("Filtering loci out of hwe...\n")
+      if(verbose){cat("Filtering loci out of hwe...\n")}
       
       # no facets, easy
       if(isFALSE(hwe_facets)){
@@ -809,7 +830,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         }
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
         phwe <- which(phwe < hwe)
-        cat("\t", length(phwe), " bad loci\n")
+        if(verbose){cat("\t", length(phwe), " bad loci\n")}
         vio.snps[phwe] <- T
         
       }
@@ -831,7 +852,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         bad.loci <- stats::na.omit(bad.loci)
         bad.loci <- bad.loci[which(bad.loci$value > 0),]
         bad.loci <- which(snp.meta(x)$.snp.id %in% bad.loci$Var1)
-        cat("\t", length(bad.loci), " bad loci\n")
+        if(verbose){cat("\t", length(bad.loci), " bad loci\n")}
         
         vio.snps[bad.loci] <- TRUE
       }
@@ -839,7 +860,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
     #==========remove violating loci==================
     if(any(vio.snps)){
-
+      if(sum(vio.snps) == nrow(x)){
+        stop("No loci passed filters.\n")
+      }
       x <- x[-which(vio.snps),]
     }
     return(x)
@@ -847,13 +870,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
   #funciton to filter by individuals.
   min_loci_filt <- function(){
-    cat("Filtering out individuals sequenced in few kept loci...\n")
+    if(verbose){cat("Filtering out individuals sequenced in few kept loci...\n")}
     mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
     rejects <- which(mcounts/nrow(x) < min_loci)
     if(length(rejects) > 0){
+      if(length(rejects) == ncol(x)){
+        stop("No individuals passed filters.\n")
+      }
+      
       old.facets <- x@facets
       x <- x[,-rejects]
-      cat("Re-calculating and adding facets.\n")
+      if(verbose){cat("Re-calculating and adding facets.\n")}
       if(any(old.facets != ".base")){
         x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
@@ -865,7 +892,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 
   #==========================call the functions as requested.==================
   if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-    cat("Filtering loci. Starting loci:", nrow(x), "\n")
+    if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
 
     # run the filter
     x <- filt_by_loci()
@@ -874,22 +901,22 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       stop("No loci remain after filters.")
     }
 
-    cat("\tEnding loci:", nrow(x), "\n")
+    if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
   }
 
   # run the minimum sequenced loci filter
   if(min_loci){
-    cat("Filtering individuals. Starting individuals:", ncol(x), "\n")
+    if(verbose){cat("Filtering individuals. Starting individuals:", ncol(x), "\n")}
     x <- min_loci_filt()
     if(length(x$rejects) == 0){
-      cat("No individuals removed.\n")
+      if(verbose){cat("No individuals removed.\n")}
       x <- x$x
     }
     else{
       x <- x$x
-      cat("\tEnding individuals:", ncol(x), "\n")
+      if(verbose){cat("\tEnding individuals:", ncol(x), "\n")}
       if(re_run != FALSE){
-        cat("Re-filtering loci...\n")
+        if(verbose){cat("Re-filtering loci...\n")}
 
         if(re_run == "partial"){
           maf <- FALSE
@@ -900,10 +927,10 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
           x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys ect.
-          cat("\tFinal loci count:", nrow(x), "\n")
+          if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
         }
         else{
-          cat("\tNo variables to re-fitler.\n")
+          if(verbose){cat("\tNo variables to re-fitler.\n")}
         }
       }
     }
@@ -1063,6 +1090,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'  position information, for VCF output.
 #'@param phenotype character, default "phenotype". Optional name of column
 #'  containing phenotype information, for plink! output.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'  reported.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1155,7 +1184,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
-                        phenotype = "phenotype"){
+                        phenotype = "phenotype", verbose = FALSE){
+  if(!isTRUE(verbose)){
+    cat <- function(...){}
+  }
 
   #======================sanity checks================
   if(!is.null(input_format)){
@@ -2097,7 +2129,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       #for lifehistory data input needs id, sex, year born
       if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
-        if(all(c("BY.min", "BY.max") %in% colnames(sample.meta(x)))){
+        if(all(c("BYmin", "BYmax") %in% colnames(sample.meta(x)))){
           warning("BirthYear, BY.max, and BY.min columns all found in sample metadata. Defaulting to use BirthYear.\n")
         }
         ID <- x@sample.meta$ID
@@ -2110,18 +2142,18 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                               stringsAsFactors = F)
         
       }
-      else if(all(c("BY.min", "BY.max", "ID", "Sex") %in% colnames(sample.meta(x)))){
+      else if(all(c("BYmin", "BYmax", "ID", "Sex") %in% colnames(sample.meta(x)))){
         ID <- x@sample.meta$ID
         sex <- fix.sex.sequoia(x)
         
         #ACTUALLY MAKE THE TABLE
         lhtable <- data.frame(ID=ID,
                               Sex = as.numeric(sex),
-                              BY.min = sample.meta(x)$BY.min,
-                              BY.max = sample.meta(x)$BY.max,
+                              BY.min = sample.meta(x)$BYmin,
+                              BY.max = sample.meta(x)$BYmax,
                               stringsAsFactors = F)
       }
-      else{stop("Needs 'ID' and 'Sex' and either 'BirthYear' or 'BY.min' and 'BY.max' columns in sample metadata. \n")}
+      else{stop("Needs 'ID' and 'Sex' and either 'BirthYear' or 'BYmin' and 'BYmax' columns in sample metadata. \n")}
       
       rownames(rdata) <- ID
       rdata = list(dat=rdata, lh=lhtable)
@@ -2265,8 +2297,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       llist[length(llist)] <- paste0("SNP_", ncol(rdata))
 
       # write output
-      cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
-      cat(llist, "\nPOP\n", file = outfile, append = T) 
+      base::cat(paste0(unlist(.split.facet(outfile))[1], "_genepop\n"), file = outfile)
+      base::cat(llist, "\nPOP\n", file = outfile, append = T) 
 
       # write the tables, splitting by pop if requested:
       if(length(facets) > 0){
@@ -2294,7 +2326,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
           cat(pop[i], "\t")
           data.table::fwrite(rdata[pop.rows == pop[i],], outfile, quote = F, sep = "\t", col.names = F, row.names = T, append = T)
           if(i != length(pop)){
-            cat("POP\n", file = outfile, append = T)
+            base::cat("POP\n", file = outfile, append = T)
           }
         }
         cat("\t Done.\n")
@@ -2316,11 +2348,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         trdat <- rdata[rdata$facet == facets[1], c("subfacet", ".snp.id", "n_total", "n_alleles", "ni1", "ni2")]
 
         #write the header
-        cat("[loci]=", nrow(x), "\n\n[populations]=", length(u.pops), "\n\n", file = outfile, sep = "")
+        base::cat("[loci]=", nrow(x), "\n\n[populations]=", length(u.pops), "\n\n", file = outfile, sep = "")
 
         #write the data for each population.
         for(i in 1:length(u.pops)){
-          cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
+          base::cat("[pop]=", i, "\n", file = outfile, append = T, sep = "") #write header
 
           tdat <- trdat[trdat$subfacet == u.pops[i],]
 
@@ -2330,7 +2362,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                              outfile, col.names = F, row.names = F, quote = F, sep = "\t",
                              append = T) # write the data for this population.
 
-          cat("\n", file = outfile, append = T) # add a line break
+          base::cat("\n", file = outfile, append = T) # add a line break
         }
       }
     }

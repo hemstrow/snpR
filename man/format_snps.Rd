@@ -22,7 +22,8 @@ format_snps(
   ncp.max = 5,
   chr = "chr",
   position = "position",
-  phenotype = "phenotype"
+  phenotype = "phenotype",
+  verbose = FALSE
 )
 }
 \arguments{
@@ -95,6 +96,9 @@ position information, for VCF output.}
 
 \item{phenotype}{character, default "phenotype". Optional name of column
 containing phenotype information, for plink! output.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+reported.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May

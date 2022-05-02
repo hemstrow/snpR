@@ -10,10 +10,10 @@ calc_pairwise_ld(
   subfacets = NULL,
   ss = FALSE,
   par = FALSE,
-  sr = FALSE,
   CLD = "only",
   use.ME = FALSE,
-  sigma = 1e-04
+  sigma = 1e-04,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -34,9 +34,6 @@ pop = "ASP") will run samples in either fam A or pop ASP, list(fam.pop =
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{sr}{logical, default FALSE. If TRUE, detailed progress reports for each
-subfacet will be reported.}
-
 \item{CLD}{TRUE, FALSE, or "only", default "only". Specifies if the CLD method
 should be used either in addition to or instead of default methods. See
 details.}
@@ -47,6 +44,9 @@ Minimization-Expectation haplotype estimation should be used. See details.}
 \item{sigma}{numeric, default 0.0001. If the ME method is used, specifies the
 minimum difference required between steps before haplotype frequencies are
 accepted.}
+
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
+reported.}
 }
 \value{
 a snpRdata object with linkage results stored in the pairwise.LD slot.
@@ -84,7 +84,7 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}.
 
 Heatmaps of the resulting data can be easily plotted using
-\code{\link{plot_pairwise_LD_heatmap}}
+\code{\link{plot_pairwise_ld_heatmap}}
 }
 \examples{
 \dontrun{

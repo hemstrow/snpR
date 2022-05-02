@@ -2,7 +2,7 @@ context("fst and ld")
 
 test_that("correct genepop", {
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_snapshot_value(tdfst, style = "serialize") # note, run off of genepop, not internally calced. Thus checked, but should not change.
@@ -66,6 +66,50 @@ test_that("correct fis",{
   expect_equal(nrow(fis_b$single), 10)
   expect_equal(unique(unlist(fis_b$weighted.means[1,1:4, drop = TRUE])),
                ".base")
+  
+  # check that merging works fine
+  fis <- calc_pi(.internal.data$test_snps)
+  fis <- calc_fis(fis)
+  fis <- calc_fis(fis, "pop")
+  fisr <- get.snpR.stats(fis, "pop", c("fis", "ho"))$single
+  a <- unique(cbind.data.frame(subfacet = fisr$subfacet, lev = .paste.by.facet(fisr, c("chr", "position"))))
+  a <- dplyr::mutate_all(a, as.character)
+  a <- dplyr::arrange(a, subfacet, lev)
+  b <- unique(expand.grid(subfacet = unique(sample.meta(fis)$pop),
+                          lev = .paste.by.facet(unique(snp.meta(fis)[,1:2]), c("chr", "position"))))
+  b <- dplyr::mutate_all(b, as.character)
+  b <- dplyr::arrange(b, subfacet, lev)
+  expect_equivalent(a,b)
+  expect_true(all(c("ho", "fis") %in% colnames(fisr)))
+  
+})
+
+test_that("fst bootstrapping",{
+  bs1 <- calc_pairwise_fst(.internal.data$test_snps, "pop", boot = 10)
+  bs1_res <- get.snpR.stats(bs1, "pop", "fst")
+  
+  expect_true(is.numeric(unlist(bs1_res$fst.matrix$pop$p[1,2])))
+  expect_true(is.numeric(bs1_res$weighted.means$weighted_mean_fst_p))
+  
+  skip_on_cran(); skip_on_ci()
+  bs1_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", boot = 10, boot_par = 5)
+  bs1_res <- get.snpR.stats(bs1_par, "pop", "fst")
+  
+  expect_true(is.numeric(unlist(bs1_res$fst.matrix$pop$p[1,2])))
+  expect_true(is.numeric(bs1_res$weighted.means$weighted_mean_fst_p))
+  
+  bs2 <- calc_pairwise_fst(.internal.data$test_snps, "pop", method = "genepop", boot = 10)
+  bs2_res <- get.snpR.stats(bs2, "pop", "fst")
+  
+  expect_true(is.numeric(unlist(bs2_res$fst.matrix$pop$p[1,2])))
+  expect_true(is.numeric(bs2_res$weighted.means$weighted_mean_fst_p))
+  
+  bs2_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", method = "genepop", boot = 10, boot_par = 5)
+  bs2_res <- get.snpR.stats(bs2_par, "pop", "fst")
+  
+  expect_true(is.numeric(unlist(bs2_res$fst.matrix$pop$p[1,2])))
+  expect_true(is.numeric(bs2_res$weighted.means$weighted_mean_fst_p))
+  
 })
 
 
@@ -85,7 +129,7 @@ test_that("correct cld ld",{
 
 test_that("correct traditional ld",{
   local_edition(3)
-  # skip_on_cran()
+  # skip_on_cran(); skip_on_ci()
   tdld <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE)
   tdld <- get.snpR.stats(tdld, stats = "ld")
   prox <- tdld$LD$prox
@@ -95,7 +139,7 @@ test_that("correct traditional ld",{
 
 test_that("correct ME ld",{
   local_edition(3)
-  # skip_on_cran()
+  # skip_on_cran(); skip_on_ci()
   set.seed(1212)
   tdldme <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE, use.ME = TRUE)
   tdldme <- get.snpR.stats(tdldme, stats = "ld")

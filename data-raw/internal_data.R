@@ -1,8 +1,9 @@
 #===========================statistic_index================
 #=============possible calculated statistics===============
-single.stats <- list(stat = c("ho", "pi", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", "fis"),
+single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", "fis"),
                      col_pattern = list("ho", 
-                                "pi", 
+                                "pi",
+                                "he",
                                 c("maf", "major", "minor", "maj.count", "min.count"),
                                 "pa",
                                 c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
@@ -14,8 +15,9 @@ window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
 pairwise.stats <- list(stat = "fst",
                     col_pattern = list(c("fst", "nk")))
-sample.stats <- list(stat = "het_hom_ratio",
-                  col_pattern = list(c("Het/Hom")))
+sample.stats <- list(stat = c("het_hom_ratio", "hs"),
+                  col_pattern = list("Het/Hom",
+                                     "hs"))
 pop.stats <- list(stat = "ne",
                col_pattern = list(c("LDNe")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance"),

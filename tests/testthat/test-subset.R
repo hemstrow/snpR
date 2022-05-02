@@ -51,7 +51,7 @@ test_that("sample facet",{
   
   
   # correct parts, via reference to environmental variables
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   # need to assign up to the global environment, otherwise it won't find pops when testing. 
   # Very not ideal, but with the way testthat works I can't think of a better way. Skipped on cran for this reason.
   # This should always work with a normal script or interactive use, where objects are set to the global environment automatically.
@@ -95,4 +95,17 @@ test_that("complex facet",{
                                                        fam = c("A", "B")))
   check <- snp.meta(ids)
   expect_equal(sort(unique(check$chr)), sort(c("groupIX", "groupIV", "groupXIX")))
+})
+
+
+#========errors=========
+test_that("errors",{
+  
+  id <- .internal.data$test_snps
+  expect_error(id[0,1:10], regexp = "All requested snps must be within 1:nsnps")
+  expect_error(id[1:10,0], regexp = "All requested samples must be within 1:nsnps")
+  expect_error(id[pop = "MAF"], regexp = "No sample found matching: pop -- MAF")
+  expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
+  expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
+  
 })

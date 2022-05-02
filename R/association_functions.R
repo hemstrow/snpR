@@ -43,6 +43,8 @@
 #' @param par numeric or FALSE, default FALSE. If a number specifies the number
 #'   of processing cores to use \emph{across facet levels}. Not used if only one
 #'   facet level.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   printed to the console.
 #' @param ... additional arguments passed to \code{\link[BGLR]{BGLR}}
 #'
 #' @export
@@ -81,7 +83,7 @@
 run_genomic_prediction <- function(x, facets = NULL, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB", interpolate = "bernoulli",
-                                   par = FALSE, ...){
+                                   par = FALSE, verbose = FALSE, ...){
   .snp.id <- facet <- subfacet <- NULL
   
   #===============sanity checks============
@@ -145,7 +147,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
     ETA <- list(list(X = sn, model = "BayesB", saveEffects = T)) # need to adjust this when I get around to allowing for more complicated models
     
     BGLR_mod <- BGLR::BGLR(y = phenotypes, ETA = ETA, nIter = iterations + burn_in, 
-                           burnIn = burn_in, thin = thin, saveAt = handle, ...)
+                           burnIn = burn_in, thin = thin, saveAt = handle, verbose = verbose, ...)
     
     # grab h2 estimate
     B <- BGLR::readBinMat(paste0(handle,'ETA_1_b.bin'))
@@ -181,7 +183,7 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   
   # apply
   out <- .apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_BGLR, response = response,
-                           interpolate = interpolate,  par = par, ...)
+                           interpolate = interpolate,  par = par, verbose = verbose, ...)
   
   
   
@@ -374,8 +376,10 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
       ggplot2::geom_point() +
       ggplot2::geom_smooth(method = "lm") +
       ggplot2::theme_bw()
-
-    print(tplot)
+    
+    return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
+                rsq = summary(stats::lm(observed~predicted, pdat))$r.squared,
+                plot = tplot))
   }
 
   return(list(model = model, model.samples = model.samples, cross.samples = cross.samples, comparison = pdat,
@@ -432,8 +436,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   the Armitage association method. See description for details.
 #' @param formula charcter, default set to response ~ 1. Null formula for the
 #'   response variable, as described in \code{\link[stats]{formula}}.
-#' @param family.override character, default NULL. Provides an alternative
-#'   model family object to use for GMMAT GWAS regression. By default, uses
+#' @param family.override character, default NULL. Provides an alternative model
+#'   family object to use for GMMAT GWAS regression. By default, uses
 #'   \code{\link[stats]{gaussian}}, link = "identity" for a quantitative
 #'   phenotype and \code{\link[stats]{binomial}}, link = "logit" for a
 #'   categorical phenotype.
@@ -446,6 +450,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   relatedness matrix.
 #' @param par numeric or FALSE, default FALSE. Number of parallel cores to use
 #'   for computation.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   printed to the console.
 #'
 #' @author William Hemstrom
 #' @author Keming Su
@@ -471,7 +477,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   get.snpR.stats(x, "pop", "association")
 #' 
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
-                             formula = NULL, family.override = FALSE, maxiter = 500, sampleID = NULL, Gmaf = 0, par = FALSE){
+                             formula = NULL, family.override = FALSE, maxiter = 500, 
+                             sampleID = NULL, Gmaf = 0, par = FALSE, verbose = FALSE){
   #==============sanity checks===========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -483,7 +490,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     msg <- c(msg,
              paste0("Only one response variable permitted."))
   }
-  if(grepl("(?<!^)\\.", response, perl = T)[1]){
+  if(grepl("(?<!^)\\.", response, perl = TRUE)[1]){
     msg <- c(msg,
              paste0("Only one sample-specific category allowed (e.g. pop but not fam.pop)."))
   }
@@ -536,7 +543,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     }
     else{
       res <- try(formula(formula), silent = T)
-      if(class(res) == "try-error"){
+      if(methods::is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
@@ -695,7 +702,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
 
     ## G matrix
-    G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang", maf = Gmaf)
+    invisible(utils::capture.output(G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang", maf = Gmaf)))
     if(is.null(sampleID)){
       sampleID <- ".sample.id"
     }
@@ -738,7 +745,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                                                           kins = G,
                                                           id = sampleID,
                                                           family = family,
-                                                          maxiter = iter)))
+                                                          maxiter = iter, verbose = verbose)))
 
     # run the test
     nmeta.col <- 2 + ncol(sub.x@snp.meta)
@@ -747,7 +754,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                                                               "asso_out_score.txt",
                                                               infile.ncol.skip = nmeta.col,
                                                               infile.ncol.print = 1:nmeta.col,
-                                                              infile.header.print = colnames(asso.in)[1:nmeta.col]), 
+                                                              infile.header.print = colnames(asso.in)[1:nmeta.col], 
+                                                              verbose = verbose), 
                                pattern = "Assuming the order of individuals in infile matches")
     score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
@@ -763,14 +771,14 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
   }
 
   if(method == "armitage"){
-    out <- .apply.snpR.facets(x, facets = facets, req = "cast.gs", case = "ps", fun = calc_armitage, response = response, w = w)
+    out <- .apply.snpR.facets(x, facets = facets, req = "cast.gs", case = "ps", fun = calc_armitage, response = response, w = w, verbose = verbose)
     x <- .update_citations(x, "Armitage1955", "association", paste0("Association test against ", response, "."))
   }
   else if(method == "odds_ratio" | method == "chisq"){
-    out <- .apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method)
+    out <- .apply.snpR.facets(x, facets = facets, req = "cast.ac", case = "ps", fun = odds.ratio.chisq, response = response, method = method, verbose = verbose)
   }
   else if(method == "gmmat.score"){
-    out <- .apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override)
+    out <- .apply.snpR.facets(x, facets = facets, req = "snpRdata", case = "ps", Gmaf = Gmaf, fun = run_gmmat, response = response, form = formula, iter = maxiter, sampleID = sampleID, family.override = family.override, verbose = verbose)
     x <- .update_citations(x, "Chen2016", "association", paste0("Association test against ", response, "."))
     x <- .update_citations(x, "Yang2010", "association", paste0("G-matrix creation for association test against ", response, "."))
   }
@@ -879,6 +887,8 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity_corrected",
                               interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
+  .formula <- formula
+  rm(formula)
   #=========sanity checks=======================
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -888,8 +898,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   #==========run============
   
   
-  run_ranger <- function(sub.x, opts.list, ...){
-
+  run_ranger <- function(sub.x, .formula = NULL, par = FALSE,...){
     #================grab data=====================
     ## sn format
     if(length(sub.x@sn$sn) != 0){
@@ -908,21 +917,21 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
     ## attach phenotype, anything else in the formula if given.
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       msg <- character()
-      res <- try(formula(formula), silent = T)
-      if(class(res) == "try-error"){
+      res <- try(formula(.formula), silent = T)
+      if(methods::is(res, "try-error")){
         msg <- c(msg,
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
       else{
-        if(all.vars(formula)[1] != response){
+        if(all.vars(.formula)[1] != response){
           msg <- c(msg,
                    "The response variable in the provided formula must be the same as that provided to the response argument.\n")
         }
 
         # see which covariates we need
-        cvars <- stats::terms(formula(formula))
+        cvars <- stats::terms(formula(.formula))
         cvars <- attr(cvars, "term.labels")
         bad.cvars <- which(!(cvars %in% colnames(sub.x@sample.meta)))
         if(length(bad.cvars) > 0){
@@ -939,12 +948,23 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         sn <- as.data.frame(sn)
         sn <- cbind(sub.x@sample.meta[,response], sub.x@sample.meta[,cvars], sn)
         colnames(sn)[1:(length(cvars) + 1)] <- c(response, cvars)
-
-        # reset formula:
-        formula <- formula(paste0(as.character(formula), "+", paste0(ocn, collapse = " + ")))
+        
+        myterms <- all.vars(res)
+        .formula <- stats::as.formula(paste0(myterms[1], " ~ ", paste0(cvars, collapse = " + "), " + ", paste0(ocn, collapse = " + ")))
+        
+        # cat("Model:\n")
+        # print(paste0(as.character(res), " + ", paste0(ocn, collapse = " + ")))
+        # cat("\nFitting...\n")
+        # if(length(paste0(as.character(res), " + ", paste0(ocn, collapse = " + "))) > 1){
+        #   browser()
+        # }
+        # 
+        # # reset formula:
+        # .formula <- formula(paste0(as.character(res), " + ", paste0(ocn, collapse = " + ")))
       }
     }
     else{
+      cvars <- character()
       sn <- cbind.data.frame(sub.x@sample.meta[,response], sn, stringsAsFactors = F)
     }
     colnames(sn)[1] <- response
@@ -959,17 +979,9 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     if(par == FALSE){
       tpar <- NULL
     }
-    else{
-      if(nrow(opts.list) == 1){
-        tpar <- par
-      }
-      else{
-        tpar <- NULL
-      }
-    }
 
     # run with or without formula
-    if(is.null(formula)){
+    if(is.null(.formula)){
       rout <- ranger::ranger(dependent.variable.name = response,
                              data = sn,
                              num.trees = num.trees,
@@ -977,7 +989,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                              importance = importance, num.threads = tpar, verbose = T, ...)
     }
     else{
-      rout <- ranger::ranger(formula = formula,
+      rout <- ranger::ranger(formula = .formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
@@ -991,13 +1003,13 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
         op <- ranger::importance_pvalues(rout, "janitza")[,2]
       }
       else{
-        warning("No p-values calcuated. P-values must be done via permutation, and only when a quantitative response is used. See ?ranger::importance_pvalues for help.\n")
+        warning("No p-values calcuated. When a quantitative response or more than 2 categorical response options are present, p-values must be done via permutation. We suggest running this with ranger directly. See ?ranger::importance_pvalues for help.\n")
       }
     }
 
 
     # prepare objects for return
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       imp.out <- cbind(sub.x@snp.meta, rout$variable.importance[which(!names(rout$variable.importance) %in% cvars)])
       colnames(imp.out)[ncol(imp.out)] <- paste0(response, "_", "RF_importance")
       covariate_importance <- data.frame(variable = cvars, importance = rout$variable.importance[which(names(rout$variable.importance) %in% cvars)])
@@ -1021,7 +1033,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     pred.out <- data.frame(predicted = rout$predictions, pheno = sub.x@sample.meta[,response],
                            stringsAsFactors = F)
 
-    if(!is.null(formula)){
+    if(!is.null(.formula)){
       return(list(importance = imp.out, predictions = pred.out, model = rout, covariate_importance = covariate_importance))
     }
     else{
@@ -1035,9 +1047,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   }
 
   facets <- .check.snpR.facet.request(x, facets)
-
-  out <- .apply.snpR.facets(x, facets, req = "snpRdata", case = "ps", fun = run_ranger, response = response,
-                           interpolate = interpolate,  par = par, ...)
+  # run for each task
+  tl <- .get.task.list(x, facets)
+  out <- vector("list", nrow(tl))
+  for(i in 1:nrow(tl)){
+    out[[i]] <- run_ranger(suppressWarnings(.subset_snpR_data(x, facets = tl[i,1], subfacets = tl[i,2], snp.facets = tl[i,3], snp.subfacets = tl[i,4])),
+                           .formula = .formula, par = par, ...)
+    out[[i]]$.fm <- cbind(facet = tl[i,1], subfacet = tl[i,2], row.names = NULL)
+  }
   
   # process
   models <- vector("list", length(out))

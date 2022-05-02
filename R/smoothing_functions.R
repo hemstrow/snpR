@@ -62,6 +62,8 @@ gaussian_weight <- function(p, c, s) {
 #'  "pairwise"). See details.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   printed to the console.
 #'
 #'@export
 #'@author William Hemstrom
@@ -82,7 +84,8 @@ gaussian_weight <- function(p, c, s) {
 #'get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
 #'get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
 #'}
-calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE) {
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE,
+                                   verbose = FALSE) {
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -103,7 +106,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   }
   
   sig <- 1000*sigma
-  cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")
+  if(verbose){cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")}
 
   .sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
   
@@ -218,7 +221,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   if(!is.null(step)){step <- step*1000}
 
   if("single" %in% stats.type){
-    cat("\nSmoothing single group stats...")
+    if(verbose){cat("\nSmoothing single group stats...")}
     out <- .apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
@@ -228,12 +231,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                              step = step,
                              sig = sig,
                              stats.type = "stats",
-                             nk = nk)
+                             nk = nk,
+                             verbose = verbose)
 
     x <- .merge.snpR.stats(x, out, "window.stats")
 
     if("pairwise" %in% stats.type){
-      cat("\nSmoothing pairwise stats...")
+      if(verbose){cat("\nSmoothing pairwise stats...")}
       out <- .apply.snpR.facets(x = x,
                                facets = facets,
                                req =  "pos.all.stats",
@@ -243,7 +247,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                                step = step,
                                sig = sig,
                                stats.type = "pairwise",
-                               nk = nk)
+                               nk = nk,
+                               verbose = verbose)
       return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
     }
     else{
@@ -252,7 +257,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   }
 
   else{
-    cat("Smoothing pairwise stats...")
+    if(verbose){cat("Smoothing pairwise stats...")}
     out <- .apply.snpR.facets(x = x,
                              facets = facets,
                              req =  "pos.all.stats",
@@ -262,7 +267,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                              step = step,
                              sig = sig,
                              stats.type = "pairwise",
-                             nk = nk)
+                             nk = nk,
+                             verbose = verbose)
     return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
   }
 }

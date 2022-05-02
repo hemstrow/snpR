@@ -2,7 +2,7 @@ context("plots")
 
 #===================plot_structure================
 test_that("structure",{
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   skip_if_not_installed("pophelper")
   
   str_path <- "C://usr/bin/structure.exe"
@@ -23,7 +23,7 @@ test_that("structure",{
 
 
 test_that("snmf",{
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   skip_if_not_installed("LEA")
   skip_if_not_installed("pophelper")
   
@@ -38,7 +38,7 @@ test_that("snmf",{
 })
 
 test_that("snapclust",{
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   skip_if_not_installed("adegenet")
   skip_if_not_installed("pophelper")
   
@@ -55,7 +55,7 @@ test_that("snapclust",{
 
 #===================plot_structure_map===================
 test_that("structure map",{
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps", "pophelper"))
   
   lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
@@ -81,7 +81,7 @@ test_that("structure map",{
 
 test_that("pca",{
   local_edition(3)
-  # skip_on_cran()
+  # skip_on_cran(); skip_on_ci()
   
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
@@ -91,7 +91,7 @@ test_that("pca",{
 
 test_that("tsne",{
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
@@ -103,7 +103,7 @@ test_that("tsne",{
 
 test_that("umap",{
   local_edition(3)
-  skip_on_cran()
+  skip_on_cran(); skip_on_ci()
   skip_if_not_installed(c("umap"))
   set.seed(1212)
   p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
@@ -114,13 +114,11 @@ test_that("umap",{
 
 #==================plot_manhattan==========
 test_that("manhattan plots", {
-  skip_if_not_installed(c("GMMAT", "AGHmatrix"))
-  asso <- stickSNPs[pop = "ASP"]
-  set.seed(1212)
-  sample.meta(asso)$cat_phenotype <- sample(c("case", "control"), ncol(asso), replace = TRUE)
-  expect_warning(asso <- calc_association(asso, response = "cat_phenotype"), "Variance estimate on the boundary of the parameter space observed, refitting model")
-  
-  p <- plot_manhattan(asso, "gmmat_pval_cat_phenotype", chr = "chr", log.p = TRUE)
+  x <- stickSNPs
+  sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+  x <- calc_association(x, response = "phenotype", method = "armitage")
+  p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                      log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
 })
 
@@ -138,13 +136,13 @@ test_that("manhattan plots", {
 #=================LD======================
 test_that("LD heatmap", {
   ld <- calc_pairwise_ld(stickSNPs, "pop.chr", subfacets = list(pop = c("ASP", "PAL"), chr = c("groupXIX", "groupIV")))
-  p <- plot_pairwise_LD_heatmap(ld, "pop.chr")
+  p <- plot_pairwise_ld_heatmap(ld, "pop.chr")
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(unique(p$plot$data$snp.subfacet), c("groupXIX", "groupIV"))
   expect_equal(unique(p$plot$data$var), c("ASP", "PAL"))
   
-  p2 <- plot_pairwise_LD_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
+  p2 <- plot_pairwise_ld_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
   expect_true(ggplot2::is.ggplot(p2$plot))
   expect_equal(unique(p2$plot$data$snp.subfacet), c("groupIV"))
   expect_equal(unique(p2$plot$data$var), c("ASP"))
@@ -196,26 +194,49 @@ test_that("tree plot",{
 #============sfs========
 test_that("sfs plot",{
   # 1D
-  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
+  sfs <- plot_sfs(stickSNPs, projection = 100)
   expect_true(ggplot2::is.ggplot(sfs))
   expect_true(sum(sfs$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(unique(sfs$data$p1), 0)
   expect_true(max(sfs$data$p2[which(!is.na(sfs$data$N))]) <= 100/2) # folded
 
   # 2D
-  expect_warning(sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
+  sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
   expect_true(ggplot2::is.ggplot(sfs2))
   expect_true(sum(sfs2$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 50) # folded
   
   
   # works with sfs provided
-  expect_warning(sfsp <- calc_sfs(stickSNPs, projection = 100), "ref and anc columns are suggested in snp metadata")
-  sfsp <- plot_sfs(sfs = sfsp)
-  expect_identical(sfs$data, sfsp$data)
+  sfs_provided <- calc_sfs(stickSNPs, projection = 100)
+  sfs_provided_plot <- plot_sfs(sfs_provided)
+  expect_identical(sfs$data, sfs_provided_plot$data)
   
-  expect_warning(sfsp2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)), "ref and anc columns are suggested in snp metadata")
-  sfsp2 <- plot_sfs(sfs = sfsp2)
-  expect_identical(sfs2$data, sfsp2$data)
+  sfs_provided2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  sfs_provided2_plot <- plot_sfs(sfs_provided2)
+  expect_identical(sfs2$data, sfs_provided2_plot$data)
+  
+  # sanity checks
+  attr(sfs_provided, "pop") <- NULL
+  expect_error(plot_sfs(sfs_provided), regexp = "1D SFS must have a pop attribute with length 1")
+  attr(sfs_provided, "pop") <- c("check1", "check2")
+  expect_error(plot_sfs(sfs_provided), regexp = "1D SFS pop attribute must be length 1")
+  
+  attr(sfs_provided2, "pop") <- NULL
+  expect_error(plot_sfs(sfs_provided2), regexp = "2D SFS must have a pop attribute with length 2")
+  attr(sfs_provided2, "pop") <- c("check1")
+  expect_error(plot_sfs(sfs_provided2), regexp = "2D SFS pop attribute must be length 2")
+  
+  expect_error(plot_sfs(sfs2), "x must be either a snpRdata object, a matrix containing a 2D SFS, or a numeric vector containing a 1D sfs")
+  
+  attr(sfs_provided, "pop") <- "check"
+  p1 <- plot_sfs(sfs_provided)
+  attr(sfs_provided, "pops") <- "check"
+  attr(sfs_provided, "pop") <- NULL
+  p2 <- plot_sfs(sfs_provided)
+  expect_equal(p1, p2)
+  
+  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100, fold = FALSE), "Without ancestral and derived character states, unfolded spectra will be misleading")
+  
 })
 

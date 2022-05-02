@@ -22,6 +22,7 @@ plot_clusters(
   ncp = NULL,
   ncp.max = 5,
   update_bib = FALSE,
+  verbose = FALSE,
   ...
 )
 }
@@ -55,13 +56,13 @@ method to use for missing data. Options: \itemize{\item{bernoulli:
 }{Interpolated via binomial draw for each allele against minor allele
 frequency.} \item{af: }{Interpolated by inserting the expected number of
 minor alleles at missing data points given loci minor allele frequencies.}
-\item{iPCA: }{This an iterative PCA approach to interpolate based on
-SNP/SNP covariance via \code{\link[missMDA]{imputePCA}}. If the ncp
-argument is not defined, the number of components used for interpolation
-will be estimated using \code{\link[missMDA]{estim_ncpPCA}}. In this case,
-this method is much slower than the other methods, especially for large
-datasets. Setting an ncp of 2-5 generally results in reasonable
-interpolations without the time constraint.}}}
+\item{iPCA: }{This an iterative PCA approach to interpolate based on SNP/SNP
+covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
+defined, the number of components used for interpolation will be estimated
+using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+slower than the other methods, especially for large datasets. Setting an ncp
+of 2-5 generally results in reasonable interpolations without the time
+constraint.}}}
 
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
@@ -77,17 +78,17 @@ found by \code{\link[mmtsne]{hbeta}}, with beta = 1.}
 \item{iter}{numeric, default 1000. Number of tSNE iterations/umap epochs to
 perform.}
 
-\item{viridis.option}{character, default "viridis". Viridis color scale
-option to use for significance lines and SNP labels. See
+\item{viridis.option}{character, default "viridis". Viridis color scale option
+to use for significance lines and SNP labels. See
 \code{\link[ggplot2]{scale_gradient}} for details.}
 
 \item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
 
-\item{ncp}{numeric or NULL, default NULL. Number of components to consider
-for iPCA sn format interpolations of missing data. If null, the optimum
-number will be estimated, with the maximum specified by ncp.max. This can
-be very slow.}
+\item{ncp}{numeric or NULL, default NULL. Number of components to consider for
+iPCA sn format interpolations of missing data. If null, the optimum number
+will be estimated, with the maximum specified by ncp.max. This can be very
+slow.}
 
 \item{ncp.max}{numeric, default 5. Maximum number of components to check for
 when determining the optimum number of components to use when interpolating
@@ -99,22 +100,25 @@ create a .bib file including any new citations for methods used. Useful
 given that this function does not return a snpRdata object, so a
 \code{\link{citations}} cannot be used to fetch references.}
 
+\item{verbose}{Logical, default FALSE. If TRUE, some progress updates may be
+reported.}
+
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 \code{\link[umap]{umap}}.}
 }
 \value{
 A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
-  plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
-  these two lists may contain one, two, or three objects, one for each PCA,
-  tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
-  respectively.
+ plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
+ these two lists may contain one, two, or three objects, one for each PCA,
+ tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+ respectively.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
 theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-Approximation and Projection approach implemented in
-\code{\link[umap]{umap}}. Works by conversion to the "sn" format described in
-\code{\link{format_snps}} with interpolated missing genotypes.
+Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
+Works by conversion to the "sn" format described in \code{\link{format_snps}}
+with interpolated missing genotypes.
 }
 \details{
 Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
@@ -132,7 +136,7 @@ Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
 UMAP similarly attempts to reduce multi-dimensional results to a two
 dimensional visualization.
 
-Note that clusters and relative positions of samples from both tSNE and UMAP 
+Note that clusters and relative positions of samples from both tSNE and UMAP
 may not reliably represent the relationships present in the higher PCA
 dimensions from which they are created. As such, it is probably not wise to
 use these methods to draw conclusions about relationships. They are useful
@@ -160,15 +164,15 @@ plot_clusters(stickSNPs, "pop.fam")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
-  Embedding using a Barnes-Hut Implementation, URL:
-  \url{https://github.com/jkrijthe/Rtsne}.
+ Embedding using a Barnes-Hut Implementation, URL:
+ \url{https://github.com/jkrijthe/Rtsne}.
 
 Van Der Maaten, L. & Hinton, G. (2008) Visualizing
-  high-dimensional data using t-SNE. journal of machine learning research.
-  \emph{Journal of Machine Learning Research}.
+ high-dimensional data using t-SNE. journal of machine learning research.
+ \emph{Journal of Machine Learning Research}.
 
 McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
-  and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+ and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}

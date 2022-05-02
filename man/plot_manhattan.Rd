@@ -17,6 +17,7 @@ plot_manhattan(
   significant = NULL,
   suggestive = NULL,
   highlight = "significant",
+  highlight_style = "label",
   sig_below = FALSE,
   log.p = FALSE,
   abs = FALSE,
@@ -24,6 +25,7 @@ plot_manhattan(
   viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10),
   colors = c("black", "slategray3"),
+  chr_order = NULL,
   abbreviate_labels = FALSE
 )
 }
@@ -76,6 +78,10 @@ Controls SNP highlighting. If either "significant" or "suggestive", SNPs
 above those respetive values will be highlighted. If a numeric vector, SNPs
 corresponding to vector entries will be highlighted. See details.}
 
+\item{highlight_style}{character, default "label". Highlighting options:
+\itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
+(word or hex) to color points by.}}}
+
 \item{sig_below}{logical, default FALSE. If TRUE, treats values lower than
 the significance threshold as significant.}
 
@@ -98,6 +104,9 @@ c(strip.title, axis, axis.ticks).}
 
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
+
+\item{chr_order}{character, default NULL. If provided, an ordered vector of
+chromosome/scaffold/etc names by which to sort ouput.}
 
 \item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
 x-axis chromosome names will be abbreviated using 

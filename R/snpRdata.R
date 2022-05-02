@@ -301,6 +301,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
 #'@param header_cols Number of header columns on passed delimited file. Mostly
 #'  for internal use with \code{\link{read_delimited_snps}}.
+#'@param verbose Logical, default FALSE. If TRUE, will print a few status updates and checks.
 #'  
 #'@examples
 #' # import example data as a snpRdata object
@@ -363,7 +364,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0){
+                             ..., header_cols = 0, verbose = FALSE){
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
@@ -437,26 +438,26 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   if(genotypes[1,1] %in% 
      c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
-    cat("Assuming data is in NN format.\n")
+    if(verbose){cat("Assuming data is in NN format.\n")}
   }
   
   # sn
   else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
-    cat("Assuming single nucleotide format.\n")
+    if(verbose){cat("Assuming single nucleotide format.\n")}
     return(format_snps(genotypes, input_format = "sn", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
   }
   
   # 0000
   else if(genotypes[1,1] %in% 
           c(apply(expand.grid(c("01", "02", "03", "04"), c("01", "02", "03", "04")), 1, paste, collapse=""), mDat)){
-    cat("Assuming 0000 format.\n")
+    if(verbose){cat("Assuming 0000 format.\n")}
     return(format_snps(genotypes, input_format = "0000", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
   }
   
   # SNP_tab
   else if(genotypes[1,1] %in% 
           c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=" "), mDat, c("A", "T", "C", "G"))){
-    cat("Assuming snp_tab format.\n")
+    if(verbose){cat("Assuming snp_tab format.\n")}
     return(format_snps(genotypes, input_format = "snp_tab", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
   }
   
@@ -529,7 +530,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
-  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = TRUE)
+  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
 
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
                     facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
@@ -559,7 +560,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
-  cat("Input data will be filtered to remove non bi-allelic data.\n")
+  if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
   invisible(utils::capture.output(x <- filter_snps(x, non_poly = FALSE)))
   
   # add basic maf
@@ -904,14 +905,24 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       fst <- fst[-not.pairwise,]
     }
     
+    empties <- numeric(0)
     for(i in 1:length(cats)){
-      if("weighted_mean_fst_p" %in% colnames(fst)){
+      if(sum(fst$facet == cats[i]) == 0){
+        empties <- c(empties, i)
+        next
+      }
+      else if("weighted_mean_fst_p" %in% colnames(fst)){
         res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
                          p = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst_p"))
       }
       else{
         res[[i]] <- data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst")
       }
+    }
+    
+    # remove any empty elements
+    if(length(empties) > 0){
+      res[[empties]] <- NULL
     }
     
     return(res)
