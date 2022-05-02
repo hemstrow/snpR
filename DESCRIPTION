@@ -36,7 +36,7 @@ Imports:
 Depends:
     data.table,
     foreach,
-    R (>= 3.60)
+    R (>= 3.6.0)
 Suggests:
     ade4,
     adegenet,
