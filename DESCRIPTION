@@ -6,7 +6,8 @@ Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
   person("Avani", "Chitre", email = "aachitre@ucdavis.edu", role = "ctb"),
-  person("Keming", "Su", email = "kmsu@ucdavis.edu", role = "ctb"))
+  person("Keming", "Su", email = "kmsu@ucdavis.edu", role = "ctb"),
+  person("Francis", "Roy", role = "cph", comment = "Holder of pophelper license"))
 Description: A toolkit for analyzing Single Nucleotide Polymorphism whole-genome data in a user-friendly way,
     allowing for the data to be automatically split and calculated across multiple metadata categories simultaneously.
     This includes functions to get most summary statistics and smooth them, map pairwise linkage disequilibrium, 
