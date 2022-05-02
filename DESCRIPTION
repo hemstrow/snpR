@@ -13,7 +13,7 @@ Description: A toolkit for analyzing Single Nucleotide Polymorphism whole-genome
     determine the significance of smoothed statistics via bootstrapping, do association testing, plot many
     kinds of results, convert to many common output formats, 
     and filter raw data. 
-License: MIT + file LICENSE
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -36,7 +36,7 @@ Imports:
 Depends:
     data.table,
     foreach,
-    R (>= 3.60)
+    R (>= 3.6.0)
 Suggests:
     ade4,
     adegenet,

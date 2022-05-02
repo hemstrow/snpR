@@ -9,3 +9,4 @@
 ^\.covrignore$
 ^codecov\.yml$
 ^inst\shiny*$
+^LICENSE\.md$
