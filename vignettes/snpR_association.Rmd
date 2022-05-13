@@ -67,6 +67,7 @@ Note that the resulting p-values are stored in the gmmat_pval_phenotype column.
 If covariates are present, they can be incorporated by providing a formula.
 
 ```{r, message=FALSE, results='hide', eval=FALSE, purl=FALSE}
+
 x <- calc_association(x,
                       response = "phenotype",
                       method = "gmmat.score", 
