@@ -129,17 +129,14 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   setwd("..")
 }
 
-run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path = "NeEstimator/"){
+run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path = "NeEstimator/", verbose = TRUE){
   #==========run NeEstimator==========
   owd <- getwd()
   setwd(data_path)
   call <- paste(NeEstimator_path, "i:info", "o:option", collapse = " ")
-  if(Sys.info()["sysname"] == "Windows"){
-    shell(call)
-  }
-  else{
-    system(call)
-  }
+  
+  system(call, show.output.on.console = verbose)
+  
   setwd(owd)
 }
 
@@ -159,7 +156,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     else if(length(grep("Ht", files[i]) != 0)){type <- "Ht"; skip <- 14}
 
     # read in the data
-    suppressWarnings(dat <- as.data.frame(readr::read_table2(files[i], skip = skip, col_names = F)))
+    suppressWarnings(dat <- as.data.frame(data.table::fread(files[i], skip = skip, header = FALSE)))
     dat <- dat[1:(nrow(dat) - 2),]
 
     # add column names, adjust data per type

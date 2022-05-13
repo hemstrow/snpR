@@ -481,23 +481,9 @@ call_colony <- function(infile, colony_path, update_bib = FALSE, verbose = TRUE)
   call <- paste0(colony_path," IFN:", infile)
 
   # call
-  if(sys.type == "Windows"){
-    if(verbose){
-      shell(call)
-    }
-    else{
-      .make_it_quiet(shell(call))
-    }
-    
-  }
-  else{
-    if(verbose){
-      .make_it_quiet(system(call))
-    }
-    else{
-      system(call)
-    }
-  }
+  system(call, show.output.on.console = verbose)
+
+  
 
   # move results
   pattern <- gsub(".+/", "", infile)
@@ -508,7 +494,7 @@ call_colony <- function(infile, colony_path, update_bib = FALSE, verbose = TRUE)
     dir.create("colony")
   }
   
-  file.rename(files, paste0("./colony/", files))
+  file.rename(files, paste0("colony/", files))
   
   .yell_citation("Jones2010", "parentage", "parentage or sibship reconstruction with COLONY2", update_bib)
 }
@@ -516,12 +502,12 @@ call_colony <- function(infile, colony_path, update_bib = FALSE, verbose = TRUE)
 #' Parse colony data.
 #' @describeIn colony_interface Parse a previously run colony analysis.
 #' @export
-parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE){
+parse_colony <- function(prefix, x, path = "colony/", sampleIDs = NULL, cleanup = FALSE){
   #===============full and half sibs==============================
   # read in half and full sibs
-  fsd <- readr::read_csv(paste0(path, prefix, ".FullSibDyad"))
+  fsd <- data.table::fread(paste0(path, prefix, ".FullSibDyad"))
   if(file.exists(paste0(path, prefix, ".HalfSibDyad"))){
-    hsd <- readr::read_csv(paste0(path, prefix, ".HalfSibDyad"))
+    hsd <- data.table::fread(paste0(path, prefix, ".HalfSibDyad"))
     ## combine
     if(nrow(fsd) > 0 & nrow(hsd) > 0){
       dyads <- rbind(cbind(fsd, type = "FullSib", stringsAsFactors = F),
@@ -549,7 +535,7 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL, cleanu
   all_pairs$type[which(is.na(all_pairs$type))] <- "none"
 
   #=============add male and female parent ID info to the sample meta===========
-  clusters <- readr::read_table2(paste0(path, prefix, ".BestCluster"))
+  clusters <- data.table::fread(paste0(path, prefix, ".BestCluster"))
   colnames(clusters)[2] <- "ClusterProbability"
   if(is.null(sampleIDs)){
     x@sample.meta$.offspringID <- colnames(x)
@@ -566,10 +552,11 @@ parse_colony <- function(prefix, x, path = "./colony/", sampleIDs = NULL, cleanu
   
   #=============cleanup and return================
   if(cleanup){
-    if(!path == "/"){
-      # tiny sanity check to make sure that someone doesn't delete their whole computer...
-      # unlink already won't delete ., .., or ~
-      unlink(path, recursive = TRUE)
+    if(Sys.info()["sysname"] == "Windows"){
+      shell(paste0("rm -r ./", path))
+    }
+    else{
+      system(paste0("rm -r ./", path))
     }
   }
   return(list(x = x, dyads = dyads, all_pairs = all_pairs, clusters = clusters))
@@ -646,14 +633,14 @@ run_colony <- function(x, colony_path, outfile = "colony_input", method = "FPLS"
                      excluded_paternal_siblings = excluded_paternal_siblings)
 
   # run
-  call_colony(infile = paste0("./colony/", outfile, ".dat"),
+  call_colony(infile = paste0("colony/", outfile, ".dat"),
               colony_path = colony_path, 
               update_bib = update_bib, verbose = verbose)
 
   # parse some basics
   return(parse_colony(prefix = outfile,
                       x = x,
-                      path = "./colony/",
+                      path = "colony/",
                       sampleIDs = sampleIDs,
                       cleanup = cleanup))
 

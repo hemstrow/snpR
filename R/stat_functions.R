@@ -3167,6 +3167,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
 #'   check this.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   reported. 
 #' @param cleanup logical, default TRUE. If TRUE, the NeEstimator output
 #'   directory will be removed following processing.
 #'
@@ -3197,7 +3199,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     methods = "LD",
                     temporal_methods = c("Pollak", "Nei", "Jorde"),
                     temporal_gens = NULL, max_ind_per_pop = NULL,
-                    outfile = "ne_out", cleanup = TRUE){
+                    outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -3231,7 +3233,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     
     # run
     run_neestimator(NeEstimator_path = NeEstimator_path,
-                    data_path = "NeEstimator/")
+                    data_path = "NeEstimator/", verbose = verbose)
     
     # parse
     out[[i]] <- parse_neestimator(path = "NeEstimator/",
@@ -3249,7 +3251,12 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
   
   if(cleanup){
-    unlink("NeEstimator", recursive = TRUE)
+    if(Sys.info()["sysname"] == "Windows"){
+      shell("rm -r ./NeEstimator")
+    }
+    else{
+      system("rm -r ./NeEstimator")
+    }
   }
 
   return(x)

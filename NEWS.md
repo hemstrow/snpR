@@ -12,11 +12,14 @@
 * Cleanup option added to `calc_ne()`.
 * Removed dependencies: `stringi`, `pkgcond`, `stringr`, `tidyr`, `CATT`. All had only one or a few used functions that were not time intensive, and so could be home-brewed easily to avoid the dependency.
 * Adjusted `stickSNPs` to be smaller--only 100 loci and 100 samples now.
+* Added a `verbose` argument to `calc_ne()`.
 
 ## Documentation
 
 ## Bug fixes
 *Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
+*`calc_ne()` and `run_colony()` actually cleanup now if asked on Windows.
+*Fixed the `verbose` argument on `run_colony()` to actually work on Windows.
 
 # snpR 1.2.1
 
