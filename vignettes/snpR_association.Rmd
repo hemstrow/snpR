@@ -64,18 +64,13 @@ Note that the resulting p-values are stored in the gmmat_pval_phenotype column.
 
 If covariates are present, they can be incorporated by providing a formula.
 
-```{r, message=FALSE, results='hide'}
+```{r, message=FALSE, results='hide', eval=FALSE, purl=FALSE}
 
 sample.meta(x)$weight <- rnorm(nsamps(x), mean = 1, sd = .5)
 x <- calc_association(x,
                       response = "phenotype",
                       method = "gmmat.score", 
                       formula = "phenotype ~ weight") # weight as a covariate
-```
-
-```{r}
-head(get.snpR.stats(x, stats = "association")$single)
-
 ```
 
 ## Genomic Prediction

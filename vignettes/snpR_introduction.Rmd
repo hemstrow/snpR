@@ -49,13 +49,13 @@ Data in the "NN" format, as shown above, can be imported directly into a snpRdat
 ```{r}
 # the first three characters of the column names are the population, so let's grab that.
 # since the first three columns contain snp.metadata, we need to remove those before import!
-sample_meta <- data.frame(pop = substr(colnames(NN[-c(1:3)]), 1, 3), stringsAsFactors = F)
+sample_meta <- data.frame(pop = substr(colnames(NN[-c(1:2)]), 1, 3), stringsAsFactors = F)
 
 # grab our sample metadata
-snp_meta <- NN[,1:3]
+snp_meta <- NN[,1:2]
 
 # grab the genetic data
-gen_data <- NN[,4:ncol(NN)]
+gen_data <- NN[,3:ncol(NN)]
 
 # import, remember to remove metadata from the genotypes!
 my.dat <- import.snpR.data(genotypes = gen_data, 
@@ -76,7 +76,7 @@ Note:
 * Most delimited genotype formats (such as NN or 0000) can also be automatically imported with the read_delimited_snps() function.
 
 ```{r}
-my.dat2 <- read_delimited_snps(NNfile, sample.meta = sample_meta, header_cols = 3)
+my.dat2 <- read_delimited_snps(NNfile, sample.meta = sample_meta, header_cols = 2)
 identical(my.dat, my.dat2)
 ```
 
@@ -226,10 +226,10 @@ head(sample.meta(sub3))
 Complex facets are specified the same way. Note that the order of the levels and facets must be consistent:
 
 ```{r}
-sub4 <- my.dat[pop.fam = "ASP.A"]
+sub4 <- my.dat[pop.fam = "ASP.D"]
 head(sample.meta(sub4))
 
-# sub5 <- my.dat[pop.fam = "A.ASP"] # won't work
+# sub5 <- my.dat[pop.fam = "D.ASP"] # won't work
 
 ```
 
