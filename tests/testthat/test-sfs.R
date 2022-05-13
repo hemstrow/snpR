@@ -7,7 +7,7 @@ test_that("sfs",{
   expect_true(max(sfs, na.rm = T) <= 100/2) # folded
   
   # 2D
-  .make_it_quiet(sfs2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50)))
+  .make_it_quiet(sfs2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10)))
   expect_true(sum(sfs2, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(attr(sfs2, "pop"), c("ASP", "UPD"))
 })
