@@ -80,17 +80,17 @@ Gutenkunst et al (2009)).
 }
 \examples{
 # folded, 1D
-plot_sfs(stickSNPs, projection = 100)
+plot_sfs(stickSNPs, projection = 20)
 
 # unfolded, 1D, one specific population
-plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
+plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
 
 \dontrun{
 # unfolded, two poplations
-plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 
 # via a sfs matrix, useful for pulling in spectra from elsewhere
-sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 plot_sfs(sfs)
 }
 }
