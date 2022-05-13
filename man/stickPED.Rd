@@ -3,10 +3,7 @@
 \docType{data}
 \name{stickPED}
 \alias{stickPED}
-\title{Contains an artificially constructed pedigree based on the 
-\code{\link{stickSNPs}} dataset. Here samples named 1 through 420 represent 
-the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
-individuals inferred via pedigree construction are affixed with "f" or "m".}
+\title{An artifical pedigree from the stickleback dataset.}
 \format{
 An object of class \code{data.frame} with 426 rows and 3 columns.
 }

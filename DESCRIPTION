@@ -18,22 +18,19 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Imports:
-    doSNOW,
+    doParallel,
     dplyr,
     matrixStats,
     methods,
     ggplot2,
+    parallel,
     plyr,
-    pkgcond,
     purrr,
     rbibutils,
     RefManageR,
     reshape2,
     rlang,
-    snow,
-    stringi,
-    stringr,
-    tidyr
+    stats
 Depends:
     data.table,
     foreach,
@@ -46,7 +43,6 @@ Suggests:
     BGLR,
     bigmemory,
     bigtabulate,
-    CATT,
     BiocManager,
     genepop,
     genio,

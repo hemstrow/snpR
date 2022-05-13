@@ -1,5 +1,3 @@
-context("IBD")
-
 test_that("correct ibd", {
   skip_if_not_installed("ade4")
   skip_if_not_installed("geosphere")

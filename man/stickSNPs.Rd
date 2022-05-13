@@ -5,13 +5,13 @@
 \alias{stickSNPs}
 \title{Deschutes stickleback example snpRdata.}
 \format{
-An object of class \code{snpRdata} with 833 rows and 420 columns.
+An object of class \code{snpRdata} with 100 rows and 100 columns.
 }
 \usage{
 stickSNPs
 }
 \description{
-A dataset containing genotypes at 833 SNP loci for 420 Three-spined
+A dataset containing genotypes at 100 SNP loci for 100 Three-spined
 Stickleback collected in 2015 from several locations in the Deschutes River,
 Oregon, USA. For more information, see Hemstrom et al (in prep).
 }

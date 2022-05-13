@@ -5,13 +5,18 @@
 ## Features
 
 ### Major
+* Added `read_structure()` to read STRUCTURE formatted files. Added auto-read of .str files to `import.snpR.data()`.
 
 ### Minor
-* Now redistributing part of Roy Francis's `pophelper` package, since it's not on CRAN. Switched to GPL license to allow this. The package is still cited automatically when generating a citation during `plot_structure()` or `plot_structure_map`()
+* Now redistributing part of Roy Francis's `pophelper` package, since it's not on CRAN. Switched to GPL license to allow this. The package is still cited automatically when generating a citation during `plot_structure()` or `plot_structure_map`(). Added a dependency on `stats` to allow for the re-packaging.
+* Cleanup option added to `calc_ne()`.
+* Removed dependencies: `stringi`, `pkgcond`, `stringr`, `tidyr`, `CATT`. All had only one or a few used functions that were not time intensive, and so could be home-brewed easily to avoid the dependency.
+* Adjusted `stickSNPs` to be smaller--only 100 loci and 100 samples now.
 
 ## Documentation
 
 ## Bug fixes
+*Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
 
 # snpR 1.2.1
 

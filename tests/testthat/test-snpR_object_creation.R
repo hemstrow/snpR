@@ -1,20 +1,19 @@
-context("snpRdata object creation/tabulation")
+tdat <- stickRAW[1:4, 1:6]
+tdat <- import.snpR.data(tdat[,-c(1:2)], tdat[,1:2], data.frame(pop = rep("ASP", 4)))
 
-tdat <- stickRAW[1:4, 1:7]
-tdat <- import.snpR.data(tdat[,-c(1:3)], tdat[,1:3], data.frame(pop = rep("ASP", 4)))
-
-correct_geno_tables <- list(gs = as.matrix(data.frame(CC = as.integer(c(3, 0, 0, 0)),
+correct_geno_tables <- list(gs = as.matrix(data.frame(AA = as.integer(c(0, 0, 1, 0)),
                                                       CT =  as.integer(c(0, 1, 0, 0)),
-                                                      GG =  as.integer(c(0, 0, 4, 0)),
-                                                      TT =  as.integer(c(0, 2, 0, 4)))),
-                            as = as.matrix(data.frame(C =  as.integer(c(6, 1, 0, 0)),
-                                                      T =  as.integer(c(0, 5, 0, 8)),
-                                                      G =  as.integer(c(0, 0, 8, 0)))),
-                            wm = as.matrix(data.frame(CC =  as.integer(c(3, 0, 0, 0)),
+                                                      GG =  as.integer(c(4, 0, 1, 3)),
+                                                      TT =  as.integer(c(0, 3, 0, 0)))),
+                            as = as.matrix(data.frame(A = as.integer(c(0, 0, 2, 0)),
+                                                      C =  as.integer(c(0, 1, 0, 0)),
+                                                      T =  as.integer(c(0, 7, 0, 0)),
+                                                      G =  as.integer(c(8, 0, 2, 6)))),
+                            wm = as.matrix(data.frame(AA =  as.integer(c(0, 0, 1, 0)),
                                                       CT =  as.integer(c(0, 1, 0, 0)),
-                                                      GG =  as.integer(c(0, 0, 4, 0)),
-                                                      NN =  as.integer(c(1, 1, 0, 0)),
-                                                      TT =  as.integer(c(0, 2, 0, 4))))
+                                                      GG =  as.integer(c(4, 0, 1, 3)),
+                                                      NN =  as.integer(c(0, 0, 2, 1)),
+                                                      TT =  as.integer(c(0, 3, 0, 0))))
 )
 
 test_that("Overall snpRdata object", {

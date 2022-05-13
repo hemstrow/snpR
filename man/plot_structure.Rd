@@ -73,8 +73,9 @@ each individual (populations, etc.).}
 \item{facet.order}{character, default NULL. Optional order in which the
 levels of the provided facet should appear on the plot, left to right.}
 
-\item{k}{numeric vector, default 2. The k value (number of clusters) for which
-to run the clustering/assignment algorithm. Each provided k value will be run.}
+\item{k}{numeric vector, default 2. The k value (number of clusters) for
+which to run the clustering/assignment algorithm. Each provided k value
+will be run.}
 
 \item{method}{character, default "snmf". The clustering/assignment method to
 run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
@@ -164,9 +165,9 @@ overlap with samples somewhat, this may be desirable.}
 \item{separator_color}{character, default "white". Color of facet level
 separator lines.}
 
-\item{no_admix}{logical, default FALSE. Used if method = "structure". If TRUE,
-the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
-will be assumed between clusters.}
+\item{no_admix}{logical, default FALSE. Used if method = "structure". If
+TRUE, the NOADMIX flag in STRUCTURE will be set to 1, meaning that no
+admixture will be assumed between clusters.}
 
 \item{use_pop_info}{logical, default FALSE. Used if method = "structure". If
 TRUE, the USEPOPINFO flag in STRUCTURE will be set to 1, meaning that
@@ -277,7 +278,7 @@ Starting seed for analysis runs. Each additional run (k value or rep) will
 use a successive seed.}
 
 \item{strip_col_names}{string, default NULL. An optional regular expression
-indicating a way to process the column names prior to plotting. Parts of 
+indicating a way to process the column names prior to plotting. Parts of
 names matching the strings provided will be cut. Useful for when the facet
 argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
 part off. A vector of strings will strip multiple patterns.}
@@ -326,8 +327,8 @@ Multiple different runs can be conducted using the 'reps' argument, and the
 results can be combined for plotting across all of these reps using the
 clumpp option. This option calls the CLUMPP software package in order to
 combine proportion population membership across multiple runs via
-\code{\link[pophelper]{clumppExport}}. Again, please cite both CLUMPP and
-pophelper if using this option.
+\code{clumppExport} from the \code{pophelper} package. Again, please cite
+both CLUMPP and pophelper if using this option.
 
 Since CLUMPP is run independantly for each value of K, cluster identites
 often "flip" between K values. For example individuals that are grouped into

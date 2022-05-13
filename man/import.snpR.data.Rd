@@ -12,6 +12,8 @@ import.snpR.data(
   chr.length = NULL,
   ...,
   header_cols = 0,
+  rows_per_individual = 2,
+  marker_and_sample_names = FALSE,
   verbose = FALSE
 )
 }
@@ -40,8 +42,15 @@ for each chromosome in order.}
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
 \emph{genotype} file name is passed that is not a vcf or ms file.}
 
-\item{header_cols}{Number of header columns on passed delimited file. Mostly
-for internal use with \code{\link{read_delimited_snps}}.}
+\item{header_cols}{numeric, default 0. Number of header columns containing
+sample metadata. Used if a tab delimited or structre input file is provided.}
+
+\item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
+for each individual. For structure input files only.}
+
+\item{marker_and_sample_names}{logical, default FALSE. If TRUE, assumes that a
+header row of marker and sample/sample metadata names is present. For
+structure input files only.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status updates and checks.}
 }

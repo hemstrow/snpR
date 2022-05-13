@@ -1,5 +1,3 @@
-context("misc. get.snpR.stats")
-
 test_that("fst_matrix return with facet containing no fst calcs", {
   dat <- calc_fis(.internal.data$test_snps, facets = c("pop", "pop.fam"))
   dat <- calc_pairwise_fst(dat, "pop") # runs, comparing Fst scores between pops

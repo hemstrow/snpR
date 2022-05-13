@@ -1,16 +1,16 @@
-#' Convert genind object to snpRdata.
-#'
-#' Convert genind object to snpRdata. Internal, called by import.snpR.data when
-#' provided a adegenet genind object.
-#'
-#' @param genind genind object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
-#'   genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual
-#'   sample, IDs and pops from genind may be added.
-#'
-#' @author William Hemstrom
-genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
+# Convert genind object to snpRdata.
+#
+# Convert genind object to snpRdata. Internal, called by import.snpR.data when
+# provided a adegenet genind object.
+#
+# @param genind genind object.
+# @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
+#   genind may be added.
+# @param sample.meta data.frame, default NULL. Metadata for each individual
+#   sample, IDs and pops from genind may be added.
+#
+# @author William Hemstrom
+.genind.tosnpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks=============
   msg <- character(0)
   
@@ -99,19 +99,19 @@ genind.to.snpRdata <- function(genind, snp.meta = NULL, sample.meta = NULL){
   return(import.snpR.data(genotypes, snp.meta, sample.meta))
 }
 
-#' Convert genlight object to snpRdata.
-#'
-#' Convert genlight object to snpRdata. Internal, called by import.snpR.data
-#' when provided a adegenet genlight object.
-#'
-#' @param genlight genlight object.
-#' @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
-#'   genind may be added.
-#' @param sample.meta data.frame, default NULL. Metadata for each individual
-#'   sample, IDs and pops from genind may be added.
-#'
-#' @author William Hemstrom
-genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
+# Convert genlight object to snpRdata.
+#
+# Convert genlight object to snpRdata. Internal, called by import.snpR.data
+# when provided a adegenet genlight object.
+#
+# @param genlight genlight object.
+# @param snp.meta data.frame, default NULL. Metadata for each SNP, IDs from
+#   genind may be added.
+# @param sample.meta data.frame, default NULL. Metadata for each individual
+#   sample, IDs and pops from genind may be added.
+#
+# @author William Hemstrom
+.genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks=============
   msg <- character(0)
   
@@ -203,13 +203,13 @@ genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
 }
 
 
-#' Internal to process a ms file
-#' @param x filepath to ms file
-#' @param chr.length length of the chromosome. If a single value, assumes all
-#'   the same length. If a vector of the same length as number of chr, assumes
-#'   those are the chr lengths in order of apperance in ms file.
-#' @author William Hemstrom
-process_ms <- function(x, chr.length){
+# Internal to process a ms file
+# @param x filepath to ms file
+# @param chr.length length of the chromosome. If a single value, assumes all
+#   the same length. If a vector of the same length as number of chr, assumes
+#   those are the chr lengths in order of apperance in ms file.
+# @author William Hemstrom
+.process_ms <- function(x, chr.length){
   infile <- x #infile
   lines <- readLines(x)
   lines <- lines[-which(lines == "")] #remove empty entries
@@ -266,17 +266,17 @@ process_ms <- function(x, chr.length){
   return(list(x = x, meta = meta))
 }
 
-#' Convert a vcf file/vcfR object into a snpRdata object
-#'
-#' @param vcf_file character or vcfR object. Either a path to a vcf file or a
-#'   vcfR object.
-#' @param snp.meta data.frame or null, default null. snp metadata, will
-#'   overwrite data in vcf if provided.
-#' @param sample.meta data.frame or null, default null. sample metadata, will
-#'   overwrite sample names in vcf if provided.
-#'
-#' @author William Hemstrom
-process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
+# Convert a vcf file/vcfR object into a snpRdata object
+#
+# @param vcf_file character or vcfR object. Either a path to a vcf file or a
+#   vcfR object.
+# @param snp.meta data.frame or null, default null. snp metadata, will
+#   overwrite data in vcf if provided.
+# @param sample.meta data.frame or null, default null. sample metadata, will
+#   overwrite sample names in vcf if provided.
+#
+# @author William Hemstrom
+.process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
   #========sanity checks, part 1=============
   .check.installed("vcfR")
   
@@ -367,17 +367,17 @@ process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
                           as.data.frame(sample.meta), "NN"))
 }
 
-#' Convert a genepop into a snpRdata object.
-#'
-#' @param genepop_file character. A path to a genepop file.
-#' @param snp.meta data.frame or null, default null. snp metadata.
-#' @param sample.meta data.frame or null, default null. sample metadata
-#' @param mDat character, default "0000". Missing data format. If the genotype
-#'   is 6 instead of 4 characters, will be automatically changed to 000000 IF
-#'   the default value is provided.
-#'
-#' @author William Hemstrom
-process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+# Convert a genepop into a snpRdata object.
+#
+# @param genepop_file character. A path to a genepop file.
+# @param snp.meta data.frame or null, default null. snp metadata.
+# @param sample.meta data.frame or null, default null. sample metadata
+# @param mDat character, default "0000". Missing data format. If the genotype
+#   is 6 instead of 4 characters, will be automatically changed to 000000 IF
+#   the default value is provided.
+#
+# @author William Hemstrom
+.process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
 
   #===============import data==============
   dat <- readLines(genepop_file)
@@ -439,22 +439,22 @@ process_genepop <- function(genepop_file, snp.meta = NULL, sample.meta = NULL, m
   }
   
   #=============convert to snpRdata object=====
-  ac <- format_and_check_numeric(gt, mDat)
+  ac <- .format_and_check_numeric(gt, mDat)
   
   return(import.snpR.data(ac, snp.meta, sample.meta))
 }
 
-#' Convert a FSTAT file into a snpRdata object.
-#'
-#' @param FSTAT_file character. A path to a genepop file.
-#' @param snp.meta data.frame or null, default null. snp metadata.
-#' @param sample.meta data.frame or null, default null. sample metadata
-#' @param mDat character, default "0000". Missing data format. If the genotype
-#'   is 6 instead of 4 characters, will be automatically changed to 000000 IF
-#'   the default value is provided.
-#'
-#' @author William Hemstrom
-process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
+# Convert a FSTAT file into a snpRdata object.
+#
+# @param FSTAT_file character. A path to a genepop file.
+# @param snp.meta data.frame or null, default null. snp metadata.
+# @param sample.meta data.frame or null, default null. sample metadata
+# @param mDat character, default "0000". Missing data format. If the genotype
+#   is 6 instead of 4 characters, will be automatically changed to 000000 IF
+#   the default value is provided.
+#
+# @author William Hemstrom
+.process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
   info <- readLines(FSTAT_file, n = 1)
   info <- strsplit(info[1], "\\s")[[1]]
   info <- as.numeric(info)
@@ -480,7 +480,7 @@ process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat 
     stop(msg)
   }
   #=====================format the numeric part=============
-  ac <- format_and_check_numeric(t(gt[,-1]), mDat)
+  ac <- .format_and_check_numeric(t(gt[,-1]), mDat)
   
   #=====================check snp.meta======================
   snp.ids <- data.table::fread(FSTAT_file, nrows = info[2], skip = 1, header = F)[[1]]
@@ -509,11 +509,11 @@ process_FSTAT <- function(FSTAT_file, snp.meta = NULL, sample.meta = NULL, mDat 
   return(import.snpR.data(ac, snp.meta, sample.meta))
 }
 
-#' Read in plink data
-#' @param plink_file extensionless filepath to plink files
-#' 
-#' @author William Hemstrom
-process_plink <- function(plink_file){
+# Read in plink data
+# @param plink_file extensionless filepath to plink files
+# 
+# @author William Hemstrom
+.process_plink <- function(plink_file){
   o1 <- ref <- o2 <- alt <- o3 <- NULL
   
   .check.installed("genio")
@@ -557,7 +557,7 @@ process_plink <- function(plink_file){
 # 
 # Formats numeric data into NN format, checking for 3+ alleles at an loci.
 # Alleles coded as A and C. Expects individuals in columns.
-format_and_check_numeric <- function(gt, mDat){
+.format_and_check_numeric <- function(gt, mDat){
   form <- nchar(gt[1,1])
   if(!form %in% c(4, 6)){
     stop("Genepop inputs must have genotypes formatted as either 2 or 3 numeric values per allele (0101 or 123123, for example).\n")
@@ -578,22 +578,93 @@ format_and_check_numeric <- function(gt, mDat){
   
   
   # combine to check for the correct number of alleles per loci (using factor levels for speed)
+  ac <- .bind_and_check_num_levs_a1_a2(a1, a2, mDat = mDat, form = form)
+  
+  # sub into NN and finish up
+  ac <- .sub_and_t_1_2_to_A_C(ac, ncol(gt))
+  return(ac)
+}
+
+.bind_and_check_num_levs_a1_a2 <- function(a1, a2, mDat, form = NULL){
   ac <- cbind(a1, a2)
   rm(a1, a2); gc();
-  ac[ac == substr(mDat, 1, form/2)] <- NA
-  ac <- as.data.frame(t(ac), stringsAsFactors = T)
-  ac <- dplyr::mutate_all(ac, as.numeric)
+  if(!is.null(form)){
+    ac[ac == substr(mDat, 1, form/2)] <- NA
+  }
+  ac <- as.data.frame(t(ac))
+  ac <- dplyr::mutate_all(ac, function(x) as.numeric(as.factor(x)))
   ac <- as.matrix(ac)
   
   if(any(matrixStats::colMaxs(ac, na.rm = T) > 2)){
-    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set.\n")
+    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, if the correct number of header columns containing sample metadata are not specified.\n")
   }
-  
-  # sub into NN and finish up
+  return(ac)
+}
+
+.sub_and_t_1_2_to_A_C <- function(ac, num_individuals){
   ac[ac == 1] <- "A"
   ac[ac == 2] <- "C"
   ac[is.na(ac)] <- "N"
-  ac <- paste0(ac[1:ncol(gt),], ac[(ncol(gt) + 1 ):nrow(ac),])
-  ac <- matrix(ac, nrow(gt), ncol(gt), byrow = T)
+  ac <- paste0(ac[1:num_individuals,], ac[(num_individuals + 1 ):nrow(ac),])
+  ac <- matrix(ac, ncol = num_individuals, byrow = T)
   return(ac)
+}
+
+# Read in a structure input file
+#
+# @param stucture_file path to file
+# @param rows_per_individual 1 or 2, rows per ind
+# @param marker_and_sample_names is there a row of marker and sample names?
+# @param header_cols number of metadata columns
+# @param snp.meta data.frame or null with snp meta
+# @param sample.meta data.frame or null with sample meta
+.process_structure <- function(structure_file, rows_per_individual = 2, 
+                               marker_and_sample_names = FALSE,
+                               header_cols = 1,
+                               snp.meta = NULL, sample.meta = NULL){
+  #==========read in and categorize input data============
+  dat <- data.table::fread(structure_file, header = marker_and_sample_names)
+  
+  # process sample metadata
+  if(header_cols > 0){
+    if(is.null(sample.meta)){
+      sample.meta <- dat[,1:header_cols]
+      if(rows_per_individual == 2){
+        sample.meta <- sample.meta[seq(1, nrow(sample.meta), by = 2),]
+      }
+    }
+    dat <- dat[,(header_cols + 1):ncol(dat)]
+  }
+  
+  # process snp metadata
+  if(marker_and_sample_names & is.null(snp.meta)){
+    snp.meta <- data.frame(ID = colnames(dat)[(header_cols + 1):ncol(dat)])
+    if(rows_per_individual == 1){
+      snp.meta <- snp.meta[seq(1, ncol(snp.meta), by = 2), ]
+    }
+  }
+  
+  #================process genotypes=======================
+  # replace missing data with "X"
+  dat <- as.matrix(dat)
+  dat[dat == -9] <- NA
+  dat <- t(dat)
+  if(rows_per_individual == 1){
+    num_individuals <- ncol(dat)
+    dat <- .bind_and_check_num_levs_a1_a2(dat[seq(1, nrow(dat), by = 2),],
+                                          dat[seq(2, nrow(dat), by = 2),], 
+                                          mDat = -9)
+    
+  }
+  else{
+    num_individuals <- ncol(dat)/2
+    dat <- .bind_and_check_num_levs_a1_a2(dat[,seq(1, ncol(dat), by = 2)],
+                                          dat[,seq(2, ncol(dat), by = 2)], 
+                                          mDat = -9)
+  }
+  
+  dat <- .sub_and_t_1_2_to_A_C(dat, num_individuals)
+  
+  #================send to snpRdata=======================
+  return(import.snpR.data(dat, snp.meta, sample.meta))
 }

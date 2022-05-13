@@ -12,16 +12,9 @@ test_that("correct wc", {
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_equal(round(tdfst$pairwise$fst, 4), 
-               round(c(0.36724566,
-                       0.21886514, 
-                       -0.11111111,
-                       0.27038627,
-                       -0.17977528,
-                       0.16666667,
-                       -0.12957696,
-                       -0.03529412,
-                       0.16666667,
-                       -0.08172128), 4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+               round(c(0.034091, 0, -0.122941, 0, -0.09375, -0.026012, 
+                       0.166667, 0.107143, -0.057692, -0.086957, 0.016548), 
+                     4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
 })
 
 test_that("correct fis",{
@@ -36,15 +29,8 @@ test_that("correct fis",{
   
   
   # checked vs pegas with above code
-  expect_equivalent(round(fis$single$fis, 3), round(c(-0.05179856,
-                                                      -0.02272727,
-                                                      -0.03703704,
-                                                      0.02222222,
-                                                      -0.08641975,
-                                                      -0.11904762,
-                                                      -0.06976744,
-                                                      -0.23888183,
-                                                      -0.01492537), 3))
+  expect_equivalent(round(fis$single$fis, 3), round(c(0.384615, 0, -0.052632, -0.111111, 0.142857, 
+                                                      -0.285714, 0, -0.25, 0.268293, -0.052632), 3))
   
   # check that the means are the same if we do additional facets at the same time
   fis_mf <- calc_fis(stickSNPs[1:10, pop = c("ASP", "PAL")], c("pop", "pop.fam"))
@@ -63,7 +49,7 @@ test_that("correct fis",{
   
   # check that base worked
   fis_b <- get.snpR.stats(fis, stats = "fis")
-  expect_equal(nrow(fis_b$single), 10)
+  expect_equal(nrow(fis_b$single), 11)
   expect_equal(unique(unlist(fis_b$weighted.means[1,1:4, drop = TRUE])),
                ".base")
   
@@ -115,6 +101,9 @@ test_that("fst bootstrapping",{
 
 test_that("correct cld ld",{
   tdld <- calc_pairwise_ld(.internal.data$test_snps, "pop")
+  expect_error(tdld <- get.snpR.stats(tdld, "chr", "ld"), "No LD values calculated for these facets")
+  
+  tdld <- calc_pairwise_ld(tdld, "chr")
   tdld <- get.snpR.stats(tdld, "pop", "ld")
   tdld <- tdld$LD$matrices$ASP$.base$CLD
   tdld <- as.numeric(tdld)

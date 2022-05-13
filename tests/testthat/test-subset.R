@@ -1,5 +1,3 @@
-context("subsetting")
-
 #=======basic subsetting via index=========
 test_that("index snps", {
   set.seed(1212)
@@ -71,9 +69,9 @@ test_that("snp facet",{
   expect_error(id[snp.facet = "chr", snp.subfacet = "groupIX"], "Facets and subfacets are now desginated directly using")
   
   # correct parts, simple
-  ids <- id[chr = c("groupIX", "groupIV")]
+  ids <- id[chr = c("groupIX", "groupXIX")]
   check <- snp.meta(ids)
-  expect_equal(unique(check$chr), c("groupIX", "groupIV"))
+  expect_equal(unique(check$chr), c("groupIX", "groupXIX"))
 })
 
 
@@ -81,20 +79,20 @@ test_that("complex facet",{
   id <- .internal.data$test_snps
   
   # correct parts, simple
-  ids <- id[pop = c("ASP", "PAL"), chr = c("groupIV")]
+  ids <- id[pop = c("ASP", "PAL"), chr = c("groupXIX")]
   check <- sample.meta(ids)
   expect_equal(unique(check$pop), c("ASP", "PAL"))
   check <- snp.meta(ids)
-  expect_equal(unique(check$chr), c("groupIV"))
+  expect_equal(unique(check$chr), c("groupXIX"))
   
   
   # correct parts, complex
-  ids <- stickSNPs[pop.fam = c("ASP.A", "PAL.B"), chr = c("groupIX", "groupIV", "groupXIX")]
+  ids <- stickSNPs[pop.fam = c("ASP.A", "PAL.B"), chr = c("groupIX", "groupXIX", "groupXII")]
   check <- sample.meta(ids)
   expect_equivalent(unique(check[,c(1:2)]), data.frame(pop = c("ASP", "PAL"),
                                                        fam = c("A", "B")))
   check <- snp.meta(ids)
-  expect_equal(sort(unique(check$chr)), sort(c("groupIX", "groupIV", "groupXIX")))
+  expect_equal(sort(unique(check$chr)), sort(c("groupIX", "groupXII", "groupXIX")))
 })
 
 

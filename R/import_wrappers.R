@@ -36,9 +36,13 @@
 #'  \item{plink: } plink .bed, .fam, and .bim files, via
 #'  \code{\link[genio]{read_plink}}. If any of these file types is provided,
 #'  snpR via \code{\link[genio]{read_plink}} will look for the other file types
-#'  automatically. Sample metadata should be contained in the .fam file and
-#'  SNP metadata in the .bim file, so sample or snp meta data can be provided
-#'  here.}
+#'  automatically. Sample metadata should be contained in the .fam file and SNP
+#'  metadata in the .bim file, so sample or snp meta data can be provided here.
+#'  \item{structure: } STRUCTURE import file, with individuals in rows and loci
+#'  in columns. Can be coded either with one row per individual and two columns
+#'  per loci or two rows per individual and two columns per loci using the
+#'  rows_per_individual argument. Genotypes can be pretty much anything,
+#'  although missing genotypes must be coded as -9. Must have a .str extension.}
 #'
 #'  Sample and snp metadata can also be provided via file path, and will be read
 #'  in using \code{\link[data.table]{fread}} \emph{with the default settings}
@@ -87,6 +91,10 @@
 #'  data has genotypes stored in 6 characters, mDat will be set to "000000".
 #'@param header_cols numeric, default 0. The number of snp metadata columns prior
 #'  to snp genotypes when importing delimited snps.
+#'@param rows_per_individual numeric (1 or 2), default 2. Number of rows used
+#'  for each individual.
+#'@param marker_and_sample_names logical, default FALSE. If TRUE, assumes that a
+#'  header row of marker and sample/sample metadata names is present.
 #'
 #'@aliases read_vcf read_ms read_delimited_snps read_genepop read_FSTAT convert_genlight convert_genind
 #'@name snpR_import_wrappers
@@ -140,11 +148,24 @@ read_FSTAT <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 read_plink <- function(file){
   if(grepl("\\.bim$", file) | grepl("\\.fam$", file) | grepl("\\.bed$", file)){
     .check.installed("tools")
-    return(process_plink(tools::file_path_sans_ext(file)))
+    return(.process_plink(tools::file_path_sans_ext(file)))
   }
   else{
-    return(process_plink(file))
+    return(.process_plink(file))
   }
+}
+
+#' @export
+#' @describeIn snpR_import_wrappers Import STRUCTURE data files.
+read_structure <- function(file, snp.meta = NULL, sample.meta = NULL, 
+                           rows_per_individual = 2, marker_and_sample_names = FALSE,
+                           header_cols = 0){
+  if(!grepl("\\.str$", file)){
+    stop("File extension is not .str. Please check that the correct file has been entered and rename if needed.\n")
+  }
+  return(import.snpR.data(genotypes = file, rows_per_individual = rows_per_individual, 
+                            marker_and_sample_names = marker_and_sample_names, 
+                            header_cols = header_cols, snp.meta = snp.meta, sample.meta = sample.meta))
 }
 
 #' @export

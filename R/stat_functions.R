@@ -167,7 +167,7 @@ calc_pi <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "ac", func, case = "ps")
@@ -195,7 +195,7 @@ calc_maf <- function(x, facets = NULL){
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   if(facets[1] == ".base" & length(facets) == 1){
@@ -385,7 +385,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   # add any missing facets
   add.facets <- .check.snpR.facet.request(x, facets)
   if(!all(add.facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, add.facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, add.facets))
   }
   facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
 
@@ -522,7 +522,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   }
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   
@@ -553,7 +553,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         setwd(g.filename)
         g.filename <- list.files(pattern = "genepop.txt")
       }
-      invisible(utils::capture.output(genepop::Fst(g.filename, pairs = TRUE)))
+      .make_it_quiet(genepop::Fst(g.filename, pairs = TRUE))
       
 
 
@@ -825,7 +825,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   for(i in 1:length(facets)){
     if(method == "genepop"){
-      invisible(utils::capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt"))))
+      .make_it_quiet(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt")))
     }
     
     real[[i]] <- one_run(x,
@@ -878,20 +878,20 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
           pboot <- split(boot, 1:boot_par, drop = F)
         }
         
-        cl <- snow::makeSOCKcluster(boot_par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(boot_par)
+        doParallel::registerDoParallel(cl)
         
         
         
         #prepare reporting function
         ntasks <- length(pboot)
-        progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
+        # progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+        # opts <- list(progress=progress)
         
         #loop through each set
         boots <- foreach::foreach(q = 1:ntasks,
-                                  .packages = c("snpR", "data.table"), 
-                                  .options.snow = opts) %dopar% {
+                                  .packages = c("snpR", "data.table"), .export = ".make_it_quiet"
+                                  ) %dopar% {
                                     
                                     boots <- vector("list", length(pboot[[q]]))
                                     for(i in 1:length(pboot[[q]])){
@@ -907,7 +907,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         
         
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
         boots <- unlist(boots, recursive = F)
         boot <- max(boot)
       }
@@ -1016,7 +1015,7 @@ calc_fis <- function(x, facets = NULL){
   facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   #===========subfunctions=====================================================
@@ -1112,7 +1111,7 @@ calc_ho <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x,
@@ -1184,7 +1183,7 @@ calc_private <- function(x, facets = NULL){
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
@@ -2230,18 +2229,18 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         rproc <- ceiling(cumsum(as.numeric(comps.per.snp))/split) # which processor should each comparison be assigned to?
 
         #now need to start the parallel job:
-        cl <- snow::makeSOCKcluster(par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(par)
+        doParallel::registerDoParallel(cl)
 
         #prepare reporting function
         ntasks <- par
-        if(verbose){
-          progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
-          opts <- list(progress=progress)
-        }
-        else{
-          opts <- list()
-        }
+        # if(verbose){
+        #   progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
+        #   opts <- list(progress=progress)
+        # }
+        # else{
+        #   opts <- list()
+        # }
 
         # initialize and store things
         x_storage <- as.matrix(as.data.frame(x))
@@ -2263,7 +2262,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         # run the LD calculations
         output <- foreach::foreach(q = 1:ntasks, .packages = c("bigmemory", "dplyr"), .inorder = TRUE,
-                                   .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
+                                   .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                      if(exists("xbd")){
                                        x_storage <- bigmemory::attach.big.matrix(xbd)
                                      }
@@ -2279,7 +2278,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         #release cores
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
 
 
         if(verbose){cat("LD computation completed. Preparing results.\n\t")}
@@ -2414,18 +2412,18 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #in parallel
     else{
-      cl <- snow::makeSOCKcluster(par)
-      doSNOW::registerDoSNOW(cl)
+      cl <- parallel::makePSOCKcluster(par)
+      doParallel::registerDoParallel(cl)
 
       #prepare reporting function
       ntasks <- tot_subfacets
-      if(verbose){
-        progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
-      }
-      else{
-        opts <- list()
-      }
+      # if(verbose){
+      #   progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
+      #   opts <- list(progress=progress)
+      # }
+      # else{
+      #   opts <- list()
+      # }
 
       x_storage <- as.matrix(as.data.frame(x))
       meta_storage <- x@snp.meta
@@ -2434,7 +2432,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #loop through each set of facets
       output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
-                                 .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
+                                 .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                    t.task <- task_list[i,]
                                    t.facet <- t.task[1]
                                    t.subfacet <- t.task[2]
@@ -2443,7 +2441,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #release cores and clean up
       parallel::stopCluster(cl)
-      doSNOW::registerDoSNOW()
       rm(x_storage, meta_storage, mDat_storage)
       gc();gc()
 
@@ -2517,22 +2514,22 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(filter_samp_facets){
       if(filter_snp_facets){
-        suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                                                facets = sample.facets,
-                                                                                subfacets = sample.subfacets,
-                                                                                snp.facets = snp.facets,
-                                                                                snp.subfacets = snp.subfacets))))
+        suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                               facets = sample.facets,
+                                                               subfacets = sample.subfacets,
+                                                               snp.facets = snp.facets,
+                                                               snp.subfacets = snp.subfacets)))
       }
       else{
-        suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                                                facets = sample.facets,
-                                                                                subfacets = sample.subfacets))))
+        suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                               facets = sample.facets,
+                                                               subfacets = sample.subfacets)))
       }
     }
     else if(filter_snp_facets){
-      suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                     snp.facets = snp.facets,
-                                                     snp.subfacets = snp.subfacets))))
+      suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                             snp.facets = snp.facets,
+                                                             snp.subfacets = snp.subfacets)))
     }
   }
 
@@ -2791,26 +2788,26 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       ptasks <- split(tasks, 1:par, drop = F)
     }
 
-    cl <- snow::makeSOCKcluster(par)
-    doSNOW::registerDoSNOW(cl)
+    cl <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(cl)
 
 
 
     #prepare reporting function
     ntasks <- length(ptasks)
-    if(verbose){
-      progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
-      opts <- list(progress=progress)
-    }
-    else{
-      opts <- list(opts)
-    }
+    # if(verbose){
+    #   progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+    #   opts <- list(progress=progress)
+    # }
+    # else{
+    #   opts <- list(opts)
+    # }
 
     #loop through each set of facets
     output <- foreach::foreach(q = 1:ntasks,
                                .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR", "data.table"),
-                               .inorder = TRUE,
-                               .options.snow = opts) %dopar% {
+                               .inorder = TRUE
+                               ) %dopar% {
 
                                  tasks <- ptasks[[q]]
 
@@ -2834,7 +2831,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #release cores and clean up
     parallel::stopCluster(cl)
-    doSNOW::registerDoSNOW()
+    parallel::stopCluster(cl)
     gc();gc()
 
     # split apart matrices and decompose
@@ -2981,7 +2978,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
@@ -3170,6 +3167,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
 #'   check this.
+#' @param cleanup logical, default TRUE. If TRUE, the NeEstimator output
+#'   directory will be removed following processing.
 #'
 #' @return A named list containing estimated Ne values (named "ne") and the
 #'   original provided data, possibly with additional LD values (named "x").
@@ -3198,7 +3197,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     methods = "LD",
                     temporal_methods = c("Pollak", "Nei", "Jorde"),
                     temporal_gens = NULL, max_ind_per_pop = NULL,
-                    outfile = "ne_out"){
+                    outfile = "ne_out", cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -3248,6 +3247,10 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   x <- .merge.snpR.stats(x, out, "pop")
   x <- .update_calced_stats(x, facets, "ne")
   x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
+  
+  if(cleanup){
+    unlink("NeEstimator", recursive = TRUE)
+  }
 
   return(x)
 }
@@ -3644,7 +3647,7 @@ calc_he <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   

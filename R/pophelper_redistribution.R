@@ -172,7 +172,7 @@
 .checkQ <- function(files=NULL,warn=FALSE) {
   
   if(is.null(files)) stop("checkQ: Input is empty.")
-  if(class(files) != "list" && class(files) != "character") stop("checkQ: Input is not a character or list datatype.")
+  if(!methods::is(files, "list") && !methods::is(files, "character")) stop("checkQ: Input is not a character or list datatype.")
   
   len1 <- length(files)
   
@@ -182,9 +182,9 @@
   {
     chk <- FALSE
     
-    if(class(files)=="list")
+    if(methods::is(files, "list"))
     {
-      if(class(files[[i]])=="data.frame") 
+      if(methods::is(files[[i]], "data.frame"))
       {
         chk <- TRUE
         checkvec[i] <- "data.frame"
@@ -228,9 +228,9 @@
         k=1
         while(!chk)
         {
-          if(class(try(suppressWarnings(read.table(files[i],header=FALSE,sep=seps[k],nrows=1,quote="",stringsAsFactors=FALSE))))!="try-error")
+          if(!methods::is(try(suppressWarnings(utils::read.table(files[i],header=FALSE,sep=seps[k],nrows=1,quote="",stringsAsFactors=FALSE))), "try-error"))
           {
-            df <- read.table(files[i],header=FALSE,sep=seps[k],nrows=1,quote="",stringsAsFactors=FALSE)
+            df <- utils::read.table(files[i],header=FALSE,sep=seps[k],nrows=1,quote="",stringsAsFactors=FALSE)
             if(all(sapply(df,is.numeric))) {
               checkvec[i] <- "BASIC"
               subtype[i] <- subtypes[k]
@@ -429,14 +429,14 @@
   # write table if opted
   if(writetable) {
     if(as.numeric(file.access(exportpath,2))==-1) stop(paste0("tabulateQ: Directory ",exportpath," has no write permission."))
-    write.table(main,file.path(exportpath,"tabulateQ.txt"),quote=FALSE,row.names=FALSE,sep="\t",dec=".")
+    utils::write.table(main,file.path(exportpath,"tabulateQ.txt"),quote=FALSE,row.names=FALSE,sep="\t",dec=".")
     message(file.path(exportpath,"tabulateQ.txt exported."))
   }
   
   return(main)
 }
 
-.summariseQ <- summarizeQ <- function(data=NULL,writetable=FALSE,exportpath=NULL) {
+.summariseQ <- function(data=NULL,writetable=FALSE,exportpath=NULL) {
   
   # does df data contain any data?
   if(is.null(data) || length(data)==0) stop("summariseQ: No input files.")
@@ -447,7 +447,7 @@
   }
   
   # make sure dataframe
-  if(class(data) != "data.frame") stop("summariseQ: Input is not a dataframe.")
+  if(!methods::is(data, "data.frame")) stop("summariseQ: Input is not a dataframe.")
   # convert column names to lowercase
   colnames(data) <- tolower(colnames(data))
   # is column k available?
@@ -460,19 +460,19 @@
   
   if(all(c("k","ind","loci","elpd") %in% colnames(data)))
   {
-    dframe1 <- aggregate(elpd ~ loci + ind + k,data=data,length)
+    dframe1 <- stats::aggregate(elpd ~ loci + ind + k,data=data,length)
     colnames(dframe1)[4] <- "runs"
-    dframe2 <- aggregate(elpd ~ loci + ind + k,data=data,FUN=function(x) c(elpdmean=mean(x,na.rm=TRUE),elpdsd=sd(x,na.rm=TRUE),elpdmin=mean(x,na.rm=TRUE)-sd(x,na.rm=TRUE),elpdmax=mean(x,na.rm=TRUE)+sd(x,na.rm=TRUE)))[,-c(1:3)]
+    dframe2 <- stats::aggregate(elpd ~ loci + ind + k,data=data,FUN=function(x) c(elpdmean=mean(x,na.rm=TRUE),elpdsd=stats::sd(x,na.rm=TRUE),elpdmin=mean(x,na.rm=TRUE)-stats::sd(x,na.rm=TRUE),elpdmax=mean(x,na.rm=TRUE)+stats::sd(x,na.rm=TRUE)))[,-c(1:3)]
     dframe1 <- cbind(dframe1,dframe2)
   }else{
-    dframe1 <- aggregate(file ~ ind + k,data=data[,c("file","k","ind")],length)
+    dframe1 <- stats::aggregate(file ~ ind + k,data=data[,c("file","k","ind")],length)
     colnames(dframe1)[3] <- "runs"
   }
   
   # write table if opted
   if(writetable) {
     if(as.numeric(file.access(exportpath,2))==-1) stop(paste0("summariseQ: Directory ",exportpath," has no write permission."))
-    write.table(dframe1,file.path(exportpath,"summariseQ.txt"),quote=FALSE,row.names=FALSE,sep="\t",dec=".")
+    utils::write.table(dframe1,file.path(exportpath,"summariseQ.txt"),quote=FALSE,row.names=FALSE,sep="\t",dec=".")
     message(file.path(exportpath,"summariseQ.txt exported."))
   }
   
@@ -541,7 +541,7 @@
     
     # error check
     tc_file_a <- textConnection(file_a)
-    file_b <- read.delim(tc_file_a,header=FALSE,sep="",stringsAsFactors=FALSE)
+    file_b <- utils::read.delim(tc_file_a,header=FALSE,sep="",stringsAsFactors=FALSE)
     close(tc_file_a)
     
     suppressWarnings(
@@ -551,7 +551,7 @@
     )
     rm(file_b)
     
-    if(class(errorcheck)=="try-error")
+    if(methods::is(errorcheck, "try-error"))
     {
       # using manual substring
       file_a <- gsub("\\([0-9.,]+\\)","",file_a)
@@ -564,7 +564,7 @@
     }else{
       # using textconnection
       tc_file_a <- textConnection(file_a)
-      file_b <- read.delim(tc_file_a,header=FALSE,sep="",stringsAsFactors=FALSE)
+      file_b <- utils::read.delim(tc_file_a,header=FALSE,sep="",stringsAsFactors=FALSE)
       close(tc_file_a)
       dframe <- file_b[,as.integer(grep(":",file_b[1,])+1):as.integer(max(grep("^[0-9]|[.]+$",file_b[1,]))),drop=FALSE]
     }
@@ -652,7 +652,7 @@
     tc_file1 <- textConnection(file1)
     
     # read as a table
-    file2 <- read.delim(tc_file1,header=FALSE,sep="\t",stringsAsFactors=FALSE)
+    file2 <- utils::read.delim(tc_file1,header=FALSE,sep="\t",stringsAsFactors=FALSE)
     
     # close text connection
     close(tc_file1)
@@ -702,9 +702,9 @@
   for (i in seq_along(files))
   {
     # read in delimited files
-    if(chk$subtype[i]=="SPACE") dframe <- read.delim(files[i],header=FALSE,sep="",dec=".",stringsAsFactors=FALSE)
-    if(chk$subtype[i]=="TAB") dframe <- read.delim(files[i],header=FALSE,sep="\t",dec=".",stringsAsFactors=FALSE)
-    if(chk$subtype[i]=="COMMA") dframe <- read.delim(files[i],header=FALSE,sep=",",dec=".",stringsAsFactors=FALSE)
+    if(chk$subtype[i]=="SPACE") dframe <- utils::read.delim(files[i],header=FALSE,sep="",dec=".",stringsAsFactors=FALSE)
+    if(chk$subtype[i]=="TAB") dframe <- utils::read.delim(files[i],header=FALSE,sep="\t",dec=".",stringsAsFactors=FALSE)
+    if(chk$subtype[i]=="COMMA") dframe <- utils::read.delim(files[i],header=FALSE,sep=",",dec=".",stringsAsFactors=FALSE)
     
     # error if columns contain non-numeric
     if(!all(sapply(dframe,is.numeric))) stop("readQBasic: One or more columns are not numeric.")
@@ -748,8 +748,8 @@
   {
     fname <- gsub(".txt","",basename(files[i]))
     
-    df1 <- read.table(files[i],header=FALSE,sep="",dec=".",quote="",stringsAsFactors=FALSE)
-    if(class(df1)!="data.frame") stop("readQClumpp: Read error. Check input format.")
+    df1 <- utils::read.table(files[i],header=FALSE,sep="",dec=".",quote="",stringsAsFactors=FALSE)
+    if(!methods::is(df1, "data.frame")) stop("readQClumpp: Read error. Check input format.")
     
     df1[,1] <- factor(df1[ ,1])
     indlev <- levels(df1[,1])
@@ -802,12 +802,12 @@
   # initialise loop variables
   len <- length(t3list)
   qlist <- vector("list",length=len)
-  if(progressbar) pb <- txtProgressBar(min=0,max=len,style=3)
+  if(progressbar) pb <- utils::txtProgressBar(min=0,max=len,style=3)
   
   # loop to read in data
   for(i in seq_along(t3list))
   {
-    if(progressbar) setTxtProgressBar(pb,i)
+    if(progressbar) utils::setTxtProgressBar(pb,i)
     if(!"tess3.run" %in% names(t3list[[i]])) stop("readQTess3: 'tess3.run' slot not found in list item ",i,".")
     dlist <- t3list[[i]]$tess3.run[[1]]
     dframe <- as.data.frame(dlist$Q,stringsAsFactors=FALSE)
@@ -852,11 +852,11 @@
     
     # read table using delimiter : and use column V2
     tc_file1 <- textConnection(file1)
-    file2 <- read.delim(tc_file1,sep=":",header=FALSE,stringsAsFactors=FALSE)$V2
+    file2 <- utils::read.delim(tc_file1,sep=":",header=FALSE,stringsAsFactors=FALSE)$V2
     
     # read table using delimiter space
     tc_file2 <- textConnection(file2)
-    dframe <- read.delim(tc_file2,sep="",header=FALSE,stringsAsFactors=FALSE)
+    dframe <- utils::read.delim(tc_file2,sep="",header=FALSE,stringsAsFactors=FALSE)
     
     # close text connections
     close(tc_file1,tc_file2)

@@ -486,13 +486,13 @@ call_colony <- function(infile, colony_path, update_bib = FALSE, verbose = TRUE)
       shell(call)
     }
     else{
-      invisible(utils::capture.output(shell(call)))
+      .make_it_quiet(shell(call))
     }
     
   }
   else{
     if(verbose){
-      invisible(utils::capture.output(system(call)))
+      .make_it_quiet(system(call))
     }
     else{
       system(call)

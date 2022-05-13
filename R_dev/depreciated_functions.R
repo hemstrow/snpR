@@ -343,7 +343,7 @@ get_position_group_par <- function(data, num_cores){
   cat("done.\nRunning on ", num_cores, "cores.")
   #print(w_df)
   cl <- makeCluster(num_cores)
-  registerDoParallel(cl)
+  registerdoParallel::(cl)
   output <- foreach(i=1:nrow(w_df), .inorder = TRUE, .combine = rbind) %dopar%{
     #if(i %% 10 == 0){cat("locus number: ", i, "\n")}
     w_v <- unlist(strsplit(w_df[i,1], "_"))
@@ -1059,12 +1059,12 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
 
     #prepare things for parallel run if requested:
     if(par_cores != FALSE){
-      cl <- snow::makeSOCKcluster(par_cores)
-      doSNOW::registerDoSNOW(cl)
+      cl <- parallel::makePSOCKcluster(par_cores)
+      doParallel::registerDoParallel(cl)
 
       ntasks <- nrow(boot_matrix)
-      progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
-      opts <- list(progress=progress)
+      # progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
+      # opts <- list(progress=progress)
     }
 
     #function to grab correct input data:
@@ -1102,8 +1102,8 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
 
     #call if parallel:
     if(par_cores != FALSE){
-      foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                       .options.snow = opts) %dopar% {
+      foreach::foreach(q = 1:ntasks, .inorder = TRUE
+                       ) %dopar% {
 
                          tdat <- gbdat(tstat = boot_matrix[i,1])
                          tfws <- tdat$fws

@@ -299,8 +299,13 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  for each chromosome in order.
 #'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
-#'@param header_cols Number of header columns on passed delimited file. Mostly
-#'  for internal use with \code{\link{read_delimited_snps}}.
+#'@param header_cols numeric, default 0. Number of header columns containing
+#'  sample metadata. Used if a tab delimited or structre input file is provided.
+#'@param rows_per_individual numeric (1 or 2), default 2. Number of rows used
+#'  for each individual. For structure input files only.
+#'@param marker_and_sample_names logical, default FALSE. If TRUE, assumes that a
+#'  header row of marker and sample/sample metadata names is present. For
+#'  structure input files only.
 #'@param verbose Logical, default FALSE. If TRUE, will print a few status updates and checks.
 #'  
 #'@examples
@@ -364,7 +369,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0, verbose = FALSE){
+                             ..., header_cols = 0, rows_per_individual = 2, marker_and_sample_names = FALSE, verbose = FALSE){
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
@@ -388,13 +393,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   # genotypes
   if("genind" %in% class(genotypes)){
-    return(genind.to.snpRdata(genotypes, snp.meta, sample.meta))
+    return(.genind.tosnpRdata(genotypes, snp.meta, sample.meta))
   }
   if("genlight" %in% class(genotypes)){
-    return(genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
+    return(.genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
   }
   if("vcfR" %in% class(genotypes)){
-    return(process_vcf(genotypes, snp.meta, sample.meta))
+    return(.process_vcf(genotypes, snp.meta, sample.meta))
   }
   if(is.matrix(genotypes)){
     genotypes <- as.data.frame(genotypes)
@@ -403,20 +408,28 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     if(file.exists(genotypes)){
       # check for ms or vcf, etc file
       if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
-        return(process_vcf(genotypes, snp.meta, sample.meta))
+        return(.process_vcf(genotypes, snp.meta, sample.meta))
       }
       else if(grepl("\\.ms$", genotypes)){
         return(format_snps(genotypes, input_format = "ms", snp.meta = snp.meta, sample.meta = sample.meta, chr.length = chr.length))
       }
       else if(grepl("\\.genepop$", genotypes)){
-        return(process_genepop(genotypes, snp.meta, sample.meta, mDat))
+        return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
       }
       else if(grepl("\\.fstat$", genotypes)){
-        return(process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
+        return(.process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
       }
       else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
         .check.installed("tools")
-        return(process_plink(tools::file_path_sans_ext(genotypes)))
+        return(.process_plink(tools::file_path_sans_ext(genotypes)))
+      }
+      else if(grepl("\\.str$", genotypes)){
+        return(.process_structure(genotypes, 
+                                  rows_per_individual = rows_per_individual, 
+                                  marker_and_sample_names = marker_and_sample_names, 
+                                  header_cols = header_cols, 
+                                  snp.meta = snp.meta, 
+                                  sample.meta = sample.meta))
       }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))
@@ -561,13 +574,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
   if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
-  invisible(utils::capture.output(x <- filter_snps(x, non_poly = FALSE)))
+  .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
   
   # add basic maf
-  invisible(utils::capture.output(x <- calc_maf(x)))
+  .make_it_quiet(x <- calc_maf(x))
   
   # add ac
-  invisible(utils::capture.output(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")]))
+  .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
   
   
   #========return=========
@@ -879,6 +892,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     
     # get prox
     prox <- y$prox[y$prox$sample.facet %in% samp.facets,]
+    if(nrow(prox) == 0){
+      stop("No LD values calculated for these facets.\n")
+    }
     
     # get matrices
     matrices <- y$LD_matrices[[which(names(y$LD_matrices) %in% facets)]]

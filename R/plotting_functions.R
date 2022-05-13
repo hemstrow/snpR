@@ -1414,8 +1414,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' results can be combined for plotting across all of these reps using the
 #' clumpp option. This option calls the CLUMPP software package in order to
 #' combine proportion population membership across multiple runs via
-#' \code{\link[pophelper]{clumppExport}}. Again, please cite both CLUMPP and
-#' pophelper if using this option.
+#' \code{clumppExport} from the \code{pophelper} package. Again, please cite
+#' both CLUMPP and pophelper if using this option.
 #'
 #' Since CLUMPP is run independantly for each value of K, cluster identites
 #' often "flip" between K values. For example individuals that are grouped into
@@ -1452,8 +1452,9 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   each individual (populations, etc.).
 #' @param facet.order character, default NULL. Optional order in which the
 #'   levels of the provided facet should appear on the plot, left to right.
-#' @param k numeric vector, default 2. The k value (number of clusters) for which
-#'   to run the clustering/assignment algorithm. Each provided k value will be run.
+#' @param k numeric vector, default 2. The k value (number of clusters) for
+#'   which to run the clustering/assignment algorithm. Each provided k value
+#'   will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
@@ -1521,9 +1522,9 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   overlap with samples somewhat, this may be desirable.
 #' @param separator_color character, default "white". Color of facet level
 #'   separator lines.
-#' @param no_admix logical, default FALSE. Used if method = "structure". If TRUE,
-#'   the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
-#'   will be assumed between clusters.
+#' @param no_admix logical, default FALSE. Used if method = "structure". If
+#'   TRUE, the NOADMIX flag in STRUCTURE will be set to 1, meaning that no
+#'   admixture will be assumed between clusters.
 #' @param use_pop_info logical, default FALSE. Used if method = "structure". If
 #'   TRUE, the USEPOPINFO flag in STRUCTURE will be set to 1, meaning that
 #'   individuals are assumed to come from the populations that they have been
@@ -1611,7 +1612,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   Starting seed for analysis runs. Each additional run (k value or rep) will
 #'   use a successive seed.
 #' @param strip_col_names string, default NULL. An optional regular expression
-#'   indicating a way to process the column names prior to plotting. Parts of 
+#'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
 #'   argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
 #'   part off. A vector of strings will strip multiple patterns.
@@ -1645,12 +1646,12 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
 #'   \item{K_plot: } A data.frame containing the value suggested for use in K
 #'   selection vs K value for the selected method.}
-#'  
+#'
 #' @examples
 #' \dontrun{
 #' # basic sNMF, k = 2 and 3
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
-#' 
+#'
 #' # basic snapclust
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
 #' }
@@ -1913,7 +1914,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       tempfile <- paste0(tempfile, ".pdf")
 
       suppressMessages(res <- try(ggplot2::ggsave(tempfile, color.check), silent = T))
-      invisible(utils::capture.output(file.remove(tempfile)))
+      .make_it_quiet(file.remove(tempfile))
       if("try-error" %in% class(res)){
         msg <- c(msg, "Alt.palette contains non-color entries or otherwise fails to properly plot.\n")
       }
@@ -2346,7 +2347,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       # format and run snapclust
-      invisible(utils::capture.output(x.g <- format_snps(x, "adegenet")))
+      .make_it_quiet(x.g <- format_snps(x, "adegenet"))
 
       # initialize
       qlist <- vector("list", length = length(k))
@@ -2409,7 +2410,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       if(file.exists("lea_input.geno")){
         file.remove("lea_input.geno")
       }
-      invisible(utils::capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
+      .make_it_quiet(format_snps(x, "lea", outfile = "lea_input.geno"))
 
       # run the analysis
       if(!is.null(I)){
@@ -2478,7 +2479,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       
-      tag <- stringi::stri_rand_strings(1, "10")
+      tag <- .rand_strings(1, 10)
       
       osp <- options()$scipen
       options(scipen = 999)
@@ -2773,8 +2774,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # strip column names if requested
   if(!is.null(strip_col_names)){
     for(pat in 1:length(strip_col_names)){
-      colnames(pdat) <- stringr::str_replace(colnames(pdat), strip_col_names[pat], "")
-      facet <- stringr::str_replace(facet, strip_col_names[pat], "")
+      colnames(pdat) <- gsub(strip_col_names[pat], "", colnames(pdat))
+      facet <- gsub(strip_col_names[pat], "", facet)
     }
   }
   
@@ -3555,8 +3556,8 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   needed_dists <- .check_calced_stats(x, facets, paste0("genetic_distance", "_", distance_method, "_", interpolate))
   needed_dists <- which(!unlist(needed_dists))
   if(length(needed_dists) > 0){
-    invisible(utils::capture.output(
-      x <- calc_genetic_distances(x, facets[needed_dists], distance_method, interpolate = interpolate)))
+    .make_it_quiet(
+      x <- calc_genetic_distances(x, facets[needed_dists], distance_method, interpolate = interpolate))
   }
   
   out <- vector("list", length = length(facets))

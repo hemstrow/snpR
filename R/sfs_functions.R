@@ -142,7 +142,7 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
   # get sfs
   if(is.null(pops)){pops <- ".base"}
   sfs <- make_SFS(y, pops, projection, fold, update_bib)
-
+  
   return(sfs)
 }
 
@@ -402,6 +402,9 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
     if(!fold){
       masked[length(masked)] <- 0
     }
+  }
+  if(sum(masked, na.rm = T) == 0){
+    stop("No segrgating sites remain after projection. Try decreasing projection sizes!\n")
   }
   
   cat("SFS completed with", sum(masked, na.rm = T), "segrgating sites.\n")

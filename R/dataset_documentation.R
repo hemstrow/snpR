@@ -1,6 +1,6 @@
 #'Deschutes stickleback example snpRdata.
 #'
-#'A dataset containing genotypes at 833 SNP loci for 420 Three-spined
+#'A dataset containing genotypes at 100 SNP loci for 100 Three-spined
 #'Stickleback collected in 2015 from several locations in the Deschutes River,
 #'Oregon, USA. For more information, see Hemstrom et al (in prep).
 #'
@@ -19,7 +19,7 @@
 
 #'Deschutes stickleback raw data.
 #'
-#'A dataset containing genotypes at 833 SNP loci for 420 Three-spined
+#'A dataset containing genotypes at 100 SNP loci for 100 Three-spined
 #'Stickleback collected in 2015 from several locations in the Deschutes River,
 #'Oregon, USA. For more information, see Hemstrom et al (in prep).
 #'
@@ -39,6 +39,8 @@
 
 
 
+#' An artifical pedigree from the stickleback dataset.
+#' 
 #' Contains an artificially constructed pedigree based on the 
 #' \code{\link{stickSNPs}} dataset. Here samples named 1 through 420 represent 
 #' the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
