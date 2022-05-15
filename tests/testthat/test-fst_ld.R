@@ -116,7 +116,7 @@ test_that("correct cld ld",{
 
 test_that("correct traditional ld",{
   local_edition(3)
-  # skip_on_cran(); skip_on_ci()
+  skip_on_cran(); skip_on_ci()
   tdld <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE)
   tdld <- get.snpR.stats(tdld, stats = "ld")
   prox <- tdld$LD$prox
@@ -126,7 +126,7 @@ test_that("correct traditional ld",{
 
 test_that("correct ME ld",{
   local_edition(3)
-  # skip_on_cran(); skip_on_ci()
+  skip_on_cran(); skip_on_ci()
   set.seed(1212)
   tdldme <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE, use.ME = TRUE)
   tdldme <- get.snpR.stats(tdldme, stats = "ld")
