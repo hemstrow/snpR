@@ -6,6 +6,7 @@
 
 ### Major
 * Added `read_structure()` to read STRUCTURE formatted files. Added auto-read of .str files to `import.snpR.data()`.
+* Added `calc_abba_baba()` to do ABBA/BABA tests, including block jackknifing for significance.
 
 ### Minor
 * Now redistributing part of Roy Francis's `pophelper` package, since it's not on CRAN. Switched to GPL license to allow this. The package is still cited automatically when generating a citation during `plot_structure()` or `plot_structure_map`(). Added a dependency on `stats` to allow for the re-packaging.
@@ -15,12 +16,14 @@
 * Added a `verbose` argument to `calc_ne()`.
 
 ## Documentation
-* Removed the `snpR_association` vignette, since it required the `GMMAT`, `BGLR`, and `ranger` R packages to be installed, but they are only suggested, not required. This could cause vignette building to fail. May re-tool later to just use the internally implmented association tests.
+* Removed the `snpR_association` vignette, since it required the `GMMAT`, `BGLR`, and `ranger` R packages to be installed, but they are only suggested, not required. This could cause vignette building to fail. May re-tool later to just use the internally implemented association tests.
+* The `mathjaxr` package is now imported to aid equation documentation.
 
 ## Bug fixes
-*Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
-*`calc_ne()` and `run_colony()` actually cleanup now if asked on Windows.
-*Fixed the `verbose` argument on `run_colony()` to actually work on Windows.
+* Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
+* `calc_ne()` and `run_colony()` actually cleanup now if asked on Windows.
+* Fixed the `verbose` argument on `run_colony()` to actually work on Windows.
+* Fixed a bug trying to merge new and old data with the same columns in different orders could cause NAs to be filled by the wrong numbers. Internal only problem that only effected the new `calc_abba_baba()` function.
 
 # snpR 1.2.1
 

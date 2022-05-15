@@ -983,6 +983,8 @@ is.snpRdata <- function(x){
     stat.cols.y <- as.matrix(stat.cols.to.fix[,stat.cols.y, with = FALSE])
     stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
     stat.cols.x <- as.matrix(stat.cols.to.fix[,stat.cols.x, with = FALSE])
+    stat.cols.x <- stat.cols.x[,order(colnames(stat.cols.x)), drop = FALSE]
+    stat.cols.y <- stat.cols.y[,order(colnames(stat.cols.y)), drop = FALSE]
     NA.y <- is.na(stat.cols.y)
     stat.cols.y[NA.y] <- stat.cols.x[NA.y]
     colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))

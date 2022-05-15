@@ -13,8 +13,9 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                 "fis"))
 window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
-pairwise.stats <- list(stat = "fst",
-                    col_pattern = list(c("fst", "nk")))
+pairwise.stats <- list(stat = c("fst", "abba_baba"),
+                    col_pattern = list(c("fst", "nk"),
+                                       c("D_abba_baba", "abba", "baba", "nk")))
 sample.stats <- list(stat = c("het_hom_ratio", "hs"),
                   col_pattern = list("Het/Hom",
                                      "hs"))
@@ -48,8 +49,15 @@ for(i in 1:length(window.stats[[1]])){
 
 for(i in 1:length(pairwise.stats[[1]])){
   names(statistic_index)[tracker] <- pairwise.stats[[1]][i]
-  statistic_index[[tracker]] <- list(category = "pairwise", types = c("pairwise", "pairwise.window", "weighted.means", "fst.matrix", "bootstraps"),
-                                     col_pattern = pairwise.stats[[2]][[i]])
+  if(pairwise.stats[[1]][i] == "fst"){
+    statistic_index[[tracker]] <- list(category = "pairwise", types = c("pairwise", "pairwise.window", "weighted.means", "fst.matrix", "bootstraps"),
+                                       col_pattern = pairwise.stats[[2]][[i]])
+  }
+  else{
+    statistic_index[[tracker]] <- list(category = "pairwise", types = c("pairwise", "pairwise.window", "weighted.means"),
+                                       col_pattern = pairwise.stats[[2]][[i]])
+  }
+  
   tracker <- tracker + 1
 }
 

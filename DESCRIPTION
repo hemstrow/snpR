@@ -20,6 +20,7 @@ LazyData: true
 Imports:
     doParallel,
     dplyr,
+    mathjaxr,
     matrixStats,
     methods,
     ggplot2,
@@ -92,3 +93,4 @@ Collate:
     'stat_functions.R'
     'utility_functions.R'
 Remotes: JiscaH/sequoia
+RdMacros: mathjaxr

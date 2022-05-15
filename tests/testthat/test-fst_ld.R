@@ -1,5 +1,3 @@
-context("fst and ld")
-
 test_that("correct genepop", {
   local_edition(3)
   skip_on_cran(); skip_on_ci()
