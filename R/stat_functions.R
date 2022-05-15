@@ -3791,69 +3791,84 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
   return(x)
 }
 
+# better code for the abba baba doc, but it currently isn't working
+
+#\loadmathjax An ABBA/BABA test according to Green et al (2010) tests the
+# hypothesis that there are an equal number of loci where population 1
+# (\mjeqn{p_{1}}{ascii}) and population 2 (\mjeqn{p_{2}}{ascii}) are more
+# closely related to population 3 (\mjeqn{p_3}{ascii}). The ratio of these two
+# scenarios is given as \mjeqn{D = ABBA/BABA}{ascii}, where: \mjdeqn{ABBA = (1
+# - p_{1})p_{2}p_{3}}{ascii}\mjdeqn{BABA = p_{1}(1 - p_{2})p_{3}}{ascii}
+# where \mjeqn{p_{1}}{ascii},\mjeqn{p_{2}}{ascii}, and \mjeqn{p_{3}}{ascii} are
+# the derived allele frequencies in populations 1 through 3, respectively.
+# \emph{D} values are provided for both the overall comparison and within any
+# levels of provided snp facets.
+#
+#  \mjeqn{D_{J}}{ascii} is
+# weighted by the number of SNPs removed that block (\mjeqn{m_{j}}{ascii}),
+# such that: \mjdeqn{D_{J} \sum_{j = 1}^{g}{D - D_{-j}} + \sum_{j =
+# 1}^{g}{\frac{m_{j}D_{-j}}{n}}}{ascii} where \mjeqn{g}{ascii} is the number of
+# blocks and \mjeqn{n}{ascii} is the total number of SNPs, and
+# \mjeqn{D_{-j}}{ascii} is the D value for one block with the SNPs for that
+# block's window ommited. The squared-standard error for \mjeqn{D_{J}}{ascii}
+# is then: \mjdeqn{\sigma^{2} = \frac{1/6}\sum_{j = 1}^{g}{\frac{(\tau_{j} -
+# \theta_{D})^{2}}{h_{j} - 1}}}{ascii}where \mjeqn{h_{j} =
+# \frac{n}{m_{j}}}{ascii} and \mjdeqn{\tau_{j} = h_{j}D - ((h_j{} -
+# 1)D_{-j})}{ascii} A \emph{Z} value can then be calculated as usual (\mjeqn{Z
+# = \frac{D}{\sqrt{\sigma^{2}}}}{ascii}), and a \emph{p}-value determined from
+# using a two-sided \emph{Z}-test following a normal distribution with
+# \mjeqn{\mu = 0}{ascii} and \mjeqn{\sigma = 1}{ascii}.
+
+
 
 #' Conduct an ABBA/BABA test for gene flow.
 #'
 #' Estimate D according to Green et al (2010) via an ABBA/BABA test for a
 #' specific set of three different populations.
 #'
-#' \loadmathjax An ABBA/BABA test according to Green et al (2010) tests the
-#' hypothesis that there are an equal number of loci where population 1
-#' (\mjeqn{p_{1}}{ascii}) and population 2 (\mjeqn{p_{2}}{ascii}) are more
-#' closely related to population 3 (\mjeqn{p_3}{ascii}). The ratio of these two
-#' scenarios is given as \mjeqn{D = ABBA/BABA}{ascii}, where: \mjdeqn{ABBA = (1
-#' - p_{1})p_{2}p_{3}}{ascii}\mjdeqn{BABA = p_{1}(1 - p_{2})p_{3}}{ascii}
-#' where \mjeqn{p_{1}}{ascii},\mjeqn{p_{2}}{ascii}, and \mjeqn{p_{3}}{ascii} are
-#' the derived allele frequencies in populations 1 through 3, respectively.
-#' \emph{D} values are provided for both the overall comparison and within any
-#' levels of provided snp facets.
+#' An ABBA/BABA test according to Green et al (2010) tests the hypothesis that
+#' there are an equal number of loci where population 1 and population 2  are
+#' more closely related to population 3. The ratio of these two scenarios is
+#' given as ABBA/BABA, where: ABBA = (1 - p1)p2p3 and BABA = p1(1 - p2)p3. where
+#' p1, p2, and p3 arethe derived allele frequencies in populations 1 through 3,
+#' respectively. \emph{D} values are provided for both the overall comparison
+#' and within any levels of provided snp facets.
 #'
-#' \emph{p}-values for \mjeqn{D}{ascii} can be calculated by a block jackknifing
+#' \emph{p}-values for \emph{D} can be calculated by a block jackknifing
 #' approach according to Maier et. al (2022) by removing SNPs from each of
-#' \mjeqn{n}{ascii} genomic windows (blocks) and then calculating
-#' \mjeqn{D}{ascii} for all other sites. Non-overlapping windows are "blocked"
-#' by reference to any provided SNP metadata facets (usually chromosome), each
-#' with a length equal to \mjeqn{\sigma \times 1000}{ascii}, so providing
-#' \code{sigma = 100} will use 100kb windows. Each block's (\mjeqn{j}{ascii})
-#' contribution to the overall jackknife average \mjeqn{D_{J}}{ascii} is
-#' weighted by the number of SNPs removed that block (\mjeqn{m_{j}}{ascii}),
-#' such that: \mjdeqn{D_{J} \sum_{j = 1}^{g}{D - D_{-j}} + \sum_{j =
-#' 1}^{g}{\frac{m_{j}D_{-j}}{n}}}{ascii} where \mjeqn{g}{ascii} is the number of
-#' blocks and \mjeqn{n}{ascii} is the total number of SNPs, and
-#' \mjeqn{D_{-j}}{ascii} is the D value for one block with the SNPs for that
-#' block's window ommited. The squared-standard error for \mjeqn{D_{J}}{ascii}
-#' is then: \mjdeqn{\sigma^{2} = \frac{1/6}\sum_{j = 1}^{g}{\frac{(\tau_{j} -
-#' \theta_{D})^{2}}{h_{j} - 1}}}{ascii}where \mjeqn{h_{j} =
-#' \frac{n}{m_{j}}}{ascii} and \mjdeqn{\tau_{j} = h_{j}D - ((h_j{} -
-#' 1)D_{-j})}{ascii} A \emph{Z} value can then be calculated as usual (\mjeqn{Z
-#' = \frac{D}{\sqrt{\sigma^{2}}}}{ascii}), and a \emph{p}-value determined from
-#' using a two-sided \emph{Z}-test following a normal distribution with
-#' \mjeqn{\mu = 0}{ascii} and \mjeqn{\sigma = 1}{ascii}.
+#' \emph{n} genomic windows (blocks) and then calculating \emph{D} for all other
+#' sites. Non-overlapping windows are "blocked" by reference to any provided SNP
+#' metadata facets (usually chromosome), each with a length equal to
+#' \emph{sigma}, so providing \emph{sigma = 100} will use 100kb windows.
 #'
 #' @param x snpRdata. Input SNP data.
 #' @param facet character. Categorical metadata variables by which to break up
 #'   analysis. Must contain a sample facet. See \code{\link{Facets_in_snpR}} for
 #'   more details.
-#' @param p1 character. Name of population 1, must match a category present in the
-#'   provided facet.
-#' @param p2 character. Name of population 2, must match a category present in the
-#'   provided facet.
-#' @param p3 character. Name of population 3, must match a category present in the
-#'   provided facet.
-#' @param jackknife logical, default FALSE. If TRUE, block-jackknifed significance for
-#'   D will be calculated with window size sigma accoriding to any SNP facet levels. See details.
-#' @param jackknife_par numeric or FALSE, default FALSE. If numeric, jackknifes per SNP levels will
-#'   be run with the requested number of processing threads.
-#' @param sigma numeric or NULL, default NULL. If jackknifes are requested, the size of the windows
-#'   to block by, in kb. Should be large enough to account for linkage!
+#' @param p1 character. Name of population 1, must match a category present in
+#'   the provided facet.
+#' @param p2 character. Name of population 2, must match a category present in
+#'   the provided facet.
+#' @param p3 character. Name of population 3, must match a category present in
+#'   the provided facet.
+#' @param jackknife logical, default FALSE. If TRUE, block-jackknifed
+#'   significance for D will be calculated with window size sigma accoriding to
+#'   any SNP facet levels. See details.
+#' @param jackknife_par numeric or FALSE, default FALSE. If numeric, jackknifes
+#'   per SNP levels will be run with the requested number of processing threads.
+#' @param sigma numeric or NULL, default NULL. If jackknifes are requested, the
+#'   size of the windows to block by, in kb. Should be large enough to account
+#'   for linkage!
 #'
 #' @author William Hemstrom
 #' @references
-#' Maier, R., Flegontov, P., Flegontova, O., Changmai, P., & Reich, D. (2022). On the limits of fitting complex models of population history to genetic data. BioRxiv. doi: 10.1101/2022.05.08.491072
-#' E., G. R., Johannes, K., W., B. A., Tomislav, M., Udo, S., Martin, K., … Svante, P. (2010). A Draft Sequence of the Neandertal Genome. Science, 328(5979), 710–722. doi: 10.1126/science.1188021
+#' Maier, R. et al (2022). On the limits of fitting complex models of population
+#' history to genetic data. BioRxiv. doi: 10.1101/2022.05.08.491072
+#' 
+#' Green, ER, et al (2010). A Draft Sequence of the Neandertal Genome. Science,
+#' 328(5979), 710–722. doi: 10.1126/science.1188021
 #' 
 #' @export
-#' @import mathjaxr
 #' @examples 
 #' 
 #' # add the ref and anc columns

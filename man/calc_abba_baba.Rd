@@ -22,61 +22,45 @@ calc_abba_baba(
 analysis. Must contain a sample facet. See \code{\link{Facets_in_snpR}} for
 more details.}
 
-\item{p1}{character. Name of population 1, must match a category present in the
-provided facet.}
+\item{p1}{character. Name of population 1, must match a category present in
+the provided facet.}
 
-\item{p2}{character. Name of population 2, must match a category present in the
-provided facet.}
+\item{p2}{character. Name of population 2, must match a category present in
+the provided facet.}
 
-\item{p3}{character. Name of population 3, must match a category present in the
-provided facet.}
+\item{p3}{character. Name of population 3, must match a category present in
+the provided facet.}
 
-\item{jackknife}{logical, default FALSE. If TRUE, block-jackknifed significance for
-D will be calculated with window size sigma accoriding to any SNP facet levels. See details.}
+\item{jackknife}{logical, default FALSE. If TRUE, block-jackknifed
+significance for D will be calculated with window size sigma accoriding to
+any SNP facet levels. See details.}
 
-\item{jackknife_par}{numeric or FALSE, default FALSE. If numeric, jackknifes per SNP levels will
-be run with the requested number of processing threads.}
+\item{jackknife_par}{numeric or FALSE, default FALSE. If numeric, jackknifes
+per SNP levels will be run with the requested number of processing threads.}
 
-\item{sigma}{numeric or NULL, default NULL. If jackknifes are requested, the size of the windows
-to block by, in kb. Should be large enough to account for linkage!}
+\item{sigma}{numeric or NULL, default NULL. If jackknifes are requested, the
+size of the windows to block by, in kb. Should be large enough to account
+for linkage!}
 }
 \description{
 Estimate D according to Green et al (2010) via an ABBA/BABA test for a
 specific set of three different populations.
 }
 \details{
-\loadmathjax An ABBA/BABA test according to Green et al (2010) tests the
-hypothesis that there are an equal number of loci where population 1
-(\mjeqn{p_{1}}{ascii}) and population 2 (\mjeqn{p_{2}}{ascii}) are more
-closely related to population 3 (\mjeqn{p_3}{ascii}). The ratio of these two
-scenarios is given as \mjeqn{D = ABBA/BABA}{ascii}, where: \mjdeqn{ABBA = (1
-- p_{1})p_{2}p_{3}}{ascii}\mjdeqn{BABA = p_{1}(1 - p_{2})p_{3}}{ascii}
-where \mjeqn{p_{1}}{ascii},\mjeqn{p_{2}}{ascii}, and \mjeqn{p_{3}}{ascii} are
-the derived allele frequencies in populations 1 through 3, respectively.
-\emph{D} values are provided for both the overall comparison and within any
-levels of provided snp facets.
+An ABBA/BABA test according to Green et al (2010) tests the hypothesis that
+there are an equal number of loci where population 1 and population 2  are
+more closely related to population 3. The ratio of these two scenarios is
+given as ABBA/BABA, where: ABBA = (1 - p1)p2p3 and BABA = p1(1 - p2)p3. where
+p1, p2, and p3 arethe derived allele frequencies in populations 1 through 3,
+respectively. \emph{D} values are provided for both the overall comparison
+and within any levels of provided snp facets.
 
-\emph{p}-values for \mjeqn{D}{ascii} can be calculated by a block jackknifing
+\emph{p}-values for \emph{D} can be calculated by a block jackknifing
 approach according to Maier et. al (2022) by removing SNPs from each of
-\mjeqn{n}{ascii} genomic windows (blocks) and then calculating
-\mjeqn{D}{ascii} for all other sites. Non-overlapping windows are "blocked"
-by reference to any provided SNP metadata facets (usually chromosome), each
-with a length equal to \mjeqn{\sigma \times 1000}{ascii}, so providing
-\code{sigma = 100} will use 100kb windows. Each block's (\mjeqn{j}{ascii})
-contribution to the overall jackknife average \mjeqn{D_{J}}{ascii} is
-weighted by the number of SNPs removed that block (\mjeqn{m_{j}}{ascii}),
-such that: \mjdeqn{D_{J} \sum_{j = 1}^{g}{D - D_{-j}} + \sum_{j =
-1}^{g}{\frac{m_{j}D_{-j}}{n}}}{ascii} where \mjeqn{g}{ascii} is the number of
-blocks and \mjeqn{n}{ascii} is the total number of SNPs, and
-\mjeqn{D_{-j}}{ascii} is the D value for one block with the SNPs for that
-block's window ommited. The squared-standard error for \mjeqn{D_{J}}{ascii}
-is then: \mjdeqn{\sigma^{2} = \frac{1/6}\sum_{j = 1}^{g}{\frac{(\tau_{j} -
-\theta_{D})^{2}}{h_{j} - 1}}}{ascii}where \mjeqn{h_{j} =
-\frac{n}{m_{j}}}{ascii} and \mjdeqn{\tau_{j} = h_{j}D - ((h_j{} -
-1)D_{-j})}{ascii} A \emph{Z} value can then be calculated as usual (\mjeqn{Z
-= \frac{D}{\sqrt{\sigma^{2}}}}{ascii}), and a \emph{p}-value determined from
-using a two-sided \emph{Z}-test following a normal distribution with
-\mjeqn{\mu = 0}{ascii}.
+\emph{n} genomic windows (blocks) and then calculating \emph{D} for all other
+sites. Non-overlapping windows are "blocked" by reference to any provided SNP
+metadata facets (usually chromosome), each with a length equal to
+\emph{sigma}, so providing \emph{sigma = 100} will use 100kb windows.
 }
 \examples{
 
@@ -90,8 +74,6 @@ snp.meta(x)$anc <- maf$minor
 # run with jackknifing, 1000kb windows!
 # Test if ASP or UPD have more geneflow with PAL...
 x <- calc_abba_baba(x, "pop.chr", "ASP", "UPD", "PAL", TRUE, sigma = 1000)
-calc_abba_baba(x, "pop.chr", "ASP", "UPD", "PAL", TRUE, sigma = 1000, 
-   jackknife_par = 4)
 get.snpR.stats(x, "pop.chr", "abba_baba") # gets the per chr results
 get.snpR.stats(x, "pop", "abba_baba") # gets the overall results
 
@@ -101,8 +83,11 @@ x <- calc_smoothed_averages(x, "pop.chr", sigma = 200, step = 200,
 get.snpR.stats(x, "pop.chr", "abba_baba")
 }
 \references{
-Maier, R., Flegontov, P., Flegontova, O., Changmai, P., & Reich, D. (2022). On the limits of fitting complex models of population history to genetic data. BioRxiv. doi: 10.1101/2022.05.08.491072
-E., G. R., Johannes, K., W., B. A., Tomislav, M., Udo, S., Martin, K., … Svante, P. (2010). A Draft Sequence of the Neandertal Genome. Science, 328(5979), 710–722. doi: 10.1126/science.1188021
+Maier, R. et al (2022). On the limits of fitting complex models of population
+history to genetic data. BioRxiv. doi: 10.1101/2022.05.08.491072
+
+Green, ER, et al (2010). A Draft Sequence of the Neandertal Genome. Science,
+328(5979), 710–722. doi: 10.1126/science.1188021
 }
 \author{
 William Hemstrom

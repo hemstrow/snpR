@@ -17,7 +17,6 @@
 
 ## Documentation
 * Removed the `snpR_association` vignette, since it required the `GMMAT`, `BGLR`, and `ranger` R packages to be installed, but they are only suggested, not required. This could cause vignette building to fail. May re-tool later to just use the internally implemented association tests.
-* The `mathjaxr` package is now imported to aid equation documentation.
 
 ## Bug fixes
 * Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
