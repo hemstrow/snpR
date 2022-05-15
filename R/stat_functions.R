@@ -3627,6 +3627,8 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
     }
   }
   
+  warning("Mantel tests for IBD may have problems with autocorrelation, and so should be interpreted carefully! See Patrick Meirmans (2012). The Trouble with Isolation by Distance, Molecular Ecology.\n")
+  
   #===============return================================
   x <- .merge.snpR.stats(x, geo_mats, "geo_dists")
   x <- .merge.snpR.stats(x, ibd, "ibd")
