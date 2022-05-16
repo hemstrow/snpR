@@ -1,14 +1,13 @@
-context("plots")
-
 #===================plot_structure================
 test_that("structure",{
   skip_on_cran(); skip_on_ci()
-  skip_if_not_installed("pophelper")
   
   str_path <- "C://usr/bin/structure.exe"
+  clumpp_path <- "C://usr/bin/CLUMPP.exe"
   skip_if(!file.exists(str_path))
+  skip_if(!file.exists(clumpp_path))
   
-  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE)
+  p <- plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE)
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(as.character(unique(p$plot_data$K)), c("K = 2", "K = 3"))
@@ -17,17 +16,29 @@ test_that("structure",{
   expect_equal(as.character(unique(p$plot_data$pop)), c("ASP", "PAL"))
   # not internally calced, just a check for proper prep and parsing. Note that the K plot details were all checked against structure harvester
   
-  expect_error(plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE, iterations = 1),
+  expect_error(plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, method = "structure", structure_path = str_path, clumpp = FALSE, iterations = 1),
                regexp = "one or fewer iterations")
+  
+  
+  # stripping axis text
+  p_cat <- plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, 
+                          method = "structure", structure_path = str_path, clumpp = FALSE, strip_col_names = "p$")
+  expect_equal(p_cat$plot$labels$x, "po")
+  
+  
+  # clumpp
+  p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2, reps = 2, method = "structure", 
+                        structure_path = str_path, clumpp = TRUE, clumpp_path = clumpp_path)
+  expect_true(ggplot2::is.ggplot(p2$plot))
+  expect_true(all(c("r_1", "r_2", "clumpp") %in% names(p2$data$K_2)))
 })
 
 
 test_that("snmf",{
   skip_on_cran(); skip_on_ci()
   skip_if_not_installed("LEA")
-  skip_if_not_installed("pophelper")
-  
-  p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE)
+
+  .make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE))
   
   expect_true(ggplot2::is.ggplot(p$plot))
   expect_equal(as.character(unique(p$plot_data$K)), c("K = 2", "K = 3"))
@@ -40,8 +51,7 @@ test_that("snmf",{
 test_that("snapclust",{
   skip_on_cran(); skip_on_ci()
   skip_if_not_installed("adegenet")
-  skip_if_not_installed("pophelper")
-  
+
   
   expect_warning(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, method = "snapclust", clumpp = FALSE), "adegenet maintainers do not")
   
@@ -55,8 +65,8 @@ test_that("snapclust",{
 
 #===================plot_structure_map===================
 test_that("structure map",{
-  skip_on_cran(); skip_on_ci()
-  skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps", "pophelper"))
+  skip_on_cran();
+  skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps"))
   
   lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
   lat_long <- t(lat_long)
@@ -67,7 +77,7 @@ test_that("structure map",{
   psf <- sf::`st_crs<-`(psf, "EPSG:4326")
 
   # get the assignments
-  assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE) # get structure-like results
+  .make_it_quiet(assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE)) # get structure-like results
 
   # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
   background <- maps::map("state", "oregon", plot = FALSE)
@@ -84,7 +94,7 @@ test_that("pca",{
   # skip_on_cran(); skip_on_ci()
   
   set.seed(1212)
-  p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop")
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop"))
   expect_true(ggplot2::is.ggplot(p$plots$pca))
   expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
@@ -95,7 +105,7 @@ test_that("tsne",{
   
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
-  p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne")
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne"))
   
   expect_true(ggplot2::is.ggplot(p$plots$tsne))
   expect_snapshot_value(p$data$tsne[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
@@ -106,7 +116,7 @@ test_that("umap",{
   skip_on_cran(); skip_on_ci()
   skip_if_not_installed(c("umap"))
   set.seed(1212)
-  p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap")
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap"))
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
   expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
@@ -170,21 +180,21 @@ test_that("tree plot",{
   }
   
   
-  tree <- plot_tree(stickSNPs, update_bib = FALSE)
+  .make_it_quiet(tree <- plot_tree(stickSNPs, update_bib = FALSE))
   
   expect_true(ggplot2::is.ggplot(tree$.base$.base$plot))
   expect_true(all(colnames(stickSNPs) %in% tree$.base$.base$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, facets = "pop", update_bib = FALSE)
+  .make_it_quiet(tree <- plot_tree(stickSNPs, facets = "pop", update_bib = FALSE))
   expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
   expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$pop$.base$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, "pop.chr", update_bib = FALSE)
+  .make_it_quiet(tree <- plot_tree(stickSNPs, "pop.chr", update_bib = FALSE))
   expect_true(all(unlist(lapply(purrr::map(tree$chr.pop, "plot"), ggplot2::is.ggplot))))
   expect_equal(names(tree$chr.pop), unique(snp.meta(stickSNPs)$chr))
   expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$chr.pop$groupV$plot$data$label))
   
-  tree <- plot_tree(stickSNPs, "pop", boot = 3, update_bib = FALSE)
+  .make_it_quiet(tree <- plot_tree(stickSNPs, "pop", boot = 3, update_bib = FALSE))
   expect_true(ggplot2::is.ggplot(tree$pop$.base$plot))
   vals <- as.numeric(gsub("%", "", tree$pop$.base$plot$data$label[-which(tree$pop$.base$plot$data$label %in% sample.meta(stickSNPs)$pop)]))
   expect_true(all(vals <= 100 & vals >= 0 & !is.na(vals)))
@@ -194,25 +204,25 @@ test_that("tree plot",{
 #============sfs========
 test_that("sfs plot",{
   # 1D
-  sfs <- plot_sfs(stickSNPs, projection = 100)
+  .make_it_quiet(sfs <- plot_sfs(stickSNPs, projection = 10))
   expect_true(ggplot2::is.ggplot(sfs))
   expect_true(sum(sfs$data$N, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(unique(sfs$data$p1), 0)
   expect_true(max(sfs$data$p2[which(!is.na(sfs$data$N))]) <= 100/2) # folded
 
   # 2D
-  sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  .make_it_quiet(sfs2 <- plot_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10)))
   expect_true(ggplot2::is.ggplot(sfs2))
   expect_true(sum(sfs2$data$N, na.rm = T) <= nsnps(stickSNPs))
-  expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 50) # folded
+  expect_true(max(sfs2$data$p2[which(!is.na(sfs2$data$N))] + sfs2$data$p1[which(!is.na(sfs2$data$N))]) <= 10) # folded
   
   
   # works with sfs provided
-  sfs_provided <- calc_sfs(stickSNPs, projection = 100)
+  .make_it_quiet(sfs_provided <- calc_sfs(stickSNPs, projection = 10))
   sfs_provided_plot <- plot_sfs(sfs_provided)
   expect_identical(sfs$data, sfs_provided_plot$data)
   
-  sfs_provided2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(50, 50))
+  .make_it_quiet(sfs_provided2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10)))
   sfs_provided2_plot <- plot_sfs(sfs_provided2)
   expect_identical(sfs2$data, sfs_provided2_plot$data)
   
@@ -236,7 +246,38 @@ test_that("sfs plot",{
   p2 <- plot_sfs(sfs_provided)
   expect_equal(p1, p2)
   
-  expect_warning(sfs <- plot_sfs(stickSNPs, projection = 100, fold = FALSE), "Without ancestral and derived character states, unfolded spectra will be misleading")
+  expect_warning(.make_it_quiet(sfs <- plot_sfs(stickSNPs, projection = 50, fold = FALSE)), "Without ancestral and derived character states, unfolded spectra will be misleading")
   
+})
+
+#=======diagnostic=======
+test_that("diagnostic plots",{
+  set.seed(1234122)
+  # correct plots and axis names
+  expect_warning(dp <- plot_diagnostic(.internal.data$test_snps), "Few remaining SNPs after filtering")
+  expect_equal(names(dp), c("fis", "sfs", "maf", "pca", "missingness"))
+  expect_equal(c(dp$fis$labels$x,
+                 dp$sfs$labels$x,
+                 dp$maf$labels$x,
+                 dp$pca$labels$x,
+                 dp$missingness$labels$x),
+               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (35.43%)", "Individual"))
+  expect_equal(c(dp$fis$labels$y,
+                 dp$sfs$labels$y,
+                 dp$maf$labels$y,
+                 dp$pca$labels$y,
+                 dp$missingness$labels$y),
+               c("density", "log10(N)", "density", "PC2 (19.8%)", "Proportion of loci with missing data"))
+  expect_false("colour" %in% names(dp$pca$labels))
+  expect_false("colour" %in% names(dp$missingness$labels))
+  
+  # if unfolded sfs
+  expect_warning(dp2 <- plot_diagnostic(.internal.data$test_snps, fold_sfs = FALSE), "Few remaining SNPs after filtering")
+  expect_equal(dp2$sfs$labels$x, "Derived Allele Count")
+  
+  # colored by pop
+  expect_warning(dp3 <- plot_diagnostic(.internal.data$test_snps, facet = "pop"), "Few remaining SNPs after filtering")
+  expect_true("colour" %in% names(dp3$pca$labels))
+  expect_true("colour" %in% names(dp3$missingness$labels))
 })
 

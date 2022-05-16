@@ -12,6 +12,8 @@ import.snpR.data(
   chr.length = NULL,
   ...,
   header_cols = 0,
+  rows_per_individual = 2,
+  marker_and_sample_names = FALSE,
   verbose = FALSE
 )
 }
@@ -40,8 +42,15 @@ for each chromosome in order.}
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
 \emph{genotype} file name is passed that is not a vcf or ms file.}
 
-\item{header_cols}{Number of header columns on passed delimited file. Mostly
-for internal use with \code{\link{read_delimited_snps}}.}
+\item{header_cols}{numeric, default 0. Number of header columns containing
+sample metadata. Used if a tab delimited or structre input file is provided.}
+
+\item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
+for each individual. For structure input files only.}
+
+\item{marker_and_sample_names}{logical, default FALSE. If TRUE, assumes that a
+header row of marker and sample/sample metadata names is present. For
+structure input files only.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status updates and checks.}
 }
@@ -165,17 +174,17 @@ output by \code{\link{format_snps}}. Missing data is noted with "NN".
 \examples{
 # import example data as a snpRdata object
 # produces data identical to that contained in the stickSNPs example dataset.
-genos <- stickRAW[,-c(1:3)]
-snp_meta <- stickRAW[,1:3]
-sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:3)], 1, 3), 
+genos <- stickRAW[,-c(1:2)]
+snp_meta <- stickRAW[,1:2]
+sample_meta <- data.frame(pop = substr(colnames(stickRAW)[-c(1:2)], 1, 3), 
                           fam = rep(c("A", "B", "C", "D"), 
-                                    length = ncol(stickRAW) - 3), 
+                                    length = ncol(stickRAW) - 2), 
                           stringsAsFactors = FALSE)
 import.snpR.data(genos, snp.meta = snp_meta, sample.meta = sample_meta, 
                  mDat = "NN")
 
 # from an adegenet genind object
-ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:3)]), 
+ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:2)]), 
                                   ncode = 1, NA.char = "N") # get genind data
 # note, will add whatever metadata data is in the genind object to the 
 # snpRdata object. 
@@ -207,7 +216,7 @@ dat <- import.snpR.data(genlight)
 # from a file:
 # note that the drop argument is passed to data.table::fread!
 dat <- import.snpR.data(system.file("extdata", "stick_NN_input.txt", 
-                                    package = "snpR"), drop = 1:3) 
+                                    package = "snpR"), drop = 1:2) 
 # if wanted, snp and sample metadata could be provided as usual.
 
 ## not run:

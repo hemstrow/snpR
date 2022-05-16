@@ -49,7 +49,7 @@ write_colony_input(
 
 call_colony(infile, colony_path, update_bib = FALSE, verbose = TRUE)
 
-parse_colony(prefix, x, path = "./colony/", sampleIDs = NULL, cleanup = FALSE)
+parse_colony(prefix, x, path = "colony/", sampleIDs = NULL, cleanup = FALSE)
 
 run_colony(
   x,

@@ -5,13 +5,13 @@
 \alias{stickRAW}
 \title{Deschutes stickleback raw data.}
 \format{
-An object of class \code{data.frame} with 833 rows and 423 columns.
+An object of class \code{data.frame} with 100 rows and 102 columns.
 }
 \usage{
 stickRAW
 }
 \description{
-A dataset containing genotypes at 833 SNP loci for 420 Three-spined
+A dataset containing genotypes at 100 SNP loci for 100 Three-spined
 Stickleback collected in 2015 from several locations in the Deschutes River,
 Oregon, USA. For more information, see Hemstrom et al (in prep).
 }

@@ -142,7 +142,7 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  invisible(utils::capture.output(nac <- format_snps(x, output = "ac", facets = added.facets)))
+  .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
   nac <- data.table::as.data.table(nac)
   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
@@ -365,14 +365,14 @@ is.snpRdata <- function(x){
           sub.x <- x
         }
         else if(opts[i,"t.snp.facet"] == ".base"){
-          suppressWarnings(invisible(utils::capture.output(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2]))))
+          suppressWarnings(.make_it_quiet(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2])))
         }
         else{
-          suppressWarnings(invisible(utils::capture.output(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
-                                                                              snp.facets = opts[i,3], snp.subfacets = opts[i,4]))))
+          suppressWarnings(.make_it_quiet(sub.x <- .subset_snpR_data(x, facets = opts[i,1], subfacets = opts[i,2],
+                                                                              snp.facets = opts[i,3], snp.subfacets = opts[i,4])))
         }
         
-        suppressWarnings(invisible(utils::capture.output(sub.x <- filter_snps(sub.x, non_poly = FALSE, maf = maf))))
+        suppressWarnings(.make_it_quiet(sub.x <- filter_snps(sub.x, non_poly = FALSE, maf = maf)))
         
 
         out <- fun(sub.x = sub.x, ...)
@@ -407,18 +407,18 @@ is.snpRdata <- function(x){
       }
       # run in parallel
       else{
-        cl <- snow::makeSOCKcluster(par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(par)
+        doParallel::registerDoParallel(cl)
         
         #prepare reporting function
         ntasks <- nrow(opts.list)
-        if(verbose){
-          progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
-          opts <- list(progress=progress)
-        }
-        else{
-          opts <- list()
-        }
+        # if(verbose){
+        #   progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
+        #   opts <- list(progress=progress)
+        # }
+        # else{
+        #   opts <- list()
+        # }
         
         
         if(verbose){cat("Begining run.\n")}
@@ -426,13 +426,12 @@ is.snpRdata <- function(x){
         # run the LD calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
         suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
-                                                 .options.snow = opts, .export = c("data.table"), .packages = "snpR") %dopar% {
+                                                 .export = c("data.table"), .packages = "snpR") %dopar% {
                                                    run.one.task(opts.list, q)
                                                  })
         
         #release cores
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
       }
       
       # combine
@@ -649,18 +648,18 @@ is.snpRdata <- function(x){
       
       ## same, but in parallel
       else{
-        cl <- snow::makeSOCKcluster(par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(par)
+        doParallel::registerDoParallel(cl)
         
         #prepare reporting function
         ntasks <- nrow(task.list)
-        if(verbose){
-          progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
-          opts <- list(progress=progress)
-        }
-        else{
-          opts <- list()
-        }
+        # if(verbose){
+        #   progress <- function(n) cat(sprintf("Part %d out of", n), ntasks, "is complete.\n")
+        #   opts <- list(progress=progress)
+        # }
+        # else{
+        #   opts <- list()
+        # }
         
         
         if(verbose){cat("Begining run.\n")}
@@ -668,13 +667,12 @@ is.snpRdata <- function(x){
         # run the calculations
         ## suppress warnings because you'll get wierd ... warnings. Not an issue in the non-parallel version.
         suppressWarnings(out <- foreach::foreach(q = 1:ntasks, .inorder = TRUE,
-                                                 .options.snow = opts, .export = "data.table", .packages = "snpR") %dopar% {
+                                                 .export = "data.table", .packages = "snpR") %dopar% {
                                                    run.one.loop(stats_to_use, meta.to.use, task.list, q, TRUE)
                                                  })
         
         #release cores
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
       }
       
       # bind the results together.
@@ -849,7 +847,8 @@ is.snpRdata <- function(x){
                                         starter.meta = start.meta)
       
       # Deal with matrices using the merge.lists utility in snpR.
-      x@pairwise.LD$LD_matrices <- .merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
+      # a <- .merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
+      x@pairwise.LD$LD_matrices <- simple.merge.lists(x@pairwise.LD$LD_matrices, stats$LD_matrices)
     }
   }
   else if(type == "genetic_distances"){
@@ -984,6 +983,8 @@ is.snpRdata <- function(x){
     stat.cols.y <- as.matrix(stat.cols.to.fix[,stat.cols.y, with = FALSE])
     stat.cols.x <- grep("\\.x$", colnames(stat.cols.to.fix))
     stat.cols.x <- as.matrix(stat.cols.to.fix[,stat.cols.x, with = FALSE])
+    stat.cols.x <- stat.cols.x[,order(colnames(stat.cols.x)), drop = FALSE]
+    stat.cols.y <- stat.cols.y[,order(colnames(stat.cols.y)), drop = FALSE]
     NA.y <- is.na(stat.cols.y)
     stat.cols.y[NA.y] <- stat.cols.x[NA.y]
     colnames(stat.cols.y) <- gsub("\\.y$", "", colnames(stat.cols.y))
@@ -1568,90 +1569,6 @@ is.snpRdata <- function(x){
   }
   
   return(matches)
-}
-
-
-# Merge lists element-to-element
-#
-# Merges list 1 into list 2, adding any elements without matching equivalents
-# to list 2.
-#
-# Merges element to element. Elements in list 1 with matching elements in list
-# 2 will be replaced.
-#
-# Do this by getting the names and "pathways" of all of the deepest level
-# objects, then looping through list 2 data and adding from list 1 that isn't
-# present at the same "pathway".
-#
-# @param list1 list. The first list. Elements with identical names at all
-#   levels in list 2 will be *replaced*.
-# @param list2 list. The second list. Elements in list 2 with identical names
-#   found in list 1 will replace those elements.
-# @param possible_end_level_names vector of possible stopping point names
-#   (bottom level)
-#
-# @author William Hemstrom
-.merge.lists <- function(list1, list2, possible_end_level_names = c("Dprime", "rsq", "pval", "CLD", "S")){
-  # prunes and prepares data on the names and nest levels of a list
-  prune.names <- function(list){
-    ln <- utils::capture.output(utils::str(list))
-    ln <- ln[which(!grepl("attr\\(\\*,", ln))]
-    ns <- character()
-    pn <- vector("list")
-    collapsed.names <- vector("list")
-    
-    # get the levels of each name
-    lev <- gsub("\\$.+", "", ln[2:length(ln)])
-    lev <- stringr::str_count(lev, "\\.\\.")
-    
-    # get the name at each level
-    clean.names <- stringr::str_extract(ln, "\\$[^:]*")
-    clean.names <- gsub("\\$", "", clean.names)
-    clean.names <- gsub(":", "", clean.names)
-    clean.names <- gsub("num \\[.+$", "", clean.names)
-    clean.names <- gsub("chr \\[.+$", "", clean.names)
-    clean.names <- gsub(" ", "", clean.names)
-    clean.names[clean.names == ""] <- NA
-    terminal <- which(clean.names %in% possible_end_level_names)
-    cl <- numeric()
-    for(i in 2:length(ln)){
-      if(i %in% terminal){
-        pn[[length(pn) + 1]] <- c(ns, clean.names[i])
-        collapsed.names[[length(pn)]] <- paste(pn[[length(pn)]], collapse = "")
-        ns <- ns[1:(lev[i] - 1)]
-        cl <- c(cl, lev[i])
-      }
-      else{
-        if(!is.na(clean.names[i])){
-          if(lev[i] <= length(ns)){
-            ns[lev[i]] <- clean.names[i]
-          }
-          else{
-            ns <- c(ns, clean.names[i])
-          }
-        }
-      }
-    }
-    
-    return(list(n = pn, l = lev, cn = unlist(collapsed.names)))
-  }
-  
-  
-  all.names.1 <- prune.names(list1)
-  all.names.2 <- prune.names(list2)
-  ## add anything present in 1 but not 2 to 2.
-  for(i in 1:length(all.names.1[[1]])){
-    # if not there, add to stats
-    if(!all.names.1$cn[i] %in% all.names.2$cn){
-      loc <- paste(paste0("[['", all.names.1$n[[i]], "']]"), collapse = "")
-      call <- paste0("list2",
-                     loc,
-                     " <- ",
-                     "list1", loc)
-      eval(parse(text=call))
-    }
-  }
-  return(list2)
 }
 
 
@@ -2267,7 +2184,10 @@ is.snpRdata <- function(x){
 # 
 # @param fun function to run
 .fix..call <- function(fun){
-  return(pkgcond::suppress_warnings(fun,"variable in calling scope for clarity"))
+  
+  
+  
+  return(.suppress_specific_warning(fun, "variable in calling scope for clarity"))
 }
 
 
@@ -2416,7 +2336,8 @@ is.snpRdata <- function(x){
   ..shuff <- NULL
   
   #=========parse gp file=========
-  pkgcond::suppress_warnings(gp_file <- readLines(gp_filepath), "incomplete final line found on") # need to suppress warnings here because genepop::Fst will remove line endings from the input file for some reason......
+  
+  .suppress_specific_warning(gp_file <- readLines(gp_filepath), "incomplete final line found on") # need to suppress warnings here because genepop::Fst will remove line endings from the input file for some reason......
   pop_headers <- grep("POP", gp_file)
   
   counts <- c(pop_headers[-1], length(gp_file)) - pop_headers
@@ -2431,12 +2352,12 @@ is.snpRdata <- function(x){
   row.names(gp_file) <- rns
   
   #=========boot=============
-  rstrings <- stringi::stri_rand_strings(n, 10)
+  rstrings <- .rand_strings(n, 10)
   rstrings <- paste0("./", rstrings)
   exists <- dir.exists(rstrings)
   abort <- 0
   while(sum(exists) > 0){
-    rstrings[exists] <- stringi::stri_rand_strings(sum(exists), 10)
+    rstrings[exists] <- .rand_strings(sum(exists), 10)
     rstrings <- paste0("./", rstrings)
     exists <- dir.exists(rstrings)
     abort <- abort + 1
@@ -2690,4 +2611,31 @@ is.snpRdata <- function(x){
     return(hs)
   }
   
+}
+
+.suppress_specific_warning <- function(fun, warn_to_suppress){
+  warn_handle <- function(warn){
+    if(any(grepl(warn_to_suppress, warn))){
+      invokeRestart("muffleWarning")
+    }
+  }
+  
+  withCallingHandlers(res <- fun,
+                      warning = warn_handle)
+  
+  
+  return(res)
+}
+
+
+.rand_strings <- function(n, length){
+  chrs <- sample(c(LETTERS, letters, 1:9), n*length, replace = TRUE)
+  chrs <- split(chrs, rep(1:n, length.out = n*length))
+  chrs <- unlist(lapply(chrs, function(x) paste0(x, collapse = "")))
+  chrs <- as.character(chrs)
+  return(chrs)
+}
+
+.make_it_quiet <- function(fun){
+  return(invisible(utils::capture.output(fun)))
 }

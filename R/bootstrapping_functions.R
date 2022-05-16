@@ -577,17 +577,17 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
     }
     # run in parallel
     else{
-      cl <- snow::makeSOCKcluster(par)
-      doSNOW::registerDoSNOW(cl)
+      cl <- parallel::makePSOCKcluster(par)
+      doParallel::registerDoParallel(cl)
 
       #prepare reporting function
       task_list <- split(1:boots, sort((1:boots)%%par))
       ntasks <- par
-      progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
-      opts <- list(progress=progress)
+      # progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
+      # opts <- list(progress=progress)
 
       tout <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
-                               .options.snow = opts, .export = "data.table") %dopar% {
+                               .export = "data.table") %dopar% {
                                  # extract the correct parts of the prepped.facet
                                  tpf <- prepped.facet
                                  tpf$fws <- tpf$fws[task_list[[q]]]
@@ -615,7 +615,6 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 
       #release cores
       parallel::stopCluster(cl)
-      doSNOW::registerDoSNOW()
 
       # bind
       out[[i]] <- data.table::rbindlist(tout)
@@ -843,16 +842,16 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     }
   }
   else{
-    cl <- snow::makeSOCKcluster(par)
-    doSNOW::registerDoSNOW(cl)
+    cl <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(cl)
 
     #prepare reporting function
     ntasks <- nrow(u.rows)
-    progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
-    opts <- list(progress=progress)
+    # progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
+    # opts <- list(progress=progress)
 
     out <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
-                            .options.snow = opts, .export = "data.table") %dopar% {
+                            .export = "data.table") %dopar% {
                               get.one.pvalue(x, facet = u.rows$facet[q],
                                              subfacet = u.rows$subfacet[q],
                                              snp.facet = u.rows$snp.facet[q],
@@ -865,7 +864,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
 
     #release cores
     parallel::stopCluster(cl)
-    doSNOW::registerDoSNOW()
   }
 
   #===========bind, cast, and merge===========

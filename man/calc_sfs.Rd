@@ -30,7 +30,9 @@ containing few or no SNPs. Must match the length of the provided pops
 vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
-left polarized.}
+left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+containing the identity of the derived and ancestral alleles, respectively,
+should be present for polarization to be meaningful.}
 
 \item{update_bib}{character or FALSE, default FALSE. If a file path to an
 existing .bib library or to a valid path for a new one, will update or
@@ -77,18 +79,18 @@ snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
 
 # run for two populations
 ## call calc_sfs()
-sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(30,30))
+sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(10,10))
 ## plot
 plot_sfs(sfs = sfs)
 
 
 # run for the overall dataset
-sfs <- calc_sfs(dat, projection = 100)
+sfs <- calc_sfs(dat, projection = 30)
 ## plot
 plot_sfs(sfs = sfs)
 
 # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
-plot_sfs(dat, projection = 100)
+plot_sfs(dat, projection = 30)
 }
 
 }

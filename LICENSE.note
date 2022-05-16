@@ -1,0 +1,4 @@
+The snpR package as a whole is distributed under GPLv3. It includes other open source software components. The following is a list of these components:
+
+* pophelper: GPLv3
+* snpR: written by package authors

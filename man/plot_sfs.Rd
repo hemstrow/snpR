@@ -47,7 +47,9 @@ containing few or no SNPs. Must match the length of the provided pops
 vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
-left polarized.}
+left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+containing the identity of the derived and ancestral alleles, respectively,
+should be present for polarization to be meaningful.}
 
 \item{update_bib}{character or FALSE, default FALSE. If a file path to an
 existing .bib library or to a valid path for a new one, will update or
@@ -80,17 +82,17 @@ Gutenkunst et al (2009)).
 }
 \examples{
 # folded, 1D
-plot_sfs(stickSNPs, projection = 100)
+plot_sfs(stickSNPs, projection = 20)
 
 # unfolded, 1D, one specific population
-plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
+plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
 
 \dontrun{
 # unfolded, two poplations
-plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 
 # via a sfs matrix, useful for pulling in spectra from elsewhere
-sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 plot_sfs(sfs)
 }
 }

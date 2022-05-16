@@ -113,9 +113,9 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   run_BGLR <- function(sub.x, ...){
 
     # generate a random file handle for multiple jobs
-    handle <- stringi::stri_rand_strings(1, length = 10)
+    handle <- .rand_strings(1, length = 10)
     while(length(grep("handle", list.files())) > 0){
-      handle <- stringi::stri_rand_strings(1, length = 10)
+      handle <- .rand_strings(1, length = 10)
     }
     
     
@@ -612,9 +612,19 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     homs <- substr(colnames(case), 1, 1) == substr(colnames(case), 2, 2)
     hom_cases <- case[,which(homs)]
     het_cases <- case[,which(!homs)]
-
-    pp_cont <- matrixStats::rowMaxs(hom_controls)
-    pp_case <- matrixStats::rowMaxs(hom_cases)
+    
+    hom_totals <- hom_controls + hom_cases
+    
+    
+    # loop through each genotype to figure out p and q--should only be four loops max!
+    pp_cont <- pp_case <- 0
+    maxs <- matrixStats::rowMaxs(hom_totals)
+    for(i in 1:ncol(hom_totals)){
+      is_p <- which(hom_totals[,i] == maxs)
+      pp_cont[is_p] <- hom_controls[is_p,i]
+      pp_case[is_p] <- hom_cases[is_p,i]
+    }
+    
     qq_cont <- rowSums(hom_controls) - pp_cont
     qq_case <- rowSums(hom_cases) - pp_case
     pq_cont <- rowSums(het_controls)
@@ -702,7 +712,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
 
     ## G matrix
-    invisible(utils::capture.output(G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang", maf = Gmaf)))
+    .make_it_quiet(G <- AGHmatrix::Gmatrix(t(sn), missingValue = NA, method = "Yang", maf = Gmaf))
     if(is.null(sampleID)){
       sampleID <- ".sample.id"
     }
@@ -740,23 +750,25 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 
 
     # run null model
-    invisible(utils::capture.output(mod <- GMMAT::glmmkin(fixed = formula,
+    .make_it_quiet(mod <- GMMAT::glmmkin(fixed = formula,
                                                           data = phenos,
                                                           kins = G,
                                                           id = sampleID,
                                                           family = family,
-                                                          maxiter = iter, verbose = verbose)))
+                                                          maxiter = iter, verbose = verbose))
 
     # run the test
     nmeta.col <- 2 + ncol(sub.x@snp.meta)
     utils::write.table(asso.in, "asso_in.txt", sep = "\t", quote = F, col.names = F, row.names = F)
-    pkgcond::suppress_warnings(score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
+    
+    .suppress_specific_warning(score.out <- GMMAT::glmm.score(mod, "asso_in.txt",
                                                               "asso_out_score.txt",
                                                               infile.ncol.skip = nmeta.col,
                                                               infile.ncol.print = 1:nmeta.col,
                                                               infile.header.print = colnames(asso.in)[1:nmeta.col], 
                                                               verbose = verbose), 
-                               pattern = "Assuming the order of individuals in infile matches")
+                               warn_to_suppress = "Assuming the order of individuals in infile")
+    
     score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
     file.remove(c("asso_in.txt", "asso_out_score.txt"))
@@ -767,7 +779,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
   # check facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   if(method == "armitage"){
@@ -1043,7 +1055,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
 
 
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   facets <- .check.snpR.facet.request(x, facets)

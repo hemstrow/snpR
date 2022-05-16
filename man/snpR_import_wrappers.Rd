@@ -10,6 +10,7 @@
 \alias{convert_genlight}
 \alias{convert_genind}
 \alias{read_plink}
+\alias{read_structure}
 \alias{convert_vcfR}
 \title{snpRdata Import Wrappers}
 \usage{
@@ -30,6 +31,15 @@ read_genepop(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 read_FSTAT(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000")
 
 read_plink(file)
+
+read_structure(
+  file,
+  snp.meta = NULL,
+  sample.meta = NULL,
+  rows_per_individual = 2,
+  marker_and_sample_names = FALSE,
+  header_cols = 0
+)
 
 convert_genlight(genlight, snp.meta = NULL, sample.meta = NULL)
 
@@ -60,6 +70,12 @@ data has genotypes stored in 6 characters, mDat will be set to "000000".}
 
 \item{header_cols}{numeric, default 0. The number of snp metadata columns prior
 to snp genotypes when importing delimited snps.}
+
+\item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
+for each individual.}
+
+\item{marker_and_sample_names}{logical, default FALSE. If TRUE, assumes that a
+header row of marker and sample/sample metadata names is present.}
 
 \item{genlight}{genlight object to convert, see
 \code{\link[adegenet]{genlight}}.}
@@ -96,6 +112,8 @@ are stored as: NN, 0000, or snp_tab format.
 
 \item \code{read_plink}: Import plink bed, bim, and fam data.
 
+\item \code{read_structure}: Import STRUCTURE data files.
+
 \item \code{convert_genlight}: Convert adegenet genlight objects.
 
 \item \code{convert_genind}: Convert adegenet genind objects
@@ -129,9 +147,13 @@ are stored as: NN, 0000, or snp_tab format.
  \item{plink: } plink .bed, .fam, and .bim files, via
  \code{\link[genio]{read_plink}}. If any of these file types is provided,
  snpR via \code{\link[genio]{read_plink}} will look for the other file types
- automatically. Sample metadata should be contained in the .fam file and
- SNP metadata in the .bim file, so sample or snp meta data can be provided
- here.}
+ automatically. Sample metadata should be contained in the .fam file and SNP
+ metadata in the .bim file, so sample or snp meta data can be provided here.
+ \item{structure: } STRUCTURE import file, with individuals in rows and loci
+ in columns. Can be coded either with one row per individual and two columns
+ per loci or two rows per individual and two columns per loci using the
+ rows_per_individual argument. Genotypes can be pretty much anything,
+ although missing genotypes must be coded as -9. Must have a .str extension.}
 
  Sample and snp metadata can also be provided via file path, and will be read
  in using \code{\link[data.table]{fread}} \emph{with the default settings}

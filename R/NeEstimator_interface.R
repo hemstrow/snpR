@@ -129,17 +129,14 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   setwd("..")
 }
 
-run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path = "NeEstimator/"){
+run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path = "NeEstimator/", verbose = TRUE){
   #==========run NeEstimator==========
   owd <- getwd()
   setwd(data_path)
   call <- paste(NeEstimator_path, "i:info", "o:option", collapse = " ")
-  if(Sys.info()["sysname"] == "Windows"){
-    shell(call)
-  }
-  else{
-    system(call)
-  }
+  
+  system(call, show.output.on.console = verbose)
+  
   setwd(owd)
 }
 
@@ -159,7 +156,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     else if(length(grep("Ht", files[i]) != 0)){type <- "Ht"; skip <- 14}
 
     # read in the data
-    suppressWarnings(dat <- as.data.frame(readr::read_table2(files[i], skip = skip, col_names = F)))
+    suppressWarnings(dat <- as.data.frame(data.table::fread(files[i], skip = skip, header = FALSE)))
     dat <- dat[1:(nrow(dat) - 2),]
 
     # add column names, adjust data per type
@@ -209,8 +206,21 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf
   
   # cast such that pcrit for each pop is applied across columns
-  cout <- as.data.frame(tidyr::pivot_wider(out, id_cols = "pop", names_from = "pcrit", values_from = colnames(out)[-c(1:2)]))
-  
+  cout <- vector("list", ncol(out) - 2)
+  for(i in 1:length(cout)){
+    cout[[i]] <- reshape2::dcast(out, pop~pcrit, value.var = colnames(out)[i + 2])
+    
+    if(i != 1){
+      cout[[i]] <- cout[[i]][,-1, drop = FALSE]
+      colnames(cout[[i]]) <- paste0(colnames(out)[i + 2], "_", colnames(cout[[i]]))
+    }
+    else{
+      colnames(cout[[i]])[-1] <- paste0(colnames(out)[i + 2], "_", colnames(cout[[i]])[-1])
+    }
+    
+    
+  }
+  cout <- dplyr::bind_cols(cout)
   
   return(cout)
 

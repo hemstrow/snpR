@@ -826,7 +826,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       if(isFALSE(hwe_facets)){
         
         if(!.check_calced_stats(x, ".base", "hwe")$.base){
-          invisible(utils::capture.output(x <- calc_hwe(x)))
+          .make_it_quiet(x <- calc_hwe(x))
         }
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
         phwe <- which(phwe < hwe)
@@ -841,7 +841,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
         run.facets <- .check_calced_stats(x, hwe_facets, "hwe")
         run.facets <- names(run.facets)[!unlist(run.facets)]
         if(length(run.facets) > 0){
-          invisible(utils::capture.output(x <- calc_hwe(x, run.facets)))
+          .make_it_quiet(x <- calc_hwe(x, run.facets))
         }
         
         # get the per-facet hwe stats, check against threshold, then condense by snp.
@@ -1423,7 +1423,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
 
       cat("Parsing ms file...")
-      x <- process_ms(x, chr.length)
+      x <- .process_ms(x, chr.length)
       snp.meta <- x$meta
       x <- x$x
       x <- .convert_2_to_1_column(x)

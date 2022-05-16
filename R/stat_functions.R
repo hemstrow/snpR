@@ -167,7 +167,7 @@ calc_pi <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "ac", func, case = "ps")
@@ -195,7 +195,7 @@ calc_maf <- function(x, facets = NULL){
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   if(facets[1] == ".base" & length(facets) == 1){
@@ -385,7 +385,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   # add any missing facets
   add.facets <- .check.snpR.facet.request(x, facets)
   if(!all(add.facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, add.facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, add.facets))
   }
   facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
 
@@ -522,7 +522,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   }
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   
@@ -553,7 +553,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         setwd(g.filename)
         g.filename <- list.files(pattern = "genepop.txt")
       }
-      invisible(utils::capture.output(genepop::Fst(g.filename, pairs = TRUE)))
+      .make_it_quiet(genepop::Fst(g.filename, pairs = TRUE))
       
 
 
@@ -825,7 +825,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
   
   for(i in 1:length(facets)){
     if(method == "genepop"){
-      invisible(utils::capture.output(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt"))))
+      .make_it_quiet(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt")))
     }
     
     real[[i]] <- one_run(x,
@@ -878,20 +878,20 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
           pboot <- split(boot, 1:boot_par, drop = F)
         }
         
-        cl <- snow::makeSOCKcluster(boot_par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(boot_par)
+        doParallel::registerDoParallel(cl)
         
         
         
         #prepare reporting function
         ntasks <- length(pboot)
-        progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
+        # progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+        # opts <- list(progress=progress)
         
         #loop through each set
         boots <- foreach::foreach(q = 1:ntasks,
-                                  .packages = c("snpR", "data.table"), 
-                                  .options.snow = opts) %dopar% {
+                                  .packages = c("snpR", "data.table"), .export = ".make_it_quiet"
+                                  ) %dopar% {
                                     
                                     boots <- vector("list", length(pboot[[q]]))
                                     for(i in 1:length(pboot[[q]])){
@@ -907,7 +907,6 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         
         
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
         boots <- unlist(boots, recursive = F)
         boot <- max(boot)
       }
@@ -1016,7 +1015,7 @@ calc_fis <- function(x, facets = NULL){
   facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   #===========subfunctions=====================================================
@@ -1112,7 +1111,7 @@ calc_ho <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x,
@@ -1184,7 +1183,7 @@ calc_private <- function(x, facets = NULL){
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
@@ -2230,18 +2229,18 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         rproc <- ceiling(cumsum(as.numeric(comps.per.snp))/split) # which processor should each comparison be assigned to?
 
         #now need to start the parallel job:
-        cl <- snow::makeSOCKcluster(par)
-        doSNOW::registerDoSNOW(cl)
+        cl <- parallel::makePSOCKcluster(par)
+        doParallel::registerDoParallel(cl)
 
         #prepare reporting function
         ntasks <- par
-        if(verbose){
-          progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
-          opts <- list(progress=progress)
-        }
-        else{
-          opts <- list()
-        }
+        # if(verbose){
+        #   progress <- function(n) cat(sprintf("Part %d out of",n), ntasks, "is complete.\n")
+        #   opts <- list(progress=progress)
+        # }
+        # else{
+        #   opts <- list()
+        # }
 
         # initialize and store things
         x_storage <- as.matrix(as.data.frame(x))
@@ -2263,7 +2262,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         # run the LD calculations
         output <- foreach::foreach(q = 1:ntasks, .packages = c("bigmemory", "dplyr"), .inorder = TRUE,
-                                   .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
+                                   .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                      if(exists("xbd")){
                                        x_storage <- bigmemory::attach.big.matrix(xbd)
                                      }
@@ -2279,7 +2278,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
         #release cores
         parallel::stopCluster(cl)
-        doSNOW::registerDoSNOW()
 
 
         if(verbose){cat("LD computation completed. Preparing results.\n\t")}
@@ -2414,18 +2412,18 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #in parallel
     else{
-      cl <- snow::makeSOCKcluster(par)
-      doSNOW::registerDoSNOW(cl)
+      cl <- parallel::makePSOCKcluster(par)
+      doParallel::registerDoParallel(cl)
 
       #prepare reporting function
       ntasks <- tot_subfacets
-      if(verbose){
-        progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
-        opts <- list(progress=progress)
-      }
-      else{
-        opts <- list()
-      }
+      # if(verbose){
+      #   progress <- function(n) cat(sprintf("Facet %d out of", n), ntasks, "is complete.\n")
+      #   opts <- list(progress=progress)
+      # }
+      # else{
+      #   opts <- list()
+      # }
 
       x_storage <- as.matrix(as.data.frame(x))
       meta_storage <- x@snp.meta
@@ -2434,7 +2432,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #loop through each set of facets
       output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
-                                 .options.snow = opts, .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
+                                 .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                    t.task <- task_list[i,]
                                    t.facet <- t.task[1]
                                    t.subfacet <- t.task[2]
@@ -2443,7 +2441,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
       #release cores and clean up
       parallel::stopCluster(cl)
-      doSNOW::registerDoSNOW()
       rm(x_storage, meta_storage, mDat_storage)
       gc();gc()
 
@@ -2517,22 +2514,22 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(filter_samp_facets){
       if(filter_snp_facets){
-        suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                                                facets = sample.facets,
-                                                                                subfacets = sample.subfacets,
-                                                                                snp.facets = snp.facets,
-                                                                                snp.subfacets = snp.subfacets))))
+        suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                               facets = sample.facets,
+                                                               subfacets = sample.subfacets,
+                                                               snp.facets = snp.facets,
+                                                               snp.subfacets = snp.subfacets)))
       }
       else{
-        suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                                                facets = sample.facets,
-                                                                                subfacets = sample.subfacets))))
+        suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                               facets = sample.facets,
+                                                               subfacets = sample.subfacets)))
       }
     }
     else if(filter_snp_facets){
-      suppressWarnings(invisible(utils::capture.output(x <- .subset_snpR_data(x,
-                                                     snp.facets = snp.facets,
-                                                     snp.subfacets = snp.subfacets))))
+      suppressWarnings(.make_it_quiet(x <- .subset_snpR_data(x,
+                                                             snp.facets = snp.facets,
+                                                             snp.subfacets = snp.subfacets)))
     }
   }
 
@@ -2791,26 +2788,26 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       ptasks <- split(tasks, 1:par, drop = F)
     }
 
-    cl <- snow::makeSOCKcluster(par)
-    doSNOW::registerDoSNOW(cl)
+    cl <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(cl)
 
 
 
     #prepare reporting function
     ntasks <- length(ptasks)
-    if(verbose){
-      progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
-      opts <- list(progress=progress)
-    }
-    else{
-      opts <- list(opts)
-    }
+    # if(verbose){
+    #   progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+    #   opts <- list(progress=progress)
+    # }
+    # else{
+    #   opts <- list(opts)
+    # }
 
     #loop through each set of facets
     output <- foreach::foreach(q = 1:ntasks,
                                .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR", "data.table"),
-                               .inorder = TRUE,
-                               .options.snow = opts) %dopar% {
+                               .inorder = TRUE
+                               ) %dopar% {
 
                                  tasks <- ptasks[[q]]
 
@@ -2834,7 +2831,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     #release cores and clean up
     parallel::stopCluster(cl)
-    doSNOW::registerDoSNOW()
+    parallel::stopCluster(cl)
     gc();gc()
 
     # split apart matrices and decompose
@@ -2981,7 +2978,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
   out <- .apply.snpR.facets(x, facets, "gs", func, case = "ps", method = method)
@@ -3170,6 +3167,10 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
 #'   check this.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'   reported. 
+#' @param cleanup logical, default TRUE. If TRUE, the NeEstimator output
+#'   directory will be removed following processing.
 #'
 #' @return A named list containing estimated Ne values (named "ne") and the
 #'   original provided data, possibly with additional LD values (named "x").
@@ -3198,7 +3199,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     methods = "LD",
                     temporal_methods = c("Pollak", "Nei", "Jorde"),
                     temporal_gens = NULL, max_ind_per_pop = NULL,
-                    outfile = "ne_out"){
+                    outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -3232,7 +3233,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     
     # run
     run_neestimator(NeEstimator_path = NeEstimator_path,
-                    data_path = "NeEstimator/")
+                    data_path = "NeEstimator/", verbose = verbose)
     
     # parse
     out[[i]] <- parse_neestimator(path = "NeEstimator/",
@@ -3248,6 +3249,15 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   x <- .merge.snpR.stats(x, out, "pop")
   x <- .update_calced_stats(x, facets, "ne")
   x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
+  
+  if(cleanup){
+    if(Sys.info()["sysname"] == "Windows"){
+      shell("rm -r ./NeEstimator")
+    }
+    else{
+      system("rm -r ./NeEstimator")
+    }
+  }
 
   return(x)
 }
@@ -3617,6 +3627,8 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
     }
   }
   
+  warning("Mantel tests for IBD may have problems with autocorrelation, and so should be interpreted carefully! See Patrick Meirmans (2012). The Trouble with Isolation by Distance, Molecular Ecology.\n")
+  
   #===============return================================
   x <- .merge.snpR.stats(x, geo_mats, "geo_dists")
   x <- .merge.snpR.stats(x, ibd, "ibd")
@@ -3644,7 +3656,7 @@ calc_he <- function(x, facets = NULL){
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
-    invisible(utils::capture.output(x <- .add.facets.snpR.data(x, facets)))
+    .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
   
@@ -3777,6 +3789,354 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
   x <- .update_calced_stats(x, facets, "hs")
   
   x <- .update_citations(x, keys = "Coltman1999", stats = "Hs", details = "Individual Heterozygosity")
+  
+  return(x)
+}
+
+# better code for the abba baba doc, but it currently isn't working
+
+#\loadmathjax An ABBA/BABA test according to Green et al (2010) tests the
+# hypothesis that there are an equal number of loci where population 1
+# (\mjeqn{p_{1}}{ascii}) and population 2 (\mjeqn{p_{2}}{ascii}) are more
+# closely related to population 3 (\mjeqn{p_3}{ascii}). The ratio of these two
+# scenarios is given as \mjeqn{D = ABBA/BABA}{ascii}, where: \mjdeqn{ABBA = (1
+# - p_{1})p_{2}p_{3}}{ascii}\mjdeqn{BABA = p_{1}(1 - p_{2})p_{3}}{ascii}
+# where \mjeqn{p_{1}}{ascii},\mjeqn{p_{2}}{ascii}, and \mjeqn{p_{3}}{ascii} are
+# the derived allele frequencies in populations 1 through 3, respectively.
+# \emph{D} values are provided for both the overall comparison and within any
+# levels of provided snp facets.
+#
+#  \mjeqn{D_{J}}{ascii} is
+# weighted by the number of SNPs removed that block (\mjeqn{m_{j}}{ascii}),
+# such that: \mjdeqn{D_{J} \sum_{j = 1}^{g}{D - D_{-j}} + \sum_{j =
+# 1}^{g}{\frac{m_{j}D_{-j}}{n}}}{ascii} where \mjeqn{g}{ascii} is the number of
+# blocks and \mjeqn{n}{ascii} is the total number of SNPs, and
+# \mjeqn{D_{-j}}{ascii} is the D value for one block with the SNPs for that
+# block's window ommited. The squared-standard error for \mjeqn{D_{J}}{ascii}
+# is then: \mjdeqn{\sigma^{2} = \frac{1/6}\sum_{j = 1}^{g}{\frac{(\tau_{j} -
+# \theta_{D})^{2}}{h_{j} - 1}}}{ascii}where \mjeqn{h_{j} =
+# \frac{n}{m_{j}}}{ascii} and \mjdeqn{\tau_{j} = h_{j}D - ((h_j{} -
+# 1)D_{-j})}{ascii} A \emph{Z} value can then be calculated as usual (\mjeqn{Z
+# = \frac{D}{\sqrt{\sigma^{2}}}}{ascii}), and a \emph{p}-value determined from
+# using a two-sided \emph{Z}-test following a normal distribution with
+# \mjeqn{\mu = 0}{ascii} and \mjeqn{\sigma = 1}{ascii}.
+
+
+
+#' Conduct an ABBA/BABA test for gene flow.
+#'
+#' Estimate D according to Green et al (2010) via an ABBA/BABA test for a
+#' specific set of three different populations.
+#'
+#' An ABBA/BABA test according to Green et al (2010) tests the hypothesis that
+#' there are an equal number of loci where population 1 and population 2  are
+#' more closely related to population 3. The ratio of these two scenarios is
+#' given as ABBA/BABA, where: ABBA = (1 - p1)p2p3 and BABA = p1(1 - p2)p3. where
+#' p1, p2, and p3 arethe derived allele frequencies in populations 1 through 3,
+#' respectively. \emph{D} values are provided for both the overall comparison
+#' and within any levels of provided snp facets.
+#'
+#' \emph{p}-values for \emph{D} can be calculated by a block jackknifing
+#' approach according to Maier et. al (2022) by removing SNPs from each of
+#' \emph{n} genomic windows (blocks) and then calculating \emph{D} for all other
+#' sites. Non-overlapping windows are "blocked" by reference to any provided SNP
+#' metadata facets (usually chromosome), each with a length equal to
+#' \emph{sigma}, so providing \emph{sigma = 100} will use 100kb windows.
+#'
+#' @param x snpRdata. Input SNP data.
+#' @param facet character. Categorical metadata variables by which to break up
+#'   analysis. Must contain a sample facet. See \code{\link{Facets_in_snpR}} for
+#'   more details.
+#' @param p1 character. Name of population 1, must match a category present in
+#'   the provided facet.
+#' @param p2 character. Name of population 2, must match a category present in
+#'   the provided facet.
+#' @param p3 character. Name of population 3, must match a category present in
+#'   the provided facet.
+#' @param jackknife logical, default FALSE. If TRUE, block-jackknifed
+#'   significance for D will be calculated with window size sigma accoriding to
+#'   any SNP facet levels. See details.
+#' @param jackknife_par numeric or FALSE, default FALSE. If numeric, jackknifes
+#'   per SNP levels will be run with the requested number of processing threads.
+#' @param sigma numeric or NULL, default NULL. If jackknifes are requested, the
+#'   size of the windows to block by, in kb. Should be large enough to account
+#'   for linkage!
+#'
+#' @author William Hemstrom
+#' @references
+#' Maier, R. et al (2022). On the limits of fitting complex models of population
+#' history to genetic data. BioRxiv. doi: 10.1101/2022.05.08.491072
+#' 
+#' Green, ER, et al (2010). A Draft Sequence of the Neandertal Genome. Science,
+#' 328(5979), 710–722. doi: 10.1126/science.1188021
+#' 
+#' @export
+#' @examples 
+#' 
+#' # add the ref and anc columns
+#' # note: here these results are meaningless since they are arbitrary.
+#' x <- stickSNPs
+#' maf <- get.snpR.stats(x, ".base", stats = "maf")$single
+#' snp.meta(x)$ref <- maf$major
+#' snp.meta(x)$anc <- maf$minor
+#' 
+#' # run with jackknifing, 1000kb windows!
+#' # Test if ASP or UPD have more geneflow with PAL...
+#' x <- calc_abba_baba(x, "pop.chr", "ASP", "UPD", "PAL", TRUE, sigma = 1000)
+#' get.snpR.stats(x, "pop.chr", "abba_baba") # gets the per chr results
+#' get.snpR.stats(x, "pop", "abba_baba") # gets the overall results
+#' 
+#' # smoothed windowed averages
+#' x <- calc_smoothed_averages(x, "pop.chr", sigma = 200, step = 200, 
+#'    nk = TRUE, stats.type = "pairwise")
+#' get.snpR.stats(x, "pop.chr", "abba_baba")
+calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_par = FALSE, sigma = NULL){
+  ..keep.names <- ..rm.cols <- abba <- baba <- snp_facet_D <- NULL
+  
+  #============sanity checks==============
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  if(length(facet) != 1){
+    stop("Only one facet at a time can be run through calc_abba_baba due to p1, p2, p3 specification. Please run more facets manually for now.\n")
+  }
+  
+  facet <- .check.snpR.facet.request(x, facet, remove.type = "none")
+  sample.facet <- .check.snpR.facet.request(x, facet, "snp")
+  if(sample.facet == ".base"){
+    stop("A sample facet MUST be provided.\n")
+  }
+  
+  x <- .add.facets.snpR.data(x, facet)
+  
+  check_sample_tasks <- .get.task.list(x, facet)
+  bad_levels <- which(!c(p1, p2, p3) %in% check_sample_tasks[,2])
+  if(length(bad_levels) > 0){
+    stop(paste0("Some sample categories not found in sample metadata (", paste0(c(p1, p2, p3)[bad_levels], collapse = ", "), ").\n"))
+  }
+  
+  if(jackknife){
+    if(!is.numeric(sigma)){
+      stop("If jackknifes are requested, sigma must be provided (windows will be sigma*1000 bp wide).\n")
+    }
+  }
+  
+  if(any(!c("ref", "anc") %in% colnames(snp.meta(x)))){
+    stop("ref (derived) and anc (ancestral) alleles must be noted in SNP metadata.\n")
+  }
+  
+  
+  #============sub-functions==============
+  jack_fun <- function(as, p1, p2, p3){
+
+    # get derived allele counts by looping through each option
+    der <- numeric(nrow(as))
+    nucs <- c("A", "C", "G", "T")[which(c("A", "C", "G","T") %in% colnames(as))]
+    nuc_cols <- which(colnames(as) %in% nucs)
+    for(i in 1:length(nucs)){
+      matching <- which(as$ref == nucs[i])
+      der[matching] <- as[matching, nucs[i]] 
+    }
+
+    # get derived allele frequencies
+    der <- der/rowSums(as[,nucs])
+    
+    # get nk for smoothing later if requested
+    nk <- rowSums(as[which(as$subfacet == p1), nuc_cols]) + 
+      rowSums(as[which(as$subfacet == p2), nuc_cols]) + 
+      rowSums(as[which(as$subfacet == p3), nuc_cols])
+    
+    # get p1, p2, p3, pO
+    p1 <- der[which(as$subfacet == p1)]
+    p2 <- der[which(as$subfacet == p2)]
+    p3 <- der[which(as$subfacet == p3)]
+
+    # get abba and baba
+    abba <- (1 - p1) * p2 * p3
+    baba <- p1 * (1 - p2) * p3
+    
+    D_overall <- (sum(abba) - sum(baba)) / (sum(abba) + sum(baba))
+    D_per_loci <- (abba - baba)/(abba + baba)
+
+
+    return(list(overall = D_overall, 
+                per_loci = data.table::as.data.table(cbind(unique(as[,-which(colnames(as) %in% c("subfacet", "A", "C", "T", "G"))]), 
+                                                           data.frame(D = D_per_loci, abba = abba, baba = baba, nk = nk)))))
+  }
+  
+  # assume this is being passed only the correct meta, runs for the given facet level. Note that for this approach, step and sigma should be identical.
+  one_jack_boot <- function(as, on_lev, p1, p2, p3, sigma){
+    starts <- seq(min(as$position[on_lev]), max(as$position[on_lev]), by = sigma*1000)
+    ends <- starts + sigma*1000 - 1
+    
+    
+    out <- data.frame(D = numeric(length(ends)), m = numeric(length(ends))) #initialize output
+
+    # run the loop
+    for (i in 1:length(starts)){
+      matches <- intersect(which(as$position >= starts[i] & as$position <= ends[i]), on_lev)
+      if(length(matches) > 0){
+        out[i,1] <- jack_fun(as[-matches,], p1, p2, p3)$overall
+        out[i,2] <- length(matches)/3
+      }
+      else{
+        out[i,1] <- NaN
+        out[i,2] <- 0
+      }
+    }
+    
+    if(any(is.nan(out[,1]))){out <- out[-which(is.nan(out[,1])),]}
+    
+    return(out)
+  }
+  
+  # selects the correct metadata for one run, given a task list without column 2 (sample subfacet)
+  select_correct_meta <- function(x, adjusted_task_row, p1, p2, p3){
+    select <- x@facet.meta$facet == adjusted_task_row[1] & 
+                      x@facet.meta$subfacet %in% c(p1, p2, p3)
+    
+    if(adjusted_task_row[2] != ".base"){
+      paste_cols <- .paste.by.facet(x@facet.meta, unlist(.split.facet(adjusted_task_row[2])), ".")
+      
+      select <- select & paste_cols == adjusted_task_row[3]
+    }
+    
+    
+    return(select)
+  }
+  
+  bind_meta <- function(x, select){
+    return(cbind(x@facet.meta[select,], x@geno.tables$as[select,]))
+  }
+  
+  #============prepare input data=======
+  sample.facet <- .check.snpR.facet.request(x, facet)
+  x <- .add.facets.snpR.data(x, facet)
+  
+  selected_meta <- select_correct_meta(x, c(sample.facet, ".base", ".base"), p1, p2, p3)
+  
+  overall <- jack_fun(bind_meta(x, selected_meta), p1, p2, p3)
+  snp.facet <- .check.snpR.facet.request(x, facet, "sample")
+  if(snp.facet != ".base"){
+    cnames <- unlist(.split.facet(snp.facet))
+    per_snp_facet <- overall$per_loci[, snp_facet_D := (sum(abba) - sum(baba))/(sum(abba) + sum(baba)), by = cnames]
+    keep.names <- c("facet", "facet.type", cnames, "snp_facet_D")
+    .fix..call(per_snp_facet <- unique(per_snp_facet[,..keep.names]))
+  }
+  
+  
+  #============jackknife if wanted=======
+  if(jackknife){
+
+    # grab tasks (snp facet levels)
+    tasks <- .get.task.list(x, facet)
+    tasks <- tasks[,-2]
+    tasks <- unique(tasks)
+    
+    # serial
+    if(isFALSE(jackknife_par)){
+      jack_res <- vector("list", nrow(tasks))
+      
+      for(i in 1:nrow(tasks)){
+        select_part <- select_correct_meta(x, tasks[i,], p1, p2, p3)
+        select_whole <- select_correct_meta(x, c(tasks[i,1], ".base", ".base"), p1, p2, p3)
+        on_lev <- match(which(select_part), which(select_whole))
+        jack_res[[i]] <- one_jack_boot(bind_meta(x, select_whole), on_lev, p1, p2, p3, sigma)
+      }
+      
+    }
+    
+    # parallel
+    else{
+      cl <- parallel::makePSOCKcluster(jackknife_par)
+      doParallel::registerDoParallel(cl)
+      
+      #prepare reporting function
+      ntasks <- nrow(tasks)
+      # progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+      # opts <- list(progress=progress)
+      
+      #loop through each set
+      jack_res <- foreach::foreach(q = 1:ntasks,
+                                .packages = c("snpR", "data.table")) %dopar% {
+                                  
+                                  select_part <- select_correct_meta(x, tasks[q,], p1, p2, p3)
+                                  select_whole <- select_correct_meta(x, c(tasks[q,1], ".base", ".base"), p1, p2, p3)
+                                  on_lev <- match(which(select_part), which(select_whole))
+                                  one_jack_boot(bind_meta(x, select_whole), on_lev, p1, p2, p3, sigma)
+                                }
+      
+      parallel::stopCluster(cl)
+    }
+    
+    #============calculate the p value and delta j (jackknifed D estimate)===========
+    jack_res <- dplyr::bind_rows(jack_res)
+    
+    # according to Maier et al 2022, see https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/wjack.pdf for formulae
+    
+    n <- sum(jack_res$m)
+    g <- nrow(jack_res)
+    hj <- n/jack_res$m
+    
+    delta_j <- sum(overall$overall - jack_res$D) + sum((jack_res$m*jack_res$D)/n)
+    pseudos <- hj*overall$overall - ((hj - 1)*jack_res$D)
+    sq_err <- (1/g) * sum(((pseudos - delta_j)^2)/(hj - 1))
+    
+    # Z score from std.err, from there to p-value... technically we should use delta_j here not D, so if we jackknife, our returned value should actually be the jackknifed estimate of D
+    Z <- delta_j/sqrt(sq_err)
+    D.pval <- 2*stats::pnorm(abs(Z), lower.tail = FALSE)
+    overall$overall_boot <- delta_j
+  }
+  
+  #=============merge and return===========
+
+  # citations
+  x <- .update_citations(x, keys = "E.2010", stats = "D", details = "D based on ABBA/BABA test.")
+  if(jackknife){
+    x <- .update_citations(x, keys = "Maier2022.05.08.491072", stats = "D", details = "Jackknife test for significance of D.")
+  }
+  
+  # merge
+  comp_lab <- paste0(p1, "~", p2, "~", p3)
+  
+  ## per_loci
+  overall$per_loci$comparison <- comp_lab
+  rm.cols <- which(colnames(overall$per_loci) %in% c("snp_facet_D", "facet.type"))
+  colnames(overall$per_loci)[which(colnames(overall$per_loci) == "D")] <- "D_abba_baba"
+  .fix..call(overall$per_loci <- overall$per_loci[,-..rm.cols])
+  data.table::setcolorder(overall$per_loci, c("facet", "comparison", colnames(overall$per_loci)[-which(colnames(overall$per_loci) %in% c("facet", "comparison"))]))
+  x <- .merge.snpR.stats(x, overall$per_loci, type = "pairwise")
+  
+  ## overall
+  new_mean <- data.frame(facet = sample.facet,
+                         subfacet = comp_lab,
+                         snp.facet = ".base",
+                         snp.subfacet = ".base",
+                         D_abba_baba = overall$overall)
+  if(jackknife){
+    new_mean$D_abba_baba_jackknife <- overall$overall_boot
+    new_mean$D_abba_baba_p_value <- D.pval
+  }
+  x <- .merge.snpR.stats(x, 
+                         stats = new_mean,
+                         type = "weighted.means")
+  
+  ## per_snp_facet
+  if(snp.facet != ".base"){
+    snp.facet_levs <- unlist(.split.facet(.check.snpR.facet.request(x, snp.facet, "sample")))
+    snp.facet_levs <- .paste.by.facet(as.data.frame(per_snp_facet), snp.facet_levs)
+    
+    new_mean <- data.frame(facet = sample.facet,
+                           subfacet = comp_lab,
+                           snp.facet = snp.facet,
+                           snp.subfacet = snp.facet_levs)
+    new_mean$D_abba_baba <- per_snp_facet$snp_facet_D
+    x <- .merge.snpR.stats(x, new_mean, "weighted.means")
+  }
+  
+  x <- .update_calced_stats(x, facet, "abba_baba")
+  
   
   return(x)
 }

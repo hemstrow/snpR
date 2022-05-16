@@ -1,5 +1,3 @@
-context("filtering")
-
 #=========maf=======
 test_that("maf", {
   check <- filter_snps(.internal.data$test_snps, maf = 0.15, verbose = FALSE)
@@ -25,7 +23,7 @@ test_that("maf_facets", {
   bads <- get.snpR.stats(bads, "pop")
   bads$bad <- bads$maf < 0.15
   bt <- tapply(bads$bad, bads[,"position"], sum)
-  expect_true(!names(bt)[bt == 2] %in% names(st))
+  expect_true(!all(names(bt)[bt == 2] %in% names(st)))
 })
 
 #===========hf_hets===================
@@ -91,9 +89,9 @@ test_that("min_loci", {
 
 #==========errors=========================
 test_that("errors",{
-  td <- .internal.data$test_snps[-3,]
+  td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]
   expect_error(filter_snps(td, min_ind = .99, verbose = FALSE), "No loci passed filters.")
-  td <- .internal.data$test_snps[,-c(1, 5:7, 9)]
-  expect_error(filter_snps(td, min_loci = .99, verbose = FALSE), "No individuals passed filters.")
+  td <- .internal.data$test_snps[,-c(7:8)]
+  expect_error(filter_snps(td, min_loci = .99, non_poly = FALSE, verbose = FALSE), "No individuals passed filters.")
 })
 

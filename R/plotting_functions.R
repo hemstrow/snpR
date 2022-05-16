@@ -1414,8 +1414,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' results can be combined for plotting across all of these reps using the
 #' clumpp option. This option calls the CLUMPP software package in order to
 #' combine proportion population membership across multiple runs via
-#' \code{\link[pophelper]{clumppExport}}. Again, please cite both CLUMPP and
-#' pophelper if using this option.
+#' \code{clumppExport} from the \code{pophelper} package. Again, please cite
+#' both CLUMPP and pophelper if using this option.
 #'
 #' Since CLUMPP is run independantly for each value of K, cluster identites
 #' often "flip" between K values. For example individuals that are grouped into
@@ -1452,8 +1452,9 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   each individual (populations, etc.).
 #' @param facet.order character, default NULL. Optional order in which the
 #'   levels of the provided facet should appear on the plot, left to right.
-#' @param k numeric vector, default 2. The k value (number of clusters) for which
-#'   to run the clustering/assignment algorithm. Each provided k value will be run.
+#' @param k numeric vector, default 2. The k value (number of clusters) for
+#'   which to run the clustering/assignment algorithm. Each provided k value
+#'   will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
 #'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
 #'   Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
@@ -1521,9 +1522,9 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   overlap with samples somewhat, this may be desirable.
 #' @param separator_color character, default "white". Color of facet level
 #'   separator lines.
-#' @param no_admix logical, default FALSE. Used if method = "structure". If TRUE,
-#'   the NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
-#'   will be assumed between clusters.
+#' @param no_admix logical, default FALSE. Used if method = "structure". If
+#'   TRUE, the NOADMIX flag in STRUCTURE will be set to 1, meaning that no
+#'   admixture will be assumed between clusters.
 #' @param use_pop_info logical, default FALSE. Used if method = "structure". If
 #'   TRUE, the USEPOPINFO flag in STRUCTURE will be set to 1, meaning that
 #'   individuals are assumed to come from the populations that they have been
@@ -1611,7 +1612,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   Starting seed for analysis runs. Each additional run (k value or rep) will
 #'   use a successive seed.
 #' @param strip_col_names string, default NULL. An optional regular expression
-#'   indicating a way to process the column names prior to plotting. Parts of 
+#'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
 #'   argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
 #'   part off. A vector of strings will strip multiple patterns.
@@ -1645,12 +1646,12 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
 #'   \item{K_plot: } A data.frame containing the value suggested for use in K
 #'   selection vs K value for the selected method.}
-#'  
+#'
 #' @examples
 #' \dontrun{
 #' # basic sNMF, k = 2 and 3
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
-#' 
+#'
 #' # basic snapclust
 #' plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
 #' }
@@ -1679,8 +1680,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   msg <- character()
   provided_qlist <- FALSE
 
-  .check.installed("pophelper", "github", "royfrancis/pophelper")
-  
   if(!is.null(facet.order)){
     if(is.null(facet)){
       msg <- c(msg, "A faceting variable must be provided if a facet.order is.\n")
@@ -1778,7 +1777,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         else{
           if(method == "structure"){
             if(!use_pop_info){
-              lev1 <- pophelper::readQStructure(lev1)[[1]]
+              lev1 <- .readQStructure(lev1)[[1]]
               good <- nrow(lev1) != length(facet)
             }
             else{
@@ -1787,7 +1786,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
             }
           }
           else{
-            lev1 <- pophelper::readQ(lev1)[[1]]
+            lev1 <- .readQ(lev1)[[1]]
             good <- nrow(lev1) == length(facet)
           }
           if(!good){
@@ -1915,7 +1914,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       tempfile <- paste0(tempfile, ".pdf")
 
       suppressMessages(res <- try(ggplot2::ggsave(tempfile, color.check), silent = T))
-      invisible(utils::capture.output(file.remove(tempfile)))
+      .make_it_quiet(file.remove(tempfile))
       if("try-error" %in% class(res)){
         msg <- c(msg, "Alt.palette contains non-color entries or otherwise fails to properly plot.\n")
       }
@@ -2075,7 +2074,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   run_clumpp <- function(pattern = "qopt"){
     # prepare files and run clumpp
     qfiles <- list.files(full.names = T, pattern = pattern)
-    qlist <- pophelper::readQ(qfiles)
+    qlist <- .readQ(qfiles)
     if(clumpp.opt == "large.k.greedy"){
       clumpp.opt <- 3
     }
@@ -2089,7 +2088,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     ks <- unlist(lapply(qlist, function(x) attr(x, "k")))
     qlist <- qlist[which(ks %in% k)]
     ## run
-    pophelper::clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
+    .clumppExport(qlist, parammode = clumpp.opt, exportpath = getwd())
     dirs <- list.files(".", "pop")
     run_dir <- logical(length(dirs))
     for(i in 1:length(k)){
@@ -2103,11 +2102,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       system(basename(clumpp_path))
       setwd("..")
     }
-    pophelper::collectClumppOutput(filetype = "both", runsdir = getwd(), newdir = "pop-both")
+    .collectClumppOutput(filetype = "both", runsdir = getwd(), newdir = "pop-both")
 
 
     # import results
-    mq <- pophelper::readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
+    mq <- .readQ(list.files("pop-both/", full.names = T, pattern = "merged"))
 
     # get only the correct k values (in case this is re-running in a previous directory)
     ks <- unlist(lapply(mq, function(x) attr(x, "k")))
@@ -2272,14 +2271,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     qfiles <- list.files(full.names = T, pattern = pattern)
     if(method == "structure"){
       if(!use_pop_info){
-        qlist <- pophelper::readQStructure(qfiles)
+        qlist <- .readQStructure(qfiles)
       }
       else{
         return(parse_qfiles_usepopinfo(pattern))
       }
     }
     else{
-      qlist <- pophelper::readQ(qfiles)
+      qlist <- .readQ(qfiles)
     }
 
     # get k values
@@ -2348,7 +2347,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       # format and run snapclust
-      invisible(utils::capture.output(x.g <- format_snps(x, "adegenet")))
+      .make_it_quiet(x.g <- format_snps(x, "adegenet"))
 
       # initialize
       qlist <- vector("list", length = length(k))
@@ -2411,7 +2410,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       if(file.exists("lea_input.geno")){
         file.remove("lea_input.geno")
       }
-      invisible(utils::capture.output(format_snps(x, "lea", outfile = "lea_input.geno")))
+      .make_it_quiet(format_snps(x, "lea", outfile = "lea_input.geno"))
 
       # run the analysis
       if(!is.null(I)){
@@ -2480,7 +2479,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       
-      tag <- stringi::stri_rand_strings(1, "10")
+      tag <- .rand_strings(1, 10)
       
       osp <- options()$scipen
       options(scipen = 999)
@@ -2775,8 +2774,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # strip column names if requested
   if(!is.null(strip_col_names)){
     for(pat in 1:length(strip_col_names)){
-      colnames(pdat) <- stringr::str_replace(colnames(pdat), strip_col_names[pat], "")
-      facet <- stringr::str_replace(facet, strip_col_names[pat], "")
+      colnames(pdat) <- gsub(strip_col_names[pat], "", colnames(pdat))
+      facet <- gsub(strip_col_names[pat], "", facet)
     }
   }
   
@@ -2941,7 +2940,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   containing few or no SNPs. Must match the length of the provided pops
 #'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
-#'   left polarized.
+#'   left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+#'   containing the identity of the derived and ancestral alleles, respectively,
+#'   should be present for polarization to be meaningful.
 #' @param update_bib character or FALSE, default FALSE. If a file path to an
 #'   existing .bib library or to a valid path for a new one, will update or
 #'   create a .bib file including any new citations for methods used. Useful
@@ -2955,17 +2956,17 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #' 
 #' @examples 
 #' # folded, 1D
-#' plot_sfs(stickSNPs, projection = 100)
+#' plot_sfs(stickSNPs, projection = 20)
 #' 
 #' # unfolded, 1D, one specific population
-#' plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 40, fold = FALSE)
+#' plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
 #' 
 #' \dontrun{
 #' # unfolded, two poplations
-#' plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+#' plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 #' 
 #' # via a sfs matrix, useful for pulling in spectra from elsewhere
-#' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(40, 40))
+#' sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 #' plot_sfs(sfs)
 #' }
 plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = TRUE,
@@ -3557,8 +3558,8 @@ plot_tree <- function(x, facets = NULL, distance_method = "Edwards", interpolate
   needed_dists <- .check_calced_stats(x, facets, paste0("genetic_distance", "_", distance_method, "_", interpolate))
   needed_dists <- which(!unlist(needed_dists))
   if(length(needed_dists) > 0){
-    invisible(utils::capture.output(
-      x <- calc_genetic_distances(x, facets[needed_dists], distance_method, interpolate = interpolate)))
+    .make_it_quiet(
+      x <- calc_genetic_distances(x, facets[needed_dists], distance_method, interpolate = interpolate))
   }
   
   out <- vector("list", length = length(facets))
@@ -3756,3 +3757,103 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   
   return(plots)
 }
+
+#' Basic diagnostic plots
+#'
+#' Create a suite of basic diagnostic plots (FIS density, 1D SFS, maf density,
+#' PCA, and % missing data per individual) to describe the condition of the data
+#' in a snpRdata object.
+#'
+#' @param x snpRdata object
+#' @param facet character, default NULL. Categorical metadata variables by which
+#' to break up plots. Note that only one facet is allowed here. Missingness and
+#' the PCA will have individuals colored by the given sample facet. See
+#' \code{\link{Facets_in_snpR}} for more details.
+#' @param projection integer, default floor(nsnps(x)/1.2). A sample size to project
+#'   the SFS to, in \emph{number of gene copies}. Sizes too large will result in
+#'   a SFS containing few or no SNPs.
+#' @param fold_sfs logical, default TRUE. Determines if the SFS should be folded
+#'   or left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+#'   containing the identity of the derived and ancestral alleles, respectively,
+#'   should be present for polarization to be meaningful.
+#'   
+#' @export
+#' @author William Hemstrom
+#' 
+#' @return A named list of diagnostic ggplot2 plots.
+#' 
+#' @examples 
+#' # missingness and pca colored by pop
+#' plot_diagnostic(stickSNPs, "pop")
+plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE){
+  Individual <- NULL
+  #================checks and init===========
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facet <- .check.snpR.facet.request(x, facet)
+  if(length(facet) > 1){
+    facet <- facet[1]
+    warning("Only the one facet can be plotted at a time for diagnostic plots. Plotting first provided facet only.\n")
+  }
+  
+  if(facet != ".base"){
+    split.facet <- .split.facet(facet)
+    facet.vec <- .paste.by.facet(sample.meta(x), facets = unlist(split.facet))
+  }
+  
+  
+  #=================FIS======================
+  # calc
+  calced <- .check_calced_stats(x, ".base", "fis")
+  if(!unlist(calced)){
+    x <- calc_fis(x)
+  }
+  
+  # plot
+  fis <- get.snpR.stats(x, ".base", "fis")$single
+  fis <- ggplot2::ggplot(fis, ggplot2::aes(x = fis)) + ggplot2::geom_density() +
+    ggplot2::theme_bw()
+  
+  #=================plot sfs=================
+  .make_it_quiet(sfs <- plot_sfs(x, projection = projection, fold = fold_sfs))
+  if(fold_sfs){
+    sfs <- sfs + ggplot2::xlab("Minor Allele Count")
+  }
+  else{
+    sfs <- sfs + ggplot2::xlab("Derived Allele Count")
+  }
+  
+  #=================plot maf density=========
+  maf <- get.snpR.stats(x, ".base", "maf")$single
+  maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf)) + ggplot2::geom_density() +
+    ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency")
+  
+  #=================plot pca=================
+  .make_it_quiet(pca <- plot_clusters(x, facets = facet))
+  pca <- pca$plots$pca
+  
+  #=================missingness==============
+  miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
+  if(exists("facet.vec")){
+    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
+                            ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+      ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet)
+  }
+  else{
+    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss),
+                            ggplot2::aes(x = Individual, y = miss))
+  }
+  
+  miss <- miss +
+    ggplot2::geom_boxplot() +
+    ggplot2::geom_point(alpha = .5) + ggplot2::theme_bw() +
+    ggplot2::ylab("Proportion of loci with missing data")
+  
+  return(list(fis = fis,sfs = sfs, maf = maf, pca = pca, missingness = miss))
+}
+
+
+
+

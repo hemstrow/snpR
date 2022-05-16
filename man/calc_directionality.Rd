@@ -14,11 +14,13 @@ calc_directionality(
 }
 \arguments{
 \item{x}{snpRdata object or matrix, default NULL. A snpRdata from which to
-calculate a SFS. Alternatively, a 2d site frequency spectra stored in a matrix,
-with an additional "pop" or "pops" attribute containing population IDs, such as
-c("POP1", "POP2"), where the first pop corresponds to matrix columns and
-the second to matrix rows. These objects can be produced from a dadi input
-file using \code{\link{make_SFS}}.}
+calculate a SFS. Alternatively, a 2d site frequency spectra stored in a
+matrix, with an additional "pop" or "pops" attribute containing population
+IDs, such as c("POP1", "POP2"), where the first pop corresponds to matrix
+columns and the second to matrix rows. These objects can be produced from a
+dadi input file using \code{\link{make_SFS}}. Note that if x is a snpRdata
+object, snp metadata columns named "ref" and "anc" containing the identity
+of the derived and ancestral alleles, respectively, must be present.}
 
 \item{facet}{character, default NULL. Passed to \code{\link{calc_sfs}} -- see
 documentation there for details. Ignored if a sfs is provided.}
@@ -57,10 +59,10 @@ details.
 \examples{
 \dontrun{
 # directionality can be calculated without first calculating a SFS
-calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(20, 20))
+calc_directionality(stickSNPs, facet ="pop", pops = c("ASP", "PAL"), projection = c(10, 10))
 
 # an existing SFS can also be fed in. This may be handy if you get a SFS from elsewhere.
-sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(20, 20), fold = FALSE)
+sfs <- calc_sfs(stickSNPs, "pop", c("ASP", "PAL"), c(10, 10), fold = FALSE)
 calc_directionality(sfs)
 }
 }
