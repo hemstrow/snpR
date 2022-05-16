@@ -30,7 +30,9 @@ containing few or no SNPs. Must match the length of the provided pops
 vector.}
 
 \item{fold}{logical, default FALSE. Determines if the SFS should be folded or
-left polarized.}
+left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+containing the identity of the derived and ancestral alleles, respectively,
+should be present for polarization to be meaningful.}
 
 \item{update_bib}{character or FALSE, default FALSE. If a file path to an
 existing .bib library or to a valid path for a new one, will update or

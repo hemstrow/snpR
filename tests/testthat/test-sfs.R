@@ -1,15 +1,28 @@
 #========basic sfs==========
 test_that("sfs",{
   # 1D
-  .make_it_quiet(sfs <- calc_sfs(stickSNPs, projection = 100))
+  .make_it_quiet(sfs <- calc_sfs(stickSNPs, projection = 90))
   expect_true(sum(sfs, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(attr(sfs, "pop"), ".base")
-  expect_true(max(sfs, na.rm = T) <= 100/2) # folded
+  expect_true(max(sfs, na.rm = T) <= 90/2) # folded
+  expect_true(attr(sfs, "folded"))
+  expect_equal(length(sfs), 45)
   
   # 2D
   .make_it_quiet(sfs2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10)))
   expect_true(sum(sfs2, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(attr(sfs2, "pop"), c("ASP", "UPD"))
+  expect_true(attr(sfs2, "folded"))
+  expect_equal(dim(sfs2), c(11, 11))
+  
+  # unfolded
+  expect_warning(.make_it_quiet(sfs <- calc_sfs(stickSNPs, projection = 90, fold = FALSE)), "ithout ancestral and derived character states, unfolded spectra will be misleading")
+  expect_false(attr(sfs, "folded"))
+  expect_equal(length(sfs), 91)
+  
+  expect_warning(.make_it_quiet(sfs2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10), fold = FALSE)), "ithout ancestral and derived character states, unfolded spectra will be misleading")
+  expect_false(attr(sfs2, "folded"))
+  expect_equal(dim(sfs2), c(11, 11))
 })
 
 #========directionality=========
