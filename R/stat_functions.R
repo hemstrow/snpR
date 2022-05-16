@@ -3891,7 +3891,7 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
 #'    nk = TRUE, stats.type = "pairwise")
 #' get.snpR.stats(x, "pop.chr", "abba_baba")
 calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_par = FALSE, sigma = NULL){
-  ..keep.names <- ..rm.cols <- NULL
+  ..keep.names <- ..rm.cols <- abba <- baba <- snp_facet_D <- NULL
   
   #============sanity checks==============
   if(!is.snpRdata(x)){
@@ -4085,7 +4085,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
     
     # Z score from std.err, from there to p-value... technically we should use delta_j here not D, so if we jackknife, our returned value should actually be the jackknifed estimate of D
     Z <- delta_j/sqrt(sq_err)
-    D.pval <- 2*pnorm(abs(Z), lower.tail = FALSE)
+    D.pval <- 2*stats::pnorm(abs(Z), lower.tail = FALSE)
     overall$overall_boot <- delta_j
   }
   

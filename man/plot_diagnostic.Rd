@@ -19,14 +19,14 @@ to break up plots. Note that only one facet is allowed here. Missingness and
 the PCA will have individuals colored by the given sample facet. See
 \code{\link{Facets_in_snpR}} for more details.}
 
+\item{projection}{integer, default floor(nsnps(x)/1.2). A sample size to project
+the SFS to, in \emph{number of gene copies}. Sizes too large will result in
+a SFS containing few or no SNPs.}
+
 \item{fold_sfs}{logical, default TRUE. Determines if the SFS should be folded
 or left polarized. If FALSE, snp metadata columns named "ref" and "anc"
 containing the identity of the derived and ancestral alleles, respectively,
 should be present for polarization to be meaningful.}
-
-\item{project}{integer, default floor(nsnps(x)/1.2). A sample size to project
-the SFS to, in \emph{number of gene copies}. Sizes too large will result in
-a SFS containing few or no SNPs.}
 }
 \value{
 A named list of diagnostic ggplot2 plots.

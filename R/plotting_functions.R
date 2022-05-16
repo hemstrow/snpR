@@ -3769,7 +3769,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' to break up plots. Note that only one facet is allowed here. Missingness and
 #' the PCA will have individuals colored by the given sample facet. See
 #' \code{\link{Facets_in_snpR}} for more details.
-#' @param project integer, default floor(nsnps(x)/1.2). A sample size to project
+#' @param projection integer, default floor(nsnps(x)/1.2). A sample size to project
 #'   the SFS to, in \emph{number of gene copies}. Sizes too large will result in
 #'   a SFS containing few or no SNPs.
 #' @param fold_sfs logical, default TRUE. Determines if the SFS should be folded
@@ -3786,6 +3786,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' # missingness and pca colored by pop
 #' plot_diagnostic(stickSNPs, "pop")
 plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE){
+  Individual <- NULL
   #================checks and init===========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
