@@ -250,3 +250,34 @@ test_that("sfs plot",{
   
 })
 
+#=======diagnostic=======
+test_that("diagnostic plots",{
+  set.seed(1234122)
+  # correct plots and axis names
+  expect_warning(dp <- plot_diagnostic(.internal.data$test_snps), "Few remaining SNPs after filtering")
+  expect_equal(names(dp), c("fis", "sfs", "maf", "pca", "missingness"))
+  expect_equal(c(dp$fis$labels$x,
+                 dp$sfs$labels$x,
+                 dp$maf$labels$x,
+                 dp$pca$labels$x,
+                 dp$missingness$labels$x),
+               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (35.43%)", "Individual"))
+  expect_equal(c(dp$fis$labels$y,
+                 dp$sfs$labels$y,
+                 dp$maf$labels$y,
+                 dp$pca$labels$y,
+                 dp$missingness$labels$y),
+               c("density", "log10(N)", "density", "PC2 (19.8%)", "Proportion of loci with missing data"))
+  expect_false("colour" %in% names(dp$pca$labels))
+  expect_false("colour" %in% names(dp$missingness$labels))
+  
+  # if unfolded sfs
+  expect_warning(dp2 <- plot_diagnostic(.internal.data$test_snps, fold_sfs = FALSE), "Few remaining SNPs after filtering")
+  expect_equal(dp2$sfs$labels$x, "Derived Allele Count")
+  
+  # colored by pop
+  expect_warning(dp3 <- plot_diagnostic(.internal.data$test_snps, facet = "pop"), "Few remaining SNPs after filtering")
+  expect_true("colour" %in% names(dp3$pca$labels))
+  expect_true("colour" %in% names(dp3$missingness$labels))
+})
+

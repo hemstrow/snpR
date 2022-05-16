@@ -2940,7 +2940,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'   containing few or no SNPs. Must match the length of the provided pops
 #'   vector.
 #' @param fold logical, default FALSE. Determines if the SFS should be folded or
-#'   left polarized.
+#'   left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+#'   containing the identity of the derived and ancestral alleles, respectively,
+#'   should be present for polarization to be meaningful.
 #' @param update_bib character or FALSE, default FALSE. If a file path to an
 #'   existing .bib library or to a valid path for a new one, will update or
 #'   create a .bib file including any new citations for methods used. Useful
@@ -3755,3 +3757,102 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   
   return(plots)
 }
+
+#' Basic diagnostic plots
+#'
+#' Create a suite of basic diagnostic plots (FIS density, 1D SFS, maf density,
+#' PCA, and % missing data per individual) to describe the condition of the data
+#' in a snpRdata object.
+#'
+#' @param x snpRdata object
+#' @param facet character, default NULL. Categorical metadata variables by which
+#' to break up plots. Note that only one facet is allowed here. Missingness and
+#' the PCA will have individuals colored by the given sample facet. See
+#' \code{\link{Facets_in_snpR}} for more details.
+#' @param project integer, default floor(nsnps(x)/1.2). A sample size to project
+#'   the SFS to, in \emph{number of gene copies}. Sizes too large will result in
+#'   a SFS containing few or no SNPs.
+#' @param fold_sfs logical, default TRUE. Determines if the SFS should be folded
+#'   or left polarized. If FALSE, snp metadata columns named "ref" and "anc"
+#'   containing the identity of the derived and ancestral alleles, respectively,
+#'   should be present for polarization to be meaningful.
+#'   
+#' @export
+#' @author William Hemstrom
+#' 
+#' @return A named list of diagnostic ggplot2 plots.
+#' 
+#' @examples 
+#' # missingness and pca colored by pop
+#' plot_diagnostic(stickSNPs, "pop")
+plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE){
+  #================checks and init===========
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facet <- .check.snpR.facet.request(x, facet)
+  if(length(facet) > 1){
+    facet <- facet[1]
+    warning("Only the one facet can be plotted at a time for diagnostic plots. Plotting first provided facet only.\n")
+  }
+  
+  if(facet != ".base"){
+    split.facet <- .split.facet(facet)
+    facet.vec <- .paste.by.facet(sample.meta(x), facets = unlist(split.facet))
+  }
+  
+  
+  #=================FIS======================
+  # calc
+  calced <- .check_calced_stats(x, ".base", "fis")
+  if(!unlist(calced)){
+    x <- calc_fis(x)
+  }
+  
+  # plot
+  fis <- get.snpR.stats(x, ".base", "fis")$single
+  fis <- ggplot2::ggplot(fis, ggplot2::aes(x = fis)) + ggplot2::geom_density() +
+    ggplot2::theme_bw()
+  
+  #=================plot sfs=================
+  .make_it_quiet(sfs <- plot_sfs(x, projection = projection, fold = fold_sfs))
+  if(fold_sfs){
+    sfs <- sfs + ggplot2::xlab("Minor Allele Count")
+  }
+  else{
+    sfs <- sfs + ggplot2::xlab("Derived Allele Count")
+  }
+  
+  #=================plot maf density=========
+  maf <- get.snpR.stats(x, ".base", "maf")$single
+  maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf)) + ggplot2::geom_density() +
+    ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency")
+  
+  #=================plot pca=================
+  .make_it_quiet(pca <- plot_clusters(x, facets = facet))
+  pca <- pca$plots$pca
+  
+  #=================missingness==============
+  miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
+  if(exists("facet.vec")){
+    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
+                            ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+      ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet)
+  }
+  else{
+    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss),
+                            ggplot2::aes(x = Individual, y = miss))
+  }
+  
+  miss <- miss +
+    ggplot2::geom_boxplot() +
+    ggplot2::geom_point(alpha = .5) + ggplot2::theme_bw() +
+    ggplot2::ylab("Proportion of loci with missing data")
+  
+  return(list(fis = fis,sfs = sfs, maf = maf, pca = pca, missingness = miss))
+}
+
+
+
+
