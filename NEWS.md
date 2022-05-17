@@ -1,3 +1,17 @@
+# snpR 1.2.3
+
+## UI
+
+## Features
+
+### Major
+
+### Minor
+
+## Documentation
+
+## Bug fixes
+
 # snpR 1.2.2
 
 ## UI
