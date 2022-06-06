@@ -20,7 +20,7 @@ sample.stats <- list(stat = c("het_hom_ratio", "hs"),
                   col_pattern = list("Het/Hom",
                                      "hs"))
 pop.stats <- list(stat = "ne",
-               col_pattern = list(c("LDNe")))
+               col_pattern = list(c("LDNe_", "Neb_", "He_")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance"),
                     types = list(c("LD"),
                                  c("genetic_distances"),

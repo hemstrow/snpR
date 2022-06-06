@@ -3119,7 +3119,11 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 
 
 
-
+# @param temporal_methods character, default c("Pollak", "Nei", "Jorde").
+#   Methods to use for the temporal methods. See defaults for options. Not
+#   currently supported.
+# @param temporal_gens data.frame, default NULL. Work in progress, not
+#   currently supported.
 
 
 #' Calculate effective population size.
@@ -3132,7 +3136,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' pairwise LD values between SNPs on different facet levels will be used.
 #'
 #' Ne can be calculated via three different methods: \itemize{ \item{"LD"}
-#' Linkage Disequilibrium based estimation. \item{"Ht"} Heterozygote excess.
+#' Linkage Disequilibrium based estimation. \item{"Het"} Heterozygote excess.
 #' \item{"Coan"} Coancestry based.} For details, please see the documentation
 #' for NeEstimator v2.
 #'
@@ -3157,11 +3161,6 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param methods character, default "LD". LD estimation methods to use.
 #'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
 #'   \item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}
-#' @param temporal_methods character, default c("Pollak", "Nei", "Jorde").
-#'   Methods to use for the temporal methods. See defaults for options. Not
-#'   currently supported.
-#' @param temporal_gens data.frame, default NULL. Work in progress, not
-#'   currently supported.
 #' @param max_ind_per_pop numeric, default NULL. Maximum number of individuals
 #'   to consider per population.
 #' @param outfile character, default "ne_out". Prefix for output files. Note
@@ -3197,8 +3196,9 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     mating = "random",
                     pcrit = c(0.05, 0.02, 0.01),
                     methods = "LD",
-                    temporal_methods = c("Pollak", "Nei", "Jorde"),
-                    temporal_gens = NULL, max_ind_per_pop = NULL,
+                    # temporal_methods = c("Pollak", "Nei", "Jorde"),
+                    # temporal_gens = NULL, 
+                    max_ind_per_pop = NULL,
                     outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
@@ -3210,10 +3210,14 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     msg <- c(msg, "NeEstimator executable not found at provided path.\n")
   }
   
+  if("temporal" %in% tolower(methods)){msg <- c(msg, "Implementation for NeEstimator's temporal method is in progress but currently not supported.\n")}
+  
+  
   facets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
   if(length(msg) > 0){
     stop(msg)
   }
+  
   
   
   #=============run====================================

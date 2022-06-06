@@ -5,7 +5,7 @@ sample.meta(asdat)$cat_phenotype <- sample(c("case", "control"), ncol(asdat), re
 
 #=========association=========
 test_that("correct gmmat", {
-  skip_if_not_installed("GMMAT")
+  skip_if_not_installed("GMMAT"); skip_on_cran()
   suppressWarnings(asgmmat <- calc_association(asdat, response = "phenotype"))
   asgmmat <- get.snpR.stats(asgmmat, stats = "association")
   hits <- asgmmat$single[which(asgmmat$single$gmmat_pval_phenotype < 0.05),]
