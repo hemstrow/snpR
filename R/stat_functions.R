@@ -3188,7 +3188,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' # calculate Ne, noting not to use LD between SNPs on the 
 #' # same chromosome equivalent ("chr") for every population.
 #' ne <- calc_ne(stickSNPs, facets = "pop", chr = "chr")
-#' get.snpR.stats(ne, "pop", type = "pop")}
+#' get.snpR.stats(ne, "pop", stat = "ne")}
 #' 
 #' @export
 calc_ne <- function(x, facets = NULL, chr = NULL,
@@ -4144,3 +4144,100 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
   
   return(x)
 }
+
+#' Calculate the proportion of polymorphic loci.
+#'
+#' Calculates the proportion of polymorphic (genotyped) loci for any
+#' combination of SNP and sample facets.
+#' 
+#' @param x snpRdata object
+#' @param facets facets over which to check for polymorphic loci. Can be any
+#'   combination of SNP/sample facets.
+#'   See \code{\link{Facets_in_snpR}} for details.
+
+#'
+#' @return A snpRdata object with prop_poly merged into the weigheted.means 
+#'   slot.
+#'   
+#' @author William Hemstrom
+#' @export
+#' 
+#' @examples
+#' # base facet
+#' x <- calc_prop_poly(stickSNPs)
+#' get.snpR.stats(x, stats = "prop_poly")$weighted.means
+#'
+#' # multiple facets
+#' x <- calc_prop_poly(stickSNPs, c("pop", "fam", "pop.fam", 
+#'                                  "pop.fam.chr", "chr"))
+#' get.snpR.stats(x, c("pop", "fam", "pop.fam", "pop.fam.chr", "chr"), 
+#'                stats = "prop_poly")$weighted.means
+#'
+calc_prop_poly <- function(x, facets = NULL){
+  #==================sanity checks====================================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  x <- .add.facets.snpR.data(x, facets)
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  
+  #==================subfunction: run once for each snp facet!========
+  func <- function(as){ 
+    meta <- as[,which(!colnames(as) %in% colnames(x@geno.tables$as) & !colnames(as) %in% c("facet.type", ".snp.id"))]
+    
+    as <- as[, which(colnames(as) %in% colnames(x@geno.tables$as))]
+    as <- ifelse(as != 0, TRUE, FALSE)
+    meta$poly <- rowSums(as) > 1
+    meta$genotypes <- rowSums(as) > 0
+    if(any(!meta$genotypes)){
+      meta <- meta[-which(!meta$genotypes),]
+    }
+    
+    meta <- data.table::as.data.table(meta)
+    tab <- meta[, .SDcols = "poly", lapply(.SD, function(x) sum(x)/length(x)), by = c(colnames(meta)[-which(colnames(meta) %in% c("poly", "genotypes"))])]
+    
+    sf.cols <- which(!colnames(tab) %in% c("facet", "subfacet", "poly"))
+    if(length(sf.cols) > 0){
+      sf.names <- paste0(colnames(tab)[sf.cols], collapse = ".")
+      sf.names <- .check.snpR.facet.request(x, sf.names, "none")
+      tab$snp.facet <- sf.names
+      tab[, snp.subfacet := .paste.by.facet(as.data.frame(tab), .split.facet(sf.names)[[1]])]
+    }
+    else{
+      tab$snp.facet <- ".base"
+      tab$snp.subfacet <- ".base"
+    }
+    
+    tab <- tab[,c("facet", "subfacet", "snp.facet", "snp.subfacet", "poly")]
+    colnames(tab)[5] <- "prop_poly"
+    return(tab)
+  }
+  
+  #=========apply=========
+  # get unique snp facets
+  snp.levs <- lapply(facets, function(f) .check.snpR.facet.request(x, f, remove.type = "sample"))
+  psl <- unlist(lapply(snp.levs, function(f) paste0(f, collapse = ".")))
+  sample.levs <- lapply(facets, function(f) .check.snpR.facet.request(x, f, remove.type = "snp"))
+  sample.levs <- lapply(sample.levs, function(f) paste0(f, collapse = "."))
+  
+  usl <- unique(snp.levs)
+
+  output <- vector("list", length(usl))
+  for(i in 1:length(usl)){
+    sample.levs.to.run <- paste0(usl[[i]], collapse = ".")
+    sample.levs.to.run <- unlist(sample.levs[which(psl == sample.levs.to.run)])
+    matches <- which(x@facet.meta$facet %in% sample.levs.to.run)
+    col.matches <- which(colnames(x@facet.meta) %in% c("facet", "subfacet", .split.facet(usl[[i]])[[1]]))
+    output[[i]] <- func(cbind(x@facet.meta[matches, col.matches], x@geno.tables$as[matches,]))
+  }
+
+  output <- dplyr::bind_rows(output)
+  
+  #==========merge========
+  
+  x <- .update_calced_stats(x, facets, stats = "prop_poly")
+  x <- .merge.snpR.stats(x, output, type = "weighted.means")
+}
+
+

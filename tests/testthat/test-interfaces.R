@@ -5,11 +5,11 @@ test_that("NeEstimator",{
   ne_path <- "C://usr/bin/Ne2-1.exe"
   skip_if(!file.exists(ne_path))
   
-  ne <- calc_ne(stickSNPs[pop = "ASP"], NeEstimator_path = ne_path, chr = "chr", facets = "pop", verbose = FALSE)
+  ne <- calc_ne(stickSNPs[pop = "ASP"], NeEstimator_path = ne_path, chr = "chr", facets = "pop")
   ne <- get.snpR.stats(ne, "pop", "ne")
   
   
-  expect_equivalent(ne$pop[1,-c(1:2), drop = TRUE], c(83.5, 24.4, Inf, 18.3, Inf)) # not internally calced, just a check for proper prep and parsing
+  expect_equal(as.numeric(unlist(ne$pop[1,-c(1:2), drop = TRUE])), c(108.3, 108.3, 83.5, 27.1, 27.1, 24.4, Inf, Inf, Inf, 20.9, 20.9, 18.3, Inf, Inf, Inf)) # not internally calced, just a check for proper prep and parsing
 })
 
 

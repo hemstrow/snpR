@@ -5,12 +5,15 @@
 ## Features
 
 ### Major
+* Added `calc_prop_poly()` to calculate proportion of polymorphic loci for a given pop.
 
 ### Minor
 
 ## Documentation
 
 ## Bug fixes
+* Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
+* Fixed a rare internal bug where `.get.task.list()` would sometimes add a space between facet levels when pasting due to weird `t()` bug. To the user, this might have occasionally resulted in wierd behavior when using multiple SNP facets with mixed numeric and character classes.
 
 # snpR 1.2.2
 
@@ -39,7 +42,7 @@
 * `calc_ne()` and `run_colony()` actually cleanup now if asked on Windows.
 * Fixed the `verbose` argument on `run_colony()` to actually work on Windows.
 * Fixed a bug trying to merge new and old data with the same columns in different orders could cause NAs to be filled by the wrong numbers. Internal only problem that only effected the new `calc_abba_baba()` function.
-* Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
+
 
 # snpR 1.2.1
 

@@ -1526,7 +1526,7 @@ is.snpRdata <- function(x){
     # get all of the possible factor/subfactor options and make the task list for this facet
     all.opts.1 <- matrix(rep(as.matrix(sample.opts), each = nrow(snp.opts)), ncol = ncol(sample.opts))
     all.opts.1 <- do.call(paste, c(as.data.frame(all.opts.1), sep = "."),)
-    all.opts.2 <- matrix(rep(t(snp.opts), nrow(sample.opts)), ncol = ncol(snp.opts), byrow = TRUE)
+    all.opts.2 <- matrix(rep(t(dplyr::mutate_all(snp.opts, as.character)), nrow(sample.opts)), ncol = ncol(snp.opts), byrow = TRUE) # mutate before transpose because t will occasionally add a space before a number for mysterious reasons.
     all.opts.2 <- do.call(paste, c(as.data.frame(all.opts.2), sep = "."))
     t.task.list <- cbind(t.sample.facet, all.opts.1, t.snp.facet, all.opts.2)
     task.list <- rbind(task.list, t.task.list)
