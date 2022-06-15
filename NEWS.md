@@ -1,15 +1,11 @@
 # snpR 1.2.3
 
-## UI
-
-## Features
 
 ### Major
 * Added `calc_prop_poly()` to calculate proportion of polymorphic loci for a given pop.
 
-### Minor
-
 ## Documentation
+* Fixed some outdated documentation in `calc_ne()`.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
