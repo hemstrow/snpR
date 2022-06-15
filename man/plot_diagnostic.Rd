@@ -37,8 +37,10 @@ PCA, and % missing data per individual) to describe the condition of the data
 in a snpRdata object.
 }
 \examples{
+\dontrun{
 # missingness and pca colored by pop
 plot_diagnostic(stickSNPs, "pop")
+}
 }
 \author{
 William Hemstrom

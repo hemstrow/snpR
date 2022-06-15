@@ -108,7 +108,7 @@ the same facet, sigma, and step values).
 dat <- calc_basic_snp_stats(stickSNPs, "chr", sigma = 200, step = 150)
 
 # do bootstraps
-dat <- do_bootstraps(dat, facets = "chr", boots = 1000, 
+dat <- do_bootstraps(dat, facets = "chr", boots = 100, 
                      sigma = 200, step = 150)
 
 # fetch results, bootstraps and then p-values on original stats

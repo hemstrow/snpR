@@ -2954,14 +2954,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 #'
 #' @export
 #' 
-#' @examples 
+#' @examples
+#' \dontrun{
 #' # folded, 1D
 #' plot_sfs(stickSNPs, projection = 20)
 #' 
 #' # unfolded, 1D, one specific population
 #' plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
 #' 
-#' \dontrun{
 #' # unfolded, two poplations
 #' plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 #' 
@@ -3783,8 +3783,10 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' @return A named list of diagnostic ggplot2 plots.
 #' 
 #' @examples 
+#' \dontrun{
 #' # missingness and pca colored by pop
 #' plot_diagnostic(stickSNPs, "pop")
+#' }
 plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE){
   Individual <- NULL
   #================checks and init===========

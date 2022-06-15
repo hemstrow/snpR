@@ -12,8 +12,6 @@ calc_ne(
   mating = "random",
   pcrit = c(0.05, 0.02, 0.01),
   methods = "LD",
-  temporal_methods = c("Pollak", "Nei", "Jorde"),
-  temporal_gens = NULL,
   max_ind_per_pop = NULL,
   outfile = "ne_out",
   verbose = TRUE,
@@ -49,13 +47,6 @@ a range of values should be checked.}
 Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
 \item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}}
 
-\item{temporal_methods}{character, default c("Pollak", "Nei", "Jorde").
-Methods to use for the temporal methods. See defaults for options. Not
-currently supported.}
-
-\item{temporal_gens}{data.frame, default NULL. Work in progress, not
-currently supported.}
-
 \item{max_ind_per_pop}{numeric, default NULL. Maximum number of individuals
 to consider per population.}
 
@@ -83,7 +74,7 @@ facet can be provided which designates chromosomes or linkage groups. Only
 pairwise LD values between SNPs on different facet levels will be used.
 
 Ne can be calculated via three different methods: \itemize{ \item{"LD"}
-Linkage Disequilibrium based estimation. \item{"Ht"} Heterozygote excess.
+Linkage Disequilibrium based estimation. \item{"Het"} Heterozygote excess.
 \item{"Coan"} Coancestry based.} For details, please see the documentation
 for NeEstimator v2.
 }
@@ -93,7 +84,7 @@ for NeEstimator v2.
 # calculate Ne, noting not to use LD between SNPs on the 
 # same chromosome equivalent ("chr") for every population.
 ne <- calc_ne(stickSNPs, facets = "pop", chr = "chr")
-get.snpR.stats(ne, "pop", type = "pop")}
+get.snpR.stats(ne, "pop", stat = "ne")}
 
 }
 \references{

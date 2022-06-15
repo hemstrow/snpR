@@ -81,13 +81,13 @@ the SFS construction methods implemented in the program \emph{dadi} (see
 Gutenkunst et al (2009)).
 }
 \examples{
+\dontrun{
 # folded, 1D
 plot_sfs(stickSNPs, projection = 20)
 
 # unfolded, 1D, one specific population
 plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
 
-\dontrun{
 # unfolded, two poplations
 plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
 

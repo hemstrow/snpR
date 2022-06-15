@@ -22,7 +22,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
 
   msg <- character()
   # check methods
-  good.methods <- c("ld", "het", "coan", "temporal")
+  good.methods <- c("ld", "het", "coan") # temporal temporarily
   methods <- tolower(methods)
   if(any(!methods %in% good.methods)){
     msg <- c(msg,paste0("Unaccepted methods. Acceptable methods: ", paste(good.methods, collapse = ", ")))
@@ -157,7 +157,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
 
     # read in the data
     suppressWarnings(dat <- as.data.frame(data.table::fread(files[i], skip = skip, header = FALSE)))
-    dat <- dat[1:(nrow(dat) - 2),]
+    # dat <- dat[1:(nrow(dat) - 2),]
 
     # add column names, adjust data per type
     if(type == "cn"){
@@ -178,11 +178,13 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
         colnames(dat) <- c("pop", "n", "pcrit",	"hm_n",	"n_alleles", "D", "He_Ne", "He_lCIp", "He_uCIp")
         dat <- dat[,c(1,3,7:9)]
       }
+      
+      dat$pop <- rep(dat$pop[seq(1, nrow(dat), length(unique(dat$pcrit)))], each = length(unique(dat$pcrit)))
     }
     out[[i]] <- dat
     names(out)[i] <- type
   }
-  setwd("..")
+  setwd(owd)
 
 
   # fix pop names if possible
@@ -191,7 +193,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     snpRdat <- .add.facets.snpR.data(snpRdat, facets)
     opts <- .get.task.list(snpRdat, facets)
     opts <- opts[,2] # these are the sorted options.
-    tab <- data.frame(index = unique(out[[1]]$pop), ref = opts)
+    index <- unique(out[[1]]$pop)
+    if(any(index == "")){index <- index[-which(index == "")]}
+    tab <- data.frame(index = index, ref = opts) #err
     out <- lapply(out, function(x){x$pop <- tab$ref[match(x$pop, tab$index)];return(x)})
   }
 
@@ -203,7 +207,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   out <- out[,c(1, mc, (2:ncol(out))[-(mc - 1)])]
   out[out == "Infinite"] <- Inf
   out[,-1] <- dplyr::mutate_all(out[,-1], as.numeric)
-  out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf
+  out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf # negative values mean inf
   
   # cast such that pcrit for each pop is applied across columns
   cout <- vector("list", ncol(out) - 2)
@@ -221,7 +225,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     
   }
   cout <- dplyr::bind_cols(cout)
-  
+
   return(cout)
 
 }

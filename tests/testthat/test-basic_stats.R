@@ -108,4 +108,49 @@ test_that("het_hom", {
                                     c("Var1", "Var2"), "_"))) # every level accounted for?
 })
 
+test_that("prop_poly",{
+  tf <- c(".base", "chr", "chr.pop", "chr.fam", "fam", "pop", "fam.pop.chr")
+  poly <- calc_prop_poly(.internal.data$test_snps, tf)
+  polyc <- get.snpR.stats(poly, tf, "prop_poly")$weighted.means
+  
+  # quick, dirty percent poly function using genotypes to check, not efficient for large data!
+  conf_one <- function(dat){
+    id <- genotypes(dat)
+    id <- t(id)
+    id[id == "NN"] <- NA
+    id1 <- substr(id, 1, 1)
+    id2 <- substr(id, 2, 2)
+    id <- rbind(id1, id2)
+    id <- apply(id, MARGIN = 2, function(x) length(unique(na.omit(x))))
+    return(sum(id != 1)/length(id))
+  }
+  
+  expect_equal(polyc$prop_poly[1:9], c(conf_one(.internal.data$test_snps),
+                                 conf_one(.internal.data$test_snps[fam = "A"]),
+                                 conf_one(.internal.data$test_snps[fam = "B"]),
+                                 conf_one(.internal.data$test_snps[pop = "ASP"]),
+                                 conf_one(.internal.data$test_snps[pop = "PAL"]),
+                                 conf_one(.internal.data$test_snps[chr = "groupVI"]),
+                                 conf_one(.internal.data$test_snps[chr = "groupVI", fam = "A"]),
+                                 conf_one(.internal.data$test_snps[chr = "groupVI", fam = "B"]),
+                                 conf_one(.internal.data$test_snps[chr = "groupVI", fam.pop = "A.ASP"])))
+  # note: hand checked for accuracy
+  
+  # merging
+  poly <- calc_ho(poly, tf)
+  expect_equal(get.snpR.stats(poly, tf, c("ho", "prop_poly"))$weighted.means$weighted_mean_ho,
+               get.snpR.stats(calc_ho(.internal.data$test_snps, tf), tf, "ho")$weighted.means$weighted_mean_ho)
+  
+  # double snp level
+  r1 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("chr.position.fam")), "chr.position.fam", "prop_poly")
+  r2 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("position.chr.fam")), "position.chr.fam", "prop_poly")
+  expect_equal(r1, r2)
+  
+  ## everything accounted for?
+  check <- .add.facets.snpR.data(.internal.data$test_snps, "fam")
+  expect_equal(sort(.paste.by.facet(r1$weighted.means, c("facet", "subfacet", "snp.subfacet"))),
+               sort(.paste.by.facet(as.data.frame(.get.task.list(check, "chr.position.fam")), 
+                                    c("t.sample.facet", "all.opts.1", "all.opts.2"))))
+})
+
   
