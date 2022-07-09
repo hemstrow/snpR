@@ -548,10 +548,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
 #'  min_loci).}
 #'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
-#'  overwhich the minor allele frequency can be checked. SNPs will only fail the
+#'  over which the minor allele frequency can be checked. SNPs will only fail the
 #'  maf filter if they fail in every level of every provided facet.
 #'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
-#'  overwhich the hwe filter can be checked. SNPs will fail the hwe filter if
+#'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
 #'  they fail in any level of any provided facet.
 #'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
 #'  removed.
@@ -956,7 +956,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'this is more complicated and not recommended. Instead, it is simpler
 #'\code{\link{import.snpR.data}} or one of the wrappers in
 #'\code{\link{snpR_import_wrappers}}. The option is kept for backwards
-#'compatability and internal use.
+#'compatibility and internal use.
 #'
 #'If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 #'metadata may either be provided in the first few columns of x, the number of
@@ -979,7 +979,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
 #'presence/absence format, presence or absence of each possible allele at each
 #'possible genotype noted. Interpolation possible, with missing data substituted
-#'with allele freqency in all samples or each population.} \item{rafm: }{RAFM
+#'with allele frequency in all samples or each population.} \item{rafm: }{RAFM
 #'format, two allele calls at each locus stored in subsequent columns, e.g.
 #'locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
 #'STRUCTURE format save with the addition of filler columns proceeding data such
@@ -1010,15 +1010,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'probability of drawing a minor allele is equal to the minor allele frequency.
 #'The expected number of minor alleles based on the later method is equal to the
 #'interpolated value from the former, but the later allows for multiple runs to
-#'determine the impact of stochastic draws and is generally prefered and
+#'determine the impact of stochastic draws and is generally preferred and
 #'required for some downstream analysis. It is therefore the default. As a
 #'slower but more accurate alternative to "af" interpolation, "iPCA" may be
 #'selected. This an iterative PCA approach to interpolate based on SNP/SNP
-#'covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is not
+#'covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
 #'defined, the number of components used for interpolation will be estimated
 #'using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'slower than the other methods, especially for large datasets. Setting an ncp
-#'of 2-5 generally results in reasonable inpterpolations without the time
+#'of 2-5 generally results in reasonable interpolations without the time
 #'constraint.
 #'
 #'Note also that for the plink format, a .bed binary file can be generated. If
@@ -1063,7 +1063,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'@param input_format Character, default NULL. Format of x, by default a
 #'  snpRdata object. See description for details.
 #'@param input_meta_columns Numeric, default NULL. If x is not a snpRdata
-#'  object, optionally specifies the number of metadata columns preceeding
+#'  object, optionally specifies the number of metadata columns preceding
 #'  genotypes in x. See details for more information.
 #'@param input_mDat Character, default "NN". If x is not a snpRdata object, the
 #'  coding for missing \emph{genotypes} in x (typically "NN" or "0000").
@@ -1114,7 +1114,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'             input_meta_columns = 3, 
 #' input_mDat = "0000", sample.meta = sample_meta)
 #'
-#' #allele count, seperated by the pop facet.
+#' #allele count, separated by the pop facet.
 #' format_snps(stickSNPs, "ac", facets = "pop")
 #'
 #' #genepop:
@@ -2696,9 +2696,9 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
 #'
 #' @param x snpRdata object
 #' @param facet character, default NULL. SNP facet specifying chromosomes or 
-#'   scaffolds. SNP positions will be independantly considered depending on the
+#'   scaffolds. SNP positions will be independently considered depending on the
 #'   facet level.
-#' @param n Integer. Specifies the minium distance between selected SNPs.
+#' @param n Integer. Specifies the minimum distance between selected SNPs.
 #' 
 #' @return A snpRdata object containing the selected SNPs.
 #' 

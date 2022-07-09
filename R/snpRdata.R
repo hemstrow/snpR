@@ -601,7 +601,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'
 #' @section Types:
 #'
-#'   \itemize{ \item{single: } non-pairwise, non-window statitics (pi, ho, ect.)
+#'   \itemize{ \item{single: } non-pairwise, non-window statistics (pi, ho, 
+#'   ect.)
 #'   \item{pairwise: } pairwise, non-window statistics (Fst).
 #'   \item{single.window: } non-pairwise, sliding window statistics.
 #'   \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }
@@ -621,7 +622,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #'   \code{\link{calc_maf}}. \item{private: } private allele identities, via
 #'   \code{\link{calc_private}}. \item{association: } results from phenotypic
 #'   association tests, via \code{\link{calc_association}}. \item{hwe: }
-#'   Hardy-Weinburg Equilibrium p-values, via \code{\link{calc_hwe}}.
+#'   Hardy-Weinberg Equilibrium p-values, via \code{\link{calc_hwe}}.
 #'   \item{tajimas_d: } Tajima's D, Watterson's Theta, and Tajima's Theta, via
 #'   \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
 #'   \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }

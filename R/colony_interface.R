@@ -8,10 +8,10 @@
 #'
 #' Requires that the COLONY program is installed locally if running within snpR.
 #' Text files exported from write_colony_input command can also be imported to
-#' non-local command line versions of COLONY (eg. on a compute cluster). Input
-#' and output files will be stored in a colony folder created in the current
-#' working directory. The functions documented here can write input files, call
-#' them using COLONY, and parse some parts of the results given the original
+#' command line versions of COLONY (eg. on a compute cluster). Input and output 
+#' files will be stored in a colony folder created in the current working 
+#' directory. The functions documented here can write input files, call them
+#' using COLONY, and parse some parts of the results given the original
 #' snpRdata object. Note that no facet support is currently available here due
 #' to the complexity and number of possible input parameters that are difficult
 #' to handle across multiple facets and facet levels. Facet support for the
@@ -564,7 +564,7 @@ parse_colony <- function(prefix, x, path = "colony/", sampleIDs = NULL, cleanup 
 
 #' Create and infile, run, and gather some basic results using the COLONY parentage analysis program.
 #'
-#' Create a COLONY infile using snpRdata sets containg offspring and possibly paternal genotypes given
+#' Create a COLONY infile using snpRdata sets containing offspring and possibly paternal genotypes given
 #' specified parameters. Requires that the COLONY program is installed locally. Input and output files
 #' will be stored in a colony folder created in the current working directory.
 #'
