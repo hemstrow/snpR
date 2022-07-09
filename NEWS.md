@@ -6,6 +6,7 @@
 
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
+* Fixed some typos in the documentation.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
