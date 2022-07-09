@@ -32,7 +32,7 @@
 #'@section private alleles:
 #'
 #'  Determines if each SNP is a private allele across all levels in each sample
-#'  facet. Will return an error of no sample  facets are provided.
+#'  facet. Will return an error if no sample facets are provided.
 #'
 #'@section hwe:
 #'
@@ -59,7 +59,7 @@
 #'  How should Family-Wise Error correction (multiple testing correction) be
 #'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
 #'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-#'  each subfacet is treated as a seperate set of tests. \item{"overall":} All
+#'  each subfacet is treated as a separate set of tests. \item{"overall":} All
 #'  tests are treated as a set.}
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf calc_he
@@ -99,7 +99,7 @@ NULL
 #'
 #'Facet designation follows a specific format. Facets are given as a character
 #'vector, where each entry designates one unique combination of levels over
-#'which to seperate the data. Levels within a facet are seperated by a '.'. Each
+#'which to separate the data. Levels within a facet are separated by a '.'. Each
 #'facet can contain multiple snp and/or sample levels. Multiple facets can be
 #'run with a single line of code.
 #'
@@ -109,7 +109,7 @@ NULL
 #'former is typically more computationally efficient.
 #'
 #'If multiple sample or snp levels are provided in a single facet, the data is
-#'simultaniously broken up by \emph{both} levels. For example, the facet
+#'simultaneously broken up by \emph{both} levels. For example, the facet
 #'c("fam.pop") would break up the data provided in \code{\link{stickSNPs}} by
 #'both family and population, and would produce levels such as "ASP.A" for
 #'individuals in the ASP population and in family A.
@@ -122,7 +122,7 @@ NULL
 #'In many cases, specifying "all" as a facet will calculate or return statistics
 #'for all previously run facets.
 #'
-#'The base facet--that is, the entire data with no categorical devisions--can be
+#'The base facet--that is, the entire data with no categorical divisions--can be
 #'specified with ".base" and is typically the facet defaulted to when facets =
 #'NULL.
 #'
@@ -235,7 +235,7 @@ calc_maf <- function(x, facets = NULL){
 #'
 #'Tajima's D compares estimates of theta based on either the number of observed
 #'pairwise differences (Tajima's theta) and the number of substitutions vs
-#'expected total tree length (Waterson's Theta). Since low frequency minor
+#'expected total tree length (Watterson's Theta). Since low frequency minor
 #'variants contribute to these statistics and they rely on the ratio of the
 #'number of variants vs the number of sequenced non-polymorphic sites, this
 #'function should only be run on data that is \emph{unfiltered} aside from the
@@ -261,7 +261,7 @@ calc_maf <- function(x, facets = NULL){
 #'@param verbose Logical, default FALSE. If TRUE progress will be printed to the
 #'  console.
 #'
-#'@return snpRdata object, with Waterson's Theta, Tajima's Theta, and Tajima's D
+#'@return snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's D
 #'  for each window merged in to the window.stats slot.
 #'
 #' @examples
@@ -420,13 +420,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'\code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
 #'possible pairwise combination of populations.
 #'
-#'Calculates FST according to either Wier and Cockerham 1984 or using the
+#'Calculates FST according to either Weir and Cockerham 1984 or using the
 #'\code{\link[genepop]{Fst}} function from the genepop package (see references).
 #'
 #'If the genpop option is used, several intermediate files will be created in
 #'the default temporary directory (see \code{\link{tempfile}}).
 #'
-#'The Wier and Cockerham (1984) and genepop methods tend to
+#'The Weir and Cockerham (1984) and genepop methods tend to
 #'produce very similar results both per SNP and per population.
 #'Generally, the former option may be preferred for computational efficiency.
 #'
@@ -449,8 +449,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' @param facets character. Categorical metadata variables by which to break up
 #'   analysis. See \code{\link{Facets_in_snpR}} for more details.
 #' @param method character, default "wc". Defines the FST estimator to use.
-#'   Options: \itemize{ \item{wc: } Wier and Cockerham (1984).
-#'   \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'   Options: \itemize{ \item{wc: } Weir and Cockerham (1984).
+#'   \item{genepop: } Rousset (2008), uses the genepop package. }
 #' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do.
 #'   See details.
 #' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
@@ -464,15 +464,15 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
 #'  slot.
 #'
-#'@references Wier and Cockerham (1984). \emph{Evolution}
-#'@references Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
+#'@references Weir and Cockerham (1984). \emph{Evolution}
+#'@references Weir (1990). Genetic data analysis. Sinauer,  Sunderland, MA
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
 #'@author William Hemstrom
 #'@export
 #'
 #' @examples
-#' # Using Wier and Cockerham 1984's method
+#' # Using Weir and Cockerham 1984's method
 #' x <- calc_pairwise_fst(stickSNPs, "pop")
 #' get.snpR.stats(x, "pop", "fst")
 #'
@@ -485,7 +485,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 #' get.snpR.stats(x, "pop", "fst")
 #' }
-calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE,
+calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par = FALSE,
                               cleanup = TRUE, verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
   
@@ -601,7 +601,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         #grab the values
         tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
         tvals <- gsub(paste0("^", i, " +"), "", tvals) #get just the values
-        tvals <- unlist(strsplit(tvals, " +")) #spit and unlist the values
+        tvals <- unlist(strsplit(tvals, " +")) #split and unlist the values
         tvals <- suppressWarnings(as.numeric(tvals)) #get them as numeric, NAs are fine, they should be NAs.
 
         #put them in a matrix to get their comparison ID.
@@ -731,7 +731,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
           
           
           
-          # Wier-- comes out exactly the same
+          # Weir-- comes out exactly the same
           # else{
           #   S1 <- cbind(parts_1$S1, parts_2$S1)
           #   S2 <- cbind(parts_2$S2, parts_2$S2)
@@ -991,7 +991,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
 #'
 #' @export
 #' @author William Hemstrom
-#' @references Wier and Cockerham (1984). \emph{Evolution}
+#' @references Weir and Cockerham (1984). \emph{Evolution}
 #'
 #' @examples
 #' x <- calc_fis(stickSNPs, c("pop", "pop.chr"))
@@ -1207,15 +1207,15 @@ calc_private <- function(x, facets = NULL){
 #'the Minimization-Expectation method  described in Excoffier, L., and Slatkin,
 #'M. (1995). Note that while the latter method is likely more accurate, it can
 #'be \emph{very} slow and often produces qualitatively equivalent results, and
-#'so is not prefered during casual or preliminary analysis. Either method will
+#'so is not preferred during casual or preliminary analysis. Either method will
 #'calculate D', r-squared, and the p-value for that r-squared.
 #'
 #'Since this process involves many pairwise comparisons, it can be very slow.
 #'
-#'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated
+#'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be calculated
 #'very quickly via the \code{\link{cor}} function from base R.
 #'\code{LD_full_pairwise} will perform this method alongside the other methods
-#'if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+#'if cld = TRUE and by itself if cld = "only". For most analyses, this will be
 #'sufficient and much faster than the other methods. This is the default
 #'behavior.
 #'
@@ -1375,7 +1375,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 
-    # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambigious haplotype frequencies,
+    # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambiguous haplotype frequencies,
     # then making a guess at the haplotype composition in the double heterozygote assuming that all possible haplotypes are equally likely
     doub.het <- which(het.1 + het.2 == 2) # identify double heterozygotes
 
@@ -1393,7 +1393,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     nhap.counts <- haptable # grab the haplotypes
-    ehap.counts <- nhap.counts + .5*doub.het.sum # assuming that both haplopairs are equaly likely in the double het
+    ehap.counts <- nhap.counts + .5*doub.het.sum # assuming that both haplopairs are equally likely in the double het
     shap.freqs <- ehap.counts/rowSums(ehap.counts) # get the starting haplotype frequencies
 
 
@@ -1430,7 +1430,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       op2.e <- 1 - op1.e
 
       # maximization: given the expected haplotype frequencies, how many of each haplotype should we have? get new frequencies
-      n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambigious phenotypes again.
+      n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambiguous phenotypes again.
       if(nrow(x) == 1){
         n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(matrix(x[,doub.het], 1))*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
         n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(matrix(x[,doub.het], 1))*op2.e*.5)
@@ -1599,10 +1599,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     dhom <- ghapmat[,dhom]
     het_l1 <- substr(gl, 1, sform) != substr(gl, sform + 1, sform*2) #columns where the first locus is het
     het_l1 <- ghapmat[,het_l1]
-    het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
+    het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #columns where the second locus is het
     het_l2 <- ghapmat[,het_l2]
 
-    #fix wierd cases where one of these isn't a matrix because only one haplotype falls into the category.
+    #fix weird cases where one of these isn't a matrix because only one haplotype falls into the category.
     if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
       if(!is.matrix(dhom)){
         dhom <- as.matrix(dhom)
@@ -2848,7 +2848,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 }
 
 #'@export
-#'@describeIn calc_single_stats p-values for Hardy-Wienberg Equilibrium divergence
+#'@describeIn calc_single_stats p-values for Hardy-Weinberg Equilibrium divergence
 calc_hwe <- function(x, facets = NULL, method = "exact", 
                      fwe_method = "BY", 
                      fwe_case = c("by_facet", "overall")){
@@ -3001,7 +3001,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   return(x)
 }
 
-#'Caluclate basic SNP statistics
+#'Calculate basic SNP statistics
 #'
 #'Automatically calculate most basic statistics from snpRdata. Calculates maf,
 #'pi, ho, he, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
@@ -3019,8 +3019,8 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'@param x snpRdata object.
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param fst.method character, default "WC". Defines the FST estimator to use.
-#'  Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+#'@param fst.method character, default "wc". Defines the FST estimator to use.
+#'  Options: \itemize{ \item{WC: } Weir and Cockerham (1984). \item{Weir: } Weir
 #'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
 #'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
 #'@param sigma numeric. Designates the width of windows in kilobases. Full
