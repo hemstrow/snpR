@@ -7,10 +7,11 @@
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
 * Fixed some typos in the documentation.
+* Fixed some parameter input descriptions in the documentation for Colony.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
-* Fixed a rare internal bug where `.get.task.list()` would sometimes add a space between facet levels when pasting due to weird `t()` bug. To the user, this might have occasionally resulted in wierd behavior when using multiple SNP facets with mixed numeric and character classes.
+* Fixed a rare internal bug where `.get.task.list()` would sometimes add a space between facet levels when pasting due to weird `t()` bug. To the user, this might have occasionally resulted in weird behavior when using multiple SNP facets with mixed numeric and character classes.
 
 # snpR 1.2.2
 
