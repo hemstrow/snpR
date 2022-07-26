@@ -2212,7 +2212,7 @@ is.snpRdata <- function(x){
     d <- d/vec[col(d)]
     d <- d/vec[row(d)]
     d <- -log(d)
-    d <- stats::as.dist(d)
+    am <- stats::as.dist(d)
   }
   am <- list(am)
   names(am) <- method
