@@ -32,7 +32,7 @@
 #'@section private alleles:
 #'
 #'  Determines if each SNP is a private allele across all levels in each sample
-#'  facet. Will return an error of no sample  facets are provided.
+#'  facet. Will return an error if no sample facets are provided.
 #'
 #'@section hwe:
 #'
@@ -465,6 +465,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'  slot.
 #'
 #'@references Weir and Cockerham (1984). \emph{Evolution}
+
 #'@references Weir (1990). Genetic data analysis. Sinauer, Sunderland, MA
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
@@ -485,7 +486,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 #' get.snpR.stats(x, "pop", "fst")
 #' }
-calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par = FALSE,
+calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par = FALSE,
                               cleanup = TRUE, verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
   
@@ -601,7 +602,7 @@ calc_pairwise_fst <- function(x, facets, method = "WC", boot = FALSE, boot_par =
         #grab the values
         tvals <- vals[grep(paste0("^", i, " +"), vals)] #get just the comparisons with this pop
         tvals <- gsub(paste0("^", i, " +"), "", tvals) #get just the values
-        tvals <- unlist(strsplit(tvals, " +")) #spit and unlist the values
+        tvals <- unlist(strsplit(tvals, " +")) #split and unlist the values
         tvals <- suppressWarnings(as.numeric(tvals)) #get them as numeric, NAs are fine, they should be NAs.
 
         #put them in a matrix to get their comparison ID.
@@ -1215,7 +1216,7 @@ calc_private <- function(x, facets = NULL){
 #'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be calculated
 #'very quickly via the \code{\link{cor}} function from base R.
 #'\code{LD_full_pairwise} will perform this method alongside the other methods
-#'if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+#'if cld = TRUE and by itself if cld = "only". For most analyses, this will be
 #'sufficient and much faster than the other methods. This is the default
 #'behavior.
 #'
@@ -1375,7 +1376,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
 
 
-    # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambigious haplotype frequencies,
+    # First, make a guess at the starting haplotype frequencies. We'll do this by taking the unambiguous haplotype frequencies,
     # then making a guess at the haplotype composition in the double heterozygote assuming that all possible haplotypes are equally likely
     doub.het <- which(het.1 + het.2 == 2) # identify double heterozygotes
 
@@ -1393,7 +1394,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
 
     nhap.counts <- haptable # grab the haplotypes
-    ehap.counts <- nhap.counts + .5*doub.het.sum # assuming that both haplopairs are equaly likely in the double het
+    ehap.counts <- nhap.counts + .5*doub.het.sum # assuming that both haplopairs are equally likely in the double het
     shap.freqs <- ehap.counts/rowSums(ehap.counts) # get the starting haplotype frequencies
 
 
@@ -1430,7 +1431,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       op2.e <- 1 - op1.e
 
       # maximization: given the expected haplotype frequencies, how many of each haplotype should we have? get new frequencies
-      n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambigious phenotypes again.
+      n1hap.freqs <- haptable # grab the known haplotype frequencies form the unambiguous phenotypes again.
       if(nrow(x) == 1){
         n1hap.freqs[,c(1, 4)] <- n1hap.freqs[,c(1, 4)] + (rowSums(matrix(x[,doub.het], 1))*op1.e*.5) # we basically add the expected number of haplotypes for the double heterozygotes
         n1hap.freqs[,c(2, 3)] <- n1hap.freqs[,c(2, 3)] + (rowSums(matrix(x[,doub.het], 1))*op2.e*.5)
@@ -1599,7 +1600,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     dhom <- ghapmat[,dhom]
     het_l1 <- substr(gl, 1, sform) != substr(gl, sform + 1, sform*2) #columns where the first locus is het
     het_l1 <- ghapmat[,het_l1]
-    het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #colunms where the second locus is het
+    het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #columns where the second locus is het
     het_l2 <- ghapmat[,het_l2]
 
     #fix Weird cases where one of these isn't a matrix because only one haplotype falls into the category.
