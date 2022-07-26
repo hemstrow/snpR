@@ -27,7 +27,6 @@ Imports:
     plyr,
     purrr,
     rbibutils,
-    RefManageR,
     reshape2,
     rlang,
     stats

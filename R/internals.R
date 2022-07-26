@@ -2533,17 +2533,16 @@ is.snpRdata <- function(x){
   #==========sanity checks=======
   
   .check.installed("rbibutils")
-  .check.installed("RefManageR")
-  
+
   #==========shout at the user=====
   bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
   bib <- rbibutils::readBib(bib.file)
-  
+
   cat("Citations for methods used thus far: \n")
   for(i in 1:length(keys)){
     cat("==============================================\n")
     cat("Statistic: ", stats[i], "\n")
-    cat("Citation: ", RefManageR::Cite(bib[keys[i]]), "\n")
+    cat("Citation: ", .quick_grab_cite(bib[keys[i]]), "\n")
     cat("Bibtex key: ", keys[i], "\n")
     cat("Details: ", details[i], "\n")
   }
@@ -2564,7 +2563,7 @@ is.snpRdata <- function(x){
         
         current_bib <- c(current_bib, bib)
         
-        RefManageR::WriteBib(current_bib, outbib, verbose = FALSE)
+        rbibutils::writeBib(current_bib, outbib)
         
         cat(".bib file ", outbib, "updated with new citations.\n")
         
@@ -2576,7 +2575,7 @@ is.snpRdata <- function(x){
     
     else {
       bib <- bib[keys]
-      RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+      rbibutils::writeBib(bib, outbib)
       
       cat(".bib file ", outbib, "written.\n")
     }
@@ -2639,3 +2638,5 @@ is.snpRdata <- function(x){
 .make_it_quiet <- function(fun){
   return(invisible(utils::capture.output(fun)))
 }
+
+.quick_grab_cite <- function(cite) paste0(capture.output(cite), collapse = "")
