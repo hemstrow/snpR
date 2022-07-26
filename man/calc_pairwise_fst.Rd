@@ -7,7 +7,7 @@
 calc_pairwise_fst(
   x,
   facets,
-  method = "WC",
+  method = "wc",
   boot = FALSE,
   boot_par = FALSE,
   cleanup = TRUE,
@@ -21,8 +21,8 @@ calc_pairwise_fst(
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{method}{character, default "wc". Defines the FST estimator to use.
-Options: \itemize{ \item{wc: } Wier and Cockerham (1984).
-\item{Genepop: } Rousset (2008), uses the genepop package. }}
+Options: \itemize{ \item{wc: } Weir and Cockerham (1984).
+\item{genepop: } Rousset (2008), uses the genepop package. }}
 
 \item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do.
 See details.}
@@ -46,13 +46,13 @@ A snpRdata object with pairwise FST as well as the number of total
 possible pairwise combination of populations.
 }
 \details{
-Calculates FST according to either Wier and Cockerham 1984 or using the
+Calculates FST according to either Weir and Cockerham 1984 or using the
 \code{\link[genepop]{Fst}} function from the genepop package (see references).
 
 If the genpop option is used, several intermediate files will be created in
 the default temporary directory (see \code{\link{tempfile}}).
 
-The Wier and Cockerham (1984) and genepop methods tend to
+The Weir and Cockerham (1984) and genepop methods tend to
 produce very similar results both per SNP and per population.
 Generally, the former option may be preferred for computational efficiency.
 
@@ -67,12 +67,12 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
-Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
+Method Options: \itemize{ \item{"wc": }{Weir and Cockerham 1984.}
 item{"Genepop": }{As used in genepop, Rousset
 2008.}}
 }
 \examples{
-# Using Wier and Cockerham 1984's method
+# Using Weir and Cockerham 1984's method
 x <- calc_pairwise_fst(stickSNPs, "pop")
 get.snpR.stats(x, "pop", "fst")
 
@@ -87,9 +87,9 @@ get.snpR.stats(x, "pop", "fst")
 }
 }
 \references{
-Wier and Cockerham (1984). \emph{Evolution}
+Weir and Cockerham (1984). \emph{Evolution}
 
-Wier (1990). Genetic data analysis. Sinauer,  Sunderland, MA
+Weir (1990). Genetic data analysis. Sinauer, Sunderland, MA
 
 Rousset (2008). \emph{Molecular Ecology Resources}
 }

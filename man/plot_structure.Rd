@@ -152,7 +152,7 @@ metadata containing sample IDs.}
 \item{viridis.option}{character, default "viridis". Viridis color scale
 option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
-\item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
+\item{alt.palette}{character or NULL, default NULL. Optional palette of colors
 to use instead of the viridis palette.}
 
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
@@ -330,22 +330,22 @@ combine proportion population membership across multiple runs via
 \code{clumppExport} from the \code{pophelper} package. Again, please cite
 both CLUMPP and pophelper if using this option.
 
-Since CLUMPP is run independantly for each value of K, cluster identites
+Since CLUMPP is run independently for each value of K, cluster identities
 often "flip" between K values. For example individuals that are grouped into
 cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
 cluster IDs are iteratively adjusted across K values by flipping IDs such
 that the euclidian distances between clusters at K and K - 1 are minimized.
-This tends to produce consistant cluster IDs across multiple runs of K.
+This tends to produce consistent cluster IDs across multiple runs of K.
 
 Individuals can be sorted into by membership proportion into different
 clusters within populations using the qsort option.
 
 Since the clustering and CLUMPP processes can be time consuming and outside
-tools (such as NGSadmix or fastSTRUCTURE) may be prefered, a nested list of Q
+tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of Q
 matrices, sorted by K and then rep or a character string giving a pattern
 matching saved Q matrix files in the current working directory may provided
 directly instead of a snpRdata object. Note that the output for this
-funciton, if run on a snpRdata object, will return a properly formatted list
+function, if run on a snpRdata object, will return a properly formatted list
 of Q files (named 'data') in addition to the plot and plot data. This allows
 for the plot to be quickly re-constructed using different sorting parameters
 or facets. In these cases, the facet argument should instead be a vector of

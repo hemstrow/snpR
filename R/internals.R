@@ -2639,4 +2639,4 @@ is.snpRdata <- function(x){
   return(invisible(utils::capture.output(fun)))
 }
 
-.quick_grab_cite <- function(cite) paste0(capture.output(cite), collapse = "")
+.quick_grab_cite <- function(cite) paste0(utils::capture.output(cite), collapse = "")

@@ -60,7 +60,7 @@ y <- calc_genetic_distances(stickSNPs, facets = "pop.chr",
 get.snpR.stats(y, "pop.chr", "genetic_distance")
 
 \dontrun{
-# by pop and fam seperately
+# by pop and fam separately
 y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
                             method = "Edwards")
 get.snpR.stats(y, c("pop", "chr"), "genetic_distance")

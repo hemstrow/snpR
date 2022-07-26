@@ -47,7 +47,7 @@ details and options, see \code{\link{p.adjust}}.}
 How should Family-Wise Error correction (multiple testing correction) be
 applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
 pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-each subfacet is treated as a seperate set of tests. \item{"overall":} All
+each subfacet is treated as a separate set of tests. \item{"overall":} All
 tests are treated as a set.}}
 }
 \value{
@@ -73,7 +73,7 @@ The data can be broken up categorically by sample metadata, as described in
 
 \item \code{calc_private}: find private alleles
 
-\item \code{calc_hwe}: p-values for Hardy-Wienberg Equilibrium divergence
+\item \code{calc_hwe}: p-values for Hardy-Weinberg Equilibrium divergence
 
 \item \code{calc_he}: expected heterozygosity
 }}
@@ -110,7 +110,7 @@ The data can be broken up categorically by sample metadata, as described in
 
 
  Determines if each SNP is a private allele across all levels in each sample
- facet. Will return an error of no sample  facets are provided.
+ facet. Will return an error if no sample facets are provided.
 }
 
 \section{hwe}{

@@ -32,7 +32,7 @@ the provided facet.}
 the provided facet.}
 
 \item{jackknife}{logical, default FALSE. If TRUE, block-jackknifed
-significance for D will be calculated with window size sigma accoriding to
+significance for D will be calculated with window size sigma according to
 any SNP facet levels. See details.}
 
 \item{jackknife_par}{numeric or FALSE, default FALSE. If numeric, jackknifes
@@ -51,7 +51,7 @@ An ABBA/BABA test according to Green et al (2010) tests the hypothesis that
 there are an equal number of loci where population 1 and population 2  are
 more closely related to population 3. The ratio of these two scenarios is
 given as ABBA/BABA, where: ABBA = (1 - p1)p2p3 and BABA = p1(1 - p2)p3. where
-p1, p2, and p3 arethe derived allele frequencies in populations 1 through 3,
+p1, p2, and p3 are the derived allele frequencies in populations 1 through 3,
 respectively. \emph{D} values are provided for both the overall comparison
 and within any levels of provided snp facets.
 

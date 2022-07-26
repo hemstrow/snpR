@@ -37,17 +37,17 @@ use for parallel processing.}
 console.}
 }
 \value{
-snpRdata object, with Waterson's Theta, Tajima's Theta, and Tajima's D
+snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's D
  for each window merged in to the window.stats slot.
 }
 \description{
-\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's
+\code{Tajimas_D} calculates Tajima's theta/pi, Watterson's theta, and Tajima's
 D over a sliding window.
 }
 \details{
 Tajima's D compares estimates of theta based on either the number of observed
 pairwise differences (Tajima's theta) and the number of substitutions vs
-expected total tree length (Waterson's Theta). Since low frequency minor
+expected total tree length (Watterson's Theta). Since low frequency minor
 variants contribute to these statistics and they rely on the ratio of the
 number of variants vs the number of sequenced non-polymorphic sites, this
 function should only be run on data that is \emph{unfiltered} aside from the

@@ -64,7 +64,7 @@ A list containing: two parts: \itemize{\item{x: } The provided
 \description{
 Run genomic prediction given a single response variable (usually a phenotype)
 using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
-this returns the resulting model direcly, so overwrite with caution.
+this returns the resulting model directly, so overwrite with caution.
 }
 \details{
 This function is provided as a wrapper to plug snpRdata objects into the

@@ -46,11 +46,11 @@ initially. \item{full: } Re-runs the full filtering scheme (save for
 min_loci).}}
 
 \item{maf_facets}{character or FALSE, default FALSE. Defines a sample facet
-overwhich the minor allele frequency can be checked. SNPs will only fail the
+over which the minor allele frequency can be checked. SNPs will only fail the
 maf filter if they fail in every level of every provided facet.}
 
 \item{hwe_facets}{character or FALSE, default FALSE. Defines a sample facet
-overwhich the hwe filter can be checked. SNPs will fail the hwe filter if
+over which the hwe filter can be checked. SNPs will fail the hwe filter if
 they fail in any level of any provided facet.}
 
 \item{non_poly}{logical, default TRUE. If TRUE, non-polymorphic loci will be

@@ -40,7 +40,7 @@ more details.}
 \item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
 the Armitage association method. See description for details.}
 
-\item{formula}{charcter, default set to response ~ 1. Null formula for the
+\item{formula}{character, default set to response ~ 1. Null formula for the
 response variable, as described in \code{\link[stats]{formula}}.}
 
 \item{family.override}{character, default NULL. Provides an alternative model
@@ -79,7 +79,7 @@ may be broken up by sample-specific facets.
 Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 Armitage approach weights should be provided to the "w" argument, which
 specifies the weight for each possible genotype (homozygote 1, heterozygote,
-homozygote 2). The default, c(0,1,2), specifies an addative model. The
+homozygote 2). The default, c(0,1,2), specifies an additive model. The
 "gmmat.score" method uses the approach described in Chen et al. (2016) and
 implemented in the \code{\link[GMMAT]{glmmkin}} and
 \code{\link[GMMAT]{glmm.score}} functions. For this method, a 'G' genetic

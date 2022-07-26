@@ -60,7 +60,7 @@ for more details.}
 snpRdata object. See description for details.}
 
 \item{input_meta_columns}{Numeric, default NULL. If x is not a snpRdata
-object, optionally specifies the number of metadata columns preceeding
+object, optionally specifies the number of metadata columns preceding
 genotypes in x. See details for more information.}
 
 \item{input_mDat}{Character, default "NN". If x is not a snpRdata object, the
@@ -120,7 +120,7 @@ While this function can be used as an alternative to
 this is more complicated and not recommended. Instead, it is simpler
 \code{\link{import.snpR.data}} or one of the wrappers in
 \code{\link{snpR_import_wrappers}}. The option is kept for backwards
-compatability and internal use.
+compatibility and internal use.
 
 If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 metadata may either be provided in the first few columns of x, the number of
@@ -143,7 +143,7 @@ probably shouldn't be used much.} \item{NN: }{character genotype tab format,
 genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
 presence/absence format, presence or absence of each possible allele at each
 possible genotype noted. Interpolation possible, with missing data substituted
-with allele freqency in all samples or each population.} \item{rafm: }{RAFM
+with allele frequency in all samples or each population.} \item{rafm: }{RAFM
 format, two allele calls at each locus stored in subsequent columns, e.g.
 locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
 STRUCTURE format save with the addition of filler columns proceeding data such
@@ -174,15 +174,15 @@ to determine the number of minor alleles at each missing data point, where the
 probability of drawing a minor allele is equal to the minor allele frequency.
 The expected number of minor alleles based on the later method is equal to the
 interpolated value from the former, but the later allows for multiple runs to
-determine the impact of stochastic draws and is generally prefered and
+determine the impact of stochastic draws and is generally preferred and
 required for some downstream analysis. It is therefore the default. As a
 slower but more accurate alternative to "af" interpolation, "iPCA" may be
 selected. This an iterative PCA approach to interpolate based on SNP/SNP
-covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is not
+covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
 defined, the number of components used for interpolation will be estimated
 using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 slower than the other methods, especially for large datasets. Setting an ncp
-of 2-5 generally results in reasonable inpterpolations without the time
+of 2-5 generally results in reasonable interpolations without the time
 constraint.
 
 Note also that for the plink format, a .bed binary file can be generated. If
@@ -213,7 +213,7 @@ format_snps(stickRAW, input_format = "0000",
             input_meta_columns = 3, 
 input_mDat = "0000", sample.meta = sample_meta)
 
-#allele count, seperated by the pop facet.
+#allele count, separated by the pop facet.
 format_snps(stickSNPs, "ac", facets = "pop")
 
 #genepop:

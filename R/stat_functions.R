@@ -3229,8 +3229,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                              facets = facets[i],
                              chr = chr,
                              methods = methods,
-                             temporal_methods = temporal_methods,
-                             temporal_gens = temporal_gens,
+                             # temporal_methods = temporal_methods,
+                             # temporal_gens = temporal_gens,
                              pcrit = pcrit,
                              mating = mating,
                              outfile = paste0(outfile, ".txt"),
@@ -4175,6 +4175,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
 #'                stats = "prop_poly")$weighted.means
 #'
 calc_prop_poly <- function(x, facets = NULL){
+  snp.subfacet <- NULL
   #==================sanity checks====================================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

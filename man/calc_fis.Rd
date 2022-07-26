@@ -33,7 +33,7 @@ get.snpR.stats(x, c("pop", "pop.chr"), "fis")
 
 }
 \references{
-Wier and Cockerham (1984). \emph{Evolution}
+Weir and Cockerham (1984). \emph{Evolution}
 }
 \author{
 William Hemstrom
