@@ -10,7 +10,7 @@ up for analysis.
 \details{
 Facet designation follows a specific format. Facets are given as a character
 vector, where each entry designates one unique combination of levels over
-which to seperate the data. Levels within a facet are seperated by a '.'. Each
+which to separate the data. Levels within a facet are separated by a '.'. Each
 facet can contain multiple snp and/or sample levels. Multiple facets can be
 run with a single line of code.
 
@@ -20,7 +20,7 @@ the function with both "chr.pop" and then again with "pop", although the
 former is typically more computationally efficient.
 
 If multiple sample or snp levels are provided in a single facet, the data is
-simultaniously broken up by \emph{both} levels. For example, the facet
+simultaneously broken up by \emph{both} levels. For example, the facet
 c("fam.pop") would break up the data provided in \code{\link{stickSNPs}} by
 both family and population, and would produce levels such as "ASP.A" for
 individuals in the ASP population and in family A.
@@ -33,7 +33,7 @@ facet does not matter.
 In many cases, specifying "all" as a facet will calculate or return statistics
 for all previously run facets.
 
-The base facet--that is, the entire data with no categorical devisions--can be
+The base facet--that is, the entire data with no categorical divisions--can be
 specified with ".base" and is typically the facet defaulted to when facets =
 NULL.
 

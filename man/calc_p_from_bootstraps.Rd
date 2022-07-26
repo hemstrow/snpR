@@ -2,7 +2,7 @@
 % Please edit documentation in R/bootstrapping_functions.R
 \name{calc_p_from_bootstraps}
 \alias{calc_p_from_bootstraps}
-\title{Caculate p-values from bootstrapped distributions.}
+\title{Calculate p-values from bootstrapped distributions.}
 \usage{
 calc_p_from_bootstraps(
   x,
@@ -34,14 +34,14 @@ extreme than observed. }}
 use for parallel processing.}
 
 \item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type
-of Family-Wise Error correction (mulitple testing correction) to use. For
+of Family-Wise Error correction (multiple testing correction) to use. For
 details and options, see \code{\link{p.adjust}}.}
 
 \item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall").
 How should Family-Wise Error correction (multiple testing correction) be
 applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
 pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-each subfacet is treated as a seperate set of tests. \item{"overall":} All
+each subfacet is treated as a separate set of tests. \item{"overall":} All
 tests are treated as a set.}}
 }
 \value{
@@ -55,11 +55,11 @@ window} statistics from bootstrapped distributions, such as produced by
 }
 \details{
 Calculates p-values for smoothed values of a statistic based upon a
-bootstrapped null distribution of that statistic using an emperical continuous
+bootstrapped null distribution of that statistic using an empirical continuous
 distribution function.
 
 p-values can be generated for specific snp or sample metadata categories
-susing the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
+using the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
 facets for which bootstrap data and raws statistical data have both been
 calculated will be run. "all" and NULL follow the typical facet rules.
 

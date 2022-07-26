@@ -28,7 +28,7 @@ details.}
 \item{response}{character. Name of the column containing the response
 variable of interest. Must match a column name in sample metadata.}
 
-\item{formula}{charcter, default NULL. Model for the response variable, as
+\item{formula}{character, default NULL. Model for the response variable, as
 described in \code{\link[stats]{formula}}. If NULL, the model will be
 equivalent to response ~ 1.}
 

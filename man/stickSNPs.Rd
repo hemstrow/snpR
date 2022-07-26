@@ -19,7 +19,7 @@ Oregon, USA. For more information, see Hemstrom et al (in prep).
 Stored in the snpRdata object class. See \code{\link{import.snpR.data}} for
 details.
 
-Genotypes noted as two characters repesenting bases sequenced at a specific
+Genotypes noted as two characters representing bases sequenced at a specific
 site (e.g. "CC" or "GT"). Each SNP occupies one row, each sample occupies on
 column. Missing data coded as "NN".
 

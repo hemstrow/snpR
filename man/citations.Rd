@@ -15,24 +15,24 @@ written.}
 
 \item{return_bib}{logical, default FALSE. If TRUE, returns a list containing
 the bib entries and their details. The bib entries are formatted according
-to \code{\link[RefManageR]{BibEntry}}.}
+to \code{\link[rbibutils]{readBib}}.}
 }
 \value{
-If return_bib is TRUE, a list containing four parts: 
-\itemize{\item{keys: } A vector of bibtex keys for each method.
-\item{stats: } A vector of the stats used.
-\item{details: } A vector of details for each method.
-\item{bib: } A \code{\link[RefManageR]{BibEntry}} for each citation.}
+If return_bib is TRUE, a list containing four parts:
+  \itemize{\item{keys: } A vector of bibtex keys for each method.
+  \item{stats: } A vector of the stats used. \item{details: } A vector of
+  details for each method. \item{bib: } A \code{bibentry} for each citation,
+  see \code{\link[rbibutils]{readBib}}.}
 }
 \description{
 snpR will automatically track the methods used when for calculations on a
-snpRdata object. Using \code{\link{citations}} on that object will provide details 
-on the the methods used, and can optionally write a .bib bibtex formatted
-library containing citations for these methods.
+snpRdata object. Using \code{\link{citations}} on that object will provide
+details on the the methods used, and can optionally write a .bib bibtex
+formatted library containing citations for these methods.
 }
 \details{
 Printed outputs contain the statistic calculated, the in-line citation for
-the method used, a bibtex key which corresponds to the .bib library written 
+the method used, a bibtex key which corresponds to the .bib library written
 if the outbib argument is used, and a quick note giving any details.
 }
 \examples{

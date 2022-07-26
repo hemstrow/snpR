@@ -68,15 +68,15 @@ removing all "0101" double heterozygote haplotypes (if use.ME is FALSE) or via
 the Minimization-Expectation method  described in Excoffier, L., and Slatkin,
 M. (1995). Note that while the latter method is likely more accurate, it can
 be \emph{very} slow and often produces qualitatively equivalent results, and
-so is not prefered during casual or preliminary analysis. Either method will
+so is not preferred during casual or preliminary analysis. Either method will
 calculate D', r-squared, and the p-value for that r-squared.
 
 Since this process involves many pairwise comparisons, it can be very slow.
 
-In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be caluclated
+In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be calculated
 very quickly via the \code{\link{cor}} function from base R.
 \code{LD_full_pairwise} will perform this method alongside the other methods
-if cld = TRUE and by itslef if cld = "only". For most analyses, this will be
+if cld = TRUE and by itself if cld = "only". For most analyses, this will be
 sufficient and much faster than the other methods. This is the default
 behavior.
 

@@ -41,11 +41,11 @@ A snpRdata object with both geographic distance and IBD results
 \description{
 Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
 genetic distance between samples or sets of samples to the geographic
-distances between samples or sets of sapmles. IBD caluclated via a mantel
+distances between samples or sets of samples. IBD caluclated via a mantel
 test.
 }
 \details{
-Genetic distance is caluclated via \code{\link{calc_genetic_distances}}.
+Genetic distance is calculated via \code{\link{calc_genetic_distances}}.
 Geographic distances are taken as-is for individual-individual comparisons
 and by finding the geographic mean of a group of samples when sample level
 facets are requested using the methods described by
@@ -53,7 +53,7 @@ facets are requested using the methods described by
 were collected from the same location, and those samples compose a single
 level of a facet, the mean sampling location will be that single location.
 
-IBD is caluclated by comparing geographic and genetic distances using a
+IBD is calculated by comparing geographic and genetic distances using a
 mantel test via \code{\link[ade4]{mantel.randtest}}.
 
 Note that geographic distance objects are also included in the returned

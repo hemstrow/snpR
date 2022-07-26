@@ -2,7 +2,7 @@
 % Please edit documentation in R/stat_functions.R
 \name{calc_basic_snp_stats}
 \alias{calc_basic_snp_stats}
-\title{Caluclate basic SNP statistics}
+\title{Calculate basic SNP statistics}
 \usage{
 calc_basic_snp_stats(
   x,
@@ -21,7 +21,7 @@ calc_basic_snp_stats(
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{fst.method}{character, default "WC". Defines the FST estimator to use.
-Options: \itemize{ \item{WC: } Wier and Cockerham (1984). \item{Wier: } Wier
+Options: \itemize{ \item{WC: } Weir and Cockerham (1984). \item{Weir: } Weir
 (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
 package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
 

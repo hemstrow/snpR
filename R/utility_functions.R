@@ -2810,7 +2810,7 @@ gap_snps <- function(x, facet = NULL, n){
 #' @returns  If return_bib is TRUE, a list containing four parts:
 #'   \itemize{\item{keys: } A vector of bibtex keys for each method.
 #'   \item{stats: } A vector of the stats used. \item{details: } A vector of
-#'   details for each method. \item{bib: } A \code{bibentry}} for each citation,
+#'   details for each method. \item{bib: } A \code{bibentry} for each citation,
 #'   see \code{\link[rbibutils]{readBib}}.}
 #' 
 #' @export

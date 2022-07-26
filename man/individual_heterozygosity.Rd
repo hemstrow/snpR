@@ -53,7 +53,7 @@ Hom ratio:
   result, the global mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}
   should be roughly equal to 1, and that in `snpR` specifically the
   denominator is calculated across *all individuals in all facet levels* if
-  facets are specified instead of within populaitons. As a result, the
+  facets are specified instead of within populations. As a result, the
   weighted mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}} in a specific
   population can be substantially different from one if a population is much
   less heterozygous.

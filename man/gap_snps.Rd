@@ -10,10 +10,10 @@ gap_snps(x, facet = NULL, n)
 \item{x}{snpRdata object}
 
 \item{facet}{character, default NULL. SNP facet specifying chromosomes or 
-scaffolds. SNP positions will be independantly considered depending on the
+scaffolds. SNP positions will be independently considered depending on the
 facet level.}
 
-\item{n}{Integer. Specifies the minium distance between selected SNPs.}
+\item{n}{Integer. Specifies the minimum distance between selected SNPs.}
 }
 \value{
 A snpRdata object containing the selected SNPs.

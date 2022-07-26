@@ -14,7 +14,7 @@ object, the name should refer to the name of the column produced when
 fetching data via \code{\link{get.snpR.stats}}. For a data.frame, it should
 refer to the column name directly.}
 
-\item{facets}{Character, default NULL. Facets by which to split the plot. See
+\item{facets}{character, default NULL. Facets by which to split the plot. See
 \code{\link{Facets_in_snpR}}.}
 }
 \description{

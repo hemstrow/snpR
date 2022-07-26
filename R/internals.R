@@ -2212,7 +2212,7 @@ is.snpRdata <- function(x){
     d <- d/vec[col(d)]
     d <- d/vec[row(d)]
     d <- -log(d)
-    d <- stats::as.dist(d)
+    am <- stats::as.dist(d)
   }
   am <- list(am)
   names(am) <- method
@@ -2639,4 +2639,4 @@ is.snpRdata <- function(x){
   return(invisible(utils::capture.output(fun)))
 }
 
-.quick_grab_cite <- function(cite) paste0(capture.output(cite), collapse = "")
+.quick_grab_cite <- function(cite) paste0(utils::capture.output(cite), collapse = "")

@@ -31,11 +31,22 @@ test_that("correct ibd", {
 test_that("correct genetic distances", {
   set.seed(1212)
   
-  # run
+  # run edwards
   y <- stickSNPs[sample(nrow(stickSNPs), 100,  F), sample(ncol(stickSNPs), 100, F)]
   res <- calc_genetic_distances(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"))
   res <- get.snpR.stats(res, facets = c(".base", "pop", "pop.chr","pop.chr.fam"), stat = "genetic_distance")
   
+  expect_true(names(res$pop$.base) == "Edwards")
+  check <- unlist(lapply(unlist(unlist(res, recursive = F), recursive = F), class))
+  expect_true(all(check == "dist")) # checks that each result is a distance matrix
+  expect_equal(length(check), 44) # each part there
+  
+  # run nei
+  y <- stickSNPs[sample(nrow(stickSNPs), 100,  F), sample(ncol(stickSNPs), 100, F)]
+  res <- calc_genetic_distances(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"), method = "Nei")
+  res <- get.snpR.stats(res, facets = c(".base", "pop", "pop.chr","pop.chr.fam"), stat = "genetic_distance")
+  
+  expect_true(names(res$pop$.base) == "Nei")
   check <- unlist(lapply(unlist(unlist(res, recursive = F), recursive = F), class))
   expect_true(all(check == "dist")) # checks that each result is a distance matrix
   expect_equal(length(check), 44) # each part there

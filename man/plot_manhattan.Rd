@@ -38,7 +38,7 @@ statistics.}
 
 \item{window}{logical, default FALSE. If TRUE, sliding window averages will
 instead be plotted. These averages must have first been calculated with
-calc_smoothed_averags. Ignored if x is a data.frame.}
+calc_smoothed_averages. Ignored if x is a data.frame.}
 
 \item{facets}{character or NULL, default NULL. Facets by which to break
 plots, as described in \code{\link{Facets_in_snpR}}. For non-window stats,
@@ -75,7 +75,7 @@ level will also be labeled.}
 
 \item{highlight}{character, numeric, or FALSE, default "significant".
 Controls SNP highlighting. If either "significant" or "suggestive", SNPs
-above those respetive values will be highlighted. If a numeric vector, SNPs
+above those respective values will be highlighted. If a numeric vector, SNPs
 corresponding to vector entries will be highlighted. See details.}
 
 \item{highlight_style}{character, default "label". Highlighting options:
@@ -106,7 +106,7 @@ c(strip.title, axis, axis.ticks).}
 alternate across chromosomes.}
 
 \item{chr_order}{character, default NULL. If provided, an ordered vector of
-chromosome/scaffold/etc names by which to sort ouput.}
+chromosome/scaffold/etc names by which to sort output.}
 
 \item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
 x-axis chromosome names will be abbreviated using 
@@ -119,7 +119,7 @@ A list containing \itemize{\item{plot: } A ggplot manhattan plot.
   \item{data: } Raw plot data.}
 }
 \description{
-Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/ect are
+Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
 concatenated along the x-axis. Can optionally highlight requested SNPs or
 those that pass an arbitrary significance threshold and facet plots by
 defined sample-specific variables such as population.
@@ -136,7 +136,7 @@ create the smoothed windows. In both cases, the requested facets must exactly
 match those used to calculate statistics! If x is a data frame, the "chr"
 argument must also be given, and the "facets" argument will be ignored.
 
-A column defining the position of the SNP within the chromsome must be
+A column defining the position of the SNP within the chromosome must be
 provided, and is "position" by default.
 
 Specific snp and chr levels can also be requested using the chr.subfacet and

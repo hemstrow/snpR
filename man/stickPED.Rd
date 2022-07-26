@@ -3,7 +3,7 @@
 \docType{data}
 \name{stickPED}
 \alias{stickPED}
-\title{An artifical pedigree from the stickleback dataset.}
+\title{An artificial pedigree from the stickleback dataset.}
 \format{
 An object of class \code{data.frame} with 426 rows and 3 columns.
 }
