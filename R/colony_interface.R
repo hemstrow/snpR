@@ -8,10 +8,10 @@
 #'
 #' Requires that the COLONY program is installed locally if running within snpR.
 #' Text files exported from write_colony_input command can also be imported to
-#' non-local command line versions of COLONY (eg. on a compute cluster). Input
-#' and output files will be stored in a colony folder created in the current
-#' working directory. The functions documented here can write input files, call
-#' them using COLONY, and parse some parts of the results given the original
+#' command line versions of COLONY (eg. on a compute cluster). Input and output 
+#' files will be stored in a colony folder created in the current working 
+#' directory. The functions documented here can write input files, call them
+#' using COLONY, and parse some parts of the results given the original
 #' snpRdata object. Note that no facet support is currently available here due
 #' to the complexity and number of possible input parameters that are difficult
 #' to handle across multiple facets and facet levels. Facet support for the
@@ -37,7 +37,7 @@
 #'   computationally intensive and slow to run, especially with large complex
 #'   datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
 #'   computationally intensive than FL.}}
-#' @param run_length numeric in c(1,2,3,4), default 2. Length of run:
+#' @param run_length numeric in c(0,1,2,3), default 2. Length of run:
 #'   short/medium/long/verylong.
 #' @param sampleIDs character, default NULL. Name of a column in the sample
 #'   metadata that designates sample identifications/"names". Each name must be
@@ -81,7 +81,7 @@
 #' @param known_af character, default FALSE. If TRUE snpR will calculate and
 #'   supply mafs, else, supply a numeric vector containing the known maf for
 #'   each locus.
-#' @param precision integer in c(1,2,3,4), default 2. Low/Medium/High/Very High
+#' @param precision integer in c(0,1,2,3), default 2. Low/Medium/High/Very High
 #'   for calculating the maximum likelihood.
 #' @param dropout numeric vector where each value is in 0:1, default 0.01.
 #'   Supply a flatrate value for all markers, or a vector corresponding to the
@@ -564,7 +564,7 @@ parse_colony <- function(prefix, x, path = "colony/", sampleIDs = NULL, cleanup 
 
 #' Create and infile, run, and gather some basic results using the COLONY parentage analysis program.
 #'
-#' Create a COLONY infile using snpRdata sets containg offspring and possibly paternal genotypes given
+#' Create a COLONY infile using snpRdata sets containing offspring and possibly paternal genotypes given
 #' specified parameters. Requires that the COLONY program is installed locally. Input and output files
 #' will be stored in a colony folder created in the current working directory.
 #'

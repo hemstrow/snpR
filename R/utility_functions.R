@@ -548,10 +548,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
 #'  min_loci).}
 #'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
-#'  overwhich the minor allele frequency can be checked. SNPs will only fail the
+#'  over which the minor allele frequency can be checked. SNPs will only fail the
 #'  maf filter if they fail in every level of every provided facet.
 #'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
-#'  overwhich the hwe filter can be checked. SNPs will fail the hwe filter if
+#'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
 #'  they fail in any level of any provided facet.
 #'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
 #'  removed.
@@ -956,7 +956,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'this is more complicated and not recommended. Instead, it is simpler
 #'\code{\link{import.snpR.data}} or one of the wrappers in
 #'\code{\link{snpR_import_wrappers}}. The option is kept for backwards
-#'compatability and internal use.
+#'compatibility and internal use.
 #'
 #'If non-snpRdata is supplied, SNP and sample metadata may be provided. SNP
 #'metadata may either be provided in the first few columns of x, the number of
@@ -979,7 +979,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
 #'presence/absence format, presence or absence of each possible allele at each
 #'possible genotype noted. Interpolation possible, with missing data substituted
-#'with allele freqency in all samples or each population.} \item{rafm: }{RAFM
+#'with allele frequency in all samples or each population.} \item{rafm: }{RAFM
 #'format, two allele calls at each locus stored in subsequent columns, e.g.
 #'locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
 #'STRUCTURE format save with the addition of filler columns proceeding data such
@@ -1010,15 +1010,15 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'probability of drawing a minor allele is equal to the minor allele frequency.
 #'The expected number of minor alleles based on the later method is equal to the
 #'interpolated value from the former, but the later allows for multiple runs to
-#'determine the impact of stochastic draws and is generally prefered and
+#'determine the impact of stochastic draws and is generally preferred and
 #'required for some downstream analysis. It is therefore the default. As a
 #'slower but more accurate alternative to "af" interpolation, "iPCA" may be
 #'selected. This an iterative PCA approach to interpolate based on SNP/SNP
-#'covariance via \code{\link[missMDA]{imputePCA}}. If the ncp arugment is not
+#'covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
 #'defined, the number of components used for interpolation will be estimated
 #'using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'slower than the other methods, especially for large datasets. Setting an ncp
-#'of 2-5 generally results in reasonable inpterpolations without the time
+#'of 2-5 generally results in reasonable interpolations without the time
 #'constraint.
 #'
 #'Note also that for the plink format, a .bed binary file can be generated. If
@@ -1063,7 +1063,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'@param input_format Character, default NULL. Format of x, by default a
 #'  snpRdata object. See description for details.
 #'@param input_meta_columns Numeric, default NULL. If x is not a snpRdata
-#'  object, optionally specifies the number of metadata columns preceeding
+#'  object, optionally specifies the number of metadata columns preceding
 #'  genotypes in x. See details for more information.
 #'@param input_mDat Character, default "NN". If x is not a snpRdata object, the
 #'  coding for missing \emph{genotypes} in x (typically "NN" or "0000").
@@ -1114,7 +1114,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
 #'             input_meta_columns = 3, 
 #' input_mDat = "0000", sample.meta = sample_meta)
 #'
-#' #allele count, seperated by the pop facet.
+#' #allele count, separated by the pop facet.
 #' format_snps(stickSNPs, "ac", facets = "pop")
 #'
 #' #genepop:
@@ -2696,9 +2696,9 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
 #'
 #' @param x snpRdata object
 #' @param facet character, default NULL. SNP facet specifying chromosomes or 
-#'   scaffolds. SNP positions will be independantly considered depending on the
+#'   scaffolds. SNP positions will be independently considered depending on the
 #'   facet level.
-#' @param n Integer. Specifies the minium distance between selected SNPs.
+#' @param n Integer. Specifies the minimum distance between selected SNPs.
 #' 
 #' @return A snpRdata object containing the selected SNPs.
 #' 
@@ -2790,28 +2790,28 @@ gap_snps <- function(x, facet = NULL, n){
 #' Gather citations for methods used with a snpRdata object
 #' 
 #' snpR will automatically track the methods used when for calculations on a
-#' snpRdata object. Using \code{\link{citations}} on that object will provide details 
-#' on the the methods used, and can optionally write a .bib bibtex formatted
-#' library containing citations for these methods.
-#' 
+#' snpRdata object. Using \code{\link{citations}} on that object will provide
+#' details on the the methods used, and can optionally write a .bib bibtex
+#' formatted library containing citations for these methods.
+#'
 #' Printed outputs contain the statistic calculated, the in-line citation for
-#' the method used, a bibtex key which corresponds to the .bib library written 
+#' the method used, a bibtex key which corresponds to the .bib library written
 #' if the outbib argument is used, and a quick note giving any details.
-#' 
+#'
 #' @param x snpRdata object
 #' @param outbib character, default FALSE. An optional file path to which a .bib
 #'   bibtex library containing all of the citations for the used methods will be
 #'   written.
 #' @param return_bib logical, default FALSE. If TRUE, returns a list containing
 #'   the bib entries and their details. The bib entries are formatted according
-#'   to \code{\link[RefManageR]{BibEntry}}.
-#'   
+#'   to \code{\link[rbibutils]{readBib}}.
+#'
 #' @author William Hemstrom
-#' @returns  If return_bib is TRUE, a list containing four parts: 
-#' \itemize{\item{keys: } A vector of bibtex keys for each method.
-#' \item{stats: } A vector of the stats used.
-#' \item{details: } A vector of details for each method.
-#' \item{bib: } A \code{\link[RefManageR]{BibEntry}} for each citation.}
+#' @returns  If return_bib is TRUE, a list containing four parts:
+#'   \itemize{\item{keys: } A vector of bibtex keys for each method.
+#'   \item{stats: } A vector of the stats used. \item{details: } A vector of
+#'   details for each method. \item{bib: } A \code{bibentry}} for each citation,
+#'   see \code{\link[rbibutils]{readBib}}.}
 #' 
 #' @export
 #' @examples 
@@ -2833,12 +2833,11 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   }
   
   .check.installed("rbibutils")
-  .check.installed("RefManageR")
-  
+
   #==========grab bib============
   bib.file <- system.file("extdata", "snpR_citations.bib", package = "snpR")
   bib <- rbibutils::readBib(bib.file)
-  
+
   #==========filter bib==========
   keys <- as.character(unlist(purrr::map(x@citations, "key")))
   bib <- bib[keys]
@@ -2846,13 +2845,13 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   #==========shout at the user=====
   deets <- unlist(purrr::map(x@citations, "details"))
   stats <- names(x@citations)
-  
+
   cat("Citations for methods used thus far: \n")
   for(i in 1:length(keys)){
     cat("==============================================\n")
-    cat("Statistic: ", stats[i], "\n")
-    cat("Citation: ", RefManageR::Cite(bib[keys[i]]), "\n")
-    cat("Bibtex key: ", keys[i], "\n")
+    cat("Statistic: ", stats[i], "\n\n")
+    cat("Citation: ", .quick_grab_cite(bib[keys[i]]), "\n\n")
+    cat("Bibtex key: ", keys[i], "\n\n")
     cat("Details: ", deets[i], "\n")
   }
   cat("==============================================\n\n")
@@ -2871,13 +2870,13 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
         
         current_bib <- c(current_bib, bib)
         
-        RefManageR::WriteBib(current_bib, outbib, verbose = FALSE)
+        rbibutils::writeBib(current_bib, outbib)
       }
     }
     
     
     else{
-      RefManageR::WriteBib(bib, outbib, verbose = FALSE)
+      rbibutils::writeBib(bib, outbib)
       cat(".bib file can be found at: ", outbib, "\n")
     }
     

@@ -449,7 +449,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param viridis.option character, default "viridis". Viridis color scale option
 #'  to use for significance lines and SNP labels. See
 #'  \code{\link[ggplot2]{scale_gradient}} for details.
-#'@param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#'@param alt.palette character or NULL, default NULL. Optional palette of colors
 #'  to use instead of the viridis palette.
 #'@param ncp numeric or NULL, default NULL. Number of components to consider for
 #'  iPCA sn format interpolations of missing data. If null, the optimum number
@@ -790,7 +790,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 
 #' Generate a manhattan plot from snpRdata or a data.frame.
 #'
-#' Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/ect are
+#' Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
 #' concatenated along the x-axis. Can optionally highlight requested SNPs or
 #' those that pass an arbitrary significance threshold and facet plots by
 #' defined sample-specific variables such as population.
@@ -806,7 +806,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' match those used to calculate statistics! If x is a data frame, the "chr"
 #' argument must also be given, and the "facets" argument will be ignored.
 #'
-#' A column defining the position of the SNP within the chromsome must be
+#' A column defining the position of the SNP within the chromosome must be
 #' provided, and is "position" by default.
 #'
 #' Specific snp and chr levels can also be requested using the chr.subfacet and
@@ -829,7 +829,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   statistics.
 #' @param window logical, default FALSE. If TRUE, sliding window averages will
 #'   instead be plotted. These averages must have first been calculated with
-#'   calc_smoothed_averags. Ignored if x is a data.frame.
+#'   calc_smoothed_averages. Ignored if x is a data.frame.
 #' @param facets character or NULL, default NULL. Facets by which to break
 #'   plots, as described in \code{\link{Facets_in_snpR}}. For non-window stats,
 #'   the any snp.specific facets will be ignored. Ignored if x is a data.frame.
@@ -863,7 +863,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   it's absolute value.
 #' @param highlight character, numeric, or FALSE, default "significant".
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
-#'   above those respetive values will be highlighted. If a numeric vector, SNPs
+#'   above those respective values will be highlighted. If a numeric vector, SNPs
 #'   corresponding to vector entries will be highlighted. See details.
 #' @param highlight_style character, default "label". Highlighting options:
 #'   \itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
@@ -879,7 +879,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
 #' @param chr_order character, default NULL. If provided, an ordered vector of
-#'   chromosome/scaffold/etc names by which to sort ouput.
+#'   chromosome/scaffold/etc names by which to sort output.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
 #'   x-axis chromosome names will be abbreviated using 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
@@ -1217,7 +1217,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   object, the name should refer to the name of the column produced when
 #'   fetching data via \code{\link{get.snpR.stats}}. For a data.frame, it should
 #'   refer to the column name directly.
-#' @param facets Character, default NULL. Facets by which to split the plot. See
+#' @param facets character, default NULL. Facets by which to split the plot. See
 #'   \code{\link{Facets_in_snpR}}.
 #'
 #'
@@ -1417,22 +1417,22 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' \code{clumppExport} from the \code{pophelper} package. Again, please cite
 #' both CLUMPP and pophelper if using this option.
 #'
-#' Since CLUMPP is run independantly for each value of K, cluster identites
+#' Since CLUMPP is run independently for each value of K, cluster identities
 #' often "flip" between K values. For example individuals that are grouped into
 #' cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
 #' cluster IDs are iteratively adjusted across K values by flipping IDs such
 #' that the euclidian distances between clusters at K and K - 1 are minimized.
-#' This tends to produce consistant cluster IDs across multiple runs of K.
+#' This tends to produce consistent cluster IDs across multiple runs of K.
 #'
 #' Individuals can be sorted into by membership proportion into different
 #' clusters within populations using the qsort option.
 #'
 #' Since the clustering and CLUMPP processes can be time consuming and outside
-#' tools (such as NGSadmix or fastSTRUCTURE) may be prefered, a nested list of Q
+#' tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of Q
 #' matrices, sorted by K and then rep or a character string giving a pattern
 #' matching saved Q matrix files in the current working directory may provided
 #' directly instead of a snpRdata object. Note that the output for this
-#' funciton, if run on a snpRdata object, will return a properly formatted list
+#' function, if run on a snpRdata object, will return a properly formatted list
 #' of Q files (named 'data') in addition to the plot and plot data. This allows
 #' for the plot to be quickly re-constructed using different sorting parameters
 #' or facets. In these cases, the facet argument should instead be a vector of
@@ -1513,7 +1513,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
-#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#' @param alt.palette character or NULL, default NULL. Optional palette of colors
 #'   to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).

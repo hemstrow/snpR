@@ -230,7 +230,7 @@ calc_maf <- function(x, facets = NULL){
 
 #'Tajima's D from SNP data.
 #'
-#'\code{Tajimas_D} calculates Tajima's theta/pi, Waterson's theta, and Tajima's
+#'\code{Tajimas_D} calculates Tajima's theta/pi, Watterson's theta, and Tajima's
 #'D over a sliding window.
 #'
 #'Tajima's D compares estimates of theta based on either the number of observed
@@ -406,7 +406,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
   x <- .update_citations(x, "Tajima1989", "Tajima's_D", "Tajima's D, as well as Watterson's and Tajima's Theta")
   
-  # calc weights ignoring any snp levels (for stuff like overal population means)
+  # calc weights ignoring any snp levels (for stuff like overall population means)
   samp.facets <- .check.snpR.facet.request(x, facets)
   return(x)
 
@@ -441,7 +441,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 #'statistic, at least a single sample level facet must be provided.
 #'
-#'Method Options: \itemize{ \item{"wc": }{Wier and Cockerham 1984.}
+#'Method Options: \itemize{ \item{"wc": }{Weir and Cockerham 1984.}
 #'item{"Genepop": }{As used in genepop, Rousset
 #'2008.}}
 #'
@@ -465,7 +465,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'  slot.
 #'
 #'@references Weir and Cockerham (1984). \emph{Evolution}
-#'@references Weir (1990). Genetic data analysis. Sinauer,  Sunderland, MA
+
+#'@references Weir (1990). Genetic data analysis. Sinauer, Sunderland, MA
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
 #'@author William Hemstrom
@@ -1532,7 +1533,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     gl <- colnames(ghapmat)
 
     ##remove anything with missing data and double hets
-    ## Keming: this line can be edited--remove the last which statement, save as a new variable which identifes
+    ## Keming: this line can be edited--remove the last which statement, save as a new variable which identifies
     ##         columns containing missing data.
     rgcs <- c(grep(paste0("^", dmDat), gl), #missing first locus
               grep(paste0(dmDat, "$"), gl), #missing second locus
@@ -1602,7 +1603,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     het_l2 <- substr(gl, (sform*2) + 1, sform*3) != substr(gl, (sform*3+1), sform*4) #columns where the second locus is het
     het_l2 <- ghapmat[,het_l2]
 
-    #fix weird cases where one of these isn't a matrix because only one haplotype falls into the category.
+    #fix Weird cases where one of these isn't a matrix because only one haplotype falls into the category.
     if(any(!is.matrix(dhom), !is.matrix(het_l1), !is.matrix(het_l2))){
       if(!is.matrix(dhom)){
         dhom <- as.matrix(dhom)
@@ -2349,8 +2350,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     # Each facet is a level to break down by. "pop" means break by pop, c("pop", "chr") means break twice, once by pop, once by chr,
     # c("pop.chr") means to break by pop and chr.
     # For each sample level facet, we must loop through all snps, since D values will be different depending on what samples we look at.
-    # These must be looped through seperately!
-    # If there are multiple snp level facets requested, there is no reason to do re-do snp/snp comparisons within each sample level facet. Just do the all of the relevent snp/snp comparisons.
+    # These must be looped through separately!
+    # If there are multiple snp level facets requested, there is no reason to do re-do snp/snp comparisons within each sample level facet. Just do the all of the relevant snp/snp comparisons.
     # If there are complex facets with repeated sample levels (c("pop.chr", "pop.subchr")), then same deal.
 
     # So:
@@ -2360,7 +2361,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #         For each snp:
     #           Figure out which snps we need to compare to across all snp level facets.
     #           Remove any comparisons that we've already done!
-    #           Pass the genotypes and per snp comparison info to the LD_func (need to edit that function slightly to accomodate)
+    #           Pass the genotypes and per snp comparison info to the LD_func (need to edit that function slightly to accommodate)
     #     Parse and output results.
 
     # as a part of this, need a function to determine the comparisons to do for each facet and subfacet.
@@ -2477,7 +2478,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     # check complex facets
     complex.sfacets <- .check.snpR.facet.request(x, ssfacets, remove.type = "simple", fill_with_base = FALSE, return_base_when_empty = FALSE)
     if(length(complex.sfacets) > 0){
-      stop(paste0("Complex (snp and sample) level SUBFACETS not accepted. Providing these as seperate snp and sample subfacets will run only snps/samples contained in both levels. Bad facets: ",
+      stop(paste0("Complex (snp and sample) level SUBFACETS not accepted. Providing these as separate snp and sample subfacets will run only snps/samples contained in both levels. Bad facets: ",
                   paste0(complex.sfacets, collapse = ", "), "\n"))
     }
 
@@ -3019,7 +3020,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'@param x snpRdata object.
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
-#'@param fst.method character, default "wc". Defines the FST estimator to use.
+#'@param fst.method character, default "WC". Defines the FST estimator to use.
 #'  Options: \itemize{ \item{WC: } Weir and Cockerham (1984). \item{Weir: } Weir
 #'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
 #'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
@@ -3321,7 +3322,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' get.snpR.stats(y, "pop.chr", "genetic_distance")
 #'
 #' \dontrun{
-#' # by pop and fam seperately
+#' # by pop and fam separately
 #' y <- calc_genetic_distances(stickSNPs, facets = c("pop", "fam"), 
 #'                             method = "Edwards")
 #' get.snpR.stats(y, c("pop", "chr"), "genetic_distance")
@@ -3457,10 +3458,10 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'
 #' Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
 #' genetic distance between samples or sets of samples to the geographic
-#' distances between samples or sets of sapmles. IBD caluclated via a mantel
+#' distances between samples or sets of samples. IBD caluclated via a mantel
 #' test.
 #'
-#' Genetic distance is caluclated via \code{\link{calc_genetic_distances}}.
+#' Genetic distance is calculated via \code{\link{calc_genetic_distances}}.
 #' Geographic distances are taken as-is for individual-individual comparisons
 #' and by finding the geographic mean of a group of samples when sample level
 #' facets are requested using the methods described by
@@ -3468,7 +3469,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #' were collected from the same location, and those samples compose a single
 #' level of a facet, the mean sampling location will be that single location.
 #'
-#' IBD is caluclated by comparing geographic and genetic distances using a
+#' IBD is calculated by comparing geographic and genetic distances using a
 #' mantel test via \code{\link[ade4]{mantel.randtest}}.
 #'
 #' Note that geographic distance objects are also included in the returned
@@ -3701,7 +3702,7 @@ calc_he <- function(x, facets = NULL){
 #'   result, the global mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}
 #'   should be roughly equal to 1, and that in `snpR` specifically the
 #'   denominator is calculated across *all individuals in all facet levels* if
-#'   facets are specified instead of within populaitons. As a result, the
+#'   facets are specified instead of within populations. As a result, the
 #'   weighted mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}} in a specific
 #'   population can be substantially different from one if a population is much
 #'   less heterozygous.
@@ -3784,7 +3785,7 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
   facets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
   
   # calculate hs
-  # workign here, need to make a sample.pf option
+  # working here, need to make a sample.pf option
   out <- .apply.snpR.facets(x, facets, "genotypes", .heterozygosity, case = "psamp", mDat = x@mDat, method = "hs")
 
   colnames(out)[which(colnames(out) == "stat")] <- "hs"
@@ -3836,7 +3837,7 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
 #' there are an equal number of loci where population 1 and population 2  are
 #' more closely related to population 3. The ratio of these two scenarios is
 #' given as ABBA/BABA, where: ABBA = (1 - p1)p2p3 and BABA = p1(1 - p2)p3. where
-#' p1, p2, and p3 arethe derived allele frequencies in populations 1 through 3,
+#' p1, p2, and p3 are the derived allele frequencies in populations 1 through 3,
 #' respectively. \emph{D} values are provided for both the overall comparison
 #' and within any levels of provided snp facets.
 #'
@@ -3858,7 +3859,7 @@ calc_hs <- function(x, facets = NULL, complex_averages = FALSE){
 #' @param p3 character. Name of population 3, must match a category present in
 #'   the provided facet.
 #' @param jackknife logical, default FALSE. If TRUE, block-jackknifed
-#'   significance for D will be calculated with window size sigma accoriding to
+#'   significance for D will be calculated with window size sigma according to
 #'   any SNP facet levels. See details.
 #' @param jackknife_par numeric or FALSE, default FALSE. If numeric, jackknifes
 #'   per SNP levels will be run with the requested number of processing threads.
