@@ -42,7 +42,7 @@ gaussian_weight <- function(p, c, s) {
 #'(chromosome, etc.).
 #'
 #'The size of sliding windows are defined by the "sigma" argument. Note that
-#'this value, as well as that provided to the "step" arguement, are given in
+#'this value, as well as that provided to the "step" argument, are given in
 #'kilobases. Each window will include SNPs within 3*sigma kilobases from the
 #'window center. Past this point, the effect of each additional SNP on the
 #'window average would be very small, and so they are dropped for computational

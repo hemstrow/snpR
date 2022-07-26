@@ -174,7 +174,7 @@ is.snpRdata <- function(x){
 
 # Apply functions across snpR facets.
 #
-# Internal function to apply functions across snpR data. Facet desicnations
+# Internal function to apply functions across snpR data. Facet designations
 # follow rules described in \code{\link{Facets_in_snpR}}. Null or "all" facet
 # designations follow typical rules.
 #

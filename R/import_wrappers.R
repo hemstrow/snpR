@@ -4,9 +4,9 @@
 #'snpRdata format from a range of file or object sources.
 #'
 #'These functions are all wrappers for \code{\link{import.snpR.data}}, and all
-#'are technically cross-compatable save read_ms: each other function can
+#'are technically cross-compatible save read_ms: each other function can
 #'actually be called with any of the supported formats (read_vcf can be handed a
-#'genlight object without failure). These are supported as seperate funcitons
+#'genlight object without failure). These are supported as separate functions
 #'for code readability and for ease of discovery.
 #'
 #'See \code{\link{import.snpR.data}} for more detail.
@@ -56,7 +56,7 @@
 #'Options:
 #'
 #'\itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
-#'adegenet. Note, no need to import genpop objects, the equivalent statistics
+#'adegenet. Note, no need to import genepop objects, the equivalent statistics
 #'are calculated automatically when functions called with facets. Sample and SNP
 #'IDs as well as, when possible, pop IDs will be taken from the genind object.
 #'This data will be added too but will not replace data provided to the SNP or

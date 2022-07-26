@@ -2,7 +2,7 @@
 #'
 #' Run genomic prediction given a single response variable (usually a phenotype)
 #' using the \code{\link[BGLR]{BGLR}} function. Unlike other snpR functions,
-#' this returns the resulting model direcly, so overwrite with caution.
+#' this returns the resulting model directly, so overwrite with caution.
 #'
 #' This function is provided as a wrapper to plug snpRdata objects into the
 #' \code{\link[BGLR]{BGLR}} function in order to easily run genomic prediction
@@ -397,7 +397,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' Several methods can be used: Armitage, chi-squared, and odds ratio. For The
 #' Armitage approach weights should be provided to the "w" argument, which
 #' specifies the weight for each possible genotype (homozygote 1, heterozygote,
-#' homozygote 2). The default, c(0,1,2), specifies an addative model. The
+#' homozygote 2). The default, c(0,1,2), specifies an additive model. The
 #' "gmmat.score" method uses the approach described in Chen et al. (2016) and
 #' implemented in the \code{\link[GMMAT]{glmmkin}} and
 #' \code{\link[GMMAT]{glmm.score}} functions. For this method, a 'G' genetic
@@ -434,7 +434,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   more details.
 #' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
 #'   the Armitage association method. See description for details.
-#' @param formula charcter, default set to response ~ 1. Null formula for the
+#' @param formula character, default set to response ~ 1. Null formula for the
 #'   response variable, as described in \code{\link[stats]{formula}}.
 #' @param family.override character, default NULL. Provides an alternative model
 #'   family object to use for GMMAT GWAS regression. By default, uses
@@ -840,7 +840,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   details.
 #' @param response character. Name of the column containing the response
 #'   variable of interest. Must match a column name in sample metadata.
-#' @param formula charcter, default NULL. Model for the response variable, as
+#' @param formula character, default NULL. Model for the response variable, as
 #'   described in \code{\link[stats]{formula}}. If NULL, the model will be
 #'   equivalent to response ~ 1.
 #' @param num.trees numeric, default 10000. Number of trees to grow. Higher

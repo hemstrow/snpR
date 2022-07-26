@@ -91,8 +91,8 @@
 #' 
 do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistics = "all", nk = TRUE, par = FALSE, do.p = TRUE, p.alt = "two-sided"){
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.chr", "pop.chr") can
-  #      be run simultainously, with no need to loop across facets.
-  #      However, SNP level facets create different windows, and so need to be run seperately. Essentially,
+  #      be run simultaneously, with no need to loop across facets.
+  #      However, SNP level facets create different windows, and so need to be run separately. Essentially,
   #      we need to do everything once for each unique snp level facet defined in the data.
 
   #================sanity checks================
@@ -636,24 +636,24 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
   return(x)
 }
 
-#calculates a p-value for a stat based on a null distribution caluclated via bootstraps of that stat.
+#calculates a p-value for a stat based on a null distribution calculated via bootstraps of that stat.
 #inputs:  x: vector of observed statistics
 #         dist: vector of statistics bootstrapped from same stat.
 #         alt: Alternative hypothesis for p-value. Can be less, greater, or two-sided (default).
 
 
-#'Caculate p-values from bootstrapped distributions.
+#'Calculate p-values from bootstrapped distributions.
 #'
 #'\code{calc_p_from_bootstraps} finds p-values for observed \emph{smoothed
 #'window} statistics from bootstrapped distributions, such as produced by
 #'\code{\link{do_bootstraps}}.
 #'
 #'Calculates p-values for smoothed values of a statistic based upon a
-#'bootstrapped null distribution of that statistic using an emperical continuous
+#'bootstrapped null distribution of that statistic using an empirical continuous
 #'distribution function.
 #'
 #'p-values can be generated for specific snp or sample metadata categories
-#'susing the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
+#'using the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
 #'facets for which bootstrap data and raws statistical data have both been
 #'calculated will be run. "all" and NULL follow the typical facet rules.
 #'
@@ -676,13 +676,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type
-#'  of Family-Wise Error correction (mulitple testing correction) to use. For
+#'  of Family-Wise Error correction (multiple testing correction) to use. For
 #'  details and options, see \code{\link{p.adjust}}.
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
 #'  How should Family-Wise Error correction (multiple testing correction) be
 #'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
 #'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-#'  each subfacet is treated as a seperate set of tests. \item{"overall":} All
+#'  each subfacet is treated as a separate set of tests. \item{"overall":} All
 #'  tests are treated as a set.}
 #'
 #'
