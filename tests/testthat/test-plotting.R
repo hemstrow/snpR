@@ -182,20 +182,20 @@ test_that("tree generation",{
   
   .make_it_quiet(tree <- calc_tree(stickSNPs, update_bib = FALSE))
   
-  expect_true(isClass("phylo", tree$.base$.base))
+  expect_true(is(tree$.base$.base, "phylo"))
   expect_true(all(colnames(stickSNPs) %in% tree$.base$.base$tip.label))
   
   .make_it_quiet(tree <- calc_tree(stickSNPs, facets = "pop", update_bib = FALSE))
-  expect_true(isClass("phylo", tree$pop$.base))
+  expect_true(is(tree$pop$.base, "phylo"))
   expect_true(all(unique(sample.meta(stickSNPs)$pop) %in%  tree$pop$.base$tip.label))
   
   .make_it_quiet(tree <- calc_tree(stickSNPs, "pop.chr", update_bib = FALSE))
-  expect_true(all(unlist(lapply(purrr::map(tree$chr.pop, "plot"), function(x) isClass("phylo", x)))))
+  expect_true(all(unlist(lapply(unlist(tree, recursive = F), function(x) is(x, "phylo")))))
   expect_equal(names(tree$chr.pop), unique(snp.meta(stickSNPs)$chr))
   expect_true(all(unique(sample.meta(stickSNPs)$pop) %in% tree$chr.pop$groupV$tip.label))
   
   .make_it_quiet(tree <- calc_tree(stickSNPs, "pop", boot = 3, update_bib = FALSE))
-  expect_true(isClass("phylo", tree$pop$.base))
+  expect_true(is(tree$pop$.base, "phylo"))
   vals <- as.numeric(gsub("%", "", tree$pop$.base$node.label))
   expect_true(all(vals <= 100 & vals >= 0 & !is.na(vals)))
   
