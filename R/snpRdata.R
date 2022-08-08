@@ -476,8 +476,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   #couldn't find a supported format
   else{
-    good.formats <- c(".vcf", ".vcf.gz", ".ms", ".bim", ".bed", ".fam", ".fstat", ".genepop", "NN", "0000", "sn", "snp_tab")
-    stop(paste0(c("Unsupported file format. Supported formats: ", good.formats, "\n"), collapse = " "))
+    stop("Genoytpes are not in a recognized format. First genotype:", genotypes[1,1], "\n")
   }
   
   
