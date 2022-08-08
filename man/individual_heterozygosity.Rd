@@ -31,11 +31,11 @@ differences in genotyping success according to Coltman et al (1999).
 }
 \section{Functions}{
 \itemize{
-\item \code{calc_het_hom_ratio}: Ratio of heterozygous to homozygous sites.
+\item \code{calc_het_hom_ratio()}: Ratio of heterozygous to homozygous sites.
 
-\item \code{calc_hs}: \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, Individual Heterozygosity
+\item \code{calc_hs()}: \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, Individual Heterozygosity
+
 }}
-
 \section{Het}{
 Hom ratio:
 

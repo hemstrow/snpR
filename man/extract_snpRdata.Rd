@@ -41,19 +41,19 @@ their values may be dependant upon changes in metadata.
 }
 \section{Functions}{
 \itemize{
-\item \code{genotypes,snpRdata-method}: view genotypes
+\item \code{genotypes(snpRdata)}: view genotypes
 
-\item \code{genotypes<-,snpRdata-method}: set genotypes
+\item \code{genotypes(snpRdata) <- value}: set genotypes
 
-\item \code{snp.meta,snpRdata-method}: view snp meta
+\item \code{snp.meta(snpRdata)}: view snp meta
 
-\item \code{snp.meta<-,snpRdata-method}: set snp meta
+\item \code{snp.meta(snpRdata) <- value}: set snp meta
 
-\item \code{sample.meta,snpRdata-method}: view sample meta
+\item \code{sample.meta(snpRdata)}: view sample meta
 
-\item \code{sample.meta<-,snpRdata-method}: set sample meta
+\item \code{sample.meta(snpRdata) <- value}: set sample meta
+
 }}
-
 \examples{
 # copy test data
 test <- stickSNPs

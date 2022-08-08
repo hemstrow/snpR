@@ -99,28 +99,28 @@ See \code{\link{import.snpR.data}} for more detail.
 }
 \section{Functions}{
 \itemize{
-\item \code{read_vcf}: Import .vcf or .vcf.gz files.
+\item \code{read_vcf()}: Import .vcf or .vcf.gz files.
 
-\item \code{read_ms}: Import .ms files.
+\item \code{read_ms()}: Import .ms files.
 
-\item \code{read_delimited_snps}: Import tab delimited data where genotypes
+\item \code{read_delimited_snps()}: Import tab delimited data where genotypes
 are stored as: NN, 0000, or snp_tab format.
 
-\item \code{read_genepop}: Import genepop formatted data.
+\item \code{read_genepop()}: Import genepop formatted data.
 
-\item \code{read_FSTAT}: Import FSTAT formatted data.
+\item \code{read_FSTAT()}: Import FSTAT formatted data.
 
-\item \code{read_plink}: Import plink bed, bim, and fam data.
+\item \code{read_plink()}: Import plink bed, bim, and fam data.
 
-\item \code{read_structure}: Import STRUCTURE data files.
+\item \code{read_structure()}: Import STRUCTURE data files.
 
-\item \code{convert_genlight}: Convert adegenet genlight objects.
+\item \code{convert_genlight()}: Convert adegenet genlight objects.
 
-\item \code{convert_genind}: Convert adegenet genind objects
+\item \code{convert_genind()}: Convert adegenet genind objects
 
-\item \code{convert_vcfR}: Convert adegenet vcfR objects
+\item \code{convert_vcfR()}: Convert adegenet vcfR objects
+
 }}
-
 \section{File import}{
  Supports automatic import of several types of files.
  Options:

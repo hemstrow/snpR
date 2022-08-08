@@ -272,15 +272,15 @@ been fully tested yet.
 }
 \section{Functions}{
 \itemize{
-\item \code{write_colony_input}: Create a colony input file
+\item \code{write_colony_input()}: Create a colony input file
 
-\item \code{call_colony}: Call a colony executable to run a prepared colony input file.
+\item \code{call_colony()}: Call a colony executable to run a prepared colony input file.
 
-\item \code{parse_colony}: Parse a previously run colony analysis.
+\item \code{parse_colony()}: Parse a previously run colony analysis.
 
-\item \code{run_colony}: run colony on a snpRdata object, start to finish
+\item \code{run_colony()}: run colony on a snpRdata object, start to finish
+
 }}
-
 \examples{
 
 # A simple example for running all individuals in the snpR object as siblings
