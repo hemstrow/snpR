@@ -91,7 +91,7 @@ test_that("structure map",{
 
 test_that("pca",{
   local_edition(3)
-  # skip_on_cran(); skip_on_ci()
+  skip_on_cran(); skip_on_ci()
   
   set.seed(1212)
   .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop"))

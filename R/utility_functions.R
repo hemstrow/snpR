@@ -1206,7 +1206,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   # check that provided snpRdata objects are in the correct format
   if(is.null(input_format)){
-    if(class(x) != "snpRdata"){
+    if(!is.snpRdata(x)){
       stop("If x is not a snpRdata object, provide input data format.\n")
     }
   }
