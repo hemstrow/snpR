@@ -65,19 +65,19 @@ The data can be broken up categorically by sample metadata, as described in
 }
 \section{Functions}{
 \itemize{
-\item \code{calc_pi}: \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
+\item \code{calc_pi()}: \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 
-\item \code{calc_maf}: minor allele frequency
+\item \code{calc_maf()}: minor allele frequency
 
-\item \code{calc_ho}: observed heterozygosity
+\item \code{calc_ho()}: observed heterozygosity
 
-\item \code{calc_private}: find private alleles
+\item \code{calc_private()}: find private alleles
 
-\item \code{calc_hwe}: p-values for Hardy-Weinberg Equilibrium divergence
+\item \code{calc_hwe()}: p-values for Hardy-Weinberg Equilibrium divergence
 
-\item \code{calc_he}: expected heterozygosity
+\item \code{calc_he()}: expected heterozygosity
+
 }}
-
 \section{\eqn{\pi}}{
 
 

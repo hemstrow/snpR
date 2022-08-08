@@ -32,14 +32,14 @@ Get the dimensions of a snpRdata object
 }
 \section{Functions}{
 \itemize{
-\item \code{nsnps,snpRdata-method}: get the number of SNPs
+\item \code{nsnps(snpRdata)}: get the number of SNPs
 
-\item \code{nrow,snpRdata-method}: identical to nsnps
+\item \code{nrow(snpRdata)}: identical to nsnps
 
-\item \code{nsamps,snpRdata-method}: get the number of samples
+\item \code{nsamps(snpRdata)}: get the number of samples
 
-\item \code{ncol,snpRdata-method}: identical to nsamps
+\item \code{ncol(snpRdata)}: identical to nsamps
 
-\item \code{dim,snpRdata-method}: get the number of SNPs and samples
+\item \code{dim(snpRdata)}: get the number of SNPs and samples
+
 }}
-

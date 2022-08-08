@@ -53,11 +53,11 @@ designated as described in \code{\link{Facets_in_snpR}}.
 }
 \section{Functions}{
 \itemize{
-\item \code{[,snpRdata,ANY,ANY,ANY-method}: extraction operator
+\item \code{x[i}: extraction operator
 
-\item \code{subset_snpR_data}: subset_snpR_data
+\item \code{subset_snpR_data()}: subset_snpR_data
+
 }}
-
 \examples{
 # Keep only individuals in the ASP and PAL populations 
 # and on the LGIX or LGIV chromosome.

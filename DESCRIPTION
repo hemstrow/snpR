@@ -48,7 +48,6 @@ Suggests:
     geosphere,
     ggrepel,
     ggsn,
-    ggtree,
     GMMAT,
     knitr,
     LEA,
@@ -71,7 +70,7 @@ Suggests:
     testthat,
     covr
 VignetteBuilder: knitr
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Collate: 
     'NeEstimator_interface.R'
     'association_functions.R'
