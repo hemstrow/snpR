@@ -1005,9 +1005,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         stats <- .get.snpR.stats(x, facets, "pairwise")
       }
     }
+    if(is.null(stats)){
+      stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
+    }
 
     if(nrow(stats) == 0){
-      stop("No matching statistics.\n")
+      stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
     }
   }
 
