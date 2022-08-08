@@ -63,7 +63,7 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   
   #===================sanity checks===============
   # check that provided snpRdata objects are in the correct format
-  if(class(x) != "snpRdata"){
+  if(!is.snpRdata(x)){
     stop("Not a snpRdata object.\n")
   }
   

@@ -93,6 +93,13 @@ such does not support parallel runs on Windows machines.
 \examples{
 # Calculate nj trees for the base facet, each chromosome, 
 # and for each population.
+
+# note: some versions of ggtree/ggplot2 give an error relating to unable
+# to use 'fortify()' when attempting to plot that is potentially due to
+# ape masking something when loading snpR. Saving the tree object as
+# a .RDS object with 'saveRDS()', restarting R, loading the object in,
+# then plotting without loading snpR seems to fix the issue.
+
 \dontrun{
 
 # make the trees
