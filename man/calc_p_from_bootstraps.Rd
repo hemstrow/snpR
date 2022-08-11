@@ -35,7 +35,7 @@ use for parallel processing.}
 
 \item{fwe_method}{character, default c("bonferroni", "holm", "BH", "BY"). Type
 of Family-Wise Error correction (multiple testing correction) to use. For
-details and options, see \code{\link{p.adjust}}.}
+details and options, see \code{\link[stats]{p.adjust}}.}
 
 \item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall").
 How should Family-Wise Error correction (multiple testing correction) be

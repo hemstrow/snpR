@@ -1040,7 +1040,7 @@ is.snpRdata <- function(x){
   if(any(facets == "all")){
     facets <- x@facets
   }
-  if(is.null(facets)){
+  if(is.null(facets) | isFALSE(facets)){
     facets <- ".base"
     if(return.type){
       return(list(facets, ".base"))

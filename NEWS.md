@@ -1,14 +1,19 @@
 # snpR 1.2.3
 
+## Features
 
 ### Major
 * Added `calc_prop_poly()` to calculate proportion of polymorphic loci for a given pop.
 * Renamed `plot_tree()` to `calc_tree()` and removed automatic plot generation, since `ggtree`, which that depended on, can behave a bit oddly sometimes. An example for generating a plot with `ggtree` was added to the examples section of `calc_tree()`'s documentation. `ggtree` is no longer a suggested dependency.
 
+### Minor
+* Added support for FWE (multiple comparisons p-value adjustment) to `filter_snps()` HWE filtering.
+
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
 * Fixed some typos in the documentation.
 * Fixed some parameter input descriptions in the documentation for Colony.
+* Cleaned up some documentation for fwe correction across multiple functions.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
@@ -35,11 +40,11 @@
 * Adjusted `stickSNPs` to be smaller--only 100 loci and 100 samples now.
 * Added a `verbose` argument to `calc_ne()`.
 
-## Documentation
+### Documentation
 * Removed the `snpR_association` vignette, since it required the `GMMAT`, `BGLR`, and `ranger` R packages to be installed, but they are only suggested, not required. This could cause vignette building to fail. May re-tool later to just use the internally implemented association tests.
 * Updated documentation for sfs related functions to more explicitly talk about ref and anc columns for folding.
 
-## Bug fixes
+### Bug fixes
 * Fixed a bug where an incorrect armitage stat would be calculated with `calc_association` if the major allele differed between the case and control.
 * `calc_ne()` and `run_colony()` actually cleanup now if asked on Windows.
 * Fixed the `verbose` argument on `run_colony()` to actually work on Windows.

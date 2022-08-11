@@ -56,6 +56,25 @@ test_that("hwe_facets", {
   expect_true(all(!names(gt)[gt != 0] %in% snp.meta(check)$position))
 })
 
+test_that("hwe_with_fwe", {
+  # mostly just checking that everything runs without errors...
+  
+  # correct removed
+  check <- filter_snps(.internal.data$test_snps, hwe = 0.5, fwe_method = "BH", verbose = FALSE)
+  goods <- calc_hwe(.internal.data$test_snps, fwe_method = "BH")
+  goods <- get.snpR.stats(goods)
+  expect_true(all(get.snpR.stats(check)$position %in% goods$position[which(goods$pHWE_overall_BH > .5)]))
+  
+  # correct removed with facets
+  check <- filter_snps(.internal.data$test_snps, hwe = 0.5, hwe_facets = "pop", fwe_method = "BH", verbose = FALSE)
+  check <- calc_maf(check, "pop")
+  goods <- calc_hwe(.internal.data$test_snps, facets = "pop", fwe_method = "BH")
+  goods <- get.snpR.stats(goods, "pop")
+  goods$bad <- goods$pHWE_byfacet_BH <= 0.5
+  gt <- tapply(goods$bad, goods[,"position"], sum)
+  expect_true(all(!names(gt)[gt != 0] %in% snp.meta(check)$position))
+})
+
 #===========min_ind======================
 test_that("min_ind", {
   # correct removed

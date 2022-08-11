@@ -52,9 +52,10 @@
 #'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 #'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 #'  Uses a chi-squared test. } See details
-#'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type
-#'  of Family-Wise Error correction (mulitple testing correction) to use. For
-#'  details and options, see \code{\link{p.adjust}}.
+#'@param fwe_method character, default "BY". Type of Family-Wise Error
+#'  correction (mulitple testing correction) to use. For details and options,
+#'  see \code{\link[stats]{p.adjust}}. If no correction is desired, set this argument
+#'  to "none".
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
 #'  How should Family-Wise Error correction (multiple testing correction) be
 #'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
@@ -2989,10 +2990,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   if(length(facets) == 1 & facets[1] == ".base"){
     fwe_case <- "overall"
   }
-  out <- .fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
-  
-  
-  
+  if(fwe_method[1] != "none"){
+    out <- .fwe_correction(out, levs = c("facet", "subfacet"), pcol = "pHWE", methods = fwe_method, case = fwe_case)
+  }
+
   x <- .merge.snpR.stats(x, out)
   x <- .update_calced_stats(x, facets, "hwe", "snp")
   if(method == "exact"){
