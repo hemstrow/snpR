@@ -15,6 +15,7 @@
 * Fixed a rare internal bug where `.get.task.list()` would sometimes add a space between facet levels when pasting due to weird `t()` bug. To the user, this might have occasionally resulted in weird behavior when using multiple SNP facets with mixed numeric and character classes.
 * Fixed a bug with `RefManageR` apparently introduced recently where `bibentry` objects wouldn't correctly write. Eliminated `RefManageR` dependency, now just uses `rbibutils` for reading and writing, and, when calling `citations()`, just spits out the full citation rather than the inline for the "Citation: " line. Not ideal, but doesn't need `RefManageR`.
 * Fixed a bug with `calc_genetic_distances()` where the "Nei" method wouldn't work (due to a typo in the code).
+* Fixed an issue where the ID column wasn't written to vcf files.
 
 # snpR 1.2.2
 

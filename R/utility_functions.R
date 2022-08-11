@@ -2251,6 +2251,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
                             POS = snp.meta(x)[,position],
+                            ID = paste0("SNP_", 1:nrow(x)),
                             REF = .get.snpR.stats(x)$major,
                             ALT = .get.snpR.stats(x)$minor,
                             QUAL = ".",
