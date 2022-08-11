@@ -949,7 +949,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            colors = c("black", "slategray3"),
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
-
   #=============sanity checks==============================
   msg <- character()
   if(highlight_style == "label" & !isFALSE(highlight)){
@@ -1005,9 +1004,15 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         stats <- .get.snpR.stats(x, facets, "pairwise")
       }
     }
+    else{
+      stop("Unable to locate stat: ", plot_var, " in the provided data. Did you remember to run this statistic?\n")
+    }
+    if(is.null(stats)){
+      stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
+    }
 
     if(nrow(stats) == 0){
-      stop("No matching statistics.\n")
+      stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
     }
   }
 
