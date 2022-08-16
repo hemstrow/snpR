@@ -541,6 +541,9 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
 #'  correction} will be removed. See \code{\link[stats]{p.adjust}} for
 #'  information on method options.
+#'@param singletons logical, default FALSE. If TRUE, removes singletons (loci
+#'  where there is only a single minor allele). If population sizes are
+#'  reasonably high, this is more or less redundant if \code{maf} is also set.
 #'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
 #'  proportion of individuals in which a loci must be sequenced.
 #'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
@@ -586,10 +589,15 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
 #'             min_loci = 0.75, re_run = "full", maf_facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method = "none", min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", maf_facets = NULL,
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method = "none",
+                        singletons = FALSE,
+                        min_ind = FALSE,
+                        min_loci = FALSE,
+                        re_run = "partial", 
+                        maf_facets = NULL,
                         hwe_facets = FALSE,
-                        non_poly = TRUE, bi_al = TRUE,
+                        non_poly = TRUE, 
+                        bi_al = TRUE, 
                         verbose = TRUE){
 
   #==============do sanity checks====================
@@ -809,6 +817,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
       }
     }
 
+    #========singletons========================================
+    if(singletons){
+      if(verbose){cat("Filtering singletons.\n")}
+      
+      # singletons exist wherever the total allele count - the maf count is 1.
+      singleton.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat)  == 1)
+      
+      if(verbose){cat(paste0("\t", length(singleton.vio), " bad loci\n"))}
+      
+      vio.snps[singleton.vio] <- T
+    }
     #========hf_hets. Should only run if bi_al = TRUE.==========
     if(hf_hets){
       if(verbose){cat("Filtering high frequency heterozygote loci...\n")}

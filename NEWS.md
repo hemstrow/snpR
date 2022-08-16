@@ -8,6 +8,7 @@
 
 ### Minor
 * Added support for FWE (multiple comparisons p-value adjustment) to `filter_snps()` HWE filtering.
+* Added singleton fitering to `filter_snps()`.
 
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
