@@ -106,6 +106,13 @@ test_that("min_loci", {
   expect_true(all(!snp.meta(td)$position[c(1, 5, 8)] %in% snp.meta(check)$position))
 })
 
+#==========singletons======================
+test_that("singletons",{
+  td <- filter_snps(.internal.data$test_snps, singletons = TRUE)
+  bad.snps <- which(matrixStats::rowSums2(.internal.data$test_snps@geno.tables$as) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$as) == 1)
+  expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
+})
+
 #==========errors=========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]
@@ -113,4 +120,5 @@ test_that("errors",{
   td <- .internal.data$test_snps[,-c(7:8)]
   expect_error(filter_snps(td, min_loci = .99, non_poly = FALSE, verbose = FALSE), "No individuals passed filters.")
 })
+
 
