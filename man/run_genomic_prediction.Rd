@@ -13,6 +13,8 @@ run_genomic_prediction(
   thin,
   model = "BayesB",
   interpolate = "bernoulli",
+  ncp = NULL,
+  ncp.max = 5,
   par = FALSE,
   verbose = FALSE,
   ...
@@ -41,7 +43,26 @@ description for the ETA argument in \code{\link[BGLR]{BGLR}}.}
 
 \item{interpolate}{character, default "bernoulli". Interpolation method for
 missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-minor allele. \item{af: } insertion of the average allele frequency}.}
+minor allele. \item{af: } insertion of the average allele frequency
+\item{iPCA:} As a slower but more accurate alternative to "af"
+interpolation, "iPCA" may be selected. This an iterative PCA approach to
+interpolate based on SNP/SNP covariance via
+\code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
+number of components used for interpolation will be estimated using
+\code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+slower than the other methods, especially for large datasets. Setting an
+ncp of 2-5 generally results in reasonable interpolations without the time
+constraint.}.}
+
+\item{ncp}{numeric or NULL, default NULL. Used only if \code{iPCA}
+interpolation is selected. Number of components to consider for iPCA sn
+format interpolations of missing data. If null, the optimum number will be
+estimated, with the maximum specified by ncp.max. This can be very slow.}
+
+\item{ncp.max}{numeric, default 5. Used only if \code{iPCA}
+interpolation is selected. Maximum number of components to check for
+when determining the optimum number of components to use when interpolating
+sn data using the iPCA approach.}
 
 \item{par}{numeric or FALSE, default FALSE. If a number specifies the number
 of processing cores to use \emph{across facet levels}. Not used if only one

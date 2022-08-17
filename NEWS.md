@@ -9,6 +9,7 @@
 ### Minor
 * Added support for FWE (multiple comparisons p-value adjustment) to `filter_snps()` HWE filtering.
 * Added singleton fitering to `filter_snps()`.
+* Added iPCA `ncp` and `ncp.max` options to `run_random_forest()` and `run_genomic_prediction()`. Previously, selecting the `iPCA` option would work, but run with the default `iPCA` options and thus determine `ncp` internally, which is pretty slow.
 
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
