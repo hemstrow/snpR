@@ -23,6 +23,7 @@
 * Fixed a bug with `RefManageR` apparently introduced recently where `bibentry` objects wouldn't correctly write. Eliminated `RefManageR` dependency, now just uses `rbibutils` for reading and writing, and, when calling `citations()`, just spits out the full citation rather than the inline for the "Citation: " line. Not ideal, but doesn't need `RefManageR`.
 * Fixed a bug with `calc_genetic_distances()` where the "Nei" method wouldn't work (due to a typo in the code).
 * Fixed an issue where the ID column wasn't written to vcf files.
+* Fixed interpolation not checking for `missMDA` installation or reporting `iPCA` as an option if an invalid method provided.
 
 # snpR 1.2.2
 

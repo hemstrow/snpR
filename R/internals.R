@@ -1288,7 +1288,7 @@ is.snpRdata <- function(x){
 # @author William Hemstrom
 .interpolate_sn <- function(sn, method = "bernoulli", ncp = NULL, ncp.max = 5){
   if(!method %in% c("bernoulli", "af", "iPCA")){
-    stop("Unaccepted interpolation method. Accepted methods: bernoulli, af.\n")
+    stop("Unaccepted interpolation method. Accepted methods: bernoulli, af, IPCA.\n")
   }
   
   if(method %in% c("bernoulli", "af")){
@@ -1323,6 +1323,7 @@ is.snpRdata <- function(x){
     }
   }
   else if(method %in% c("iPCA")){
+    .check.installed("missMDA")
     sn <- t(as.matrix(sn))
     
     # remove any columns (loci) with NO data and warn!
