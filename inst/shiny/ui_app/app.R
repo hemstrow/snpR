@@ -1,121 +1,138 @@
 library(shiny)
+library(shinyjs)
 source("app_code.R")
 
 # other things I'd like this to do:
 ## citations
 ## monitor and save repeatable snpR code
 
-ui <- fluidPage(
+ui <- navbarPage(
   
   #===============input===============
-  titlePanel("Data import:"),
-  sidebarLayout( 
-    sidebarPanel(
-      fluidRow(fileInput(inputId = "genotypes", label = "genotypes/vcf/ms/etc"),
-               fileInput(inputId = "snp_meta", label = "SNP metadata (optional)"),
-               fileInput(inputId = "sample_meta", label = "sample metadata (optional)"),
-               textInput(inputId = "mDat", label = "missing data format (optional)", value = "NN", placeholder = "NN, 0000, etc."),
-               actionButton("import", "Import Data"))
-    ),
-    mainPanel(fluidRow(
-      plotOutput("input_validation"),
-      textOutput("input_validation_numbers")))
+  tabPanel("Data Import",
+           useShinyjs(),
+           titlePanel("Data import:"),
+           actionButton("use_example", "Use example data?"),
+           sidebarLayout( 
+             sidebarPanel(
+               fluidRow(fileInput(inputId = "genotypes", label = "genotypes/vcf/ms/etc"),
+                        fileInput(inputId = "snp_meta", label = "SNP metadata (optional)"),
+                        fileInput(inputId = "sample_meta", label = "sample metadata (optional)"),
+                        textInput(inputId = "mDat", label = "missing data format (optional)", value = "NN", placeholder = "NN, 0000, etc."),
+                        uiOutput("import"))
+             ),
+             mainPanel(fluidRow(
+               plotOutput("input_validation"),
+               textOutput("input_validation_numbers")))
+           ),
+           
+           # subset sidebar
+           textOutput(outputId = "subset_header"),
+           fluidRow(textInput("subsetting_call", "Subsetting call, see ?subset_snpR_data for more info"),
+                    actionButton("subset", "Subset Data")), # note that this should change the input_validation return!
   ),
-  
-  # subset sidebar
-  textOutput(outputId = "subset_header"),
-  fluidRow(textInput(inputId = "subset", label = "Subsetting call, see ?subset_snpR_data for more info"),
-           actionButton("subset", "Subset Data")), # note that this should change the input_validation return!
-
   #============filtering================
-  titlePanel("Filtering:"),
-  fluidRow(
-    column(5,
-           titlePanel(h4("Filtering option A:")),
-           numericInput(inputId = "mafA", label = "Minor Allele Frequency Minimum", value = 0, min = 0.05, max = .5),
-           selectInput("maf_facets_A", "MAF facet: keep any loci above specified Minor Alele Frequency in any facet level.", choices = list("Upload data to see available facets." = "none"),
-                       multiple = TRUE),
-           numericInput(inputId = "hweA", label = "HWE p-value Maximum", value = 0.0001, min = 0, max = 1),
-           selectInput("hwe_facets_A", "HWE facet: reject any loci out of HWE in any facet level", choices = list("Upload data to see available facets." = "none"),
-                       multiple = TRUE),
-           numericInput(inputId = "min_indA", label = "Maximum Proportion of Missing SNPs per Sample", value = 0.75, min = 0, max = 1),
-           numericInput(inputId = "min_lociA", label = "Maximum Proportion of Missing Samples per Locus", value = 0.75, min = 0, max = 1),
-           actionButton("run_filt_A", "Run?")),
-    column(5,
-           titlePanel(h4("Filtering option B:")),
-           numericInput(inputId = "mafB", label = "Minor Allele Frequency Minimum", value = 0),
-           selectInput("maf_facets_B", "MAF facet: keep any loci above specified Minor Alele Frequency in any facet level.", choices = list("Upload data to see available facets." = "none"),
-                       multiple = TRUE),
-           numericInput(inputId = "hweB", label = "HWE p-value Maximum", value = 0.000001),
-           selectInput("hwe_facets_B", "HWE facet: reject any loci out of HWE in any facet level", choices = list("Upload data to see available facets." = "none"),
-                       multiple = TRUE),
-           numericInput(inputId = "min_indB", label = "Maximum Proportion of Missing SNPs per Sample", value = 0.5, min = 0, max = 1),
-           numericInput(inputId = "min_lociB", label = "Maximum Proportion of Missing Samples per Locus", value = 0.5, min = 0, max = 1),
-           actionButton("run_filt_B", "Run?"))
-  ),
-  fluidRow(column(5,
-                  fluidRow(
-                    plotOutput("filter_validation_A"),
-                    textOutput("filter_validation_A_numbers")
-                  ),
-                  actionButton("filter_select_A", "Apply filtering option A")),
-           column(5,
-                  fluidRow(
-                    plotOutput("filter_validation_B"),
-                    textOutput("filter_validation_B_numbers")
-                  ),
-                  actionButton("filter_select_B", "Apply filtering option B"))
+  
+  tabPanel("Filtering",
+           titlePanel("Filtering:"),
+           fluidRow(
+             column(6,
+                    titlePanel(h4("Filtering option A:")),
+                    numericInput(inputId = "mafA", label = "Minor Allele Frequency Minimum", value = 0, min = 0.05, max = .5),
+                    selectInput("maf_facets_A", "MAF facet: keep any loci above specified Minor Alele Frequency in any facet level.", choices = list("Upload data to see available facets." = "none"),
+                                multiple = TRUE),
+                    checkboxInput("singletons_A", "Remove singletons"),
+                    numericInput(inputId = "hweA", label = "HWE p-value Maximum", value = 0.0001, min = 0, max = 1),
+                    selectInput("hwe_facets_A", "HWE facet: reject any loci out of HWE in any facet level", choices = list("Upload data to see available facets." = "none"),
+                                multiple = TRUE),
+                    numericInput(inputId = "min_indA", label = "Maximum Proportion of Missing SNPs per Sample", value = 0.75, min = 0, max = 1),
+                    numericInput(inputId = "min_lociA", label = "Maximum Proportion of Missing Samples per Locus", value = 0.75, min = 0, max = 1),
+                    actionButton("run_filt_A", "Run?")),
+             column(6,
+                    titlePanel(h4("Filtering option B:")),
+                    numericInput(inputId = "mafB", label = "Minor Allele Frequency Minimum", value = 0),
+                    selectInput("maf_facets_B", "MAF facet: keep any loci above specified Minor Alele Frequency in any facet level.", choices = list("Upload data to see available facets." = "none"),
+                                multiple = TRUE),
+                    checkboxInput("singletons_B", "Remove singletons"),
+                    numericInput(inputId = "hweB", label = "HWE p-value Maximum", value = 0.000001),
+                    selectInput("hwe_facets_B", "HWE facet: reject any loci out of HWE in any facet level", choices = list("Upload data to see available facets." = "none"),
+                                multiple = TRUE),
+                    numericInput(inputId = "min_indB", label = "Maximum Proportion of Missing SNPs per Sample", value = 0.5, min = 0, max = 1),
+                    numericInput(inputId = "min_lociB", label = "Maximum Proportion of Missing Samples per Locus", value = 0.5, min = 0, max = 1),
+                    actionButton("run_filt_B", "Run?"))
+           ),
+           fluidRow(column(6,
+                           fluidRow(
+                             plotOutput("filter_validation_A"),
+                             textOutput("filter_validation_A_numbers")
+                           ),
+                           actionButton("filter_select_A", "Apply filtering option A")),
+                    column(6,
+                           fluidRow(
+                             plotOutput("filter_validation_B"),
+                             textOutput("filter_validation_B_numbers")
+                           ),
+                           actionButton("filter_select_B", "Apply filtering option B"))
+           ),
   ),
 
   #===========statistics=======
-
-
-
-  # tests - single
-  uiOutput(outputId = "stats_header"),
-  checkboxGroupInput("selected_tests_single", label = "Desired Single-SNP Statistics:",
-                     choices = c("Ho" = "ho",
-                                 "pi" = "pi",
-                                 "Fst" = "Fst",
-                                 "Fis" = "Fis",
-                                 "HWE" = "hwe",
-                                 "Minor Allele Frequencies" = "maf",
-                                 "Private Alleles" = "pa")),
-  fluidRow(checkboxInput("do_fst_boot", "Calculate Fst p-values via Bootstrapping?")),
-  textInput("fst_boots", "# Bootstrapps", value = 1000),
-  uiOutput("single_facets"), # provide drop down with clickable facets to use
-
-  ## tests - window
-  checkboxGroupInput("selected_tests_window", label = "Desired Windowed Statistics",
-                     choices = c("Ho" = "ho",
-                                 "pi" = "pi",
-                                 "Fst" = "Fst",
-                                 "Private Alleles" = "pa",
-                                 "Tajima's D" = "tsd")),
-  uiOutput(outputId = "window_opts"),
-  fluidRow(textInput(inputId = "sigma", label = "Sigma (Window Size = 6*Sigma, in kb)", value = 200),
-           textInput(inputId = "slide", label = "Slide Between Windows (kb)", value = 50),
-           checkboxInput(inputId = "do_boots", "Bootstrap Window Significance?"),
-           textInput(inputId = "num_window_boots", "Number of Bootstraps", value = 1e6)),
-  uiOutput("window_facets"),
-
-  ## association
-
-  ## plotting
-
-  ## tests - misc
-  fluidRow(
-    uiOutput("sfs_facets"),
-    uiOutput("sfs_facet_levels")
+  tabPanel("Statistics",
+           
+           
+           # tests - single
+           uiOutput(outputId = "stats_header"),
+           checkboxGroupInput("selected_tests_single", label = "Desired Single-SNP Statistics:",
+                              choices = c("Ho" = "ho",
+                                          "pi" = "pi",
+                                          "Fst" = "Fst",
+                                          "Fis" = "Fis",
+                                          "HWE" = "hwe",
+                                          "Minor Allele Frequencies" = "maf",
+                                          "Private Alleles" = "pa")),
+           checkboxInput("do_fst_boot", "Calculate Fst p-values via Bootstrapping?"),
+           hidden(textInput("fst_boots", "# Bootstrapps", value = 1000)),
+           uiOutput("single_facets"), # provide drop down with clickable facets to use
+           actionButton("run_single_tests", "Run!"),
+           
+           ## tests - window
+           checkboxGroupInput("selected_tests_window", label = "Desired Windowed Statistics",
+                              choices = c("Ho" = "ho",
+                                          "pi" = "pi",
+                                          "Fst" = "Fst",
+                                          "Private Alleles" = "pa",
+                                          "Tajima's D" = "tsd")),
+           uiOutput(outputId = "window_opts"),
+           fluidRow(textInput(inputId = "sigma", label = "Sigma (Window Size = 6*Sigma, in kb)", value = 200),
+                    textInput(inputId = "slide", label = "Slide Between Windows (kb)", value = 50),
+                    checkboxInput(inputId = "do_boots", "Bootstrap Window Significance?"),
+                    hidden(textInput(inputId = "num_window_boots", "Number of Bootstraps", value = 1e6))),
+           uiOutput("window_facets"),
+           actionButton("run_window_tests", "Run!"),
+           
+           ## association
+           
+           ## plotting
+           
+           ## tests - misc
+           fluidRow(
+             uiOutput("sfs_facets"),
+             uiOutput("sfs_facet_levels")
+           ),
+           fluidRow(checkboxInput("ibd", "Isolation by Distance"),
+                    uiOutput("snp_ibd_facets")),
+           fluidRow(checkboxInput("ne", "Effective Population Size (Ne)"),
+                    textInput("neestimator_path", "Path to NeEstimator executable"),
+                    checkboxGroupInput("ne_methods", label = "Methods:", choices = list("LDNe" = "ld",
+                                                                                        "Heterozygote Excess" = "Ht",
+                                                                                        "Coancestry" = "coan")),
+                    numericInput(inputId = "ne_pcrit", label = "P-crit (minimum minor allele frequency)", 0.01, 0, .5))
   ),
-  fluidRow(checkboxInput("ibd", "Isolation by Distance"),
-           uiOutput("snp_ibd_facets")),
-  fluidRow(checkboxInput("ne", "Effective Population Size (Ne)"),
-           textInput("neestimator_path", "Path to NeEstimator executable"),
-           checkboxGroupInput("ne_methods", label = "Methods:", choices = list("LDNe" = "ld",
-                                                                               "Heterozygote Excess" = "Ht",
-                                                                               "Coancestry" = "coan")),
-           numericInput(inputId = "ne_pcrit", label = "P-crit (minimum minor allele frequency)", 0.01, 0, .5))
+  
+  #================navbar options===========
+  title = "snpR"
+  
+  #================end of ui================
 )
 
 
@@ -123,34 +140,64 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   #==========read in input files===========
-  x <- reactiveValues()
+  x <- reactiveValues(x = NULL,
+                      valid = NULL)
 
   data_importer <- reactive({
-    x <- import_wrapper(input$genotypes, input$snp_meta, input$sample_meta, input$mDat)
-    valid <- validation(x)
-    return(list(x = x, valid = valid))
+    return(import_wrapper(input$genotypes, input$snp_meta, input$sample_meta, input$mDat))
   })
   
   observeEvent(input$import,{
-    x$data <- data_importer()
+    x$x <- data_importer()
   })
   
   
-  observeEvent(input$import | input$filter_select_A | input$filter_select_B, ignoreInit = TRUE, {
+  observe({
+    if(is.snpRdata(x$x)){
+      isolate(x$valid <- validation(x$x))
+    }
+  })
+  
+  
+  observeEvent(input$use_example, ignoreInit = TRUE, {
+    ex <- stickSNPs
+    ex <- calc_fis(ex)
+    x$x <- ex
+  })
+  
+  
+  observeEvent(x$valid, ignoreInit = TRUE, {
     cat("updated plot")
-    vpns <- renderValidation(x$data$valid)
-    output$input_validation <- vpns$vp
-    output$input_validation_numbers <- vpns$vn
+    if(is.list(x$valid)){
+      
+      vpns <- renderValidation(x$valid)
+      
+      output$input_validation <- vpns$vp
+      output$input_validation_numbers <- vpns$vn
+    }
   })
+  
+  # define import button
+  output$import <- renderUI({
+    validate(need(is.data.frame(input$genotypes), "Select a genotypes file to continue!"))
+    
+    actionButton("import", "Import Data")
+  })
+  
+  # subsetting
+  # observeEvent(input$subset,{
+  #   x$x <- subset_wrapper(x$x, input$subsetting_call)
+  # })
 
 
   #==========filtering=====================
   # set up reactives
   filtered_sets <- reactiveValues()
   a <- reactive({
-    d <- filter_wrapper(x$data$x,
+    d <- filter_wrapper(x$x,
                         maf = input$mafA,
                         maf_facet = input$maf_facets_A,
+                        singletons = input$singletons_A,
                         hwe = input$hweA,
                         hwe_facet = input$hwe_facets_A,
                         min_ind = input$min_indA,
@@ -160,9 +207,10 @@ server <- function(input, output, session) {
     return(list(x = d, valid = v))
   })
   b <- reactive({
-    d <- filter_wrapper(x$data$x,
+    d <- filter_wrapper(x$x,
                         maf = input$mafB,
                         maf_facet = input$maf_facets_B,
+                        singletons = input$singletons_B,
                         hwe = input$hweB,
                         hwe_facet = input$hwe_facets_B,
                         min_ind = input$min_indB,
@@ -175,8 +223,8 @@ server <- function(input, output, session) {
   # facet level trackers
   observe({
     
-    if(!is.null(x$data$x)){
-      facet_opts <- facet_check(x$data$x)
+    if(is.snpRdata(x$x)){
+      facet_opts <- facet_check(x$x)
       
       updateSelectInput(session, "maf_facets_A", choices = facet_opts$sample)
       updateSelectInput(session, "maf_facets_B", choices = facet_opts$sample)
@@ -208,10 +256,10 @@ server <- function(input, output, session) {
   
   # keep a filter
   observeEvent(input$filter_select_A, {
-    x$data <- filtered_sets$a
+    x$x <- filtered_sets$a
   })
   observeEvent(input$filter_select_B, {
-    x$data <- filtered_sets$b
+    x$x <- filtered_sets$b
   })
 
   #===================do statistics=====================
