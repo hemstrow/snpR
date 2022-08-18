@@ -29,7 +29,7 @@ ui <- navbarPage(
            # subset sidebar
            textOutput(outputId = "subset_header"),
            fluidRow(textInput("subsetting_call", "Subsetting call, see ?subset_snpR_data for more info"),
-                    actionButton("subset", "Subset Data")), # note that this should change the input_validation return!
+                    actionButton("subset", "Subset Data")) # note that this should change the input_validation return!
   ),
   #============filtering================
   
@@ -73,60 +73,162 @@ ui <- navbarPage(
                              textOutput("filter_validation_B_numbers")
                            ),
                            actionButton("filter_select_B", "Apply filtering option B"))
-           ),
+           )
   ),
 
   #===========statistics=======
   tabPanel("Statistics",
-           
-           
-           # tests - single
-           uiOutput(outputId = "stats_header"),
-           checkboxGroupInput("selected_tests_single", label = "Desired Single-SNP Statistics:",
-                              choices = c("Ho" = "ho",
-                                          "pi" = "pi",
-                                          "Fst" = "Fst",
-                                          "Fis" = "Fis",
-                                          "HWE" = "hwe",
-                                          "Minor Allele Frequencies" = "maf",
-                                          "Private Alleles" = "pa")),
-           checkboxInput("do_fst_boot", "Calculate Fst p-values via Bootstrapping?"),
-           hidden(textInput("fst_boots", "# Bootstrapps", value = 1000)),
-           uiOutput("single_facets"), # provide drop down with clickable facets to use
-           actionButton("run_single_tests", "Run!"),
-           
-           ## tests - window
-           checkboxGroupInput("selected_tests_window", label = "Desired Windowed Statistics",
-                              choices = c("Ho" = "ho",
-                                          "pi" = "pi",
-                                          "Fst" = "Fst",
-                                          "Private Alleles" = "pa",
-                                          "Tajima's D" = "tsd")),
-           uiOutput(outputId = "window_opts"),
-           fluidRow(textInput(inputId = "sigma", label = "Sigma (Window Size = 6*Sigma, in kb)", value = 200),
-                    textInput(inputId = "slide", label = "Slide Between Windows (kb)", value = 50),
-                    checkboxInput(inputId = "do_boots", "Bootstrap Window Significance?"),
-                    hidden(textInput(inputId = "num_window_boots", "Number of Bootstraps", value = 1e6))),
-           uiOutput("window_facets"),
-           actionButton("run_window_tests", "Run!"),
-           
-           ## association
-           
-           ## plotting
-           
-           ## tests - misc
-           fluidRow(
-             uiOutput("sfs_facets"),
-             uiOutput("sfs_facet_levels")
-           ),
-           fluidRow(checkboxInput("ibd", "Isolation by Distance"),
-                    uiOutput("snp_ibd_facets")),
-           fluidRow(checkboxInput("ne", "Effective Population Size (Ne)"),
-                    textInput("neestimator_path", "Path to NeEstimator executable"),
-                    checkboxGroupInput("ne_methods", label = "Methods:", choices = list("LDNe" = "ld",
-                                                                                        "Heterozygote Excess" = "Ht",
-                                                                                        "Coancestry" = "coan")),
-                    numericInput(inputId = "ne_pcrit", label = "P-crit (minimum minor allele frequency)", 0.01, 0, .5))
+           tabsetPanel(
+
+
+             # tests - single
+             tabPanel("Basic Analysis",
+                      uiOutput(outputId = "stats_header"),
+                      checkboxGroupInput("selected_tests_single", label = "Options:",
+                                         choices = c("Ho" = "ho",
+                                                     "He" = "he",
+                                                     "pi" = "pi",
+                                                     "Fst" = "Fst",
+                                                     "Fis" = "Fis",
+                                                     "HWE" = "hwe",
+                                                     "Hs (individual heterozygosity)" = "Hs",
+                                                     "Minor Allele Frequencies" = "maf",
+                                                     "Private Alleles" = "pa")),
+                      checkboxInput("do_fst_boot", "Calculate Fst p-values via Bootstrapping?"),
+                      hidden(textInput("fst_boots", "# Bootstrapps", value = 1000)),
+                      uiOutput("single_facets"), # provide drop down with clickable facets to use
+                      actionButton("run_single_tests", "Run!")
+             ),
+
+
+             # tests - window
+             tabPanel("Sliding Window Analysis",
+                      checkboxGroupInput("selected_tests_window", label = "Options:",
+                                         choices = c("Ho" = "ho",
+                                                     "pi" = "pi",
+                                                     "Fst" = "Fst",
+                                                     "Private Alleles" = "pa",
+                                                     "Tajima's D" = "tsd")),
+                      uiOutput(outputId = "window_opts"),
+                      fluidRow(textInput(inputId = "sigma", label = "Sigma (Window Size = 6*Sigma, in kb)", value = 200),
+                               textInput(inputId = "slide", label = "Slide Between Windows (kb)", value = 50),
+                               checkboxInput(inputId = "do_boots", "Bootstrap Window Significance?"),
+                               hidden(textInput(inputId = "num_window_boots", "Number of Bootstraps", value = 1e6))),
+                      uiOutput("window_facets"),
+                      numericInput("par", label = "Number of parallel processing threads:", value = 1, min = 1, max = parallel::detectCores(), step = 1),
+                      actionButton("run_window_tests", "Run!")
+             ),
+
+             # tests - association
+             tabPanel("Association Testing and Genomic Prediction",
+                      radioButtons("association_method", "Method:", choices = list(GWAS = "GWAS",
+                                                                                   GP = "Genomic Prediction",
+                                                                                   RF = "Random Forest"), inline = TRUE),
+                      uiOutput("all_facets"),
+                      uiOutput("association_response"),
+                      uiOutput("association_covariates"),
+                      hidden(tags$div(id = "GWAS",
+                                      selectInput("GWAS_method", label = "Method:", choices = c("gmmat.score" = "GMMAT",
+                                                                                                "armitage" = "Armitage",
+                                                                                                "odds_ratio" = "Log Odds Ratio",
+                                                                                                "chisq" = "Chi-squared")),
+                                      hidden(tags$div(id = "armitage_options",
+                                                      inputPanel(
+                                                        fluidRow(h5("Armitage Test Weights:"),
+                                                                 numericInput("w1", "Homozygote A", 0, 0, 1),
+                                                                 numericInput("w2", "Heterozygote", .5, 0, 1),
+                                                                 numericInput("w2", "Homozygote B", 1, 0, 1))))),
+                                      hidden(tags$div(id = "GMMAT_options",
+                                                      inputPanel(
+                                                        uiOutput("GMMAT_covariates"),
+                                                        textInput("GWAS_family", "Regression family override, must be a valid family. See ?family."),
+                                                        numericInput("maxiter", "Maximum number of fitting iterations", 500, 100, 10000),
+                                                        uiOutput("GMMAT_sampleID"),
+                                                        numericInput("Gmaf", "Minimum Minor Allele Frequency?", 0, 0, .5),
+                                                        numericInput("par", label = "Number of parallel processing threads:", value = 1, min = 1, max = parallel::detectCores(), step = 1)))))),
+
+                      hidden(tags$div(id = "GP",
+                                      numericInput("GP_iters", 10000, 100, 1e7),
+                                      uiOutput("GP_burnin"),
+                                      uiOutput("GP_thin"),
+                                      selectInput("GP_model", "Genetic Architecture Model:",
+                                                  choices = c("BayesA", "BayesB", "BayesC", "BRR", "BL", "FIXED"), selected = "BayesB"),
+                                      selectInput("GP_interpolate", "Missing Genotype Interpolation",
+                                                  choices = c("binomial draw" = "bernoulli", "allele frequency" = "af", "iPCA (warning: slow)" = "iPCA")),
+                                      fluidRow(hidden(numericInput("GP_iPCA_ncp", "ncp:", NULL, 0)), hidden(numericInput("GP_iPCA_ncp_max", "ncp max:", 1, 5))),
+                                      numericInput("par", label = "Number of parallel processing threads:", value = 1, min = 1, max = parallel::detectCores(), step = 1))),
+
+
+                      hidden(tags$div(id = "RF",
+                                      uiOutput("RF_covariates"),
+                                      numericInput("RF_num.trees", "Number of Trees", 10000, 100, 1e7),
+                                      uiOutput("RF_mtry"),
+                                      selectInput("RF_importance", "Importance method:", choices = c("", impurity_corrected = "Corrected Impurity", impurity = "Impurity", permutation = "Permutation")),
+                                      selectInput("RF_interpolate", "Missing Genotype Interpolation",
+                                                  choices = c(`binomial draw` = "bernoulli", `allele frequency` = "af", `iPCA (warning: slow)` = "iPCA")),
+                                      fluidRow(hidden(numericInput("iPCA_ncp", "ncp:", NULL, 0)), hidden(numericInput("iPCA_ncp_max", "ncp max:", 1, 5))),
+                                      numericInput("par", label = "Number of parallel processing threads:", value = 1, min = 1, max = parallel::detectCores(), step = 1)))
+
+
+             ),
+
+             ## tests - misc
+             tabPanel("Misc",
+                      fluidRow(
+                        uiOutput("sfs_facets"),
+                        uiOutput("sfs_facet_levels")
+                      ),
+                      fluidRow(checkboxInput("ibd", "Isolation by Distance"),
+                               uiOutput("snp_ibd_facets")),
+                      fluidRow(checkboxInput("ne", "Effective Population Size (Ne)"),
+                               textInput("neestimator_path", "Path to NeEstimator executable", "/usr/bin/Ne2-1.exe"),
+                               checkboxGroupInput("ne_methods", label = "Methods:", choices = list("LDNe" = "ld",
+                                                                                                   "Heterozygote Excess" = "Ht",
+                                                                                                   "Coancestry" = "coan")),
+                               numericInput(inputId = "ne_pcrit", label = "P-crit (minimum minor allele frequency)", 0.01, 0, .5))
+             )
+
+
+           )
+  ),
+  
+  #================plotting=================
+  tabPanel("Plotting",
+           # PCA
+           tabsetPanel(
+             tabPanel("PCA/UMAP/tSNE",
+                      uiOutput("all_facets"),
+                      radioButtons("association_method", "Method:", choices = list(PCA = "pca",
+                                                                                   UMAP = "umap",
+                                                                                   tSNE = "tsne"), inline = TRUE),
+                      checkboxInput("check_duplicates", "Check for Duplicates (slow)?", FALSE),
+                      numericInput("minimum_percent_coverage", "Minimum proportion of genotypes per sample:", 0, 0, 1),
+                      numericInput("minimum_genotype_percentage", "Minimum proportion of samples sequenced per loci:", 0, 0, 1),
+                      selectInput("clusters_interpolate", "Missing Genotype Interpolation",
+                                  choices = c(bernoulli = "binomial draw", af = "allele frequency", iPCA = "iPCA (warning: slow)")),
+                      fluidRow(hidden(numericInput("iPCA_ncp", "ncp:", NA, 0)), hidden(numericInput("iPCA_ncp_max", "ncp max:", 5, 1))),
+                      hidden(tags$div(id = "tSNE_options",
+                                      inputPanel(numericInput("tSNE_dims", "Output dimensions (at max 2 plotted):", 2, 1),
+                                                 numericInput("tSNE_perplexity", "Perplexity:", NA, min = 0))))
+             ),
+             
+             # structure
+             tabPanel("STRUCTURE/ADMIXTURE q-plots",
+                      uiOutput("all_facets"),
+                      uiOutput("facet_order"),
+                      numericInput("kmin", "Minimum k value:", 1, 1),
+                      numericInput("kmin", "Maximum k value:", 2, 1),
+                      selectInput("struc_method", "Assignment/Clustering Method:", 
+                                  choices = c(STRUCTURE = "structure",
+                                              sNMF = "snmf",
+                                              ADMIXTURE = "admixture",
+                                              snapclust = "snapclust"), 
+                                  selected = "snmf")
+             )
+           )
+           # LD
+           # manhattan
+           # sfs
   ),
   
   #================navbar options===========
