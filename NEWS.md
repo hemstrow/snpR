@@ -25,6 +25,7 @@
 * Fixed a bug with `calc_genetic_distances()` where the "Nei" method wouldn't work (due to a typo in the code).
 * Fixed an issue where the ID column wasn't written to vcf files.
 * Fixed interpolation not checking for `missMDA` installation or reporting `iPCA` as an option if an invalid method provided.
+* Fixed a bug where the `subfacet` and `facet` columns in the `stats` slot of a `snpRdata` object would get flipped in order during `calc_association()`, resulting in the addition of a bunch of empty data rows when something else was merged in. This would produce a downstream error during `calc_pairwise_fst` (and potentially elsewhere) due to attempting to cbind the `stats` slot to the `facet_meta` slot. Note that this wouldn't cause any bad stats to be calculated or returned anywhere due to the way that `get.snpR.stats()` functions to fetch results!
 
 # snpR 1.2.2
 

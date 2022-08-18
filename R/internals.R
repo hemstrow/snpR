@@ -308,6 +308,7 @@ is.snpRdata <- function(x){
       
       # get the input gs data. Split by facet, since we need to extract metadata differently for each.
       for(i in 1:length(facets)){
+
         tgs <- gs[gs$facet == pheno.facets[i],]
         
         which.is.phenotype <- which(unlist(.split.facet(pheno.facets[i])) == response)
@@ -335,18 +336,22 @@ is.snpRdata <- function(x){
         }
         comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
         comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"), all.y = T)
+        
+        
         comb[[i]]$facet <- facets[i]
       }
       
-      comb <- rbindlist(comb)
+      comb <- data.table::rbindlist(comb)
       mcols <- 1:ncol(x@facet.meta)
       meta <- comb[,mcols, with = FALSE]
       comb <- comb[,-mcols, with = FALSE]
       
       # call function
       out <- fun(comb, ...)
-      n.ord <- (1:ncol(meta))[-which(colnames(meta) == ".snp.id")]
-      n.ord <- c(n.ord, which(colnames(meta) == ".snp.id"))
+      n.ord <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x))[-which(colnames(snp.meta(x)) == ".snp.id")], ".snp.id")
+      if(any(!n.ord %in% colnames(meta))){
+        n.ord <- n.ord[-which(!n.ord %in% colnames(meta))]
+      }
       meta <- meta[,n.ord, with = FALSE]
       out <- cbind(meta, out)
       if(req == "cast.gs"){

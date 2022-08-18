@@ -854,7 +854,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
         }
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
         if(fwe_method != "none"){
-          phwe <- p.adjust(phwe, method = fwe_method[1])
+          phwe <- stats::p.adjust(phwe, method = fwe_method[1])
         }
         phwe <- which(phwe < hwe)
         if(verbose){cat("\t", length(phwe), " bad loci\n")}
