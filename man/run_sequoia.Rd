@@ -12,6 +12,7 @@ run_sequoia(
   run_pedigree = FALSE,
   min_maf = 0.3,
   min_ind = 0.5,
+  ask = TRUE,
   ...
 )
 }
@@ -41,6 +42,9 @@ than this proportion of individuals. Note that \emph{individuals} with
 genotypes for fewer than half of the loci will be automatically removed by
 sequoia.}
 
+\item{ask}{logical, default TRUE. Should the function ask for confirmation
+before sourcing github code?}
+
 \item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}}
 (during parentage and pedigree reconstruction).}
 }
@@ -51,6 +55,7 @@ A nested list with each facet specified containing sequoia output
 \description{
 Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
 construction tool. Note that this function \emph{is not overwrite safe!}.
+This function is a wrapper which sources code from github.
 }
 \details{
 This is an integration of the program and package written by Jisca Huisman.

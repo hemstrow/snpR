@@ -1677,6 +1677,8 @@ is.snpRdata <- function(x){
   else{return(TRUE)}
 }
 
+
+
 # Correct for multiple testing.
 # @param p data.frame/data.table containing p values and any facets to split by
 # @param pcol name of the column containing p values

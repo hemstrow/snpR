@@ -19,7 +19,8 @@ plot_structure_map(
   label_args = NULL,
   crop = FALSE,
   scale_bar = list(dist = 4, dist_unit = "km", transform = T),
-  compass = list(symbol = 16)
+  compass = list(symbol = 16),
+  ask = TRUE
 )
 }
 \arguments{
@@ -75,12 +76,16 @@ scale to the plot. If NULL, no scale added.}
 \item{compass}{list or NULL, list(symbol = 16). Arguments passed to
 \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
 added.}
+
+\item{ask}{logical, default TRUE. Should the function ask for confirmation
+before sourcing github code?}
 }
 \description{
 Plots the mean cluster assignment for each population on a map using the
 scatterpie package alongside any additional simple feature objects
 (\code{\link[sf]{sf}}). Assignments must be given in the format provided by
-\code{\link{plot_structure}}.
+\code{\link{plot_structure}}. This function is a wrapper which sources 
+code from github.
 }
 \details{
 Currently, this only works for simple, sample specific facets. Coordinates
