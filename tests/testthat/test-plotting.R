@@ -124,12 +124,49 @@ test_that("umap",{
 
 #==================plot_manhattan==========
 test_that("manhattan plots", {
+  
+  # with snpRdata
   x <- stickSNPs
   sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
   x <- calc_association(x, response = "phenotype", method = "armitage")
   p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                       log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
+  
+  
+  # with data.frame
+  y <- get.snpR.stats(x, stats = "association")
+  p2 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE)
+  expect_true(ggplot2::is.ggplot(p2$plot))
+  expect_equivalent(p$data, p2$data)
+  
+  
+  
+  
+  # with a rug 
+  rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+                         end = c(5000000, 6000000), gene = c("A", "B"))
+
+  # point style
+  p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data)
+  expect_true(is(p3$plot$layers[[2]]$geom, "GeomRug"))
+
+  # ribbon style
+  p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+  expect_true(is(p4$plot$layers[[2]]$geom, "GeomSegment"))
+  
+  # with rug labels
+  ## point
+  p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_label = "gene")
+  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  ## ribbon
+  p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
+  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
 })
 
 #=================qq=====================

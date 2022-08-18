@@ -878,10 +878,40 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   c(strip.title, axis, axis.ticks).
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
+#' @param rug_data data.frame or tbl, default NULL. Data to plot as a rug below the manhattan plot containing columns named to match
+#'   the \code{chr} arugment \emph{and} either the \code{bp} argument OR columns
+#'   named \code{start} and \code{end} as well as, optionally, a column named to match the \code{rug_label} column.
+#'   Useful for labeling the locations of candidate genes, for example.
+#' @param rug_style character, default "point". Options for the style of the
+#'   rug, ignored if \code{rug_data} is not provided. Options:
+#'   \itemize{\item{point: } standard rug plot with vertical dashes below the
+#'   plot at the indicated locations. If start and end points are supplied in
+#'   \code{rug_data}, the midpoint will be plotted. \item{ribbon: } Ribbons for
+#'   each point drawn below the plot, from the \code{start} to \code{end}
+#'   columns. If the plotted range of \code{x} is very large (as in whole-genome
+#'   or reduced representation sequencing), these may not be visible. A warning
+#'   will be provided if this may be the case. Sub-setting the input and rug
+#'   data to a range of interest may help in this case.}
+#' @param rug_label character, default NULL. Names of additional labeling
+#'   columns in \code{rug_data}, ignored if \code{rug_data} is not provided.
+#'   \emph{These will not be directly plotted} (since the result is often very
+#'   messy), but are available as aesthetics in the resulting plot, which can
+#'   then be examined if something like the \code{ggplotly} function from
+#'   \code{plotly} is used. This may change in the future if a clean plotting
+#'   technique is suggested.
+#' @param rug_alpha numeric between 0 and 1, default 0.3. Alpha (transparency)
+#'   applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
+#'   or the \code{rug_style} is not \code{ribbon}.
+#' @param rug_thickness numeric or \code{grid}-style \code{unit}, default
+#'   \code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
+#'   height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
+#'   \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
+#'   Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
+#'   avoid over-plotting.
 #' @param chr_order character, default NULL. If provided, an ordered vector of
 #'   chromosome/scaffold/etc names by which to sort output.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
-#'   x-axis chromosome names will be abbreviated using 
+#'   x-axis chromosome names will be abbreviated using
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
 #'   minimum length specified. Helpful when chromosome/scaffold/etc names are
 #'   very long.
@@ -894,40 +924,39 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'
 #'
 #' @examples
-#' \dontrun{
 #' # association testing:
 #' # add a dummy phenotype and run an association test.
 #' x <- stickSNPs
 #' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
-#'                log.p = TRUE)
+#'                log.p = TRUE)$plot
 #' 
 #' 
 #' # other types of stats:
 #' # make some data
-#' x <- calc_basic_snp_stats(stickSNPs, "pop.chr", sigma = 200, step = 50)
+#' x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
 #'
 #' # plot pi, breaking apart by population, keeping only the groupIX and
 #' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
 #' # significant and suggestive lines plotted and SNPs
 #' # with pi below the significance level labeled.
 #' plot_manhattan(x, "pi", facets = "pop",
-#' chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
-#' sample.subfacet = c("ASP", "OPL", "SMR"),
-#' significant = 0.05, suggestive = 0.15, sig_below = TRUE)
+#'                chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
+#'                sample.subfacet = c("ASP", "OPL", "SMR"),
+#'                significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
 #'
 #' # plot FST for the ASP/PAL comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
 #' plot_manhattan(x, "fst", facets = "pop.chr",
-#' sample.subfacet = "ASP~PAL", highlight = 1:20,
-#' chr = "chr", snp = ".snp.id")
+#'                sample.subfacet = "ASP~PAL", highlight = 1:20,
+#'                chr = "chr", snp = ".snp.id")$plot
 #'
 #' # plot sliding-window FST between ASP and CLF
 #' # and between OPL and SMR
 #' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
-#' chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
-#' significant = .29, suggestive = .2)
+#'                chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+#'                significant = .29, suggestive = .2)$plot
 #'
 #' # plot using a data.frame,
 #' # using log-transformed p-values
@@ -935,8 +964,31 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 #' ## plot
 #' plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
-#' significant = 0.0001, suggestive = 0.001,
-#' log.p = TRUE, highlight = FALSE)
+#'                significant = 0.0001, suggestive = 0.001,
+#'                log.p = TRUE, highlight = FALSE)$plot
+#' 
+#' 
+#' 
+#' # plot with a rug
+#' rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+#'                        end = c(5000000, 6000000), gene = c("A", "B"))
+#'                        
+#' # point style, midpoints plotted
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+#'                log.p = TRUE, rug_data = rug_data)
+#'                
+#' # ribbon style
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+#'                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+#' 
+#' # with labels that are visible by examining with plotly!
+#' # not run to avoid pltoly dependancy
+#' \dontrun{
+#' plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+#'                                 log.p = TRUE, rug_data = rug_data, 
+#'                                 rug_style = "ribbon", 
+#'                                 rug_label = "gene")$plot)
+#' 
 #' }
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
@@ -947,6 +999,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            sig_below = FALSE, log.p = FALSE, abs = FALSE,
                            viridis.option = "plasma", viridis.hue = c(.2, 0.5), t.sizes = c(16, 12, 10),
                            colors = c("black", "slategray3"),
+                           rug_data = NULL,
+                           rug_style = "point",
+                           rug_label = NULL,
+                           rug_alpha = 0.3,
+                           rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
   #=============sanity checks==============================
@@ -956,6 +1013,52 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
   
   .check.installed("viridis")
+  
+  # rug sanity checks, can do those now
+  if(!is.null(rug_data)){
+    if(!rug_style %in% c("point", "ribbon")){
+      msg <- c(msg, ("Unrecognized rug_style argument. Recognized options: 'point', 'ribbon'.\n"))
+    }
+    if(!is.data.frame(rug_data) | is(rug_data, "tbl")){
+      msg <- c(msg, "rug_data must be a data.frame or tbl.\n")
+    }
+    else{
+      
+      
+      if(!chr %in% colnames(rug_data)){
+        msg <- c(msg, paste0(chr, " column not found in rug_data.\n"))
+      }
+      
+      
+      
+      if(!all(c("start", "end") %in% colnames(rug_data))){
+        if(rug_style == "ribbon"){
+          msg <- c(msg, "Could not locate start and/or end columns in rug_data. Both are needed for ribbon plotting.\n")
+        }
+        else if(!bp %in% rug_data){
+          msg <- c(msg, paste0("Neither ", bp, " or start+end columns not found in rug_data.\n"))
+        }
+      }
+      else if(rug_style == "point" & !bp %in% colnames(rug_data)){
+        rug_data[,bp] <- ave(rug_data$start, rug_data$end) # make the bp column if needed and possible!
+      }
+      
+      
+      
+      if(rug_style == "ribbon"){
+        if(rug_alpha < 0 | rug_alpha > 1){
+          msg <- c(msg, "rug_alpha must be between 0 and 1.\n")
+        }
+      }
+      
+      
+      if(!is.null(rug_label)){
+        if(!rug_label %in% colnames(rug_data)){
+          msg <- c(msg, paste0(rug_label, " not found in rug_data.\n"))
+        }
+      }
+    }
+  }
   
   if(length(msg) > 0){
     stop(msg, collapse = "\n")
@@ -1077,6 +1180,18 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   cum.chr.centers <- cum.bp + chr.centers # cumulative chromosome centers
   stats$start <- cum.bp[match(stats[,chr], names(cum.bp))]
   stats$cum.bp <- stats$start + stats[,bp]
+  
+  # apply the same adjustment to the rug_data if provided
+  if(!is.null(rug_data)){
+    rug_data$start.cum.bp <- cum.bp[match(rug_data[,chr], names(cum.bp))]
+    if(rug_style == "point"){
+      rug_data$cum.bp <- rug_data[,bp] + rug_data$start.cum.bp
+    }
+    else{
+      rug_data$cum.start <- rug_data$start + rug_data$start.cum.bp
+      rug_data$cum.end <- rug_data$end + rug_data$start.cum.bp
+    }
+  }
 
   #=============clean up==================
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
@@ -1205,6 +1320,61 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   else{
     p <- p + ggplot2::scale_x_continuous(label = names(cum.chr.centers), 
                                          breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  
+  # rug
+  if(!is.null(rug_data)){
+    
+    # standard rug style
+    if(rug_style == "point"){
+      # note: labels aren't plotted because they tend to be very messy, so they are returned as an unplotted aesthetic for plotly use!
+      if(!is.null(rug_label)){
+        .suppress_specific_warning(p <- p + ggplot2::geom_rug(data = rug_data, 
+                                                              mapping = ggplot2::aes_string(label = rug_label, position = bp),
+                                                              length = rug_thickness),
+                                   "Ignoring unknown aesthetics")
+      }
+      else{
+        p <- p + ggplot2::geom_rug(data = rug_data)
+      }
+    }
+    
+    # ribbon style -- note that this really doesn't make sense if you are plotting genome-wide data, so warn if a large x range
+    else{
+      p_min <- min(stats$pvar, na.rm = TRUE)
+      p_range <- range(stats$pvar, na.rm = TRUE)
+      p_range <- abs(p_range[2] - p_range[1])
+      rug_ymin <- ifelse(p_min < 0, p_min + p_range*.05, p_min - p_range*.07)
+      rug_ymax <- ifelse(p_min < 0, p_min + p_range*.07, p_min - p_range*.05)
+      rug_med <- mean(rug_ymin, rug_ymax)
+      
+      rug_data$y <- rug_med
+      
+      if(min(abs(rug_data$cum.start - rug_data$cum.end), na.rm = TRUE) < max(stats$cum.bp)*0.005){
+        warning("Some ribbon segments are very small and may not be visible. Consider using the 'point' rug_style or subset the input data down to a smaller positional range.")
+      }
+      
+
+      if(!is.null(rug_label)){
+        .suppress_specific_warning(
+          p <- p + ggplot2::geom_segment(data = rug_data, 
+                                         mapping = ggplot2::aes_string(x = "cum.start", 
+                                                                       xend = "cum.end", 
+                                                                       y = "y",
+                                                                       yend = "y", 
+                                                                       label = rug_label,
+                                                                       start_position = "start",
+                                                                       end_position = "end"),
+                                         size = rug_thickness), 
+          "Ignoring unknown aesthetics")
+        
+      }
+      else{
+        p <- p + ggplot2::geom_segment(data = rug_data, 
+                                       mapping = ggplot2::aes(x = cum.start, xend = cum.end, y = y, yend = y),
+                                       size = rug_thickness)
+      }
+    }
   }
   
   return(list(plot = p, data = stats))

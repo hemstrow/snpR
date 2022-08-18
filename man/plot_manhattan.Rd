@@ -25,6 +25,11 @@ plot_manhattan(
   viridis.hue = c(0.2, 0.5),
   t.sizes = c(16, 12, 10),
   colors = c("black", "slategray3"),
+  rug_data = NULL,
+  rug_style = "point",
+  rug_label = NULL,
+  rug_alpha = 0.3,
+  rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
   chr_order = NULL,
   abbreviate_labels = FALSE
 )
@@ -105,11 +110,46 @@ c(strip.title, axis, axis.ticks).}
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
 
+\item{rug_data}{data.frame or tbl, default NULL. Data to plot as a rug below the manhattan plot containing columns named to match
+the \code{chr} arugment \emph{and} either the \code{bp} argument OR columns
+named \code{start} and \code{end} as well as, optionally, a column named to match the \code{rug_label} column.
+Useful for labeling the locations of candidate genes, for example.}
+
+\item{rug_style}{character, default "point". Options for the style of the
+rug, ignored if \code{rug_data} is not provided. Options:
+\itemize{\item{point: } standard rug plot with vertical dashes below the
+plot at the indicated locations. If start and end points are supplied in
+\code{rug_data}, the midpoint will be plotted. \item{ribbon: } Ribbons for
+each point drawn below the plot, from the \code{start} to \code{end}
+columns. If the plotted range of \code{x} is very large (as in whole-genome
+or reduced representation sequencing), these may not be visible. A warning
+will be provided if this may be the case. Sub-setting the input and rug
+data to a range of interest may help in this case.}}
+
+\item{rug_label}{character, default NULL. Names of additional labeling
+columns in \code{rug_data}, ignored if \code{rug_data} is not provided.
+\emph{These will not be directly plotted} (since the result is often very
+messy), but are available as aesthetics in the resulting plot, which can
+then be examined if something like the \code{ggplotly} function from
+\code{plotly} is used. This may change in the future if a clean plotting
+technique is suggested.}
+
+\item{rug_alpha}{numeric between 0 and 1, default 0.3. Alpha (transparency)
+applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
+or the \code{rug_style} is not \code{ribbon}.}
+
+\item{rug_thickness}{numeric or \code{grid}-style \code{unit}, default
+\code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
+height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
+\code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
+Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
+avoid over-plotting.}
+
 \item{chr_order}{character, default NULL. If provided, an ordered vector of
 chromosome/scaffold/etc names by which to sort output.}
 
 \item{abbreviate_labels}{numeric or FALSE, default FALSE. If a numeric value,
-x-axis chromosome names will be abbreviated using 
+x-axis chromosome names will be abbreviated using
 \code{\link[base]{abbreviate}}, with each abbreviated label having the
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
@@ -154,40 +194,39 @@ highlighted SNPs will be either chr_bp by default or given in the column
 named by the "snp" argument.
 }
 \examples{
-\dontrun{
 # association testing:
 # add a dummy phenotype and run an association test.
 x <- stickSNPs
 sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
 x <- calc_association(x, response = "phenotype", method = "armitage")
 plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
-               log.p = TRUE)
+               log.p = TRUE)$plot
 
 
 # other types of stats:
 # make some data
-x <- calc_basic_snp_stats(stickSNPs, "pop.chr", sigma = 200, step = 50)
+x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
 
 # plot pi, breaking apart by population, keeping only the groupIX and
 # groupIV chromosomes and the ASP, PAL, and SMR populations, with
 # significant and suggestive lines plotted and SNPs
 # with pi below the significance level labeled.
 plot_manhattan(x, "pi", facets = "pop",
-chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
-sample.subfacet = c("ASP", "OPL", "SMR"),
-significant = 0.05, suggestive = 0.15, sig_below = TRUE)
+               chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
+               sample.subfacet = c("ASP", "OPL", "SMR"),
+               significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
 
 # plot FST for the ASP/PAL comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID
 plot_manhattan(x, "fst", facets = "pop.chr",
-sample.subfacet = "ASP~PAL", highlight = 1:20,
-chr = "chr", snp = ".snp.id")
+               sample.subfacet = "ASP~PAL", highlight = 1:20,
+               chr = "chr", snp = ".snp.id")$plot
 
 # plot sliding-window FST between ASP and CLF
 # and between OPL and SMR
 plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
-chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
-significant = .29, suggestive = .2)
+               chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+               significant = .29, suggestive = .2)$plot
 
 # plot using a data.frame,
 # using log-transformed p-values
@@ -195,8 +234,31 @@ significant = .29, suggestive = .2)
 y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 ## plot
 plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
-significant = 0.0001, suggestive = 0.001,
-log.p = TRUE, highlight = FALSE)
+               significant = 0.0001, suggestive = 0.001,
+               log.p = TRUE, highlight = FALSE)$plot
+
+
+
+# plot with a rug
+rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+                       end = c(5000000, 6000000), gene = c("A", "B"))
+                       
+# point style, midpoints plotted
+plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+               log.p = TRUE, rug_data = rug_data)
+               
+# ribbon style
+plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+               log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+
+# with labels that are visible by examining with plotly!
+# not run to avoid pltoly dependancy
+\dontrun{
+plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                                log.p = TRUE, rug_data = rug_data, 
+                                rug_style = "ribbon", 
+                                rug_label = "gene")$plot)
+
 }
 }
 \author{
