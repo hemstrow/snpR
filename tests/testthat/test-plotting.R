@@ -83,7 +83,7 @@ test_that("structure map",{
   background <- maps::map("state", "oregon", plot = FALSE)
   background <- sf::st_as_sf(background)
   
-  p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
+  p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2), ask = FALSE)
   expect_true(ggplot2::is.ggplot(p2))
 })
 
