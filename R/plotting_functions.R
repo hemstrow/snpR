@@ -3337,9 +3337,9 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   
   
   # source scripts and pull up internals
-  .check.installed("devtools")
-  
-  devtools::source_url("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/plot_structure_map.R")
+  source_file <-  tempfile()
+  utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/plot_structure_map.R", 
+                       destfile = source_file)
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
                  .check.installed = .check.installed,
