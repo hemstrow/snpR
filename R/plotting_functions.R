@@ -1006,6 +1006,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
+  
+  cum.bp <- cum.start <- cum.end <- y <- NULL
+  
   #=============sanity checks==============================
   msg <- character()
   if(highlight_style == "label" & !isFALSE(highlight)){
@@ -1019,7 +1022,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     if(!rug_style %in% c("point", "ribbon")){
       msg <- c(msg, ("Unrecognized rug_style argument. Recognized options: 'point', 'ribbon'.\n"))
     }
-    if(!is.data.frame(rug_data) | is(rug_data, "tbl")){
+    if(!is.data.frame(rug_data) | methods::is(rug_data, "tbl")){
       msg <- c(msg, "rug_data must be a data.frame or tbl.\n")
     }
     else{
@@ -1040,7 +1043,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         }
       }
       else if(rug_style == "point" & !bp %in% colnames(rug_data)){
-        rug_data[,bp] <- ave(rug_data$start, rug_data$end) # make the bp column if needed and possible!
+        rug_data[,bp] <- stats::ave(rug_data$start, rug_data$end) # make the bp column if needed and possible!
       }
       
       
@@ -3217,13 +3220,13 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' Plot STRUCTURE like results on a map.
 #'
 #' Plots the mean cluster assignment for each population on a map using the
-#' scatterpie package alongside any additional simple feature objects
-#' (\code{\link[sf]{sf}}). Assignments must be given in the format provided by
-#' \code{\link{plot_structure}}. This function is a wrapper which sources 
-#' code from github.
+#' \code{scatterpie} package alongside any additional simple feature objects
+#' (see \code{sf} from the \code{sf} package). Assignments must be given in the
+#' format provided by \code{\link{plot_structure}}. This function is a wrapper
+#' which sources code from github.
 #'
 #' Currently, this only works for simple, sample specific facets. Coordinates
-#' for pie charts should be provided as an \code{\link[sf]{sf}} object, where
+#' for pie charts should be provided as an \code{sf} object, where
 #' one column, named for the facet being plotted, provides the subfacet level
 #' names matching those in the assignments. Additional sf objects can be
 #' provided, which will also be plotted. Note that there is no need to
@@ -3235,10 +3238,11 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' @param k numeric. Value of K (number of clusters) to plot.
 #' @param facet character. The facet by which data is broken down in the passed
 #'   assignments.
-#' @param pop_coordinates sf object, see \code{\link[sf]{sf}}. sf object
-#'   containing points/coordinates for each facet level. Must contain a column
-#'   of data with population labels named identically to the provided facet (for
-#'   example, named "pop" if "pop" is the provided facet.)
+#' @param pop_coordinates sf object, see the documentation for \code{sf}
+#'   function from the \code{sf} package. sf object containing
+#'   points/coordinates for each facet level. Must contain a column of data with
+#'   population labels named identically to the provided facet (for example,
+#'   named "pop" if "pop" is the provided facet.)
 #' @param sf list of sf objects, default NULL. Additional features to be plotted
 #'   alongside points, such as rivers or county lines.
 #' @param sf_fill_colors character vector, default "viridis". A vector of colors
@@ -3263,11 +3267,11 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #'   sample points. If false will show the full extent of the data, often set by
 #'   any additional sf objects being plotted.
 #' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km",
-#'   transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a
-#'   scale to the plot. If NULL, no scale added.
+#'   transform = T). Arguments passed to the \code{scalebar} function from
+#'   \code{ggsn} to add a scale to the plot. If NULL, no scale added.
 #' @param compass list or NULL, list(symbol = 16). Arguments passed to
-#'   \code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
-#'   added.
+#'   \code{north} function from \code{ggsn} to add a compass to the plot. If
+#'   NULL, no compass added.
 #' @param ask logical, default TRUE. Should the function ask for confirmation
 #'   before sourcing github code?
 #'

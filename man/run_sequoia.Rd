@@ -45,7 +45,7 @@ sequoia.}
 \item{ask}{logical, default TRUE. Should the function ask for confirmation
 before sourcing github code?}
 
-\item{...}{Additional arguments passed to \code{\link[sequoia]{sequoia}}
+\item{...}{Additional arguments passed to\code{sequoia}
 (during parentage and pedigree reconstruction).}
 }
 \value{
@@ -53,34 +53,37 @@ A nested list with each facet specified containing sequoia output
   summary information.
 }
 \description{
-Runs the \code{\link[sequoia]{sequoia}} parentage assignment and pedigree
-construction tool. Note that this function \emph{is not overwrite safe!}.
-This function is a wrapper which sources code from github.
+Runs the parentage assignment and pedigree construction tool from the
+\code{sequoia} package. Note that this function \emph{is not overwrite
+safe!}. This function is a wrapper which sources code from github.
 }
 \details{
 This is an integration of the program and package written by Jisca Huisman.
 Note that there are many more Sequoia specific arguments that can be added to
 change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
-etc.) See documentation for \code{\link[sequoia]{sequoia}}. These can be
+etc.) See documentation for \code{sequoia}. These can be
 passed to the pedigree and parentage reconstructions using the ... argument
 in run_sequoia.
 }
 \examples{
-# to follow an example using the stickSNPs example dataset you need to add some variables 
-# that don't exist in the actual dataset.
+# to follow an example using the stickSNPs example dataset you need 
+# to add some variables that don't exist in the actual dataset.
 a <- 2013:2015 #create a vector of possible birthyears
 b <- c("M", "F", "U") #create a vector of possible sexes
 stk <- stickSNPs
 set.seed(4865)
-sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), replace = TRUE) #create 
-# birth years
+sample.meta(stk)$BirthYear <- sample(x = a, size = nsamps(stickSNPs), 
+                                     replace = TRUE) #create birth years
 sample.meta(stk)$ID <- 1:nsamps(stk) #create unique sampleID
-sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), replace = TRUE) # create sexes
+sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk), 
+                               replace = TRUE) # create sexes
 
 # slow, so not run here
 \dontrun{
-dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, run_pedigree = FALSE)
-ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, run_pedigree = TRUE)
+dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, 
+                   run_pedigree = FALSE)
+ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, 
+                   run_pedigree = TRUE)
 }
 }
 \references{
