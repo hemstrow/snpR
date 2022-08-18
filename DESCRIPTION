@@ -43,6 +43,7 @@ Suggests:
     bigmemory,
     bigtabulate,
     BiocManager,
+    devtools,
     genepop,
     genio,
     geosphere,
