@@ -167,6 +167,12 @@ test_that("manhattan plots", {
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
   expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  
+  
+  # with tajimas D
+  skip_on_cran(); # slower
+  x <- calc_tajimas_d(x, facets = "pop.chr", sigma = 100, step = 50)
+  expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr")$p))
 })
 
 #=================qq=====================

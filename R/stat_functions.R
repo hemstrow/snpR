@@ -373,6 +373,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
     }
     if(nrow(out) > 0){
       out$sigma <- sigma/1000
+      out$step <- step
+      out$nk.status <- 0
     }
     return(out)
   }

@@ -1006,7 +1006,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
-  
+
   cum.bp <- cum.start <- cum.end <- y <- NULL
   
   #=============sanity checks==============================
@@ -1110,6 +1110,13 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         stats <- .get.snpR.stats(x, facets, "pairwise")
       }
     }
+    else if(window & plot_var %in% colnames(x@window.stats)){
+      if(chr != "chr"){
+        warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
+      }
+      stats <- .get.snpR.stats(x, facets, "single.window")
+      chr <- "snp.subfacet"
+    }
     else{
       stop("Unable to locate stat: ", plot_var, " in the provided data. Did you remember to run this statistic?\n")
     }
@@ -1121,7 +1128,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
     }
   }
-
   #====otherwise=====
   else if(is.data.frame(x)){
     if(data.table::is.data.table(x)){x <- as.data.frame(x)}
@@ -1134,6 +1140,20 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #================sanity checks==============
   msg <- character(0)
   
+  if(nrow(stats) != 0){
+    nas <- which(is.na(stats[,plot_var]))
+    if(length(nas) != 0){
+      stats <- stats[-which(is.na(stats[,plot_var])),]
+    }
+  }
+  
+  
+  if(nrow(stats) == 0){
+    stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
+  }
+  
+  
+  
   if(!bp %in% colnames(stats)){
     msg <- c(msg, paste0("Position column: ", bp, " not found in data/snp.meta. Define with argument bp = \n"))
   }
@@ -1145,6 +1165,38 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   if(length(msg) > 0){
     stop(msg)
   }
+  
+  
+  
+  #================ask user to pick option if window and multiple schemes======
+  if(window){
+    opts <- unique(stats[,c("sigma", "step", "nk.status")])
+    if(nrow(opts) > 1){
+      message("Multiple window schemes detected.\n")
+      
+      if(interactive()){
+        message("Which would you like to use?")
+        rownames(opts) <- 1:nrow(opts)
+        print(opts)
+        resp <- readline(prompt = "Select row (by number):")
+        while(!resp %in% 1:nrow(opts)){
+          resp <- readline(prompt = "Select row (by number):")
+        }
+      }
+      else{
+        resp <- 1
+        message("Using:\n", paste0(colnames(opts), " = ", opts[1,], " "))
+      }
+      
+      resp <- as.numeric(resp)
+      match_opts <- .paste.by.facet(stats, colnames(opts), sep = "_")
+      opts <- .paste.by.facet(opts, colnames(opts), sep = "_")
+      stats <- stats[which(match_opts %in% opts[resp]),]
+      rm(match_opts, opts, resp)
+    }
+  }
+  
+  
 
   #====clean up=====
   # fix comparison column name
