@@ -47,7 +47,7 @@ calc_smoothed_averages. Ignored if x is a data.frame.}
 
 \item{facets}{character or NULL, default NULL. Facets by which to break
 plots, as described in \code{\link{Facets_in_snpR}}. For non-window stats,
-the any snp.specific facets will be ignored. Ignored if x is a data.frame.}
+the any snp metadata facets will be ignored. Ignored if x is a data.frame.}
 
 \item{chr}{character, default "chr". Column in either snp metadata or x (for
 snpRdata or data.frame objects, respectively) which defines the
@@ -110,10 +110,12 @@ c(strip.title, axis, axis.ticks).}
 \item{colors}{character, default c("black", "slategray3"). Colors to
 alternate across chromosomes.}
 
-\item{rug_data}{data.frame or tbl, default NULL. Data to plot as a rug below the manhattan plot containing columns named to match
-the \code{chr} arugment \emph{and} either the \code{bp} argument OR columns
-named \code{start} and \code{end} as well as, optionally, a column named to match the \code{rug_label} column.
-Useful for labeling the locations of candidate genes, for example.}
+\item{rug_data}{data.frame or tbl, default NULL. Data to plot as a rug below
+the manhattan plot containing columns named to match the \code{chr}
+arugment \emph{and} either the \code{bp} argument OR columns named
+\code{start} and \code{end} as well as, optionally, a column named to match
+the \code{rug_label} column. Useful for labeling the locations of candidate
+genes, for example.}
 
 \item{rug_style}{character, default "point". Options for the style of the
 rug, ignored if \code{rug_data} is not provided. Options:

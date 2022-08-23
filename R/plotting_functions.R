@@ -832,7 +832,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   calc_smoothed_averages. Ignored if x is a data.frame.
 #' @param facets character or NULL, default NULL. Facets by which to break
 #'   plots, as described in \code{\link{Facets_in_snpR}}. For non-window stats,
-#'   the any snp.specific facets will be ignored. Ignored if x is a data.frame.
+#'   the any snp metadata facets will be ignored. Ignored if x is a data.frame.
 #' @param chr character, default "chr". Column in either snp metadata or x (for
 #'   snpRdata or data.frame objects, respectively) which defines the
 #'   "chromosome" by which SNP positions will be concatenated along the x-axis.
@@ -878,10 +878,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   c(strip.title, axis, axis.ticks).
 #' @param colors character, default c("black", "slategray3"). Colors to
 #'   alternate across chromosomes.
-#' @param rug_data data.frame or tbl, default NULL. Data to plot as a rug below the manhattan plot containing columns named to match
-#'   the \code{chr} arugment \emph{and} either the \code{bp} argument OR columns
-#'   named \code{start} and \code{end} as well as, optionally, a column named to match the \code{rug_label} column.
-#'   Useful for labeling the locations of candidate genes, for example.
+#' @param rug_data data.frame or tbl, default NULL. Data to plot as a rug below
+#'   the manhattan plot containing columns named to match the \code{chr}
+#'   arugment \emph{and} either the \code{bp} argument OR columns named
+#'   \code{start} and \code{end} as well as, optionally, a column named to match
+#'   the \code{rug_label} column. Useful for labeling the locations of candidate
+#'   genes, for example.
 #' @param rug_style character, default "point". Options for the style of the
 #'   rug, ignored if \code{rug_data} is not provided. Options:
 #'   \itemize{\item{point: } standard rug plot with vertical dashes below the
@@ -1038,7 +1040,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         if(rug_style == "ribbon"){
           msg <- c(msg, "Could not locate start and/or end columns in rug_data. Both are needed for ribbon plotting.\n")
         }
-        else if(!bp %in% rug_data){
+        else if(!bp %in% colnames(rug_data)){
           msg <- c(msg, paste0("Neither ", bp, " or start+end columns not found in rug_data.\n"))
         }
       }
@@ -1074,12 +1076,16 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       facets <- .check.snpR.facet.request(x, facets)
     }
     else{
-      if(chr != "chr"){
-        warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
-      }
       if(!is.null(facets)){
         pop.facets <- .check.snpR.facet.request(x, facets, "snp")
-        facets <- paste0(pop.facets, ".", chr)
+        pop.facets <- pop.facets[-which(pop.facets == ".base")]
+        if(length(pop.facets) > 0){
+          facets <- paste0(pop.facets, ".", chr)
+        }
+        else{
+          facets <- chr
+        }
+        
       }
       else{
         facets <- chr
@@ -1091,8 +1097,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       if(window){
 
         stats <- .get.snpR.stats(x, facets = facets, type = "single.window")
-        chr <- "snp.subfacet"
-
+        colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
       }
       else{
         stats <- .get.snpR.stats(x, facets = facets)
@@ -1104,7 +1109,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
           warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
         }
         stats <- .get.snpR.stats(x, facets, "pairwise.window")
-        chr <- "snp.subfacet"
+        colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
       }
       else{
         stats <- .get.snpR.stats(x, facets, "pairwise")
@@ -1115,7 +1120,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
       }
       stats <- .get.snpR.stats(x, facets, "single.window")
-      chr <- "snp.subfacet"
+      colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
     }
     else{
       stop("Unable to locate stat: ", plot_var, " in the provided data. Did you remember to run this statistic?\n")
@@ -1337,7 +1342,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
 
   #=============adjust the plot========
-  if(length(unique(as.character(stats$subfacet)) > 1)){
+  if(length(unique(as.character(stats$subfacet))) > 1){
     p <- p + ggplot2::facet_wrap(~subfacet)
   }
 
@@ -1385,12 +1390,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       # note: labels aren't plotted because they tend to be very messy, so they are returned as an unplotted aesthetic for plotly use!
       if(!is.null(rug_label)){
         .suppress_specific_warning(p <- p + ggplot2::geom_rug(data = rug_data, 
-                                                              mapping = ggplot2::aes_string(label = rug_label, position = bp),
+                                                              mapping = ggplot2::aes_string(label = rug_label, position = bp, color = chr),
                                                               length = rug_thickness),
                                    "Ignoring unknown aesthetics")
       }
       else{
-        p <- p + ggplot2::geom_rug(data = rug_data)
+        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes_string(color = chr))
       }
     }
     
@@ -1419,14 +1424,15 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                                                                        yend = "y", 
                                                                        label = rug_label,
                                                                        start_position = "start",
-                                                                       end_position = "end"),
+                                                                       end_position = "end",
+                                                                       color = chr),
                                          size = rug_thickness), 
           "Ignoring unknown aesthetics")
         
       }
       else{
         p <- p + ggplot2::geom_segment(data = rug_data, 
-                                       mapping = ggplot2::aes(x = cum.start, xend = cum.end, y = y, yend = y),
+                                       mapping = ggplot2::aesring(x = "cum.start", xend = "cum.end", y = "y", yend = "y", color = chr),
                                        size = rug_thickness)
       }
     }
