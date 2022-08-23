@@ -1432,7 +1432,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       }
       else{
         p <- p + ggplot2::geom_segment(data = rug_data, 
-                                       mapping = ggplot2::aesring(x = "cum.start", xend = "cum.end", y = "y", yend = "y", color = chr),
+                                       mapping = ggplot2::aes_string(x = "cum.start", xend = "cum.end", y = "y", yend = "y", color = chr),
                                        size = rug_thickness)
       }
     }
