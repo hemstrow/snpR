@@ -1078,7 +1078,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     else{
       if(!is.null(facets)){
         pop.facets <- .check.snpR.facet.request(x, facets, "snp")
-        pop.facets <- pop.facets[-which(pop.facets == ".base")]
+        if(any(pop.facets == ".base")){
+          pop.facets <- pop.facets[-which(pop.facets == ".base")]
+        }
         if(length(pop.facets) > 0){
           facets <- paste0(pop.facets, ".", chr)
         }
@@ -1105,9 +1107,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     }
     else if(plot_var %in% colnames(x@pairwise.stats)){
       if(window){
-        if(chr != "chr"){
-          warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
-        }
         stats <- .get.snpR.stats(x, facets, "pairwise.window")
         colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
       }
@@ -1116,9 +1115,6 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       }
     }
     else if(window & plot_var %in% colnames(x@window.stats)){
-      if(chr != "chr"){
-        warning("chr variable will be set to the snp level facet provided to the facets argument for sliding windows.\n")
-      }
       stats <- .get.snpR.stats(x, facets, "single.window")
       colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
     }
