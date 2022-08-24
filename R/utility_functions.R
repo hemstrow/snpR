@@ -536,6 +536,14 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  acceptable heterozygote frequency.
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  HWE p-value.
+#'@param fwe_method character, default "none". Option to use for Family-Wise
+#'  Error rate correction for HWE filtering. If requested, only SNPs with
+#'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
+#'  correction} will be removed. See \code{\link[stats]{p.adjust}} for
+#'  information on method options.
+#'@param singletons logical, default FALSE. If TRUE, removes singletons (loci
+#'  where there is only a single minor allele). If population sizes are
+#'  reasonably high, this is more or less redundant if \code{maf} is also set.
 #'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
 #'  proportion of individuals in which a loci must be sequenced.
 #'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
@@ -581,10 +589,15 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
 #'             min_loci = 0.75, re_run = "full", maf_facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = FALSE,
-                        min_loci = FALSE, re_run = "partial", maf_facets = NULL,
+filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method = "none",
+                        singletons = FALSE,
+                        min_ind = FALSE,
+                        min_loci = FALSE,
+                        re_run = "partial", 
+                        maf_facets = NULL,
                         hwe_facets = FALSE,
-                        non_poly = TRUE, bi_al = TRUE,
+                        non_poly = TRUE, 
+                        bi_al = TRUE, 
                         verbose = TRUE){
 
   #==============do sanity checks====================
@@ -804,6 +817,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       }
     }
 
+    #========singletons========================================
+    if(singletons){
+      if(verbose){cat("Filtering singletons.\n")}
+      
+      # singletons exist wherever the total allele count - the maf count is 1.
+      singleton.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat)  == 1)
+      
+      if(verbose){cat(paste0("\t", length(singleton.vio), " bad loci\n"))}
+      
+      vio.snps[singleton.vio] <- T
+    }
     #========hf_hets. Should only run if bi_al = TRUE.==========
     if(hf_hets){
       if(verbose){cat("Filtering high frequency heterozygote loci...\n")}
@@ -829,6 +853,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
           .make_it_quiet(x <- calc_hwe(x))
         }
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
+        if(fwe_method != "none"){
+          phwe <- stats::p.adjust(phwe, method = fwe_method[1])
+        }
         phwe <- which(phwe < hwe)
         if(verbose){cat("\t", length(phwe), " bad loci\n")}
         vio.snps[phwe] <- T
@@ -837,16 +864,18 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, min_ind = 
       
       # facets, slightly more complicated
       else{
-        
-        run.facets <- .check_calced_stats(x, hwe_facets, "hwe")
-        run.facets <- names(run.facets)[!unlist(run.facets)]
-        if(length(run.facets) > 0){
-          .make_it_quiet(x <- calc_hwe(x, run.facets))
-        }
+        # run again to ensure that the correct fwe method and case are used
+        .make_it_quiet(x <- calc_hwe(x, hwe_facets, fwe_method = fwe_method[1], fwe_case = "by_facet"))
         
         # get the per-facet hwe stats, check against threshold, then condense by snp.
         phwe <- get.snpR.stats(x, hwe_facets)
-        phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
+        if(fwe_method != "none"){
+          phwe$low.p <- ifelse(phwe[,paste0("pHWE_byfacet_", fwe_method[1])] <= hwe, 1, 0)
+        }
+        else{
+          phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
+        }
+        
         bad.loci <- tapply(phwe$low.p, phwe[,".snp.id"], sum, na.rm = TRUE)
         bad.loci <- reshape2::melt(bad.loci)
         bad.loci <- stats::na.omit(bad.loci)

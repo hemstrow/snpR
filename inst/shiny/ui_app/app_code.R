@@ -48,14 +48,19 @@ renderValidation <- function(valid){
   return(list(vp = vp, vn = vn))
 }
 
-filter_wrapper <- function(x, maf, maf_facet, hwe, hwe_facet, min_ind, min_loci){
-  
-  maf_facet <- paste0(maf_facet, collapse = ".")
-  hwe_facet <- paste0(hwe_facet, collapse = ".")
+filter_wrapper <- function(x, maf, maf_facet, singletons, hwe, hwe_facet, min_ind, min_loci){
+
+  if(!is.null(maf_facet)){
+    maf_facet <- paste0(maf_facet, collapse = ".")
+  }
+  if(!is.null(hwe_facet)){
+    hwe_facet <- paste0(hwe_facet, collapse = ".")
+  }
   
   x <- filter_snps(x,
                    maf = maf, 
-                   maf_facets = maf_facet,
+                   maf_facets = maf_facet, 
+                   singletons = singletons,
                    hwe = hwe,
                    hwe_facets = hwe_facet,
                    min_ind = min_ind,

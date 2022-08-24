@@ -19,7 +19,8 @@ plot_structure_map(
   label_args = NULL,
   crop = FALSE,
   scale_bar = list(dist = 4, dist_unit = "km", transform = T),
-  compass = list(symbol = 16)
+  compass = list(symbol = 16),
+  ask = TRUE
 )
 }
 \arguments{
@@ -31,10 +32,11 @@ plot_structure_map(
 \item{facet}{character. The facet by which data is broken down in the passed
 assignments.}
 
-\item{pop_coordinates}{sf object, see \code{\link[sf]{sf}}. sf object
-containing points/coordinates for each facet level. Must contain a column
-of data with population labels named identically to the provided facet (for
-example, named "pop" if "pop" is the provided facet.)}
+\item{pop_coordinates}{sf object, see the documentation for \code{sf}
+function from the \code{sf} package. sf object containing
+points/coordinates for each facet level. Must contain a column of data with
+population labels named identically to the provided facet (for example,
+named "pop" if "pop" is the provided facet.)}
 
 \item{sf}{list of sf objects, default NULL. Additional features to be plotted
 alongside points, such as rivers or county lines.}
@@ -69,22 +71,26 @@ sample points. If false will show the full extent of the data, often set by
 any additional sf objects being plotted.}
 
 \item{scale_bar}{list or NULL, default list(dist = 4, dist_unit = "km",
-transform = T). Arguments passed to \code{\link[ggsn]{scalebar}} to add a
-scale to the plot. If NULL, no scale added.}
+transform = T). Arguments passed to the \code{scalebar} function from
+\code{ggsn} to add a scale to the plot. If NULL, no scale added.}
 
 \item{compass}{list or NULL, list(symbol = 16). Arguments passed to
-\code{\link[ggsn]{north}} to add a compass to the plot. If NULL, no compass
-added.}
+\code{north} function from \code{ggsn} to add a compass to the plot. If
+NULL, no compass added.}
+
+\item{ask}{logical, default TRUE. Should the function ask for confirmation
+before sourcing github code?}
 }
 \description{
 Plots the mean cluster assignment for each population on a map using the
-scatterpie package alongside any additional simple feature objects
-(\code{\link[sf]{sf}}). Assignments must be given in the format provided by
-\code{\link{plot_structure}}.
+\code{scatterpie} package alongside any additional simple feature objects
+(see \code{sf} from the \code{sf} package). Assignments must be given in the
+format provided by \code{\link{plot_structure}}. This function is a wrapper
+which sources code from github.
 }
 \details{
 Currently, this only works for simple, sample specific facets. Coordinates
-for pie charts should be provided as an \code{\link[sf]{sf}} object, where
+for pie charts should be provided as an \code{sf} object, where
 one column, named for the facet being plotted, provides the subfacet level
 names matching those in the assignments. Additional sf objects can be
 provided, which will also be plotted. Note that there is no need to

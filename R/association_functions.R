@@ -39,7 +39,24 @@
 #'   description for the ETA argument in \code{\link[BGLR]{BGLR}}.
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#'   minor allele. \item{af: } insertion of the average allele frequency
+#'   \item{iPCA:} As a slower but more accurate alternative to "af"
+#'   interpolation, "iPCA" may be selected. This an iterative PCA approach to
+#'   interpolate based on SNP/SNP covariance via
+#'   \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
+#'   number of components used for interpolation will be estimated using
+#'   \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+#'   slower than the other methods, especially for large datasets. Setting an
+#'   ncp of 2-5 generally results in reasonable interpolations without the time
+#'   constraint.}.
+#' @param ncp numeric or NULL, default NULL. Used only if \code{iPCA}
+#'   interpolation is selected. Number of components to consider for iPCA sn
+#'   format interpolations of missing data. If null, the optimum number will be
+#'   estimated, with the maximum specified by ncp.max. This can be very slow.
+#' @param ncp.max numeric, default 5. Used only if \code{iPCA}
+#'   interpolation is selected. Maximum number of components to check for
+#'   when determining the optimum number of components to use when interpolating
+#'   sn data using the iPCA approach.
 #' @param par numeric or FALSE, default FALSE. If a number specifies the number
 #'   of processing cores to use \emph{across facet levels}. Not used if only one
 #'   facet level.
@@ -83,6 +100,7 @@
 run_genomic_prediction <- function(x, facets = NULL, response, iterations,
                                    burn_in, thin,
                                    model = "BayesB", interpolate = "bernoulli",
+                                   ncp = NULL, ncp.max = 5,
                                    par = FALSE, verbose = FALSE, ...){
   .snp.id <- facet <- subfacet <- NULL
   
@@ -121,12 +139,12 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
     
     if(length(sub.x@sn$sn) != 0){
       if(sub.x@sn$type != interpolate){
-        suppressWarnings(sub.x@sn$sn <- format_snps(sub.x, "sn", interpolate = interpolate))
+        suppressWarnings(sub.x@sn$sn <- format_snps(sub.x, "sn", interpolate = interpolate, ncp = ncp, ncp.max = ncp.max))
         sub.x@sn$type <- interpolate
       }
     }
     else{
-      suppressWarnings(sub.x@sn$sn <- format_snps(sub.x, "sn", interpolate = interpolate))
+      suppressWarnings(sub.x@sn$sn <- format_snps(sub.x, "sn", interpolate = interpolate, ncp = ncp, ncp.max = ncp.max))
       sub.x@sn$type <- interpolate
     }
     
@@ -855,7 +873,24 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   \code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
 #'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#'   minor allele. \item{af: } insertion of the average allele frequency
+#'   \item{iPCA:} As a slower but more accurate alternative to "af"
+#'   interpolation, "iPCA" may be selected. This an iterative PCA approach to
+#'   interpolate based on SNP/SNP covariance via
+#'   \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
+#'   number of components used for interpolation will be estimated using
+#'   \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+#'   slower than the other methods, especially for large datasets. Setting an
+#'   ncp of 2-5 generally results in reasonable interpolations without the time
+#'   constraint.}.
+#' @param ncp numeric or NULL, default NULL. Used only if \code{iPCA}
+#'   interpolation is selected. Number of components to consider for iPCA sn
+#'   format interpolations of missing data. If null, the optimum number will be
+#'   estimated, with the maximum specified by ncp.max. This can be very slow.
+#' @param ncp.max numeric, default 5. Used only if \code{iPCA}
+#'   interpolation is selected. Maximum number of components to check for
+#'   when determining the optimum number of components to use when interpolating
+#'   sn data using the iPCA approach.
 #' @param pvals logical, default TRUE. Determines if pvalues should be
 #'   calculated for importance values. If the response variable is quantitative,
 #'   no pvalues will be returned, since they must be calculated via permutation
@@ -898,7 +933,8 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                               num.trees = 10000, mtry = NULL,
                               importance = "impurity_corrected",
-                              interpolate = "bernoulli", pvals = TRUE, par = FALSE, ...){
+                              interpolate = "bernoulli", ncp = NULL, 
+                              ncp.max = 5, pvals = TRUE, par = FALSE, ...){
   .formula <- formula
   rm(formula)
   #=========sanity checks=======================
@@ -915,14 +951,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     ## sn format
     if(length(sub.x@sn$sn) != 0){
       if(sub.x@sn$type != interpolate){
-        sn <- format_snps(sub.x, "sn", interpolate = interpolate)
+        sn <- format_snps(sub.x, "sn", interpolate = interpolate, ncp = ncp, ncp.max = ncp.max)
       }
       else{
         sn <- sub.x@sn$sn
       }
     }
     else{
-      sn <- format_snps(sub.x, "sn", interpolate = interpolate)
+      sn <- format_snps(sub.x, "sn", interpolate = interpolate, ncp = ncp, ncp.max = ncp.max)
     }
     sn <- sn[,-c(which(colnames(sn) %in% colnames(sub.x@snp.meta)))]
     sn <- t(sn)

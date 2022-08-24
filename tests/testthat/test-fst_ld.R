@@ -76,7 +76,7 @@ test_that("fst bootstrapping",{
   expect_true(is.numeric(bs1_res$weighted.means$weighted_mean_fst_p))
   
   skip_on_cran(); skip_on_ci()
-  bs1_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", boot = 10, boot_par = 5)
+  bs1_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", boot = 10)
   bs1_res <- get.snpR.stats(bs1_par, "pop", "fst")
   
   expect_true(is.numeric(unlist(bs1_res$fst.matrix$pop$p[1,2])))
@@ -88,7 +88,7 @@ test_that("fst bootstrapping",{
   expect_true(is.numeric(unlist(bs2_res$fst.matrix$pop$p[1,2])))
   expect_true(is.numeric(bs2_res$weighted.means$weighted_mean_fst_p))
   
-  bs2_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", method = "genepop", boot = 10, boot_par = 5)
+  bs2_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", method = "genepop", boot = 10)
   bs2_res <- get.snpR.stats(bs2_par, "pop", "fst")
   
   expect_true(is.numeric(unlist(bs2_res$fst.matrix$pop$p[1,2])))

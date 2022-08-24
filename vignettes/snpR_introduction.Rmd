@@ -367,18 +367,17 @@ If you have many different facet combinations and a large dataset, this may take
 
 ```{r, results='hide'}
 
-ncores <- parallel::detectCores()
-ncores <- ifelse(ncores == 1, 1, floor(ncores/2))
 sub7 <- my.dat[pop = c("ASP", "PAL")]
 sub7 <- calc_pi(sub7, "pop")
 sub7 <- calc_pairwise_fst(sub7, "pop")
 sub7 <- calc_smoothed_averages(x = sub7, facets = "pop.chr",
                                  sigma = 200, # using a window size of 200
-                                 step = 50, # using a step size of 50 between windows
-                                 par = ncores) # in parallel 
+                                 step = 50) # using a step size of 50 between windows
 
 
 ```
+
+We could run `calc_smoothed_averages()` faster using the `par` argument if we chose to!
 
 We can view the results with get.snpR.stats as usual! We can then look at the `single.window` and `pairwise.window` outputs to see our results.
 

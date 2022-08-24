@@ -47,11 +47,9 @@ Suggests:
     genio,
     geosphere,
     ggrepel,
-    ggsn,
     GMMAT,
     knitr,
     LEA,
-    maps,
     markdown,
     missMDA,
     mmtsne,
@@ -60,9 +58,6 @@ Suggests:
     readr,
     remotes,
     Rtsne,
-    scatterpie,
-    sequoia,
-    sf,
     shiny,
     umap,
     vcfR,
@@ -89,4 +84,3 @@ Collate:
     'snpRdata_methods.R'
     'stat_functions.R'
     'utility_functions.R'
-Remotes: JiscaH/sequoia

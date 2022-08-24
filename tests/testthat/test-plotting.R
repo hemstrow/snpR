@@ -64,28 +64,28 @@ test_that("snapclust",{
 })
 
 #===================plot_structure_map===================
-test_that("structure map",{
-  skip_on_cran();
-  skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps"))
-  
-  lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
-  lat_long <- t(lat_long)
-  colnames(lat_long) <- c("lat", "long")
-  lat_long <- as.data.frame(lat_long)
-  lat_long$pop <- rownames(lat_long)
-  psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
-  psf <- sf::`st_crs<-`(psf, "EPSG:4326")
-
-  # get the assignments
-  .make_it_quiet(assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE)) # get structure-like results
-
-  # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
-  background <- maps::map("state", "oregon", plot = FALSE)
-  background <- sf::st_as_sf(background)
-  
-  p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2))
-  expect_true(ggplot2::is.ggplot(p2))
-})
+# test_that("structure map",{
+#   skip_on_cran()
+#   skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps"))
+#   
+#   lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+#   lat_long <- t(lat_long)
+#   colnames(lat_long) <- c("lat", "long")
+#   lat_long <- as.data.frame(lat_long)
+#   lat_long$pop <- rownames(lat_long)
+#   psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
+#   psf <- sf::`st_crs<-`(psf, "EPSG:4326")
+# 
+#   # get the assignments
+#   .make_it_quiet(assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE)) # get structure-like results
+# 
+#   # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+#   background <- maps::map("state", "oregon", plot = FALSE)
+#   background <- sf::st_as_sf(background)
+#   
+#   p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2), ask = FALSE)
+#   expect_true(ggplot2::is.ggplot(p2))
+# })
 
 #==================plot_clusters=====================
 
@@ -124,12 +124,55 @@ test_that("umap",{
 
 #==================plot_manhattan==========
 test_that("manhattan plots", {
+  
+  # with snpRdata
   x <- stickSNPs
   sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
   x <- calc_association(x, response = "phenotype", method = "armitage")
   p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                       log.p = TRUE)
   expect_true(ggplot2::is.ggplot(p$plot))
+  
+  
+  # with data.frame
+  y <- get.snpR.stats(x, stats = "association")
+  p2 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE)
+  expect_true(ggplot2::is.ggplot(p2$plot))
+  expect_equivalent(p$data, p2$data)
+  
+  
+  
+  
+  # with a rug 
+  rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+                         end = c(5000000, 6000000), gene = c("A", "B"))
+
+  # point style
+  p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data)
+  expect_true(is(p3$plot$layers[[2]]$geom, "GeomRug"))
+
+  # ribbon style
+  p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+  expect_true(is(p4$plot$layers[[2]]$geom, "GeomSegment"))
+  
+  # with rug labels
+  ## point
+  p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_label = "gene")
+  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  ## ribbon
+  p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
+  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  
+  
+  # with tajimas D
+  skip_on_cran(); # slower
+  x <- calc_tajimas_d(x, facets = "pop.chr", sigma = 100, step = 50)
+  expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr")$p))
 })
 
 #=================qq=====================

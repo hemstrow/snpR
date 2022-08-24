@@ -9,6 +9,8 @@ filter_snps(
   maf = FALSE,
   hf_hets = FALSE,
   hwe = FALSE,
+  fwe_method = "none",
+  singletons = FALSE,
   min_ind = FALSE,
   min_loci = FALSE,
   re_run = "partial",
@@ -30,6 +32,16 @@ acceptable heterozygote frequency.}
 
 \item{hwe}{numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 HWE p-value.}
+
+\item{fwe_method}{character, default "none". Option to use for Family-Wise
+Error rate correction for HWE filtering. If requested, only SNPs with
+p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
+correction} will be removed. See \code{\link[stats]{p.adjust}} for
+information on method options.}
+
+\item{singletons}{logical, default FALSE. If TRUE, removes singletons (loci
+where there is only a single minor allele). If population sizes are
+reasonably high, this is more or less redundant if \code{maf} is also set.}
 
 \item{min_ind}{numeric between 0 and 1 or FALSE, default FALSE. Minimum
 proportion of individuals in which a loci must be sequenced.}

@@ -1,7 +1,9 @@
 ## Test environments
 
-* Windows Server 2022 (on R-hub) R-devel
-* Local Windows 10 install, R 4.1.2
+* macOS-latest (release) -- via github actions
+* windows-latest (release) -- via github actions
+* ubuntu-latest (oldrel-1) -- via github actions
+* ubuntu-latest (release) -- via github actions
 
 ## R CMD check results
 
