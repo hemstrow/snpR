@@ -49,7 +49,7 @@ possible pairwise combination of populations.
 Calculates FST according to either Weir and Cockerham 1984 or using the
 \code{\link[genepop]{Fst}} function from the genepop package (see references).
 
-If the genpop option is used, several intermediate files will be created in
+If the genepop option is used, several intermediate files will be created in
 the default temporary directory (see \code{\link{tempfile}}).
 
 The Weir and Cockerham (1984) and genepop methods tend to

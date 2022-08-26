@@ -182,7 +182,7 @@ is.snpRdata <- function(x){
 # are returned and are not automatically merged into x.
 #
 # For examples, look at how this function is called in functions such as
-# calc_pi, calc_pairwise_fst, ect.
+# calc_pi, calc_pairwise_fst, etc.
 #
 # Options:
 #

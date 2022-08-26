@@ -38,7 +38,7 @@ any sample specific facets, broken apart by any requested snp level facets.
 For details on methods, see details.
 }
 \details{
-If a sample facet is requested, distances are calulcated via code adapted
+If a sample facet is requested, distances are calculated via code adapted
 from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
 alongside the tree-building and distance methods Available methods:
 \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.

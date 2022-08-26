@@ -8,7 +8,7 @@
 
 ### Minor
 * Added support for FWE (multiple comparisons p-value adjustment) to `filter_snps()` HWE filtering.
-* Added singleton fitering to `filter_snps()`.
+* Added singleton filtering to `filter_snps()`.
 * Added iPCA `ncp` and `ncp.max` options to `run_random_forest()` and `run_genomic_prediction()`. Previously, selecting the `iPCA` option would work, but run with the default `iPCA` options and thus determine `ncp` internally, which is pretty slow.
 * Added rug plotting to `plot_manhattan()` to allow for easy plotting of gene positions, etc under plots. Both ribbon-style and classic rug style supported.
 * Moved code for `run_sequoia()` and `plot_structure_map()` to a secondary github repo, since both of these use CRAN unfriendly dependencies (sequoia and sf, respectively). These functions now source this code (after asking for permission) in order to run, allowing the dependencies to be dropped. This should not change the user experience whatsoever.
@@ -17,7 +17,8 @@
 * Fixed some outdated documentation in `calc_ne()`.
 * Fixed some typos in the documentation.
 * Fixed some parameter input descriptions in the documentation for Colony.
-* Cleaned up some documentation for fwe correction across multiple functions.
+* Cleaned up some documentation for FWE correction across multiple functions.
+* Fixed spelling issues throughout package.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.

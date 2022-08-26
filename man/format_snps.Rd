@@ -33,7 +33,7 @@ input formats.}
 \item{output}{Character, default "snpRdata". The desired output format. A
 snpRdata object by default.}
 
-\item{facets}{Character or NULL, default NULL. Facets overwhich to break up
+\item{facets}{Character or NULL, default NULL. Facets over which to break up
 data for some output formats, following the format described in
 \code{\link{Facets_in_snpR}}.}
 
@@ -45,7 +45,7 @@ or a numeric vector of loci to use.}
 "sn" format, notes the interpolation method to be used to fill missing data.
 Options are "bernoulli", "af", "iPCA", or FALSE. See details.}
 
-\item{outfile}{character vector, default FALSE. If a filepath is provided, a
+\item{outfile}{character vector, default FALSE. If a file path is provided, a
 copy of the output will be saved to that location. For some output styles,
 such as genepop, additional lines will be added to the output to allow them
 to be immediately run on commonly used programs.}
@@ -105,7 +105,7 @@ A data.frame or snpRdata object with data in the correct format. May
  also write a file to the specified path.
 }
 \description{
-\code{format_snps} reformats SNP data into a range of different possible
+\code{format_snps} re-formats SNP data into a range of different possible
 formats for use in snpR functions and elsewhere.
 }
 \details{

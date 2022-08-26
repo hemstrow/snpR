@@ -225,7 +225,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  Options:
 #'
 #'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
-#'  adegenet. Note, no need to import genpop objects, the equivalent statistics
+#'  adegenet. Note, no need to import genepop objects, the equivalent statistics
 #'  are calculated automatically when functions called with facets. Sample and
 #'  SNP IDs as well as, when possible, pop IDs will be taken from the genind
 #'  object. This data will be added too but will not replace data provided to
@@ -262,7 +262,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  data.frame/table containing all pairwise (fst) single-snp statistics.
 #'  \item{pairwise.window.stats: } data.frame/table containing all pairwise
 #'  statistics calculated for sliding windows. \item{sample.stats: }
-#'  data.frame/table containing statistics caluclated for each individual
+#'  data.frame/table containing statistics calculated for each individual
 #'  sample. \item{pairwise.LD: } nested list containing linkage disequilibrium
 #'  data (see \code{\link{calc_pairwise_ld}} for more information).
 #'  \item{window.bootstraps: } data.frame/table containing all calculated
@@ -300,13 +300,15 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
 #'@param header_cols numeric, default 0. Number of header columns containing
-#'  sample metadata. Used if a tab delimited or structre input file is provided.
+#'  sample metadata. Used if a tab delimited or STRUCTURE input file is
+#'  provided.
 #'@param rows_per_individual numeric (1 or 2), default 2. Number of rows used
 #'  for each individual. For structure input files only.
 #'@param marker_and_sample_names logical, default FALSE. If TRUE, assumes that a
 #'  header row of marker and sample/sample metadata names is present. For
 #'  structure input files only.
-#'@param verbose Logical, default FALSE. If TRUE, will print a few status updates and checks.
+#'@param verbose Logical, default FALSE. If TRUE, will print a few status
+#'  updates and checks.
 #'  
 #'@examples
 #' # import example data as a snpRdata object
@@ -601,7 +603,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' @section Types:
 #'
 #'   \itemize{ \item{single: } non-pairwise, non-window statistics (pi, ho, 
-#'   ect.)
+#'   etc.)
 #'   \item{pairwise: } pairwise, non-window statistics (Fst).
 #'   \item{single.window: } non-pairwise, sliding window statistics.
 #'   \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }

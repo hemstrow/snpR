@@ -41,7 +41,7 @@ A snpRdata object with both geographic distance and IBD results
 \description{
 Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
 genetic distance between samples or sets of samples to the geographic
-distances between samples or sets of samples. IBD caluclated via a mantel
+distances between samples or sets of samples. IBD calculated via a mantel
 test.
 }
 \details{

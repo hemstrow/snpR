@@ -100,7 +100,7 @@ run_colony(
 path may be provided (e.g. "colony/colony_run_1.txt").}
 
 \item{method}{character, default "FPLS". Pedigree reconstruction method. For
-more details see the Colony User Guide. Options: \itemize{\item{"FLPS":
+more details see the Colony User Guide. Options: \itemize{\item{"FPLS":
 }{Pure pairwise likelihood method, combines the full likelihood and
 pairwise likelihood methods. A good compromise between speed and
 accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more
@@ -109,7 +109,7 @@ datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
 computationally intensive than FL.}}}
 
 \item{run_length}{numeric in c(0,1,2,3), default 2. Length of run:
-short/medium/long/verylong.}
+short/medium/long/very long.}
 
 \item{sampleIDs}{character, default NULL. Name of a column in the sample
 metadata that designates sample identifications/"names". Each name must be

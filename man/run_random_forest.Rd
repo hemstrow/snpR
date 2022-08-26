@@ -70,9 +70,9 @@ interpolation is selected. Maximum number of components to check for
 when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
 
-\item{pvals}{logical, default TRUE. Determines if pvalues should be
+\item{pvals}{logical, default TRUE. Determines if p-values should be
 calculated for importance values. If the response variable is quantitative,
-no pvalues will be returned, since they must be calculated via permutation
+no p-values will be returned, since they must be calculated via permutation
 and this is very slow. For details, see
 \code{\link[ranger]{importance_pvalues}}.}
 

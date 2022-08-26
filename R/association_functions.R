@@ -748,7 +748,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     # set parameters
     ## response
     if(is.character(phenos[,response])){
-      phenos[,response] <- as.numeric(as.factor(phenos[,response])) - 1 # set the phenotype to 0,1,ect
+      phenos[,response] <- as.numeric(as.factor(phenos[,response])) - 1 # set the phenotype to 0,1,etc
     }
     ## family
     if(family.override != FALSE){
@@ -891,9 +891,9 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   interpolation is selected. Maximum number of components to check for
 #'   when determining the optimum number of components to use when interpolating
 #'   sn data using the iPCA approach.
-#' @param pvals logical, default TRUE. Determines if pvalues should be
+#' @param pvals logical, default TRUE. Determines if p-values should be
 #'   calculated for importance values. If the response variable is quantitative,
-#'   no pvalues will be returned, since they must be calculated via permutation
+#'   no p-values will be returned, since they must be calculated via permutation
 #'   and this is very slow. For details, see
 #'   \code{\link[ranger]{importance_pvalues}}.
 #' @param par numeric, default FALSE. Number of parallel computing cores to use

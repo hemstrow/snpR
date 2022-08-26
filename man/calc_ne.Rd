@@ -30,7 +30,7 @@ removed. If NULL, Ne will be calculated for all samples.}
 categorical metadata variable which designates chromosomes/linkage
 groups/etc. Pairwise LD scores for SNPs with the same level of this
 variable will be not be used to calculate Ne. Since physical linkage can
-bias Ne estimtes, providing a value here is recommended.}
+bias Ne estimates, providing a value here is recommended.}
 
 \item{NeEstimator_path}{character, default "/usr/bin/Ne2-1.exe". Path to the
 NeEstimator executable.}
@@ -69,7 +69,7 @@ Calculates effective population size for any given sample-level facets via
 interface with the NeEstimator v2 program by Do et al. (2013).
 }
 \details{
-Since physical linkage can cause mis-estimation of Ne, an optional snp-level
+Since physical linkage can cause miss-estimation of Ne, an optional snp-level
 facet can be provided which designates chromosomes or linkage groups. Only
 pairwise LD values between SNPs on different facet levels will be used.
 

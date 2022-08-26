@@ -55,7 +55,7 @@ displayed on the map.}
 \item{viridis.option}{character, default "viridis". Viridis color scale
 option. See \code{\link[ggplot2]{scale_gradient}} for details.}
 
-\item{alt.palette}{charcter or NULL, default NULL. Optional palette of colors
+\item{alt.palette}{character or NULL, default NULL. Optional palette of colors
 to use instead of viridis palette  the pie charts.}
 
 \item{radius_scale}{numeric 0-1, default 0.05. Scale for pie chart radii as a

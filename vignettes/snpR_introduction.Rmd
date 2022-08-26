@@ -65,7 +65,7 @@ my.dat <- import.snpR.data(genotypes = gen_data,
 ```
 Note: 
 
-* Column names in the snp and sample metadata must be unique (no repeats across *both* metadatasets), and cannot contain '.', '~', or whitespace!
+* Column names in the snp and sample metadata must be unique (no repeats across *both* metadata sets), and cannot contain '.', '~', or whitespace!
 
 * Some functions expect to see columns named 'chr' and 'position'. Ensuring snp.meta has these columns early on saves some potential column renaming later.   
 
@@ -146,7 +146,7 @@ my.dat <- calc_ho(my.dat)
 
 Calculated statistics can be fetched using the get.snpR.stats accessor function. Note that this function returns a data.frame or nested list (depending on the requested stats), not a snpRdata object, and *should never be used to overwrite a snpRdata object!*. Since some calculations are run pairwise you need to specify if you want the pairwise or single stats returned.
 
-get.snpR.stats will automatically return multiple types of data if it is available. Typically, this is the statistic calculated both within each individual snp and the weighted averages within populaitons (or facet levels).
+get.snpR.stats will automatically return multiple types of data if it is available. Typically, this is the statistic calculated both within each individual snp and the weighted averages within populations (or facet levels).
 
 ```{r}
 # fetch calculated statistics
@@ -301,7 +301,7 @@ p$plots$pca
 
 plot_clusters also returns the raw plot data under the data element.
 
-plot_clusters also supports a few other plotting tools (UMAP and tSNE), but these are not currently recommended due to reproduceability issues.
+plot_clusters also supports a few other plotting tools (UMAP and tSNE), but these are not currently recommended due to reproducibility issues.
 
 Tip: you can specify viridis palette option for your plot! Or, if you want more customization, save the data to a new object and use your preferred plotting library package. For example:
 
@@ -540,7 +540,7 @@ head(stats)
 ```
 
 ## Pedigree Construction and visualization
-snpR has a couple options for parentage assignment and pedigree construction. COLONY (Jones and Wang, 2010) is a well known program and works very well when much information is known about individuals in the sample dataset. snpR functions are designed to work with the commandline implementation of COLONY. Sequoia (Huisman, 2017) is designed to easily handle analyses with multi-generational samples. snpR functions are designed to work with the R based implementation of Sequoia.
+snpR has a couple options for parentage assignment and pedigree construction. COLONY (Jones and Wang, 2010) is a well known program and works very well when much information is known about individuals in the sample dataset. snpR functions are designed to work with the command-line implementation of COLONY. Sequoia (Huisman, 2017) is designed to easily handle analyses with multi-generational samples. snpR functions are designed to work with the R based implementation of Sequoia.
 
 #### COLONY
 Formatting data to run in COLONY can be difficult especially with complicated datasets, but snpR can help make the process easier. The function write_colony_input takes a snpR object and writes a text file formatted for the COLONY commandline interface. This file is saved in a folder named 'colony' in your working directory. If the folder does not already exist, one will automatically be created. 

@@ -1,7 +1,7 @@
 
 #'Subset snpRdata objects
 #'
-#'Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
+#'Subsets snpRdata objects by specific snps, samples, facets, subfacets, etc.
 #'Statistics will need to be recalculated after subsetting to avoid confusion. 
 #'The bracket operators can be alternatively, following the same syntax.
 #'
@@ -551,7 +551,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
-#'  automatically via several methods: \itemize{ \item{partial: } Refilters for
+#'  automatically via several methods: \itemize{ \item{partial: } Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
 #'  min_loci).}
@@ -774,7 +774,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
         # pmafs <- logical(nrow(x))
 
         # see if we need to calculate mafs
-        if(any(colnames(x@stats) == "maf")){ # mafs have been caluclated
+        if(any(colnames(x@stats) == "maf")){ # mafs have been calculated
           # get mafs for any uncalculated facets
 
           # if mafs have been calculated, but not for of the requested any facets...
@@ -955,7 +955,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
           hwe <- FALSE
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-          x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys ect.
+          x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
           if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
         }
         else{
@@ -971,7 +971,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 
 #'Re-format SNP data.
 #'
-#'\code{format_snps} reformats SNP data into a range of different possible
+#'\code{format_snps} re-formats SNP data into a range of different possible
 #'formats for use in snpR functions and elsewhere.
 #'
 #'While this function can accept a few non-snpRdata input formats, it will
@@ -1071,7 +1071,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'  input formats.
 #'@param output Character, default "snpRdata". The desired output format. A
 #'  snpRdata object by default.
-#'@param facets Character or NULL, default NULL. Facets overwhich to break up
+#'@param facets Character or NULL, default NULL. Facets over which to break up
 #'  data for some output formats, following the format described in
 #'  \code{\link{Facets_in_snpR}}.
 #'@param n_samp Integer or numeric vector, default NA. For structure or RAFM
@@ -1080,7 +1080,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'@param interpolate Character or FALSE, default "bernoulli". If transforming to
 #'  "sn" format, notes the interpolation method to be used to fill missing data.
 #'  Options are "bernoulli", "af", "iPCA", or FALSE. See details.
-#'@param outfile character vector, default FALSE. If a filepath is provided, a
+#'@param outfile character vector, default FALSE. If a file path is provided, a
 #'  copy of the output will be saved to that location. For some output styles,
 #'  such as genepop, additional lines will be added to the output to allow them
 #'  to be immediately run on commonly used programs.
@@ -2598,7 +2598,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 #' facet.
 #'
 #' Fetch allele frequencies for all SNPs for each level of all the requested
-#' facets. Major and minor allele frequencies will be interleved, with the major
+#' facets. Major and minor allele frequencies will be interleaved, with the major
 #' allele first for each locus. Note that this particular function is not
 #' overwrite-safe.
 #'
@@ -2658,7 +2658,7 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
     tam <- tam[,-1]
     amb <- 1 - tam
     
-    # interleve major and minor frequencies and save
+    # interleave major and minor frequencies and save
     ord <- rep(1:ncol(tam), each = 2) + (0:1) * ncol(tam)
     amc <- .fix..call(cbind(amb, tam)[,..ord])
     colnames(amc) <- maj_min

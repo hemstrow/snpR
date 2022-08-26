@@ -53,7 +53,7 @@
 #'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
 #'  Uses a chi-squared test. } See details
 #'@param fwe_method character, default "BY". Type of Family-Wise Error
-#'  correction (mulitple testing correction) to use. For details and options,
+#'  correction (multiple testing correction) to use. For details and options,
 #'  see \code{\link[stats]{p.adjust}}. If no correction is desired, set this argument
 #'  to "none".
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
@@ -240,7 +240,7 @@ calc_maf <- function(x, facets = NULL){
 #'variants contribute to these statistics and they rely on the ratio of the
 #'number of variants vs the number of sequenced non-polymorphic sites, this
 #'function should only be run on data that is \emph{unfiltered} aside from the
-#'removal of poorly sequenced bases, ect.
+#'removal of poorly sequenced bases, etc.
 #'
 #'The data can be broken up categorically by either SNP and/or sample metadata,
 #'as described in \code{\link{Facets_in_snpR}}.
@@ -426,7 +426,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #'Calculates FST according to either Weir and Cockerham 1984 or using the
 #'\code{\link[genepop]{Fst}} function from the genepop package (see references).
 #'
-#'If the genpop option is used, several intermediate files will be created in
+#'If the genepop option is used, several intermediate files will be created in
 #'the default temporary directory (see \code{\link{tempfile}}).
 #'
 #'The Weir and Cockerham (1984) and genepop methods tend to
@@ -980,8 +980,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
 #' according to Weir and Cockerham (1984).
 #'
 #' Note that FIS is calculated by considering \emph{only data from individual
-#' sample levels}! This means that individual and subpopulation variances are
-#' only considered within each subpopulation. If snp facets are provided,
+#' sample levels}! This means that individual and sub-population variances are
+#' only considered within each sub-population. If snp facets are provided,
 #' weighted means will be provided for each snp facet level, although raw FIS
 #' values are calculated on a per-snp basis and thus ignore these levels.
 #'
@@ -3135,7 +3135,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' Calculates effective population size for any given sample-level facets via
 #' interface with the NeEstimator v2 program by Do et al. (2013).
 #'
-#' Since physical linkage can cause mis-estimation of Ne, an optional snp-level
+#' Since physical linkage can cause miss-estimation of Ne, an optional snp-level
 #' facet can be provided which designates chromosomes or linkage groups. Only
 #' pairwise LD values between SNPs on different facet levels will be used.
 #'
@@ -3153,7 +3153,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   categorical metadata variable which designates chromosomes/linkage
 #'   groups/etc. Pairwise LD scores for SNPs with the same level of this
 #'   variable will be not be used to calculate Ne. Since physical linkage can
-#'   bias Ne estimtes, providing a value here is recommended.
+#'   bias Ne estimates, providing a value here is recommended.
 #' @param NeEstimator_path character, default "/usr/bin/Ne2-1.exe". Path to the
 #'   NeEstimator executable.
 #' @param mating character, default "random". The mating system to use. Options:
@@ -3277,7 +3277,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' For details on methods, see details.
 #'
 #'
-#' If a sample facet is requested, distances are calulcated via code adapted
+#' If a sample facet is requested, distances are calculated via code adapted
 #' from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
 #' alongside the tree-building and distance methods Available methods:
 #' \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
@@ -3461,7 +3461,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
 #'
 #' Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
 #' genetic distance between samples or sets of samples to the geographic
-#' distances between samples or sets of samples. IBD caluclated via a mantel
+#' distances between samples or sets of samples. IBD calculated via a mantel
 #' test.
 #'
 #' Genetic distance is calculated via \code{\link{calc_genetic_distances}}.
@@ -4160,7 +4160,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
 #'   See \code{\link{Facets_in_snpR}} for details.
 
 #'
-#' @return A snpRdata object with prop_poly merged into the weigheted.means 
+#' @return A snpRdata object with prop_poly merged into the weighted.means 
 #'   slot.
 #'   
 #' @author William Hemstrom

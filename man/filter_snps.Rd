@@ -52,7 +52,7 @@ proportion of SNPs at which an individual must be genotyped.}
 \item{re_run}{character or FALSE, default "partial". When individuals are
 removed via min_ind, it is possible that some SNPs that initially passed
 filtering steps will now violate some filters. SNP filters can be re-run
-automatically via several methods: \itemize{ \item{partial: } Refilters for
+automatically via several methods: \itemize{ \item{partial: } Re-filters for
 non-polymorphic loci (non_poly) only, if that filter was requested
 initially. \item{full: } Re-runs the full filtering scheme (save for
 min_loci).}}

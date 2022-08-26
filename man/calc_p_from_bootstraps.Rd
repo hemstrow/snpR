@@ -60,11 +60,11 @@ distribution function.
 
 p-values can be generated for specific snp or sample metadata categories
 using the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
-facets for which bootstrap data and raws statistical data have both been
+facets for which bootstrap data and raw statistical data have both been
 calculated will be run. "all" and NULL follow the typical facet rules.
 
 Likewise, p-values can be generated for specific statistics using the
-statistics argument. Only statistics for which bootstrap data and raws
+statistics argument. Only statistics for which bootstrap data and raw
 statistical data have both been calculated will be run. By default, all stats
 for which a bootstrap null distribution has been generated will be run.
 }

@@ -92,7 +92,7 @@ setMethod("dim", "snpRdata", function(x) {
 
 #' Get from or overwrite components of a snpRdata object
 #'
-#' Fetch or overwirte the major parts of a snpRdata object (genotypes, snp meta,
+#' Fetch or overwrite the major parts of a snpRdata object (genotypes, snp meta,
 #' or sample meta). If overwritten, any calculated stats will be removed, since
 #' their values may be dependant upon changes in metadata.
 #'

@@ -686,7 +686,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   for(i in 1:length(plot_dats)){
     tpd <- plot_dats[[i]]
 
-    #Categories (pops, fathers, mothers, ect.) are given in plot.vars argument. Supports up to two!
+    #Categories (pops, fathers, mothers, etc.) are given in plot.vars argument. Supports up to two!
     #make the base plot, then add categories as color and fill.
     PC1 <- PC2 <- NULL
     out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
@@ -880,7 +880,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   alternate across chromosomes.
 #' @param rug_data data.frame or tbl, default NULL. Data to plot as a rug below
 #'   the manhattan plot containing columns named to match the \code{chr}
-#'   arugment \emph{and} either the \code{bp} argument OR columns named
+#'   argument \emph{and} either the \code{bp} argument OR columns named
 #'   \code{start} and \code{end} as well as, optionally, a column named to match
 #'   the \code{rug_label} column. Useful for labeling the locations of candidate
 #'   genes, for example.
@@ -1618,7 +1618,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 
 #' Create STRUCTURE-like cluster plots
 #'
-#' Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
+#' Creates ggplot-based stacked bar charts of assignment probabilities (Q) into
 #' an arbitrary 'k' number of clusters like those produced by the program
 #' STRUCTURE. Files containing prior results can be parsed and plotted, or new
 #' results can be generated via a suite of different methods. Many k values and
@@ -1653,7 +1653,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' often "flip" between K values. For example individuals that are grouped into
 #' cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
 #' cluster IDs are iteratively adjusted across K values by flipping IDs such
-#' that the euclidian distances between clusters at K and K - 1 are minimized.
+#' that the euclidean distances between clusters at K and K - 1 are minimized.
 #' This tends to produce consistent cluster IDs across multiple runs of K.
 #'
 #' Individuals can be sorted into by membership proportion into different
@@ -1866,7 +1866,7 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   T. (2018). A fast likelihood solution to the genetic clustering problem.
 #'   \emph{Methods in ecology and evolution}, 9(4), 1006-1016.
 #' @references Francis, R. M. (2017). pophelper: an R package and web app to
-#'   analyse and visualize population structure. \emph{Molecular ecology
+#'   analyze and visualize population structure. \emph{Molecular ecology
 #'   resources}, 17(1), 27-32.
 #' @references Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster
 #'   matching and permutation program for dealing with label switching and
@@ -2185,7 +2185,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
         #compare to each other col.
         for(tk in 1:ncol(x[[i-1]])){
-          #save euclidian dist
+          #save euclidean dist
           elist[tk] <- sum((x[[i]][,j] - x[[i-1]][,tk])^2, na.rm = T)
         }
 
@@ -2539,7 +2539,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     return(out_q)
   }
 
-  # function to sort each element of a qlist by a facet (population, ect). Needed because they must
+  # function to sort each element of a qlist by a facet (population, etc). Needed because they must
   # be ordered properly for qsorting to work correctly.
   sort_by_pop_qfiles <- function(qlist, meta, pop.ord){
     ord <- factor(meta[,facet], levels = pop.ord)
@@ -3309,7 +3309,7 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #'   displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
-#' @param alt.palette charcter or NULL, default NULL. Optional palette of colors
+#' @param alt.palette character or NULL, default NULL. Optional palette of colors
 #'   to use instead of viridis palette  the pie charts.
 #' @param radius_scale numeric 0-1, default 0.05. Scale for pie chart radii as a
 #'   proportion of the total map space.
