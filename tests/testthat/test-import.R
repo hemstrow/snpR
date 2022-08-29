@@ -48,3 +48,26 @@ test_that("vcf", {
   
   file.remove("test.vcf")
 })
+
+test_that("structure",{
+  format_snps(stickSNPs, output = "structure", outfile = "test.str")
+  
+  check <- read_structure("test.str", rows_per_individual = 2, header_cols = 1)
+  check <- calc_ho(check)
+  y <- calc_ho(stickSNPs)
+  expect_identical(get.snpR.stats(check, stats = "maf")$single$maf, get.snpR.stats(stickSNPs, stats = "maf")$single$maf) # tests for correct alleles
+  expect_identical(get.snpR.stats(check, stats = "ho")$single$ho, get.snpR.stats(y, stats = "ho")$single$ho) # checks for correct genotypes
+  rm(y)
+  
+  check <- read_structure("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
+                          rows_per_individual = 2, header_cols = 1)
+  expect_identical(snp.meta(stickSNPs), snp.meta(check))
+  expect_identical(sample.meta(stickSNPs), sample.meta(check))
+  
+  expect_identical(read_structure("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
+                                  rows_per_individual = 2, header_cols = 1),
+                   import.snpR.data("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
+                                  rows_per_individual = 2, header_cols = 1))
+  
+  file.remove("test.str")
+})
