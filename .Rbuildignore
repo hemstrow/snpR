@@ -4,7 +4,6 @@
 ^data-raw$
 ^R_dev$
 ^cran-comments\.md$
-^NEWS\.md
 ^\.github$
 ^\.covrignore$
 ^codecov\.yml$
