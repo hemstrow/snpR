@@ -2988,5 +2988,7 @@ summarize_facets <- function(x, facets = NULL){
     }
   }
   
+  out <- lapply(out, unique)
+  
   return(out)
 }

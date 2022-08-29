@@ -11,3 +11,27 @@ test_that("fst_matrix return with facet containing no fst calcs", {
 test_that("empty return warning", {
   expect_warning(get.snpR.stats(stickSNPs, "pop", "fst"), "statistics located for requested stats/facets")
 })
+
+test_that("summarize_facets",{
+  expect_message(summarize_facets(stickSNPs), "Returning list of facets")
+  
+  # basic reporting
+  expect_identical(suppressMessages(summarize_facets(stickSNPs)),
+                   list(SNP = c("chr", "position", ".snp.id"),
+                        sample = c("pop", "fam", ".sample.id")))
+  
+  # facet reporting
+  check_sum <- summarize_facets(stickSNPs, c("pop", "pop.chr", "chr", "pop.chr.fam"))
+  expect_equal(check_sum$pop, unique(sample.meta(stickSNPs)$pop))
+  expect_equal(check_sum$chr, unique(snp.meta(stickSNPs)$chr))
+  chr_pop_check <- unique(.paste.by.facet(expand.grid(list(unique(snp.meta(stickSNPs)$chr), 
+                                                           unique(sample.meta(stickSNPs)$pop))), 
+                                          c("Var1", "Var2")))
+  expect_equal(sort(check_sum$chr.pop), sort(chr_pop_check))
+  chr_pop_fam_check <- unique(.paste.by.facet(expand.grid(list(unique(snp.meta(stickSNPs)$chr),
+                                                               unique(sample.meta(stickSNPs)$fam),
+                                                               unique(sample.meta(stickSNPs)$pop))),
+                                          c("Var1", "Var2", "Var3")))
+  expect_equal(sort(check_sum$chr.fam.pop), sort(chr_pop_fam_check))
+  
+})
