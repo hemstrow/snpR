@@ -602,7 +602,7 @@
 }
 
 .sub_and_t_1_2_to_A_C <- function(ac, num_individuals){
-  waring("Since allelic identities are not clear, alleles at each locus will be saved as A and C. If this data is later reformatted for use elsewhere, please be aware that this may cause issues for some downstream analyses (since, for example, all SNPs will be nonsensically noted as transversions rather than transitions!).\n To prevent this, use a different format that specifies allelic identities.\nThis is not an issue for any snpR functions save those that rely on ancestral/derived allelic identities.\n")
+  warning("Since allelic identities are not clear, alleles at each locus will be saved as A and C. If this data is later reformatted for use elsewhere, please be aware that this may cause issues for some downstream analyses (since, for example, all SNPs will be nonsensically noted as transversions rather than transitions!).\n To prevent this, use a different format that specifies allelic identities.\nThis is not an issue for any snpR functions save those that rely on ancestral/derived allelic identities.\n")
   ac[ac == 1] <- "A"
   ac[ac == 2] <- "C"
   ac[is.na(ac)] <- "N"
@@ -625,7 +625,7 @@
                                snp.meta = NULL, sample.meta = NULL){
   #==========read in and categorize input data============
   dat <- data.table::fread(structure_file, header = marker_and_sample_names)
-  
+
   # process sample metadata
   if(header_cols > 0){
     if(is.null(sample.meta)){
