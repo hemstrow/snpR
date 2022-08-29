@@ -105,7 +105,6 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   file.remove(source_file)
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
-                    .check.installed = .check.installed,
                     .check.snpR.facet.request = .check.snpR.facet.request, 
                     .split.facet = .split.facet, 
                     .tabulate_genotypes = .tabulate_genotypes, 

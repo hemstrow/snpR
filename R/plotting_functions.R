@@ -3392,6 +3392,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   .check.installed("sf")
   .check.installed("scatterpie")
   .check.installed("viridis")
+  if(!is.null(compass) | !is.null(scale_bar)){.check.installed("ggsn")}
   
   
   
@@ -3405,7 +3406,6 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
-                 .check.installed = .check.installed,
                  .check.snpR.facet.request = .check.snpR.facet.request, 
                  .split.facet = .split.facet, 
                  .tabulate_genotypes = .tabulate_genotypes, 
