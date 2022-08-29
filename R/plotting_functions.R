@@ -3368,7 +3368,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
                                scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16), ask = TRUE){
   
   plot_structure_map_extension <- NULL
-  
+
   if(ask){
     # confirm we want to run this
     cat("plot_structure_map depends on the 'sf' package, which currently fails to compile on a Mac unless gdal is installed.\nThis causes packages with dependecies on it to fail CRAN checks on Mac.\nThis function is a wrapper that sources R scripts from github to pull in the plot_structure_map function.\nIt is tested and should function normally.\nProceed?\t")
@@ -3394,6 +3394,8 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
   source_file <-  tempfile()
   utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/plot_structure_map.R", 
                        destfile = source_file)
+  source(source_file)
+  file.remove(source_file)
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
                  .check.installed = .check.installed,

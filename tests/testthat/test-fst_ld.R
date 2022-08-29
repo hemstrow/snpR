@@ -1,6 +1,6 @@
 test_that("correct genepop", {
   local_edition(3)
-  skip_on_cran(); skip_on_ci()
+  skip_on_cran();
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_snapshot_value(tdfst, style = "serialize") # note, run off of genepop, not internally calced. Thus checked, but should not change.
@@ -75,7 +75,7 @@ test_that("fst bootstrapping",{
   expect_true(is.numeric(unlist(bs1_res$fst.matrix$pop$p[1,2])))
   expect_true(is.numeric(bs1_res$weighted.means$weighted_mean_fst_p))
   
-  skip_on_cran(); skip_on_ci()
+  skip_on_cran();
   bs1_par <- calc_pairwise_fst(.internal.data$test_snps, "pop", boot = 10)
   bs1_res <- get.snpR.stats(bs1_par, "pop", "fst")
   
@@ -116,7 +116,7 @@ test_that("correct cld ld",{
 
 test_that("correct traditional ld",{
   local_edition(3)
-  skip_on_cran(); skip_on_ci()
+  skip_on_cran();
   tdld <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE)
   tdld <- get.snpR.stats(tdld, stats = "ld")
   prox <- tdld$LD$prox
@@ -126,7 +126,7 @@ test_that("correct traditional ld",{
 
 test_that("correct ME ld",{
   local_edition(3)
-  skip_on_cran(); skip_on_ci()
+  skip_on_cran();
   set.seed(1212)
   tdldme <- calc_pairwise_ld(.internal.data$test_snps, CLD = FALSE, use.ME = TRUE)
   tdldme <- get.snpR.stats(tdldme, stats = "ld")

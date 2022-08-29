@@ -95,6 +95,8 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
   source_file <-  tempfile()
   utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/run_sequoia.R", 
                        destfile = source_file)
+  source(source_file)
+  file.remove(source_file)
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
                     .check.installed = .check.installed,
