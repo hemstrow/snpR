@@ -27,10 +27,12 @@
 * Fixed a bug with `calc_genetic_distances()` where the "Nei" method wouldn't work (due to a typo in the code).
 * Fixed an issue where the ID column wasn't written to vcf files.
 * Fixed interpolation not checking for `missMDA` installation or reporting `iPCA` as an option if an invalid method provided.
-* Fixed a bug where the `subfacet` and `facet` columns in the `stats` slot of a `snpRdata` object would get flipped in order during `calc_association()`, resulting in the addition of a bunch of empty data rows when something else was merged in. This would produce a downstream error during `calc_pairwise_fst` (and potentially elsewhere) due to attempting to cbind the `stats` slot to the `facet_meta` slot. Note that this wouldn't cause any bad stats to be calculated or returned anywhere due to the way that `get.snpR.stats()` functions to fetch results!
-* Fixed a bug where trying to calculate windowed averages on top of previously calculated tajima's D would throw a merge error.
-* Fixed a bug where `plot_manhattan()` wouldn't correctly plot tajima's D (didn't look for it in the right place)
+* Fixed a bug where the `subfacet` and `facet` columns in the `stats` slot of a `snpRdata` object would get flipped in order during `calc_association()`, resulting in the addition of a bunch of empty data rows when something else was merged in. This would produce a downstream error during `calc_pairwise_fst` (and potentially elsewhere) due to attempting to `cbind` the `stats` slot to the `facet_meta` slot. Note that this wouldn't cause any bad stats to be calculated or returned anywhere due to the way that `get.snpR.stats()` functions to fetch results!
+* Fixed a bug where trying to calculate windowed averages on top of previously calculated Tajima's D would throw a merge error.
+* Fixed a bug where `plot_manhattan()` wouldn't correctly plot Tajima's D (didn't look for it in the right place)
 * Fixed a bug where `plot_manhattan()` would display the facet name even if there was only one possible level (for example, if the sample facet was the .base level).
+* Fixed a bug where importing VCF files with `read_vcf()` would fail due to a typo in a sanity check.
+* Fixed a bug where reading in files with, for example, "GC" AND "CG" genotypes somewhere would cause tabulated genotypes to treat these as two different genotypes. Not a common bug except where reading in, for example, VCF files.
 
 # snpR 1.2.2
 
