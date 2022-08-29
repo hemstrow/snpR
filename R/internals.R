@@ -1672,6 +1672,10 @@ is.snpRdata <- function(x){
     cat(say, "")
     cat("Install? (y or n)\n")
     
+    if(!interactive()){
+      stop(say)
+    }
+    
     resp <- readLines(n = 1)
     resp <- tolower(resp)
     
