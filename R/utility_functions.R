@@ -2916,3 +2916,77 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
     return(list(keys = keys, stats = stats, details = deets, bib = bib))
   }
 }
+
+
+#' Summarize possible snpRdata object facet options
+#' 
+#' List either all of the possible SNP and sample facets (if called with no facets)
+#' or all of the categories for each requested facet.
+#' 
+#' @param x snpRdata object
+#' @param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the 
+#'  possible SNP and sample facets will be listed. If facets are instead provided,
+#'  the \emph{categories} for each facet will instead be listed.
+#' 
+#' @export
+#' @author William Hemstrom
+#' @return A named list containing either the possible SNP and sample facets or
+#'   the categories for all of the requested facets.
+#' @examples 
+#' # list available facets
+#' summarize_facets(stickSNPs)
+#' 
+#' # return details for a few facets
+#' summarize_facets(stickSNPs, c("pop", "chr.pop", "fam.pop"))
+summarize_facets <- function(x, facets = NULL){
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none", fill_with_base = FALSE, return_base_when_empty = FALSE, return.type = TRUE)
+  base_facets <- which(facets[[1]] == ".base")
+  if(length(base_facets) > 0){
+    facets[[1]] <- facets[[1]][-base_facets]
+    facets[[2]] <- facets[[2]][-base_facets]
+  }
+  
+  
+  # If called without facets, list availabilities
+  if(length(facets[[1]]) == 0){
+    message("Returning list of facets. For more details, try asking for information about a specific facet (such as 'pop' or 'pop.chr')!")
+    
+    return(list(SNP = colnames(snp.meta(x)),
+                sample = colnames(sample.meta(x))))
+  }
+  
+  # otherwise return options for each facet
+  else{
+    
+    
+    out <- vector("list", length(facets[[1]]))
+    names(out) <- facets[[1]]
+    for(i in 1:length(out)){
+      if(facets[[2]][i] == "snp"){
+        out[[i]] <- .get.task.list(x, facets[[1]][i])[,4]
+      }
+      else if(facets[[2]][i] == "sample"){
+        out[[i]] <- .paste.by.facet(sample.meta(x), unlist(.split.facet(facets[[1]][i])))
+      }
+      else if(facets[[2]][i] == "complex"){
+        split_facet <- unlist(.split.facet(facets[[1]][i]))
+        samp_part <- .check.snpR.facet.request(x, split_facet, fill_with_base = FALSE, return_base_when_empty = FALSE)
+        snp_part <- .check.snpR.facet.request(x, split_facet, remove.type = "sample", fill_with_base = FALSE, return_base_when_empty = FALSE)
+        samp_part <- sample.meta(x)[,samp_part, drop = FALSE]
+        samp_part <- lapply(samp_part, unique)
+        snp_part <- snp.meta(x)[,snp_part, drop = FALSE]
+        snp_part <- lapply(snp_part, unique)
+
+        opts <- expand.grid(c(samp_part, snp_part))
+        out[[i]] <- .paste.by.facet(opts, split_facet)
+      }
+    }
+  }
+  
+  return(out)
+}

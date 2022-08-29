@@ -5,6 +5,8 @@
 ### Major
 * Added `calc_prop_poly()` to calculate proportion of polymorphic loci for a given pop.
 * Renamed `plot_tree()` to `calc_tree()` and removed automatic plot generation, since `ggtree`, which that depended on, can behave a bit oddly sometimes. An example for generating a plot with `ggtree` was added to the examples section of `calc_tree()`'s documentation. `ggtree` is no longer a suggested dependency.
+* Added `summarize_facets()`, which provides information on either the possible facets or provided specific facets for a given
+`snpRdata` object.
 
 ### Minor
 * Added support for FWE (multiple comparisons p-value adjustment) to `filter_snps()` HWE filtering.
@@ -20,6 +22,7 @@
 * Fixed some parameter input descriptions in the documentation for Colony.
 * Cleaned up some documentation for FWE correction across multiple functions.
 * Fixed spelling issues throughout package.
+* Added a note on import format guessing, cleaned up the file format descriptions to more clearly note the extension `snpR` expects, and added the missing STRUCTRE import file description to the documentation for `import.snpR.data()`.
 
 ## Bug fixes
 * Fixed a bug with `calc_ne()` where pop names were not being properly handled and het/coan method results were not being returned by `get.snpR.stats()`.
@@ -35,6 +38,7 @@
 * Fixed a bug where importing VCF files with `read_vcf()` would fail due to a typo in a sanity check.
 * Fixed a bug where reading in files with, for example, "GC" AND "CG" genotypes somewhere would cause tabulated genotypes to treat these as two different genotypes. Not a common bug except where reading in, for example, VCF files.
 * Fixed a bug where asking to return fst for a facet that it hasn't been calculated would return an uniformative error instead of an empty list and a warning.
+* Not so much a bug, but added a warning when reading in genepop/fstat/etc file formats that do not specify the allelic identity (ATCG), sine snpR assumes A/C SNPs in this case. This could potentially cause downstream issues with *other* packages or with stuff like `calc_sfs()` with `fold = FALSE` and `calc_abba_baba()`.
 
 # snpR 1.2.2
 

@@ -174,7 +174,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'\code{import.snpR.data} converts genotype and meta data to the snpRdata class,
 #'which stores raw genotype data, sample and locus specific metadata, useful
 #'data summaries, repeatedly internally used tables, calculated summary
-#'statistics, and smoothed statistic data.
+#'statistics, and sliding-window statistic data.
 #'
 #'The snpRdata class is built to contain SNP genotype data for use by functions
 #'in the snpR package. It inherits from the S3 class data.frame, in which the
@@ -182,6 +182,11 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'sample and locus specific metadata, genomic summary information, and results
 #'from most snpR functions. Genotypes are stored in the "character" format, as
 #'output by \code{\link{format_snps}}. Missing data is noted with "NN".
+#'
+#'Inputs can be provided either as pre-existing R objects (in several different
+#'formats) or as paths to files. In both cases, \code{snpR} will attempt to
+#'guess the data format from either the object classs, first genotype or the
+#'file extension (as appropriate).
 #'
 #'@section File import: Supports automatic import of several types of files.
 #'  Options:
@@ -191,25 +196,27 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  taken from the fixed fields in the VCF and sample metadata from the sample
 #'  IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
 #'  Files in the ms format, as provided by many commonly used simulation tools.
-#'  \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA", "CT").
-#'  \item{0000: }SNP genotypes stored as four numeric characters (e.g. "0101",
-#'  "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each cell,
-#'  but only a single nucleotide noted if homozygote and two nucleotides
-#'  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
-#'  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
-#'  (heterozygous), or 2 (homozyogus allele 2). \item{.genepop: } genepop file
-#'  format, with genotypes stored as either 4 or 6 numeric characters. Works
-#'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
-#'  the first allele (numerically) will be coded as A, the second as C.
-#'  \item{FSTAT: } FSTAT file format, with genotypes stored as either 4 or 6
-#'  numeric characters. Works only with bi-allelic data. Genotypes will be
+#'  \item{.txt, NN: } SNP genotypes stored as actual base calls (e.g. "AA",
+#'  "CT"). \item{.txt, 0000: }SNP genotypes stored as four numeric characters
+#'  (e.g. "0101", "0204"). \item{.txt, snp_tab: }SNP genotypes stored with
+#'  genotypes in each cell, but only a single nucleotide noted if homozygote and
+#'  two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
+#'  \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
+#'  (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
+#'  \item{.genepop: } genepop file format, with genotypes stored as either 4 or
+#'  6 numeric characters. Works only with bi-allelic data. Genotypes will be
 #'  converted (internally) to NN: the first allele (numerically) will be coded
-#'  as A, the second as C. \item{plink: } plink .bed, .fam, and .bim files, via
-#'  \code{\link[genio]{read_plink}}. If any of these file types is provided,
-#'  snpR via \code{\link[genio]{read_plink}} will look for the other file types
-#'  automatically. Sample metadata should be contained in the .fam file and
-#'  SNP metadata in the .bim file, so sample or snp meta data provided here will
-#'  be ignored.}
+#'  as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes
+#'  stored as either 4 or 6 numeric characters. Works only with bi-allelic data.
+#'  Genotypes will be converted (internally) to NN: the first allele
+#'  (numerically) will be coded as A, the second as C. \item{.bed/.fam/.bim: }
+#'  PLINK .bed, .fam, and .bim files, via \code{\link[genio]{read_plink}}. If
+#'  any of these file types is provided, snpR (via
+#'  \code{\link[genio]{read_plink}}) will look for the other file types
+#'  automatically. Sample metadata should be contained in the .fam file and SNP
+#'  metadata in the .bim file, so sample or snp meta data provided here will be
+#'  ignored. \item{.str: } STRUCTURE import files in either 1 or 2 rows per
+#'  individual as defined by the \code{rows_per_individual} argument.}
 #'
 #'  Additional arguments can be provided to import.snpR.data that will be passed
 #'  to \code{\link[data.table]{fread}} when reading in genotype data.
