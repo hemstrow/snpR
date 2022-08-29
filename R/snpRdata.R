@@ -740,6 +740,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   out <- Filter(Negate(is.null), out)
+  if(length(out) == 0){
+    warning("No statistics located for requested stats/facets combination(s). Did you forget to run the requested stats or mistype the facets or statistic name (which should match the 'calc_' function used)?\n")
+  }
   
   return(out)
 }
@@ -912,6 +915,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       return(NULL)
     }
     fst <- data.table::as.data.table(.get.snpR.stats(x, facets, "weighted.means"), col_pattern = .internal.data$statistic_index$fst$col_pattern)
+    if(nrow(fst) == 0){
+      return(NULL)
+    }
     fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
     
     cats <- unique(fst$facet)

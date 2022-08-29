@@ -7,3 +7,7 @@ test_that("fst_matrix return with facet containing no fst calcs", {
   expect_equal(unique(res$pairwise$facet), "pop")
   expect_equal(unique(res$single$facet), c("fam.pop", "pop"))
 })
+
+test_that("empty return warning", {
+  expect_warning(get.snpR.stats(stickSNPs, "pop", "fst"), "statistics located for requested stats/facets")
+})

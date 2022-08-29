@@ -12,6 +12,7 @@
 * Added iPCA `ncp` and `ncp.max` options to `run_random_forest()` and `run_genomic_prediction()`. Previously, selecting the `iPCA` option would work, but run with the default `iPCA` options and thus determine `ncp` internally, which is pretty slow.
 * Added rug plotting to `plot_manhattan()` to allow for easy plotting of gene positions, etc under plots. Both ribbon-style and classic rug style supported.
 * Moved code for `run_sequoia()` and `plot_structure_map()` to a secondary github repo, since both of these use CRAN unfriendly dependencies (sequoia and sf, respectively). These functions now source this code (after asking for permission) in order to run, allowing the dependencies to be dropped. This should not change the user experience whatsoever.
+*Set `get.snpR.stats()` to return an informative warning if an empty list is returned.
 
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.
@@ -33,6 +34,7 @@
 * Fixed a bug where `plot_manhattan()` would display the facet name even if there was only one possible level (for example, if the sample facet was the .base level).
 * Fixed a bug where importing VCF files with `read_vcf()` would fail due to a typo in a sanity check.
 * Fixed a bug where reading in files with, for example, "GC" AND "CG" genotypes somewhere would cause tabulated genotypes to treat these as two different genotypes. Not a common bug except where reading in, for example, VCF files.
+* Fixed a bug where asking to return fst for a facet that it hasn't been calculated would return an uniformative error instead of an empty list and a warning.
 
 # snpR 1.2.2
 
