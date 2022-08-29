@@ -3389,6 +3389,11 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     }
   }
   
+  .check.installed("sf")
+  .check.installed("scatterpie")
+  .check.installed("viridis")
+  
+  
   
   # source scripts and pull up internals
   source_file <-  tempfile()
@@ -3396,6 +3401,8 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
                        destfile = source_file)
   source(source_file)
   file.remove(source_file)
+  
+  
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
                  .check.installed = .check.installed,
