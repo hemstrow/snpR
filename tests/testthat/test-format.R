@@ -41,5 +41,7 @@ test_that("genalex",{
   check2 <- calc_ho(.internal.data$test_snps, "pop")
   expect_identical(get.snpR.stats(check, "pop", "ho")$weighted.means,
                    get.snpR.stats(check2, "pop", "ho")$weighted.means)
+
   file.remove("test.xlsx")
+
 })
