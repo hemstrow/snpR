@@ -978,9 +978,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'reformat to a snpRdata object internally. As such, it takes a facets argument
 #'that works identically to elsewhere in the package, as described in
 #'\code{\link{Facets_in_snpR}}. This argument is only used for output formats
-#'where facets are important, such as the genepop format,and only one facet at a
-#'time is supported (although that facet can be a joint facet eg 'pop.fam'),
-#'since very few downstream tools can make use of multiple facet levels.
+#'where facets are important, such as the genepop format.
 #'
 #'While this function can be used as an alternative to
 #'\code{\link{import.snpR.data}} when the output argument is set to "snpRdata",
@@ -1245,10 +1243,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(!is.snpRdata(x)){
       stop("If x is not a snpRdata object, provide input data format.\n")
     }
-  }
-  
-  if(length(facets) > 1){
-    stop("Only one facet at a time permitted!\n")
   }
 
   # do checks, print info
@@ -1758,6 +1752,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   ##convert to structure, fastStructure or RAFM format (v)
   if (output == "structure" | output == "rafm" | output == "faststructure" | output == "genalex"){
+    if(length(facets) > 1){
+      stop("Only one facet at a time permitted for structure/rafm/faststructure/genalex!\n")
+    }
     facets <- .check.snpR.facet.request(x, facets)
     
     #subset if requested
