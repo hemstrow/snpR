@@ -53,6 +53,7 @@ Suggests:
     markdown,
     missMDA,
     mmtsne,
+    openxlsx,
     ranger,
     rmarkdown,
     readr,

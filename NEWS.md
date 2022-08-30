@@ -14,7 +14,8 @@
 * Added iPCA `ncp` and `ncp.max` options to `run_random_forest()` and `run_genomic_prediction()`. Previously, selecting the `iPCA` option would work, but run with the default `iPCA` options and thus determine `ncp` internally, which is pretty slow.
 * Added rug plotting to `plot_manhattan()` to allow for easy plotting of gene positions, etc under plots. Both ribbon-style and classic rug style supported.
 * Moved code for `run_sequoia()` and `plot_structure_map()` to a secondary github repo, since both of these use CRAN unfriendly dependencies (sequoia and sf, respectively). These functions now source this code (after asking for permission) in order to run, allowing the dependencies to be dropped. This should not change the user experience whatsoever.
-*Set `get.snpR.stats()` to return an informative warning if an empty list is returned.
+* Set `get.snpR.stats()` to return an informative warning if an empty list is returned.
+* Added GenAlEx outfile support to `format_snps()`. `openxlsx` added to the `Suggests` field of the `DESCRIPTION` as needed for `.xlsx` file creation.
 
 ## Documentation
 * Fixed some outdated documentation in `calc_ne()`.

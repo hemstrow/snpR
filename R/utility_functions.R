@@ -978,7 +978,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'reformat to a snpRdata object internally. As such, it takes a facets argument
 #'that works identically to elsewhere in the package, as described in
 #'\code{\link{Facets_in_snpR}}. This argument is only used for output formats
-#'where facets are important, such as the genepop format.
+#'where facets are important, such as the genepop format,and only one facet at a
+#'time is supported (although that facet can be a joint facet eg 'pop.fam'),
+#'since very few downstream tools can make use of multiple facet levels.
 #'
 #'While this function can be used as an alternative to
 #'\code{\link{import.snpR.data}} when the output argument is set to "snpRdata",
@@ -1024,12 +1026,14 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
 #''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
 #'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
-#'BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata 
-#'for running Sequoia. For more information see sequoia documentation.} \item{fasta: }
-#'{fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format 
-#'for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or ./. 
-#'(for missing values), with a healthy serving of additional metadata but very 
-#'little sample metadata.}\item{snpRdata: }{a snpRdata object.} }
+#'BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata for
+#'running Sequoia. For more information see sequoia documentation.} \item{fasta:
+#'} {fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format
+#'for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or
+#'./. (for missing values), with a healthy serving of additional metadata but
+#'very little sample metadata.} \item{genalex: }{GenAlEx format. If an outfile
+#'is requested, the data will be sorted according to any provided facets and
+#'written as an '.xlsx' object.} \item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1069,8 +1073,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'
 #'@param x snpRdata object or data.frame. Input data, in any of the above listed
 #'  input formats.
-#'@param output Character, default "snpRdata". The desired output format. A
-#'  snpRdata object by default.
+#'@param output Character, default "snpRdata". The desired output format, see
+#'  description for details.
 #'@param facets Character or NULL, default NULL. Facets over which to break up
 #'  data for some output formats, following the format described in
 #'  \code{\link{Facets_in_snpR}}.
@@ -1206,6 +1210,9 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'
 #' # VCF format
 #' test <- format_snps(stickSNPs, "vcf", chr = "chr")
+#' 
+#' # GenAlEx format (write to file to generate a facet-sorted xlsx file)
+#' test <- format_snps(stickSNPs, "genalex")
 #' }
 format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
@@ -1228,7 +1235,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   if(output == "nn"){output <- "NN"}
   pos_outs <- c("ac", "genepop", "structure", "0000", "hapmap", "NN", "pa",
                 "rafm", "faststructure", "dadi", "plink", "sn", "snprdata",
-                "colony","adegenet", "fasta", "lea", "sequoia", "vcf")
+                "colony","adegenet", "fasta", "lea", "sequoia", "vcf", "genalex")
   if(!(output %in% pos_outs)){
     stop("Unaccepted output format specified. Check documentation for options.\n")
   }
@@ -1238,6 +1245,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     if(!is.snpRdata(x)){
       stop("If x is not a snpRdata object, provide input data format.\n")
     }
+  }
+  
+  if(length(facets) > 1){
+    stop("Only one facet at a time permitted!\n")
   }
 
   # do checks, print info
@@ -1414,6 +1425,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     
     cat("Converting to VCF format.\n")
+  }
+  else if(output == "genalex"){
+    cat("Converting to genalex format.")
+    .check.installed("openxlsx")
   }
 
   else{
@@ -1742,7 +1757,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
 
   ##convert to structure, fastStructure or RAFM format (v)
-  if (output == "structure" | output == "rafm" | output == "faststructure"){
+  if (output == "structure" | output == "rafm" | output == "faststructure" | output == "genalex"){
+    facets <- .check.snpR.facet.request(x, facets)
+    
     #subset if requested
     if(all(!is.na(n_samp))){
       cat("Subsetting ")
@@ -1756,17 +1773,25 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
     }
 
-    # transpose, since these are sample based, then gsub
+    # transpose, since these are sample based, then split into two matrices
     xv <- t(as.matrix(x))
-    xv <- gsub("A", 1, xv)
-    xv <- gsub("C", 2, xv)
-    xv <- gsub("G", 3, xv)
-    xv <- gsub("T", 4, xv)
-    xv <- gsub(substr(x@mDat, 1, nchar(x@mDat)/2), 0, xv)
-
-    #split into two matrices
     xv1 <- substr(xv, 1, 1)
     xv2 <- substr(xv, 2, 2)
+    
+    # replace
+    xv1[xv1 == "A"] <- 1
+    xv1[xv1 == "C"] <- 2
+    xv1[xv1 == "G"] <- 3
+    xv1[xv1 == "T"] <- 4
+    xv1[xv1 == substr(x@mDat, 1, nchar(x@mDat)/2)] <- 0
+    
+    
+    xv2[xv2 == "A"] <- 1
+    xv2[xv2 == "C"] <- 2
+    xv2[xv2 == "G"] <- 3
+    xv2[xv2 == "T"] <- 4
+    xv2[xv2 == substr(x@mDat, 1, nchar(x@mDat)/2)] <- 0
+
 
     #create output matrix and bind the data to it, structure format
     if(output == "structure" | output == "faststructure"){
@@ -1789,7 +1814,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
         
         #prep pop numbers
-        facets <- .check.snpR.facet.request(x, facets)
         facets <- unlist(.split.facet(facets))
         
         struc.meta <- as.numeric(as.factor(
@@ -1824,6 +1848,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
           colnames(rdata)[(1 + n.valid.facets):6] <- paste0("filler", 1:(5 - n.valid.facets))
         }
       }
+    }
+    
+    else if(output == "genalex"){
+      rdata <- matrix(NA, nrow = nsamps(x), ncol = nsnps(x)*2)
+      rdata[,seq(1, ncol(rdata), by = 2)] <- xv1
+      rdata[,seq(2, ncol(rdata), by = 2)] <- xv2
+      rdata <- matrix(as.numeric(rdata), nrow(rdata), ncol(rdata))
     }
 
     #create output matrix and bind to it, RAFM format.
@@ -2425,6 +2456,58 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     else if(output == "vcf"){
       writeLines(rdata$meta, outfile)
       data.table::fwrite(rdata$genotypes, outfile, append = T, quote = F, sep = "\t", row.names = F, col.names = T)
+    }
+    else if(output == "genalex"){
+      wb <- openxlsx::createWorkbook(creator = "snpR")
+      openxlsx::addWorksheet(wb, sheetName = "Data")
+
+      if(length(facets) > 0){
+        
+        # figure out samples in each facet
+        levs <- .paste.by.facet(sample.meta(x), unlist(.split.facet(facets)))
+        ulevs <- unique(levs)
+        matches <- vector("list", length(ulevs))
+        names(matches) <- ulevs
+        for(i in 1:length(ulevs)){
+          matches[[i]] <- .fetch.sample.meta.matching.task.list(x, c(facets, ulevs[i], ".base", ".base"))
+        }
+        
+        # make the header
+        header <- c(nsnps(x), nsamps(x), length(matches), unlist(lapply(matches, length)))
+        names(header) <- NULL
+        openxlsx::writeData(wb, "Data", matrix(header, 1), colNames = FALSE)
+        openxlsx::writeData(wb, "Data", matrix(c("snpR exported data", "", "", ulevs), 1), startRow = 2, colNames = FALSE)
+        
+        # make the column titles
+        col_titles <- c("SAMPLE", "POP", c(rbind(paste0("SNP", 1:nsnps(x)), "")))
+        openxlsx::writeData(wb, "Data", matrix(col_titles, nrow = 1), startRow = 3, colNames = FALSE)
+        
+        # write the data
+        prog <- 4
+        for(i in 1:length(matches)){
+          part <- (prog-3):(prog-4 + length(matches[[i]]))
+          openxlsx::writeData(wb, "Data", cbind(paste0("Sample", part), levs[matches[[i]]]), colNames = FALSE, startRow = prog)
+          openxlsx::writeData(wb, "Data", rdata[matches[[i]],], colNames = FALSE, startRow = prog, startCol = 3)
+          prog <- prog + length(matches[[i]])
+        }
+      }
+      else{
+        # header
+        header <- c(nsnps(x), nsamps(x), 1)
+        # make the header
+        openxlsx::writeData(wb, "Data", matrix(header, 1), colNames = FALSE)
+        openxlsx::writeData(wb, "Data", matrix(c("snpR exported data", "", "", "base"), 1), startRow = 2, colNames = FALSE)
+        
+        # make the column titles
+        col_titles <- c("SAMPLE", "POP", c(rbind(paste0("SNP", 1:nsnps(x)), "")))
+        openxlsx::writeData(wb, "Data", matrix(col_titles, nrow = 1), startRow = 3, colNames = FALSE)
+        
+        # data
+        openxlsx::writeData(wb, "Data", cbind(paste0("Sample", 1:nsamps(x)), "base"), colNames = FALSE, startRow = 4)
+        openxlsx::writeData(wb, "Data", rdata, colNames = FALSE, startRow = 4, startCol = 3)
+      }
+      
+      openxlsx::saveWorkbook(wb, file = outfile, overwrite = TRUE)
     }
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
