@@ -90,14 +90,21 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FA
     }
   }
   
+  .check.installed("sequoia", install.type = "github", source = "JiscaH/sequoia")
+  if(utils::packageVersion("sequoia") < as.package_version("2.2")){
+    cat("Sequoia version is too old, version 2.2 or greater is required.\n")
+    .check.installed("remotes")
+    remotes::install_github("JiscaH/sequoia", ref = "stable")
+  }
 
   # source scripts and pull up internals
   source_file <-  tempfile()
   utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/run_sequoia.R", 
                        destfile = source_file)
+  source(source_file)
+  file.remove(source_file)
   
   internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
-                    .check.installed = .check.installed,
                     .check.snpR.facet.request = .check.snpR.facet.request, 
                     .split.facet = .split.facet, 
                     .tabulate_genotypes = .tabulate_genotypes, 

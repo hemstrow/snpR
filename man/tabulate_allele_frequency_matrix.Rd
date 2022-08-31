@@ -19,7 +19,7 @@ A named, nested list containing allele frequency matrices for each
 }
 \description{
 Fetch allele frequencies for all SNPs for each level of all the requested
-facets. Major and minor allele frequencies will be interleved, with the major
+facets. Major and minor allele frequencies will be interleaved, with the major
 allele first for each locus. Note that this particular function is not
 overwrite-safe.
 }

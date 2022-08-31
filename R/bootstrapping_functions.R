@@ -23,7 +23,7 @@
 #'The data can be broken up categorically by snp or sample metadata, as
 #'described in \code{\link{Facets_in_snpR}}.
 #'
-#'As described in Hohelohe et al. (2010), the contribution of individual SNPs to
+#'As described in Hohenlohe  et al. (2010), the contribution of individual SNPs to
 #'window averages can be weighted by the number of observations per SNP by
 #'setting the nk argument to TRUE, as is the default. For bootstraps, nk values
 #'are randomly drawn for each SNP in each window.
@@ -654,11 +654,11 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = NULL, statistic
 #'
 #'p-values can be generated for specific snp or sample metadata categories
 #'using the facets argument, as described in \code{\link{Facets_in_snpR}}. Only
-#'facets for which bootstrap data and raws statistical data have both been
+#'facets for which bootstrap data and raw statistical data have both been
 #'calculated will be run. "all" and NULL follow the typical facet rules.
 #'
 #'Likewise, p-values can be generated for specific statistics using the
-#'statistics argument. Only statistics for which bootstrap data and raws
+#'statistics argument. Only statistics for which bootstrap data and raw
 #'statistical data have both been calculated will be run. By default, all stats
 #'for which a bootstrap null distribution has been generated will be run.
 #'
@@ -726,7 +726,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   }
 
   #===========subfunctions=======
-  # finds matching rows for given facet, ect
+  # finds matching rows for given facet, etc
   get.matches <- function(y, facet, subfacet, snp.facet, sigma, nk, step, statistic){
     matches <- y$facet == facet &
       y$subfacet == subfacet &

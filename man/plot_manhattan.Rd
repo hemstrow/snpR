@@ -112,7 +112,7 @@ alternate across chromosomes.}
 
 \item{rug_data}{data.frame or tbl, default NULL. Data to plot as a rug below
 the manhattan plot containing columns named to match the \code{chr}
-arugment \emph{and} either the \code{bp} argument OR columns named
+argument \emph{and} either the \code{bp} argument OR columns named
 \code{start} and \code{end} as well as, optionally, a column named to match
 the \code{rug_label} column. Useful for labeling the locations of candidate
 genes, for example.}

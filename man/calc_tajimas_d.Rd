@@ -51,7 +51,7 @@ expected total tree length (Watterson's Theta). Since low frequency minor
 variants contribute to these statistics and they rely on the ratio of the
 number of variants vs the number of sequenced non-polymorphic sites, this
 function should only be run on data that is \emph{unfiltered} aside from the
-removal of poorly sequenced bases, ect.
+removal of poorly sequenced bases, etc.
 
 The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}.

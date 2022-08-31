@@ -14,7 +14,7 @@ combination of SNP/sample facets.
 See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
-A snpRdata object with prop_poly merged into the weigheted.means 
+A snpRdata object with prop_poly merged into the weighted.means 
   slot.
 }
 \description{

@@ -298,7 +298,7 @@ A list containing: \itemize{\item{plot: } A ggplot object.
   selection vs K value for the selected method.}
 }
 \description{
-Creates ggplot-based stacked barcharts of assignment probabilities (Q) into
+Creates ggplot-based stacked bar charts of assignment probabilities (Q) into
 an arbitrary 'k' number of clusters like those produced by the program
 STRUCTURE. Files containing prior results can be parsed and plotted, or new
 results can be generated via a suite of different methods. Many k values and
@@ -334,7 +334,7 @@ Since CLUMPP is run independently for each value of K, cluster identities
 often "flip" between K values. For example individuals that are grouped into
 cluster 1 and K = 3 may be grouped into cluster 2 at K = 4. To adjust this,
 cluster IDs are iteratively adjusted across K values by flipping IDs such
-that the euclidian distances between clusters at K and K - 1 are minimized.
+that the euclidean distances between clusters at K and K - 1 are minimized.
 This tends to produce consistent cluster IDs across multiple runs of K.
 
 Individuals can be sorted into by membership proportion into different
@@ -377,7 +377,7 @@ Beugin, M. P., Gayet, T., Pontier, D., Devillard, S., & Jombart,
   \emph{Methods in ecology and evolution}, 9(4), 1006-1016.
 
 Francis, R. M. (2017). pophelper: an R package and web app to
-  analyse and visualize population structure. \emph{Molecular ecology
+  analyze and visualize population structure. \emph{Molecular ecology
   resources}, 17(1), 27-32.
 
 Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster

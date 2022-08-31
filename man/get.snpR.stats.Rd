@@ -37,7 +37,7 @@ Different statistics are returned either by named statistic or by type.
 
 
   \itemize{ \item{single: } non-pairwise, non-window statistics (pi, ho, 
-  ect.)
+  etc.)
   \item{pairwise: } pairwise, non-window statistics (Fst).
   \item{single.window: } non-pairwise, sliding window statistics.
   \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }

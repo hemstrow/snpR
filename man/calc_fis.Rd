@@ -18,8 +18,8 @@ according to Weir and Cockerham (1984).
 }
 \details{
 Note that FIS is calculated by considering \emph{only data from individual
-sample levels}! This means that individual and subpopulation variances are
-only considered within each subpopulation. If snp facets are provided,
+sample levels}! This means that individual and sub-population variances are
+only considered within each sub-population. If snp facets are provided,
 weighted means will be provided for each snp facet level, although raw FIS
 values are calculated on a per-snp basis and thus ignore these levels.
 

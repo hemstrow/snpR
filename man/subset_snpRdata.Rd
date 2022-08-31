@@ -41,7 +41,7 @@ SNPs to keep. Negative subscripts allowed.}
 to samples to keep. Negative subscripts allowed.}
 }
 \description{
-Subsets snpRdata objects by specific snps, samples, facets, subfacets, ect.
+Subsets snpRdata objects by specific snps, samples, facets, subfacets, etc.
 Statistics will need to be recalculated after subsetting to avoid confusion. 
 The bracket operators can be alternatively, following the same syntax.
 }

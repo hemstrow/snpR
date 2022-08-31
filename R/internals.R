@@ -182,7 +182,7 @@ is.snpRdata <- function(x){
 # are returned and are not automatically merged into x.
 #
 # For examples, look at how this function is called in functions such as
-# calc_pi, calc_pairwise_fst, ect.
+# calc_pi, calc_pairwise_fst, etc.
 #
 # Options:
 #
@@ -1208,6 +1208,30 @@ is.snpRdata <- function(x){
   
   gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
   gmat <- gmat[,-1]
+  
+  # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
+  opts <- colnames(gmat)
+  opts1 <- substr(opts, 1, snp_form/2)
+  opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
+  rev_opts <- paste0(opts2, opts1)
+  reps <- which(opts %in% rev_opts & opts1 != opts2)
+  if(length(reps) > 0){
+    done <- character()
+    rm_cols <- numeric()
+    for(i in 1:length(reps)){
+      this_opt <- reps[i]
+      if(opts[this_opt] %in% done){next}
+      match <- which(rev_opts == opts[this_opt])
+      all_idents <- c(this_opt, match)
+      gmat[[this_opt]] <- rowSums(gmat[,..all_idents])
+      done <- c(done, unique(opts[all_idents]))
+      rm_cols <- c(rm_cols, all_idents[-1])
+    }
+    
+    gmat <- gmat[,-..rm_cols]
+  }
+  
+  # remove missing
   mis.cols <- -which(colnames(gmat) == mDat)
   if(length(mis.cols) > 0){
     tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
@@ -1647,6 +1671,10 @@ is.snpRdata <- function(x){
     say <- paste0("Package '", pkg, "' not found.")
     cat(say, "")
     cat("Install? (y or n)\n")
+    
+    if(!interactive()){
+      stop(say)
+    }
     
     resp <- readLines(n = 1)
     resp <- tolower(resp)

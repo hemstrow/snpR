@@ -103,7 +103,7 @@ NULL
 #' @export
 #' @describeIn snpR_import_wrappers Import .vcf or .vcf.gz files.
 read_vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
-  if(!grepl("\\.vcf$", genotypes) | !grepl("\\.vcf\\.gz$", genotypes)){
+  if(!grepl("\\.vcf$", file) & !grepl("\\.vcf\\.gz$", file)){
     stop("File extension is not .vcf or .vcf.gz. Please check that the correct file has been entered and rename if needed.\n")
   }
   return(import.snpR.data(file, snp.meta, sample.meta))
