@@ -503,6 +503,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     stop("NA found in input genotypes. Often, this is in the last row or column.\n")
   }
   
+  if(nrow(snp.meta) != nrow(genotypes)){
+    stop(paste0("Number of rows in snp.meta (", nrow(snp.meta), ") not equal to number of SNPs in genotypes (", nrow(genotypes), "). Do you need to transpose your genotypes?\n"))
+  }
+  if(nrow(sample.meta) != ncol(genotypes)){
+    stop(paste0("Number of rows in sample.meta (", nrow(sample.meta), ") not equal to number of samples in genotypes (", ncol(genotypes), "). Do you need to transpose your genotypes?\n"))
+  }
+  
   if(any(colnames(snp.meta) == "position")){
     snp.meta$position <- as.numeric(as.character(snp.meta$position))
     if(ncol(genotypes) == 1){

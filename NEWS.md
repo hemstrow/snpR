@@ -3,6 +3,24 @@
 ## Features
 
 ### Major
+
+
+### Minor
+
+
+## Documentation
+
+## Bug fixes
+* Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.
+
+
+
+
+# snpR 1.2.3
+
+## Features
+
+### Major
 * Added `calc_prop_poly()` to calculate proportion of polymorphic loci for a given pop.
 * Renamed `plot_tree()` to `calc_tree()` and removed automatic plot generation, since `ggtree`, which that depended on, can behave a bit oddly sometimes. An example for generating a plot with `ggtree` was added to the examples section of `calc_tree()`'s documentation. `ggtree` is no longer a suggested dependency.
 * Added `summarize_facets()`, which provides information on either the possible facets or provided specific facets for a given
