@@ -43,7 +43,7 @@ for each chromosome in order.}
 \emph{genotype} file name is passed that is not a vcf or ms file.}
 
 \item{header_cols}{numeric, default 0. Number of header columns containing
-sample metadata. Used if a tab delimited or STRUCTURE input file is
+SNP metadata. Used if a tab delimited or STRUCTURE input file is
 provided.}
 
 \item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
