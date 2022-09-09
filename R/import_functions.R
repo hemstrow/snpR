@@ -596,7 +596,7 @@
   ac <- as.matrix(ac)
   
   if(any(matrixStats::colMaxs(ac, na.rm = T) > 2)){
-    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, if the correct number of header columns containing sample metadata are not specified.\n")
+    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
   }
   return(ac)
 }
