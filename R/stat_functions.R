@@ -224,6 +224,9 @@ calc_maf <- function(x, facets = NULL){
                              ref = major_minor_base)
     
   }
+  if(x@bi_allelic){
+    out$minor <- "NA"
+  }
   
   x <- .update_calced_stats(x, facets, "maf", "snp")
   return(.merge.snpR.stats(x, out))

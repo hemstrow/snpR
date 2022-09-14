@@ -142,13 +142,15 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
-  nac <- data.table::as.data.table(nac)
-  nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
-  nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
-  nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
-  nac <- as.data.frame(nac)
-  x@ac <- nac[,-c(1:3)]
+  if(!x@bi_allelic){
+    .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
+    nac <- data.table::as.data.table(nac)
+    nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+    nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
+    nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
+    nac <- as.data.frame(nac)
+    x@ac <- nac[,-c(1:3)]
+  }
   
   # add in dummy rows to stats
   sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
@@ -1244,7 +1246,8 @@ is.snpRdata <- function(x){
   #initialize
   hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
   if(verbose){cat("Getting allele table...\n")}
-  as <- unique(unlist(strsplit(paste0(colnames(tmat)), "")))
+  split_pattern <- paste0("(?<=", paste0(rep(".", snp_form/2), collapse = ""), ")") # split by the correct allele size
+  as <- unique(unlist(strsplit(paste0(colnames(tmat)), split_pattern, perl = TRUE)))
   amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
   colnames(amat) <- as
   
@@ -2265,7 +2268,7 @@ is.snpRdata <- function(x){
 #
 # @return A vector of the filenames for the new datasets.
 .maf_func <- function(gs, m.al, ref = NULL){
-  
+
   maj_count <- NULL
   
   # for the base facet, determine the major and minor then calculate maf
