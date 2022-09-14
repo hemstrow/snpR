@@ -80,8 +80,8 @@ however.
 The data can be broken up categorically by snp or sample metadata, as
 described in \code{\link{Facets_in_snpR}}.
 
-As described in Hohenlohe  et al. (2010), the contribution of individual SNPs to
-window averages can be weighted by the number of observations per SNP by
+As described in Hohenlohe  et al. (2010), the contribution of individual SNPs
+to window averages can be weighted by the number of observations per SNP by
 setting the nk argument to TRUE, as is the default. For bootstraps, nk values
 are randomly drawn for each SNP in each window.
 
