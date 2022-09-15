@@ -31,6 +31,17 @@ test_that("he",{
   
   # test
   expect_equal(he$he, 2 * (tdm@ac$ni1/tdm@ac$n_total) * (tdm@ac$ni2/tdm@ac$n_total)) # check against 2pq from another source
+  
+  # non-bi-allelic
+  check <- stickSNPs
+  check <- calc_he(check, "pop")
+  check <- get.snpR.stats(check, "pop", "he")
+  
+  check2 <- stickSNPs
+  check2@bi_allelic <- FALSE
+  check2 <- calc_he(check2, "pop")
+  check2 <- get.snpR.stats(check2, "pop", "he")
+  exect_identical(check, check2)
 })
 
 test_that("ho", {

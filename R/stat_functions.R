@@ -3658,34 +3658,50 @@ calc_he <- function(x, facets = NULL){
     stop("x is not a snpRdata object.\n")
   }
   
-  he_func <- function(maf){
-    return(2 * maf$maf * (1 - maf$maf))
-  }
   
   # add any missing facets
-  
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets)
   if(!all(facets %in% x@facets)){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
-  
-  # add missing maf
-  has_maf <- .check_calced_stats(x, facets, "maf")
-  if(any(!unlist(has_maf))){
-    x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+  # bi_allelic case, just need maf--very straightforward
+  if(x@bi_allelic){
+    he_func <- function(maf){
+      return(2 * maf$maf * (1 - maf$maf))
+    }
+    # add missing maf
+    has_maf <- .check_calced_stats(x, facets, "maf")
+    if(any(!unlist(has_maf))){
+      x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+    }
+    
+    # calculate he
+    out <- .get.snpR.stats(x, facets = facets, type = "single")
+    out$he <- he_func(out)
+    out <- out[,c("facet", "subfacet", colnames(snp.meta(x)), "he")]
+  }
+  # non bi_allelic, need as but still easy
+  else{
+    he_func <- function(as){
+      as <- as$as
+      as <- as/rowSums(as)
+      as <- as^2
+      he <- 1 - rowSums(as)
+      return(he)
+    }
+    
+    out <- .apply.snpR.facets(x, facets, "gs", fun = he_func, case = "ps")
+    colnames(out)[ncol(out)] <- "he"
   }
   
-  # calculate he
-  out <- .get.snpR.stats(x, facets = facets, type = "single")
-  out$he <- he_func(out)
-  out <- out[,c("facet", "subfacet", colnames(snp.meta(x)), "he")]
   
   x <- .merge.snpR.stats(x, out)
   x <- .calc_weighted_stats(x, ofacets, type = "single", "he")
   x <- .update_calced_stats(x, facets, "he", "snp")
   return(x)
+  
 }
 
 #' Calculate individual based heterozygosity.
