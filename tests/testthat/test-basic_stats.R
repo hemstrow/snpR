@@ -41,7 +41,7 @@ test_that("he",{
   check2@bi_allelic <- FALSE
   check2 <- calc_he(check2, "pop")
   check2 <- get.snpR.stats(check2, "pop", "he")
-  exect_identical(check, check2)
+  expect_identical(check, check2)
 })
 
 test_that("ho", {
