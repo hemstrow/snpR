@@ -149,15 +149,9 @@ NULL
 #'@describeIn calc_single_stats \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
-    nt <- as.numeric(x[,"n_total"])
-    n1 <- as.numeric(x[,"ni1"])
-    n2 <- as.numeric(x[,"ni2"])
-    binom_n1 <- choose(n1,2)
-    binom_n2 <- choose(n2,2)
-    binom_nt <- choose(nt,2)
-    #print(n1)
-    #print(n2)
-    p <- 1 - (binom_n1 + binom_n2)/binom_nt
+    bins <- choose(x$as, 2)
+    tot <- choose(rowSums(x$as), 2)
+    return(1 - (rowSums(bins))/tot)
   }
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -171,7 +165,7 @@ calc_pi <- function(x, facets = NULL){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
 
-  out <- .apply.snpR.facets(x, facets, "ac", func, case = "ps")
+  out <- .apply.snpR.facets(x, facets, "gs", func, case = "ps")
   colnames(out)[ncol(out)] <- "pi"
   x <- .merge.snpR.stats(x, out)
   x <- .calc_weighted_stats(x, ofacets, type = "single", "pi")
@@ -224,7 +218,7 @@ calc_maf <- function(x, facets = NULL){
                              ref = major_minor_base)
     
   }
-  if(x@bi_allelic){
+  if(!x@bi_allelic){
     out$minor <- "NA"
   }
   
