@@ -670,8 +670,110 @@
   return(import.snpR.data(dat, snp.meta, sample.meta))
 }
 
+.process_sync <- function(sync_file, snp.meta = NULL, sample.meta = NULL, bi_allelic = TRUE, ploidy = 2){
+  value <- ..tar_cols <- .snp.id <- variable <-  NULL
+  
+  #==========read and initialize=========
+  sync <- data.table::fread(sync_file)
+  
+  if(is.character(sample.meta)){
+    if(file.exists(sample.meta)){
+      sample.meta <- as.data.frame(data.table::fread(sample.meta))
+    }
+    else{
+      stop("Cannot locate sample.meta file.\n")
+    }
+  }
+  if(is.character(snp.meta)){
+    if(file.exists(snp.meta)){
+      snp.meta <- as.data.frame(data.table::fread(snp.meta))
+    }
+    else{
+      stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  
+  if(is.null(snp.meta)){
+    snp.meta <- sync[,1:2]
+    colnames(snp.meta) <- c("chr", "position")
+  }
+  
+  if(! ".snp.meta" %in% colnames(snp.meta)){
+    snp.meta$.snp.id <- 1:nrow(snp.meta)
+  }
+  
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(pop = paste0("pop", 1:(ncol(sync) - 3)),
+                              .sample.id = 1:(ncol(sync) - 3))
+  }
+  
+  if(!".sample.meta" %in% colnames(sample.meta)){
+    sample.meta$.sample.id <- 1:nrow(sample.meta)
+  }
+  
+  colnames(sync)[-c(1:3)] <- sample.meta[,1]
+  
+  
+  #========make gs/as=============
+  sync$.snp.id <- snp.meta$.snp.id
+  msync <- .fix..call(data.table::melt(sync, id.vars = c(colnames(sync)[1:3], ".snp.id")))
+  msync[, c("A", "T", "C", "G", "N", "D") := data.table::tstrsplit(value, ":", fixed=TRUE)] # split the ac column
+
+  # get .base data
+  tar_cols <- c("A", "T", "C", "G", "N", "D")
+  msync[,(tar_cols) := lapply(.SD, as.numeric), .SDcols = tar_cols]
+  sums_sync <- msync[,lapply(.SD, sum), .SDcols = tar_cols, by = .snp.id]
+  as <- rbind(.fix..call(sums_sync[,..tar_cols]), 
+              .fix..call(msync[,..tar_cols]))
+
+  # non_biallelic fix?
+  N_col <- "N"
+  if(!bi_allelic){
+    non_bi <- which(rowSums(.fix..call(sums_sync[,..tar_cols][,-..N_col]) != 0) > 2)
+    sums_sync <- sums_sync[-non_bi,]
+    msync <- msync[which(msync$.snp.id %in% sums_sync$.snp.id),]
+    snp.meta <- snp.meta[which(snp.meta$.snp.id %in% sums_sync$.snp.id),]
+  }
+  
+  msync <- dplyr::arrange(msync, .snp.id, variable)
+  
+  #========make facet meta/stats=============
+  stats <- data.table::data.table(facet = c(rep(".base", nrow(sums_sync)), rep(colnames(sample.meta)[1], nrow(msync))),
+                                  subfacet = c(rep(".base", nrow(sums_sync)), as.character(msync$variable)),
+                                  facet.type = c(rep(".base", nrow(sums_sync)), rep("sample", nrow(msync))),
+                                  stringsAsFactors = FALSE)
+  
+  
+  x <- methods::new("snpRdata", 
+                    .Data = as.data.frame(sync)[,-c(1:3, which(colnames(sync) == ".snp.id"))], 
+                    sample.meta = sample.meta, 
+                    snp.meta = snp.meta,
+                    facet.meta = cbind(stats,
+                                       snp.meta),
+                    geno.tables = list(gs = NULL, 
+                                       wm = as.matrix(as),
+                                       as = as.matrix(.fix..call(as[,-..N_col]))),
+                    mDat = "N",
+                    ploidy = ploidy,
+                    bi_allelic = bi_allelic,
+                    data.type = "poolseq",
+                    stats = cbind(stats,
+                                  snp.meta),
+                    snp.form = as.numeric(NA),
+                    row.names = 1:nrow(sync),
+                    sn = list(sn = NULL, type = NULL),
+                    facets = c(".base", colnames(sample.meta)[1]),
+                    facet.type = c(".base", colnames(sample.meta)[1]),
+                    calced_stats = list(),
+                    allele_frequency_matrices = list(),
+                    genetic_distances = list(),
+                    weighted.means = data.frame(),
+                    other = list(),
+                    citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
+}
+
 .process_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
-  bi_allelic <- TRUE
+  bi_allelic <- FALSE
   #======special cases========
   # sample and snp metadata
   if(is.character(sample.meta)){
@@ -837,13 +939,6 @@
                     citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
   
   x@calced_stats$.base <- character()
-  
-  
-  if(!bi_allelic){
-    # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
-    if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
-    .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
-  }
   
   # add basic maf
   .make_it_quiet(x <- calc_maf(x))
