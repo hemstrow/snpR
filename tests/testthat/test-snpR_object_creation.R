@@ -32,6 +32,9 @@ test_that("Geno table creation", {
   # missing data check
   expect_true(tdat@mDat %in% colnames(tdat@geno.tables$wm))
   expect_true(!tdat@mDat %in% colnames(tdat@geno.tables$gs))
+  
+  # relevant test for some other data types, to implement fully later
+  expect_true(all(rowSums(tdat@geno.tables$gs)*2 == rowSums(tdat@geno.tables$as)))
 })
 
 test_that("AC table creation",{

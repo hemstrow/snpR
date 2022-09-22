@@ -907,7 +907,7 @@
   #===========format and calculate some basics=========
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
-  
+
   gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
   
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,

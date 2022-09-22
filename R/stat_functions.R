@@ -488,7 +488,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' }
 calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par = FALSE,
                               cleanup = TRUE, verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- NULL
   
 
   if(!isTRUE(verbose)){
@@ -531,7 +531,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
   
   
   #============================subfunctions=========================
-  func <- function(x, method, facets = NULL, g.filename = NULL){
+  func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL){
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
@@ -575,10 +575,6 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
 
       #check that the correct number of pop names were provided or grab new ones if they weren't.
       ##get pop data
-      # py <- grep("Indices for populations:", y)
-      # py <- y[(py+2):(py+1+np)]
-      # py <- unlist(strsplit(py, " +"))
-      # py <- py[seq(2, length(py), 2)]
 
       # population names
       pnames <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
@@ -694,6 +690,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
     #loop through each comparison and calculate pairwise FST at each site
     c.col <- 1L
     prog <- 1L
+    
     for (i in 1:(length(pops) - 1)){ #i is the first pop
       idat <- x[subfacet == pops[i]] # get data for first pop
       j <- i + 1 #initialize j as the next pop
@@ -702,65 +699,42 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
 
         if(method == "wc"){
 
-          #allele frequencies in both i and jdat.
-          ps1_1 <- idat$ni1/idat$n_total
-          ps1_2 <- idat$ni2/idat$n_total
-          ps2_1 <- jdat$ni1/jdat$n_total
-          ps2_2 <- jdat$ni2/jdat$n_total
+          nt1 <- .fix..call(rowSums(idat[,..ac_cols]))
+          nt2 <- .fix..call(rowSums(jdat[,..ac_cols]))
+          ps1_f <- .fix..call(idat[,..ac_cols]/nt1)
+          ps2_f <- .fix..call(jdat[,..ac_cols]/nt2)
+          intot <- nt1/2
+          jntot <- nt2/2
           
-          
-          intot <- idat$n_total/2
-          jntot <- jdat$n_total/2
-
           # compute variance parts
-          r <- 2 #number of comps
+          r <- 2 # number of comps
           nbar <- (intot + jntot)/2 #average sample size in individuals
           comb_ntots <- cbind(intot, jntot)
           CV <- matrixStats::rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
-          parts_1 <- .per_all_f_stat_components(intot, jntot, ps1_1, ps2_1, r, nbar, nc, idat$ho, jdat$ho)
-          parts_2 <- .per_all_f_stat_components(intot, jntot, ps1_2, ps2_2, r, nbar, nc, idat$ho, jdat$ho)
-         
-          # compute Fst
-          a <- cbind(parts_1$a, parts_2$a)
-          b <- cbind(parts_1$b, parts_2$b)
-          c <- cbind(parts_1$c, parts_2$c)
+          parts <- vector("list", ncol(ps1_f))
+          for(k in 1:ncol(ps1_f)){
+            absent <- which(ps1_f[[k]] + ps2_f[[k]] == 0)
+            if(length(absent) != 0){
+              tiho <- idat$ho
+              tjho <- jdat$ho
+              tiho[absent] <- 0
+              tjho[absent] <- 0
+              
+              parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho)
+            }
+            else{
+              parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, idat$ho, jdat$ho)
+            }
+          }
+          a <- matrix(unlist(purrr::map(parts, "a")), ncol = length(parts))
+          b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
+          c <- matrix(unlist(purrr::map(parts, "c")), ncol = length(parts))
           Fst <- rowSums(a)/rowSums(a + b + c)
-          # Fit <- 1 - rowSums(c)/rowSums(a + b + c)
-          # Fis <- 1 - rowSums(c)/rowSums(b + c)
           
-          
-          
-          
-          # Weir-- comes out exactly the same
-          # else{
-          #   S1 <- cbind(parts_1$S1, parts_2$S1)
-          #   S2 <- cbind(parts_2$S2, parts_2$S2)
-          #   Fst <- rowSums(S1)/rowSums(S2)
-          # }
           data.table::set(out, j = c.col, value = Fst) # write fst
         }
 
-        # hohenlohe is currently unsupported, it's borked
-        # else if(method == "hohenlohe"){
-        # 
-        #   #n.ali <- ifelse(idat$ni1 != 0, 1, 0) + ifelse(idat$ni2 != 0, 1, 0) #get number of alleles in pop 1
-        #   #n.alj <- ifelse(jdat$ni1 != 0, 1, 0) + ifelse(jdat$ni2 != 0, 1, 0) #get number of alleles in pop 2
-        #   #com.top <- (choose(n.ali, 2) * idat$pi) + (choose(n.alj, 2) * jdat$pi) #get the numerator
-        #   com.top <- (choose(idat$n_total, 2) * idat$pi) + (choose(jdat$n_total, 2) * jdat$pi)
-        # 
-        #   t.ni1 <- idat$ni1 + jdat$ni1 #get the total number of allele one
-        #   t.ni2 <- idat$ni2 + jdat$ni2 #get the total number of allele two
-        #   ptop <- choose(t.ni1, 2) + choose(t.ni2, 2) #get the pooled pi numerator
-        #   pbot <- choose((t.ni1 + t.ni2), 2) #get the pooled pi denominator
-        #   ppi <- 1 - ptop/pbot #get pooled pi
-        #   #com.bot <- ppi * (choose(n.ali,2) + choose(n.alj,2)) #get the denominator
-        #   com.bot <- ppi * (choose(idat$n_total,2) + choose(jdat$n_total,2)) #get the denominator
-        #   Fst <- 1 - com.top/com.bot #get fst
-        #   if(any(abs(Fst) > 1, na.rm = T)){cat("Fst > 1 at", which(Fst > 1), ". That's not good.");stop()}
-        #   #Fst[t.ni1 == 0 | t.ni2 == 0] <- 0 #could uncomment this if want 0s instead of NaNs.
-        #   data.table::set(out, j = c.col, value = Fst) # write fst
-        # }
 
         else{
           stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tgenepop: Genepop")
@@ -768,7 +742,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
 
         # update pnk
         pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 1L, paste0(idat$subfacet, "~", jdat$subfacet))
-        pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 2L, as.integer(idat$n_total + jdat$n_total))
+        pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 2L, as.integer(intot + jntot)*2) # back to allele count
         prog <- prog + as.integer(nrow(idat))
 
 
@@ -779,9 +753,10 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
     # melt, cbind pnk
     suppressWarnings(out <- data.table::melt(out))
     colnames(out) <- c("comparison", "fst")
-    meta.cols <- 4:(ncol(x) - 5)
+    # meta.cols <- (1:ncol(x))[-c(ac_cols, ncol(x))]
     out$nk <- pnk$ntotal
-    out <- cbind(out, .fix..call(x[x$subfacet == pops[1],..meta.cols]))
+    meta.cols <- 2:3
+    out <- cbind(out[,"comparison"], .fix..call(x[x$subfacet == pops[1],..meta_colnames]), .fix..call(out[,..meta.cols]))
 
     # return
     return(out)
@@ -803,9 +778,9 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
     }
     else{
       if(is.null(rac)){
-        rac <- cbind(x@facet.meta, x@ac, ho = x@stats$ho)
+        rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
       }
-      real_out <- func(rac[which(rac$facet == facet),], method, facet)
+      real_out <- func(rac[which(rac$facet == facet),], method, facet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
       real_wm <- one_wm(real_out)
     }
     
@@ -861,7 +836,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
           cat("Boot", i, "out of", boot, "\n")
           if(method == "wc"){
             gp.filenames <- NULL
-            wc.inputs <- .boot_ac(x, 1, facets[f])
+            wc.inputs <- .boot_as(x, 1, facets[f])
           }
           boots[[i]] <- one_run(x, method = method, facet = facets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
         }
@@ -898,7 +873,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
                                     for(i in 1:length(pboot[[q]])){
                                       if(method == "wc"){
                                         gp.filenames <- NULL
-                                        wc.inputs <- .boot_ac(x, 1, facets[f])
+                                        wc.inputs <- .boot_as(x, 1, facets[f])
                                       }
                                       boots[[i]] <- one_run(x, method = method, facet = facets[f], 
                                                             gp.filenames[pboot[[q]][i]], wc.inputs[[1]])$real_wm
@@ -1119,6 +1094,7 @@ calc_ho <- function(x, facets = NULL){
                            facets = facets,
                            req = "gs",
                            fun = .ho_func,
+                           snp_form = x@snp.form,
                            case = "ps")
   colnames(out)[ncol(out)] <- "ho"
 

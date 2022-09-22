@@ -1253,7 +1253,8 @@ is.snpRdata <- function(x){
   
   #fill in
   for(i in 1:length(as)){
-    b <- grep(as[i], colnames(tmat))
+    b <- grep(paste0(as[i], "$"), colnames(tmat))
+    b <- sort(unique(c(b, grep(paste0("^", as[i]), colnames(tmat)))))
     hom <- which(colnames(tmat) == paste0(as[i], as[i]))
     if(length(hom) == 0){
       het <- b
@@ -2343,10 +2344,10 @@ is.snpRdata <- function(x){
 # @param gs @geno.tables part of a snpRdata object
 # 
 # @return a vector of observed heterozygosity
-.ho_func <- function(gs){
+.ho_func <- function(gs, snp_form){
   #identify heterozygote rows in genotype matrix
   genos <- colnames(gs$gs)
-  hets <- which(substr(genos, 1, 1) != substr(genos, 2,2))
+  hets <- which(substr(genos, 1, snp_form/2) != substr(genos, (snp_form/2) + 1, snp_form))
   
   # calculate ho
   ## if only one heterozygote...
@@ -2488,6 +2489,58 @@ is.snpRdata <- function(x){
       tac <- data.table::rbindlist(tac)
       out[[i]] <- tac
     }
+  }
+  
+  return(out)
+}
+
+# Generate random bootstraps in as format
+# 
+# @param x snpRdata object to permute
+# @param n numeric, number of bootstrapped datasets to generate.
+# @param facet sample level facet to permute within
+#
+# @return A list containing permuted ac data.
+.boot_as <- function(x, n, facet){
+  ..tm <- ..ord <-  NULL
+  
+  out <- vector("list", n)
+  opts <- .get.task.list(x, facet)
+  for(i in 1:n){
+    
+    # get the maf identities for the base facet
+    shuff <- genotypes(x)[,sample(ncol(x), ncol(x), replace = TRUE)]
+    shuff <- data.table::as.data.table(shuff)
+    colnames(shuff) <- colnames(genotypes(x))
+    tas <- vector("list", nrow(opts))
+    
+    # do for each facet level.
+    for(j in 1:nrow(opts)){
+      tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
+      ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
+      tas[[j]] <- data.table::as.data.table(ttab$as)
+      tas[[j]]$ho <- .ho_func(ttab, x@snp.form)
+      # fix missing columns (no genotypes with this allele in this subfacet)
+      missing <- which(!colnames(x@geno.tables$as) %in% colnames(tas[[j]]))
+      if(length(missing) != 0){
+        fill <- matrix(0, nrow(tas[[j]]), length(missing))
+        fill <- as.data.table(fill)
+        colnames(fill) <- colnames(x@geno.tables$as)[missing]
+        tas[[j]] <- cbind(tas[[j]], fill)
+        ord <- c(colnames(x@geno.tables$as), "ho")
+        tas[[j]] <- .fix..call(tas[[j]][,..ord])
+      }
+      
+      
+      tas[[j]]$.snp.id <- x@snp.meta$.snp.id
+      tas[[j]]$subfacet <- opts[j,2]
+      tas[[j]]$facet <- facet
+    }
+    tas <- data.table::rbindlist(tas)
+    tas[is.na(tas)] <- 0
+    ord <- c((ncol(tas) - 3):ncol(tas), 1:(ncol(tas) - 4))
+    out[[i]] <- .fix..call(tas[,..ord])
+    out[[i]] <- .suppress_specific_warning(cbind(snp.meta(x)[which(colnames(snp.meta(x)) != ".snp.id"),,drop=FALSE], out[[i]]), "row names were found from a short variable")
   }
   
   return(out)
