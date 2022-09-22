@@ -142,7 +142,7 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  if(!x@bi_allelic){
+  if(x@bi_allelic){
     .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
     nac <- data.table::as.data.table(nac)
     nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
