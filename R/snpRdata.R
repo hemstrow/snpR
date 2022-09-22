@@ -572,7 +572,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     geno.tables = gs,
                     mDat = mDat,
                     ploidy = 2,
-                    bi_allelic = FALSE,
+                    bi_allelic = TRUE,
                     data.type = "genotypic",
                     stats = cbind(data.table::data.table(facet = rep(".base", nrow(gs$gs)),
                                                          subfacet = rep(".base", nrow(gs$gs)),
