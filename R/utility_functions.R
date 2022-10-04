@@ -1247,6 +1247,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       stop("If x is not a snpRdata object, provide input data format.\n")
     }
   }
+  else if(is.snpRdata(x)){
+    imput_format <- NULL
+  }
+  
+  # bi-allelic check
+  if(is.snpRdata(x)){
+    if(!x@bi_allelic){
+      pos_nbi_outs <- c("genepop", "0000")
+      if(!output %in% pos_nbi_outs){
+        stop(paste0("The output format you selected is not currently supported for non-biallelic data. Currently supported formats are:",
+                    paste0(pos_nbi_outs, collapse = ", "), ".\n"))
+      }
+    }
+  }
 
   # do checks, print info
   if(is.null(input_format) & !is.null(facets[1])){
@@ -1730,25 +1744,40 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
   ##convert to genepop or numeric format (v)
   if (output == "genepop" | output == "0000"){
-    # keming
-    #vectorize and replace
-    xv <- as.matrix(x)
-    xv <- gsub("A", "01", xv)
-    xv <- gsub("C", "02", xv)
-    xv <- gsub("G", "03", xv)
-    xv <- gsub("T", "04", xv)
-    xv <- gsub(substr(x@mDat, 1, 2), "0000", xv)
 
-    # keming
-    if(output == "genepop"){ #convert to genepop
-      rdata <- as.data.frame(t(xv), stringsAsFactors = F) #remove extra columns and transpose data
-      row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
+    if(!x@bi_allelic){
+      if(output == "genepop"){
+        rdata <- as.data.frame(t(genotypes(x)))
+        row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
+      }
+      else{
+        rdata <- genotypes(x)
+        rdata <- cbind(x@snp.meta, rdata)
+        colnames(rdata)[1:ncol(x@snp.meta)] <- colnames(x@snp.meta)
+      }
     }
-    # else if(output == "baps"){}
-    else {#prepare numeric output, otherwise same format
-      rdata <- as.data.frame(xv, stringsAsFactors = F)
-      rdata <- cbind(x@snp.meta, rdata)
-      colnames(rdata)[1:ncol(x@snp.meta)] <- colnames(x@snp.meta)
+    
+    else{
+      # keming
+      #vectorize and replace
+      xv <- as.matrix(x)
+      xv <- gsub("A", "01", xv)
+      xv <- gsub("C", "02", xv)
+      xv <- gsub("G", "03", xv)
+      xv <- gsub("T", "04", xv)
+      xv <- gsub(substr(x@mDat, 1, 2), "0000", xv)
+      
+      # keming
+      if(output == "genepop"){ #convert to genepop
+        rdata <- as.data.frame(t(xv), stringsAsFactors = F) #remove extra columns and transpose data
+        row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
+      }
+      # else if(output == "baps"){}
+      else {#prepare numeric output, otherwise same format
+        rdata <- as.data.frame(xv, stringsAsFactors = F)
+        rdata <- cbind(x@snp.meta, rdata)
+        colnames(rdata)[1:ncol(x@snp.meta)] <- colnames(x@snp.meta)
+      }
     }
   }
 

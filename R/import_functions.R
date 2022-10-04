@@ -942,12 +942,7 @@
   
   # add basic maf
   .make_it_quiet(x <- calc_maf(x))
-  
-  if(!bi_allelic){
-    # add ac
-    .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
-  }
-  
+ 
   
   #========return=========
   return(x)

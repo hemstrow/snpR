@@ -634,8 +634,13 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
 
       # get nk values:
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
-                                       .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets],
-                                       nk = x@ac[x@facet.meta$facet == facets, "n_total"])
+                                       .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets])
+      if(nrow(x@ac) == 0){
+        n_tots$nk <- rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
+      }
+      else{
+        n_tots$nk <- x@ac[x@facet.meta$facet == facets, "n_total"]
+      }
       n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
 
