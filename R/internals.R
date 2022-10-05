@@ -1338,7 +1338,7 @@ is.snpRdata <- function(x){
       ndat <- stats::rbinom(length(NAs), 2, af[NA.cols])
     }
     else if(method == "af"){
-      ndat <- af[NA.cols]
+      ndat <- af[NA.cols]*2
     }
     
     # replace
