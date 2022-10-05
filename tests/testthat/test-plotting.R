@@ -304,13 +304,13 @@ test_that("diagnostic plots",{
                  dp$maf$labels$x,
                  dp$pca$labels$x,
                  dp$missingness$labels$x),
-               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (35.43%)", "Individual"))
+               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (33.06%)", "Individual"))
   expect_equal(c(dp$fis$labels$y,
                  dp$sfs$labels$y,
                  dp$maf$labels$y,
                  dp$pca$labels$y,
                  dp$missingness$labels$y),
-               c("density", "log10(N)", "density", "PC2 (19.8%)", "Proportion of loci with missing data"))
+               c("density", "log10(N)", "density", "PC2 (18.76%)", "Proportion of loci with missing data"))
   expect_false("colour" %in% names(dp$pca$labels))
   expect_false("colour" %in% names(dp$missingness$labels))
   
