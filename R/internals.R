@@ -1323,6 +1323,7 @@ is.snpRdata <- function(x){
   if(!method %in% c("bernoulli", "af", "iPCA")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af, IPCA.\n")
   }
+  browser()
 
   if(method %in% c("bernoulli", "af")){
     # find allele frequencies
@@ -1342,7 +1343,7 @@ is.snpRdata <- function(x){
       ndat <- stats::rbinom(length(NAs), 2, af[NA.cols])
     }
     else if(method == "af"){
-      ndat <- af[NA.cols]
+      ndat <- af[NA.cols]*2
     }
     
     # replace
