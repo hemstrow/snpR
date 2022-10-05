@@ -576,21 +576,40 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   #=============prepare dataset===============
   cat("Formatting data...\n")
 
-  # check for matching sn plot:
-  if(length(x@sn$sn) != 0){
-    if(x@sn$type != interpolation_method){
+  if(x@bi_allelic){
+    # check for matching sn plot:
+    if(length(x@sn$sn) != 0){
+      if(x@sn$type != interpolation_method){
+        suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+        x@sn$type <- interpolation_method
+      }
+    }
+    else{
       suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
       x@sn$type <- interpolation_method
     }
+    
+    sn <- x@sn$sn
+    sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
+    meta <- x@sample.meta
   }
   else{
-    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
-    x@sn$type <- interpolation_method
+    if(length(x@sn$sn) != 0){
+      if(x@sn$type != interpolation_method){
+        suppressWarnings(x@sn$sn <- format_snps(x, "pa", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+        x@sn$type <- interpolation_method
+      }
+    }
+    else{
+      suppressWarnings(x@sn$sn <- format_snps(x, "pa", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+      x@sn$type <- interpolation_method
+    }
+    
+    sn <- x@sn$sn
+    sn <- t(sn[,-c(1:(ncol(x@sample.meta) - 1))])
+    meta <- x@sample.meta
   }
-
-  sn <- x@sn$sn
-  sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
-  meta <- x@sample.meta
+  
 
   # figure out which snps should be dropped due to low coverage
   if(minimum_percent_coverage != FALSE){

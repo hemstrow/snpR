@@ -1083,17 +1083,17 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'  outputs. How many random loci should be selected? Can either be an integer
 #'  or a numeric vector of loci to use.
 #'@param interpolate Character or FALSE, default "bernoulli". If transforming to
-#'  "sn" format, notes the interpolation method to be used to fill missing data.
-#'  Options are "bernoulli", "af", "iPCA", or FALSE. See details.
+#'  "sn" or "pa" format, notes the interpolation method to be used to fill
+#'  missing data. Options are "bernoulli", "af", "iPCA", or FALSE. See details.
 #'@param outfile character vector, default FALSE. If a file path is provided, a
 #'  copy of the output will be saved to that location. For some output styles,
 #'  such as genepop, additional lines will be added to the output to allow them
 #'  to be immediately run on commonly used programs.
 #'@param ped data.frame default NULL. Optional argument for the "plink" output
-#'  format. A six column data frame containing Family ID, Individual ID, Paternal
-#'  ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
-#'  outputs will contain information contained in ped. See plink documentation
-#'  for more details.
+#'  format. A six column data frame containing Family ID, Individual ID,
+#'  Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. If
+#'  provided, outputs will contain information contained in ped. See plink
+#'  documentation for more details.
 #'@param input_format Character, default NULL. Format of x, by default a
 #'  snpRdata object. See description for details.
 #'@param input_meta_columns Numeric, default NULL. If x is not a snpRdata
@@ -1254,7 +1254,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   # bi-allelic check
   if(is.snpRdata(x)){
     if(!x@bi_allelic){
-      pos_nbi_outs <- c("genepop", "0000")
+      pos_nbi_outs <- c("genepop", "0000", "pa")
       if(!output %in% pos_nbi_outs){
         stop(paste0("The output format you selected is not currently supported for non-biallelic data. Currently supported formats are:",
                     paste0(pos_nbi_outs, collapse = ", "), ".\n"))
@@ -1935,6 +1935,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 
       #initialize
       amat <- matrix(0, nsamp, length(as)*nloci)
+      if(any(grepl("_", as))){stop("Detected '_' in genotypes. Alleles cannot be coded with underscores for pa conversion.\n")}
       colnames(amat) <- paste0(sort(rep(1:nrow(x),length(as))), "_", as) #initialize all of the columns, with locus number followed by allele. Will remove anything empty after assignment.
 
       #fill in
@@ -1952,21 +1953,50 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       cat("Filling in missing data with NAs.\n")
 
       ###########
+
       #fill in missing data with NAs.
-      xmc <- which(xv == mDat) #which samples had missing data?
-      adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
-      adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample
-      xmc <- xmc + (nsamp*adj) #adjust xmc for extra columns.
-      if(any(amat[xmc] != 0) | any(amat[xmc + nsamp] != 0)){
-        stop("Missing data values were not properly identified for replacement with NAs. This usually happens when SNP data is not completely bi-allelic. Try filtering out non-biallelic and non-polymorphic SNPs using filter_snps.\n")
+      if(x@bi_allelic){ # fully vectorized
+        xmc <- which(x == mDat) #which samples had missing data?
+        adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
+        adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample
+        xmc <- xmc + (nsamp*adj) #adjust xmc for extra columns.
+        if(any(amat[xmc] != 0) | any(amat[xmc + nsamp] != 0)){
+          stop("Missing data values were not properly identified for replacement with NAs. This usually happens when SNP data is not completely bi-allelic. Try filtering out non-biallelic and non-polymorphic SNPs using filter_snps.\n")
+        }
+        amat[xmc] <- NA #make the first allele NA
+        amat[xmc + nsamp] <- NA #make the second allele (another column over) NA.
       }
-      amat[xmc] <- NA #make the first allele NA
-      amat[xmc + nsamp] <- NA #make the second allele (another column over) NA.
+      else{ # need to loop through loci :(
+        loc_key <- gsub("_.+", "", colnames(amat))
+        loc_key <- table(loc_key)
+        loc_key <- loc_key[order(as.numeric(names(loc_key)))]
+        loc_key <- cumsum(loc_key)
+        loc_key <- c(0, loc_key)
+        
+        xmc <- which(as.matrix(x) == x@mDat, arr.ind = TRUE) #which samples had missing data?
+        
+        for(j in 1:(length(loc_key) - 1)){
+          tl <- xmc[which(xmc[,1] == j),]
+          if(sum(amat[tl[,2], (loc_key[j] + 1):loc_key[j + 1]]) != 0){stop("Failed to correctly fill NAs.\n")}
+          amat[tl[,2], loc_key[j]:loc_key[j + 1]] <- NA
+        }
+      }
 
       return(amat)
     }
 
-    amat <- pa_alleles(t(xv), 2, x@mDat)
+    amat <- pa_alleles(t(xv), x@snp.form, x@mDat)
+    
+    # interpolate?
+    if(interpolate == "bernoulli"){
+      amat <- t(.interpolate_sn(t(amat), "bernoulli"))
+    }
+    else if(interpolate == "af"){
+      amat <- t(.interpolate_sn(t(amat), "af"))
+    }
+    else if(interpolate == "iPCA"){
+      amat <- t(.interpolate_sn(t(amat), "iPCA", ncp = ncp, ncp.max = ncp.max))
+    }
 
     # if(interp_miss){
     #   #average number observed in columns
