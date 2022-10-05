@@ -1,4 +1,4 @@
-# snpR 1.2.3
+# snpR 1.2.5
 
 ## Features
 
@@ -16,6 +16,10 @@
 * Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.
 
 
+# snpR 1.2.4 -- hot-fix
+
+## Bug fixes
+* Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.
 
 
 # snpR 1.2.3
