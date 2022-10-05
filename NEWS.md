@@ -1,3 +1,8 @@
+# snpR 1.2.4 -- hot-fix
+
+## Bug fixes
+* Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.
+
 # snpR 1.2.3
 
 ## Features

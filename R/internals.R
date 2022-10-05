@@ -1324,7 +1324,8 @@ is.snpRdata <- function(x){
     # find allele frequencies
     sn <- as.matrix(sn)
     sn <- t(sn)
-    af <- colMeans(sn, na.rm = T) # this is the allele frequency of the "1" allele
+    af <- colSums(sn, na.rm = T)
+    af <- af/(colSums(!is.na(sn))*2) # this is the allele frequency of the "1" allele
     
     # identify all of the NAs and the columns that they belong to
     NAs <- which(is.na(sn)) # cells with NA
