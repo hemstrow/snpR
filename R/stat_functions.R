@@ -719,6 +719,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
           nc <- nbar*(1-(CV^2)/r)
           parts <- vector("list", ncol(ps1_f))
           for(k in 1:ncol(ps1_f)){
+            
+            # where this allele is absent in both populations, ignore it's contribution.
             absent <- which(ps1_f[[k]] + ps2_f[[k]] == 0)
             if(length(absent) != 0){
               tiho <- idat$ho
@@ -1001,49 +1003,51 @@ calc_fis <- function(x, facets = NULL){
   
   #===========subfunctions=====================================================
   func <- function(ac_i, ho_i){
+    browser()
     # browser()
-    intot <- ac_i$n_total/2
-    ps1 <- ac_i$ni1/ac_i$n_total
-    ps2 <- ac_i$ni2/ac_i$n_total
-    iho <- ho_i
-
-    r <- 1
-    nbar <- intot
-    nc <- 0
+    intot <- rowSums(ac_i)/2
     
-    jntot <- NA
-    jho <- NA
-    # write.table(data.frame(intot = intot, ps1 = ps1, ps2 = ps2, iho = ho_i, r = r, nbar = nbar, nc = nc), "fis_temp1.txt")
-
-    fcomp1 <- .per_all_f_stat_components(intot = intot,
-                                        jntot = jntot,
-                                        ps1 = ps1,
-                                        ps2 = NA,
-                                        r = r,
-                                        nbar = nbar, 
-                                        nc = nc, 
-                                        iho = iho, 
-                                        jho = jho)
+    parts <- vector("list", ncol(ac_i))
     
-    fcomp2 <- .per_all_f_stat_components(intot = intot,
-                                         jntot = jntot,
-                                         ps1 = ps2,
-                                         ps2 = NA,
-                                         r = r,
-                                         nbar = nbar, 
-                                         nc = nc, 
-                                         iho = iho, 
-                                         jho = jho)
-    # Fis <- 1 - rowSums(c)/rowSums(b + c)
-    fcomp1 <- lapply(fcomp1, function (x) ifelse(is.na(x), 0, x))
-    fcomp2 <- lapply(fcomp2, function (x) ifelse(is.na(x), 0, x))
+    for(i in 1:ncol(ac_i)){
+      ps1 <- ac_i[[i]]
+      tho <- ho_i
+      absent <- which(ps1 == 0)
+      if(length(absent) > 0){
+        tho[absent] <- 0
+      }
+      
+      parts[[i]] <- .per_all_f_stat_components(intot = intot,
+                                               jntot = NA,
+                                               ps1 = ps1,
+                                               ps2 = NA,
+                                               r = 1,
+                                               nbar = intot, 
+                                               nc = 0, 
+                                               iho = tho, 
+                                               jho = NA)
+    }
     
-    fis <- 1 - (fcomp1$c + fcomp2$c)/(fcomp1$b + fcomp2$b + fcomp1$c + fcomp2$c)
+    b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
+    c <- matrix(unlist(purrr::map(parts, "c")), ncol = length(parts))
+    
+    
+    if(any(is.na(b))){
+      b[is.na(b)] <- 0
+    }
+    if(any(is.na(c))){
+      c[is.na(c)] <- 0
+    }
+    
+    # browser()
+    fis <- 1 - rowSums(c)/rowSums(b + c)
+    # saveRDS(data.frame(b = b, c = c, fis = fis), "../temp/fis_new_test.RDS")
     
     return(fis)
   }
   
   #===========run=============================================================
+  browser()
   # add ho
   needed <- .check_calced_stats(x, facets, "ho")
   needed <- facets[which(!unlist(needed))]
@@ -1055,15 +1059,15 @@ calc_fis <- function(x, facets = NULL){
   samp.facets <- .check.snpR.facet.request(x, facets, fill_with_base = TRUE, return_base_when_empty = TRUE)
   meta.match <- which(x@facet.meta$facet %in% samp.facets)
   
-  tac <- cbind(as.data.table(x@ac[meta.match,]), as.data.table(x@facet.meta[meta.match,]))
+  tas <- cbind(as.data.table(x@geno.tables$as[meta.match,]), as.data.table(x@facet.meta[meta.match,]))
   
   stat.match <- which(x@stats$facet %in% samp.facets)
   ho <- as.data.table(x@stats[stat.match,])
   
-  input <- merge(tac, ho, by = c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))
+  input <- merge(tas, ho, by = c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))
   
   # run and finish
-  ac.cols <- which(colnames(input) %in% c("n_total", "n_alleles", "ni1", "ni2"))
+  ac.cols <- which(colnames(input) %in% colnames(x@geno.tables$as))
   out <- func(.fix..call(input[,..ac.cols]), input$ho)
   
   meta.cols <- which(colnames(input) %in% colnames(x@facet.meta))
