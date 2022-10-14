@@ -23,8 +23,7 @@ test_that("correct fis",{
   # peg <- snpR::format_snps(x, facets = "pop", output = "adegenet")
   # peg <- pegas::genind2loci(peg)
   # peg_fis_ASP <- pegas::Fst(peg[peg$population == "ASP",])
-  # peg_fis_ASP <- pegas::Fst(peg[peg$population == "ASP",])[2:10,]
-  
+
   
   # checked vs pegas with above code
   expect_equivalent(round(fis$single$fis, 3), round(c(0.384615, 0, -0.052632, -0.111111, 0.142857, 

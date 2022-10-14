@@ -1002,11 +1002,11 @@ calc_fis <- function(x, facets = NULL){
   }
   
   #===========subfunctions=====================================================
+  
+  # cracked the problem: ho_i needs to be the proportion of individuals heterozygous for an allele, not heterozygous for all alleles! Need to fix for Fst too. Revert these to there bi-allelic form for that case since it is faster if ac is already calced?
   func <- function(ac_i, ho_i){
     browser()
-    # browser()
-    intot <- rowSums(ac_i)/2
-    
+    count_tot <- rowSums(ac_i)
     parts <- vector("list", ncol(ac_i))
     
     for(i in 1:ncol(ac_i)){
@@ -1016,13 +1016,14 @@ calc_fis <- function(x, facets = NULL){
       if(length(absent) > 0){
         tho[absent] <- 0
       }
+      ps1 <- ps1/count_tot
       
-      parts[[i]] <- .per_all_f_stat_components(intot = intot,
+      parts[[i]] <- .per_all_f_stat_components(intot = count_tot/2,
                                                jntot = NA,
                                                ps1 = ps1,
                                                ps2 = NA,
                                                r = 1,
-                                               nbar = intot, 
+                                               nbar = count_tot/2, 
                                                nc = 0, 
                                                iho = tho, 
                                                jho = NA)
@@ -1039,15 +1040,12 @@ calc_fis <- function(x, facets = NULL){
       c[is.na(c)] <- 0
     }
     
-    # browser()
     fis <- 1 - rowSums(c)/rowSums(b + c)
-    # saveRDS(data.frame(b = b, c = c, fis = fis), "../temp/fis_new_test.RDS")
-    
+
     return(fis)
   }
   
   #===========run=============================================================
-  browser()
   # add ho
   needed <- .check_calced_stats(x, facets, "ho")
   needed <- facets[which(!unlist(needed))]
@@ -1072,7 +1070,7 @@ calc_fis <- function(x, facets = NULL){
   
   meta.cols <- which(colnames(input) %in% colnames(x@facet.meta))
   out <- cbind(.fix..call(input[,..meta.cols]), fis = out)
-  out$nk <- tac$n_total
+  out$nk <- rowSums(.fix..call(input[,..ac.cols]))
   
   
   #========return==============
