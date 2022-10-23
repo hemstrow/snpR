@@ -1,7 +1,13 @@
 # snpR 1.2.4 -- hot-fix
 
+## Features
+
+### Minor
+* Added the `gradient_colors` argument to `plot_pairwise_ld_heatmap()` to allow for custom sets of colors for the scale.
+
 ## Bug fixes
 * Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.
+* Swapped the `geom` used in `plot_pairwise_ld_heatmap()` to `geom_bin2d()` to prevent points from disappearing if too many loci are plotted on a chr.
 
 # snpR 1.2.3
 
