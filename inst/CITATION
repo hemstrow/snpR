@@ -4,7 +4,7 @@ bibentry(bibtype = "Article",
          title = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
          author = c(person("William", "Hemstrom"),
                     person("Melissa", "Jones")),
-         year = 2021,
+         year = 2022,
          journal = "Molecular Ecology Resources",
          doi = "https://doi.org/10.1111/1755-0998.13721"
 )
