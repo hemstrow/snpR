@@ -769,7 +769,7 @@
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
+                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
 }
 
 .process_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
@@ -936,7 +936,7 @@
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
+                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   
