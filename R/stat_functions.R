@@ -3213,6 +3213,15 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   if(!file.exists(NeEstimator_path)){
     msg <- c(msg, "NeEstimator executable not found at provided path.\n")
   }
+  else{
+    suppressWarnings(test <- try(system(paste0(NeEstimator_path, " -check"), intern = TRUE), silent = TRUE))
+    if(is(test, "try-error")){
+      msg <- c(msg, "NeEstimator executable not found at provided path.\n")
+    }
+    else if(test[1] != "Illegal argument!"){
+      msg <- c(msg, "NeEstimator executable not found at provided path.\n")
+    }
+  }
   
   if("temporal" %in% tolower(methods)){msg <- c(msg, "Implementation for NeEstimator's temporal method is in progress but currently not supported.\n")}
   

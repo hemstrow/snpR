@@ -615,16 +615,23 @@
 #
 # @param stucture_file path to file
 # @param rows_per_individual 1 or 2, rows per ind
-# @param marker_and_sample_names is there a row of marker and sample names?
+# @param marker__names is there a row of marker and sample names?
 # @param header_cols number of metadata columns
 # @param snp.meta data.frame or null with snp meta
 # @param sample.meta data.frame or null with sample meta
 .process_structure <- function(structure_file, rows_per_individual = 2, 
-                               marker_and_sample_names = FALSE,
+                               marker_names = FALSE,
                                header_cols = 1,
                                snp.meta = NULL, sample.meta = NULL){
   #==========read in and categorize input data============
-  dat <- data.table::fread(structure_file, header = marker_and_sample_names)
+  if(marker_names){
+    header <- data.table::fread(structure_file, nrows = 1, header = FALSE)
+    dat <- data.table::fread(structure_file, header = FALSE, skip = 1)
+  }
+  else{
+    dat <- data.table::fread(structure_file, header = FALSE)
+  }
+  
 
   # process sample metadata
   if(header_cols > 0){
@@ -638,11 +645,8 @@
   }
   
   # process snp metadata
-  if(marker_and_sample_names & is.null(snp.meta)){
-    snp.meta <- data.frame(ID = colnames(dat)[(header_cols + 1):ncol(dat)])
-    if(rows_per_individual == 1){
-      snp.meta <- snp.meta[seq(1, ncol(snp.meta), by = 2), ]
-    }
+  if(marker_names & is.null(snp.meta)){
+    snp.meta <- data.frame(ID = unlist(header))
   }
   
   #================process genotypes=======================
@@ -663,6 +667,13 @@
                                           dat[,seq(2, ncol(dat), by = 2)], 
                                           mDat = -9)
   }
+  
+  if(!is.null(snp.meta)){
+    if(nrow(snp.meta) != ncol(dat)){
+      stop("The number of loci names or the number of SNP metadata rows provided is not equal to the number of loci present in the data.\n")
+    }
+  }
+  
   
   dat <- .sub_and_t_1_2_to_A_C(dat, num_individuals)
   

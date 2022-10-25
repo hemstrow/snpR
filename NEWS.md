@@ -8,6 +8,8 @@
 ## Bug fixes
 * Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.
 * Swapped the `geom` used in `plot_pairwise_ld_heatmap()` to `geom_bin2d()` to prevent points from disappearing if too many loci are plotted on a chr.
+* Fixed `read_structure()` (and `import.snpR.data()`) to never assume sample names, just loci names (which is the standard) if noted.
+* Added better error checking for invalid NeEstimator exe files to `calc_ne()`.
 
 # snpR 1.2.3
 

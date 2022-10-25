@@ -37,7 +37,7 @@ read_structure(
   snp.meta = NULL,
   sample.meta = NULL,
   rows_per_individual = 2,
-  marker_and_sample_names = FALSE,
+  marker_names = FALSE,
   header_cols = 0
 )
 
@@ -74,8 +74,8 @@ to snp genotypes when importing delimited snps.}
 \item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
 for each individual.}
 
-\item{marker_and_sample_names}{logical, default FALSE. If TRUE, assumes that a
-header row of marker and sample/sample metadata names is present.}
+\item{marker_names}{logical, default FALSE. If TRUE, assumes that a
+header row of marker is present.}
 
 \item{genlight}{genlight object to convert, see
 \code{\link[adegenet]{genlight}}.}
@@ -153,7 +153,8 @@ are stored as: NN, 0000, or snp_tab format.
  in columns. Can be coded either with one row per individual and two columns
  per loci or two rows per individual and two columns per loci using the
  rows_per_individual argument. Genotypes can be pretty much anything,
- although missing genotypes must be coded as -9. Must have a .str extension.}
+ although missing genotypes must be coded as -9. Must have a .str extension 
+ and be consistantly whitespace delimited.}
 
  Sample and snp metadata can also be provided via file path, and will be read
  in using \code{\link[data.table]{fread}} \emph{with the default settings}
