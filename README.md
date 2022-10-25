@@ -124,7 +124,7 @@ A CRAN version should be available soon.
             cross-validation for genomic predictions.
 -   Site-frequency Spectra:
     -   `calc_sfs()`: Generate a 1 or 2d site frequency spectra.
-        -   `make_tree()`: Wrapper function that uses an external `dadi`
+        -   `make_sfs()`: Wrapper function that uses an external `dadi`
             formatted file to generate an sfs.
     -   `calc_directionality()`: Peter and Slatkin’s directionality
         index.
