@@ -167,7 +167,7 @@ x <- calc_ho(x, facets = c("fam")) # split by family
 x <- calc_ho(x, facets = c("pop.fam")) # split by combinations of family and pop
 ```
 
-snpR also facilitates ease-of-use by being \emph{overwrite safe}. As above, new analyses are added to an existing object. Results can be fetched using the get.snpR.stats handler.
+snpR also facilitates ease-of-use by being *overwrite safe*. As above, new analyses are added to an existing object. Results can be fetched using the get.snpR.stats handler.
 
 ```{r show, eval=FALSE}
 res <- get.snpR.stats(x, facets = "pop", stats = "ho")
