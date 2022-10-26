@@ -135,7 +135,12 @@ run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path =
   setwd(data_path)
   call <- paste(NeEstimator_path, "i:info", "o:option", collapse = " ")
   
-  system(call, show.output.on.console = verbose)
+  if(Sys.info()["sysname"] == "Windows"){
+    system(call, show.output.on.console = verbose)
+  }
+  else{
+    system(call, ignore.stdout = !verbose)
+  }
   
   setwd(owd)
 }
