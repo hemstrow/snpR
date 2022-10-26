@@ -5,6 +5,7 @@
 ### Minor
 * Added the `gradient_colors` argument to `plot_pairwise_ld_heatmap()` to allow for custom sets of colors for the scale.
 * Updated the readme for github with a function table of contents.
+* Added another sanity check to `calc_ne()` to catch full file paths given to `outfile`.
 
 ## Bug fixes
 * Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.

@@ -3169,7 +3169,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   to consider per population.
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
-#'   check this.
+#'   check this. At the moment, this cannot be a full file path, just a file
+#'   prefix ('test_ne' is OK, '~/tests/test_ne' is not).
 #' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'   reported. 
 #' @param cleanup logical, default TRUE. If TRUE, the NeEstimator output
@@ -3225,6 +3226,9 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   if("temporal" %in% tolower(methods)){msg <- c(msg, "Implementation for NeEstimator's temporal method is in progress but currently not supported.\n")}
   
+  if(basename(outfile) != outfile){
+    msg <- c(msg, "At the moment, the outfile name must be a file name prefix (such as 'test_ne'), not a full path (such as '~/tests/test_ne').\n")
+  }
   
   facets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
   if(length(msg) > 0){
