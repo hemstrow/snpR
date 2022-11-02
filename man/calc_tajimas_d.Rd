@@ -61,18 +61,18 @@ as described in \code{\link{Facets_in_snpR}}.
 \dontrun{
 # broken by population, windows across linkage group
 x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
-get.snpR.stats(x, "chr.pop", "single.window")
+get.snpR.stats(x, "chr.pop", "tajimas_d")
 
 # the entire population at once, note that sigma and step are NULL and
 # no chromosome/linkage group/scaffold/etc set.
 # this will calculate overall tajima's D without a window for each population.
 x <- calc_tajimas_d(stickSNPs, facets = "pop")
-get.snpR.stats(x, "pop", "single.window")
+get.snpR.stats(x, "pop", "tajimas_d")
 
 # for the overall dataset, note that sigma and step are NULL
 # this will calculate overall tajima's D for each chr/pop
 x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
-get.snpR.stats(x, "pop.chr", "single.window")
+get.snpR.stats(x, "pop.chr", "tajimas_d")
 }
 }
 \references{

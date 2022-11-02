@@ -267,18 +267,18 @@ calc_maf <- function(x, facets = NULL){
 #' \dontrun{
 #' # broken by population, windows across linkage group
 #' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
-#' get.snpR.stats(x, "chr.pop", "single.window")
+#' get.snpR.stats(x, "chr.pop", "tajimas_d")
 #'
 #' # the entire population at once, note that sigma and step are NULL and
 #' # no chromosome/linkage group/scaffold/etc set.
 #' # this will calculate overall tajima's D without a window for each population.
 #' x <- calc_tajimas_d(stickSNPs, facets = "pop")
-#' get.snpR.stats(x, "pop", "single.window")
+#' get.snpR.stats(x, "pop", "tajimas_d")
 #'
 #' # for the overall dataset, note that sigma and step are NULL
 #' # this will calculate overall tajima's D for each chr/pop
 #' x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
-#' get.snpR.stats(x, "pop.chr", "single.window")
+#' get.snpR.stats(x, "pop.chr", "tajimas_d")
 #' }
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
@@ -1005,7 +1005,6 @@ calc_fis <- function(x, facets = NULL){
   
   # cracked the problem: ho_i needs to be the proportion of individuals heterozygous for an allele, not heterozygous for all alleles! Need to fix for Fst too. Revert these to there bi-allelic form for that case since it is faster if ac is already calced?
   func <- function(ac_i, ho_i){
-    browser()
     count_tot <- rowSums(ac_i)
     parts <- vector("list", ncol(ac_i))
     
