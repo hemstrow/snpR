@@ -16,6 +16,7 @@
 ## Bug fixes
 * Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.
 * Fixed a bug where not using a pop facet with `plot_structure()` with the `method = "structure"` option would cause a bug due to an incorrectly set "LOCISPOP" flag (which is checked even if not using the locprior option).
+* Fixed a bug where PSIXct data in the sample meta data could cause issues with `calc_hs()`
 
 
 # snpR 1.2.4 -- hot-fix
