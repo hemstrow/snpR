@@ -12,6 +12,7 @@
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.
 * Edited the warning message when importing structure data without setting header_cols properly to more explicitly reference that problem.
 * Updated the `calc_tajimas_d()` examples to use the updated `get.snpR.stats()` syntax.
+* Added warnings/messages to `calc_ne` when it is run without the `chr` argument or with more than 5,000 SNPs.
 
 ## Bug fixes
 * Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.

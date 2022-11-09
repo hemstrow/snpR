@@ -3202,6 +3202,20 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
   
   
+  wrn <- character(0)
+  if(nsnps(x) > 5000){
+    wrn <- c(wrn, "Large numbers of loci don't usually improve Ne estimates by a substantial margin and can massively increase run times and memory requirements. Loci counts of ~3,000 are usually sufficient to generate accurate Ne esitmates, but estimates are improved substantially by selecting loci with little missing data. See https://doi.org/10.1002/ece3.6016\n")
+  }
+  if(is.null(chr)){
+    wrn <- c(wrn, "NeEstimator expects no physical linkage between loci. You may want to consider setting the 'chr' argument to only consider LD values between loci on different chromosomes/scaffolds/etc.\n")
+  }
+  
+  if(length(wrn) > 0){
+    message(wrn)
+    warning(wrn)
+  }
+  
+  
   
   #=============run====================================
   out <- vector("list", length(facets))
