@@ -347,6 +347,7 @@
   genos <- gsub("\\|", "", genos)
   genos <- gsub("\\/", "", genos)
   genos[is.na(genos)] <- "NN"
+  genos[genos == "."] <- "NN"
   
   # prep metadata
   if(is.null(snp.meta)){

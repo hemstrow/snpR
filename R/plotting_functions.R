@@ -576,7 +576,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   #=============prepare dataset===============
   cat("Formatting data...\n")
 
-  if(x@bi_allelic){
+  bi_allelic <- ifelse("bi_allelic" %in% methods::slotNames(x), x@bi_allelic, TRUE)
+  if(bi_allelic){
     # check for matching sn plot:
     if(length(x@sn$sn) != 0){
       if(x@sn$type != interpolation_method){
