@@ -445,6 +445,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))
+        if(sum(is.na(genotypes[,ncol(genotypes)])) == nrow(genotypes)){
+          genotypes <- genotypes[,-ncol(genotypes)]
+        }
       }
     }
     else{
