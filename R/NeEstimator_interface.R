@@ -147,6 +147,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   files <- list.files(pattern = pattern)
   files <- files[-which(files == paste0(pattern, ".txt"))]
   out <- vector("list", length(files))
+  if(length(files) == 0){
+    stop("No NeEstimator output files found. Double check your NeEstimator path and look for any errors produced by NeEstimator. If the problem persists, please leave an issue at https://github.com/hemstrow/snpR/issues .")
+  }
 
   for(i in 1:length(files)){
 
