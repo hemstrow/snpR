@@ -32,7 +32,7 @@ ui <- navbarPage(
                     actionButton("subset", "Subset Data")) # note that this should change the input_validation return!
   ),
   #============filtering================
-  
+
   tabPanel("Filtering",
            titlePanel("Filtering:"),
            fluidRow(
@@ -191,46 +191,46 @@ ui <- navbarPage(
 
            )
   ),
-  
+
   #================plotting=================
-  tabPanel("Plotting",
-           # PCA
-           tabsetPanel(
-             tabPanel("PCA/UMAP/tSNE",
-                      uiOutput("all_facets"),
-                      radioButtons("association_method", "Method:", choices = list(PCA = "pca",
-                                                                                   UMAP = "umap",
-                                                                                   tSNE = "tsne"), inline = TRUE),
-                      checkboxInput("check_duplicates", "Check for Duplicates (slow)?", FALSE),
-                      numericInput("minimum_percent_coverage", "Minimum proportion of genotypes per sample:", 0, 0, 1),
-                      numericInput("minimum_genotype_percentage", "Minimum proportion of samples sequenced per loci:", 0, 0, 1),
-                      selectInput("clusters_interpolate", "Missing Genotype Interpolation",
-                                  choices = c(bernoulli = "binomial draw", af = "allele frequency", iPCA = "iPCA (warning: slow)")),
-                      fluidRow(hidden(numericInput("iPCA_ncp", "ncp:", NA, 0)), hidden(numericInput("iPCA_ncp_max", "ncp max:", 5, 1))),
-                      hidden(tags$div(id = "tSNE_options",
-                                      inputPanel(numericInput("tSNE_dims", "Output dimensions (at max 2 plotted):", 2, 1),
-                                                 numericInput("tSNE_perplexity", "Perplexity:", NA, min = 0))))
-             ),
-             
-             # structure
-             tabPanel("STRUCTURE/ADMIXTURE q-plots",
-                      uiOutput("all_facets"),
-                      uiOutput("facet_order"),
-                      numericInput("kmin", "Minimum k value:", 1, 1),
-                      numericInput("kmin", "Maximum k value:", 2, 1),
-                      selectInput("struc_method", "Assignment/Clustering Method:", 
-                                  choices = c(STRUCTURE = "structure",
-                                              sNMF = "snmf",
-                                              ADMIXTURE = "admixture",
-                                              snapclust = "snapclust"), 
-                                  selected = "snmf")
-             )
-           )
-           # LD
-           # manhattan
-           # sfs
-  ),
-  
+  # tabPanel("Plotting",
+  #          # PCA
+  #          tabsetPanel(
+  #            tabPanel("PCA/UMAP/tSNE",
+  #                     uiOutput("all_facets"),
+  #                     radioButtons("association_method", "Method:", choices = list(PCA = "pca",
+  #                                                                                  UMAP = "umap",
+  #                                                                                  tSNE = "tsne"), inline = TRUE),
+  #                     checkboxInput("check_duplicates", "Check for Duplicates (slow)?", FALSE),
+  #                     numericInput("minimum_percent_coverage", "Minimum proportion of genotypes per sample:", 0, 0, 1),
+  #                     numericInput("minimum_genotype_percentage", "Minimum proportion of samples sequenced per loci:", 0, 0, 1),
+  #                     selectInput("clusters_interpolate", "Missing Genotype Interpolation",
+  #                                 choices = c(bernoulli = "binomial draw", af = "allele frequency", iPCA = "iPCA (warning: slow)")),
+  #                     fluidRow(hidden(numericInput("iPCA_ncp", "ncp:", NA, 0)), hidden(numericInput("iPCA_ncp_max", "ncp max:", 5, 1))),
+  #                     hidden(tags$div(id = "tSNE_options",
+  #                                     inputPanel(numericInput("tSNE_dims", "Output dimensions (at max 2 plotted):", 2, 1),
+  #                                                numericInput("tSNE_perplexity", "Perplexity:", NA, min = 0))))
+  #            ),
+  # 
+  #            # structure
+  #            tabPanel("STRUCTURE/ADMIXTURE q-plots",
+  #                     uiOutput("all_facets"),
+  #                     uiOutput("facet_order"),
+  #                     numericInput("kmin", "Minimum k value:", 1, 1),
+  #                     numericInput("kmin", "Maximum k value:", 2, 1),
+  #                     selectInput("struc_method", "Assignment/Clustering Method:",
+  #                                 choices = c(STRUCTURE = "structure",
+  #                                             sNMF = "snmf",
+  #                                             ADMIXTURE = "admixture",
+  #                                             snapclust = "snapclust"),
+  #                                 selected = "snmf")
+  #            )
+  #          )
+  #          # LD
+  #          # manhattan
+  #          # sfs
+  # ),
+
   #================navbar options===========
   title = "snpR"
   
@@ -240,7 +240,7 @@ ui <- navbarPage(
 
 
 server <- function(input, output, session) {
-  
+
   #==========read in input files===========
   x <- reactiveValues(x = NULL,
                       valid = NULL)

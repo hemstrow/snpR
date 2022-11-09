@@ -2785,7 +2785,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                        paste0("#define GENSBACK ", gens_back),
                        paste0("#define MIGRPRIOR ", mig_prior),
                        "#define PFROMPOPFLAGONLY 0",
-                       "#define LOCISPOP 1",
+                       paste0("#define LOCISPOP ", ifelse(is.null(facet), 0, 1)),
                        paste0("#define LOCPRIORINIT ", locprior_init_r),
                        paste0("#define MAXLOCPRIOR ", locprior_max_r),
                        "#define PRINTNET     1",

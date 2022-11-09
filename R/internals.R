@@ -748,7 +748,7 @@ is.snpRdata <- function(x){
       stat.col <- (which(colnames(out) == "stat"))
       out <- out[,c((1:ncol(out))[-stat.col], stat.col)]
       meta <- out[,-ncol(out)]
-      meta[is.na(meta)] <- ".base"
+      meta[,c("facet", "subfacet", "snp.facet", "snp.subfacet")][is.na(meta[,c("facet", "subfacet", "snp.facet", "snp.subfacet")])] <- ".base"
       out[,1:(ncol(out) - 1)] <- meta
       return(out)
     }
@@ -1323,7 +1323,6 @@ is.snpRdata <- function(x){
   if(!method %in% c("bernoulli", "af", "iPCA")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af, IPCA.\n")
   }
-  browser()
 
   if(method %in% c("bernoulli", "af")){
     # find allele frequencies
