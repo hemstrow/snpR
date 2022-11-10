@@ -3189,6 +3189,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
   
   msg <- character()
+  NeEstimator_path <- normalizePath(NeEstimator_path)
   if(!file.exists(NeEstimator_path)){
     msg <- c(msg, "NeEstimator executable not found at provided path.\n")
   }
