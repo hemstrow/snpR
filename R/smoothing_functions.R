@@ -84,7 +84,8 @@ gaussian_weight <- function(p, c, s) {
 #'get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
 #'get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
 #'}
-calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), par = FALSE,
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), 
+                                   par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
   #==============sanity checks============
   if(!is.snpRdata(x)){
@@ -100,175 +101,175 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
       msg <- c(msg, "No pairwise stats calculated.\n")
     }
   }
-
+  
   if(length(msg) > 0){
     stop(msg)
   }
   
   sig <- 1000*sigma
+  if(!is.null(step)){
+    step <- step * 1000
+  }
   if(verbose){cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")}
-
+  
   .sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
   
+  
+  par <- .par_checker(par, TRUE)
+  
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  snp.facets <- .check.snpR.facet.request(x, facets, "sample")
+  sample.facets <- .check.snpR.facet.request(x, facets, "snp")
   x <- .add.facets.snpR.data(x, facets)
-  #================subfunction========
-  # funciton to do a sliding window analysis on a data set.
-  # x: a data frame containing one column with positions and one for each column to be smoothed
-  # nk: logical, should nk wieghting be performed (usually yes)
-  # if ws is not FALSE, uses a typical sliding window. Otherwise does a window centered on each SNP.
-  func <- function(x, step, sig, nk){
-    if(nk){
-      scols <- (which(colnames(x) == "nk") + 1):ncol(x)
-      un.genotyped <- which(x$nk== 0)
-      if(length(un.genotyped) > 0){
-        x <- x[-which(x$nk == 0),]
-      }
-    }
-    else{
-      scols <- 2:ncol(x)
-    }
+  browser()
+  
+  #============get windows==============
+  windows <- .mark_windows(snp.meta(x), sigma = sig, step = step, triple_sig = triple_sigma, chr = unlist(.split.facet(snp.facets)))
+  
+  cl <- parallel::makePSOCKcluster(par)
+  doParallel::registerDoParallel(cl)
+  
+  browser()
+  
+  samp_task_list <- .get.task.list(x, sample.facets)
+  
+  task_window_ids <- sort(rep(1:par, length.out = nrow(windows$win_stats)))
+  window_task_list <- split(windows$windows, task_window_ids)
 
-    if(nrow(x) <= 1){
-      ret <- matrix(NA, 0, 5 + length(scols))
-      ret <- as.data.frame(ret)
-      colnames(ret) <- c("position", "sigma", "n_snps", "step", "nk.status", colnames(x)[scols])
-      return(ret)
-    }
-    #get window centers, starts, and stops:
-    ##possible positions
-    pos <- x$position
-    pos <- as.numeric(pos)
-
-    #window starts, stops, and ends
-    if(!is.null(step)){
-      cs <- seq(0, max(pos), by = step)
-    }
-    else{
-      cs <- pos
-    }
-    ends <- cs + sig*3
-    starts <- cs - sig*3
-
-    #matrix where the rows are the snps and columns are window centers. Are the snps in the windows?
-    lmat <- outer(pos, starts, function(pos, starts) pos >= starts)
-    lmat <- lmat + outer(pos, ends, function(pos, ends) pos <= ends)
-    colnames(lmat) <- cs
-    rownames(lmat) <- pos
-    lmat <- ifelse(lmat == 2, TRUE, FALSE)
-
-    #get number of snps per window for later...
-    n_snps <- colSums(lmat)
-
-    #Multiply this using the gaussian weight function to get the contribution of each snp in each window.
-    gmat <- outer(pos, cs, gaussian_weight, s = sig)
-    gmat <- gmat*lmat
-
-    #remove any windows with no SNPs
-    gmat <- gmat[,n_snps != 0] #doing it this way allows for windows with SNPs but a stat value of 0.
-    cs <- cs[n_snps != 0]
-    n_snps <- n_snps[n_snps != 0]
-
-
-    #fix any NA values
-    vals <- as.matrix(x[,scols])
-    NAs <- which(is.na(vals))
-    if(length(NAs) > 0){
-      vals[NAs] <- 0
-    }
-
-    #multiply by value of the statistics and nk if requested
-    if(nk){
-      #set up nks. Have to do it this way because of the possibility of NAs.
-      nkv <- matrix(rep(x$nk, ncol(vals)), ncol = ncol(vals))
-      nkv <- nkv - 1
-      if(length(NAs) > 0){
-        nkv[NAs] <- 0 #make sure that these snps don't contribute to the weight!
-      }
-
-      # fix any -1s (for ungenotyped stuff)
-      mdats <- which(nkv == -1)
-      if(any(mdats)){
-        nkv[mdats] <- 0
-      }
-
-      #run
-      win_vals <- t(gmat) %*% (vals*(x$nk - 1))
-      win_scales <- t(gmat) %*% nkv
-
-    }
-    else{
-      win_vals <- t(gmat) %*% vals
-      win_scales <- rowSums(t(gmat))
-    }
-
-    #get the weighted value of the window
-    win_stats <- win_vals/win_scales
-
-    #return
-    if(is.numeric(step)){
-      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step/1000, nk.status = nk, win_stats)
-    }
-    else{
-      out <- cbind(position = cs, sigma = sig/1000, n_snps = n_snps, step = step, nk.status = nk, win_stats)
-    }
-    colnames(out)[-c(1:5)] <- colnames(x)[scols]
-    return(out)
+  tout <- foreach::foreach(q = 1:length(window_task_list), .inorder = FALSE,
+                           .export = "data.table") %dopar% {
+    
   }
+  
+  
+  window_meta <- cbind(data.table::as.data.table(meta[,c(chr, "position")]), effect = p, window = windows)
+  window_meta <- window_meta[,as.list(basic(effect)), by = "window"]
+  colnames(window_meta)[-1] <- paste0("window_", colnames(window_meta)[-1])
+  window_meta <- data.table::melt(window_meta, id.vars = "window")
+  window_meta <- window_meta[,as.list(basic(value)), by = "variable"]
+  colnames(window_meta)[1] <- "window_stat"
+  window_meta <- data.table::melt(window_meta, id.vars = "window_stat")
+  window_meta$stat <- paste0(window_meta$window_stat, "_summary_", window_meta$variable)
+  window_stats <- window_meta[["value"]]
+  names(window_stats) <- window_meta[["stat"]]
+}
 
-  #================smooth at proper levels========
-  #which cols hold the stats of interest?
 
-  if(!is.null(step)){step <- step*1000}
 
-  if("single" %in% stats.type){
-    if(verbose){cat("\nSmoothing single group stats...")}
-    out <- .apply.snpR.facets(x = x,
-                             facets = facets,
-                             req =  "pos.all.stats",
-                             fun = func,
-                             case =  "ps.pf.psf",
-                             par = par,
-                             step = step,
-                             sig = sig,
-                             stats.type = "stats",
-                             nk = nk,
-                             verbose = verbose)
-
-    x <- .merge.snpR.stats(x, out, "window.stats")
-
-    if("pairwise" %in% stats.type){
-      if(verbose){cat("\nSmoothing pairwise stats...")}
-      out <- .apply.snpR.facets(x = x,
-                               facets = facets,
-                               req =  "pos.all.stats",
-                               fun = func,
-                               case =  "ps.pf.psf",
-                               par = par,
-                               step = step,
-                               sig = sig,
-                               stats.type = "pairwise",
-                               nk = nk,
-                               verbose = verbose)
-      return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
-    }
-    else{
-      return(x)
-    }
+# Mark windows for snps. More memory efficient but a bit slower, pulled from GeneArchEst. Call if there are a lot of SNPs.
+#
+# Determine which unique genomic window each snp belongs to.
+#
+# @param x data.frame. Must contain a "position" column and a chromosome info column.
+# @param sigma numeric. Size of windows, in BP.
+# @param step numeric, step size.
+# @param chr character, default "chr". Name of chromosome info column in x.
+#
+.mark_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE){
+  if(triple_sig){
+    sigma <- sigma * 3
   }
-
+  
+  if(length(chr) > 1){
+    ncc <- .paste.by.facet(x[,chr], chr)
+    nccn <- paste0(chr, collapse = ".")
+    x[,nccn] <- ncc
+    x[,chr] <- NULL
+    chr <- nccn
+  }
+  else if(chr == ".base" | is.null(chr)){
+    x$chr <- ".base"
+    chr <- "chr"
+  }
+  
+  # window start and end points
+  unique.chr <- sort(unique(x[,chr]))
+  chr.max <- tapply(x$position, x[,chr], max)
+  chr.min <- tapply(x$position, x[,chr], min)
+  chr.range <- matrix(c(chr.max, chr.min), ncol = 2)
+  
+  if(!is.null(step)){
+    centers <- apply(chr.range, 1, function(y) seq(from = 0, to = y[1], by = step))
+  }
   else{
-    if(verbose){cat("Smoothing pairwise stats...")}
-    out <- .apply.snpR.facets(x = x,
-                             facets = facets,
-                             req =  "pos.all.stats",
-                             fun = func,
-                             case =  "ps.pf.psf",
-                             par = par,
-                             step = step,
-                             sig = sig,
-                             stats.type = "pairwise",
-                             nk = nk,
-                             verbose = verbose)
-    return(.merge.snpR.stats(x, out, "pairwise.window.stats"))
+    centers <- lapply(unique.chr, function(y) unique(x[x[,chr] == y,]$position))
   }
+  
+  if(is.matrix(centers)){
+    centers <- as.list(as.data.frame(centers))
+  }
+  
+  ends <- foreach::foreach(q = 1:length(chr.max), .inorder = T) %do% {
+    e <- centers[[q]] + sigma
+    e[e > chr.max[q]] <- chr.max[q]
+    e
+  }
+  starts <- foreach::foreach(q = 1:length(chr.max), .inorder = T) %do% {
+    s <- centers[[q]] - sigma
+    s[s < 0] <- 0
+    s
+  }
+  chrs <- foreach::foreach(q = 1:length(chr.max), .inorder = T) %do% {
+    rep(unique.chr[q], length(centers[[q]]))
+  }
+  
+  
+
+  
+  # for each chr, assign windows to all snps
+  ## function per chr
+  assign_windows <- function(y, starts, ends){
+    comp_fun <- function(y, starts, ends){
+      lmat <- outer(y, starts, function(pos, starts) pos > starts)
+      lmat <- lmat * outer(y, ends, function(pos, ends) pos <= ends)
+      lmat[lmat == 1] <- rep(1:nrow(lmat), ncol(lmat))[lmat == 1]
+      # if(any(colSums(lmat) == 0)){
+      #   warning("Colsums are 0.")
+      # }
+      
+      lmat <- as.data.frame(lmat)
+      lmat <- as.list(lmat)
+      names(lmat) <- NULL
+      lmat <- lapply(lmat, function(z) {z <- z[z != 0]; return(z)})
+      return(lmat)
+    }
+    
+    # if large (say, 50k snps), will iterate through in chunks, solve, and then combine results to minimize memory usage
+    if(nrow(y) > 50000){
+      n_iters <- ceiling(nrow(y)/50000)
+      titer <- 1
+      lmat <- vector("list", length(starts))
+      for(i in 1:n_iters){
+        end <- i*50000
+        end <- ifelse(end > nrow(y), nrow(y), end)
+        trows <- titer:end
+        consider_windows <- starts <= max(y$position[trows]) & ends >= min(y$position[trows])
+        tpart <- comp_fun(y$position[trows], starts[consider_windows], ends[consider_windows])
+        tpart <- lapply(tpart, function(z) z + (titer - 1))
+        lmat[consider_windows] <- foreach::foreach(q = 1:length(tpart), .inorder = T) %do% {
+          c(lmat[consider_windows][[q]], tpart[[q]])
+        }
+        titer <- i*50000 + 1
+      }
+    }
+    else{
+      lmat <- comp_fun(y$position, starts, ends)
+    }
+    return(lmat)
+  }
+  
+  
+  ## note: need to make sure that the window ids are unique!
+  windows <- vector("list", length(unique.chr))
+  for(i in 1:length(chr.max)){
+    windows[[i]] <- assign_windows(x[x[,chr] == unique.chr[i],], starts[[i]], ends[[i]])
+  }
+  windows <- unlist(windows, recursive = FALSE)
+  empties <- lapply(windows, length) == 0
+  windows <- windows[!empties]
+
+  return(.suppress_specific_warning(list(windows = windows, 
+                                         win_stats = data.frame(starts = unlist(starts)[!empties], 
+                                                                ends = unlist(ends)[!empties], 
+                                                                chr = unlist(chrs)[!empties])), "short variable"))
 }
