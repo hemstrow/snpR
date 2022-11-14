@@ -17,6 +17,8 @@ gaussian sliding window analysis tools, plotting options, clustering
 analysis, colony interface, Ne estimation, formatting, filtering, and
 more!
 
+See [here](https://doi.org/10.1111/1755-0998.13721) for snpR's publication and to export citation details.
+
 ## Installation
 
 snpR can be installed from [GitHub](https://github.com/hemstrow/snpR):
