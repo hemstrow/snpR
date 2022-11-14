@@ -2733,3 +2733,27 @@ is.snpRdata <- function(x){
 }
 
 .quick_grab_cite <- function(cite) paste0(utils::capture.output(cite), collapse = "")
+
+.par_checker <- function(par, ret_1_on_FALSE = FALSE){
+  if(!isFALSE(par)){
+    if(is.numeric(par)){
+      if(par != floor(par)){
+        stop("par must be an integer.\n")
+      }
+      cor_avail <- parallel::detectCores()
+      if(par > cor_avail){
+        par <- cor_avail
+      }
+    }
+    else{
+      stop("par must be a numeric value or FALSE.\n")
+    }
+  }
+  else{
+    if(ret_1_on_FALSE){
+      par <- 1
+    }
+  }
+  
+  return(par)
+}
