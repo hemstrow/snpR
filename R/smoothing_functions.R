@@ -190,13 +190,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     out$step <- ifelse(is.null(step), NA, step/1000)
     out$triple_sigma <- triple_sigma
     
-    if(length(unlist(.split.facet(snp.facets))) > 1){
-      out <- cbind(out, setnames(setDT(out)[, tstrsplit(out[[snp.facets]], "(?<!^)\\.", perl=TRUE)], unlist(.split.facet(snp.facets)))[])
-      out[[snp.facets]] <- NULL
-    }
-    
-    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(out)[which(colnames(out) %in% colnames(snp.meta(x)))], "start", "end",
-                     "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps")
+    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position",
+                     "sigma", "step", "nk.status", "gaussian", "n_snps", "triple_sigma")
     col_ord <- c(header_cols, colnames(out)[which(!colnames(out) %in% header_cols)])
     .fix..call(out <- out[,..col_ord])
     x <- .merge.snpR.stats(x, out, "window.stats")
@@ -266,13 +261,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     out$step <- ifelse(is.null(step), NA, step/1000)
     out$triple_sigma <- triple_sigma
     
-    if(length(unlist(.split.facet(snp.facets))) > 1){
-      out <- cbind(out, setnames(setDT(out)[, tstrsplit(out[[snp.facets]], "(?<!^)\\.", perl=TRUE)], unlist(.split.facet(snp.facets)))[])
-      out[[snp.facets]] <- NULL
-    }
-    
-    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(out)[which(colnames(out) %in% colnames(snp.meta(x)))], "start", "end",
-                     "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps")
+    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position",
+                     "sigma", "step", "nk.status", "gaussian", "n_snps", "triple_sigma")
     col_ord <- c(header_cols, colnames(out)[which(!colnames(out) %in% header_cols)])
     .fix..call(out <- out[,..col_ord])
     x <- .merge.snpR.stats(x, out, "pairwise.window.stats")
@@ -459,8 +449,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     empties <- which(rowSums(dplyr::mutate_all(out, is.nan)) == ncol(out))
         
     out[,chr] <- chrs
-    out$start <- starts
-    out$end <- ends
     out$position <- centers
     out$n_snps <- build$n_snps
     
@@ -480,6 +468,8 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   }
   
   windows <- data.table::rbindlist(windows)
+  
+  windows[,chr] <- NULL
 
   return(windows)
 }
