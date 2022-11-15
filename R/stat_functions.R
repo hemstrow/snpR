@@ -283,7 +283,8 @@ calc_maf <- function(x, facets = NULL){
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
-calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE, 
+calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE,
+                           triple_sigma = TRUE,
                            verbose = FALSE){
   #===============sanity checks==========================
   if(!is.snpRdata(x)){
@@ -323,8 +324,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
     
     # run the loop
     while (c <= lsp){
-      start <- c - sigma*3 #change window start
-      end <- c + sigma*3 #change window end
+      start <- c - ifelse(triple_sigma, sigma*3, sigma) #change window start
+      end <- c + ifelse(triple_sigma, sigma*3, sigma) #change window end
 
       #take all the snps in the window, calculate T's theta, W's theta, and T's D
       wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
@@ -365,13 +366,17 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
       out[i,"ts.theta"] <- ts.theta
       out[i,"D"] <- D
       out[i, "n_snps"] <- nrow(wsnps)
+      out[i, "start"] <- start
+      out[i, "end"] <- end
       c <- c + step*1000
       i <- i + 1
     }
     if(nrow(out) > 0){
       out$sigma <- sigma/1000
       out$step <- step
-      out$nk.status <- 0
+      out$nk.status <- FALSE
+      out$triple_sigma <- triple_sigma
+      out$gaussian <- FALSE
     }
     return(out)
   }

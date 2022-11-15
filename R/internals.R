@@ -817,14 +817,14 @@ is.snpRdata <- function(x){
   }
   else if(type == "window.stats"){
     # merge and return
-    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
-    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "gaussian", "nk.status", "triple_sigma", "start", "end", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "start", "end")
     n.s <- .smart.merge(stats, x@window.stats, meta.cols, starter.meta)
     x@window.stats <- n.s
   }
   else if(type == "pairwise.window.stats"){
-    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
-    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "gaussian", "nk.status", "triple_sigma", "start", "end", colnames(x@snp.meta))
+    starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "start", "end")
     n.s <- .smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
     x@pairwise.window.stats <- n.s
   }

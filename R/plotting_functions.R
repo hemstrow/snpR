@@ -1128,7 +1128,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     else if(plot_var %in% colnames(x@pairwise.stats)){
       if(window){
         stats <- .get.snpR.stats(x, facets, "pairwise.window")
-        colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
+        if(!chr %in% colnames(stats)){
+          colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
+        }
       }
       else{
         stats <- .get.snpR.stats(x, facets, "pairwise")
@@ -1191,7 +1193,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   #================ask user to pick option if window and multiple schemes======
   if(window){
-    opts <- unique(stats[,c("sigma", "step", "nk.status")])
+    opts <- unique(stats[,c("sigma", "step", "nk.status", "gaussian", "triple_sigma")])
     if(nrow(opts) > 1){
       message("Multiple window schemes detected.\n")
       

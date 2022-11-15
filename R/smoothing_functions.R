@@ -87,6 +87,7 @@ gaussian_weight <- function(p, c, s) {
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, stats.type = c("single", "pairwise"), 
                                    par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
+  .snp.id <- chr <- position <- start <- end <- ..col_ord <- NULL
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -106,13 +107,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     stop(msg)
   }
   
-  sig <- 1000*sigma
+  sigma <- 1000*sigma
   if(!is.null(step)){
     step <- step * 1000
   }
-  if(verbose){cat("Smoothing Parameters:\n\twindow size = ", 3*1000*sigma, "\n\tWindow slide = ", step*1000, "\n")}
+  if(verbose){cat("Smoothing Parameters:\n\twindow size = ", ifelse(triple_sigma, 6*sigma, 2*sigma), "\n\tWindow slide = ", ifelse(is.null(step), "per-snp", step*1000), "\n")}
   
-  .sanity_check_window(x, sigma, step, stats.type = stats.type, nk, facets = facets)
+  .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
   
   
   par <- .par_checker(par, TRUE)
@@ -121,64 +122,194 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   snp.facets <- .check.snpR.facet.request(x, facets, "sample")
   sample.facets <- .check.snpR.facet.request(x, facets, "snp")
   x <- .add.facets.snpR.data(x, facets)
-  browser()
-  
-  #============get windows==============
-  windows <- .mark_windows(snp.meta(x), sigma = sig, step = step, triple_sig = triple_sigma, chr = unlist(.split.facet(snp.facets)))
-  
-  cl <- parallel::makePSOCKcluster(par)
-  doParallel::registerDoParallel(cl)
-  
-  browser()
-  
-  samp_task_list <- .get.task.list(x, sample.facets)
-  
-  task_window_ids <- sort(rep(1:par, length.out = nrow(windows$win_stats)))
-  window_task_list <- split(windows$windows, task_window_ids)
 
-  tout <- foreach::foreach(q = 1:length(window_task_list), .inorder = FALSE,
-                           .export = "data.table") %dopar% {
+  #============run smoothing==============
+
+  if("single" %in% stats.type){
+    stats <- get.snpR.stats(x, facets = sample.facets, "single")
+    stats$nk <- stats$maj.count + stats$min.count
+    stats$maj.count <- NULL
+    stats$min.count <- NULL
+    numeric.cols <- which(sapply(stats, class) %in% c("numeric", "integer") & colnames(stats) != "nk")
+    numeric.cols <- intersect(numeric.cols, (which(colnames(stats) == ".snp.id") + 1):ncol(stats))
+    
+    
+    task_list <- .get.task.list(x, facets)
+    
+    if(verbose){cat("Beginning run: single stats.\n")}
+    
+    cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
+    doParallel::registerDoParallel(cl)
+
+    out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
+                            .export = c("data.table", ".average_windows")) %dopar% {
+                              
+                              snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+                              snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+                              
+                              sample.matches <- which(apply(stats[,1:2], 1, function(x) identical(as.character(x), as.character(task_list[q,1:2]))))
+                              matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+                              if(length(matches) != 0){
+                                out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                                        chr =  unlist(.split.facet(snp.facets)),
+                                                        sigma = sigma,
+                                                        step = step, 
+                                                        triple_sig = triple_sigma, 
+                                                        gaussian = gaussian, 
+                                                        stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                                        nk = nk)
+                                out$subfacet <- task_list[q,2]
+                                out$facet <- task_list[q,1]
+                                out$snp.facet <- task_list[q,3]
+                                out$snp.subfacet <- task_list[q,4]
+                              }
+                              else{
+                                out <- NULL
+                              }
+                              out
+                            }
+    
+    
+    parallel::stopCluster(cl)
+    
+    
+    out <- dplyr::bind_rows(out)
+    out <- dplyr::arrange(out, snp.facets, position, start, end)
+    out$nk.status <- nk
+    out$gaussian <- gaussian
+    out$sigma <- sigma/1000
+    out$step <- ifelse(is.null(step), NA, step/1000)
+    out$triple_sigma <- triple_sigma
+    
+    if(length(unlist(.split.facet(snp.facets))) > 1){
+      out <- cbind(out, setnames(setDT(out)[, tstrsplit(out[[snp.facets]], "(?<!^)\\.", perl=TRUE)], unlist(.split.facet(snp.facets)))[])
+      out[[snp.facets]] <- NULL
+    }
+    
+    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(out)[which(colnames(out) %in% colnames(snp.meta(x)))], "start", "end",
+                     "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps")
+    col_ord <- c(header_cols, colnames(out)[which(!colnames(out) %in% header_cols)])
+    .fix..call(out <- out[,..col_ord])
+    x <- .merge.snpR.stats(x, out, "window.stats")
     
   }
   
   
-  window_meta <- cbind(data.table::as.data.table(meta[,c(chr, "position")]), effect = p, window = windows)
-  window_meta <- window_meta[,as.list(basic(effect)), by = "window"]
-  colnames(window_meta)[-1] <- paste0("window_", colnames(window_meta)[-1])
-  window_meta <- data.table::melt(window_meta, id.vars = "window")
-  window_meta <- window_meta[,as.list(basic(value)), by = "variable"]
-  colnames(window_meta)[1] <- "window_stat"
-  window_meta <- data.table::melt(window_meta, id.vars = "window_stat")
-  window_meta$stat <- paste0(window_meta$window_stat, "_summary_", window_meta$variable)
-  window_stats <- window_meta[["value"]]
-  names(window_stats) <- window_meta[["stat"]]
+  if("pairwise" %in% stats.type){
+    stats <- get.snpR.stats(x, facets = sample.facets, "pairwise")
+    numeric.cols <- which(sapply(stats, class) %in% c("numeric", "integer") & colnames(stats) != "nk")
+    numeric.cols <- intersect(numeric.cols, (which(colnames(stats) == ".snp.id") + 1):ncol(stats))
+    
+    
+    task_list <- .get.task.list(x, snp.facets)
+    task_list <- task_list[,3:4]
+    task_list <- as.data.frame(task_list)
+    
+    sample_task_list <- unique(as.character(stats$comparison))
+    sample_task_list <- cbind(sample.facets, sample_task_list)
+    sample_task_list <- as.data.frame(sample_task_list)
+    
+    task_list <- merge(sample_task_list, task_list)
+    
+    cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
+    
+    if(verbose){cat("Beginning run: pairwise stats.\n")}
+    doParallel::registerDoParallel(cl)
+    
+    out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
+                            .export = c("data.table", ".average_windows")) %dopar% {
+                              
+                              snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+                              snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+                              
+                              sample.matches <- which(apply(stats[,1:2], 1, function(x) identical(as.character(x), as.character(task_list[q,1:2]))))
+                              matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+                              
+                              if(length(matches) != 0){
+                                out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                                        chr =  unlist(.split.facet(snp.facets)),
+                                                        sigma = sigma,
+                                                        step = step, 
+                                                        triple_sig = triple_sigma, 
+                                                        gaussian = gaussian, 
+                                                        stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                                        nk = nk)
+                                out$subfacet <- task_list[q,2]
+                                out$facet <- task_list[q,1]
+                                out$snp.facet <- task_list[q,3]
+                                out$snp.subfacet <- task_list[q,4]
+                              }
+                              else{
+                                out <- NULL
+                              }
+                              out
+                            }
+    
+    
+    parallel::stopCluster(cl)
+    
+    
+    out <- dplyr::bind_rows(out)
+    out <- dplyr::arrange(out, snp.facets, position, start, end)
+    out$nk.status <- nk
+    out$gaussian <- gaussian
+    out$sigma <- sigma/1000
+    out$step <- ifelse(is.null(step), NA, step/1000)
+    out$triple_sigma <- triple_sigma
+    
+    if(length(unlist(.split.facet(snp.facets))) > 1){
+      out <- cbind(out, setnames(setDT(out)[, tstrsplit(out[[snp.facets]], "(?<!^)\\.", perl=TRUE)], unlist(.split.facet(snp.facets)))[])
+      out[[snp.facets]] <- NULL
+    }
+    
+    header_cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(out)[which(colnames(out) %in% colnames(snp.meta(x)))], "start", "end",
+                     "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps")
+    col_ord <- c(header_cols, colnames(out)[which(!colnames(out) %in% header_cols)])
+    .fix..call(out <- out[,..col_ord])
+    x <- .merge.snpR.stats(x, out, "pairwise.window.stats")
+  }
+  
+  
+  return(x)
 }
 
 
 
-# Mark windows for snps. More memory efficient but a bit slower, pulled from GeneArchEst. Call if there are a lot of SNPs.
+# Average stats for windows for snps. 
 #
-# Determine which unique genomic window each snp belongs to.
+# More memory efficient but a bit slower if there are many SNPs, parts pulled from GeneArchEst.
 #
-# @param x data.frame. Must contain a "position" column and a chromosome info column.
-# @param sigma numeric. Size of windows, in BP.
-# @param step numeric, step size.
-# @param chr character, default "chr". Name of chromosome info column in x.
+# @param x data.frame. Must contain a "position" column and may contain chromosome info columns
+# @param sigma numeric. Size of windows on each side of center, in BP.
+# @param step numeric, step size, in BP.
+# @param chr character, default "chr". Name of chromosome info column(s) in x. Should be passed through .check.snpR.facet.request first.
+# @param triple_sig logical, default FALSE. If true, triples sigma (original protocol)
+# @param stats data.table, stats to smooth. any columns not matching position or chr will be smoothed and must be numeric.
+# @param gaussian logical, default FALSE. If true, does gaussian smoothing. If not, does averages.
+# @param nk logical, default TRUE. If TRUE, weights by nk - 1. Expects 'nk' column in stats.
 #
-.mark_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE){
+.average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
+                          stats, gaussian = FALSE, nk = TRUE){
+  browser()
+  ..scols <- ..chr <- NULL
+  
   if(triple_sig){
     sigma <- sigma * 3
   }
   
   if(length(chr) > 1){
-    ncc <- .paste.by.facet(x[,chr], chr)
     nccn <- paste0(chr, collapse = ".")
+    
+    
+    ncc <- .paste.by.facet(x[,chr], chr)
     x[,nccn] <- ncc
     x[,chr] <- NULL
+    
     chr <- nccn
   }
   else if(chr == ".base" | is.null(chr)){
     x$chr <- ".base"
+    stats$chr <- ".base"
     chr <- "chr"
   }
   
@@ -218,58 +349,128 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   
   # for each chr, assign windows to all snps
   ## function per chr
-  assign_windows <- function(y, starts, ends){
-    comp_fun <- function(y, starts, ends){
-      lmat <- outer(y, starts, function(pos, starts) pos > starts)
-      lmat <- lmat * outer(y, ends, function(pos, ends) pos <= ends)
-      lmat[lmat == 1] <- rep(1:nrow(lmat), ncol(lmat))[lmat == 1]
-      # if(any(colSums(lmat) == 0)){
-      #   warning("Colsums are 0.")
-      # }
+  assign_windows <- function(y, starts, ends, centers, stats, chrs){
+    comp_fun <- function(y, starts, ends, centers, stats, scols, nk_dt){
+      # find snps in windows
+      lmat <- outer(y$position, starts, function(pos, starts) pos > starts)
+      lmat <- lmat * outer(y$position, ends, function(pos, ends) pos <= ends)
       
-      lmat <- as.data.frame(lmat)
-      lmat <- as.list(lmat)
-      names(lmat) <- NULL
-      lmat <- lapply(lmat, function(z) {z <- z[z != 0]; return(z)})
-      return(lmat)
+      tnsnps <- colSums(lmat)
+
+      # weight (gaussian)
+      if(gaussian){
+        lmat <-  outer(y$pos, centers, gaussian_weight, s = sigma)*lmat
+      }
+      
+      lmat[is.na(lmat)] <- 0
+      
+
+      # calculate weighted stats
+      if(nk){
+        build <- t(lmat) %*% as.matrix(.fix..call(stats[,..scols])*(nk_dt - 1))
+        build_weights <- t(lmat) %*% as.matrix(nk_dt - 1)
+      }
+      else{
+        build <- t(lmat) %*% as.matrix(.fix..call(stats[,..scols]))
+        build_weights <- matrix(colSums(lmat), nrow = ncol(lmat), ncol = length(scols))
+      }
+      
+      return(list(build = build, build_weights = build_weights, n_snps = tnsnps))
     }
     
+    scols <- which(!colnames(stats) %in% c(chr, "position", "nk"))
+    
+    # check for NAs in either stats or weights (don't want them to contribute)
+    nk_dt <- data.table::as.data.table(matrix(stats$nk, nrow = nrow(stats), ncol = length(scols)))
+    if(nk){
+      nk_NAs <- which(is.na(stats$nk))
+      if(length(nk_NAs) > 0){
+        data.table::set(stats, i = as.integer(nk_NAs), j = scols, value = 0)
+        stats$nk[nk_NAs] <- 0
+        data.table::set(nk_dt, nk_NAs, 1:ncol(nk_dt), value = 0)
+      }
+    }
+    for(k in 1:length(scols)){
+      if(nk){
+        data.table::set(nk_dt, which(is.na(stats[[scols[k]]])), k, value = 0)
+      }
+      data.table::set(stats,which(is.na(stats[[scols[k]]])),scols[k],0)
+    }
+    
+    if(nk){
+      for(k in 1:ncol(nk_dt)){
+        data.table::set(nk_dt, which(nk_dt[[k]] == 0), k, value = 1) # set missing data to 1 to prevent negative weights (since we do nk - 1)
+      }
+    }
+    
+    
+    
     # if large (say, 50k snps), will iterate through in chunks, solve, and then combine results to minimize memory usage
-    if(nrow(y) > 50000){
-      n_iters <- ceiling(nrow(y)/50000)
+    max_snps <- 100
+    if(nrow(y) > max_snps){
+      n_iters <- ceiling(nrow(y)/max_snps)
       titer <- 1
-      lmat <- vector("list", length(starts))
+      
+      # initialize storage: build will hold the building weighted values for each stat for each window, build_weights will hold the total weights for those windows
+      build <- matrix(0, length(starts), length(scols))
+      build <- data.table::as.data.table(build)
+      colnames(build) <- colnames(stats)[scols]
+      build <- list(build = build, build_weights = build, n_snps = numeric(length(starts)))
+
+      # for each set of snps, get the weighted values and weights for all relevent windows.
       for(i in 1:n_iters){
-        end <- i*50000
+        end <- i*max_snps
         end <- ifelse(end > nrow(y), nrow(y), end)
         trows <- titer:end
         consider_windows <- starts <= max(y$position[trows]) & ends >= min(y$position[trows])
-        tpart <- comp_fun(y$position[trows], starts[consider_windows], ends[consider_windows])
-        tpart <- lapply(tpart, function(z) z + (titer - 1))
-        lmat[consider_windows] <- foreach::foreach(q = 1:length(tpart), .inorder = T) %do% {
-          c(lmat[consider_windows][[q]], tpart[[q]])
-        }
-        titer <- i*50000 + 1
+        bpart <- comp_fun(y[trows,], 
+                          starts[consider_windows], 
+                          ends[consider_windows], 
+                          centers[consider_windows], 
+                          stats[trows,], 
+                          scols,
+                          nk_dt[trows,])
+        titer <- i*max_snps+ 1
+        
+        build$build[consider_windows,] <- build$build[consider_windows,] + bpart$build
+        build$build_weights[consider_windows,] <- build$build_weights[consider_windows,] + bpart$build_weights
+        build$n_snps <- build$n_snps[consider_windows] + bpart$n_snps
       }
     }
     else{
-      lmat <- comp_fun(y$position, starts, ends)
+      build <- comp_fun(y, starts, ends, centers, stats, scols, nk_dt)
+      build[1:2] <- lapply(build[1:2], data.table::as.data.table)
     }
-    return(lmat)
+    
+    
+    # calculate weighted values
+    out <- build$build / build$build_weights
+    
+    # remove empty windows
+    empties <- which(rowSums(dplyr::mutate_all(out, is.nan)) == ncol(out))
+        
+    out[,chr] <- chrs
+    out$start <- starts
+    out$end <- ends
+    out$position <- centers
+    out$n_snps <- build$n_snps
+    
+    
+    if(length(empties) > 0){
+      out <- out[-empties,]
+    }
+    return(out)
   }
   
   
   ## note: need to make sure that the window ids are unique!
   windows <- vector("list", length(unique.chr))
   for(i in 1:length(chr.max)){
-    windows[[i]] <- assign_windows(x[x[,chr] == unique.chr[i],], starts[[i]], ends[[i]])
+    windows[[i]] <- assign_windows(x[x[,chr] == unique.chr[i],], starts[[i]], ends[[i]], centers[[i]], 
+                                   stats = stats[x[,chr] == unique.chr[i],], chrs = chrs[[i]])
   }
-  windows <- unlist(windows, recursive = FALSE)
-  empties <- lapply(windows, length) == 0
-  windows <- windows[!empties]
+  
+  windows <- data.table::rbindlist(windows)
 
-  return(.suppress_specific_warning(list(windows = windows, 
-                                         win_stats = data.frame(starts = unlist(starts)[!empties], 
-                                                                ends = unlist(ends)[!empties], 
-                                                                chr = unlist(chrs)[!empties])), "short variable"))
+  return(windows)
 }
