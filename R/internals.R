@@ -1197,6 +1197,80 @@ is.snpRdata <- function(x){
 # 
 .tabulate_genotypes <- function(x, mDat, verbose = F){
 
+  
+  .tab_func <- function(x, snp_form, mDat){
+    x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
+    
+    gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
+    gmat <- gmat[,-1]
+    
+    # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
+    opts <- colnames(gmat)
+    opts1 <- substr(opts, 1, snp_form/2)
+    opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
+    rev_opts <- paste0(opts2, opts1)
+    reps <- which(opts %in% rev_opts & opts1 != opts2)
+    if(length(reps) > 0){
+      done <- character()
+      rm_cols <- numeric()
+      for(i in 1:length(reps)){
+        this_opt <- reps[i]
+        if(opts[this_opt] %in% done){next}
+        match <- which(rev_opts == opts[this_opt])
+        all_idents <- c(this_opt, match)
+        gmat[[this_opt]] <- rowSums(gmat[,..all_idents])
+        done <- c(done, unique(opts[all_idents]))
+        rm_cols <- c(rm_cols, all_idents[-1])
+      }
+      
+      gmat <- gmat[,-..rm_cols]
+    }
+    
+    # remove missing
+    mis.cols <- -which(colnames(gmat) == mDat)
+    if(length(mis.cols) > 0){
+      tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
+    }
+    else{
+      tmat <- gmat
+    }
+    
+    #get matrix of allele counts
+    #initialize
+    hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
+    if(verbose){cat("Getting allele table...\n")}
+    split_pattern <- paste0("(?<=", paste0(rep(".", snp_form/2), collapse = ""), ")") # split by the correct allele size
+    as <- unique(unlist(strsplit(paste0(colnames(tmat)), split_pattern, perl = TRUE)))
+    amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
+    colnames(amat) <- as
+    
+    #fill in
+    for(i in 1:length(as)){
+      b <- grep(paste0(as[i], "$"), colnames(tmat))
+      b <- sort(unique(c(b, grep(paste0("^", as[i]), colnames(tmat)))))
+      hom <- which(colnames(tmat) == paste0(as[i], as[i]))
+      if(length(hom) == 0){
+        het <- b
+        set(amat, j = i, value = rowSums(tmat[,het, with = FALSE]))
+      }
+      else{
+        het <- b[b != hom]
+        if(length(het) > 0){
+          if(data.table::is.data.table(tmat[,het, with = FALSE])){
+            set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2) + rowSums(tmat[,het, with = FALSE]))
+          }
+          else{
+            amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
+          }
+        }
+        else{
+          set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2))
+        }
+      }
+    }
+    return(list(gs = tmat, as = amat, wm = gmat))
+  }
+
   # fix for if x is a vector (only one individual) and convert to data.table
   if(!is.data.frame(x)){
     x <- data.frame(samp = x)
@@ -1204,78 +1278,47 @@ is.snpRdata <- function(x){
   x <- data.table::setDT(x)
   
   
+  
+  
   # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
-  x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
   
-  gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
-  gmat <- gmat[,-1]
   
-  # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
-  opts <- colnames(gmat)
-  opts1 <- substr(opts, 1, snp_form/2)
-  opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
-  rev_opts <- paste0(opts2, opts1)
-  reps <- which(opts %in% rev_opts & opts1 != opts2)
-  if(length(reps) > 0){
-    done <- character()
-    rm_cols <- numeric()
-    for(i in 1:length(reps)){
-      this_opt <- reps[i]
-      if(opts[this_opt] %in% done){next}
-      match <- which(rev_opts == opts[this_opt])
-      all_idents <- c(this_opt, match)
-      gmat[[this_opt]] <- rowSums(gmat[,..all_idents])
-      done <- c(done, unique(opts[all_idents]))
-      rm_cols <- c(rm_cols, all_idents[-1])
-    }
+  # loop to save memory if large
+  max_rows <- 100000000 # about 1.5G of storage for the big melt
+  max_snps <- ceiling(max_rows/ncol(x)) # max snps tolerable at once
+  n_iters <- ceiling(nrow(x)/max_snps)
+  titer <- 1
+  
+  # for each set of snps, get the weighted values and weights for all relevent windows.
+  geno.tables <- vector("list", n_iters)
+  for(i in 1:n_iters){
+    end <- i*max_snps
+    end <- ifelse(end > nrow(x), nrow(x), end)
+    trows <- titer:end
     
-    gmat <- gmat[,-..rm_cols]
+    
+    geno.tables[[i]] <- .tab_func(x[trows,], snp_form, mDat)
+
+    titer <- i*max_snps+ 1
   }
   
-  # remove missing
-  mis.cols <- -which(colnames(gmat) == mDat)
-  if(length(mis.cols) > 0){
-    tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
-  }
-  else{
-    tmat <- gmat
-  }
+
+  gs <- purrr::map(geno.tables, "gs")
+  as <- purrr::map(geno.tables, "as")
+  wm <- purrr::map(geno.tables, "wm")
   
-  #get matrix of allele counts
-  #initialize
-  hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
-  if(verbose){cat("Getting allele table...\n")}
-  split_pattern <- paste0("(?<=", paste0(rep(".", snp_form/2), collapse = ""), ")") # split by the correct allele size
-  as <- unique(unlist(strsplit(paste0(colnames(tmat)), split_pattern, perl = TRUE)))
-  amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
-  colnames(amat) <- as
+  gs <- as.matrix(data.table::rbindlist(gs, fill = TRUE))
+  as <- as.matrix(data.table::rbindlist(as, fill = TRUE))
+  wm <- as.matrix(data.table::rbindlist(wm, fill = TRUE))
   
-  #fill in
-  for(i in 1:length(as)){
-    b <- grep(paste0(as[i], "$"), colnames(tmat))
-    b <- sort(unique(c(b, grep(paste0("^", as[i]), colnames(tmat)))))
-    hom <- which(colnames(tmat) == paste0(as[i], as[i]))
-    if(length(hom) == 0){
-      het <- b
-      set(amat, j = i, value = rowSums(tmat[,het, with = FALSE]))
-    }
-    else{
-      het <- b[b != hom]
-      if(length(het) > 0){
-        if(data.table::is.data.table(tmat[,het, with = FALSE])){
-          set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2) + rowSums(tmat[,het, with = FALSE]))
-        }
-        else{
-          amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
-        }
-      }
-      else{
-        set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2))
-      }
-    }
-  }
-  return(list(gs = as.matrix(tmat), as = as.matrix(amat), wm = as.matrix(gmat)))
+  
+  gs[is.na(gs)] <- 0
+  as[is.na(as)] <- 0
+  wm[is.na(wm)] <- 0
+  
+  return(list(gs = gs, as = as, wm = wm))
+  
 }
 
 
