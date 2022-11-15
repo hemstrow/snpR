@@ -2,7 +2,7 @@
 % Please edit documentation in R/smoothing_functions.R
 \name{calc_smoothed_averages}
 \alias{calc_smoothed_averages}
-\title{Gaussian smooth statistics across sliding windows.}
+\title{Gaussian smooth or average statistics across sliding windows.}
 \usage{
 calc_smoothed_averages(
   x,
@@ -12,6 +12,8 @@ calc_smoothed_averages(
   nk = TRUE,
   stats.type = c("single", "pairwise"),
   par = FALSE,
+  triple_sigma = TRUE,
+  gaussian = TRUE,
   verbose = FALSE
 )
 }
@@ -22,7 +24,8 @@ calc_smoothed_averages(
 windows.}
 
 \item{sigma}{numeric. Designates the width of windows in kilobases. Full
-window size is 6*sigma.}
+window size is 6*sigma or sigma kilobases depending on the
+\code{triple_sigma} argument.}
 
 \item{step}{numeric or NULL, default NULL. Designates the number of kilobases
 between each window centroid. If NULL, windows are centered on each SNP.}
@@ -37,6 +40,12 @@ statistic(s) to smooth, either "single",  "pairwise", or c("single",
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
+\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+create windows of 6*sigma total.}
+
+\item{gaussian}{Logical, default TRUE. If TRUE, windows will be gaussian
+smoothed. If not, windows will be raw averages.}
+
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 printed to the console.}
 }
@@ -45,8 +54,9 @@ snpRdata object with smoothed averages for any requested statistics
  merged into the window.stats or pairwise.window.stats slots.
 }
 \description{
-Calculates gaussian smoothed average values for statistics and the genomic
-position at which it was observed, splitting by any requested variables.
+Calculates optionally gaussian smoothed average values for statistics and the
+genomic position at which it was observed, splitting by any requested
+variables.
 }
 \details{
 Averages for multiple statistics can be calculated at once. If the statistics
@@ -65,7 +75,8 @@ facets work as normally described in \code{\link{Facets_in_snpR}}.
 As described in Hohelohe et al. (2010), the contribution of individual SNPs to
 window averages can be weighted by the number of observations per SNP by
 setting the nk argument to TRUE, as is the default. For bootstraps, nk values
-are randomly drawn for each SNP in each window.
+are randomly drawn for each SNP in each window. SNPs can also optionally be
+weighted by their proximity to the window centroid using a gaussian kernal.
 
 Centers for windows can either every SNP (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
@@ -74,9 +85,10 @@ every step kilobases from the 0 position of each snp level facet category
 The size of sliding windows are defined by the "sigma" argument. Note that
 this value, as well as that provided to the "step" argument, are given in
 kilobases. Each window will include SNPs within 3*sigma kilobases from the
-window center. Past this point, the effect of each additional SNP on the
-window average would be very small, and so they are dropped for computational
-efficiency (see Hohenlohe (2010)).
+window center (if the \code{triple_sigma} option is selected). Past this
+point, the effect of each additional SNP on the window average would be very
+small, and so they are dropped for computational efficiency (see Hohenlohe
+(2010)).
 }
 \examples{
 \dontrun{

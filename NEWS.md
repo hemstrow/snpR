@@ -6,7 +6,7 @@
 
 
 ### Minor
-* Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of $6 * \sigma$ and determine if gaussian smoothing is actually used. NOTE: do_bootstraps needs work still to update.
+* Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. NOTE: do_bootstraps needs work still to update.
 
 
 ## Documentation

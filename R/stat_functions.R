@@ -248,19 +248,22 @@ calc_maf <- function(x, facets = NULL){
 #'  facets are provided, the calculated Tajima's D will be for the entire
 #'  genome.
 #'@param sigma numeric, default NULL. Sliding window size, in kilobases. Each
-#'  window will include all SNPs within 3*sigma kilobases. If either sigma or
-#'  step are NULL, the entire snp subfacet will be done at once (for example,
-#'  the whole chromosome).
+#'  window will include all SNPs within 3*sigma or sigma kilobases depending on
+#'  the \code{triple_sigma} argument. If either sigma or step are NULL, the
+#'  entire snp subfacet will be done at once (for example, the whole
+#'  chromosome).
 #'@param step numeric, default NULL. Number of bases to move between each
 #'  window, in kilobases. If either sigma or step are NULL, the entire snp
 #'  subfacet will be done at once (for example, the whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
+#'@param triple_sigma Logical, default TRUE. If TRUE, sigma will be tripled to
+#'  create windows of 6*sigma total.
 #'@param verbose Logical, default FALSE. If TRUE progress will be printed to the
 #'  console.
 #'
-#'@return snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's D
-#'  for each window merged in to the window.stats slot.
+#'@return snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's
+#'  D for each window merged in to the window.stats slot.
 #'
 #' @examples
 #' # slow, so not run
