@@ -415,7 +415,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     
     # if large (say, 50k snps), will iterate through in chunks, solve, and then combine results to minimize memory usage
-    max_snps <- 100
+    max_snps <- 50000
     if(nrow(y) > max_snps){
       n_iters <- ceiling(nrow(y)/max_snps)
       titer <- 1
