@@ -149,7 +149,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
     doParallel::registerDoParallel(cl)
-    browser()
 
     out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
                             .export = c("data.table", ".average_windows")) %dopar% {
@@ -290,7 +289,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 #
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
                           stats, gaussian = FALSE, nk = TRUE){
-  browser()
   ..scols <- ..chr <- NULL
   
   if(triple_sig){
