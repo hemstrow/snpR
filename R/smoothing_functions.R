@@ -206,7 +206,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     
     task_list <- .get.task.list(x, snp.facets)
-    task_list <- task_list[,3:4]
+    task_list <- task_list[,3:4,drop = FALSE]
     task_list <- as.data.frame(task_list)
     
     sample_task_list <- unique(as.character(stats$comparison))
@@ -219,7 +219,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     if(verbose){cat("Beginning run: pairwise stats.\n")}
     doParallel::registerDoParallel(cl)
-    
+
     out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
                             .export = c("data.table", ".average_windows")) %dopar% {
                               
