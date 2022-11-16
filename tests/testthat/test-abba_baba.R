@@ -38,6 +38,6 @@ test_that("correct abba_baba", {
   x <- calc_smoothed_averages(x, "pop.chr", sigma = 200, step = 200,
      nk = TRUE, stats.type = "pairwise")
   expect_equal(nrow(get.snpR.stats(x, "pop.chr", "abba_baba")$pairwise.window),
-               481)
+               487)
 })
   
