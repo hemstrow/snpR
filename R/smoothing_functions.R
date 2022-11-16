@@ -147,41 +147,77 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     if(verbose){cat("Beginning run: single stats.\n")}
     
-    cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
-    doParallel::registerDoParallel(cl)
-
-    out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
-                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
-                              
-                              .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
-                              
-                              snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
-                              snp.matches <- snp.meta(x)$.snp.id[snp.matches]
-                              
-                              sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
-                              matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
-                              if(length(matches) != 0){
-                                out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
-                                                        chr =  unlist(.split.facet(snp.facets)),
-                                                        sigma = sigma,
-                                                        step = step, 
-                                                        triple_sig = triple_sigma, 
-                                                        gaussian = gaussian, 
-                                                        stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
-                                                        nk = nk)
-                                out$subfacet <- task_list[q,2]
-                                out$facet <- task_list[q,1]
-                                out$snp.facet <- task_list[q,3]
-                                out$snp.subfacet <- task_list[q,4]
+    if(par > 1){
+      cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
+      doParallel::registerDoParallel(cl)
+      
+      out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
+                              .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
+                                
+                                .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
+                                
+                                snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+                                snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+                                
+                                sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
+                                matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+                                if(length(matches) != 0){
+                                  out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                                          chr =  unlist(.split.facet(snp.facets)),
+                                                          sigma = sigma,
+                                                          step = step, 
+                                                          triple_sig = triple_sigma, 
+                                                          gaussian = gaussian, 
+                                                          stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                                          nk = nk)
+                                  out$subfacet <- task_list[q,2]
+                                  out$facet <- task_list[q,1]
+                                  out$snp.facet <- task_list[q,3]
+                                  out$snp.subfacet <- task_list[q,4]
+                                }
+                                else{
+                                  out <- NULL
+                                }
+                                out
                               }
-                              else{
-                                out <- NULL
-                              }
-                              out
-                            }
+      
+      
+      parallel::stopCluster(cl)
+    }
+    else{
+      out <- vector("list", nrow(task_list))
+      for(q in 1:nrow(task_list)){
+        
+        if(verbose){cat(paste0(task_list[q,], collapse = "\t"), "\n")}
+        
+        .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
+        
+        snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+        snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+        
+        sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
+        matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+        if(length(matches) != 0){
+          out[[q]] <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                  chr =  unlist(.split.facet(snp.facets)),
+                                  sigma = sigma,
+                                  step = step, 
+                                  triple_sig = triple_sigma, 
+                                  gaussian = gaussian, 
+                                  stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                  nk = nk)
+          out[[q]]$subfacet <- task_list[q,2]
+          out[[q]]$facet <- task_list[q,1]
+          out[[q]]$snp.facet <- task_list[q,3]
+          out[[q]]$snp.subfacet <- task_list[q,4]
+        }
+        else{
+          out[[q]] <- NULL
+        }
+      }
+    }
     
     
-    parallel::stopCluster(cl)
     
     
     out <- dplyr::bind_rows(out)
@@ -217,44 +253,82 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     task_list <- merge(sample_task_list, task_list)
     
-    cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
+    
     
     if(verbose){cat("Beginning run: pairwise stats.\n")}
-    doParallel::registerDoParallel(cl)
-
-    out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
-                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
-                              
-                              .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
-                              
-                              snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
-                              snp.matches <- snp.meta(x)$.snp.id[snp.matches]
-                              
-                              sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
-                              matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
-                              
-                              if(length(matches) != 0){
-                                out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
-                                                        chr =  unlist(.split.facet(snp.facets)),
-                                                        sigma = sigma,
-                                                        step = step, 
-                                                        triple_sig = triple_sigma, 
-                                                        gaussian = gaussian, 
-                                                        stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
-                                                        nk = nk)
-                                out$subfacet <- task_list[q,2]
-                                out$facet <- task_list[q,1]
-                                out$snp.facet <- task_list[q,3]
-                                out$snp.subfacet <- task_list[q,4]
+    
+    if(par > 1){
+      cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
+      doParallel::registerDoParallel(cl)
+      
+      out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
+                              .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
+                                
+                                .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
+                                
+                                snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+                                snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+                                
+                                sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
+                                matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+                                
+                                if(length(matches) != 0){
+                                  out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                                          chr =  unlist(.split.facet(snp.facets)),
+                                                          sigma = sigma,
+                                                          step = step, 
+                                                          triple_sig = triple_sigma, 
+                                                          gaussian = gaussian, 
+                                                          stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                                          nk = nk)
+                                  out$subfacet <- task_list[q,2]
+                                  out$facet <- task_list[q,1]
+                                  out$snp.facet <- task_list[q,3]
+                                  out$snp.subfacet <- task_list[q,4]
+                                }
+                                else{
+                                  out <- NULL
+                                }
+                                out
                               }
-                              else{
-                                out <- NULL
-                              }
-                              out
-                            }
+      
+      
+      parallel::stopCluster(cl)
+    }
+    else{
+      out <- vector("list", nrow(task_list))
+      for(q in 1:nrow(task_list)){
+        if(verbose){cat(paste0(task_list[q,], collapse = "\t"), "\n")}
+        
+        .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
+        
+        snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
+        snp.matches <- snp.meta(x)$.snp.id[snp.matches]
+        
+        sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
+        matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+        
+        if(length(matches) != 0){
+          out[[q]] <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                  chr =  unlist(.split.facet(snp.facets)),
+                                  sigma = sigma,
+                                  step = step, 
+                                  triple_sig = triple_sigma, 
+                                  gaussian = gaussian, 
+                                  stats = data.table::as.data.table(stats[matches,c(numeric.cols, which(colnames(stats) == "nk"))]),
+                                  nk = nk)
+          out[[q]]$subfacet <- task_list[q,2]
+          out[[q]]$facet <- task_list[q,1]
+          out[[q]]$snp.facet <- task_list[q,3]
+          out[[q]]$snp.subfacet <- task_list[q,4]
+        }
+        else{
+          out[[q]] <- NULL
+        }
+      }
+    }
     
     
-    parallel::stopCluster(cl)
     
     
     out <- dplyr::bind_rows(out)
