@@ -151,7 +151,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     doParallel::registerDoParallel(cl)
 
     out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
-                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet", ".split.facet")) %dopar% {
+                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
+                              
+                              .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
                               
                               snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
                               snp.matches <- snp.meta(x)$.snp.id[snp.matches]
@@ -221,7 +223,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     doParallel::registerDoParallel(cl)
 
     out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
-                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet", ".split.facet")) %dopar% {
+                            .export = c("data.table", ".average_windows", ".fetch.snp.meta.matching.task.list", ".paste.by.facet")) %dopar% {
+                              
+                              .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
                               
                               snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
                               snp.matches <- snp.meta(x)$.snp.id[snp.matches]
