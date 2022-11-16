@@ -149,6 +149,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
     
     cl <- parallel::makePSOCKcluster(min(c(par, nrow(task_list))))
     doParallel::registerDoParallel(cl)
+    browser()
 
     out <- foreach::foreach(q = 1:nrow(task_list), .inorder = FALSE,
                             .export = c("data.table", ".average_windows")) %dopar% {
@@ -156,7 +157,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                               snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
                               snp.matches <- snp.meta(x)$.snp.id[snp.matches]
                               
-                              sample.matches <- which(apply(stats[,1:2], 1, function(x) identical(as.character(x), as.character(task_list[q,1:2]))))
+                              sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                               matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
                               if(length(matches) != 0){
                                 out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
@@ -226,7 +227,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                               snp.matches <- .fetch.snp.meta.matching.task.list(x = x, task_list[q,])
                               snp.matches <- snp.meta(x)$.snp.id[snp.matches]
                               
-                              sample.matches <- which(apply(stats[,1:2], 1, function(x) identical(as.character(x), as.character(task_list[q,1:2]))))
+                              sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                               matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
                               
                               if(length(matches) != 0){
