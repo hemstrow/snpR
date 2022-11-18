@@ -26,3 +26,18 @@ test_that("pairwise",{
   expect_true(all(check[check$subfacet == "ASP" & check$snp.subfacet == "groupVI",]$position %in% 
                     seq(0, 14000000, by = 250*1000)))
 })
+
+
+test_that("no_chr",{
+  # smooth
+  check <- calc_pairwise_fst(stickSNPs, "pop")
+  check <- calc_pi(check, "pop")
+  check <- calc_smoothed_averages(check, facets = "pop", sigma = 250, step = 250)
+  checkp <- get.snpR.stats(check, "pop", "fst")$pairwise.window
+  checks <- get.snpR.stats(check, "pop", "pi")$single.window
+  
+  
+  # tests
+  expect_true(all(checkp$snp.facet == ".base" & checkp$snp.subfacet == ".base"))
+  expect_true(all(checks$snp.facet == ".base" & checks$snp.subfacet == ".base"))
+})

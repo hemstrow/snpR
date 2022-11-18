@@ -161,8 +161,15 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                                 
                                 sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                                 matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+                                
+                                pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+                                if(any(pos_cols == ".base")){
+                                  pos_cols <- pos_cols[-which(pos_cols == ".base")]
+                                }
+                                
+                                
                                 if(length(matches) != 0){
-                                  out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                  out <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
                                                           chr =  unlist(.split.facet(snp.facets)),
                                                           sigma = sigma,
                                                           step = step, 
@@ -197,8 +204,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
         
         sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
         matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
+        
+        pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+        if(any(pos_cols == ".base")){
+          pos_cols <- pos_cols[-which(pos_cols == ".base")]
+        }
         if(length(matches) != 0){
-          out[[q]] <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+          out[[q]] <- .average_windows(stats[matches,pos_cols, drop = FALSE], 
                                   chr =  unlist(.split.facet(snp.facets)),
                                   sigma = sigma,
                                   step = step, 
@@ -272,8 +284,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
                                 sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                                 matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
                                 
+                                pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+                                if(any(pos_cols == ".base")){
+                                  pos_cols <- pos_cols[-which(pos_cols == ".base")]
+                                }
+                                
                                 if(length(matches) != 0){
-                                  out <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+                                  out <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
                                                           chr =  unlist(.split.facet(snp.facets)),
                                                           sigma = sigma,
                                                           step = step, 
@@ -308,8 +325,14 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
         sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
         matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
         
+        
+        pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+        if(any(pos_cols == ".base")){
+          pos_cols <- pos_cols[-which(pos_cols == ".base")]
+        }
+        
         if(length(matches) != 0){
-          out[[q]] <- .average_windows(stats[matches,c(unlist(.split.facet(snp.facets)), "position")], 
+          out[[q]] <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
                                   chr =  unlist(.split.facet(snp.facets)),
                                   sigma = sigma,
                                   step = step, 
@@ -540,8 +563,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   ## note: need to make sure that the window ids are unique!
   windows <- vector("list", length(unique.chr))
   for(i in 1:length(chr.max)){
-    windows[[i]] <- assign_windows(x[x[,chr] == unique.chr[i],], starts[[i]], ends[[i]], centers[[i]], 
-                                   stats = stats[x[,chr] == unique.chr[i],], chrs = chrs[[i]])
+    matches <- which(x[,chr] == unique.chr[i])
+    windows[[i]] <- assign_windows(x[matches,], starts[[i]], ends[[i]], centers[[i]], 
+                                   stats = stats[matches,], chrs = chrs[[i]])
   }
   
   windows <- data.table::rbindlist(windows)
