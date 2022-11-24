@@ -878,7 +878,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(!is.null(col_pattern)){
       keep.cols <- colnames(y)[keep.cols]
       
-      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop",
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma",
                                                     colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
