@@ -533,7 +533,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
         
         build$build[consider_windows,] <- build$build[consider_windows,] + bpart$build
         build$build_weights[consider_windows,] <- build$build_weights[consider_windows,] + bpart$build_weights
-        build$n_snps <- build$n_snps[consider_windows] + bpart$n_snps
+        build$n_snps[consider_windows] <- build$n_snps[consider_windows] + bpart$n_snps
       }
     }
     else{
