@@ -12,6 +12,7 @@
 * Swapped the `geom` used in `plot_pairwise_ld_heatmap()` to `geom_bin2d()` to prevent points from disappearing if too many loci are plotted on a chr.
 * Fixed `read_structure()` (and `import.snpR.data()`) to never assume sample names, just loci names (which is the standard) if noted.
 * Added better error checking for invalid NeEstimator exe files to `calc_ne()`.
+* Fixed a bug where vcf files with missing data would occasionally get read in as "."s instead of NAs by `vcfR`, which meant that they weren't being properly accounted for as missing data by snpR. Most functions actually still work fine, but a few, like `plot_structure()` were unhappy.
 
 # snpR 1.2.3
 
