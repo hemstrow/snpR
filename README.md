@@ -112,7 +112,7 @@ vignette("snpR_introduction")
 
 -   `filter_snps()`: Filter data.
 -   `format_snps()`: Format data into other export formats.
--   `summarize_facets()`: Summarized available facets.
+-   `summarize_facets()`: Summarize available facets.
 -   `citations()`: Fetch citations for all methods used in calculations
     for a specific `snpRdata` object.
 -   `check_duplicates()`: Check data for potentially duplicated samples.
