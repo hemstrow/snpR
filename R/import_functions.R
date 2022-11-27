@@ -672,7 +672,7 @@
 }
 
 .process_sync <- function(sync_file, snp.meta = NULL, sample.meta = NULL, bi_allelic = TRUE, ploidy = 2){
-  value <- ..tar_cols <- .snp.id <- variable <-  NULL
+  value <- ..tar_cols <- .snp.id <- variable <- ..N_col <- NULL
   
   #==========read and initialize=========
   sync <- data.table::fread(sync_file)
@@ -774,7 +774,7 @@
 }
 
 .process_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
-  bi_allelic <- FALSE
+  bi_allelic <- rows_per_individual <- marker_and_sample_names <- position <- .snp.id <- .sample.id <- ..N_col <- FALSE
   #======special cases========
   # sample and snp metadata
   if(is.character(sample.meta)){
@@ -820,7 +820,7 @@
                                   sample.meta = sample.meta))
       }
       else{
-        genotypes <- as.data.frame(data.table::fread(genotypes, ...))
+        genotypes <- as.data.frame(data.table::fread(genotypes))
       }
     }
     else{

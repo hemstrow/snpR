@@ -946,40 +946,41 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'
 #'
 #' @examples
-#' # association testing:
 #' # add a dummy phenotype and run an association test.
-#' x <- stickSNPs
-#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+#' x <- stickSNPs[pop = c("ASP", "SMR"), chr = c("groupIX", "groupIV")]
+#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(x), TRUE)
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
-#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE)$plot
 #' 
 #' 
 #' # other types of stats:
 #' # make some data
 #' x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
-#'
-#' # plot pi, breaking apart by population, keeping only the groupIX and
-#' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
+#' 
+#' # plot pi, breaking apart by population, keeping only the groupIX
+#' # and the ASP population, with
 #' # significant and suggestive lines plotted and SNPs
 #' # with pi below the significance level labeled.
 #' plot_manhattan(x, "pi", facets = "pop",
-#'                chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
-#'                sample.subfacet = c("ASP", "OPL", "SMR"),
+#'                chr = "chr", chr.subfacet = "groupIX",
+#'                sample.subfacet = "ASP",
 #'                significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
-#'
-#' # plot FST for the ASP/PAL comparison across all chromosomes,
+#' 
+#' # plot FST for the ASP/SMR comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
+#' # Note that since this is thie ony comparison, we don't actually need to
+#' # specify it.
 #' plot_manhattan(x, "fst", facets = "pop.chr",
-#'                sample.subfacet = "ASP~PAL", highlight = 1:20,
+#'                sample.subfacet = "ASP~SMR", highlight = 1:10,
 #'                chr = "chr", snp = ".snp.id")$plot
-#'
-#' # plot sliding-window FST between ASP and CLF
+#' 
+#' # plot sliding-window FST between ASP and SMR
 #' # and between OPL and SMR
 #' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
-#'                chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+#'                chr = "chr", sample.subfacet = "ASP~SMR",
 #'                significant = .29, suggestive = .2)$plot
-#'
+#' 
 #' # plot using a data.frame,
 #' # using log-transformed p-values
 #' ## grab data
@@ -992,19 +993,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' 
 #' 
 #' # plot with a rug
-#' rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+#' rug_data <- data.frame(chr = c("groupIX", "groupIV"), start = c(0, 1000000),
 #'                        end = c(5000000, 6000000), gene = c("A", "B"))
-#'                        
+#' 
 #' # point style, midpoints plotted
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data)
-#'                
+#' 
 #' # ribbon style
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
-#' 
-#' # with labels that are visible by examining with plotly!
-#' # not run to avoid pltoly dependancy
 #' \dontrun{
 #' plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                                 log.p = TRUE, rug_data = rug_data, 

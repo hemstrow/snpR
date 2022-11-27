@@ -496,7 +496,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 #' }
 calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par = FALSE,
                               cleanup = TRUE, verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- NULL
   
 
   if(!isTRUE(verbose)){
@@ -3667,7 +3667,7 @@ calc_he <- function(x, facets = NULL){
   
   # bi_allelic case, just need maf--very straightforward
   if(x@bi_allelic){
-    he_func <- function(maf){
+    he_func_bi <- function(as = NULL, maf){
       return(2 * maf$maf * (1 - maf$maf))
     }
     # add missing maf
@@ -3678,12 +3678,12 @@ calc_he <- function(x, facets = NULL){
     
     # calculate he
     out <- .get.snpR.stats(x, facets = facets, type = "single")
-    out$he <- he_func(out)
+    out$he <- he_func_bi(maf = out)
     out <- out[,c("facet", "subfacet", colnames(snp.meta(x)), "he")]
   }
   # non bi_allelic, need as but still easy
   else{
-    he_func <- function(as){
+    he_func_nb <- function(as, maf = NULL){
       as <- as$as
       as <- as/rowSums(as)
       as <- as^2
@@ -3691,7 +3691,7 @@ calc_he <- function(x, facets = NULL){
       return(he)
     }
     
-    out <- .apply.snpR.facets(x, facets, "gs", fun = he_func, case = "ps")
+    out <- .apply.snpR.facets(x, facets, "gs", fun = he_func_nb, case = "ps")
     colnames(out)[ncol(out)] <- "he"
   }
   

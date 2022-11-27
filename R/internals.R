@@ -9,7 +9,7 @@
 #'
 #' @export
 is.snpRdata <- function(x){
-  return(is(x, "snpRdata"))
+  return(methods::is(x, "snpRdata"))
 }
 
 # Add facets to snpRdata objects
@@ -1132,6 +1132,10 @@ is.snpRdata <- function(x){
       else if(facets[[i]][j] == ".base"){
         next
       }
+      else{
+        # if the facet doesn't exit, an error will pop up later
+        next
+      }
       
       bad <- which(unlist(bad))
       if(length(bad) > 0){stop(paste0("Facet '", 
@@ -1219,7 +1223,7 @@ is.snpRdata <- function(x){
 # @author William Hemstrom
 # 
 .tabulate_genotypes <- function(x, mDat, verbose = F){
-
+  ..all_idents <- ..rm_cols <- NULL
   
   .tab_func <- function(x, snp_form, mDat){
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt

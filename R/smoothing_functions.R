@@ -387,7 +387,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 # @param stats data.table, stats to smooth. any columns not matching position or chr will be smoothed and must be numeric.
 # @param gaussian logical, default FALSE. If true, does gaussian smoothing. If not, does averages.
 # @param nk logical, default TRUE. If TRUE, weights by nk - 1. Expects 'nk' column in stats.
-#
+#' @importFrom foreach %do%
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
                           stats, gaussian = FALSE, nk = TRUE){
   ..scols <- ..chr <- NULL
