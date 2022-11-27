@@ -50,7 +50,7 @@ test_that("Stats table creation", {
 
 
 test_that("facet error reporting",{
-  test <- stickSNPs
+  test <- .internal.data$test_snps
   
   # sample meta
   expect_warning(sample.meta(test) <- cbind(sample.meta(test),
@@ -67,7 +67,7 @@ test_that("facet error reporting",{
   
   
   # snp.meta
-  test <- stickSNPs
+  test <- .internal.data$test_snps
   expect_warning(snp.meta(test) <- cbind(snp.meta(test),
                                          test1 = sample(c("A", "B", ".C"), nsnps(test), replace = TRUE),
                                          test2 = sample(c("A", "B", "~C"), nsnps(test), replace = TRUE),
@@ -81,13 +81,13 @@ test_that("facet error reporting",{
   expect_error(calc_ho(test, "test4"), "\n\t'\\.'\n\t '~'\n\t ' ' \\(spaces\\)")
   
   # dup facets
-  expect_error(snp.meta(test) <- cbind(snp.meta(test), pop = "test"), "Bad column names: pop, pop\\.")
+  expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), pop = "test"), "unexpected"), "Bad column names: pop, pop\\.")
   
   # bad facet names
-  expect_error(snp.meta(test) <- cbind(snp.meta(test), `~pop` = "test"), "Bad column names: ~pop\\.")
-  expect_error(snp.meta(test) <- cbind(snp.meta(test), `.pop` = "test"), "Bad column names: \\.pop\\.")
-  expect_error(snp.meta(test) <- cbind(snp.meta(test), ` pop` = "test"), "Bad column names: \\ pop\\.")
-  expect_error(snp.meta(test) <- cbind(snp.meta(test), all = "test"), "Bad column names: all\\.")
+  expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), `~pop` = "test"), "unexpected"), "Bad column names: ~pop\\.")
+  expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), `.pop` = "test"), "unexpected"), "Bad column names: \\.pop\\.")
+  expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), ` pop` = "test"), "unexpected"), "Bad column names: \\ pop\\.")
+  expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), all = "test"), "unexpected"), "Bad column names: all\\.")
   
 })
 
