@@ -1118,6 +1118,29 @@ is.snpRdata <- function(x){
         facet.types[i] <- "snp"
       }
     }
+    
+    # check for bad characters in our facet level (slows things down a small bit, but avoids user errors that are uninformative)
+    bad.chars <- c("\\.", "\\~", " ")
+    bad.chars.rep <- c("'.'", "'~'", "' ' (spaces)")
+    for(j in 1:length(facets[[i]])){
+      if(facets[[i]][j] %in% colnames(x@snp.meta)){
+        bad <- lapply(bad.chars, function(y) any(grepl(y, x@snp.meta[,facets[[i]][j]])))
+      }
+      else if(facets[[i]][j] %in% colnames(x@sample.meta)){
+        bad <- lapply(bad.chars, function(y) any(grepl(y, x@sample.meta[,facets[[i]][j]])))
+      }
+      else if(facets[[i]][j] == ".base"){
+        next
+      }
+      
+      bad <- which(unlist(bad))
+      if(length(bad) > 0){stop(paste0("Facet '", 
+                                      facets[[i]][j], 
+                                      "' cannot be used as a facet level since it contains: \n\t", 
+                                      paste0(bad.chars.rep[bad], collapse = "\n\t ")))}
+    }
+    
+    # update
     facets[[i]] <- paste(facets[[i]], collapse = ".")
   }
   
@@ -1153,7 +1176,6 @@ is.snpRdata <- function(x){
     }
   }
   
-  
   # fix the facet type for .base
   if(return.type){
     base.facets <- which(facet.types == "")
@@ -1162,12 +1184,14 @@ is.snpRdata <- function(x){
     }
   }
   
-  # remove duplicates and return
+  # remove duplicates
   dups <- duplicated(facets)
   if(any(dups)){
     facets <- facets[-which(dups)]
     facet.types <- facet.types[-which(dups)]
   }
+
+  # return
   if(return.type){
     return(list(unlist(facets), facet.types))
   }

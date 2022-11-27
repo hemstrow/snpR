@@ -24,6 +24,7 @@
 * Fixed a bug where vcf files with missing data would occasionally get read in as "."s instead of NAs by `vcfR`, which meant that they weren't being properly accounted for as missing data by snpR. Most functions actually still work fine, but a few, like `plot_structure()` were unhappy.
 * Added a check to tab-delimited input for a column of NAs at the end (automatically remove if found). Common when importing ANGSD outputs.
 * Added `normalizePath()` to calc_ne to normalize the neestimator path.
+* Added automatic facet checking for bad characters when doing facet operations. This is a bit slower (when there are *many* SNPs or individuals), but will return an informative error instead of an uninformative one and so improves usability.
 
 
 # snpR 1.2.4 -- hot-fix

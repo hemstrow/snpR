@@ -49,5 +49,47 @@ test_that("Stats table creation", {
 })
 
 
+test_that("facet error reporting",{
+  test <- stickSNPs
+  
+  # sample meta
+  expect_warning(sample.meta(test) <- cbind(sample.meta(test),
+                                            test1 = sample(c("A", "B", ".C"), nsamps(test), replace = TRUE),
+                                            test2 = sample(c("A", "B", "~C"), nsamps(test), replace = TRUE),
+                                            test3 = sample(c("A", "B", " C"), nsamps(test), replace = TRUE),
+                                            test4 = sample(c(".A", "~B", " C"), nsamps(test), replace = TRUE)),
+                 "Unaccepted characters")
+  
+  expect_error(calc_ho(test, "test1"), "'\\.'")
+  expect_error(calc_ho(test, "test2"), "'~'")
+  expect_error(calc_ho(test, "test3"), "\\(spaces\\)")
+  expect_error(calc_ho(test, "test4"), "\n\t'\\.'\n\t '~'\n\t ' ' \\(spaces\\)")
+  
+  
+  # snp.meta
+  test <- stickSNPs
+  expect_warning(snp.meta(test) <- cbind(snp.meta(test),
+                                         test1 = sample(c("A", "B", ".C"), nsnps(test), replace = TRUE),
+                                         test2 = sample(c("A", "B", "~C"), nsnps(test), replace = TRUE),
+                                         test3 = sample(c("A", "B", " C"), nsnps(test), replace = TRUE),
+                                         test4 = sample(c(".A", "~B", " C"), nsnps(test), replace = TRUE)),
+                 "Unaccepted characters")
+  
+  expect_error(calc_ho(test, "test1"), "'\\.'")
+  expect_error(calc_ho(test, "test2"), "'~'")
+  expect_error(calc_ho(test, "test3"), "\\(spaces\\)")
+  expect_error(calc_ho(test, "test4"), "\n\t'\\.'\n\t '~'\n\t ' ' \\(spaces\\)")
+  
+  # dup facets
+  expect_error(snp.meta(test) <- cbind(snp.meta(test), pop = "test"), "Bad column names: pop, pop\\.")
+  
+  # bad facet names
+  expect_error(snp.meta(test) <- cbind(snp.meta(test), `~pop` = "test"), "Bad column names: ~pop\\.")
+  expect_error(snp.meta(test) <- cbind(snp.meta(test), `.pop` = "test"), "Bad column names: \\.pop\\.")
+  expect_error(snp.meta(test) <- cbind(snp.meta(test), ` pop` = "test"), "Bad column names: \\ pop\\.")
+  expect_error(snp.meta(test) <- cbind(snp.meta(test), all = "test"), "Bad column names: all\\.")
+  
+})
+
 
 
