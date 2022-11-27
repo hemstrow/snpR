@@ -9,9 +9,8 @@
 #'
 #' @export
 is.snpRdata <- function(x){
-  return("snpRdata" %in% class(x))
+  return(is(x, "snpRdata"))
 }
-
 
 # Add facets to snpRdata objects
 # 
