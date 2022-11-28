@@ -1194,6 +1194,7 @@ is.snpRdata <- function(x){
 # @author William Hemstrom
 # 
 .tabulate_genotypes <- function(x, mDat, verbose = F){
+  ..all_idents <- ..rm_cols <- NULL
 
   # fix for if x is a vector (only one individual) and convert to data.table
   if(!is.data.frame(x)){

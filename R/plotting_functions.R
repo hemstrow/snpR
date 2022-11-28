@@ -1683,8 +1683,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' clusters within populations using the qsort option.
 #'
 #' Since the clustering and CLUMPP processes can be time consuming and outside
-#' tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of Q
-#' matrices, sorted by K and then rep or a character string giving a pattern
+#' tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of
+#' Q matrices, sorted by K and then rep or a character string giving a pattern
 #' matching saved Q matrix files in the current working directory may provided
 #' directly instead of a snpRdata object. Note that the output for this
 #' function, if run on a snpRdata object, will return a properly formatted list
@@ -1768,8 +1768,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
-#' @param alt.palette character or NULL, default NULL. Optional palette of colors
-#'   to use instead of the viridis palette.
+#' @param alt.palette character or NULL, default NULL. Optional palette of
+#'   colors to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
 #' @param separator_thickness numeric, default 1. Thickness of facet level
@@ -1869,8 +1869,8 @@ plot_qq <- function(x, plot_var, facets = NULL){
 #' @param strip_col_names string, default NULL. An optional regular expression
 #'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
-#'   argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
-#'   part off. A vector of strings will strip multiple patterns.
+#'   argument is something like "meta$pop". A vector of strings will strip
+#'   multiple patterns.
 #' @param cleanup logical, default TRUE. If TRUE, extra files created during
 #'   assignment, clumpp, and plot construction will be removed. If FALSE, they
 #'   will be left in the working directory.
