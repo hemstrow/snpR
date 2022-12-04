@@ -1250,7 +1250,7 @@ is.snpRdata <- function(x){
         rm_cols <- c(rm_cols, all_idents[-1])
       }
       
-      gmat <- gmat[,-..rm_cols]
+      gmat <- .fix..call(gmat[,-..rm_cols])
     }
     
     # remove missing
