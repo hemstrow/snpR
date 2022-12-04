@@ -1245,7 +1245,7 @@ is.snpRdata <- function(x){
         if(opts[this_opt] %in% done){next}
         match <- which(rev_opts == opts[this_opt])
         all_idents <- c(this_opt, match)
-        gmat[[this_opt]] <- rowSums(gmat[,..all_idents])
+        gmat[[this_opt]] <- .fix..call(rowSums(gmat[,..all_idents]))
         done <- c(done, unique(opts[all_idents]))
         rm_cols <- c(rm_cols, all_idents[-1])
       }
