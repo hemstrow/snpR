@@ -3679,7 +3679,9 @@ calc_he <- function(x, facets = NULL){
     # calculate he
     out <- .get.snpR.stats(x, facets = facets, type = "single")
     out$he <- he_func_bi(maf = out)
-    out <- out[,c("facet", "subfacet", colnames(snp.meta(x)), "he")]
+    ft <- .check.snpR.facet.request(x, facets, return.type = TRUE)
+    out$facet.type <- ft[[2]][match(out$facet, ft[[1]])]
+    out <- out[,c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "he")]
   }
   # non bi_allelic, need as but still easy
   else{
@@ -3695,8 +3697,8 @@ calc_he <- function(x, facets = NULL){
     colnames(out)[ncol(out)] <- "he"
   }
   
-  
   x <- .merge.snpR.stats(x, out)
+  
   x <- .calc_weighted_stats(x, ofacets, type = "single", "he")
   x <- .update_calced_stats(x, facets, "he", "snp")
   return(x)
