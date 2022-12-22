@@ -12,7 +12,7 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                 c("gp_effect"),
                                 "fis"))
 window.stats <- list(stat = "tajimas_d",
-                  col_pattern = list(c("ws.theta", "ts.theta", "D", "n_snps")))
+                  col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
                     col_pattern = list(c("fst", "nk"),
                                        c("D_abba_baba", "abba", "baba", "nk")))

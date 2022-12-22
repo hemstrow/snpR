@@ -18,8 +18,15 @@ A snpRdata object with prop_poly merged into the weighted.means
   slot.
 }
 \description{
-Calculates the proportion of polymorphic (genotyped) loci for any
-combination of SNP and sample facets.
+Calculates the proportion of polymorphic (genotyped) loci for any combination
+of SNP and sample facets. Note: per window counts of polymorphic loci can be
+calculated using \code{\link{calc_tajimas_d}}.
+}
+\details{
+Note that per window counts of polymorphic loci can be calculated using
+\code{\link{calc_tajimas_d}} (contained in the \code{num_seg} column).
+Dividing this by the \code{n_snps} column will return the proportion of
+polymorphic loci in each window if that is desired!
 }
 \examples{
 # base facet

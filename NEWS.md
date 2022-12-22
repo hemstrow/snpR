@@ -8,6 +8,7 @@
 ### Minor
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
 * Minor rework to importing and facet creation to be more memory efficient (but sligtly slower) when working with large datasets.
+* `calc_tajimas_d()` will now also return the number of raw segregating sites per window (which was already internally calculated, since it is a part of Watterson's Theta, but not returned).
 
 
 ## Documentation
@@ -16,6 +17,7 @@
 * Updated the `calc_tajimas_d()` examples to use the updated `get.snpR.stats()` syntax.
 * Added warnings/messages to `calc_ne` when it is run without the `chr` argument or with more than 5,000 SNPs.
 * Added a more informative error message to `calc_ne` that shows if no output files are generated.
+* Added a note to the documentation for `calc_prop_poly` to note that `calc_tajimas_d` will also calculate the number of segragating sites (and the number of snps) in a window, which gives the prop_poly per window.
 
 ## Bug fixes
 * Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.

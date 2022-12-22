@@ -367,6 +367,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
       out[i,"position"] <- c
       out[i,"ws.theta"] <- ws.theta
       out[i,"ts.theta"] <- ts.theta
+      out[i,"num_seg"] <- n_seg
       out[i,"D"] <- D
       out[i, "n_snps"] <- nrow(wsnps)
       out[i, "start"] <- start
@@ -410,9 +411,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
 
   #===========merge and clean============
   x <- .merge.snpR.stats(x, out, type = "window.stats")
-  x <- .update_calced_stats(x, facets, "tajimas_D")
-  x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "D"))
-  x <- .update_citations(x, "Tajima1989", "Tajima's_D", "Tajima's D, as well as Watterson's and Tajima's Theta")
+  x <- .update_calced_stats(x, facets, "tajimas_d")
+  x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "num_seg", "D"))
+  x <- .update_citations(x, "Tajima1989", "Tajima's_d", "Tajima's D, as well as Watterson's and Tajima's Theta")
   
   # calc weights ignoring any snp levels (for stuff like overall population means)
   samp.facets <- .check.snpR.facet.request(x, facets)
@@ -4171,8 +4172,14 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
 
 #' Calculate the proportion of polymorphic loci.
 #'
-#' Calculates the proportion of polymorphic (genotyped) loci for any
-#' combination of SNP and sample facets.
+#' Calculates the proportion of polymorphic (genotyped) loci for any combination
+#' of SNP and sample facets. Note: per window counts of polymorphic loci can be
+#' calculated using \code{\link{calc_tajimas_d}}.
+#'
+#' Note that per window counts of polymorphic loci can be calculated using
+#' \code{\link{calc_tajimas_d}} (contained in the \code{num_seg} column).
+#' Dividing this by the \code{n_snps} column will return the proportion of
+#' polymorphic loci in each window if that is desired!
 #' 
 #' @param x snpRdata object
 #' @param facets facets over which to check for polymorphic loci. Can be any
@@ -4264,8 +4271,6 @@ calc_prop_poly <- function(x, facets = NULL){
   x <- .update_calced_stats(x, facets, stats = "prop_poly")
   x <- .merge.snpR.stats(x, output, type = "weighted.means")
 }
-
-
 
 
 #' Generate phylogenetic-like clustering trees.
