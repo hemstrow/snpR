@@ -802,7 +802,7 @@ is.snpRdata <- function(x){
   
   if(type == "stats"){
     # merge and return
-    meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == ".snp.id"))], colnames(x@snp.meta), "facet.type")
+    meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == ".snp.id"))], colnames(x@snp.meta))
     starter.meta <- c("facet", "subfacet", "facet.type")
     n.s <- .smart.merge(stats, x@stats, meta.cols, starter.meta)
     x@stats <- n.s

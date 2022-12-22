@@ -17,7 +17,7 @@
 * Updated the `calc_tajimas_d()` examples to use the updated `get.snpR.stats()` syntax.
 * Added warnings/messages to `calc_ne` when it is run without the `chr` argument or with more than 5,000 SNPs.
 * Added a more informative error message to `calc_ne` that shows if no output files are generated.
-* Added a note to the documentation for `calc_prop_poly` to note that `calc_tajimas_d` will also calculate the number of segragating sites (and the number of snps) in a window, which gives the prop_poly per window.
+* Added a note to the documentation for `calc_prop_poly` to note that `calc_tajimas_d` will also calculate the number of segragating sites (and the number of snps) in a window, which can be used to easily calculate the prop_poly per window.
 
 ## Bug fixes
 * Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.
