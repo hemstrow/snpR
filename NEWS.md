@@ -9,6 +9,7 @@
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
 * Minor rework to importing and facet creation to be more memory efficient (but sligtly slower) when working with large datasets.
 * `calc_tajimas_d()` will now also return the number of raw segregating sites per window (which was already internally calculated, since it is a part of Watterson's Theta, but not returned).
+* Changed the defaults for smoothing and tajima's D to `2*sigma` (non-overlapping windows)
 
 
 ## Documentation

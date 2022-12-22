@@ -8,7 +8,7 @@ calc_smoothed_averages(
   x,
   facets = NULL,
   sigma,
-  step = NULL,
+  step = 2 * sigma,
   nk = TRUE,
   stats.type = c("single", "pairwise"),
   par = FALSE,
@@ -27,8 +27,9 @@ windows.}
 window size is 6*sigma or sigma kilobases depending on the
 \code{triple_sigma} argument.}
 
-\item{step}{numeric or NULL, default NULL. Designates the number of kilobases
-between each window centroid. If NULL, windows are centered on each SNP.}
+\item{step}{numeric or NULL, default default \code{2*sigma} (non-overlapping
+windows). Designates the number of kilobases between each window centroid.
+If NULL, windows are centered on each SNP.}
 
 \item{nk}{logical, default TRUE. If TRUE, weights SNP contribution to window
 averages by the number of observations at those SNPs.}

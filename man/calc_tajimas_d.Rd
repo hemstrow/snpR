@@ -8,7 +8,7 @@ calc_tajimas_d(
   x,
   facets = NULL,
   sigma = NULL,
-  step = NULL,
+  step = 2 * sigma,
   par = FALSE,
   triple_sigma = TRUE,
   verbose = FALSE
@@ -28,9 +28,10 @@ the \code{triple_sigma} argument. If either sigma or step are NULL, the
 entire snp subfacet will be done at once (for example, the whole
 chromosome).}
 
-\item{step}{numeric, default NULL. Number of bases to move between each
-window, in kilobases. If either sigma or step are NULL, the entire snp
-subfacet will be done at once (for example, the whole chromosome).}
+\item{step}{numeric or NULL, default \code{2*sigma} (non-overlapping windows). Number
+of bases to move between each window, in kilobases. If either sigma or step
+are NULL, the entire snp subfacet will be done at once (for example, the
+whole chromosome).}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}

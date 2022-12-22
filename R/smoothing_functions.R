@@ -57,8 +57,9 @@ gaussian_weight <- function(p, c, s) {
 #'@param sigma numeric. Designates the width of windows in kilobases. Full
 #'  window size is 6*sigma or sigma kilobases depending on the
 #'  \code{triple_sigma} argument.
-#'@param step numeric or NULL, default NULL. Designates the number of kilobases
-#'  between each window centroid. If NULL, windows are centered on each SNP.
+#'@param step numeric or NULL, default default \code{2*sigma} (non-overlapping
+#'  windows). Designates the number of kilobases between each window centroid.
+#'  If NULL, windows are centered on each SNP.
 #'@param nk logical, default TRUE. If TRUE, weights SNP contribution to window
 #'  averages by the number of observations at those SNPs.
 #'@param stats.type character, default c("single", "pairwise"). Designates the
@@ -92,7 +93,7 @@ gaussian_weight <- function(p, c, s) {
 #'get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
 #'get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
 #'}
-calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TRUE, 
+calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk = TRUE, 
                                    stats.type = c("single", "pairwise"), 
                                    par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
@@ -119,10 +120,14 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   sigma <- 1000*sigma
   if(!is.null(step)){
     step <- step * 1000
+    .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
+  }
+  else{
+    .sanity_check_window(x, sigma/1000, NULL, stats.type = stats.type, nk, facets = facets)
+    
   }
   if(verbose){cat("Smoothing Parameters:\n\twindow size = ", ifelse(triple_sigma, 6*sigma, 2*sigma), "\n\tWindow slide = ", ifelse(is.null(step), "per-snp", step), "\n\tOverlap? = ", ifelse(step >= sigma*2, FALSE, TRUE), "\n")}
   
-  .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
   
   
   par <- .par_checker(par, TRUE)

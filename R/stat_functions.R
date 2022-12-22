@@ -252,9 +252,10 @@ calc_maf <- function(x, facets = NULL){
 #'  the \code{triple_sigma} argument. If either sigma or step are NULL, the
 #'  entire snp subfacet will be done at once (for example, the whole
 #'  chromosome).
-#'@param step numeric, default NULL. Number of bases to move between each
-#'  window, in kilobases. If either sigma or step are NULL, the entire snp
-#'  subfacet will be done at once (for example, the whole chromosome).
+#'@param step numeric or NULL, default \code{2*sigma} (non-overlapping windows). Number
+#'  of bases to move between each window, in kilobases. If either sigma or step
+#'  are NULL, the entire snp subfacet will be done at once (for example, the
+#'  whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'@param triple_sigma Logical, default TRUE. If TRUE, sigma will be tripled to
@@ -286,7 +287,7 @@ calc_maf <- function(x, facets = NULL){
 #'@export
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
-calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FALSE,
+calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
                            triple_sigma = TRUE,
                            verbose = FALSE){
   #===============sanity checks==========================
@@ -296,6 +297,11 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   
   if(!is.null(sigma) & !is.null(step)){
     .sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+  }
+  else if(is.null(step) & !is.null(sigma)){
+    sigma <- NULL
+    step <- NULL
+    warning("If no step size is provided but sigma is, the entire facet level will be considerd as a single window (sigma will be ignored).\n")
   }
   else{
     sigma <- NULL
@@ -308,6 +314,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = NULL, par = FA
   
   #=================subfunction=========
   func <- function(ac, par, sigma, step, report){
+    browser()
     out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
