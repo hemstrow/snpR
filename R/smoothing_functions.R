@@ -120,7 +120,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
   if(!is.null(step)){
     step <- step * 1000
   }
-  if(verbose){cat("Smoothing Parameters:\n\twindow size = ", ifelse(triple_sigma, 6*sigma, 2*sigma), "\n\tWindow slide = ", ifelse(is.null(step), "per-snp", step*1000), "\n")}
+  if(verbose){cat("Smoothing Parameters:\n\twindow size = ", ifelse(triple_sigma, 6*sigma, 2*sigma), "\n\tWindow slide = ", ifelse(is.null(step), "per-snp", step), "\n\tOverlap? = ", ifelse(step >= sigma*2, FALSE, TRUE), "\n")}
   
   .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
   
@@ -391,7 +391,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = NULL, nk = TR
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
                           stats, gaussian = FALSE, nk = TRUE){
   ..scols <- ..chr <- NULL
-  
+
   if(triple_sig){
     sigma <- sigma * 3
   }

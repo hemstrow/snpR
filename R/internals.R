@@ -1499,8 +1499,8 @@ is.snpRdata <- function(x){
     if(sigma >= 500 | sigma >= 500){
       warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in kilobases!")
     }
-    else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
+    else if(sigma <= 10){
+      warn.msg <- c(warn.msg, paste0("Sigma is smaller that typically expected: ", sigma, " kb!"))
     }
   }
   else{
@@ -1510,8 +1510,8 @@ is.snpRdata <- function(x){
     if(sigma >= 500){
       warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in kilobases!")
     }
-    else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
+    else if(sigma <= 10){
+      warn.msg <- c(warn.msg, paste0("Sigma is smaller that typically expected: ", sigma, " kb!"))
     }
   }
   
