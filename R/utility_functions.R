@@ -314,6 +314,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 
 # Old subset version with different facet specification. For internal use.
 .subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
+  browser()
   #=========sanity checks========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -1126,6 +1127,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'  containing phenotype information, for plink! output.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
+#'@param plink_recode_numeric Logical, default TRUE. If TRUE, all chrs/scaffs
+#'  will be renamed to simple numerics.
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1220,8 +1223,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        ncp = 2, ncp.max = 5, chr = "chr", position = "position",
-                        phenotype = "phenotype", verbose = FALSE){
+                        ncp = 2, ncp.max = 5, chr = NULL, position = "position",
+                        phenotype = "phenotype", verbose = FALSE, plink_recode_numeric = TRUE){
   if(!isTRUE(verbose)){
     cat <- function(...){}
   }
@@ -1365,6 +1368,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   else if(output == "plink"){
     .check.installed("genio")
+    if(is.null(chr)){
+      stop("The chr argument must be provided for plink output, indicating which column of the data contains chromosome information.\n")
+    }
     if(is.null(input_format)){
       if(!all(c("position") %in% colnames(x@snp.meta)) | !any(chr %in% colnames(x@snp.meta))){
         stop("A column named position and one matching the argument 'chr' containing position in bp and chr/linkage group/scaffold must be present in snp metadata!")
@@ -1381,6 +1387,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         stop("ped must be a six column data.frame containg Family ID, Individual ID, Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. See plink documentation.\n")
       }
     }
+    
     cat("Converting to PLINK! binary format.\n\tThis relies on the genio package--please cite this for publication.\n")
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
@@ -2024,6 +2031,31 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       warning("Removed some loci without any called genotypes.\n")
     }
     
+    # check for bad chr names
+    chrs <- summarize_facets(x, chr)$chr
+    lead <- unlist(lapply(chrs, substr, stop = 1, start = 1))
+    bad_chrs <- which(lead %in% 0:9)
+    if(length(bad_chrs) > 0){
+      lead[bad_chrs] <- LETTERS[1:10][match(lead[bad_chrs], 0:9)]
+      n.chrs <- snp.meta(x)[,chr]
+      if(length(bads) > 0){
+        n.chrs <- n.chrs[-bads]
+      }
+      substr(n.chrs[which(n.chrs %in% chrs[bad_chrs])], 1, 1) <- lead[match(n.chrs[which(n.chrs %in% chrs[bad_chrs])], chrs)]
+      warning("Found numbers at the start of chr/scaffold names, which plink does not allow. Replaced with letters (0:9 = A:J).\n")
+    }
+    else{
+      n.chrs <- snp.meta(x)[,chr]
+      if(length(bads) > 0){
+        n.chrs <- n.chrs[-bads]
+      }
+    }
+    
+    # sort by chr then position
+    n.ord <- order(n.chrs, snp.meta(x)$position)
+    n.chrs <- n.chrs[n.ord]
+    sn <- sn[n.ord,]
+    
     if(isFALSE(outfile)){
       genio::write_bed("plink_out.bed", sn, verbose = FALSE)
       cat("Wrote bed file to plink_out.bed\n")
@@ -2139,13 +2171,23 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         a2 = a.names[,2])
     }
 
-    # recode chr
-    bim$chr <- as.numeric(as.factor(bim$chr))
-
+    
     # remove bads
     if(length(bads) > 0){
       bim <- bim[-bads,]
     }
+    
+    # re-order
+    bim <- bim[n.ord,]
+    
+    # re-name
+    bim$chr <- n.chrs
+    
+    # recode chr
+    if(plink_recode_numeric){
+      bim$chr <- as.numeric(as.factor(bim$chr))
+    }
+    
     
     # grab normal map file
     map <- bim[,1:4]
