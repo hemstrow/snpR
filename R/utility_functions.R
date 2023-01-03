@@ -1222,7 +1222,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
-                        ncp = 2, ncp.max = 5, chr = NULL, position = "position",
+                        ncp = 2, ncp.max = 5, chr = "chr", position = "position",
                         phenotype = "phenotype", verbose = FALSE, plink_recode_numeric = TRUE){
   if(!isTRUE(verbose)){
     cat <- function(...){}

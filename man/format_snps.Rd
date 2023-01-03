@@ -20,10 +20,11 @@ format_snps(
   chr.length = NULL,
   ncp = 2,
   ncp.max = 5,
-  chr = "chr",
+  chr = NULL,
   position = "position",
   phenotype = "phenotype",
-  verbose = FALSE
+  verbose = FALSE,
+  plink_recode_numeric = TRUE
 )
 }
 \arguments{
@@ -99,6 +100,9 @@ containing phenotype information, for plink! output.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}
+
+\item{plink_recode_numeric}{Logical, default TRUE. If TRUE, all chrs/scaffs
+will be renamed to simple numerics.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
