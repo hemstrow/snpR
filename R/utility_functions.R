@@ -314,7 +314,6 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 
 # Old subset version with different facet specification. For internal use.
 .subset_snpR_data <- function(x, snps = 1:nrow(x), samps = 1:ncol(x), facets = NULL, subfacets = NULL, snp.facets = NULL, snp.subfacets = NULL){
-  browser()
   #=========sanity checks========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")

@@ -314,7 +314,6 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
   
   #=================subfunction=========
   func <- function(ac, par, sigma, step, report){
-    browser()
     out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
     tps <- sort(ac$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
