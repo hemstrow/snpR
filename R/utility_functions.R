@@ -2032,17 +2032,25 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     
     # check for bad chr names
-    chrs <- summarize_facets(x, chr)$chr
-    lead <- unlist(lapply(chrs, substr, stop = 1, start = 1))
-    bad_chrs <- which(lead %in% 0:9)
-    if(length(bad_chrs) > 0){
-      lead[bad_chrs] <- LETTERS[1:10][match(lead[bad_chrs], 0:9)]
-      n.chrs <- snp.meta(x)[,chr]
-      if(length(bads) > 0){
-        n.chrs <- n.chrs[-bads]
+    if(!plink_recode_numeric){
+      chrs <- summarize_facets(x, chr)$chr
+      lead <- unlist(lapply(chrs, substr, stop = 1, start = 1))
+      bad_chrs <- which(lead %in% 0:9)
+      if(length(bad_chrs) > 0){
+        lead[bad_chrs] <- LETTERS[1:10][match(lead[bad_chrs], 0:9)]
+        n.chrs <- snp.meta(x)[,chr]
+        if(length(bads) > 0){
+          n.chrs <- n.chrs[-bads]
+        }
+        substr(n.chrs[which(n.chrs %in% chrs[bad_chrs])], 1, 1) <- lead[match(n.chrs[which(n.chrs %in% chrs[bad_chrs])], chrs)]
+        warning("Found numbers at the start of chr/scaffold names, which plink does not allow. Replaced with letters (0:9 = A:J).\n")
       }
-      substr(n.chrs[which(n.chrs %in% chrs[bad_chrs])], 1, 1) <- lead[match(n.chrs[which(n.chrs %in% chrs[bad_chrs])], chrs)]
-      warning("Found numbers at the start of chr/scaffold names, which plink does not allow. Replaced with letters (0:9 = A:J).\n")
+      else{
+        n.chrs <- snp.meta(x)[,chr]
+        if(length(bads) > 0){
+          n.chrs <- n.chrs[-bads]
+        }
+      }
     }
     else{
       n.chrs <- snp.meta(x)[,chr]
@@ -2050,6 +2058,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         n.chrs <- n.chrs[-bads]
       }
     }
+    
     
     # sort by chr then position
     n.ord <- order(n.chrs, snp.meta(x)$position)
