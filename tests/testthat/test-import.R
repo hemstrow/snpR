@@ -32,6 +32,7 @@ test_that("files",{
 })
 
 test_that("vcf", {
+  skip_if_not_installed("vcfR")
   format_snps(stickSNPs, output = "vcf", outfile = "test.vcf")
   
   expect_warning(.make_it_quiet(check <- import.snpR.data("test.vcf")), "sample metadata columns contain unacceptable special characters")
