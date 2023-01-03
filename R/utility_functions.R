@@ -1124,10 +1124,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
 #'  position information, for VCF output.
 #'@param phenotype character, default "phenotype". Optional name of column
 #'  containing phenotype information, for plink! output.
+#'@param plink_recode_numeric Logical, default FALSE. If FALSE, all chrs/scaffs
+#'  will be renamed to numbers. This may be useful in some cases.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
-#'@param plink_recode_numeric Logical, default TRUE. If TRUE, all chrs/scaffs
-#'  will be renamed to simple numerics.
+
 #'
 #'@return A data.frame or snpRdata object with data in the correct format. May
 #'  also write a file to the specified path.
@@ -1223,7 +1224,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
-                        phenotype = "phenotype", verbose = FALSE, plink_recode_numeric = TRUE){
+                        phenotype = "phenotype", plink_recode_numeric = FALSE, verbose = FALSE){
   if(!isTRUE(verbose)){
     cat <- function(...){}
   }

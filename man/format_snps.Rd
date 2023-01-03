@@ -20,11 +20,11 @@ format_snps(
   chr.length = NULL,
   ncp = 2,
   ncp.max = 5,
-  chr = NULL,
+  chr = "chr",
   position = "position",
   phenotype = "phenotype",
-  verbose = FALSE,
-  plink_recode_numeric = TRUE
+  plink_recode_numeric = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -98,11 +98,11 @@ position information, for VCF output.}
 \item{phenotype}{character, default "phenotype". Optional name of column
 containing phenotype information, for plink! output.}
 
+\item{plink_recode_numeric}{Logical, default FALSE. If FALSE, all chrs/scaffs
+will be renamed to numbers. This may be useful in some cases.}
+
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}
-
-\item{plink_recode_numeric}{Logical, default TRUE. If TRUE, all chrs/scaffs
-will be renamed to simple numerics.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
