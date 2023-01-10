@@ -1469,7 +1469,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                                                                 start_position = start,
                                                                 end_position = end,
                                                                 color = chr),
-                                         size = rug_thickness), 
+                                         linewidth = rug_thickness), 
           "Ignoring unknown aesthetics")
         
         chr <- ochr
@@ -1483,7 +1483,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         
         p <- p + ggplot2::geom_segment(data = rug_data, 
                                        mapping = ggplot2::aes(x = cum.start, xend = cum.end, y = y, yend = y, color = chr),
-                                       size = rug_thickness)
+                                       linewidth = rug_thickness)
         
         chr <- ochr
       }
