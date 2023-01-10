@@ -473,7 +473,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #' @param zfst logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
 #'   will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
 #'   The resulting values will be in the column "zfst", accessable using the
-#'   usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.
+#'   usual \code{\link{get.snpR.stats}} method.
 #' @param fst_over_one_minus_fst logical, default FALSE. If TRUE, fst/(1-fst)
 #'   will be calculated, and will be in the column "fst_id" accessable using the
 #'   usual \code{\link{get.snpR.stats}} method.
