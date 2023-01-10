@@ -514,7 +514,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               fst_over_one_minus_fst = FALSE,
                               cleanup = TRUE, 
                               verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- zfst <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- NULL
   
 
   if(!isTRUE(verbose)){
