@@ -253,6 +253,8 @@ plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 # ribbon style
 plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+               
+# with plotly to mouse over information
 \dontrun{
 plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                                 log.p = TRUE, rug_data = rug_data, 

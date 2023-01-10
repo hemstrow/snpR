@@ -470,6 +470,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'   See details.
 #' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
 #'   be processed in parallel using the supplied number of cores.
+#' @param zfst logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
+#'   will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
+#'   The resulting values will be in the column "zfst", accessable using the
+#'   usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.
+#' @param fst_over_one_minus_fst logical, default FALSE. If TRUE, fst/(1-fst)
+#'   will be calculated, and will be in the column "fst_id" accessable using the
+#'   usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.
 #' @param cleanup logical, default TRUE. If TRUE, any new files created during
 #'   FST calculation will be automatically removed.
 #' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
@@ -501,9 +508,13 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 #' get.snpR.stats(x, "pop", "fst")
 #' }
-calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par = FALSE,
-                              cleanup = TRUE, verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- NULL
+calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, 
+                              boot_par = FALSE,
+                              zfst = FALSE,
+                              fst_over_one_minus_fst = FALSE,
+                              cleanup = TRUE, 
+                              verbose = FALSE){
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- NULL
   
 
   if(!isTRUE(verbose)){
@@ -940,6 +951,15 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, boot_par =
   
   # merge the per-snp
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
+  ## zfst and fst/1-fst
+  if(zfst){
+    real_out[, zfst := fst - mean(fst, na.rm = TRUE)/sd(fst, na.rm = TRUE), by = .(comparison, facet)]
+  }
+  if(fst_over_one_minus_fst){
+    real_out[, fst_id := fst/(1 - fst)]
+  }
+  col.ord <- c(which(colnames(real_out) != "nk"), which(colnames(real_out) == "nk"))
+  real_out <- .fix..call(real_out[,..col.ord])
   x <- .merge.snpR.stats(x, real_out, type = "pairwise")
   
   # cleanup

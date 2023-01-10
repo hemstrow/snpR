@@ -15,6 +15,12 @@ test_that("correct wc", {
                      4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
 })
 
+test_that("zfst and 1/1-fst",{
+  tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc", zfst = TRUE, fst_over_one_minus_fst = TRUE)
+  tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+  expect_true(all(c("zfst", "fst_id") %in% colnames(tdfst$pairwise)))
+})
+
 test_that("correct fis",{
   # check
   x <- calc_fis(stickSNPs[1:10, pop = c("ASP")], c("pop"))
@@ -94,7 +100,6 @@ test_that("fst bootstrapping",{
   expect_true(is.numeric(bs2_res$weighted.means$weighted_mean_fst_p))
   
 })
-
 
 test_that("correct cld ld",{
   tdld <- calc_pairwise_ld(.internal.data$test_snps, "pop")

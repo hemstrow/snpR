@@ -1029,7 +1029,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
 
-  cum.bp <- cum.start <- cum.end <- y <- NULL
+  cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
   
   #=============sanity checks==============================
   msg <- character()
