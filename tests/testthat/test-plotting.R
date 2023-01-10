@@ -33,9 +33,9 @@ test_that("structure",{
   expect_true(all(c("r_1", "r_2", "clumpp") %in% names(p2$data$K_2)))
   
   # evanno is there and OK?
-  expect_true(names(p2$K_plot) == c("raw", "evanno"))
-  if(names(p2$K_plot) == c("raw", "evano")){
-    expect_true(colnames(p2$K_plot$evanno) == c("K", "mean_est_ln_prob", "lnpK", "lnppK", "deltaK", "sd_est_ln_prob"))
+  expect_true(all(names(p2$K_plot) == c("raw", "evanno")))
+  if(all(names(p2$K_plot) == c("raw", "evano"))){
+    expect_true(all(colnames(p2$K_plot$evanno) == c("K", "mean_est_ln_prob", "lnpK", "lnppK", "deltaK", "sd_est_ln_prob")))
     expect_identical(round(p2$K_plot$evanno$deltaK, 4), c(NA, round(3.889087, 4), NA))
   }
 })
@@ -184,6 +184,7 @@ test_that("manhattan plots", {
 
 #=================qq=====================
 test_that("qq plots",{
+  set.seed(12211)
   # with snpRdata 
   asso <- stickSNPs
   sample.meta(asso)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
