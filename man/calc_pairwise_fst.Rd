@@ -39,7 +39,7 @@ usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.}
 
 \item{fst_over_one_minus_fst}{logical, default FALSE. If TRUE, fst/(1-fst)
 will be calculated, and will be in the column "fst_id" accessable using the
-usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.}
+usual \code{\link{get.snpR.stats}} method.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, any new files created during
 FST calculation will be automatically removed.}

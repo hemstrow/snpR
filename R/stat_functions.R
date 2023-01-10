@@ -476,7 +476,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'   usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.
 #' @param fst_over_one_minus_fst logical, default FALSE. If TRUE, fst/(1-fst)
 #'   will be calculated, and will be in the column "fst_id" accessable using the
-#'   usual \code{\link{get.snpR.stats(x, facet = "pop", stats = "fst")}} method.
+#'   usual \code{\link{get.snpR.stats}} method.
 #' @param cleanup logical, default TRUE. If TRUE, any new files created during
 #'   FST calculation will be automatically removed.
 #' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
@@ -514,7 +514,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               fst_over_one_minus_fst = FALSE,
                               cleanup = TRUE, 
                               verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- zfst <- NULL
   
 
   if(!isTRUE(verbose)){
@@ -953,7 +953,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
   ## zfst and fst/1-fst
   if(zfst){
-    real_out[, zfst := fst - mean(fst, na.rm = TRUE)/sd(fst, na.rm = TRUE), by = .(comparison, facet)]
+    real_out[, zfst := fst - mean(fst, na.rm = TRUE)/stats::sd(fst, na.rm = TRUE), by = .(comparison, facet)]
   }
   if(fst_over_one_minus_fst){
     real_out[, fst_id := fst/(1 - fst)]
