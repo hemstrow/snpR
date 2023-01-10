@@ -1003,6 +1003,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' # ribbon style
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+#'                
+#' # with plotly to mouse over information
 #' \dontrun{
 #' plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                                 log.p = TRUE, rug_data = rug_data, 
@@ -1400,18 +1402,36 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   # rug
   if(!is.null(rug_data)){
-    
+
     # standard rug style
     if(rug_style == "point"){
       # note: labels aren't plotted because they tend to be very messy, so they are returned as an unplotted aesthetic for plotly use!
       if(!is.null(rug_label)){
+        ochr <- chr
+        orl <- rug_label
+        obp <- bp
+        
+        chr <- ggplot2::sym(chr)
+        rug_label <- ggplot2::sym(rug_label)
+        bp <- ggplot2::sym(bp)
+        
         .suppress_specific_warning(p <- p + ggplot2::geom_rug(data = rug_data, 
-                                                              mapping = ggplot2::aes_string(label = rug_label, position = bp, color = chr),
+                                                              mapping = ggplot2::aes(label = rug_label, position = bp, color = chr),
                                                               length = rug_thickness),
                                    "Ignoring unknown aesthetics")
+        
+        chr <- ochr
+        rug_label <- orl
+        bp <- obp
       }
       else{
-        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes(color = ggplot2::sym(chr)))
+        ochr <- chr
+        
+        chr <- ggplot2::sym(chr)
+        
+        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes(color = chr))
+        
+        chr <- ochr
       }
     }
     
@@ -1432,24 +1452,40 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       
 
       if(!is.null(rug_label)){
+        orl <- rug_label
+        ochr <- chr
+        
+        rug_label <- ggplot2::sym(rug_label)
+        chr <- ggplot2::sym(chr)
+        
+        
         .suppress_specific_warning(
           p <- p + ggplot2::geom_segment(data = rug_data, 
-                                         mapping = ggplot2::aes_string(x = "cum.start", 
-                                                                       xend = "cum.end", 
-                                                                       y = "y",
-                                                                       yend = "y", 
-                                                                       label = rug_label,
-                                                                       start_position = "start",
-                                                                       end_position = "end",
-                                                                       color = chr),
+                                         mapping = ggplot2::aes(x = cum.start, 
+                                                                xend = cum.end, 
+                                                                y = y,
+                                                                yend = y, 
+                                                                label = rug_label,
+                                                                start_position = start,
+                                                                end_position = end,
+                                                                color = chr),
                                          size = rug_thickness), 
           "Ignoring unknown aesthetics")
         
+        chr <- ochr
+        rug_label <- orl
+        
       }
       else{
+        ochr <- chr
+        
+        chr <- ggplot2::sym(chr)
+        
         p <- p + ggplot2::geom_segment(data = rug_data, 
-                                       mapping = ggplot2::aes_string(x = "cum.start", xend = "cum.end", y = "y", yend = "y", color = chr),
+                                       mapping = ggplot2::aes(x = cum.start, xend = cum.end, y = y, yend = y, color = chr),
                                        size = rug_thickness)
+        
+        chr <- ochr
       }
     }
   }
