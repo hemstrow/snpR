@@ -218,7 +218,7 @@ calc_maf <- function(x, facets = NULL){
                              ref = major_minor_base)
     
   }
-  if(!x@bi_allelic){
+  if(!.is.bi_allelic(x)){
     out$minor <- "NA"
   }
   
@@ -3673,7 +3673,7 @@ calc_he <- function(x, facets = NULL){
   }
   
   # bi_allelic case, just need maf--very straightforward
-  if(x@bi_allelic){
+  if(.is.bi_allelic(x@bi_allelic)){
     he_func_bi <- function(as = NULL, maf){
       return(2 * maf$maf * (1 - maf$maf))
     }

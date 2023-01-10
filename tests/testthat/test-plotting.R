@@ -27,10 +27,17 @@ test_that("structure",{
   
   
   # clumpp
-  p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2, reps = 2, method = "structure", 
+  p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:4, reps = 2, method = "structure", 
                         structure_path = str_path, clumpp = TRUE, clumpp_path = clumpp_path)
   expect_true(ggplot2::is.ggplot(p2$plot))
   expect_true(all(c("r_1", "r_2", "clumpp") %in% names(p2$data$K_2)))
+  
+  # evanno is there and OK?
+  expect_true(names(p2$K_plot) == c("raw", "evanno"))
+  if(names(p2$K_plot) == c("raw", "evano")){
+    expect_true(colnames(p2$K_plot$evanno) == c("K", "mean_est_ln_prob", "lnpK", "lnppK", "deltaK", "sd_est_ln_prob"))
+    expect_identical(round(p2$K_plot$evanno$deltaK, 4), c(NA, round(3.889087, 4), NA))
+  }
 })
 
 
@@ -144,7 +151,7 @@ test_that("manhattan plots", {
   
   
   
-  # with a rug 
+  # with a rug
   rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
                          end = c(5000000, 6000000), gene = c("A", "B"))
 
@@ -166,7 +173,7 @@ test_that("manhattan plots", {
   ## ribbon
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
-  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  expect_true(all(c("label", "start_position", "end_position") %in% names(p4$plot$layers[[2]]$mapping)))
   
   
   # with tajimas D
@@ -176,15 +183,28 @@ test_that("manhattan plots", {
 })
 
 #=================qq=====================
-# test_that("qq plots",{
-#   set.seed(1212)
-#   sample.meta(asso)$cat_phenotype <- sample(c("A", "B"), ncol(asso), replace = TRUE)
-#   asso <- calc_association(asso, response = "cat_phenotype")
-#   
-#   p <- plot_qq(asso, )
-#   
-#   
-# })
+test_that("qq plots",{
+  # with snpRdata 
+  asso <- stickSNPs
+  sample.meta(asso)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+  asso <- calc_association(asso, response = "phenotype")
+
+  p <- plot_qq(asso, "gmmat_pval_phenotype")
+  ggplot2::is.ggplot(p$.base)
+
+  # multiple facets
+  x <- stickSNPs
+  sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+  x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype",
+                        method = "armitage")
+  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"))
+  expect_true(all(unlist(lapply(p, ggplot2::is.ggplot))))
+  out <- lapply(p, ggplot2::ggplot_build)
+  expect_equal(length(levels(out$fam.pop$data[[1]]$PANEL)), 24)
+  expect_equal(length(levels(out$pop$data[[1]]$PANEL)), 6)
+  expect_equal(length(levels(out$.base$data[[1]]$PANEL)), 1)
+  
+})
 
 #=================LD======================
 test_that("LD heatmap", {

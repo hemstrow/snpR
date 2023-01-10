@@ -3,14 +3,15 @@
 ## Features
 
 ### Major
-
+* Rework to allow some features to be used with microsatellite or other non-biallelic data types such as microhaplotypes is underway and will be enabled once basic filtering, diversity calculations, and plotting function support is finished.
 
 ### Minor
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
 * Minor rework to importing and facet creation to be more memory efficient (but sligtly slower) when working with large datasets.
 * `calc_tajimas_d()` will now also return the number of raw segregating sites per window (which was already internally calculated, since it is a part of Watterson's Theta, but not returned).
 * Changed the defaults for smoothing and tajima's D to `2*sigma` (non-overlapping windows)
-
+* Added the `mac` argument to `filter_snps()` to filter by minor allele count instead of minor allele frequency. Currently doesn't support faceting, which will probably be added later depending on user need. The `singletons` argument is now depriceated.
+* Added the `hwe_excess_side` argument ot `filter_snps()`, enabling users to only remove SNPs out of HWE that have either het or hom excesses. They default behavior is still to do both.
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.

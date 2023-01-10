@@ -576,7 +576,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   #=============prepare dataset===============
   cat("Formatting data...\n")
 
-  bi_allelic <- ifelse("bi_allelic" %in% methods::slotNames(x), x@bi_allelic, TRUE)
+  bi_allelic <- .is.bi_allelic(x)
   if(bi_allelic){
     # check for matching sn plot:
     if(length(x@sn$sn) != 0){
@@ -1411,7 +1411,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                                    "Ignoring unknown aesthetics")
       }
       else{
-        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes_string(color = chr))
+        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes(color = ggplot2::sym(chr)))
       }
     }
     
@@ -3073,7 +3073,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     seps[1] <- -.5
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
-      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, size = separator_thickness) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, linewidth = separator_thickness) +
       ggplot2::xlab(label = facet[1])
   }
   else{

@@ -534,19 +534,29 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'
 #'@param x snpRdata object.
 #'@param maf numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
-#'  minor allele frequency.
+#'  minor allele frequency. Either maf or mac filtering are allowed, not both.
+#'@param mac numeric, between 0 and 1 minus the total number of individuals.
+#'  Loci with less than this many minor alleles will be removed. Either maf or
+#'  mac filtering are allowed, not both.
 #'@param hf_hets numeric between 0 and 1 or FALSE, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  HWE p-value.
+#'@param hwe_excess_side character, default "both". Options:
+#'  \itemize{\item{heterozygote:} only loci with a heterozygote excess are 
+#'  removed.
+#'  \item{homozygote:} only loci with a homozygote excess are removed.
+#'  \itemize{\item{both:} loci with either a heterozygote or homozygote excess 
+#'  are removed.}}.
 #'@param fwe_method character, default "none". Option to use for Family-Wise
 #'  Error rate correction for HWE filtering. If requested, only SNPs with
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
 #'  correction} will be removed. See \code{\link[stats]{p.adjust}} for
 #'  information on method options.
-#'@param singletons logical, default FALSE. If TRUE, removes singletons (loci
-#'  where there is only a single minor allele). If population sizes are
-#'  reasonably high, this is more or less redundant if \code{maf} is also set.
+#'@param singletons logical, default FALSE. Depricated, use \code{mac = 1} to
+#'  remove singletons. If TRUE, removes singletons (loci where there is only a
+#'  single minor allele). If population sizes are reasonably high, this is more
+#'  or less redundant if \code{maf} is also set.
 #'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
 #'  proportion of individuals in which a loci must be sequenced.
 #'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
@@ -559,8 +569,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
 #'  min_loci).}
 #'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
-#'  over which the minor allele frequency can be checked. SNPs will only fail the
-#'  maf filter if they fail in every level of every provided facet.
+#'  over which the minor allele frequency can be checked. SNPs will only fail
+#'  the maf filter if they fail in every level of every provided facet.
 #'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
 #'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
 #'  they fail in any level of any provided facet.
@@ -592,7 +602,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #' filter_snps(stickSNPs, maf = 0.05, hf_hets = 0.55, min_ind = 0.5, 
 #'             min_loci = 0.75, re_run = "full", maf_facets = "pop")
 #'
-filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method = "none",
+filter_snps <- function(x, maf = FALSE, 
+                        mac = 0,
+                        hf_hets = FALSE, 
+                        hwe = FALSE, fwe_method = "none",
+                        hwe_excess_side = "both",
                         singletons = FALSE,
                         min_ind = FALSE,
                         min_loci = FALSE,
@@ -604,12 +618,41 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
                         verbose = TRUE){
 
   #==============do sanity checks====================
+  if(singletons){
+    warning("The singletons argument is depriceated. Please use mac = 1 instead!")
+    if(mac == 0){
+      mac <- 1
+    }
+  }
+  
   if(maf){
     if(!is.numeric(maf)){
       stop("maf must be a numeric value.")
     }
     if(length(maf) != 1){
       stop("maf must be a numeric vector of length 1.")
+    }
+    if(mac != 0){
+      stop("mac and maf cannot both be set.\n")
+    }
+    if(maf < 0 | maf >= .5){
+      stop("maf must be greater than or equal to 0 and less than .5")
+    }
+    
+  }
+  
+  if(mac){
+    if(!is.numeric(mac)){
+      stop("mac must be a numeric value.")
+    }
+    if(length(mac) != 1){
+      stop("mac must be a numeric vector of length 1.")
+    }
+    if(mac >= nsamps(x) | mac < 0){
+      stop("mac must be greater than or equal to zero and less than the number of samples (a maf of 0.5 in fully sequenced loci).")
+    }
+    if(mac != as.integer(mac)){
+      stop("mac must be an integer (but can be a numeric object).")
     }
   }
 
@@ -622,6 +665,11 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
     }
     if(hwe <= 0 | hwe >= 1){
       stop("hwe must be a value between 0 and 1.")
+    }
+    
+    good_hwe_sides <- c("both", "homozygote", "heterozygote")
+    if(!hwe_excess_side %in% good_hwe_sides){
+      stop("hwe_excess_sides must be one of: ", paste0(good_hwe_sides, collapse = ", "))
     }
     
     if(!isFALSE(hwe_facets)){
@@ -707,7 +755,7 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
   filt_by_loci <- function(){
     # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
     
-    #==========================run filters========================
+    #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
 
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",]
@@ -820,16 +868,16 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
       }
     }
 
-    #========singletons========================================
-    if(singletons){
-      if(verbose){cat("Filtering singletons.\n")}
+    #========mac========================================
+    if(mac){
+      if(verbose){cat("Filtering low minor allele counts.\n")}
       
       # singletons exist wherever the total allele count - the maf count is 1.
-      singleton.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat)  == 1)
+      mac.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat) <= mac)
       
-      if(verbose){cat(paste0("\t", length(singleton.vio), " bad loci\n"))}
+      if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
       
-      vio.snps[singleton.vio] <- T
+      vio.snps[mac.vio] <- T
     }
     #========hf_hets. Should only run if bi_al = TRUE.==========
     if(hf_hets){
@@ -855,11 +903,40 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
         if(!.check_calced_stats(x, ".base", "hwe")$.base){
           .make_it_quiet(x <- calc_hwe(x))
         }
+        if(hwe_excess_side != "both"){
+          calced <- .check_calced_stats(x,".base", c("fis"))$.base
+          if(!calced){
+            .make_it_quiet(x <- calc_fis(x))
+          }
+        }
+        
+        
         phwe <- x@stats$pHWE[x@stats$facet == ".base"]
         if(fwe_method != "none"){
           phwe <- stats::p.adjust(phwe, method = fwe_method[1])
         }
-        phwe <- which(phwe < hwe)
+        phwe <- phwe <= hwe
+        
+        # check sides
+        # consider sides
+        if(hwe_excess_side == "both"){
+          side <- 1
+        }
+        else if(hwe_excess_side == "heterozygote"){
+          side <- ifelse(x@stats$fis[x@stats$facet == ".base"] <= 0, 1, 0)
+        }
+        else{
+          side <- ifelse(x@stats$fis[x@stats$facet == ".base"] >= 0, 1, 0)
+        }
+        
+        if(any(is.na(side))){
+          side[is.na(side)] <- 1
+        }
+        
+        # recheck low.p
+        phwe <- phwe * side
+        phwe <- which(phwe == 1)
+        
         if(verbose){cat("\t", length(phwe), " bad loci\n")}
         vio.snps[phwe] <- T
         
@@ -869,6 +946,12 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
       else{
         # run again to ensure that the correct fwe method and case are used
         .make_it_quiet(x <- calc_hwe(x, hwe_facets, fwe_method = fwe_method[1], fwe_case = "by_facet"))
+        if(hwe_excess_side != "both"){
+          calced <- .check_calced_stats(x, hwe_facets, c("fis"))
+          if(any(!unlist(calced))){
+            .make_it_quiet(x <- calc_fis(x, names(calced)[!unlist(calced)]))
+          }
+        }
         
         # get the per-facet hwe stats, check against threshold, then condense by snp.
         phwe <- get.snpR.stats(x, hwe_facets)
@@ -878,6 +961,24 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
         else{
           phwe$low.p <- ifelse(phwe$pHWE <= hwe, 1, 0)
         }
+        
+        # consider sides
+        if(hwe_excess_side == "both"){
+          phwe$side <- 1
+        }
+        else if(hwe_excess_side == "heterozygote"){
+          phwe$side <- ifelse(phwe$fis <= 0, 1, 0)
+        }
+        else{
+          phwe$side <- ifelse(phwe$fis >= 0, 1, 0)
+        }
+        
+        if(any(is.na(phwe$side))){
+          phwe$side[is.na(phwe$side)] <- 1
+        }
+        
+        # recheck low.p
+        phwe$low.p <- phwe$low.p * phwe$side
         
         bad.loci <- tapply(phwe$low.p, phwe[,".snp.id"], sum, na.rm = TRUE)
         bad.loci <- reshape2::melt(bad.loci)
@@ -956,6 +1057,8 @@ filter_snps <- function(x, maf = FALSE, hf_hets = FALSE, hwe = FALSE, fwe_method
           min_ind <- FALSE
           bi_al <- FALSE
           hwe <- FALSE
+          mac <- 0
+          singletons <- FALSE
         }
         if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
           x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
@@ -1256,7 +1359,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   # bi-allelic check
   if(is.snpRdata(x)){
-    if(!x@bi_allelic){
+    if(!.is.bi_allelic(x@bi_allelic)){
       pos_nbi_outs <- c("genepop", "0000", "pa")
       if(!output %in% pos_nbi_outs){
         stop(paste0("The output format you selected is not currently supported for non-biallelic data. Currently supported formats are:",
@@ -1752,7 +1855,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   ##convert to genepop or numeric format (v)
   if (output == "genepop" | output == "0000"){
 
-    if(!x@bi_allelic){
+    if(!.is.bi_allelic(x@bi_allelic)){
       if(output == "genepop"){
         rdata <- as.data.frame(t(genotypes(x)))
         row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
@@ -1962,7 +2065,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       ###########
 
       #fill in missing data with NAs.
-      if(x@bi_allelic){ # fully vectorized
+      if(.is.bi_allelic(x@bi_allelic)){ # fully vectorized
         xmc <- which(x == mDat) #which samples had missing data?
         adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
         adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample
