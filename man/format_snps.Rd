@@ -99,7 +99,9 @@ position information, for VCF output.}
 containing phenotype information, for plink! output.}
 
 \item{plink_recode_numeric}{Logical, default FALSE. If FALSE, all chrs/scaffs
-will be renamed to numbers. This may be useful in some cases.}
+will be renamed to numbers. This may be useful in some cases. If this is
+FALSE, chromosome names will be checked for leading numbers and replaced
+with a corresponding letter (0 becomes A, 1 becomes B, and so on).}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}

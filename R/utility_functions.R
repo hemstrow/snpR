@@ -1228,7 +1228,9 @@ filter_snps <- function(x, maf = FALSE,
 #'@param phenotype character, default "phenotype". Optional name of column
 #'  containing phenotype information, for plink! output.
 #'@param plink_recode_numeric Logical, default FALSE. If FALSE, all chrs/scaffs
-#'  will be renamed to numbers. This may be useful in some cases.
+#'  will be renamed to numbers. This may be useful in some cases. If this is
+#'  FALSE, chromosome names will be checked for leading numbers and replaced
+#'  with a corresponding letter (0 becomes A, 1 becomes B, and so on).
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
 
@@ -1327,7 +1329,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         input_meta_columns = NULL, input_mDat = NULL,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
-                        phenotype = "phenotype", plink_recode_numeric = FALSE, verbose = FALSE){
+                        phenotype = "phenotype", plink_recode_numeric = FALSE, 
+                        verbose = FALSE){
   if(!isTRUE(verbose)){
     cat <- function(...){}
   }

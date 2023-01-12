@@ -13,6 +13,7 @@
 * Added the `mac` argument to `filter_snps()` to filter by minor allele count instead of minor allele frequency. Currently doesn't support faceting, which will probably be added later depending on user need. The `singletons` argument is now depriceated.
 * Added the `hwe_excess_side` argument ot `filter_snps()`, enabling users to only remove SNPs out of HWE that have either het or hom excesses. They default behavior is still to do both.
 * Added $ZF_{ST}$ and $F_{ST}/(1-F_{ST})$ to `calc_pairwise_fst()`.
+* Added the explicit option to recode chromosome names as simple numeric values to `format_snps()` with the `plink` option. For some cases with many scaffolds/etc, this may be necessary. Before this was the default behavior, not an option. To account for this, also added checks to ensure that, if this option is not used, that no chromosome names start in numbers (leading numbers will be replaced with a character equivalent -- 0 -> A, 1 -> B, 9 -> I).
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.
