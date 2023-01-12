@@ -66,4 +66,25 @@ test_that("plink",{
   expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
+  
+  
+  # check bad loci removal
+  ## make bad data
+  dat <- stickSNPs
+  genos <- genotypes(dat)
+  genos <- rbind(genos, rep("NN", ncol(genos)))
+  sm <- snp.meta(dat)
+  sm <- rbind(sm[,-ncol(sm)], c("test", 10))
+  
+  ## test
+  dat <- import.snpR.data(genos, sm, sample.meta(dat))
+  expect_warning(check <- format_snps(dat, "plink", "pop", outfile = "plink_test"), "loci without any called genotypes.")
+  expect_warning(check <- read_plink("plink_test"), " metadata columns contain unacceptable special")
+  dat <- calc_pi(stickSNPs, "chr.fam")
+  check <- calc_pi(check, "chr.fam")
+  c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
+  c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
+  expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
+  cleanups <- list.files(pattern = "plink_test")
+  file.remove(cleanups)
 })

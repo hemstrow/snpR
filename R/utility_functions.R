@@ -2164,7 +2164,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     
     
     # sort by chr then position
-    n.ord <- order(n.chrs, snp.meta(x)$position)
+    if(length(bads) > 0){
+      n.ord <- order(n.chrs, snp.meta(x)$position[-bads])
+    }
+    else{
+      n.ord <- order(n.chrs, snp.meta(x)$position)
+    }
     n.chrs <- n.chrs[n.ord]
     sn <- sn[n.ord,]
     
