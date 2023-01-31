@@ -613,7 +613,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     pkg.check <- .check.installed("adegenet")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
     
-    if(is.null(dapc_clustering_max_n_clust)){
+    if(!is.null(dapc_clustering_max_n_clust)){
       if(!interactive()){
         msg <- c(msg, "If plot_clusters() is not run interactively, dapc interactive parameter picking cannot be used. Please set 'dapc_clustering_max_n_clust' to NULL and supply all dapc parameters.\n")
       }

@@ -131,6 +131,7 @@ test_that("umap",{
 
 test_that("dapc",{
   skip_on_cran();
+  skip_if_not_installed("adegenet")
   
   set.seed(1212)
   expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc"), "supply all dapc clustering arguments or choose interactively")
