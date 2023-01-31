@@ -4,6 +4,7 @@
 
 ### Major
 * Rework to allow some features to be used with microsatellite or other non-biallelic data types such as microhaplotypes is underway and will be enabled once basic filtering, diversity calculations, and plotting function support is finished.
+* Added support for DAPC to `plot_clusters()` via interface to adegenet and some code pulled in from (the thankfully GPL-v3) ade4 package. Licence note adjusted to reflect ade4 code.
 
 ### Minor
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
@@ -14,6 +15,9 @@
 * Added the `hwe_excess_side` argument ot `filter_snps()`, enabling users to only remove SNPs out of HWE that have either het or hom excesses. They default behavior is still to do both.
 * Added $ZF_{ST}$ and $F_{ST}/(1-F_{ST})$ to `calc_pairwise_fst()`.
 * Added the explicit option to recode chromosome names as simple numeric values to `format_snps()` with the `plink` option. For some cases with many scaffolds/etc, this may be necessary. Before this was the default behavior, not an option. To account for this, also added checks to ensure that, if this option is not used, that no chromosome names start in numbers (leading numbers will be replaced with a character equivalent -- 0 -> A, 1 -> B, 9 -> I).
+* Changed the second facets used in `plot_clusters()` to use different shapes instead of different fill/color combos as long as
+there are less than 25 levels (the number of uinque point shapes). This makes for substantially easier to interpret levels in plots! Which
+facet gets shapes is controlled by the `shape_has_more_levels` argument.
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.

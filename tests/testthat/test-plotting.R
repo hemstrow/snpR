@@ -101,7 +101,7 @@ test_that("pca",{
   skip_on_cran();
   
   set.seed(1212)
-  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop"))
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "pca"))
   expect_true(ggplot2::is.ggplot(p$plots$pca))
   # expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
@@ -127,6 +127,26 @@ test_that("umap",{
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
   # expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+})
+
+test_that("dapc",{
+  skip_on_cran();
+  
+  set.seed(1212)
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc"), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", 
+                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_npca = 20, dapc_clustering_nclust = 5), 
+               "supply both dapc_npca and dapc_ndisc arguments or choose interactively instead")
+  
+  .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
+                                    dapc_clustering_max_n_clust = NULL, 
+                                    dapc_clustering_npca = 20, 
+                                    dapc_clustering_nclust = 5, 
+                                    dapc_npca = 20, 
+                                    dapc_ndisc = 4))
+  
+  expect_true(ggplot2::is.ggplot(p$plots$dapc))
 })
 
 #==================plot_manhattan==========
