@@ -775,7 +775,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
               tjho[absent] <- 0
             }
             
-            parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho, .print = ifelse(k == 1, TRUE, FALSE))
+            parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho)
           }
           a <- matrix(unlist(purrr::map(parts, "a")), ncol = length(parts))
           b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
@@ -1046,7 +1046,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' get.snpR.stats(x, c("pop", "pop.chr"), "fis")
 #' 
 calc_fis <- function(x, facets = NULL){
-  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- NULL
+  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..het_cols_containing_k <- NULL
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

@@ -2646,7 +2646,7 @@ is.snpRdata <- function(x){
 # @param nc If CV = coefficient of variation in sample size, nc = nbar*(1-(CV^2)/r)
 # @param iho ho for pop 1
 # @param jho ho for pop 2
-.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL, .print = FALSE){
+.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL){
   if(r == 2){
     pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
     ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
@@ -2669,10 +2669,10 @@ is.snpRdata <- function(x){
   b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
   c <- .5*hbar
   
-  # browser()
-  if(.print){
-    write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
-  }
+  # # browser()
+  # if(.print){
+  #   write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
+  # }
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same

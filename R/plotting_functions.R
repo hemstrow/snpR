@@ -556,6 +556,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
                           update_bib = FALSE, verbose = FALSE,...){
 
   #=============sanity checks============
+  y <- cluster <- .cluster <- NULL
   msg <- character(0)
 
   # mpc

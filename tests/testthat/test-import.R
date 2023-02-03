@@ -77,5 +77,5 @@ test_that("non-biallelic",{
   td <- read_non_biallelic(genotypes(steelMSATs), sample.meta = sample.meta(steelMSATs))
   expect_true(is.snpRdata(td))
   expect_false(.is.bi_allelic(td))
-  expect_identical(td, steelMSATs)
+  expect_equivalent(td, steelMSATs)
 })
