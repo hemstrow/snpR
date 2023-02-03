@@ -15,6 +15,22 @@ test_that("correct wc", {
                      4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
 })
 
+test_that("correct wc, non-bi", {
+  keeps <- which(sample.meta(steelMSATs)$pop %in% c("sumhat", "winhat"))
+  tdfst <- read_non_biallelic(genotypes(steelMSATs)[,keeps], sample.meta = sample.meta(steelMSATs)[keeps,])
+  tdfst <- calc_pairwise_fst(tdfst, "pop", "wc")
+  tdfstr <- get.snpR.stats(tdfst, "pop", "fst")$pairwise
+  expect_equal(round(tdfstr$fst[which(tdfstr$comparison == "sumhat~winhat")], 4), 
+               c(0.0255,0.0326,0.0276,0.0864,0.0614,0.0204,0.0284,0.0165,
+                 0.1458,0.0036,0.0542,0.0445,0.0551)) # values from pegas, also double checked by hand.
+  
+  # check that bootstrapping works
+  set.seed(1232)
+  tdfst <- calc_pairwise_fst(tdfst, "pop", boot = 10)
+  expect_equal(round(get.snpR.stats(tdfst, "pop", "fst")$weighted.means$weighted_mean_fst_p, 3), 
+               0.091)
+})
+
 test_that("zfst and 1/1-fst",{
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc", zfst = TRUE, fst_over_one_minus_fst = TRUE)
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")

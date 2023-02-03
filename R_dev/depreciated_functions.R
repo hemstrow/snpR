@@ -1021,7 +1021,6 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
   ###########################################
   #smooth any other requested stats
 
-  browser()
   if(is.character(smooth)){
     sm.out <- s_ave_multi(sm.in, colnames(sm.in)[(ecs+1):(ecs + length(sm.smooth))], sigma, ws, nk, smooth_levs)
     out$stats_smoothed <- sm.out
@@ -1029,7 +1028,6 @@ snpR.stats <- function(x, ecs, stats = "basic", filter = FALSE, smooth = FALSE, 
 
   ###########################################
   #bootstrap any requested stats
-  browser()
   #if we are bootstrapping...
   if(bootstrap != FALSE){
 

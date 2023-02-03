@@ -23,7 +23,9 @@ setMethod("show", "snpRdata", function(object) {
   
   mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
   
-  cat(methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
+  bi_allelic <- .is.bi_allelic(object)
+  
+  cat(ifelse(bi_allelic, "bi-allelic", "non bi-allelic"), methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
       "==============================================\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",

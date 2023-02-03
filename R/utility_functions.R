@@ -1362,7 +1362,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   # bi-allelic check
   if(is.snpRdata(x)){
-    if(!.is.bi_allelic(x@bi_allelic)){
+    if(!.is.bi_allelic(x)){
       pos_nbi_outs <- c("genepop", "0000", "pa")
       if(!output %in% pos_nbi_outs){
         stop(paste0("The output format you selected is not currently supported for non-biallelic data. Currently supported formats are:",
@@ -1858,7 +1858,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   ##convert to genepop or numeric format (v)
   if (output == "genepop" | output == "0000"){
 
-    if(!.is.bi_allelic(x@bi_allelic)){
+    if(!.is.bi_allelic(x)){
       if(output == "genepop"){
         rdata <- as.data.frame(t(genotypes(x)))
         row.names(rdata) <- paste0(row.names(rdata), " ,") #adding space and comma to row names, as required.
@@ -2068,7 +2068,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       ###########
 
       #fill in missing data with NAs.
-      if(.is.bi_allelic(x@bi_allelic)){ # fully vectorized
+      if(.is.bi_allelic(x)){ # fully vectorized
         xmc <- which(x == mDat) #which samples had missing data?
         adj <- floor(xmc / nsamp) #how many loci over do I need to adjust xmc, since in amat each locus occupies two columns?
         adj[xmc%%nsamp == 0] <- adj[xmc%%nsamp == 0] - 1 #shift over anything that got screwed up by being in the last sample

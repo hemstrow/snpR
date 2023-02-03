@@ -555,9 +555,11 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   method <- tolower(method)
   
+  bi_allelic <- .is.bi_allelic(x)
+  
   
   #============================subfunctions=========================
-  func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL){
+  func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
@@ -727,9 +729,10 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       j <- i + 1 #initialize j as the next pop
       for (j in j:length(pops)){#j is pop being compared
         jdat <- x[subfacet == pops[j]] #get data for second pop
-
+        
         if(method == "wc"){
-
+          
+          
           nt1 <- .fix..call(rowSums(idat[,..ac_cols]))
           nt2 <- .fix..call(rowSums(jdat[,..ac_cols]))
           ps1_f <- .fix..call(idat[,..ac_cols]/nt1)
@@ -744,34 +747,49 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           CV <- matrixStats::rowSds(comb_ntots)/rowMeans(comb_ntots) # coefficient of variation in sample size
           nc <- nbar*(1-(CV^2)/r)
           parts <- vector("list", ncol(ps1_f))
+          gc_colnames <- colnames(idat)[gc_cols]
+          if(!bi_allelic){
+            snp_form <- nchar(gc_colnames[1])/2
+            gc_colnames_1 <- substr(gc_colnames, 1, snp_form)
+            gc_colnames_2 <- substr(gc_colnames, snp_form + 1, snp_form*2)
+          }
           for(k in 1:ncol(ps1_f)){
+            # if not bi-allelic, need to compute the heterozygosity for this specific locus using the gc table handed along for this reason!
+            if(!bi_allelic){
+              het_cols_containing_k <- which(xor(gc_colnames_1 == colnames(ps1_f)[k], gc_colnames_2 == colnames(ps1_f)[k])) # hets (xor) with this allele
+              tiho <- .fix..call(rowSums(idat[,..gc_cols][,..het_cols_containing_k])/intot)
+              tjho <- .fix..call(rowSums(jdat[,..gc_cols][,..het_cols_containing_k])/jntot)
+            }
+            
+            # otherwise we have the ho already
+            else{
+              tiho <- idat$ho
+              tjho <- jdat$ho
+            }
+            
             
             # where this allele is absent in both populations, ignore it's contribution.
             absent <- which(ps1_f[[k]] + ps2_f[[k]] == 0)
             if(length(absent) != 0){
-              tiho <- idat$ho
-              tjho <- jdat$ho
               tiho[absent] <- 0
               tjho[absent] <- 0
-              
-              parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho)
             }
-            else{
-              parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, idat$ho, jdat$ho)
-            }
+            
+            parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho, .print = ifelse(k == 1, TRUE, FALSE))
           }
           a <- matrix(unlist(purrr::map(parts, "a")), ncol = length(parts))
           b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
           c <- matrix(unlist(purrr::map(parts, "c")), ncol = length(parts))
+
           Fst <- rowSums(a)/rowSums(a + b + c)
           
           data.table::set(out, j = c.col, value = Fst) # write fst
         }
-
-
+        
         else{
           stop("Please select a method of calculating FST.\nOptions:\n\tWC: Weir and Cockerham (1984).\n\tgenepop: Genepop")
         }
+        
 
         # update pnk
         pnk <- data.table::set(pnk, prog:(prog + nrow(idat) - 1), 1L, paste0(idat$subfacet, "~", jdat$subfacet))
@@ -810,11 +828,23 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       real_out <- real_out[[1]]
     }
     else{
-      if(is.null(rac)){
-        rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
+      if(bi_allelic){
+        if(is.null(rac)){
+          rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
+        }
+        real_out <- func(rac[which(rac$facet == facet),], method, facet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
+        real_wm <- one_wm(real_out)
       }
-      real_out <- func(rac[which(rac$facet == facet),], method, facet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
-      real_wm <- one_wm(real_out)
+      else{
+        if(is.null(rac)){
+          rac <- cbind(x@facet.meta, x@geno.tables$as, x@geno.tables$gs)
+        }
+        real_out <- func(rac[which(rac$facet == facet),], method, facet, 
+                         ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
+                         meta_colnames = colnames(snp.meta(x)),
+                         gc_cols = which(colnames(rac) %in% colnames(x@geno.tables$gs)))
+        real_wm <- one_wm(real_out)
+      }
     }
     
     return(list(real_out = real_out, real_wm = real_wm))
@@ -823,7 +853,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   #============================run with real data===============
   real <- vector("list", length = length(facets))
   names(real) <- facets
-  if(method == "wc"){
+  if(method == "wc" & bi_allelic){
     needed <- .check_calced_stats(x, facets, "ho")
     needed <- facets[which(!unlist(needed))]
     if(length(needed) > 0){
@@ -869,7 +899,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           cat("Boot", i, "out of", boot, "\n")
           if(method == "wc"){
             gp.filenames <- NULL
-            wc.inputs <- .boot_as(x, 1, facets[f])
+            wc.inputs <- .boot_as(x, 1, facets[f], ret_gs = !bi_allelic)
           }
           boots[[i]] <- one_run(x, method = method, facet = facets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
         }
@@ -906,7 +936,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                                     for(i in 1:length(pboot[[q]])){
                                       if(method == "wc"){
                                         gp.filenames <- NULL
-                                        wc.inputs <- .boot_as(x, 1, facets[f])
+                                        wc.inputs <- .boot_as(x, 1, facets[f], ret_gs = !bi_allelic)
                                       }
                                       boots[[i]] <- one_run(x, method = method, facet = facets[f], 
                                                             gp.filenames[pboot[[q]][i]], wc.inputs[[1]])$real_wm
@@ -3693,7 +3723,7 @@ calc_he <- function(x, facets = NULL){
   }
   
   # bi_allelic case, just need maf--very straightforward
-  if(.is.bi_allelic(x@bi_allelic)){
+  if(.is.bi_allelic(x)){
     he_func_bi <- function(as = NULL, maf){
       return(2 * maf$maf * (1 - maf$maf))
     }

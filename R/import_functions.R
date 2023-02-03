@@ -773,7 +773,7 @@
                     citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
 }
 
-.process_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
+read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
   bi_allelic <- rows_per_individual <- marker_and_sample_names <- position <- .snp.id <- .sample.id <- ..N_col <- FALSE
   #======special cases========
   # sample and snp metadata

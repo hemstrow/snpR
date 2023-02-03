@@ -141,7 +141,7 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  if(.is.bi_allelic(x@bi_allelic)){
+  if(.is.bi_allelic(x)){
     .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
     nac <- data.table::as.data.table(nac)
     nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
@@ -2572,7 +2572,7 @@ is.snpRdata <- function(x){
 # @param facet sample level facet to permute within
 #
 # @return A list containing permuted ac data.
-.boot_as <- function(x, n, facet){
+.boot_as <- function(x, n, facet, ret_gs = FALSE){
   ..tm <- ..ord <-  NULL
   
   out <- vector("list", n)
@@ -2590,7 +2590,7 @@ is.snpRdata <- function(x){
       tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
       ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
       tas[[j]] <- data.table::as.data.table(ttab$as)
-      tas[[j]]$ho <- .ho_func(ttab, x@snp.form)
+      
       # fix missing columns (no genotypes with this allele in this subfacet)
       missing <- which(!colnames(x@geno.tables$as) %in% colnames(tas[[j]]))
       if(length(missing) != 0){
@@ -2598,14 +2598,32 @@ is.snpRdata <- function(x){
         fill <- as.data.table(fill)
         colnames(fill) <- colnames(x@geno.tables$as)[missing]
         tas[[j]] <- cbind(tas[[j]], fill)
-        ord <- c(colnames(x@geno.tables$as), "ho")
+        ord <- colnames(x@geno.tables$as)
         tas[[j]] <- .fix..call(tas[[j]][,..ord])
       }
       
+      if(ret_gs){
+        gst <- as.data.table(ttab$gs)
+
+        # fix missing columns (no genotypes with this allele in this subfacet)
+        missing <- which(!colnames(x@geno.tables$gs) %in% colnames(gst))
+        if(length(missing) != 0){
+          fill <- matrix(0, nrow(gst), length(missing))
+          fill <- as.data.table(fill)
+          colnames(fill) <- colnames(x@geno.tables$gs)[missing]
+          gst <- cbind(gst, fill)
+          ord <- colnames(x@geno.tables$gs)
+          gst<- .fix..call(gst[,..ord])
+        }
+        
+        tas[[j]] <- cbind(tas[[j]], gst)
+      }
       
+      tas[[j]]$ho <- .ho_func(ttab, x@snp.form)
       tas[[j]]$.snp.id <- x@snp.meta$.snp.id
       tas[[j]]$subfacet <- opts[j,2]
       tas[[j]]$facet <- facet
+      
     }
     tas <- data.table::rbindlist(tas)
     tas[is.na(tas)] <- 0
@@ -2628,7 +2646,7 @@ is.snpRdata <- function(x){
 # @param nc If CV = coefficient of variation in sample size, nc = nbar*(1-(CV^2)/r)
 # @param iho ho for pop 1
 # @param jho ho for pop 2
-.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL){
+.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL, .print = FALSE){
   if(r == 2){
     pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
     ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
@@ -2652,8 +2670,9 @@ is.snpRdata <- function(x){
   c <- .5*hbar
   
   # browser()
-  # write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "fis_temp2.txt")
-
+  if(.print){
+    write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
+  }
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same
