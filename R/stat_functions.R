@@ -514,7 +514,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               fst_over_one_minus_fst = FALSE,
                               cleanup = TRUE, 
                               verbose = FALSE){
-  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- NULL
+  facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
   
 
   if(!isTRUE(verbose)){
@@ -560,6 +560,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
+
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
