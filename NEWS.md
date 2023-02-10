@@ -18,6 +18,7 @@
 * Changed the second facets used in `plot_clusters()` to use different shapes instead of different fill/color combos as long as
 there are less than 25 levels (the number of uinque point shapes). This makes for substantially easier to interpret levels in plots! Which
 facet gets shapes is controlled by the `shape_has_more_levels` argument.
+* Added a `verbose` option to `check_duplicates()`. It's still a slow function and could use some work or parallelization.
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.

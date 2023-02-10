@@ -4,7 +4,7 @@
 \alias{check_duplicates}
 \title{Checks for duplicated samples in snpRdata.}
 \usage{
-check_duplicates(x, y = 1:ncol(x), id.col = NULL)
+check_duplicates(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE)
 }
 \arguments{
 \item{x}{snpRdata object}
@@ -15,6 +15,9 @@ indices or IDs in x for which duplicates will be checked.}
 \item{id.col}{character, default NULL. Designates a column in the sample
 metadata which contains sample IDs. If provided, y is assumed to contain
 sample IDs uniquely matching those in the the sample ID column.}
+
+\item{verbose}{logical, default FALSE. If TRUE, prints detailed progress 
+report.}
 }
 \value{
 A list containing: \itemize{ \item{best_matches: } Data.frame listing

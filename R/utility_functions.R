@@ -2759,6 +2759,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @param id.col character, default NULL. Designates a column in the sample
 #'   metadata which contains sample IDs. If provided, y is assumed to contain
 #'   sample IDs uniquely matching those in the the sample ID column.
+#' @param verbose logical, default FALSE. If TRUE, prints detailed progress 
+#'   report.
 #'
 #' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
 #'   the best match for each sample noted in y and the percentage of genotypes
@@ -2776,7 +2778,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' # check duplicates using the .samp.id column as sample IDs
 #' check_duplicates(stickSNPs, 1, id.col = ".sample.id")
 #' }
-check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
+check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE){
   #============sanity checks============
   msg <- character()
   if(!is.null(id.col)){
@@ -2830,6 +2832,9 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
 
   # do each comparison
   for(i in 1:length(y)){
+    if(verbose){
+      cat("Working on sample:", y[i], "\n")
+    }
 
     # pick out this value
     if(!is.null(id.col)){
@@ -2840,6 +2845,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
     }
     if(length(t.samp.id) == 0){
       out.best$matches[i] <- "bad.ID"
+      if(verbose){cat("\tBad ID, skipping.\n")}
       next()
     }
 
@@ -2889,6 +2895,11 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL){
     out.best$best_match[i] <- paste0(names(out[[i]]$best), collapse = ", ")
     out.best$percentage[i] <- out[[i]]$best
     out.best$comparisons[i] <- out[[i]]$comparisons[best]
+    
+    if(verbose){
+      cat("\tBest hit(s):", out.best$best_match[i], "\n")
+      cat("\tPercentage match(es):", out.best$percentage[i], "\n")
+    }
   }
 
   # return
