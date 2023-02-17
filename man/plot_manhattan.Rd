@@ -148,6 +148,10 @@ height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
 Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
 avoid over-plotting.}
 
+\item{lambda_gc_correction}{Correct for inflated significance due to
+population and/or family structure using the \eqn{\gamma_{GC}} approach
+described in Price et al 2010.}
+
 \item{chr_order}{character, default NULL. If provided, an ordered vector of
 chromosome/scaffold/etc names by which to sort output.}
 
@@ -156,10 +160,6 @@ x-axis chromosome names will be abbreviated using
 \code{\link[base]{abbreviate}}, with each abbreviated label having the
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
-
-\item{lambda_gc_correctionion}{Correct for inflated significance due to
-population and/or family structure using the \eqn{\gamma_{GC}} approach
-described in Price et al 2010.}
 }
 \value{
 A list containing \itemize{\item{plot: } A ggplot manhattan plot.

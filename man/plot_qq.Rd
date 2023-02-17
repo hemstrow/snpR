@@ -17,7 +17,7 @@ refer to the column name directly.}
 \item{facets}{character, default NULL. Facets by which to split the plot. See
 \code{\link{Facets_in_snpR}}.}
 
-\item{lambda_gc_correctionion}{Correct for inflated significance due to
+\item{lambda_gc_correction}{Correct for inflated significance due to
 population and/or family structure using the \eqn{\gamma_{GC}} approach
 described in Price et al 2010.}
 }

@@ -1230,7 +1230,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
 #'   minimum length specified. Helpful when chromosome/scaffold/etc names are
 #'   very long.
-#' @param lambda_gc_correctionion Correct for inflated significance due to
+#' @param lambda_gc_correction Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
 #'
@@ -1584,6 +1584,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     
     # lam will differ depending on grouping by pops.
     if(length(unique(as.character(stats$subfacet))) > 1){
+      subfacet <- NULL
       stats[,.lam := stats::median(.q)/stats::qchisq(0.5,1), by = subfacet]
     }
     else{
@@ -1827,7 +1828,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   refer to the column name directly.
 #' @param facets character, default NULL. Facets by which to split the plot. See
 #'   \code{\link{Facets_in_snpR}}.
-#' @param lambda_gc_correctionion Correct for inflated significance due to
+#' @param lambda_gc_correction Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
 #'
