@@ -30,6 +30,7 @@ plot_manhattan(
   rug_label = NULL,
   rug_alpha = 0.3,
   rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+  lambda_gc_correct = FALSE,
   chr_order = NULL,
   abbreviate_labels = FALSE
 )
@@ -155,6 +156,10 @@ x-axis chromosome names will be abbreviated using
 \code{\link[base]{abbreviate}}, with each abbreviated label having the
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
+
+\item{lambda_gc_correction}{Correct for inflated significance due to
+population and/or family structure using the \eqn{\gamma_{GC}} approach
+described in Price et al 2010.}
 }
 \value{
 A list containing \itemize{\item{plot: } A ggplot manhattan plot.
@@ -262,6 +267,11 @@ plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                                 rug_label = "gene")$plot)
 
 }
+}
+\references{
+Price, A., Zaitlen, N., Reich, D. et al. New approaches to
+  population stratification in genome-wide association studies. Nat Rev Genet
+  11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 }
 \author{
 William Hemstrom

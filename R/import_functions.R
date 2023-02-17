@@ -798,30 +798,30 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   if(is.character(genotypes) & length(genotypes) == 1){
     if(file.exists(genotypes)){
       # check for ms or vcf, etc file
-      if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
-        return(.process_vcf(genotypes, snp.meta, sample.meta))
-      }
-      else if(grepl("\\.genepop$", genotypes)){
-        return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
-      }
-      else if(grepl("\\.fstat$", genotypes)){
-        return(.process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
-      }
-      else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
-        .check.installed("tools")
-        return(.process_plink(tools::file_path_sans_ext(genotypes)))
-      }
-      else if(grepl("\\.str$", genotypes)){
-        return(.process_structure(genotypes, 
-                                  rows_per_individual = rows_per_individual, 
-                                  marker_and_sample_names = marker_and_sample_names, 
-                                  header_cols = header_cols, 
-                                  snp.meta = snp.meta, 
-                                  sample.meta = sample.meta))
-      }
-      else{
+      # if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
+      #   return(.process_vcf(genotypes, snp.meta, sample.meta))
+      # }
+      # else if(grepl("\\.genepop$", genotypes)){
+      #   return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
+      # }
+      # else if(grepl("\\.fstat$", genotypes)){
+      #   return(.process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
+      # }
+      # else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
+      #   .check.installed("tools")
+      #   return(.process_plink(tools::file_path_sans_ext(genotypes)))
+      # }
+      # else if(grepl("\\.str$", genotypes)){
+      #   return(.process_structure(genotypes, 
+      #                             rows_per_individual = rows_per_individual, 
+      #                             marker_and_sample_names = marker_and_sample_names, 
+      #                             header_cols = header_cols, 
+      #                             snp.meta = snp.meta, 
+      #                             sample.meta = sample.meta))
+      # }
+      # else{
         genotypes <- as.data.frame(data.table::fread(genotypes))
-      }
+      # }
     }
     else{
       stop("File not found. Fix path or import manually and provide to import.snpR.data.\n")

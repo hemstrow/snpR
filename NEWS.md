@@ -16,9 +16,10 @@
 * Added $ZF_{ST}$ and $F_{ST}/(1-F_{ST})$ to `calc_pairwise_fst()`.
 * Added the explicit option to recode chromosome names as simple numeric values to `format_snps()` with the `plink` option. For some cases with many scaffolds/etc, this may be necessary. Before this was the default behavior, not an option. To account for this, also added checks to ensure that, if this option is not used, that no chromosome names start in numbers (leading numbers will be replaced with a character equivalent -- 0 -> A, 1 -> B, 9 -> I).
 * Changed the second facets used in `plot_clusters()` to use different shapes instead of different fill/color combos as long as
-there are less than 25 levels (the number of uinque point shapes). This makes for substantially easier to interpret levels in plots! Which
+there are less than 25 levels (the number of unique point shapes). This makes for substantially easier to interpret levels in plots! Which
 facet gets shapes is controlled by the `shape_has_more_levels` argument.
 * Added a `verbose` option to `check_duplicates()`. It's still a slow function and could use some work or parallelization.
+* Added `lambda_gc_correct` arguments to `plot_qq()` and `plot_manhattan()` to generate $\lambda_{GC}$ genomic stratification measures and correct for them in plots (see [this paper](https://doi.org/10.1038/nrg2813)).
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.

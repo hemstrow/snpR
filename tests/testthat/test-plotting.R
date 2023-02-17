@@ -170,6 +170,34 @@ test_that("manhattan plots", {
   expect_equivalent(p$data, p2$data)
   
   
+  # with lambda correction
+  pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, lambda_gc_correct = TRUE)
+  expect_true(".lam" %in% colnames(pl$data))
+  if(".lam" %in% colnames(pl$data)){
+    expect_true(length(unique(pl$data$.lam)) == 1)
+  }
+  
+  
+  
+  # with facets
+  x <- calc_association(x, response = "phenotype", method = "armitage", facets = "pop")
+  p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
+                      log.p = TRUE)
+  p1 <- ggplot2::ggplot_build(p$plot)
+  expect_true(all(p1$layout$layout$subfacet == c("ASP", "CLF", "OPL", "PAL", "SMR", "UPD")))
+  ## also with lambda correction
+  pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
+                       log.p = TRUE, lambda_gc_correct = TRUE)
+  expect_true(".lam" %in% colnames(pl$data))
+  if(".lam" %in% colnames(pl$data)){
+    expect_true(length(unique(pl$data$.lam)) == 6)
+  }
+  
+  
+  
+  
+  
   
   
   # with a rug
@@ -212,7 +240,14 @@ test_that("qq plots",{
   asso <- calc_association(asso, response = "phenotype")
 
   p <- plot_qq(asso, "gmmat_pval_phenotype")
-  ggplot2::is.ggplot(p$.base)
+  expect_true(ggplot2::is.ggplot(p$.base))
+  
+  # lambda correction
+  p <- plot_qq(asso, "gmmat_pval_phenotype", lambda_gc_correct = TRUE)
+  expect_true(".lam" %in% colnames(p$.base$data))
+  if(".lam" %in% colnames(p$.base$data)){
+    expect_true(length(unique(p$.base$data$.lam)) == 1)
+  }
 
   # multiple facets
   x <- stickSNPs
@@ -225,6 +260,18 @@ test_that("qq plots",{
   expect_equal(length(levels(out$fam.pop$data[[1]]$PANEL)), 24)
   expect_equal(length(levels(out$pop$data[[1]]$PANEL)), 6)
   expect_equal(length(levels(out$.base$data[[1]]$PANEL)), 1)
+  
+  # lambda correction
+  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"), lambda_gc_correct = TRUE)
+  good <- all(unlist(lapply(p, function(i) ".lam" %in% colnames(i$data))))
+  expect_true(good)
+  if(good){
+    expect_equivalent(unlist(lapply(p, function(i) {
+      return(length(unique(i$data$.lam)) > 1)
+    })), c(TRUE, TRUE, FALSE))
+    
+  }
+  
   
 })
 
