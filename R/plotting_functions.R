@@ -1230,7 +1230,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
 #'   minimum length specified. Helpful when chromosome/scaffold/etc names are
 #'   very long.
-#' @param lambda_gc_correction Correct for inflated significance due to
+#' @param lambda_gc_correctionion Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
 #'
@@ -1326,7 +1326,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_label = NULL,
                            rug_alpha = 0.3,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
-                           lambda_gc_correct = FALSE,
+                           lambda_gc_correction = FALSE,
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
 
@@ -1577,20 +1577,20 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
   
   # lambda gc correction for pop structure, etc.
-  if(lambda_gc_correct){
+  if(lambda_gc_correction){
     .q <- .lam <- pvar <- NULL
     stats <- data.table::as.data.table(stats)
-    stats[,.q := qchisq(1-pvar,1)]
+    stats[,.q := stats::qchisq(1-pvar,1)]
     
     # lam will differ depending on grouping by pops.
     if(length(unique(as.character(stats$subfacet))) > 1){
-      stats[,.lam := median(.q)/qchisq(0.5,1), by = subfacet]
+      stats[,.lam := stats::median(.q)/stats::qchisq(0.5,1), by = subfacet]
     }
     else{
-      stats[,.lam := median(.q)/qchisq(0.5,1)]
+      stats[,.lam := stats::median(.q)/stats::qchisq(0.5,1)]
     }
     
-    stats[,pvar := pchisq(.q/.lam, 1, lower.tail = FALSE)]
+    stats[,pvar := stats::pchisq(.q/.lam, 1, lower.tail = FALSE)]
     
   }
   
@@ -1827,7 +1827,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   refer to the column name directly.
 #' @param facets character, default NULL. Facets by which to split the plot. See
 #'   \code{\link{Facets_in_snpR}}.
-#' @param lambda_gc_correction Correct for inflated significance due to
+#' @param lambda_gc_correctionion Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
 #'
@@ -1864,7 +1864,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' colnames(z)[1] <- "pop"
 #' p <- plot_qq(z, "p_armitage_phenotype", "pop")
 #' }
-plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correct = FALSE){
+plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
   #=============sanity checks and prep============
   msg <- character(0)
   
@@ -1956,12 +1956,12 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correct = FALSE){
     }
     
     # lambda correction
-    if(lambda_gc_correct){
+    if(lambda_gc_correction){
       .q <- .lam <- NULL
       
-      tstats[,.q := qchisq(1-.p,1)]
-      tstats[,.lam := median(.q)/qchisq(0.5,1), by = c(split.facet.part)]
-      tstats[,.p := pchisq(.q/.lam, 1, lower.tail = FALSE)]
+      tstats[,.q := stats::qchisq(1-.p,1)]
+      tstats[,.lam := stats::median(.q)/stats::qchisq(0.5,1), by = c(split.facet.part)]
+      tstats[,.p := stats::pchisq(.q/.lam, 1, lower.tail = FALSE)]
       
     }
     

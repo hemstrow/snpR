@@ -172,7 +172,7 @@ test_that("manhattan plots", {
   
   # with lambda correction
   pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, lambda_gc_correct = TRUE)
+                       log.p = TRUE, lambda_gc_correction = TRUE)
   expect_true(".lam" %in% colnames(pl$data))
   if(".lam" %in% colnames(pl$data)){
     expect_true(length(unique(pl$data$.lam)) == 1)
@@ -188,7 +188,7 @@ test_that("manhattan plots", {
   expect_true(all(p1$layout$layout$subfacet == c("ASP", "CLF", "OPL", "PAL", "SMR", "UPD")))
   ## also with lambda correction
   pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
-                       log.p = TRUE, lambda_gc_correct = TRUE)
+                       log.p = TRUE, lambda_gc_correction = TRUE)
   expect_true(".lam" %in% colnames(pl$data))
   if(".lam" %in% colnames(pl$data)){
     expect_true(length(unique(pl$data$.lam)) == 6)
@@ -243,7 +243,7 @@ test_that("qq plots",{
   expect_true(ggplot2::is.ggplot(p$.base))
   
   # lambda correction
-  p <- plot_qq(asso, "gmmat_pval_phenotype", lambda_gc_correct = TRUE)
+  p <- plot_qq(asso, "gmmat_pval_phenotype", lambda_gc_correction = TRUE)
   expect_true(".lam" %in% colnames(p$.base$data))
   if(".lam" %in% colnames(p$.base$data)){
     expect_true(length(unique(p$.base$data$.lam)) == 1)
@@ -262,7 +262,7 @@ test_that("qq plots",{
   expect_equal(length(levels(out$.base$data[[1]]$PANEL)), 1)
   
   # lambda correction
-  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"), lambda_gc_correct = TRUE)
+  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"), lambda_gc_correction = TRUE)
   good <- all(unlist(lapply(p, function(i) ".lam" %in% colnames(i$data))))
   expect_true(good)
   if(good){

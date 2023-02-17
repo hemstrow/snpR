@@ -30,7 +30,7 @@ plot_manhattan(
   rug_label = NULL,
   rug_alpha = 0.3,
   rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
-  lambda_gc_correct = FALSE,
+  lambda_gc_correction = FALSE,
   chr_order = NULL,
   abbreviate_labels = FALSE
 )
@@ -157,7 +157,7 @@ x-axis chromosome names will be abbreviated using
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
 
-\item{lambda_gc_correction}{Correct for inflated significance due to
+\item{lambda_gc_correctionion}{Correct for inflated significance due to
 population and/or family structure using the \eqn{\gamma_{GC}} approach
 described in Price et al 2010.}
 }

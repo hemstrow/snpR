@@ -19,7 +19,7 @@
 there are less than 25 levels (the number of unique point shapes). This makes for substantially easier to interpret levels in plots! Which
 facet gets shapes is controlled by the `shape_has_more_levels` argument.
 * Added a `verbose` option to `check_duplicates()`. It's still a slow function and could use some work or parallelization.
-* Added `lambda_gc_correct` arguments to `plot_qq()` and `plot_manhattan()` to generate $\lambda_{GC}$ genomic stratification measures and correct for them in plots (see [this paper](https://doi.org/10.1038/nrg2813)).
+* Added `lambda_gc_correction` arguments to `plot_qq()` and `plot_manhattan()` to generate $\lambda_{GC}$ genomic stratification measures and correct for them in plots (see [this paper](https://doi.org/10.1038/nrg2813)).
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.
