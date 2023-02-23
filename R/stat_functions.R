@@ -984,7 +984,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
   ## zfst and fst/1-fst
   if(zfst){
-    real_out[, zfst := fst - mean(fst, na.rm = TRUE)/stats::sd(fst, na.rm = TRUE), by = .(comparison, facet)]
+    real_out[, zfst := (fst - mean(fst, na.rm = TRUE))/stats::sd(fst, na.rm = TRUE), by = .(comparison, facet)]
   }
   if(fst_over_one_minus_fst){
     real_out[, fst_id := fst/(1 - fst)]
