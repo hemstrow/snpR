@@ -35,6 +35,7 @@ test_that("zfst and 1/1-fst",{
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc", zfst = TRUE, fst_over_one_minus_fst = TRUE)
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_true(all(c("zfst", "fst_id") %in% colnames(tdfst$pairwise)))
+  expect_true(all(round(tapply(tdfst$pairwise$zfst, tdfst$pairwise$comparison, mean), 3) == 0))
 })
 
 test_that("correct fis",{
