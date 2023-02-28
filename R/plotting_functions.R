@@ -413,8 +413,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'automatically plotted simultaneously. If two facets are supplied, one level
 #'will be noted by point shape and the other by color (by default the facet with
 #'more options will be given shapes, behavior that can be controlled using the
-#'\code{shape_has_more_levels} argument), as long as one has less than 25 total
-#'levels. If both have more than 25 levels, one will be noted by point fill and
+#'\code{shape_has_more_levels} argument), as long as one has less than 6 total
+#'levels. If both have more than 6 levels, one will be noted by point fill and
 #'the other by point outline.
 #'
 #'@param x snpRdata object.
@@ -498,7 +498,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param shape_has_more_levels logical, default TRUE. If TRUE and two facets are
 #'  requested, the facet with more levels will plotted as shapes. If FALSE,
 #'  the facet with less levels will be plotted with shapes. Ignored if the facet
-#'  that would get shapes has more than 25 levels.
+#'  that would get shapes has more than 6 levels.
 #'@param update_bib character or FALSE, default FALSE. If a file path to an
 #'  existing .bib library or to a valid path for a new one, will update or
 #'  create a .bib file including any new citations for methods used. Useful
@@ -978,16 +978,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
         # if two plotting variables, prepare the second and add it as well.
         v2 <- tpd[,which(colnames(tpd) == facets[2])]
         
-        # Figure out which has less levels, make that v2 IF neither have more than 25.
+        # Figure out which has less levels, make that v2 IF neither have more than 6.
         lv1 <- length(unique(v1))
         lv2 <- length(unique(v2))
         
         # adjust levels
-        if(lv1 <= 25 | lv2 <= 25){
+        if(lv1 <= 6 | lv2 <= 6){
           # if need to be flipped
           if(lv1 > lv2){
-            # only flip if v2 has less or equal to 25 levels and we are flipping
-            if(!lv2 > 25 & shape_has_more_levels){
+            # only flip if v2 has less or equal to 6 levels and we are flipping
+            if(!lv2 > 6 & shape_has_more_levels){
               temp <- v2
               v2 <- v1
               v1 <- temp
@@ -999,9 +999,21 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
               rm(temp)
             }
           }
+          # also flip if lv1 is less than lv1 and less than 7, but lv2 has too many levels
+          else if(lv2 > 6 & lv1 <=6){
+            temp <- v2
+            v2 <- v1
+            v1 <- temp
+            facets <- rev(facets)
+            
+            temp <- lv2
+            lv2 <- lv1
+            lv1 <- temp
+            rm(temp)
+          }
         }
         
-        if(lv2 <= 25){
+        if(lv2 <= 6){
           out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
             ggplot2::scale_shape_discrete(name = facets[2])
         }

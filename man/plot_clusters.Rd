@@ -139,7 +139,7 @@ points and cluster centers when plotting with DAPC.}
 \item{shape_has_more_levels}{logical, default TRUE. If TRUE and two facets are
 requested, the facet with more levels will plotted as shapes. If FALSE,
 the facet with less levels will be plotted with shapes. Ignored if the facet
-that would get shapes has more than 25 levels.}
+that would get shapes has more than 6 levels.}
 
 \item{update_bib}{character or FALSE, default FALSE. If a file path to an
 existing .bib library or to a valid path for a new one, will update or
@@ -207,8 +207,8 @@ facet categories. Facets should be provided as described in
 automatically plotted simultaneously. If two facets are supplied, one level
 will be noted by point shape and the other by color (by default the facet with
 more options will be given shapes, behavior that can be controlled using the
-\code{shape_has_more_levels} argument), as long as one has less than 25 total
-levels. If both have more than 25 levels, one will be noted by point fill and
+\code{shape_has_more_levels} argument), as long as one has less than 6 total
+levels. If both have more than 6 levels, one will be noted by point fill and
 the other by point outline.
 }
 \examples{
