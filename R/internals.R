@@ -69,8 +69,8 @@ is.snpRdata <- function(x){
   # For snp facets, nothing to do here besides add them to the facet list and facet type list.
   # For complex facets, prep summary tables for the sample facet portion if they don't exist and add to facet list.
   added.facets <- character(0)
-  oac <- cbind(data.table::as.data.table(x@facet.meta[,c("facet", "subfacet", ".snp.id")]),
-               data.table::as.data.table(x@ac)) # grab original ac with meta for later
+  # oac <- cbind(data.table::as.data.table(x@facet.meta[,c("facet", "subfacet", ".snp.id")]),
+  #              data.table::as.data.table(x@ac)) # grab original ac with meta for later
   for(k in 1:length(facet.list)){
     facets <- facet.list[[k]] # column levels for this facet.
     #=========================figure out unique levels for the facet==========
@@ -141,15 +141,15 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  if(.is.bi_allelic(x)){
-    .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
-    nac <- data.table::as.data.table(nac)
-    nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
-    nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
-    nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
-    nac <- as.data.frame(nac)
-    x@ac <- nac[,-c(1:3)]
-  }
+  # if(.is.bi_allelic(x)){
+  #   .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
+  #   nac <- data.table::as.data.table(nac)
+  #   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+  #   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
+  #   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
+  #   nac <- as.data.frame(nac)
+  #   x@ac <- nac[,-c(1:3)]
+  # }
   
   # add in dummy rows to stats
   sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
@@ -191,7 +191,7 @@ is.snpRdata <- function(x){
 #
 # \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
 # \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
-# \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
+# \item{ac.stats: } ac data cbound to stats \item{meta.as: } as data cbound to
 # snp metadata. \item{snpRdata: } subset snpRdata object. }
 #
 # case:
@@ -265,7 +265,8 @@ is.snpRdata <- function(x){
       # return
       return(out)
     }
-    else if(req == "ac"){ # really simple, just here for consistancy across functions. you just... run it on the thing.
+    else if(req == "ac"){
+      browser()
       # subset
       ac <- x@ac[x@facet.meta$facet %in% facets,]
       
@@ -279,7 +280,7 @@ is.snpRdata <- function(x){
       return(out)
     }
     else if(req == "cast.gs" | req == "cast.ac"){
-      
+
       # need to split by phenotype + facet
       pheno.facets <- paste(facets, response, sep = ".")
       
@@ -301,12 +302,13 @@ is.snpRdata <- function(x){
         gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
       }
       else{
-        gs <- data.table::as.data.table(cbind(x@facet.meta, x@ac[, c("ni1", "ni2")]))
+        gs <- format_snps(x, "ac", pheno.facets)
+        gs <- gs[,-which(colnames(gs) %in% c("n_total", "n_alleles"))]
       }
       
       # initialize outputs
       comb <- vector("list", length = length(facets))
-      
+
       # get the input gs data. Split by facet, since we need to extract metadata differently for each.
       for(i in 1:length(facets)){
 
@@ -338,6 +340,17 @@ is.snpRdata <- function(x){
         comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
         comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"), all.y = T)
         
+        # levels where there is no case/no control
+        if(any(is.na(comb[[i]]$facet))){
+          ..target_cols <- NULL
+          fill <- merge(comb[[i]][is.na(comb[[i]]$facet),c(".snp.id", "subfacet")],
+                        tgs[tgs$phenotype == unique(tgs$phenotype),1:which(colnames(tgs) == ".snp.id")],
+                        by = c(".snp.id", "subfacet"), all.x = TRUE)
+          target_cols <- c("subfacet", "facet", "facet.type", 
+                           colnames(comb[[i]])[which(colnames(comb[[i]]) %in% colnames(snp.meta(x)) & colnames(comb[[i]]) != ".snp.id")])
+          data.table::set(comb[[i]], which(is.na(comb[[i]]$facet)), target_cols,
+                          .fix..call(fill[,..target_cols]))
+        }
         
         comb[[i]]$facet <- facets[i]
       }
@@ -536,7 +549,7 @@ is.snpRdata <- function(x){
     
   }
   else if(case == "ps.pf.psf"){
-    if(req == "meta.ac" | req == "pos.all.stats"){
+    if(req == "pos.all.stats" | req == "meta.as"){
       x@facet.meta$facet <- as.character(x@facet.meta$facet)
       x@facet.meta$subfacet <- as.character(x@facet.meta$subfacet)
       
@@ -568,7 +581,7 @@ is.snpRdata <- function(x){
         
         # run the function and create a snp res metadata df to bind to the results.
         # assign("last.warning", NULL, envir = baseenv())
-        res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
+        res <- fun(cbind(meta[run.lines,,drop = FALSE], stats_to_use[run.lines,,drop = FALSE]), ...)
         
         # return
         if(nrow(res) == 1){
@@ -586,9 +599,9 @@ is.snpRdata <- function(x){
       }
       
       
-      # get the statistics needed by the function and the task list. For now, expects only meta cbound to ac or snp-wise statistics.
-      if(req == "meta.ac"){
-        stats_to_use <- x@ac
+      # get the statistics needed by the function and the task list. For now, expects only meta cbound to as or snp-wise statistics.
+      if(req == "meta.as"){
+        stats_to_use <- x@geno.tables$as
         task.list <- .get.task.list(x, facets)
         meta.to.use <- x@facet.meta
       }
@@ -1330,7 +1343,6 @@ is.snpRdata <- function(x){
     titer <- i*max_snps+ 1
   }
   
-
   gs <- purrr::map(geno.tables, "gs")
   as <- purrr::map(geno.tables, "as")
   wm <- purrr::map(geno.tables, "wm")
@@ -1338,6 +1350,13 @@ is.snpRdata <- function(x){
   gs <- as.matrix(data.table::rbindlist(gs, fill = TRUE))
   as <- as.matrix(data.table::rbindlist(as, fill = TRUE))
   wm <- as.matrix(data.table::rbindlist(wm, fill = TRUE))
+  if(any(colnames(wm) == mDat)){
+    wm <- wm[,mDat,drop=FALSE]
+  }
+  else{
+    wm <- matrix(0, nrow = nrow(gs), 1)
+    colnames(wm) <- mDat
+  }
   
   
   gs[is.na(gs)] <- 0
@@ -2515,7 +2534,7 @@ is.snpRdata <- function(x){
 .boot_ac <- function(x, n, facet){
   ..tm <- NULL
 
-  # function to conver the output of .maf_func into ac
+  # function to convert the output of .maf_func into ac
   maf.to.ac <- function(maf){
     ac <- data.table::data.table(n_total = maf$maj.count + maf$min.count,
                                  n_alleles = rowSums(maf[,c("maj.count", "min.count")] != 0),

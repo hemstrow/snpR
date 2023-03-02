@@ -313,16 +313,16 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
   
   
   #=================subfunction=========
-  func <- function(ac, par, sigma, step, report){
+  func <- function(as, par, sigma, step, report){
     out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
-    tps <- sort(ac$position) #get the site positions, sort
+    tps <- sort(as$position) #get the site positions, sort
     lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
     c <- 0 #set starting position
     i <- 1 #set starting iteration for writing output
 
     # if sigma is null, set to run everything in one window
     if(is.null(sigma)){
-      sigma <- range(ac$position)
+      sigma <- range(as$position)
       c <- mean(sigma)
       step <- c + 1
       sigma <- sigma[2] - sigma[1]
@@ -331,25 +331,37 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
       sigma <- 1000*sigma
     }
     
+    
     # run the loop
     while (c <= lsp){
+
       start <- c - ifelse(triple_sigma, sigma*3, sigma) #change window start
       end <- c + ifelse(triple_sigma, sigma*3, sigma) #change window end
 
-      #take all the snps in the window, calculate T's theta, W's theta, and T's D
-      wsnps <- ac[ac$position <= end & ac$position >= start,] #get only the sites in the window
-      wsnps <- wsnps[!(wsnps[,"ni1"] == 0 & wsnps[,"ni2"] == 0),] #remove any sites that are not sequenced in this pop/group/whatever
+      # take all the snps in the window, calculate T's theta, W's theta, and T's D
+      wsnps <- as[as$position <= end & as$position >= start,] # get only the sites in the window
+      
+      ac_cols <- which(colnames(wsnps) %in% colnames(x@geno.tables$as))
+      
+      wsnps <- wsnps[!(rowSums(wsnps[,ac_cols]) == 0),] # remove any sites that are not sequenced in this pop/group/whatever
       if(nrow(wsnps) == 0){ #if no snps in window
         c <- c + step*1000 #step along
         next #go to the next window
       }
-      b1s <- choose(wsnps[,"ni1"],2) #binomial for first allele
-      b2s <- choose(wsnps[,"ni2"],2) #binomial for second allele
-      bts <- choose(wsnps[,"n_total"],2) #binomial for all alleles
-      ts.theta <- sum(1-((b1s+b2s)/bts)) #average number of pairwise differences (pi) per snp. Equivalent to sum((ndif/ncomp)) for all snps
+      
+      # binomials for each allele
+      btop <- 0
+      for(j in ac_cols){
+        btop <- btop + choose(wsnps[,j],2) # binomial for this allele
+      }
+      
+      ntotal <- rowSums(wsnps[,colnames(x@geno.tables$as)])
+      
+      bts <- choose(ntotal,2) #binomial for all alleles
+      ts.theta <- sum(1-(btop/bts)) #average number of pairwise differences (pi) per snp. Equivalent to sum((ndif/ncomp)) for all snps
       #ts.thetaf <- ts.theta/nrow(wsnps) #pi for the whole region, which includes all of the non-polymorphic sites. Reason why this shouldn't be run with a maf filter, probably.
-      n_seg <- nrow(wsnps[wsnps$ni1 != 0 & wsnps$ni2 != 0,]) #number of segregating sites
-      K <- round(mean(wsnps[,"n_total"])) #average sample size for ws.theta, as in hohenlohe 2010. Alternative would make this into a function, then use lapply on the vector of K values
+      n_seg <- nrow(wsnps[which(rowSums(wsnps[,ac_cols] != 0) > 1),]) #number of segregating sites
+      K <- round(mean(ntotal)) #average sample size for ws.theta, as in hohenlohe 2010. Alternative would make this into a function, then use lapply on the vector of K values
       #if(is.nan(K) == TRUE){browser()}
       a1 <- sum(1/seq(1:(K-1))) #get a1
       ws.theta <- n_seg/a1 #get ws.theta
@@ -407,7 +419,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
   #=============run=============
   out <- .apply.snpR.facets(x,
                            facets = facets,
-                           req = "meta.ac",
+                           req = "meta.as",
                            fun = func,
                            case = "ps.pf.psf",
                            par = par,
@@ -528,12 +540,6 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   if(method == "genepop"){
     .check.installed("genepop")
-  }
-  
-  if(any(x@ac$n_alleles > 2)){
-    vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
-    vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
-    stop(base::cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
   }
   
   method <- tolower(method)
@@ -664,12 +670,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       # get nk values:
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
                                        .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets])
-      if(nrow(x@ac) == 0){
-        n_tots$nk <- rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
-      }
-      else{
-        n_tots$nk <- x@ac[x@facet.meta$facet == facets, "n_total"]
-      }
+     
+      n_tots$nk <- rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
       n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
 
@@ -1051,12 +1053,6 @@ calc_fis <- function(x, facets = NULL){
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
-  }
-  
-  if(any(x@ac$n_alleles > 2)){
-    vio <- which(x@ac$n_alleles[x@facet.meta$facet %in% facets] > 2)
-    vio <- unique(x@facet.meta$.snp.id[x@facet.meta$facet %in% facets][vio])
-    stop(cat("Some loci have more than two alleles. Violating loci:\n", paste0(vio, collapse = "\n")))
   }
   
   # add any missing facets

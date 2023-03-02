@@ -417,7 +417,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     if(length(samps) == 1){
       dat <- as.data.frame(dat, stringsAsFactors = F)
     }
-    dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,], sample.meta = sample.meta(x)[samps,], mDat = x@mDat)
+    dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,,drop = FALSE], sample.meta = sample.meta(x)[samps,,drop = FALSE], mDat = x@mDat)
     if(any(x@facets != ".base")){
       dat <- .add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
@@ -459,7 +459,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
                   geno.tables = list(gs = x@geno.tables$gs[x@facet.meta$.snp.id %in% snps,],
                                      as = x@geno.tables$as[x@facet.meta$.snp.id %in% snps,],
                                      wm = x@geno.tables$wm[x@facet.meta$.snp.id %in% snps,]),
-                  ac = x@ac[x@facet.meta$.snp.id %in% snps,],
+                  # ac = x@ac[x@facet.meta$.snp.id %in% snps,],
                   facets = x@facets,
                   facet.type = x@facet.type,
                   stats = x@stats[x@stats$.snp.id %in% snps,],
@@ -741,15 +741,6 @@ filter_snps <- function(x, maf = FALSE,
   snp_form <- x@snp.form
   mDat <- x@mDat
 
-  # fix a table if it only has one loci
-  fix.one.loci <- function(x){
-    if(is.null(nrow(x))){
-      a <- matrix(x, nrow = 1)
-      colnames(a) <- names(x)
-      x <- a
-    }
-    return(x)
-  }
 
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
@@ -758,12 +749,9 @@ filter_snps <- function(x, maf = FALSE,
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
 
-    amat <- x@geno.tables$as[x@facet.meta$facet == ".base",]
-    amat <- fix.one.loci(amat)
-    gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",]
-    gmat <- fix.one.loci(gmat)
-    wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",]
-    wmat <- fix.one.loci(wmat)
+    amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
+    gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
+    wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
 
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
@@ -3306,4 +3294,160 @@ summarize_facets <- function(x, facets = NULL){
   out <- lapply(out, unique)
   
   return(out)
+}
+
+
+merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), names(sample.meta(y))),
+                           by.sample.x = by.sample, by.sample.y = by.sample,
+                           by.snp = intersect(names(snp.meta(x)), names(snp.meta(y))),
+                           by.snp.x = by.snp, by.snp.y = by.snp,
+                           all = TRUE, all.x.snps = all, all.y.snps = all,
+                           all.x.samples = all, all.y.samples = all,
+                           by.allelic = FALSE,
+                           resolve_conflicts = "error"){
+  browser()
+  
+  #========sanity checks==============
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  if(!is.snpRdata(y)){
+    stop("y must be a snpRdata object.\n")
+  }
+  
+  if(x@snp.form != y@snp.form){
+    stop("x and y have snps in a different format.\n")
+  }
+  
+  if(x@mDat != y@mDat){
+    if(x@mDat %in% colnames(y@geno.tables$wm)){
+      stop("x and y have missing data in a different format. The missing data format from x ", x@mDat, " is also present in the genotypes of y, so merging cannot procceed.\n")
+    }
+    
+    warning("x and y have missing data in a different format. The missing data format from x ", x@mDat, " will be used.\n")
+    gy <- genotypes(y)
+    gy[gy == y@mDat] <- x@mDat
+    y <- import.snpR.data(gy, snp.meta(y), sample.meta(y), x@mDat)
+  }
+
+  
+  if(".sample.id" %in% by.sample){
+    by.sample <- by.sample[-which(by.sample == ".sample.id")]
+  }
+  
+  if(".snp.id" %in% by.snp){
+    by.snp <- by.snp[-which(by.snp == ".snp.id")]
+  }
+  
+  #========match samples and SNPs=============
+  sm1 <- sample.meta(x)
+  sm2 <- sample.meta(y)
+  
+  sm.m <- merge(sm1, sm2, by.x = by.sample.x, by.y = by.sample.y,
+                all.x = all.x.samples, all.y = all.y.samples, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  sm.id.cols <- grep("^\\.sample\\.id", colnames(sm.m))
+  
+  
+  snm1 <- snp.meta(x)
+  snm2 <- snp.meta(y)
+  
+  snm.m <- merge(snm1, snm2, by.x = by.snp.x, by.y = by.snp.y,
+                all.x = all.x.snps, all.y = all.y.snps, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  snm.id.cols <- grep("^\\.snp\\.id", colnames(snm.m))
+  
+  
+  genotypes.m <- matrix(x@mDat, nrow = nrow(snm.m), ncol = nrow(sm.m))
+  gt <- list(gs = matrix(nrow = nrow(snm.m), ncol = length(unique(c(colnames(x@geno.tables$gs), colnames(y@geno.tables$gs))))),
+             as = matrix(nrow = nrow(snm.m), ncol = length(unique(c(colnames(x@geno.tables$as), colnames(y@geno.tables$as))))),
+             wm = matrix(nrow = nrow(snm.m), ncol = 1))
+  
+  #=======merge genotypes by indices in merged metadata--genotypes present in both============
+  idents.snp <- which(!is.na(snm.m$.snp.id.from.x) & !is.na(snm.m$.snp.id.from.y))
+  idents.samp <- which(!is.na(sm.m$.sample.id.from.x) & !is.na(sm.m$.sample.id.from.y))
+  
+  if(length(idents.snp) > 0 & length(idents.samp) > 0){
+    g.matches.x <- genotypes(x)[match(snm.m$.snp.id.from.x[idents.snp], snp.meta(x)$.snp.id), 
+                                match(sm.m$.sample.id.from.x[idents.samp], sample.meta(x)$.sample.id)]
+    g.matches.y <- genotypes(y)[match(snm.m$.snp.id.from.y[idents.snp], snp.meta(y)$.snp.id), 
+                                match(sm.m$.sample.id.from.y[idents.samp], sample.meta(y)$.sample.id)]
+    
+    if(all(c(dim(g.matches.y), dim(g.matches.x))) > 0){
+      
+      # set matches to x or y if requested, filling missing genotypes when possible from other set
+      if(resolve_conflicts == "y"){
+        g.matches.m <- g.matches.y
+        g.matches.m[g.matches.m == x@mDat] <- g.matches.x[g.matches.m == x@mDat]
+      }
+      else if(resolve_conflicts == "x"){
+        g.matches.m <- g.matches.x
+        g.matches.m[g.matches.m == x@mDat] <- g.matches.y[g.matches.m == x@mDat]
+      }
+      else{
+        
+        # handle mismatches
+        ## first sub-in any missing genotypes, since these will be seen as implicit matches in favor of the one without missing data.
+        g.matches.m <- g.matches.x
+        g.matches.m[g.matches.m == x@mDat] <- g.matches.y[g.matches.m == x@mDat] 
+        matching_idents <- g.matches.m == g.matches.y # should be no mDats here, since those will now match.
+        
+        
+        # throw an error if requested
+        if(resolve_conflicts == "error"){
+          if(any(!matching_idents)){
+            warning("Error: Genotypic mismatches in identical samples/snps. Returning matrix of mismatches.")
+            matching_idents <- cbind(snp.meta(x)[match(snm.m$.snp.id.from.x[idents.snp], snp.meta(x)$.snp.id),], matching_idents)
+            colnames(matching_idents)[(ncol(snp.meta(x)) + 1): ncol(matching_idents)] <- paste0("Obj_x_sample_", match(sm.m$.sample.id.from.x[idents.samp], sample.meta(x)$.sample.id))
+            return(matching_idents)
+          }
+        }
+        
+        # grab a random x or y genotype if requested
+        else if(resolve_conflicts == "random"){
+          take.y <- rbinom(sum(!matching_idents), 1, .5)
+          take.y <- as.logical(take.y)
+          
+          g.matches.m[!matching_idents][take.y] <- g.matches.y[!matching_idents][take.y]
+        }
+      }
+      
+      genotypes.m[idents.snp, idents.samp] <- as.matrix(g.matches.m)
+    }
+  }
+  browser()
+  
+  #=======merge genotypes by indices in merged metadata--genotypes not present in both============
+  browser()
+  genotypes.m <- data.table::as.data.table(genotypes.m)
+  
+  # samples in only one:
+  x.only <- which(is.na(sm.m$.sample.id.from.y) & !is.na(sm.m$.sample.id.from.x))
+  y.only <- which(is.na(sm.m$.sample.id.from.x) & !is.na(sm.m$.sample.id.from.y))
+  
+  if(length(x.only) > 0){
+    set(genotypes.m, which(!is.na(snm.m$.snp.id.from.x)), x.only, 
+        data.table::as.data.table(genotypes(x)[match(snm.m$.snp.id.from.x[which(!is.na(snm.m$.snp.id.from.x))], snp.meta(x)$.snp.id),
+                                               match(sm.m$.sample.id.from.x[x.only], sample.meta(x)$.sample.id)]))
+  }
+  if(length(y.only) > 0){
+    set(genotypes.m, which(!is.na(snm.m$.snp.id.from.y)), y.only,
+      data.table::as.data.table(genotypes(y)[match(snm.m$.snp.id.from.y[which(!is.na(snm.m$.snp.id.from.y))], snp.meta(y)$.snp.id),
+                                             match(sm.m$.sample.id.from.y[y.only], sample.meta(y)$.sample.id)]))
+  }
+  
+  # snps in only one
+  x.only <- which(is.na(snm.m$.snp.id.from.y) & !is.na(snm.m$.snp.id.from.x))
+  y.only <- which(is.na(snm.m$.snp.id.from.x) & !is.na(snm.m$.snp.id.from.y))
+  
+  if(length(x.only) > 0){
+    set(genotypes.m, x.only, which(!is.na(sm.m$.sample.id.from.x)),
+      data.table::as.data.table(genotypes(x)[match(snm.m$.snp.id.from.x[x.only], snp.meta(x)$.snp.id),
+                                             match(sm.m$.sample.id.from.x[which(!is.na(sm.m$.sample.id.from.x))], sample.meta(x)$.sample.id)]))
+  }
+  if(length(y.only) > 0){
+    set(genotypes.m, y.only, which(!is.na(sm.m$.sample.id.from.y)),
+      data.table::as.data.table(genotypes(y)[match(snm.m$.snp.id.from.y[y.only], snp.meta(y)$.snp.id),
+                                             match(sm.m$.sample.id.from.y[which(!is.na(sm.m$.sample.id.from.y))], sample.meta(y)$.sample.id)]))
+    
+    
+  }
 }

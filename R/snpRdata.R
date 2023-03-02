@@ -114,9 +114,7 @@ NULL
 #'@slot mDat character, missing data key
 #'@slot snp.form numeric, number of characters per genotype (not really used)
 #'@slot geno.tables list containing three matrices: gs (genotype counts), as
-#'  (allele counts), and wm (genotype counts + missing counts)
-#'@slot ac data.frame containing ac formatted data, see
-#'  \code{\link{format_snps}}.
+#'  (allele counts), and wm (missing counts)
 #'@slot facets character, vector of tabulated facets
 #'@slot facet.type character, types of each tabulated facet.
 #'@slot stats data.frame, all calculated single-snp non-pairwise stats.
@@ -150,7 +148,6 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        data.type = "character",
                                        snp.form = "numeric",
                                        geno.tables = "list",
-                                       ac = "data.frame",
                                        facets = "character",
                                        facet.type = "character",
                                        stats = "data.frame",
@@ -262,8 +259,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  \item{mDat: } missing data format. \item{snp.form: } number of characters
 #'  per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
 #'  allele counts (as), and missing data (wm). facet.meta contains the
-#'  corresponding metadata. \item{ac: } data in allele count format, used
-#'  internally. facet.meta contains corresponding metadata. \item{facets: }
+#'  corresponding metadata. \item{facets: }
 #'  vector of the facets that have been added to the data. \item{facet.type: }
 #'  classes of the added facets (snp, sample, complex, or .base). \item{stats: }
 #'  data.frame containing all calculated non-pairwise single-snp statistics and
@@ -284,7 +280,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  distance data. \item{names: } column names for genotypes. \item{row.names: }
 #'  row names for genotypes. \item{.Data: } list of vectors containing raw
 #'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
-#'
+#'  
 #'  Note that most of these slots are used primarily internally.
 #'
 #'  All calculated data can be accessed using the \code{\link{get.snpR.stats}}
@@ -605,7 +601,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   .make_it_quiet(x <- calc_maf(x))
   
   # add ac
-  .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
+  # .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
   
   
   #========return=========

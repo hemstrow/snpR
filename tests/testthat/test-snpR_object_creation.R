@@ -9,11 +9,7 @@ correct_geno_tables <- list(gs = as.matrix(data.frame(AA = as.integer(c(0, 0, 1,
                                                       C =  as.integer(c(0, 1, 0, 0)),
                                                       T =  as.integer(c(0, 7, 0, 0)),
                                                       G =  as.integer(c(8, 0, 2, 6)))),
-                            wm = as.matrix(data.frame(AA =  as.integer(c(0, 0, 1, 0)),
-                                                      CT =  as.integer(c(0, 1, 0, 0)),
-                                                      GG =  as.integer(c(4, 0, 1, 3)),
-                                                      NN =  as.integer(c(0, 0, 2, 1)),
-                                                      TT =  as.integer(c(0, 3, 0, 0))))
+                            wm = as.matrix(data.frame(NN =  as.integer(c(0, 0, 2, 1))))
 )
 
 test_that("Overall snpRdata object", {
@@ -37,11 +33,6 @@ test_that("Geno table creation", {
   expect_true(all(rowSums(tdat@geno.tables$gs)*2 == rowSums(tdat@geno.tables$as)))
 })
 
-test_that("AC table creation",{
-  expect_is(tdat@ac, "data.frame")
-  expect_equal(tdat@ac$ni1, matrixStats::rowMaxs(tdat@geno.tables$as))
-  expect_equal(tdat@ac$n_total, rowSums(tdat@geno.tables$as)) # check minor by proxy
-})
 
 test_that("Stats table creation", {
   expect_is(tdat@stats, "data.table")

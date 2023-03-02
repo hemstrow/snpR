@@ -21,7 +21,7 @@ test_that("pi",{
   pi <- get.snpR.stats(tdm, c(".base", "pop"), "pi")$single
 
   # test
-  expect_equal(pi$pi, 1 - (choose(tdm@ac$ni1, 2) + choose(tdm@ac$ni2, 2) )/choose(tdm@ac$n_total, 2)) # equ from hohenlohe
+  expect_equal(pi$pi, 1 - rowSums(apply(tdm@geno.tables$as, MARGIN = 2, function(x) choose(x, 2)))/choose(rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
 })
 
 test_that("he",{
@@ -30,7 +30,11 @@ test_that("he",{
   he <- get.snpR.stats(tdm, c(".base", "pop"), "he")$single
   
   # test
-  expect_equal(he$he, 2 * (tdm@ac$ni1/tdm@ac$n_total) * (tdm@ac$ni2/tdm@ac$n_total)) # check against 2pq from another source
+  as <- tdm@geno.tables$as
+  as <- as/rowSums(as)
+  as <- as^2
+  che <- 1 - rowSums(as) # 1 minus hom freqs
+  expect_equal(he$he, che) # check against 2pq from another source
   
   # non-bi-allelic
   check <- stickSNPs
