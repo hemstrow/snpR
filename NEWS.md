@@ -7,7 +7,7 @@
 * Added support for DAPC to `plot_clusters()` via interface to adegenet and some code pulled in from (the thankfully GPL-v3) ade4 package. Licence note adjusted to reflect ade4 code.
 * Improved memory efficiency of `snpRdata` objects by removing some duplicated information. Old objects should still work fine, but new objects will be considerably smaller. This also improves `snpRdata` object
 creation times!
-* Added `merge.snpRdata()` to merge `snpRdata` objects using syntax equivalent to base R's `merge()` function. This can still be made more computationally efficient in the future by avoiding some internal summary tabulation.
+* Added `merge_snpRdata()` to merge `snpRdata` objects using syntax equivalent to base R's `merge()` function. This can still be made more computationally efficient in the future by avoiding some internal summary tabulation.
 
 ### Minor
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.

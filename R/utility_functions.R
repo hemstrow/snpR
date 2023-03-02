@@ -3330,7 +3330,7 @@ summarize_facets <- function(x, facets = NULL){
 #' argument will sill override \code{all = TRUE}, as in 
 #' \code{\link[base]{merge}}.
 #' 
-#' At present, \code{\link{merge.snpRdata}} is not maximally efficient in that
+#' At present, \code{\link{merge_snpRdata}} is not maximally efficient in that
 #' it will remove all tabulated statistics and re-tabulate all internal 
 #' summaries. Improvements are in development.
 #' 
@@ -3383,17 +3383,17 @@ summarize_facets <- function(x, facets = NULL){
 #' 
 #' \dontrun{
 #' # Not run, will error due to conflicts
-#' z <- merge.snpRdata(x, y)
+#' z <- merge_snpRdata(x, y)
 #' 
 #' # Not run, will return a warning and report mismatches
-#' z <- merge.snpRdata(x, y, resolve_conflicts = "warning")
+#' z <- merge_snpRdata(x, y, resolve_conflicts = "warning")
 #' }
 #' 
 #' # take a random genotype in the case of conflicts
-#' z <- merge.snpRdata(x, y, resolve_conflicts = "random")
+#' z <- merge_snpRdata(x, y, resolve_conflicts = "random")
 #' z
 #' 
-merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), names(sample.meta(y))),
+merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), names(sample.meta(y))),
                            by.sample.x = by.sample, by.sample.y = by.sample,
                            by.snp = intersect(names(snp.meta(x)), names(snp.meta(y))),
                            by.snp.x = by.snp, by.snp.y = by.snp,
@@ -3483,7 +3483,7 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
       }
       else{
         if(resolve_conflicts == "error"){
-          stop("Some genotypes at identical loci sequenced in samples in both 'x' and 'y' are not identical. For more information on conflicts, merge.snpRdata() may instead be run with the 'resolve_conflicts' argument set to 'warning'\n")
+          stop("Some genotypes at identical loci sequenced in samples in both 'x' and 'y' are not identical. For more information on conflicts, merge_snpRdata() may instead be run with the 'resolve_conflicts' argument set to 'warning'\n")
         }
         
         # handle mismatches
