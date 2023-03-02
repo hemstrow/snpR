@@ -16,7 +16,7 @@ test_that("merging",{
   y <- import.snpR.data(gy, snp.y, samp.y)
   
   x <- stickSNPs
-  sample.meta(x)$ID <- 1:ncol(dx)
+  sample.meta(x)$ID <- 1:ncol(x)
   
   # error calling
   expect_error(z <- merge_snpRdata(x, y), "Some genotypes at identical loci sequenced in samples in both 'x' and 'y' are not identical") 
