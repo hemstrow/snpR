@@ -3379,7 +3379,7 @@ summarize_facets <- function(x, facets = NULL){
 #' y <- import.snpR.data(y, snp.y, samp.y)
 #' 
 #' x <- stickSNPs
-#' sample.meta(x)$ID <- 1:ncol(dx)
+#' sample.meta(x)$ID <- 1:ncol(x)
 #' 
 #' \dontrun{
 #' # Not run, will error due to conflicts
@@ -3506,7 +3506,7 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
         
         # grab a random x or y genotype if requested
         else if(resolve_conflicts == "random"){
-          take.y <- rbinom(sum(!matching_idents), 1, .5)
+          take.y <- stats::rbinom(sum(!matching_idents), 1, .5)
           take.y <- as.logical(take.y)
           
           g.matches.m[!matching_idents][take.y] <- g.matches.y[!matching_idents][take.y]

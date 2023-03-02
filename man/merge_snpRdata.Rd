@@ -108,7 +108,7 @@ samp.y <- data.frame(pop = c("ASP", "ASP", "ASP", "test1", "test2", "test3"),
 y <- import.snpR.data(y, snp.y, samp.y)
 
 x <- stickSNPs
-sample.meta(x)$ID <- 1:ncol(dx)
+sample.meta(x)$ID <- 1:ncol(x)
 
 \dontrun{
 # Not run, will error due to conflicts
