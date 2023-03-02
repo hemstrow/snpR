@@ -1,10 +1,13 @@
-# snpR 1.2.5
+# snpR 1.2.6
 
 ## Features
 
 ### Major
 * Rework to allow some features to be used with microsatellite or other non-biallelic data types such as microhaplotypes is underway and will be enabled once basic filtering, diversity calculations, and plotting function support is finished.
 * Added support for DAPC to `plot_clusters()` via interface to adegenet and some code pulled in from (the thankfully GPL-v3) ade4 package. Licence note adjusted to reflect ade4 code.
+* Improved memory efficiency of `snpRdata` objects by removing some duplicated information. Old objects should still work fine, but new objects will be considerably smaller. This also improves `snpRdata` object
+creation times!
+* Added `merge.snpRdata()` to merge `snpRdata` objects using syntax equivalent to base R's `merge()` function. This can still be made more computationally efficient in the future by avoiding some internal summary tabulation.
 
 ### Minor
 * Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
@@ -20,8 +23,6 @@ there are less than 25 levels (the number of unique point shapes). This makes fo
 facet gets shapes is controlled by the `shape_has_more_levels` argument.
 * Added a `verbose` option to `check_duplicates()`. It's still a slow function and could use some work or parallelization.
 * Added `lambda_gc_correction` arguments to `plot_qq()` and `plot_manhattan()` to generate $\lambda_{GC}$ genomic stratification measures and correct for them in plots (see [this paper](https://doi.org/10.1038/nrg2813)).
-* Improved memory efficiency of snpRdata objects by removing some duplicated information. Old objects should still work fine, but new objects
-will be smaller.
 
 ## Documentation
 * Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.

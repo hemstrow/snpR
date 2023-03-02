@@ -3296,17 +3296,111 @@ summarize_facets <- function(x, facets = NULL){
   return(out)
 }
 
-
+#' Merge two snpRdata objects
+#' 
+#' Merge two snpRdata objects using sample and SNP metadata. Functions
+#' much like base R's  \code{\link[base]{merge}} function, but
+#' the 'by' and 'all' options can be specified at the SNP and sample level.
+#' 
+#' While this function can be used essentially identically to how one might
+#' use base R's \code{\link[base]{merge}} function, there are a few differences
+#' to note. 
+#' 
+#' First, samples that are genotyped at identical loci 
+#' in both data sets can be handled several ways, controlled by the
+#' \code{resolve_conflicts} argument: \itemize{\item{warning:} Return a harsh 
+#' warning and a data frame with more information on genotypes at identical 
+#' samples/SNPs are different between \code{x} and \code{y}. 
+#' \item{error: } The default, return an error when conflicts are detected.
+#' \item{x} Use genotypes from \code{x} to resolve conflicts.
+#' \item{y} Use genotypes from \code{y} to resolve conflicts.
+#' \item{random} Randomly sample (non-missing) genotypes from \code{x}
+#' and \code{y} to resolve conflicts.}
+#' Note that called genotypes are always taken over un-called genotypes when
+#' there are merge conflicts, and missing data in one but not the other data set
+#' will not trigger an error or a warning if those options are selected.
+#' 
+#' Secondly, the \code{by} and \code{all} arugment families from 
+#' \code{\link[base]{merge}} are extended to refer to either samples or SNPs,
+#' such that all samples can be maintained but not all SNPs, for example.
+#' 
+#' Lastly, all of the \code{all} family of arguments default to \code{TRUE}
+#' instead of \code{FALSE}, since purely overlapping genotypes/SNPs is unlikely
+#' to be desired. \code{FALSE} values provided to any specific \code{all}
+#' argument will sill override \code{all = TRUE}, as in 
+#' \code{\link[base]{merge}}.
+#' 
+#' At present, \code{\link{merge.snpRdata}} is not maximally efficient in that
+#' it will remove all tabulated statistics and re-tabulate all internal 
+#' summaries. Improvements are in development.
+#' 
+#' @param x,y \code{snpRdata} objects to merge
+#' @param by.sample,by.sample.x,by.sample.y Columns of sample metadata by which
+#'   to merge across samples--function identically to the \code{by}, \code{by.x},
+#'   and \code{by.y} arguments to \code{\link[base]{merge}}, see documentation
+#'   there for details.
+#' @param by.snp,by.snp.x,by.snp.y Columns of SNP metadata by which to merge
+#'   across SNPs--function idetically to the \code{by}, \code{by.x}, and
+#'   \code{by.y} arguments to \code{\link[base]{merge}}, see documentation there
+#'   for details.
+#' @param all logical, default TRUE. If TRUE, all samples and SNPs will be 
+#'   maintained in the output \code{snpRdata} object, with missing data matching
+#'   the missing data format of \code{x} added where genotypes are not in
+#'   either \code{x} or \code{y}.
+#' @param all.x.snps,all.y.snps logical, default \code{all}. Keep SNPs in the data
+#'   even if they are only present in \code{x} or \code{y}, respectively.
+#' @param all.x.samples,all.y.samples logical, default \code{all}. Keep samples in the
+#'   data even if they are only present in \code{x} or \code{y}, respectively.
+#' @param resolve_conflicts character, default 'error'. Controls how
+#'   conflicting genotypic information in \code{x} and \code{y} is handled. See
+#'   'Details' for options and explanation.
+#' 
+#' @author William Hemstrom
+#' 
+#' @return A merged \code{snpRdata} object.
+#' 
+#' @export
+#' 
+#' @examples
+#' # create data to merge in
+#' y <- data.frame(s1 = c("GG", "NN"),
+#'                 s2 = c("GG", "TG"),
+#'                 s3 = c("GG", "TT"),
+#'                 s4 = c("GA", "TT"),
+#'                 s5 = c("GG", "GT"),
+#'                 s6 = c("NN", "GG"))
+#'                 
+#' snp.y <- data.frame(chr = c("groupVI", "test_chr"),
+#'                     position = c(212436, 10))
+#'                    
+#' samp.y <- data.frame(pop = c("ASP", "ASP", "ASP", "test1", "test2", "test3"),
+#'                      ID = c(1, 2, 3, "A1", "A2", "A3"),
+#'                      fam = c("A", "B", "C", "T", "T", "T"))
+#' y <- import.snpR.data(y, snp.y, samp.y)
+#' 
+#' x <- stickSNPs
+#' sample.meta(x)$ID <- 1:ncol(dx)
+#' 
+#' \dontrun{
+#' # Not run, will error due to conflicts
+#' z <- merge.snpRdata(x, y)
+#' 
+#' # Not run, will return a warning and report mismatches
+#' z <- merge.snpRdata(x, y, resolve_conflicts = "warning")
+#' }
+#' 
+#' # take a random genotype in the case of conflicts
+#' z <- merge.snpRdata(x, y, resolve_conflicts = "random")
+#' z
+#' 
 merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), names(sample.meta(y))),
                            by.sample.x = by.sample, by.sample.y = by.sample,
                            by.snp = intersect(names(snp.meta(x)), names(snp.meta(y))),
                            by.snp.x = by.snp, by.snp.y = by.snp,
                            all = TRUE, all.x.snps = all, all.y.snps = all,
                            all.x.samples = all, all.y.samples = all,
-                           by.allelic = FALSE,
                            resolve_conflicts = "error"){
-  browser()
-  
+
   #========sanity checks==============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -3339,7 +3433,12 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     by.snp <- by.snp[-which(by.snp == ".snp.id")]
   }
   
-  #========match samples and SNPs=============
+  good.resolves <- c("warning", "error", "random", "x", "y")
+  if(!resolve_conflicts %in% good.resolves){
+    stop(paste0("'", resolve_conflicts, "' not a recognized option for the 'resolve_conflicts' argument.\n"))
+  }
+  
+  #========match samples and SNPs using the usual merge tool, which also handles all of the 'all' and 'by' options naturally=============
   sm1 <- sample.meta(x)
   sm2 <- sample.meta(y)
   
@@ -3372,7 +3471,7 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
                                 match(sm.m$.sample.id.from.y[idents.samp], sample.meta(y)$.sample.id)]
     
     if(all(c(dim(g.matches.y), dim(g.matches.x))) > 0){
-      
+
       # set matches to x or y if requested, filling missing genotypes when possible from other set
       if(resolve_conflicts == "y"){
         g.matches.m <- g.matches.y
@@ -3383,16 +3482,20 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
         g.matches.m[g.matches.m == x@mDat] <- g.matches.y[g.matches.m == x@mDat]
       }
       else{
+        if(resolve_conflicts == "error"){
+          stop("Some genotypes at identical loci sequenced in samples in both 'x' and 'y' are not identical. For more information on conflicts, merge.snpRdata() may instead be run with the 'resolve_conflicts' argument set to 'warning'\n")
+        }
         
         # handle mismatches
         ## first sub-in any missing genotypes, since these will be seen as implicit matches in favor of the one without missing data.
         g.matches.m <- g.matches.x
-        g.matches.m[g.matches.m == x@mDat] <- g.matches.y[g.matches.m == x@mDat] 
+        g.matches.m[g.matches.m == x@mDat] <- g.matches.y[g.matches.m == x@mDat]
+        g.matches.y[g.matches.y == x@mDat] <- g.matches.m[g.matches.y == x@mDat]
         matching_idents <- g.matches.m == g.matches.y # should be no mDats here, since those will now match.
         
         
         # throw an error if requested
-        if(resolve_conflicts == "error"){
+        if(resolve_conflicts == "warning"){
           if(any(!matching_idents)){
             warning("Error: Genotypic mismatches in identical samples/snps. Returning matrix of mismatches.")
             matching_idents <- cbind(snp.meta(x)[match(snm.m$.snp.id.from.x[idents.snp], snp.meta(x)$.snp.id),], matching_idents)
@@ -3413,10 +3516,8 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
       genotypes.m[idents.snp, idents.samp] <- as.matrix(g.matches.m)
     }
   }
-  browser()
-  
+
   #=======merge genotypes by indices in merged metadata--genotypes not present in both============
-  browser()
   genotypes.m <- data.table::as.data.table(genotypes.m)
   
   # samples in only one:
@@ -3450,4 +3551,8 @@ merge.snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     
     
   }
+  return(import.snpR.data(genotypes = genotypes.m, 
+                          snp.meta = snm.m[,-grep("\\.snp\\.id", colnames(snm.m))],
+                          sample.meta = sm.m[,-grep("\\.sample\\.id", colnames(sm.m))],
+                          mDat = x@mDat))
 }
