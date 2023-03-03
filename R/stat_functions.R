@@ -3205,7 +3205,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   a range of values should be checked.
 #' @param methods character, default "LD". LD estimation methods to use.
 #'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-#'   \item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}
+#'   \item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.}
 #' @param max_ind_per_pop numeric, default NULL. Maximum number of individuals
 #'   to consider per population.
 #' @param outfile character, default "ne_out". Prefix for output files. Note

@@ -10,6 +10,15 @@ test_that("NeEstimator",{
   
   
   expect_equal(as.numeric(unlist(ne$pop[1,-c(1:2), drop = TRUE])), c(108.3, 108.3, 83.5, 27.1, 27.1, 24.4, Inf, Inf, Inf, 20.9, 20.9, 18.3, Inf, Inf, Inf)) # not internally calced, just a check for proper prep and parsing
+  
+  ne <- calc_ne(stickSNPs[pop = "ASP"], pcrit = 0, NeEstimator_path = ne_path, chr = "chr", facets = "pop")
+  ne <- get.snpR.stats(ne, "pop", "ne")
+  expect_equal(as.numeric(unlist(ne$pop[1,-c(1:2), drop = TRUE])), c(108.3, 27.1, Inf, 20.9, Inf)) # tests two bugs, one that occurs when you have one pcrit, one that occurs when you have one pcrit AND one pop!
+  
+  
+  ne <- calc_ne(stickSNPs[pop = "ASP"], pcrit = 0, NeEstimator_path = ne_path, chr = "chr", facets = "pop", methods = c("het", "coan", "LD"))
+  ne <- get.snpR.stats(ne, "pop", "ne")
+  expect_equal(as.numeric(unlist(ne$pop[1,-c(1:2), drop = TRUE])), c(10.8, 3.2, 22.8, 9.2, 5, 127.9, 108.3, 27.1, Inf, 20.9, Inf)) # tests multiple methods at once
 })
 
 

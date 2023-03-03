@@ -266,7 +266,6 @@ is.snpRdata <- function(x){
       return(out)
     }
     else if(req == "ac"){
-      browser()
       # subset
       ac <- x@ac[x@facet.meta$facet %in% facets,]
       

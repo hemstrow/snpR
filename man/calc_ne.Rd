@@ -45,7 +45,7 @@ a range of values should be checked.}
 
 \item{methods}{character, default "LD". LD estimation methods to use.
 Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-\item{"Ht"} Heterozygote excess. \item{"Coan"} Coancestry based.}}
+\item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.}}
 
 \item{max_ind_per_pop}{numeric, default NULL. Maximum number of individuals
 to consider per population.}

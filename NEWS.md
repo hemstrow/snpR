@@ -1,4 +1,4 @@
-# snpR 1.2.6
+# snpR 1.2.5
 
 ## Features
 
@@ -41,6 +41,8 @@ facet gets shapes is controlled by the `shape_has_more_levels` argument.
 * Added a check to tab-delimited input for a column of NAs at the end (automatically remove if found). Common when importing ANGSD outputs.
 * Added `normalizePath()` to calc_ne to normalize the neestimator path.
 * Added automatic facet checking for bad characters when doing facet operations. This is a bit slower (when there are *many* SNPs or individuals), but will return an informative error instead of an uninformative one and so improves usability.
+* Fixed bugs that would occur when NeEstimator is one with only one pcrit and when only one pcrit + one population (both during parsing).
+* Fixed a bug in the `coan` option for NeEstimator.
 
 
 # snpR 1.2.4 -- hot-fix
