@@ -2865,4 +2865,22 @@ is.snpRdata <- function(x){
   return(par)
 }
 
-.is.bi_allelic <- function(x) ifelse("bi_allelic" %in% methods::slotNames(x), x@bi_allelic, TRUE)
+.is.bi_allelic <- function(x){
+  r <- try(x@bi_allelic, silent = TRUE)
+  if(is(r, "try-error")){
+    return(TRUE)
+  }
+  else{
+    return(x@bi_allelic)
+  }
+}
+
+.ploidy <- function(x){
+  r <- try(x@ploidy, silent = TRUE)
+  if(is(r, "try-error")){
+    return(2)
+  }
+  else{
+    return(x@ploidy)
+  }
+}
