@@ -8,6 +8,11 @@ test_that("maf", {
   # comp to unfiltered
   bads <- get.snpR.stats(.internal.data$test_snps, stats = "maf")$single
   expect_true(all(bads$maf[!bads$position %in% stats$single$position] < 0.15))
+  
+  # works with .base set
+  check2 <- filter_snps(.internal.data$test_snps, maf = 0.15, maf_facets = ".base", verbose = FALSE)
+  stats <- get.snpR.stats(check, stats = "maf")
+  expect_identical(check, check2)
 })
 
 test_that("maf_facets", {
@@ -56,6 +61,11 @@ test_that("hwe", {
   goods <- calc_fis(goods)
   goods <- get.snpR.stats(goods)
   expect_true(all(sort(get.snpR.stats(check_ho)$position) == sort(goods$position[-which(goods$pHWE <= .5 & goods$fis >= 0)])))
+  
+  # works with .base set
+  check2 <- filter_snps(.internal.data$test_snps, hwe = 0.5, hwe_facets = ".base", verbose = FALSE)
+  stats <- get.snpR.stats(check, stats = "maf")
+  expect_identical(check, check2)
   
 })
 

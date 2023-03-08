@@ -17,7 +17,7 @@ filter_snps(
   min_loci = FALSE,
   re_run = "partial",
   maf_facets = NULL,
-  hwe_facets = FALSE,
+  hwe_facets = NULL,
   non_poly = TRUE,
   bi_al = TRUE,
   verbose = TRUE
@@ -71,11 +71,11 @@ non-polymorphic loci (non_poly) only, if that filter was requested
 initially. \item{full: } Re-runs the full filtering scheme (save for
 min_loci).}}
 
-\item{maf_facets}{character or FALSE, default FALSE. Defines a sample facet
+\item{maf_facets}{character or NULL, default NULL. Defines a sample facet
 over which the minor allele frequency can be checked. SNPs will only fail
 the maf filter if they fail in every level of every provided facet.}
 
-\item{hwe_facets}{character or FALSE, default FALSE. Defines a sample facet
+\item{hwe_facets}{character or NULL, default NULL. Defines a sample facet
 over which the hwe filter can be checked. SNPs will fail the hwe filter if
 they fail in any level of any provided facet.}
 

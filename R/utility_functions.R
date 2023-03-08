@@ -568,10 +568,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
 #'  min_loci).}
-#'@param maf_facets character or FALSE, default FALSE. Defines a sample facet
+#'@param maf_facets character or NULL, default NULL. Defines a sample facet
 #'  over which the minor allele frequency can be checked. SNPs will only fail
 #'  the maf filter if they fail in every level of every provided facet.
-#'@param hwe_facets character or FALSE, default FALSE. Defines a sample facet
+#'@param hwe_facets character or NULL, default NULL. Defines a sample facet
 #'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
 #'  they fail in any level of any provided facet.
 #'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
@@ -612,7 +612,7 @@ filter_snps <- function(x, maf = FALSE,
                         min_loci = FALSE,
                         re_run = "partial", 
                         maf_facets = NULL,
-                        hwe_facets = FALSE,
+                        hwe_facets = NULL,
                         non_poly = TRUE, 
                         bi_al = TRUE, 
                         verbose = TRUE){
@@ -672,7 +672,7 @@ filter_snps <- function(x, maf = FALSE,
       stop("hwe_excess_sides must be one of: ", paste0(good_hwe_sides, collapse = ", "))
     }
     
-    if(!isFALSE(hwe_facets)){
+    if(!is.null(hwe_facets)){
       hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
     }
   }
@@ -725,11 +725,12 @@ filter_snps <- function(x, maf = FALSE,
     }
 
     # check for bad facets to remove (those that don't just consider samples)
-    if(any(x@facet.type[x@facets %in% maf_facets] != "sample")){
+    if(any(!x@facet.type[x@facets %in% maf_facets] %in% c("sample", ".base"))){
       vio.facets <- x@facets[match(maf_facets, x@facets)]
       vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf_facets] != "sample")]
       warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
       maf_facets <- maf_facets[-which(maf_facets %in% vio.facets)]
+      if(length(maf_facets) == 0){maf_facets <- NULL}
     }
   }
 
@@ -886,7 +887,7 @@ filter_snps <- function(x, maf = FALSE,
       if(verbose){cat("Filtering loci out of hwe...\n")}
       
       # no facets, easy
-      if(isFALSE(hwe_facets)){
+      if(is.null(hwe_facets) | isFALSE(hwe_facets)){
         
         if(!.check_calced_stats(x, ".base", "hwe")$.base){
           .make_it_quiet(x <- calc_hwe(x))
