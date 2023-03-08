@@ -672,7 +672,7 @@ filter_snps <- function(x, maf = FALSE,
       stop("hwe_excess_sides must be one of: ", paste0(good_hwe_sides, collapse = ", "))
     }
     
-    if(!is.null(hwe_facets)){
+    if(!is.null(hwe_facets) | !isFALSE(hwe_facets)){
       hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
     }
   }
@@ -713,7 +713,7 @@ filter_snps <- function(x, maf = FALSE,
     }
   }
 
-  if(!is.null(maf_facets[1])){
+  if(!is.null(maf_facets[1]) | !isFALSE(maf_facets[1])){
     maf_facets <- .check.snpR.facet.request(x, maf_facets, "none")
 
     # add any needed facets...
@@ -785,7 +785,7 @@ filter_snps <- function(x, maf = FALSE,
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
     if(maf){
       #if not filtering with multiple pops
-      if(is.null(maf_facets)){
+      if(is.null(maf_facets) | isFALSE(maf_facets)){
         if(verbose){cat("Filtering low minor allele frequencies, no pops...\n")}
 
         # check to see if we need to calculate mafs:
