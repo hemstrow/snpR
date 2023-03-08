@@ -2867,7 +2867,7 @@ is.snpRdata <- function(x){
 
 .is.bi_allelic <- function(x){
   r <- try(x@bi_allelic, silent = TRUE)
-  if(is(r, "try-error")){
+  if(methods::is(r, "try-error")){
     return(TRUE)
   }
   else{
@@ -2877,7 +2877,7 @@ is.snpRdata <- function(x){
 
 .ploidy <- function(x){
   r <- try(x@ploidy, silent = TRUE)
-  if(is(r, "try-error")){
+  if(methods::is(r, "try-error")){
     return(2)
   }
   else{
