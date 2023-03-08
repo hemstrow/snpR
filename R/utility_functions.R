@@ -639,6 +639,31 @@ filter_snps <- function(x, maf = FALSE,
       stop("maf must be greater than or equal to 0 and less than .5")
     }
     
+    if(!is.null(maf_facets) & !isFALSE(maf_facets)){
+      if(length(maf_facets) == 1 & maf_facets[1] == ".base"){
+        maf_facets <- NULL
+      }
+      else{
+        maf_facets <- .check.snpR.facet.request(x, maf_facets, "none")
+        
+        # add any needed facets...
+        miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
+        if(length(miss.facets) != 0){
+          if(verbose){cat("Adding missing facets...\n")}
+          # need to fix any multivariate facets (those with a .)
+          x <- .add.facets.snpR.data(x, miss.facets)
+        }
+        
+        # check for bad facets to remove (those that don't just consider samples)
+        if(any(!x@facet.type[x@facets %in% maf_facets] %in% c("sample", ".base"))){
+          vio.facets <- x@facets[match(maf_facets, x@facets)]
+          vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf_facets] != "sample")]
+          warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
+          maf_facets <- maf_facets[-which(maf_facets %in% vio.facets)]
+          if(length(maf_facets) == 0){maf_facets <- NULL}
+        }
+      }
+    }
   }
   
   if(mac){
@@ -672,8 +697,13 @@ filter_snps <- function(x, maf = FALSE,
       stop("hwe_excess_sides must be one of: ", paste0(good_hwe_sides, collapse = ", "))
     }
     
-    if(!is.null(hwe_facets) | !isFALSE(hwe_facets)){
-      hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
+    if(!is.null(hwe_facets) & !isFALSE(hwe_facets)){
+      if(length(hwe_facets) == 1 & hwe_facets[1] == ".base"){
+        hwe_facets <- NULL
+      }
+      else{
+        hwe_facets <- .check.snpR.facet.request(x, hwe_facets)
+      }
     }
   }
 
@@ -710,27 +740,6 @@ filter_snps <- function(x, maf = FALSE,
   if(re_run != FALSE){
     if(re_run != "partial" & re_run != "full"){
       if(verbose){cat("re_run must be set to partial or full if not FALSE.\n")}
-    }
-  }
-
-  if(!is.null(maf_facets[1]) | !isFALSE(maf_facets[1])){
-    maf_facets <- .check.snpR.facet.request(x, maf_facets, "none")
-
-    # add any needed facets...
-    miss.facets <- maf_facets[which(!(maf_facets %in% x@facets))]
-    if(length(miss.facets) != 0){
-      if(verbose){cat("Adding missing facets...\n")}
-      # need to fix any multivariate facets (those with a .)
-      x <- .add.facets.snpR.data(x, miss.facets)
-    }
-
-    # check for bad facets to remove (those that don't just consider samples)
-    if(any(!x@facet.type[x@facets %in% maf_facets] %in% c("sample", ".base"))){
-      vio.facets <- x@facets[match(maf_facets, x@facets)]
-      vio.facets <- vio.facets[which(x@facet.type[x@facets %in% maf_facets] != "sample")]
-      warning(paste0("Facets over which to maf.filter must be sample specific facets, not snp specific facets! Removing non-sample facets: \n", paste0(vio.facets, collapse = " "), ".\n"))
-      maf_facets <- maf_facets[-which(maf_facets %in% vio.facets)]
-      if(length(maf_facets) == 0){maf_facets <- NULL}
     }
   }
 
