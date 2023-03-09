@@ -91,7 +91,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
   }
   ## if only doing molecular coancestry, no pcrits
   if(length(methods) == 1 & methods[1] == "coan"){
-    pcrit <- numeric()
+    pcrit <- 0
   }
 
   # organize everthing that needs to be written:
@@ -152,6 +152,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   files <- list.files(pattern = pattern)
   files <- files[-which(files == paste0(pattern, ".txt"))]
   out <- vector("list", length(files))
+  if(length(files) == 0){
+    stop("No NeEstimator output files found. Double check your NeEstimator path and look for any errors produced by NeEstimator. If the problem persists, please leave an issue at https://github.com/hemstrow/snpR/issues .")
+  }
 
   for(i in 1:length(files)){
 
@@ -161,27 +164,65 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     else if(length(grep("Ht", files[i]) != 0)){type <- "Ht"; skip <- 14}
 
     # read in the data
-    suppressWarnings(dat <- as.data.frame(data.table::fread(files[i], skip = skip, header = FALSE)))
+    suppressWarnings(dat <- as.data.frame(data.table::fread(files[i], skip = skip, header = FALSE, sep = "\t")))
+    if(ncol(dat) == 1){
+      dat <- unlist(strsplit(dat[1,], "\t"))
+      dat <- gsub(" +", "", dat)
+      dat <- as.data.frame(matrix(dat, nrow = 1))
+    }
     # dat <- dat[1:(nrow(dat) - 2),]
 
     # add column names, adjust data per type
     if(type == "cn"){
       colnames(dat) <- c("pop", "n",	"hm_n", "f^1", "Neb", "Neb_lCI", "Neb_uCI")
-      dat <- dat[,c(1, 5:7)]
+      dat$pcrit <- 0
+      dat <- dat[,c(1, 8, 5:7)]
     }
     else if(type == "LD" | type == "Ht"){
       fix.rows <- which(rowSums(is.na(dat)) == 2)
-      dat[fix.rows, 3:ncol(dat)] <- dat[fix.rows, 1:(ncol(dat) - 2)]
-      dat[fix.rows, 1:2] <- dat[-fix.rows, 1:2][sort(rep(1:(nrow(dat) - length(fix.rows)), length.out = length(fix.rows))),]
+      if(length(fix.rows) > 0){
+        dat[fix.rows, 3:ncol(dat)] <- dat[fix.rows, 1:(ncol(dat) - 2)]
+        dat[fix.rows, 1:2] <- dat[-fix.rows, 1:2][sort(rep(1:(nrow(dat) - length(fix.rows)), length.out = length(fix.rows))),]
+      }
       if(type == "LD"){
-        colnames(dat) <- c("pop", "n", "pcrit",	"hm_n",	"n_alleles", "r^2", "Exp(r^2)", "LDNe",
-                           "LDNe_lCIp", "LDNe_uCIp",
-                           "LDNe_lCIj", "LDNe_uCIj", "Eff.df")
-        dat <- dat[,c(1,3,8:12)]
+        if(ncol(dat) == 13){
+          colnames(dat) <- c("pop", "n", "pcrit",	"hm_n",	"n_alleles", "r^2", "Exp(r^2)", "LDNe",
+                             "LDNe_lCIp", "LDNe_uCIp",
+                             "LDNe_lCIj", "LDNe_uCIj", "Eff.df")
+          dat <- dat[,c(1,3,8:12)]
+        }
+        else{
+          # pcrit doesn't get printed if pcrit is only one option for some reason.
+          colnames(dat) <- c("pop", "n", "hm_n",	"n_alleles", "r^2", "Exp(r^2)", "LDNe",
+                             "LDNe_lCIp", "LDNe_uCIp",
+                             "LDNe_lCIj", "LDNe_uCIj", "Eff.df")
+          dat <- dat[,c(1,7:11)]
+          pcrit <- readLines(files[i], n = 10)
+          pcrit <- pcrit[10]
+          pcrit <- gsub("Lowest allele frequency used: +", "", pcrit)
+          pcrit <- as.numeric(pcrit)
+          dat$pcrit <- pcrit
+          dat <- dat[,c(1, ncol(dat), 2:(ncol(dat) - 1))]
+        }
+        
       }
       else{
-        colnames(dat) <- c("pop", "n", "pcrit",	"hm_n",	"n_alleles", "D", "He_Ne", "He_lCIp", "He_uCIp")
-        dat <- dat[,c(1,3,7:9)]
+        if(ncol(dat) == 9){
+          colnames(dat) <- c("pop", "n", "pcrit",	"hm_n",	"n_alleles", "D", "He_Ne", "He_lCIp", "He_uCIp")
+          dat <- dat[,c(1,3,7:9)]
+        }
+        else{
+          # pcrit doesn't get printed if pcrit is only one option for some reason.
+          colnames(dat) <- c("pop", "n", "hm_n",	"n_alleles", "D", "He_Ne", "He_lCIp", "He_uCIp")
+          dat <- dat[,c(1,6:8)]
+          pcrit <- readLines(files[i], n = 10)
+          pcrit <- pcrit[10]
+          pcrit <- gsub("Lowest allele frequency used: +", "", pcrit)
+          pcrit <- as.numeric(pcrit)
+          dat$pcrit <- pcrit
+          dat <- dat[,c(1, ncol(dat), 2:(ncol(dat) - 1))]
+        }
+        
       }
       
       dat$pop <- rep(dat$pop[seq(1, nrow(dat), length(unique(dat$pcrit)))], each = length(unique(dat$pcrit)))
@@ -206,7 +247,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
 
 
   # clean and merge
-  out <- purrr::reduce(out, dplyr::left_join)
+  out <- purrr::reduce(out, dplyr::full_join)
   out <- as.data.frame(out)
   mc <- which(colnames(out) == "pcrit")
   out <- out[,c(1, mc, (2:ncol(out))[-(mc - 1)])]

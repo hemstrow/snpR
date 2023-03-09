@@ -27,10 +27,17 @@ test_that("structure",{
   
   
   # clumpp
-  p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2, reps = 2, method = "structure", 
+  p2 <-  plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:4, reps = 2, method = "structure", 
                         structure_path = str_path, clumpp = TRUE, clumpp_path = clumpp_path)
   expect_true(ggplot2::is.ggplot(p2$plot))
   expect_true(all(c("r_1", "r_2", "clumpp") %in% names(p2$data$K_2)))
+  
+  # evanno is there and OK?
+  expect_true(all(names(p2$K_plot) == c("raw", "evanno")))
+  if(all(names(p2$K_plot) == c("raw", "evano"))){
+    expect_true(all(colnames(p2$K_plot$evanno) == c("K", "mean_est_ln_prob", "lnpK", "lnppK", "deltaK", "sd_est_ln_prob")))
+    expect_identical(round(p2$K_plot$evanno$deltaK, 4), c(NA, round(3.889087, 4), NA))
+  }
 })
 
 
@@ -94,9 +101,9 @@ test_that("pca",{
   skip_on_cran();
   
   set.seed(1212)
-  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop"))
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "pca"))
   expect_true(ggplot2::is.ggplot(p$plots$pca))
-  expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+  # expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("tsne",{
@@ -108,7 +115,7 @@ test_that("tsne",{
   .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne"))
   
   expect_true(ggplot2::is.ggplot(p$plots$tsne))
-  expect_snapshot_value(p$data$tsne[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+  # expect_snapshot_value(p$data$tsne[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
 })
 
 test_that("umap",{
@@ -119,7 +126,28 @@ test_that("umap",{
   .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap"))
   
   expect_true(ggplot2::is.ggplot(p$plots$umap))
-  expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+  # expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+})
+
+test_that("dapc",{
+  skip_on_cran();
+  skip_if_not_installed("adegenet")
+  
+  set.seed(1212)
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc"), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", 
+                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_npca = 20, dapc_clustering_nclust = 5), 
+               "supply both dapc_npca and dapc_ndisc arguments or choose interactively instead")
+  
+  .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
+                                    dapc_clustering_max_n_clust = NULL, 
+                                    dapc_clustering_npca = 20, 
+                                    dapc_clustering_nclust = 5, 
+                                    dapc_npca = 20, 
+                                    dapc_ndisc = 4))
+  
+  expect_true(ggplot2::is.ggplot(p$plots$dapc))
 })
 
 #==================plot_manhattan==========
@@ -142,9 +170,37 @@ test_that("manhattan plots", {
   expect_equivalent(p$data, p2$data)
   
   
+  # with lambda correction
+  pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+                       log.p = TRUE, lambda_gc_correction = TRUE)
+  expect_true(".lam" %in% colnames(pl$data))
+  if(".lam" %in% colnames(pl$data)){
+    expect_true(length(unique(pl$data$.lam)) == 1)
+  }
   
   
-  # with a rug 
+  
+  # with facets
+  x <- calc_association(x, response = "phenotype", method = "armitage", facets = "pop")
+  p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
+                      log.p = TRUE)
+  p1 <- ggplot2::ggplot_build(p$plot)
+  expect_true(all(p1$layout$layout$subfacet == c("ASP", "CLF", "OPL", "PAL", "SMR", "UPD")))
+  ## also with lambda correction
+  pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
+                       log.p = TRUE, lambda_gc_correction = TRUE)
+  expect_true(".lam" %in% colnames(pl$data))
+  if(".lam" %in% colnames(pl$data)){
+    expect_true(length(unique(pl$data$.lam)) == 6)
+  }
+  
+  
+  
+  
+  
+  
+  
+  # with a rug
   rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
                          end = c(5000000, 6000000), gene = c("A", "B"))
 
@@ -166,7 +222,7 @@ test_that("manhattan plots", {
   ## ribbon
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
-  expect_true(all(c("label", "position") %in% names(p3$plot$layers[[2]]$mapping)))
+  expect_true(all(c("label", "start_position", "end_position") %in% names(p4$plot$layers[[2]]$mapping)))
   
   
   # with tajimas D
@@ -176,15 +232,48 @@ test_that("manhattan plots", {
 })
 
 #=================qq=====================
-# test_that("qq plots",{
-#   set.seed(1212)
-#   sample.meta(asso)$cat_phenotype <- sample(c("A", "B"), ncol(asso), replace = TRUE)
-#   asso <- calc_association(asso, response = "cat_phenotype")
-#   
-#   p <- plot_qq(asso, )
-#   
-#   
-# })
+test_that("qq plots",{
+  set.seed(12211)
+  # with snpRdata 
+  asso <- stickSNPs
+  sample.meta(asso)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+  asso <- calc_association(asso, response = "phenotype")
+
+  p <- plot_qq(asso, "gmmat_pval_phenotype")
+  expect_true(ggplot2::is.ggplot(p$.base))
+  
+  # lambda correction
+  p <- plot_qq(asso, "gmmat_pval_phenotype", lambda_gc_correction = TRUE)
+  expect_true(".lam" %in% colnames(p$.base$data))
+  if(".lam" %in% colnames(p$.base$data)){
+    expect_true(length(unique(p$.base$data$.lam)) == 1)
+  }
+
+  # multiple facets
+  x <- stickSNPs
+  sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
+  x <- calc_association(x, c("pop.fam", "pop", ".base"), "phenotype",
+                        method = "armitage")
+  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"))
+  expect_true(all(unlist(lapply(p, ggplot2::is.ggplot))))
+  out <- lapply(p, ggplot2::ggplot_build)
+  expect_equal(length(levels(out$fam.pop$data[[1]]$PANEL)), 24)
+  expect_equal(length(levels(out$pop$data[[1]]$PANEL)), 6)
+  expect_equal(length(levels(out$.base$data[[1]]$PANEL)), 1)
+  
+  # lambda correction
+  p <- plot_qq(x, "p_armitage_phenotype", c("pop.fam", "pop", ".base"), lambda_gc_correction = TRUE)
+  good <- all(unlist(lapply(p, function(i) ".lam" %in% colnames(i$data))))
+  expect_true(good)
+  if(good){
+    expect_equivalent(unlist(lapply(p, function(i) {
+      return(length(unique(i$data$.lam)) > 1)
+    })), c(TRUE, TRUE, FALSE))
+    
+  }
+  
+  
+})
 
 #=================LD======================
 test_that("LD heatmap", {

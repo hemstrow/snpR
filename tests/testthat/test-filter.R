@@ -8,6 +8,11 @@ test_that("maf", {
   # comp to unfiltered
   bads <- get.snpR.stats(.internal.data$test_snps, stats = "maf")$single
   expect_true(all(bads$maf[!bads$position %in% stats$single$position] < 0.15))
+  
+  # works with .base set
+  check2 <- filter_snps(.internal.data$test_snps, maf = 0.15, maf_facets = ".base", verbose = FALSE)
+  stats <- get.snpR.stats(check, stats = "maf")
+  expect_identical(check, check2)
 })
 
 test_that("maf_facets", {
@@ -41,7 +46,27 @@ test_that("hwe", {
   check <- filter_snps(.internal.data$test_snps, hwe = 0.5, verbose = FALSE)
   goods <- calc_hwe(.internal.data$test_snps)
   goods <- get.snpR.stats(goods)
-  expect_true(all(get.snpR.stats(check)$position %in% goods$position[which(goods$pHWE > .5)]))
+  expect_true(all(sort(get.snpR.stats(check)$position) == sort(goods$position[which(goods$pHWE > .5)])))
+  
+  # correct direction - he excess
+  check_he <- filter_snps(.internal.data$test_snps, hwe = 0.5, verbose = FALSE, hwe_excess_side = "heterozygote")
+  goods <- calc_hwe(.internal.data$test_snps)
+  goods <- calc_fis(goods)
+  goods <- get.snpR.stats(goods)
+  expect_true(all(sort(get.snpR.stats(check_he)$position) == sort(goods$position[-which(goods$pHWE <= .5 & goods$fis <= 0)])))
+  
+  # correct direction - ho excess
+  check_ho <- filter_snps(.internal.data$test_snps, hwe = 0.5, verbose = FALSE, hwe_excess_side = "homozygote")
+  goods <- calc_hwe(.internal.data$test_snps)
+  goods <- calc_fis(goods)
+  goods <- get.snpR.stats(goods)
+  expect_true(all(sort(get.snpR.stats(check_ho)$position) == sort(goods$position[-which(goods$pHWE <= .5 & goods$fis >= 0)])))
+  
+  # works with .base set
+  check2 <- filter_snps(.internal.data$test_snps, hwe = 0.5, hwe_facets = ".base", verbose = FALSE)
+  stats <- get.snpR.stats(check, stats = "maf")
+  expect_identical(check, check2)
+  
 })
 
 
@@ -53,7 +78,39 @@ test_that("hwe_facets", {
   goods <- get.snpR.stats(goods, "pop")
   goods$bad <- goods$pHWE <= 0.5
   gt <- tapply(goods$bad, goods[,"position"], sum)
-  expect_true(all(!names(gt)[gt != 0] %in% snp.meta(check)$position))
+  expect_true(all(sort(as.numeric(names(gt)[gt == 0])) == sort(snp.meta(check)$position)))
+  
+  # correct direction - he excess
+  check_he <- filter_snps(.internal.data$test_snps, hwe = 0.5, hwe_facets = "pop", verbose = FALSE, hwe_excess_side = "heterozygote")
+  check_he <- calc_maf(check_he, "pop")
+  goods <- calc_hwe(.internal.data$test_snps, facets = "pop")
+  goods <- calc_fis(goods, "pop")
+  goods <- get.snpR.stats(goods, "pop")
+  goods$bad <- goods$pHWE <= 0.5
+  goods$dir <- ifelse(goods$fis <= 0, 1, 0)
+  if(any(is.na(goods$fis))){
+    goods$dir[is.na(goods$fis)] <- 0
+  }
+  goods$bad <- goods$bad * goods$dir
+  gt <- tapply(goods$bad, goods[,"position"], sum)
+  expect_true(all(sort(as.numeric(names(gt)[gt == 0])) == sort(snp.meta(check_he)$position)))
+  
+  
+  # correct direction - he excess
+  check_ho <- filter_snps(.internal.data$test_snps, hwe = 0.5, hwe_facets = "pop", verbose = FALSE, hwe_excess_side = "homozygote")
+  check_ho <- calc_maf(check_ho, "pop")
+  goods <- calc_hwe(.internal.data$test_snps, facets = "pop")
+  goods <- calc_fis(goods, "pop")
+  goods <- get.snpR.stats(goods, "pop")
+  goods$bad <- goods$pHWE <= 0.5
+  goods$dir <- ifelse(goods$fis >= 0, 1, 0)
+  if(any(is.na(goods$fis))){
+    goods$dir[is.na(goods$fis)] <- 0
+  }
+  goods$bad <- goods$bad * goods$dir
+  gt <- tapply(goods$bad, goods[,"position"], sum)
+  expect_true(all(sort(as.numeric(names(gt)[gt == 0])) == sort(snp.meta(check_ho)$position)))
+  
 })
 
 test_that("hwe_with_fwe", {
@@ -108,12 +165,22 @@ test_that("min_loci", {
 
 #==========singletons======================
 test_that("singletons",{
-  td <- filter_snps(.internal.data$test_snps, singletons = TRUE)
-  bad.snps <- which(matrixStats::rowSums2(.internal.data$test_snps@geno.tables$as) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$as) == 1)
+  expect_warning(.make_it_quiet(td <- filter_snps(.internal.data$test_snps, singletons = TRUE)), "depriceated")
+})
+
+#==========mac=============================
+test_that("mac",{
+  expect_error(filter_snps(.internal.data$test_snps, maf = 0.05, mac = 1), "mac and maf cannot both be set")
+  expect_error(filter_snps(.internal.data$test_snps, mac = 10), "mac must be greater than or equal to zero and less than the number of samples")
+  expect_error(filter_snps(.internal.data$test_snps, mac = 5.5), "mac must be an integer")
+  
+  td <- filter_snps(.internal.data$test_snps, mac = 3, verbose = FALSE)
+  
+  bad.snps <- which(matrixStats::rowSums2(.internal.data$test_snps@geno.tables$as) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$as) <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
-#==========errors=========================
+#==========errors==========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]
   expect_error(filter_snps(td, min_ind = .99, verbose = FALSE), "No loci passed filters.")

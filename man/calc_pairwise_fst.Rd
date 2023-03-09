@@ -10,6 +10,8 @@ calc_pairwise_fst(
   method = "wc",
   boot = FALSE,
   boot_par = FALSE,
+  zfst = FALSE,
+  fst_over_one_minus_fst = FALSE,
   cleanup = TRUE,
   verbose = FALSE
 )
@@ -29,6 +31,15 @@ See details.}
 
 \item{boot_par}{numeric or FALSE, default FALSE. If a number, bootstraps will
 be processed in parallel using the supplied number of cores.}
+
+\item{zfst}{logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
+will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
+The resulting values will be in the column "zfst", accessable using the
+usual \code{\link{get.snpR.stats}} method.}
+
+\item{fst_over_one_minus_fst}{logical, default FALSE. If TRUE, fst/(1-fst)
+will be calculated, and will be in the column "fst_id" accessable using the
+usual \code{\link{get.snpR.stats}} method.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, any new files created during
 FST calculation will be automatically removed.}

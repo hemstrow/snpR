@@ -8,8 +8,9 @@ calc_tajimas_d(
   x,
   facets = NULL,
   sigma = NULL,
-  step = NULL,
+  step = 2 * sigma,
   par = FALSE,
+  triple_sigma = TRUE,
   verbose = FALSE
 )
 }
@@ -22,23 +23,28 @@ facets are provided, the calculated Tajima's D will be for the entire
 genome.}
 
 \item{sigma}{numeric, default NULL. Sliding window size, in kilobases. Each
-window will include all SNPs within 3*sigma kilobases. If either sigma or
-step are NULL, the entire snp subfacet will be done at once (for example,
-the whole chromosome).}
+window will include all SNPs within 3*sigma or sigma kilobases depending on
+the \code{triple_sigma} argument. If either sigma or step are NULL, the
+entire snp subfacet will be done at once (for example, the whole
+chromosome).}
 
-\item{step}{numeric, default NULL. Number of bases to move between each
-window, in kilobases. If either sigma or step are NULL, the entire snp
-subfacet will be done at once (for example, the whole chromosome).}
+\item{step}{numeric or NULL, default \code{2*sigma} (non-overlapping windows). Number
+of bases to move between each window, in kilobases. If either sigma or step
+are NULL, the entire snp subfacet will be done at once (for example, the
+whole chromosome).}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+create windows of 6*sigma total.}
 
 \item{verbose}{Logical, default FALSE. If TRUE progress will be printed to the
 console.}
 }
 \value{
-snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's D
- for each window merged in to the window.stats slot.
+snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's
+ D for each window merged in to the window.stats slot.
 }
 \description{
 \code{Tajimas_D} calculates Tajima's theta/pi, Watterson's theta, and Tajima's
@@ -61,18 +67,18 @@ as described in \code{\link{Facets_in_snpR}}.
 \dontrun{
 # broken by population, windows across linkage group
 x <- calc_tajimas_d(stickSNPs, facets = "chr.pop", sigma = 200, step = 50)
-get.snpR.stats(x, "chr.pop", "single.window")
+get.snpR.stats(x, "chr.pop", "tajimas_d")
 
 # the entire population at once, note that sigma and step are NULL and
 # no chromosome/linkage group/scaffold/etc set.
 # this will calculate overall tajima's D without a window for each population.
 x <- calc_tajimas_d(stickSNPs, facets = "pop")
-get.snpR.stats(x, "pop", "single.window")
+get.snpR.stats(x, "pop", "tajimas_d")
 
 # for the overall dataset, note that sigma and step are NULL
 # this will calculate overall tajima's D for each chr/pop
 x <- calc_tajimas_d(stickSNPs, facets = "chr.pop")
-get.snpR.stats(x, "pop.chr", "single.window")
+get.snpR.stats(x, "pop.chr", "tajimas_d")
 }
 }
 \references{

@@ -349,7 +349,6 @@
   genos[is.na(genos)] <- "NN"
   genos[genos == "."] <- "NN"
   
-  
   # prep metadata
   if(is.null(snp.meta)){
     snp.meta <- vcfR::getFIX(vcf)
@@ -598,7 +597,7 @@
   ac <- as.matrix(ac)
   
   if(any(matrixStats::colMaxs(ac, na.rm = T) > 2)){
-    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, if the correct number of header columns containing sample metadata are not specified.\n")
+    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
   }
   return(ac)
 }
@@ -681,4 +680,282 @@
   
   #================send to snpRdata=======================
   return(import.snpR.data(dat, snp.meta, sample.meta))
+}
+
+.process_sync <- function(sync_file, snp.meta = NULL, sample.meta = NULL, bi_allelic = TRUE, ploidy = 2){
+  value <- ..tar_cols <- .snp.id <- variable <- ..N_col <- NULL
+  
+  #==========read and initialize=========
+  sync <- data.table::fread(sync_file)
+  
+  if(is.character(sample.meta)){
+    if(file.exists(sample.meta)){
+      sample.meta <- as.data.frame(data.table::fread(sample.meta))
+    }
+    else{
+      stop("Cannot locate sample.meta file.\n")
+    }
+  }
+  if(is.character(snp.meta)){
+    if(file.exists(snp.meta)){
+      snp.meta <- as.data.frame(data.table::fread(snp.meta))
+    }
+    else{
+      stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  
+  if(is.null(snp.meta)){
+    snp.meta <- sync[,1:2]
+    colnames(snp.meta) <- c("chr", "position")
+  }
+  
+  if(! ".snp.meta" %in% colnames(snp.meta)){
+    snp.meta$.snp.id <- 1:nrow(snp.meta)
+  }
+  
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(pop = paste0("pop", 1:(ncol(sync) - 3)),
+                              .sample.id = 1:(ncol(sync) - 3))
+  }
+  
+  if(!".sample.meta" %in% colnames(sample.meta)){
+    sample.meta$.sample.id <- 1:nrow(sample.meta)
+  }
+  
+  colnames(sync)[-c(1:3)] <- sample.meta[,1]
+  
+  
+  #========make gs/as=============
+  sync$.snp.id <- snp.meta$.snp.id
+  msync <- .fix..call(data.table::melt(sync, id.vars = c(colnames(sync)[1:3], ".snp.id")))
+  msync[, c("A", "T", "C", "G", "N", "D") := data.table::tstrsplit(value, ":", fixed=TRUE)] # split the ac column
+
+  # get .base data
+  tar_cols <- c("A", "T", "C", "G", "N", "D")
+  msync[,(tar_cols) := lapply(.SD, as.numeric), .SDcols = tar_cols]
+  sums_sync <- msync[,lapply(.SD, sum), .SDcols = tar_cols, by = .snp.id]
+  as <- rbind(.fix..call(sums_sync[,..tar_cols]), 
+              .fix..call(msync[,..tar_cols]))
+
+  # non_biallelic fix?
+  N_col <- "N"
+  if(!bi_allelic){
+    non_bi <- which(rowSums(.fix..call(sums_sync[,..tar_cols][,-..N_col]) != 0) > 2)
+    sums_sync <- sums_sync[-non_bi,]
+    msync <- msync[which(msync$.snp.id %in% sums_sync$.snp.id),]
+    snp.meta <- snp.meta[which(snp.meta$.snp.id %in% sums_sync$.snp.id),]
+  }
+  
+  msync <- dplyr::arrange(msync, .snp.id, variable)
+  
+  #========make facet meta/stats=============
+  stats <- data.table::data.table(facet = c(rep(".base", nrow(sums_sync)), rep(colnames(sample.meta)[1], nrow(msync))),
+                                  subfacet = c(rep(".base", nrow(sums_sync)), as.character(msync$variable)),
+                                  facet.type = c(rep(".base", nrow(sums_sync)), rep("sample", nrow(msync))),
+                                  stringsAsFactors = FALSE)
+  
+  
+  x <- methods::new("snpRdata", 
+                    .Data = as.data.frame(sync)[,-c(1:3, which(colnames(sync) == ".snp.id"))], 
+                    sample.meta = sample.meta, 
+                    snp.meta = snp.meta,
+                    facet.meta = cbind(stats,
+                                       snp.meta),
+                    geno.tables = list(gs = NULL, 
+                                       wm = as.matrix(as),
+                                       as = as.matrix(.fix..call(as[,-..N_col]))),
+                    mDat = "N",
+                    ploidy = ploidy,
+                    bi_allelic = bi_allelic,
+                    data.type = "poolseq",
+                    stats = cbind(stats,
+                                  snp.meta),
+                    snp.form = as.numeric(NA),
+                    row.names = 1:nrow(sync),
+                    sn = list(sn = NULL, type = NULL),
+                    facets = c(".base", colnames(sample.meta)[1]),
+                    facet.type = c(".base", colnames(sample.meta)[1]),
+                    calced_stats = list(),
+                    allele_frequency_matrices = list(),
+                    genetic_distances = list(),
+                    weighted.means = data.frame(),
+                    other = list(),
+                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
+}
+
+read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
+  bi_allelic <- rows_per_individual <- marker_and_sample_names <- position <- .snp.id <- .sample.id <- ..N_col <- FALSE
+  #======special cases========
+  # sample and snp metadata
+  if(is.character(sample.meta)){
+    if(file.exists(sample.meta)){
+      sample.meta <- as.data.frame(data.table::fread(sample.meta))
+    }
+    else{
+      stop("Cannot locate sample.meta file.\n")
+    }
+  }
+  if(is.character(snp.meta)){
+    if(file.exists(snp.meta)){
+      snp.meta <- as.data.frame(data.table::fread(snp.meta))
+    }
+    else{
+      stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  
+  # genotypes
+  if(is.character(genotypes) & length(genotypes) == 1){
+    if(file.exists(genotypes)){
+      # check for ms or vcf, etc file
+      # if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
+      #   return(.process_vcf(genotypes, snp.meta, sample.meta))
+      # }
+      # else if(grepl("\\.genepop$", genotypes)){
+      #   return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
+      # }
+      # else if(grepl("\\.fstat$", genotypes)){
+      #   return(.process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
+      # }
+      # else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
+      #   .check.installed("tools")
+      #   return(.process_plink(tools::file_path_sans_ext(genotypes)))
+      # }
+      # else if(grepl("\\.str$", genotypes)){
+      #   return(.process_structure(genotypes, 
+      #                             rows_per_individual = rows_per_individual, 
+      #                             marker_and_sample_names = marker_and_sample_names, 
+      #                             header_cols = header_cols, 
+      #                             snp.meta = snp.meta, 
+      #                             sample.meta = sample.meta))
+      # }
+      # else{
+        genotypes <- as.data.frame(data.table::fread(genotypes))
+      # }
+    }
+    else{
+      stop("File not found. Fix path or import manually and provide to import.snpR.data.\n")
+    }
+  }
+  
+  if(is.matrix(genotypes)){genotypes <- as.data.frame(genotypes)}
+  
+  
+  #=================check input format for non-special case=============================
+  # NN, no need to do anything, just read in and proceed as normal.
+  if(header_cols > 0){
+    header_cols <- 1:header_cols
+    snp.meta <- genotypes[,header_cols]
+    genotypes <- genotypes[,-header_cols]
+    
+  }
+  
+  #============sanity checks and prep========
+  if(is.null(snp.meta)){
+    snp.meta <- data.frame(snpID = paste0("snp", 1:nrow(genotypes)))
+  }
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = paste0("samp", 1:ncol(genotypes)))
+  }
+  
+  # prepare things for addition to data
+  if(any(is.na(genotypes))){
+    stop("NA found in input genotypes. Often, this is in the last row or column.\n")
+  }
+  
+  if(nrow(snp.meta) != nrow(genotypes)){
+    stop(paste0("Number of rows in snp.meta (", nrow(snp.meta), ") not equal to number of SNPs in genotypes (", nrow(genotypes), "). Do you need to transpose your genotypes?\n"))
+  }
+  if(nrow(sample.meta) != ncol(genotypes)){
+    stop(paste0("Number of rows in sample.meta (", nrow(sample.meta), ") not equal to number of samples in genotypes (", ncol(genotypes), "). Do you need to transpose your genotypes?\n"))
+  }
+  
+  if(any(colnames(snp.meta) == "position")){
+    snp.meta$position <- as.numeric(as.character(snp.meta$position))
+    if(ncol(genotypes) == 1){
+      genotypes <- genotypes[order(snp.meta$position),]
+      genotypes <- as.data.frame(genotypes, stringsAsFactors = FALSE)
+    }
+    else{
+      genotypes <- genotypes[order(snp.meta$position),]
+    }
+    snp.meta <- dplyr::arrange(snp.meta, position)
+  }
+  
+  if(any(colnames(snp.meta) == ".snp.id")){
+    if(any(duplicated(snp.meta$.snp.id))){stop("Duplicated .snp.id entries found in snp.meta.\n")}
+    snp.meta <- dplyr::relocate(snp.meta, .snp.id, .after = dplyr::last_col())
+  }
+  else{
+    snp.meta <- cbind(snp.meta, .snp.id = 1:nrow(snp.meta))
+  }
+  if(any(colnames(sample.meta) == ".sample.id")){
+    if(any(duplicated(sample.meta$.sample.id))){stop("Duplicated .sample.id entries found in sample.meta.\n")}
+    sample.meta <- dplyr::relocate(sample.meta, .sample.id, .after = dplyr::last_col())
+    
+  }
+  else{
+    sample.meta <- cbind(sample.meta, .sample.id = 1:nrow(sample.meta))
+  }
+  
+  # fix factors
+  sample.meta <- dplyr::mutate_if(.tbl = sample.meta, is.factor, as.character)
+  snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
+  genotypes <- dplyr::mutate_if(.tbl = genotypes, is.factor, as.character)
+  
+  
+  # warn if anything repeated across sample level factors
+  uniques <- lapply(sample.meta, unique)
+  uniques <- uniques[-which(names(uniques) == ".sample.id")]
+  uniques <- unlist(uniques)
+  if(any(duplicated(uniques))){
+    warning(paste0("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
+                   paste0(uniques[which(duplicated(uniques))], "\n", collapse = "")))
+  }
+  
+
+  
+  #===========format and calculate some basics=========
+  rownames(genotypes) <- 1:nrow(genotypes)
+  rownames(snp.meta) <- 1:nrow(snp.meta)
+
+  gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
+  
+  x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
+                    facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
+                                                  subfacet = rep(".base", nrow(gs$gs)),
+                                                  facet.type = rep(".base", nrow(gs$gs)),
+                                                  stringsAsFactors = FALSE),
+                                       snp.meta),
+                    geno.tables = gs,
+                    mDat = mDat,
+                    ploidy = 2,
+                    bi_allelic = bi_allelic,
+                    data.type = "genotypic",
+                    stats = cbind(data.table::data.table(facet = rep(".base", nrow(gs$gs)),
+                                                         subfacet = rep(".base", nrow(gs$gs)),
+                                                         facet.type = rep(".base", nrow(gs$gs)),
+                                                         stringsAsFactors = FALSE),
+                                  snp.meta),
+                    snp.form = nchar(genotypes[1,1]), 
+                    row.names = rownames(genotypes),
+                    sn = list(sn = NULL, type = NULL),
+                    facets = ".base",
+                    facet.type = ".base",
+                    calced_stats = list(),
+                    allele_frequency_matrices = list(),
+                    genetic_distances = list(),
+                    weighted.means = data.frame(),
+                    other = list(),
+                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
+  
+  x@calced_stats$.base <- character()
+  
+  # add basic maf
+  .make_it_quiet(x <- calc_maf(x))
+ 
+  
+  #========return=========
+  return(x)
 }

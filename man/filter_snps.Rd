@@ -7,15 +7,17 @@
 filter_snps(
   x,
   maf = FALSE,
+  mac = 0,
   hf_hets = FALSE,
   hwe = FALSE,
   fwe_method = "none",
+  hwe_excess_side = "both",
   singletons = FALSE,
   min_ind = FALSE,
   min_loci = FALSE,
   re_run = "partial",
   maf_facets = NULL,
-  hwe_facets = FALSE,
+  hwe_facets = NULL,
   non_poly = TRUE,
   bi_al = TRUE,
   verbose = TRUE
@@ -25,7 +27,11 @@ filter_snps(
 \item{x}{snpRdata object.}
 
 \item{maf}{numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
-minor allele frequency.}
+minor allele frequency. Either maf or mac filtering are allowed, not both.}
+
+\item{mac}{numeric, between 0 and 1 minus the total number of individuals.
+Loci with less than this many minor alleles will be removed. Either maf or
+mac filtering are allowed, not both.}
 
 \item{hf_hets}{numeric between 0 and 1 or FALSE, default FALSE. Maximum
 acceptable heterozygote frequency.}
@@ -39,9 +45,17 @@ p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
 correction} will be removed. See \code{\link[stats]{p.adjust}} for
 information on method options.}
 
-\item{singletons}{logical, default FALSE. If TRUE, removes singletons (loci
-where there is only a single minor allele). If population sizes are
-reasonably high, this is more or less redundant if \code{maf} is also set.}
+\item{hwe_excess_side}{character, default "both". Options:
+\itemize{\item{heterozygote:} only loci with a heterozygote excess are 
+removed.
+\item{homozygote:} only loci with a homozygote excess are removed.
+\itemize{\item{both:} loci with either a heterozygote or homozygote excess 
+are removed.}}.}
+
+\item{singletons}{logical, default FALSE. Depricated, use \code{mac = 1} to
+remove singletons. If TRUE, removes singletons (loci where there is only a
+single minor allele). If population sizes are reasonably high, this is more
+or less redundant if \code{maf} is also set.}
 
 \item{min_ind}{numeric between 0 and 1 or FALSE, default FALSE. Minimum
 proportion of individuals in which a loci must be sequenced.}
@@ -57,11 +71,11 @@ non-polymorphic loci (non_poly) only, if that filter was requested
 initially. \item{full: } Re-runs the full filtering scheme (save for
 min_loci).}}
 
-\item{maf_facets}{character or FALSE, default FALSE. Defines a sample facet
-over which the minor allele frequency can be checked. SNPs will only fail the
-maf filter if they fail in every level of every provided facet.}
+\item{maf_facets}{character or NULL, default NULL. Defines a sample facet
+over which the minor allele frequency can be checked. SNPs will only fail
+the maf filter if they fail in every level of every provided facet.}
 
-\item{hwe_facets}{character or FALSE, default FALSE. Defines a sample facet
+\item{hwe_facets}{character or NULL, default NULL. Defines a sample facet
 over which the hwe filter can be checked. SNPs will fail the hwe filter if
 they fail in any level of any provided facet.}
 

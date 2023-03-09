@@ -1,3 +1,52 @@
+# snpR 1.2.5
+
+## Features
+
+### Major
+* Rework to allow some features to be used with microsatellite or other non-biallelic data types such as microhaplotypes is underway and will be enabled once basic filtering, diversity calculations, and plotting function support is finished.
+* Added support for DAPC to `plot_clusters()` via interface to adegenet and some code pulled in from (the thankfully GPL-v3) ade4 package. Licence note adjusted to reflect ade4 code.
+* Improved memory efficiency of `snpRdata` objects by removing some duplicated information. Old objects should still work fine, but new objects will be considerably smaller. This also improves `snpRdata` object
+creation times!
+* Added `merge_snpRdata()` to merge `snpRdata` objects using syntax equivalent to base R's `merge()` function. This can still be made more computationally efficient in the future by avoiding some internal summary tabulation.
+
+### Minor
+* Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
+* Minor rework to importing and facet creation to be more memory efficient (but sligtly slower) when working with large datasets.
+* `calc_tajimas_d()` will now also return the number of raw segregating sites per window (which was already internally calculated, since it is a part of Watterson's Theta, but not returned).
+* Changed the defaults for smoothing and tajima's D to `2*sigma` (non-overlapping windows)
+* Added the `mac` argument to `filter_snps()` to filter by minor allele count instead of minor allele frequency. Currently doesn't support faceting, which will probably be added later depending on user need. The `singletons` argument is now depriceated.
+* Added the `hwe_excess_side` argument ot `filter_snps()`, enabling users to only remove SNPs out of HWE that have either het or hom excesses. They default behavior is still to do both.
+* Added $ZF_{ST}$ and $F_{ST}/(1-F_{ST})$ to `calc_pairwise_fst()`.
+* Added the explicit option to recode chromosome names as simple numeric values to `format_snps()` with the `plink` option. For some cases with many scaffolds/etc, this may be necessary. Before this was the default behavior, not an option. To account for this, also added checks to ensure that, if this option is not used, that no chromosome names start in numbers (leading numbers will be replaced with a character equivalent -- 0 -> A, 1 -> B, 9 -> I).
+* Changed the second facets used in `plot_clusters()` to use different shapes instead of different fill/color combos as long as
+there are less than 25 levels (the number of unique point shapes). This makes for substantially easier to interpret levels in plots! Which
+facet gets shapes is controlled by the `shape_has_more_levels` argument.
+* Added a `verbose` option to `check_duplicates()`. It's still a slow function and could use some work or parallelization.
+* Added `lambda_gc_correction` arguments to `plot_qq()` and `plot_manhattan()` to generate $\lambda_{GC}$ genomic stratification measures and correct for them in plots (see [this paper](https://doi.org/10.1038/nrg2813)).
+* Added an informational shout-out on launch directing users towards the issues page and here.
+
+## Documentation
+* Changed "sample metadata" to "SNP metadata" in the description of the `header_cols` argument to `import.snpR.data()`.
+* Edited the warning message when importing structure data without setting header_cols properly to more explicitly reference that problem.
+* Updated the `calc_tajimas_d()` examples to use the updated `get.snpR.stats()` syntax.
+* Added warnings/messages to `calc_ne` when it is run without the `chr` argument or with more than 5,000 SNPs.
+* Added a more informative error message to `calc_ne` that shows if no output files are generated.
+* Added a note to the documentation for `calc_prop_poly` to note that `calc_tajimas_d` will also calculate the number of segragating sites (and the number of snps) in a window, which can be used to easily calculate the prop_poly per window.
+* Extended the error message when importing finds a bad genotype format to suggest removing SNP meta data from your genotypes.
+
+## Bug fixes
+* Changed `import.snpR.data()` to return an error if the genotypic dimensions are not correct for the provided SNP and sample meta data instead of proceeding and returning a bogus result.
+* Fixed a bug where not using a pop facet with `plot_structure()` with the `method = "structure"` option would cause a bug due to an incorrectly set "LOCISPOP" flag (which is checked even if not using the locprior option).
+* Fixed a bug where PSIXct data in the sample meta data could cause issues with `calc_hs()`.
+* Fixed a bug where vcf files with missing data would occasionally get read in as "."s instead of NAs by `vcfR`, which meant that they weren't being properly accounted for as missing data by snpR. Most functions actually still work fine, but a few, like `plot_structure()` were unhappy.
+* Added a check to tab-delimited input for a column of NAs at the end (automatically remove if found). Common when importing ANGSD outputs.
+* Added `normalizePath()` to calc_ne to normalize the neestimator path.
+* Added automatic facet checking for bad characters when doing facet operations. This is a bit slower (when there are *many* SNPs or individuals), but will return an informative error instead of an uninformative one and so improves usability.
+* Fixed bugs that would occur when NeEstimator is one with only one pcrit and when only one pcrit + one population (both during parsing).
+* Fixed a bug in the `coan` option for NeEstimator.
+* Fixed a bug where asking to filter by the `.base` facet with `filter_snps()` would cause an error and a spurious warning.
+* Standardized the defaults of both `facet` arguments to `filter_snps()` to use `NULL` as a default.
+
 # snpR 1.2.4 -- hot-fix
 
 ## Features
@@ -13,6 +62,7 @@
 * Fixed `read_structure()` (and `import.snpR.data()`) to never assume sample names, just loci names (which is the standard) if noted.
 * Added better error checking for invalid NeEstimator exe files to `calc_ne()`.
 * Fixed a bug where vcf files with missing data would occasionally get read in as "."s instead of NAs by `vcfR`, which meant that they weren't being properly accounted for as missing data by snpR. Most functions actually still work fine, but a few, like `plot_structure()` were unhappy.
+
 
 # snpR 1.2.3
 

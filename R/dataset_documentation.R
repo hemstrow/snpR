@@ -46,3 +46,26 @@
 #' the sequenced individuals in the \code{\link{stickSNPs}} dataset and 
 #' individuals inferred via pedigree construction are affixed with "f" or "m". 
 "stickPED"
+
+#' Contains example data for 13 microsatellite loci from 1573 steelhead from the
+#' Siletz river, Oregon, USA. Samples come from both the summer and winter run
+#' wild and hatchery populations. For more details, see Hemstrom et al 2018.
+#'
+#' The first column contains population info, each remaining column contains
+#' information on one microsatellite. Note that this data is transposed with
+#' respect to the SNP example data.
+#'
+#' Individual genotypes are coded as "0000", where the first two numbers are an
+#' identifer for the first allele and the third and fourth identify the second
+#' allele.
+"steelRAW"
+
+#' Siletz Steelhead microsatellite snpRdata
+#'
+#' Contains example data for 13 microsatellite loci from 1573 steelhead from the
+#' Siletz river, Oregon, USA. Samples come from both the summer and winter run
+#' wild and hatchery populations. For more details, see Hemstrom et al 2018.
+#'
+#' Sample metadata can be found using the \code{sample.meta} function.
+#' Individuals have been randomly sorted into "families" for example purposes.
+"steelMSATs"

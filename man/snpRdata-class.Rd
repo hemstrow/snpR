@@ -35,10 +35,7 @@ the order of snps in that data)}
 \item{\code{snp.form}}{numeric, number of characters per genotype (not really used)}
 
 \item{\code{geno.tables}}{list containing three matrices: gs (genotype counts), as
-(allele counts), and wm (genotype counts + missing counts)}
-
-\item{\code{ac}}{data.frame containing ac formatted data, see
-\code{\link{format_snps}}.}
+(allele counts), and wm (missing counts)}
 
 \item{\code{facets}}{character, vector of tabulated facets}
 

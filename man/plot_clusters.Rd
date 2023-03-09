@@ -21,6 +21,14 @@ plot_clusters(
   alt.palette = NULL,
   ncp = NULL,
   ncp.max = 5,
+  dapc_clustering_max_n_clust = 20,
+  dapc_clustering_npca = NULL,
+  dapc_clustering_nclust = NULL,
+  dapc_npca = NULL,
+  dapc_ndisc = NULL,
+  ellipse_size = 1.5,
+  seg_lines = TRUE,
+  shape_has_more_levels = TRUE,
   update_bib = FALSE,
   verbose = FALSE,
   ...
@@ -33,13 +41,16 @@ plot_clusters(
 variables by which to color points. Up to two different sample-specific
 facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap"). Types of
-plots to be produced. Options \itemize{\item{pca: } Principal Component
-Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
-Neighbor Embedding, which collapses dims (see argument) dimensions of
-variance into two. \item{umap: } Uniform Manifold Approximation and
-Projection, which collapses multiple dimensions of variance into two. } See
-description for details.}
+\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap", "dapc"). 
+Types of
+ plots to be produced. Options \itemize{\item{pca: } Principal Component
+ Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
+ Neighbor Embedding, which collapses dims (see argument) dimensions of
+ variance into two. \item{umap: } Uniform Manifold Approximation and
+ Projection, which collapses multiple dimensions of variance into two.
+ \item{dapc: } Discriminant analysis of principal components, 
+ clusters individuals into groups for plotting via PCA.} See
+ description for details.}
 
 \item{check_duplicates}{logical, default FALSE. Checks for any duplicated
 individuals, which will cause errors. Since these rarely exist and
@@ -94,6 +105,42 @@ slow.}
 when determining the optimum number of components to use when interpolating
 sn data using the iPCA approach.}
 
+\item{dapc_clustering_max_n_clust}{numeric or NULL, default 20. If not NULL,
+the clustering parameters for DAPC calculation will be selected
+interactively, with \code{dapc_clustering_max_n_clust} max clusters
+considered. If NULL, the parameters \code{dapc_clustering_npca},
+\code{dapc_clustering_nclust}, \code{dapc_ndisc}, and \code{dapc_npca} must
+instead be set.}
+
+\item{dapc_clustering_npca}{numeric or NULL, default NULL. The number of PCS
+to use for assigning individuals to clusters with DAPC. Interactive decision
+is recommended using \code{dapc_clustering_max_n_clust}.}
+
+\item{dapc_clustering_nclust}{numeric or NULL, default NULL. The number of
+clusters to use for DAPC. Interactive decision is recommended using
+\code{dapc_clustering_max_n_clust}.}
+
+\item{dapc_npca}{numeric or NULL, default NULL. The number of PCS to use for
+conducting the DAPC itself after assigning individuals to clusters.
+Interactive decision is recommended using
+\code{dapc_clustering_max_n_clust}.}
+
+\item{dapc_ndisc}{numeric or NULL, default NULL. The number of discriminants
+to use for conducting the DAPC itself after assigning individuals to
+clusters. Interactive decision is recommended using
+\code{dapc_clustering_max_n_clust}.}
+
+\item{ellipse_size}{numeric or NULL, default 1.5. The scaled-size of the
+ellipse to use for DAPC. If NULL, no ellipses will be calculated or drawn.}
+
+\item{seg_lines}{logical, default TRUE. If TRUE, lines will be drawn between
+points and cluster centers when plotting with DAPC.}
+
+\item{shape_has_more_levels}{logical, default TRUE. If TRUE and two facets are
+requested, the facet with more levels will plotted as shapes. If FALSE,
+the facet with less levels will be plotted with shapes. Ignored if the facet
+that would get shapes has more than 6 levels.}
+
 \item{update_bib}{character or FALSE, default FALSE. If a file path to an
 existing .bib library or to a valid path for a new one, will update or
 create a .bib file including any new citations for methods used. Useful
@@ -107,21 +154,24 @@ reported.}
 \code{\link[umap]{umap}}.}
 }
 \value{
-A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
- plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
- these two lists may contain one, two, or three objects, one for each PCA,
- tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
+ DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+ Each of these two lists may contain one to four objects, one for each PCA,
+ tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
  respectively.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
-theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
-Works by conversion to the "sn" format described in \code{\link{format_snps}}
-with interpolated missing genotypes.
+theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, the Uniform Manifold
+Approximation and Projection approach implemented in \code{\link[umap]{umap}},
+or the Discriminant Analysis of Principal Components implemented in
+\code{\link[adegenet]{dapc}}.
 }
 \details{
-Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
+Works by conversion to the "sn" format described in \code{\link{format_snps}}
+with interpolated missing genotypes for all methods other than DAPC.
+
+Cluster plots can be produced via, PCA, tSNE, umap, or DAPC. The PCA point
 coordinates are calculated using \code{\link{prcomp}}. By default, the first
 two principal coordinates are plotted. A PC matrix will also be returned for
 easy plotting of other PCs. tSNE coordinates are calculated via
@@ -134,14 +184,15 @@ compression process is stochastic, and so plots will vary somewhat between
 runs, and multiple runs are recommended. Uniform Manifold Approximation and
 Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
 UMAP similarly attempts to reduce multi-dimensional results to a two
-dimensional visualization.
+dimensional visualization. DAPC instead clusters individuals in \emph{n}
+groups, a number which by default is interactively chosen (again using a
+PCA framework).
 
 Note that clusters and relative positions of samples from both tSNE and UMAP
 may not reliably represent the relationships present in the higher PCA
 dimensions from which they are created. As such, it is probably not wise to
 use these methods to draw conclusions about relationships. They are useful
 exploratory tools, however, and so are kept available here.
-
 
 For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
 consulted.
@@ -153,7 +204,12 @@ information on these arguments can be found in
 Data points for individuals can be automatically colored by any sample-level
 facet categories. Facets should be provided as described in
 \code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-automatically plotted simultaneously.
+automatically plotted simultaneously. If two facets are supplied, one level
+will be noted by point shape and the other by color (by default the facet with
+more options will be given shapes, behavior that can be controlled using the
+\code{shape_has_more_levels} argument), as long as one has less than 6 total
+levels. If both have more than 6 levels, one will be noted by point fill and
+the other by point outline.
 }
 \examples{
 # plot colored by population
@@ -173,9 +229,20 @@ Van Der Maaten, L. & Hinton, G. (2008) Visualizing
 
 McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
  and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+
+Jombart, T., Devillard, S. & Balloux, F. Discriminant analysis of
+ principal components: a new method for the analysis of genetically
+ structured populations. BMC Genet 11, 94 (2010).
+ \url{https://doi.org/10.1186}
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}
+
+\code{\link[umap]{umap}}
+
+\code{\link[stats]{prcomp}}
+
+\code{\link[adegenet]{dapc}}
 }
 \author{
 William Hemstrom

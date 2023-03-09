@@ -13,6 +13,8 @@ do_bootstraps(
   statistics = "all",
   nk = TRUE,
   par = FALSE,
+  triple_sigma = TRUE,
+  gaussian = TRUE,
   do.p = TRUE,
   p.alt = "two-sided"
 )
@@ -39,6 +41,12 @@ averages by the number of observations at those SNPs.}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
+
+\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+create windows of 6*sigma total.}
+
+\item{gaussian}{Logical, default TRUE. If TRUE, windows will be gaussian
+smoothed. If not, windows will be raw averages.}
 
 \item{do.p}{logical, default TRUE. Determines if p-values should be calculated
 for sliding windows.}
@@ -80,8 +88,8 @@ however.
 The data can be broken up categorically by snp or sample metadata, as
 described in \code{\link{Facets_in_snpR}}.
 
-As described in Hohenlohe  et al. (2010), the contribution of individual SNPs to
-window averages can be weighted by the number of observations per SNP by
+As described in Hohenlohe  et al. (2010), the contribution of individual SNPs
+to window averages can be weighted by the number of observations per SNP by
 setting the nk argument to TRUE, as is the default. For bootstraps, nk values
 are randomly drawn for each SNP in each window.
 

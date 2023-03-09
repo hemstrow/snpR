@@ -21,7 +21,7 @@ test_that("pi",{
   pi <- get.snpR.stats(tdm, c(".base", "pop"), "pi")$single
 
   # test
-  expect_equal(pi$pi, 1 - (choose(tdm@ac$ni1, 2) + choose(tdm@ac$ni2, 2) )/choose(tdm@ac$n_total, 2)) # equ from hohenlohe
+  expect_equal(pi$pi, 1 - rowSums(apply(tdm@geno.tables$as, MARGIN = 2, function(x) choose(x, 2)))/choose(rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
 })
 
 test_that("he",{
@@ -30,7 +30,22 @@ test_that("he",{
   he <- get.snpR.stats(tdm, c(".base", "pop"), "he")$single
   
   # test
-  expect_equal(he$he, 2 * (tdm@ac$ni1/tdm@ac$n_total) * (tdm@ac$ni2/tdm@ac$n_total)) # check against 2pq from another source
+  as <- tdm@geno.tables$as
+  as <- as/rowSums(as)
+  as <- as^2
+  che <- 1 - rowSums(as) # 1 minus hom freqs
+  expect_equal(he$he, che) # check against 2pq from another source
+  
+  # non-bi-allelic
+  check <- stickSNPs
+  check <- calc_he(check, "pop")
+  check <- get.snpR.stats(check, "pop", "he")
+  
+  check2 <- stickSNPs
+  check2@bi_allelic <- FALSE
+  check2 <- calc_he(check2, "pop")
+  check2 <- get.snpR.stats(check2, "pop", "he")
+  expect_equivalent(check, check2)
 })
 
 test_that("ho", {
@@ -153,4 +168,48 @@ test_that("prop_poly",{
                                     c("t.sample.facet", "all.opts.1", "all.opts.2"))))
 })
 
+# tajima's D
+test_that("tajimas_d",{
+  tf <- c(".base", "chr", "chr.pop", "chr.fam", "fam", "pop", "fam.pop.chr")
+  expect_warning(tsd <- calc_tajimas_d(.internal.data$test_snps, tf, step = 200, triple_sigma = FALSE, sigma = 400), "Consider adding a snp level facet")
+  tsdc <- get.snpR.stats(tsd, tf, "tajimas_d")
+  
+  # check that all levels are there in both windows and weighted
+  ## windows
+  levs <- unique(tsdc$single.window[,1:4])
+  levs_pasted <- .paste.by.facet(levs, colnames(levs), sep = ".")
+  sf <- summarize_facets(.internal.data$test_snps, tf)
+  expect_true(".base..base..base..base" %in% levs_pasted)
+  expect_true(all(paste0(".base..base.chr.", sf$chr) %in% levs_pasted))
+  expect_true(all(paste0("pop.", lapply(strsplit(sf$chr.pop, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("fam.", lapply(strsplit(sf$chr.fam, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("fam.", sf$fam, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("pop.", sf$pop, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("fam.pop.", lapply(strsplit(sf$chr.fam.pop, "\\."), function(x){paste0(x[2], ".", x[3], ".chr.", x[1])})) %in% levs_pasted))
+  
+  ## weighted
+  levs <- unique(tsdc$weighted.means[,1:4])
+  levs_pasted <- .paste.by.facet(levs, colnames(levs), sep = ".")
+  sf <- summarize_facets(.internal.data$test_snps, tf)
+  expect_true(".base..base..base..base" %in% levs_pasted)
+  expect_true(all(paste0(".base..base.chr.", c(sf$chr, ".OVERALL_MEAN")) %in% levs_pasted))
+  expect_true(all(paste0("pop.", lapply(strsplit(sf$chr.pop, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("pop.", sf$pop, ".chr..OVERALL_MEAN") %in% levs_pasted))
+  expect_true(all(paste0("fam.", lapply(strsplit(sf$chr.fam, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("fam.", sf$fam, ".chr..OVERALL_MEAN") %in% levs_pasted))
+  expect_true(all(paste0("fam.", sf$fam, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("pop.", sf$pop, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("fam.pop.", lapply(strsplit(sf$chr.fam.pop, "\\."), function(x){paste0(x[2], ".", x[3], ".chr.", x[1])})) %in% levs_pasted))
+  sfc <- summarize_facets(.internal.data$test_snps, "pop.fam")
+  expect_true(all(paste0("fam.pop.", sfc$fam.pop, ".chr..OVERALL_MEAN") %in% levs_pasted))
+  
+  # check correct window notation,  step size
+  expect_true(all(tsdc$single.window$position %% 200*100 == 0))
+  expect_true(all(!tsdc$single.window$triple_sigma))
+  expect_true(all(!tsdc$single.window$nk.status))
+  expect_identical(tsdc$single.window[tsdc$single.window$facet == ".base" & tsdc$single.window$snp.facet == ".base",]$position, seq(0, 3000000, 200*1000))
+  expect_warning(tsd2 <- calc_tajimas_d(.internal.data$test_snps, ".base", step = 400, triple_sigma = TRUE, sigma = 200), "Consider adding a snp level facet")
+  tsdc2 <- get.snpR.stats(tsd2, ".base", "tajimas_d")
+  expect_true(all(tsdc2$single.window$triple_sigma))
+})
   

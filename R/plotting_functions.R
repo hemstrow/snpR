@@ -391,12 +391,16 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'PCA, tSNE, and umap plots from snpRdata.
 #'
 #'Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
-#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, or the Uniform Manifold
-#'Approximation and Projection approach implemented in \code{\link[umap]{umap}}.
-#'Works by conversion to the "sn" format described in \code{\link{format_snps}}
-#'with interpolated missing genotypes.
+#'theta>0 implemented in \code{\link[Rtsne]{Rtsne}}, the Uniform Manifold
+#'Approximation and Projection approach implemented in \code{\link[umap]{umap}},
+#'or the Discriminant Analysis of Principal Components implemented in
+#'\code{\link[adegenet]{dapc}}.
 #'
-#'Cluster plots can be produced via, PCA, tSNE, or umap. The PCA point
+#'
+#'Works by conversion to the "sn" format described in \code{\link{format_snps}}
+#'with interpolated missing genotypes for all methods other than DAPC.
+#'
+#'Cluster plots can be produced via, PCA, tSNE, umap, or DAPC. The PCA point
 #'coordinates are calculated using \code{\link{prcomp}}. By default, the first
 #'two principal coordinates are plotted. A PC matrix will also be returned for
 #'easy plotting of other PCs. tSNE coordinates are calculated via
@@ -409,14 +413,15 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'runs, and multiple runs are recommended. Uniform Manifold Approximation and
 #'Projection (UMAP) coordinates are calculated via \code{\link[umap]{umap}}.
 #'UMAP similarly attempts to reduce multi-dimensional results to a two
-#'dimensional visualization.
+#'dimensional visualization. DAPC instead clusters individuals in \emph{n}
+#'groups, a number which by default is interactively chosen (again using a
+#'PCA framework).
 #'
 #'Note that clusters and relative positions of samples from both tSNE and UMAP
 #'may not reliably represent the relationships present in the higher PCA
 #'dimensions from which they are created. As such, it is probably not wise to
 #'use these methods to draw conclusions about relationships. They are useful
 #'exploratory tools, however, and so are kept available here.
-#'
 #'
 #'For more details on tSNE arguments, \code{\link[Rtsne]{Rtsne}} should be
 #'consulted.
@@ -428,18 +433,26 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'Data points for individuals can be automatically colored by any sample-level
 #'facet categories. Facets should be provided as described in
 #'\code{\link{Facets_in_snpR}}. Up to two different sample-level facets can be
-#'automatically plotted simultaneously.
+#'automatically plotted simultaneously. If two facets are supplied, one level
+#'will be noted by point shape and the other by color (by default the facet with
+#'more options will be given shapes, behavior that can be controlled using the
+#'\code{shape_has_more_levels} argument), as long as one has less than 6 total
+#'levels. If both have more than 6 levels, one will be noted by point fill and
+#'the other by point outline.
 #'
 #'@param x snpRdata object.
 #'@param facets character, default NULL. Categorical sample-level metadata
 #'  variables by which to color points. Up to two different sample-specific
 #'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
-#'@param plot_type character, default "pca". c("pca", "tSNE", "umap"). Types of
+#'@param plot_type character, default "pca". c("pca", "tSNE", "umap", "dapc"). 
+#'Types of
 #'  plots to be produced. Options \itemize{\item{pca: } Principal Component
 #'  Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
 #'  Neighbor Embedding, which collapses dims (see argument) dimensions of
 #'  variance into two. \item{umap: } Uniform Manifold Approximation and
-#'  Projection, which collapses multiple dimensions of variance into two. } See
+#'  Projection, which collapses multiple dimensions of variance into two.
+#'  \item{dapc: } Discriminant analysis of principal components, 
+#'  clusters individuals into groups for plotting via PCA.} See
 #'  description for details.
 #'@param check_duplicates logical, default FALSE. Checks for any duplicated
 #'  individuals, which will cause errors. Since these rarely exist and
@@ -481,6 +494,34 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ncp.max numeric, default 5. Maximum number of components to check for
 #'  when determining the optimum number of components to use when interpolating
 #'  sn data using the iPCA approach.
+#'@param dapc_clustering_max_n_clust numeric or NULL, default 20. If not NULL,
+#'  the clustering parameters for DAPC calculation will be selected
+#'  interactively, with \code{dapc_clustering_max_n_clust} max clusters
+#'  considered. If NULL, the parameters \code{dapc_clustering_npca},
+#'  \code{dapc_clustering_nclust}, \code{dapc_ndisc}, and \code{dapc_npca} must
+#'  instead be set.
+#'@param dapc_clustering_nclust numeric or NULL, default NULL. The number of
+#'  clusters to use for DAPC. Interactive decision is recommended using
+#'  \code{dapc_clustering_max_n_clust}.
+#'@param dapc_clustering_npca numeric or NULL, default NULL. The number of PCS
+#'  to use for assigning individuals to clusters with DAPC. Interactive decision
+#'  is recommended using \code{dapc_clustering_max_n_clust}.
+#'@param dapc_npca numeric or NULL, default NULL. The number of PCS to use for
+#'  conducting the DAPC itself after assigning individuals to clusters.
+#'  Interactive decision is recommended using
+#'  \code{dapc_clustering_max_n_clust}.
+#'@param dapc_ndisc numeric or NULL, default NULL. The number of discriminants
+#'  to use for conducting the DAPC itself after assigning individuals to
+#'  clusters. Interactive decision is recommended using
+#'  \code{dapc_clustering_max_n_clust}.
+#'@param ellipse_size numeric or NULL, default 1.5. The scaled-size of the
+#'  ellipse to use for DAPC. If NULL, no ellipses will be calculated or drawn.
+#'@param seg_lines logical, default TRUE. If TRUE, lines will be drawn between
+#'  points and cluster centers when plotting with DAPC.
+#'@param shape_has_more_levels logical, default TRUE. If TRUE and two facets are
+#'  requested, the facet with more levels will plotted as shapes. If FALSE,
+#'  the facet with less levels will be plotted with shapes. Ignored if the facet
+#'  that would get shapes has more than 6 levels.
 #'@param update_bib character or FALSE, default FALSE. If a file path to an
 #'  existing .bib library or to a valid path for a new one, will update or
 #'  create a .bib file including any new citations for methods used. Useful
@@ -491,10 +532,10 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, and umap
-#'  plot data. \item{plots: } ggplot PCA, tSNE, and/or umap plots.} Each of
-#'  these two lists may contain one, two, or three objects, one for each PCA,
-#'  tSNE, or umap plot requested, named "pca" and "tsne", and "umap",
+#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
+#'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+#'  Each of these two lists may contain one to four objects, one for each PCA,
+#'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
 #'  respectively.
 #'
 #'@author William Hemstrom
@@ -508,8 +549,15 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  \emph{Journal of Machine Learning Research}.
 #'@references McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
 #'  and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+#'@references Jombart, T., Devillard, S. & Balloux, F. Discriminant analysis of
+#'  principal components: a new method for the analysis of genetically
+#'  structured populations. BMC Genet 11, 94 (2010).
+#'  \url{https://doi.org/10.1186}
 #'
 #'@seealso \code{\link[mmtsne]{mmtsne}}
+#'@seealso \code{\link[umap]{umap}}
+#'@seealso \code{\link[stats]{prcomp}}
+#'@seealso \code{\link[adegenet]{dapc}}
 #'
 #'@export
 #'
@@ -520,12 +568,18 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' # plot colored by population and family
 #' plot_clusters(stickSNPs, "pop.fam")
 plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
-                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, interpolation_method = "bernoulli",
+                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, 
+                          interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
-                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5, 
+                          viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5,
+                          dapc_clustering_max_n_clust = 20,
+                          dapc_clustering_npca = NULL, dapc_clustering_nclust = NULL,
+                          dapc_npca = NULL, dapc_ndisc = NULL, ellipse_size = 1.5,
+                          seg_lines = TRUE, shape_has_more_levels = TRUE,
                           update_bib = FALSE, verbose = FALSE,...){
 
   #=============sanity checks============
+  y <- cluster <- .cluster <- NULL
   msg <- character(0)
 
   # mpc
@@ -561,7 +615,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   facets <- .check.snpR.facet.request(x, facets)
 
   plot_type <- tolower(plot_type)
-  good_plot_types <- c("pca", "tsne", "umap")
+  good_plot_types <- c("pca", "tsne", "umap", "dapc")
   if(any(!(plot_type %in% good_plot_types))){
     msg <- c(msg, paste0("Unaccepted plot_type. Accepted types:", paste0(good_plot_types, collapse = ", "), "."))
   }
@@ -579,10 +633,38 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
   }
   
+  if("dapc" %in% plot_type){
+    pkg.check <- .check.installed("adegenet")
+    if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
+    
+    if(!is.null(dapc_clustering_max_n_clust)){
+      if(!interactive()){
+        msg <- c(msg, "If plot_clusters() is not run interactively, dapc interactive parameter picking cannot be used. Please set 'dapc_clustering_max_n_clust' to NULL and supply all dapc parameters.\n")
+      }
+      if(any(is.null(c(dapc_clustering_npca, dapc_clustering_nclust, dapc_npca, dapc_ndisc)))){
+        msg <- c(msg, "If plot_clusters() is not run interactively please supply all dapc parameters.\n")
+      }
+    }
+    
+    if(any(is.null(c(dapc_npca, dapc_ndisc)))){
+      if(!interactive()){
+        msg <- c(msg, "If plot_clusters() is not run interactively please supply all dapc parameters.\n")
+      }
+      
+      if(sum(is.null(c(dapc_npca, dapc_ndisc))) == 1){
+        msg <- c(msg, "Please supply both dapc_npca and dapc_ndisc arguments or choose interactively instead.\n")
+      }
+    }
+    
+    if(sum(is.null(c(dapc_clustering_npca, dapc_clustering_nclust))) == 1){
+      msg <- c(msg, "Please supply all dapc clustering arguments or choose interactively instead.\n")
+    }
+  }
+  
   if(interpolation_method == "iPCA"){
     .check.installed("missMDA")
   }
-  if(isFALSE(interpolation_method)){
+  if(isFALSE(interpolation_method) & length(plot_type) != 1 & plot_type[1] != "dapc"){
     stop("All methods require no missing data. Please enable interpolation.\n")
   }
   
@@ -599,72 +681,98 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   #=============prepare dataset===============
   cat("Formatting data...\n")
 
-  # check for matching sn plot:
-  if(length(x@sn$sn) != 0){
-    if(x@sn$type != interpolation_method){
-      suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
-      x@sn$type <- interpolation_method
+  bi_allelic <- .is.bi_allelic(x)
+  if((length(plot_type) == 1 & plot_type[1] != "dapc") | length(plot_type) > 1){
+    if(bi_allelic){
+      # check for matching sn plot:
+      if(length(x@sn$sn) != 0){
+        if(x@sn$type != interpolation_method){
+          suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+          x@sn$type <- interpolation_method
+        }
+      }
+      else{
+        suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+        x@sn$type <- interpolation_method
+      }
+      
+      sn <- x@sn$sn
+      sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
+      meta <- x@sample.meta
     }
+    else{
+      if(length(x@sn$sn) != 0){
+        if(x@sn$type != interpolation_method){
+          suppressWarnings(x@sn$sn <- format_snps(x, "pa", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+          x@sn$type <- interpolation_method
+        }
+      }
+      else{
+        suppressWarnings(x@sn$sn <- format_snps(x, "pa", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
+        x@sn$type <- interpolation_method
+      }
+      
+      sn <- x@sn$sn
+      sn <- t(sn[,-c(1:(ncol(x@sample.meta) - 1))])
+      meta <- x@sample.meta
+    }
+    
+    
+    # figure out which snps should be dropped due to low coverage
+    if(minimum_percent_coverage != FALSE){
+      counts <- rowSums(x@geno.tables$gs[x@facet.meta$subfacet == ".base",])
+      counts <- counts/ncol(x)
+      bad.loci <- which(counts <= minimum_percent_coverage)
+      if(length(bad.loci) > 0){
+        sn <- sn[-bad.loci,]
+      }
+    }
+    
+    # figure out which samples should be dropped due to poor genotyping
+    if(minimum_genotype_percentage != FALSE){
+      counts <- colSums(ifelse(x == x@mDat, F, T))
+      counts <- counts/nrow(x)
+      bad.samples <- which(counts <= minimum_genotype_percentage)
+      if(length(bad.samples) > 0){
+        sn <- sn[,-bad.samples]
+        meta <- meta[-bad.samples,]
+      }
+    }
+    
+    if(check_duplicates){
+      if(verbose){cat("Checking for duplicates...\n")}
+      sn <- as.data.table(t(sn))
+      dups <- which(duplicated(sn) | duplicated(sn, fromLast=TRUE))
+      if(length(dups) > 0){
+        if(verbose){cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")}
+        sn <- sn[-dups,]
+        meta <- meta[-dups,]
+      }
+      sn <- as.matrix(t(sn))
+    }
+    
+    
+    
+    
+    rm.snps <- nrow(sn)
+    rm.ind <- ncol(sn)
+    if(rm.snps == 0){
+      stop("No remaining SNPs after filtering.\n")
+    }
+    if(rm.ind == 0){
+      stop("No remaining samples after filtering.\n")
+    }
+    if(rm.snps < 20){
+      warning("Few remaining SNPs after filtering! Remaining SNPs:", rm.snps, ".\n")
+    }
+    
+    if(verbose){cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")}
+    sn <- t(sn)
   }
   else{
-    suppressWarnings(x@sn$sn <- format_snps(x, "sn", interpolate = interpolation_method, ncp = ncp, ncp.max = ncp.max))
-    x@sn$type <- interpolation_method
-  }
-
-  sn <- x@sn$sn
-  sn <- sn[,-c(1:(ncol(x@snp.meta) - 1))]
-  meta <- x@sample.meta
-
-  # figure out which snps should be dropped due to low coverage
-  if(minimum_percent_coverage != FALSE){
-    counts <- rowSums(x@geno.tables$gs[x@facet.meta$subfacet == ".base",])
-    counts <- counts/ncol(x)
-    bad.loci <- which(counts <= minimum_percent_coverage)
-    if(length(bad.loci) > 0){
-      sn <- sn[-bad.loci,]
-    }
-  }
-
-  # figure out which samples should be dropped due to poor genotyping
-  if(minimum_genotype_percentage != FALSE){
-    counts <- colSums(ifelse(x == x@mDat, F, T))
-    counts <- counts/nrow(x)
-    bad.samples <- which(counts <= minimum_genotype_percentage)
-    if(length(bad.samples) > 0){
-      sn <- sn[,-bad.samples]
-      meta <- meta[-bad.samples,]
-    }
-  }
-
-  if(check_duplicates){
-    if(verbose){cat("Checking for duplicates...\n")}
-    sn <- as.data.table(t(sn))
-    dups <- which(duplicated(sn) | duplicated(sn, fromLast=TRUE))
-    if(length(dups) > 0){
-      if(verbose){cat("Duplicates detected, indices:", dups, "\nRemoving all of these!\n")}
-      sn <- sn[-dups,]
-      meta <- meta[-dups,]
-    }
-    sn <- as.matrix(t(sn))
+    meta <- x@sample.meta
   }
   
-  
-
-
-  rm.snps <- nrow(sn)
-  rm.ind <- ncol(sn)
-  if(rm.snps == 0){
-    stop("No remaining SNPs after filtering.\n")
-  }
-  if(rm.ind == 0){
-    stop("No remaining samples after filtering.\n")
-  }
-  if(rm.snps < 20){
-    warning("Few remaining SNPs after filtering! Remaining SNPs:", rm.snps, ".\n")
-  }
-
-  if(verbose){cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")}
-  sn <- t(sn)
 
   #=============prepare plot data=============
   plot_dats <- vector("list", length(plot_type))
@@ -698,6 +806,23 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     colnames(umap_r$layout) <- paste0("PC", 1:ncol(umap_r$layout))
     plot_dats$umap <- cbind(meta, as.data.frame(umap_r$layout))
   }
+  if("dapc" %in% plot_type){
+    gi <- format_snps(x, "adegenet", "pop")
+    if(!is.null(dapc_clustering_max_n_clust)){
+      k <- adegenet::find.clusters.genind(x = gi, max.n.clust = dapc_clustering_max_n_clust)
+    }
+    else{
+      k <- adegenet::find.clusters.genind(x = gi, choose.n.clust = FALSE,
+                                          n.pca = dapc_clustering_npca, n.clust = dapc_clustering_nclust)
+    }
+    if(any(is.null(c(dapc_npca, dapc_ndisc)))){
+      plot_dats$dapc <- adegenet::dapc(gi, k$grp)
+    }
+    else{
+      plot_dats$dapc <- adegenet::dapc.genind(gi, k$grp, n.pca = dapc_npca, n.da = dapc_ndisc)
+      plot_dats$dapc
+    }
+  }
   #=============make ggplots=====================
   plots <- vector("list", length(plot_dats))
   names(plots) <- names(plot_dats)
@@ -707,13 +832,155 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
 
   for(i in 1:length(plot_dats)){
-    tpd <- plot_dats[[i]]
-
-    #Categories (pops, fathers, mothers, etc.) are given in plot.vars argument. Supports up to two!
-    #make the base plot, then add categories as color and fill.
-    PC1 <- PC2 <- NULL
-    out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
-
+    
+    if(names(plot_dats)[i] == "dapc"){
+      
+      
+      # from ade4, two internals I need here to get ellipses, the second with edits to return values instead of plotting them
+      fac2disj <- function(fac, drop = FALSE) {
+        ## Returns the disjunctive table corrseponding to a factor
+        n <- length(fac)
+        fac <- as.factor(fac)
+        if(drop)
+          fac <- factor(fac)
+        x <- matrix(0, n, nlevels(fac))
+        x[(1:n) + n * (unclass(fac) - 1)] <- 1
+        dimnames(x) <- list(names(fac), as.character(levels(fac)))
+        return(data.frame(x, check.names = FALSE))
+      }
+      scatterutil.ellipse <- function (x, y, z, cellipse) {
+        if (any(is.na(z))) 
+          return(invisible())
+        if (sum(z * z) == 0) 
+          return(invisible())
+        util.ellipse <- function(mx, my, vx, cxy, vy, coeff) {
+          lig <- 100
+          epsi <- 1e-10
+          x <- 0
+          y <- 0
+          if (vx < 0) 
+            vx <- 0
+          if (vy < 0) 
+            vy <- 0
+          if (vx == 0 && vy == 0) 
+            return(NULL)
+          delta <- (vx - vy) * (vx - vy) + 4 * cxy * cxy
+          delta <- sqrt(delta)
+          l1 <- (vx + vy + delta)/2
+          l2 <- vx + vy - l1
+          if (l1 < 0) 
+            l1 <- 0
+          if (l2 < 0) 
+            l2 <- 0
+          l1 <- sqrt(l1)
+          l2 <- sqrt(l2)
+          test <- 0
+          if (vx == 0) {
+            a0 <- 0
+            b0 <- 1
+            test <- 1
+          }
+          if ((vy == 0) && (test == 0)) {
+            a0 <- 1
+            b0 <- 0
+            test <- 1
+          }
+          if (((abs(cxy)) < epsi) && (test == 0)) {
+            if(vx > vy){
+              a0 <- 1
+              b0 <- 0
+            } else {
+              a0 <- 0
+              b0 <- 1
+            }
+            test <- 1
+          }
+          if (test == 0) {
+            a0 <- 1
+            b0 <- (l1 * l1 - vx)/cxy
+            norm <- sqrt(a0 * a0 + b0 * b0)
+            a0 <- a0/norm
+            b0 <- b0/norm
+          }
+          a1 <- 2 * pi/lig
+          c11 <- coeff * a0 * l1
+          c12 <- (-coeff) * b0 * l2
+          c21 <- coeff * b0 * l1
+          c22 <- coeff * a0 * l2
+          angle <- 0
+          for (i in 1:lig) {
+            cosinus <- cos(angle)
+            sinus <- sin(angle)
+            x[i] <- mx + c11 * cosinus + c12 * sinus
+            y[i] <- my + c21 * cosinus + c22 * sinus
+            angle <- angle + a1
+          }
+          return(list(x = x, y = y, seg1 = c(mx + c11, my + c21, 
+                                             mx - c11, my - c21), seg2 = c(mx + c12, my + c22, 
+                                                                           mx - c12, my - c22)))
+        }
+        z <- z/sum(z)
+        m1 <- sum(x * z)
+        m2 <- sum(y * z)
+        v1 <- sum((x - m1) * (x - m1) * z)
+        v2 <- sum((y - m2) * (y - m2) * z)
+        cxy <- sum((x - m1) * (y - m2) * z)
+        ell <- util.ellipse(m1, m2, v1, cxy, v2, cellipse)
+        if (is.null(ell)) 
+          return(invisible())
+        else{
+          return(ell)
+        }
+      }
+      
+      tpd <- as.data.frame(plot_dats[[i]]$ind.coord)
+      colnames(tpd) <- gsub("LD", ".LD", colnames(tpd))
+      tpd$.cluster <- plot_dats[[i]]$grp
+      tpd <- data.table::as.data.table(tpd)
+      
+      # xs <- pd[ , cbind(density(LD1)[1:2]), by = cluster]
+      # colnames(xs)[2:3] <- c("x", "y")
+      # densities <- tapply(pd$LD1, pd$cluster, density)
+      
+      tpd <- as.data.table(cbind(meta, tpd))
+      
+      .LD1 <- .LD2 <- .GRP_LD1 <- .GRP_LD2 <- NULL
+      
+      out <- ggplot2::ggplot(tpd, ggplot2::aes(.LD1, .LD2)) + ggplot2::theme_bw()
+      
+      if(is.numeric(ellipse_size)){
+        disj <- fac2disj(as.factor(tpd$.cluster))
+        ellipses <- vector("list", length(k$size))
+        for(j in 1:length(ellipses)){
+          ellipses[[j]] <- scatterutil.ellipse(tpd$.LD1, tpd$.LD2, disj[,j], ellipse_size)
+          ellipses[[j]] <- data.frame(x = ellipses[[j]]$x, y = ellipses[[j]]$y)
+          ellipses[[j]]$cluster <- j
+        }
+        ellipses <- data.table::rbindlist(ellipses)
+        
+        out <- out + 
+          ggplot2::geom_polygon(data = ellipses, mapping = ggplot2::aes(x, y, group = as.factor(cluster)), fill = NA, color = "black")
+      }
+      
+      if(seg_lines){
+        tpd[,c(".GRP_LD1", ".GRP_LD2") := as.data.frame(plot_dats[[i]]$grp.coord)[as.numeric(as.character(.cluster)),1:2]]
+        tpd <- as.data.frame(tpd)
+        out <- out + 
+          ggplot2::geom_segment(ggplot2::aes(xend = .GRP_LD1, yend = .GRP_LD2))
+      }
+      
+    }
+    
+    else{
+      tpd <- plot_dats[[i]]
+      
+      #Categories (pops, fathers, mothers, etc.) are given in plot.vars argument. Supports up to two!
+      #make the base plot, then add categories as color and fill.
+      PC1 <- PC2 <- NULL
+      out <- ggplot2::ggplot(tpd, ggplot2::aes(PC1, PC2)) + ggplot2::theme_bw() #initialize plot
+      
+    }
+    
 
     if(facets[1] == ".base"){
       out <- out + ggplot2::geom_point()
@@ -722,6 +989,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       #add variables.
       v1 <- tpd[,which(colnames(tpd) == facets[1])] #get the factors
       
+      
+      v2_has_color <- FALSE
+      
+      
       # add geoms to plot
       if(length(facets) == 1){
         out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
@@ -729,7 +1000,50 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       else{
         # if two plotting variables, prepare the second and add it as well.
         v2 <- tpd[,which(colnames(tpd) == facets[2])]
-        out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+        
+        # Figure out which has less levels, make that v2 IF neither have more than 6.
+        lv1 <- length(unique(v1))
+        lv2 <- length(unique(v2))
+        
+        # adjust levels
+        if(lv1 <= 6 | lv2 <= 6){
+          # if need to be flipped
+          if(lv1 > lv2){
+            # only flip if v2 has less or equal to 6 levels and we are flipping
+            if(!lv2 > 6 & shape_has_more_levels){
+              temp <- v2
+              v2 <- v1
+              v1 <- temp
+              facets <- rev(facets)
+              
+              temp <- lv2
+              lv2 <- lv1
+              lv1 <- temp
+              rm(temp)
+            }
+          }
+          # also flip if lv1 is less than lv1 and less than 7, but lv2 has too many levels
+          else if(lv2 > 6 & lv1 <=6){
+            temp <- v2
+            v2 <- v1
+            v1 <- temp
+            facets <- rev(facets)
+            
+            temp <- lv2
+            lv2 <- lv1
+            lv1 <- temp
+            rm(temp)
+          }
+        }
+        
+        if(lv2 <= 6){
+          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
+            ggplot2::scale_shape_discrete(name = facets[2])
+        }
+        else{
+          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+          v2_has_color <- TRUE
+        }
       }
       
       
@@ -755,23 +1069,24 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
       ## for the second variable if defined
       if(length(facets) > 1){
-        if(is.numeric(v2)){
-          if(is.null(alt.palette)){
-            out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+        if(v2_has_color){
+          if(is.numeric(v2)){
+            if(is.null(alt.palette)){
+              out <- out + ggplot2::scale_fill_viridis_c(name = facets[2], option = viridis.option)
+            }
+            else{
+              out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+            }
           }
           else{
-            out <- out + ggplot2::scale_fill_gradient(low = alt.palette[1], high = alt.palette[2], name = facets[2])
+            if(is.null(alt.palette)){
+              out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
+            }
+            else{
+              out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
+            }
           }
         }
-        else{
-          if(is.null(alt.palette)){
-            out <- out + ggplot2::scale_fill_viridis_d(name = facets[2], option = viridis.option)
-          }
-          else{
-            out <- out + ggplot2::scale_fill_manual(values = alt.palette, name = facets[2])
-          }
-        }
-        
       }
     }
 
@@ -802,6 +1117,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     keys <- c(keys, "McInnes2018")
     stats <- c(stats, "UMAP")
     details <- c(details, "Uniform Manifold Approximation and Projection (UMAP)")
+  }
+  
+  if("dapc" %in% plot_type){
+    keys <- c(keys, "jombart_discriminant_2010")
+    stats <- c(stats, "DAPC")
+    details <- c(details, "Discriminant Analysis of Principal Components core method.")
+    
+    keys <- c(keys, "Jombart2008")
+    stats <- c(stats, "adegenet")
+    details <- c(details, "DAPC run via interface to adegenet.")
   }
   
   if(length(keys) > 0){
@@ -940,6 +1265,13 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
 #'   minimum length specified. Helpful when chromosome/scaffold/etc names are
 #'   very long.
+#' @param lambda_gc_correction Correct for inflated significance due to
+#'   population and/or family structure using the \eqn{\gamma_{GC}} approach
+#'   described in Price et al 2010.
+#'
+#' @references Price, A., Zaitlen, N., Reich, D. et al. New approaches to
+#'   population stratification in genome-wide association studies. Nat Rev Genet
+#'   11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 #'
 #' @author William Hemstrom
 #' @export
@@ -949,40 +1281,41 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'
 #'
 #' @examples
-#' # association testing:
 #' # add a dummy phenotype and run an association test.
-#' x <- stickSNPs
-#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+#' x <- stickSNPs[pop = c("ASP", "SMR"), chr = c("groupIX", "groupIV")]
+#' sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(x), TRUE)
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
-#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
+#' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE)$plot
 #' 
 #' 
 #' # other types of stats:
 #' # make some data
 #' x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
-#'
-#' # plot pi, breaking apart by population, keeping only the groupIX and
-#' # groupIV chromosomes and the ASP, PAL, and SMR populations, with
+#' 
+#' # plot pi, breaking apart by population, keeping only the groupIX
+#' # and the ASP population, with
 #' # significant and suggestive lines plotted and SNPs
 #' # with pi below the significance level labeled.
 #' plot_manhattan(x, "pi", facets = "pop",
-#'                chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
-#'                sample.subfacet = c("ASP", "OPL", "SMR"),
+#'                chr = "chr", chr.subfacet = "groupIX",
+#'                sample.subfacet = "ASP",
 #'                significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
-#'
-#' # plot FST for the ASP/PAL comparison across all chromosomes,
+#' 
+#' # plot FST for the ASP/SMR comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
+#' # Note that since this is thie ony comparison, we don't actually need to
+#' # specify it.
 #' plot_manhattan(x, "fst", facets = "pop.chr",
-#'                sample.subfacet = "ASP~PAL", highlight = 1:20,
+#'                sample.subfacet = "ASP~SMR", highlight = 1:10,
 #'                chr = "chr", snp = ".snp.id")$plot
-#'
-#' # plot sliding-window FST between ASP and CLF
+#' 
+#' # plot sliding-window FST between ASP and SMR
 #' # and between OPL and SMR
 #' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
-#'                chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+#'                chr = "chr", sample.subfacet = "ASP~SMR",
 #'                significant = .29, suggestive = .2)$plot
-#'
+#' 
 #' # plot using a data.frame,
 #' # using log-transformed p-values
 #' ## grab data
@@ -995,19 +1328,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' 
 #' 
 #' # plot with a rug
-#' rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+#' rug_data <- data.frame(chr = c("groupIX", "groupIV"), start = c(0, 1000000),
 #'                        end = c(5000000, 6000000), gene = c("A", "B"))
-#'                        
+#' 
 #' # point style, midpoints plotted
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data)
-#'                
+#' 
 #' # ribbon style
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
-#' 
-#' # with labels that are visible by examining with plotly!
-#' # not run to avoid pltoly dependancy
+#'                
+#' # with plotly to mouse over information
 #' \dontrun{
 #' plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                                 log.p = TRUE, rug_data = rug_data, 
@@ -1029,10 +1361,11 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_label = NULL,
                            rug_alpha = 0.3,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+                           lambda_gc_correction = FALSE,
                            chr_order = NULL,
                            abbreviate_labels = FALSE){
 
-  cum.bp <- cum.start <- cum.end <- y <- NULL
+  cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
   
   #=============sanity checks==============================
   msg <- character()
@@ -1131,7 +1464,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     else if(plot_var %in% colnames(x@pairwise.stats)){
       if(window){
         stats <- .get.snpR.stats(x, facets, "pairwise.window")
-        colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
+        if(!chr %in% colnames(stats)){
+          colnames(stats)[which(colnames(stats) == "snp.subfacet")] <- chr
+        }
       }
       else{
         stats <- .get.snpR.stats(x, facets, "pairwise")
@@ -1194,7 +1529,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   #================ask user to pick option if window and multiple schemes======
   if(window){
-    opts <- unique(stats[,c("sigma", "step", "nk.status")])
+    opts <- unique(stats[,c("sigma", "step", "nk.status", "gaussian", "triple_sigma")])
     if(nrow(opts) > 1){
       message("Multiple window schemes detected.\n")
       
@@ -1275,6 +1610,26 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #=============clean up==================
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
+  
+  # lambda gc correction for pop structure, etc.
+  if(lambda_gc_correction){
+    .q <- .lam <- pvar <- NULL
+    stats <- data.table::as.data.table(stats)
+    stats[,.q := stats::qchisq(1-pvar,1)]
+    
+    # lam will differ depending on grouping by pops.
+    if(length(unique(as.character(stats$subfacet))) > 1){
+      subfacet <- NULL
+      stats[,.lam := stats::median(.q)/stats::qchisq(0.5,1), by = subfacet]
+    }
+    else{
+      stats[,.lam := stats::median(.q)/stats::qchisq(0.5,1)]
+    }
+    
+    stats[,pvar := stats::pchisq(.q/.lam, 1, lower.tail = FALSE)]
+    
+  }
+  
   if(log.p){
     stats$pvar <- -log10(stats$pvar)
     if(!is.null(significant)){
@@ -1403,18 +1758,36 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   
   # rug
   if(!is.null(rug_data)){
-    
+
     # standard rug style
     if(rug_style == "point"){
       # note: labels aren't plotted because they tend to be very messy, so they are returned as an unplotted aesthetic for plotly use!
       if(!is.null(rug_label)){
+        ochr <- chr
+        orl <- rug_label
+        obp <- bp
+        
+        chr <- ggplot2::sym(chr)
+        rug_label <- ggplot2::sym(rug_label)
+        bp <- ggplot2::sym(bp)
+        
         .suppress_specific_warning(p <- p + ggplot2::geom_rug(data = rug_data, 
-                                                              mapping = ggplot2::aes_string(label = rug_label, position = bp, color = chr),
+                                                              mapping = ggplot2::aes(label = rug_label, position = bp, color = chr),
                                                               length = rug_thickness),
                                    "Ignoring unknown aesthetics")
+        
+        chr <- ochr
+        rug_label <- orl
+        bp <- obp
       }
       else{
-        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes_string(color = chr))
+        ochr <- chr
+        
+        chr <- ggplot2::sym(chr)
+        
+        p <- p + ggplot2::geom_rug(data = rug_data, ggplot2::aes(color = chr))
+        
+        chr <- ochr
       }
     }
     
@@ -1435,24 +1808,40 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       
 
       if(!is.null(rug_label)){
+        orl <- rug_label
+        ochr <- chr
+        
+        rug_label <- ggplot2::sym(rug_label)
+        chr <- ggplot2::sym(chr)
+        
+        
         .suppress_specific_warning(
           p <- p + ggplot2::geom_segment(data = rug_data, 
-                                         mapping = ggplot2::aes_string(x = "cum.start", 
-                                                                       xend = "cum.end", 
-                                                                       y = "y",
-                                                                       yend = "y", 
-                                                                       label = rug_label,
-                                                                       start_position = "start",
-                                                                       end_position = "end",
-                                                                       color = chr),
-                                         size = rug_thickness), 
+                                         mapping = ggplot2::aes(x = cum.start, 
+                                                                xend = cum.end, 
+                                                                y = y,
+                                                                yend = y, 
+                                                                label = rug_label,
+                                                                start_position = start,
+                                                                end_position = end,
+                                                                color = chr),
+                                         linewidth = rug_thickness), 
           "Ignoring unknown aesthetics")
+        
+        chr <- ochr
+        rug_label <- orl
         
       }
       else{
+        ochr <- chr
+        
+        chr <- ggplot2::sym(chr)
+        
         p <- p + ggplot2::geom_segment(data = rug_data, 
-                                       mapping = ggplot2::aes_string(x = "cum.start", xend = "cum.end", y = "y", yend = "y", color = chr),
-                                       size = rug_thickness)
+                                       mapping = ggplot2::aes(x = cum.start, xend = cum.end, y = y, yend = y, color = chr),
+                                       linewidth = rug_thickness)
+        
+        chr <- ochr
       }
     }
   }
@@ -1474,7 +1863,13 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #'   refer to the column name directly.
 #' @param facets character, default NULL. Facets by which to split the plot. See
 #'   \code{\link{Facets_in_snpR}}.
+#' @param lambda_gc_correction Correct for inflated significance due to
+#'   population and/or family structure using the \eqn{\gamma_{GC}} approach
+#'   described in Price et al 2010.
 #'
+#' @references Price, A., Zaitlen, N., Reich, D. et al. New approaches to
+#'   population stratification in genome-wide association studies. Nat Rev Genet
+#'   11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 #'
 #' @export
 #' 
@@ -1505,7 +1900,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 #' colnames(z)[1] <- "pop"
 #' p <- plot_qq(z, "p_armitage_phenotype", "pop")
 #' }
-plot_qq <- function(x, plot_var, facets = NULL){
+plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
   #=============sanity checks and prep============
   msg <- character(0)
   
@@ -1596,6 +1991,15 @@ plot_qq <- function(x, plot_var, facets = NULL){
       tstats <- stats
     }
     
+    # lambda correction
+    if(lambda_gc_correction){
+      .q <- .lam <- NULL
+      
+      tstats[,.q := stats::qchisq(1-.p,1)]
+      tstats[,.lam := stats::median(.q)/stats::qchisq(0.5,1), by = c(split.facet.part)]
+      tstats[,.p := stats::pchisq(.q/.lam, 1, lower.tail = FALSE)]
+      
+    }
     
     # get the x axis
     tstats[,.o := -log10(sort(.p)), by = c(split.facet.part)]
@@ -2789,7 +3193,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                        paste0("#define GENSBACK ", gens_back),
                        paste0("#define MIGRPRIOR ", mig_prior),
                        "#define PFROMPOPFLAGONLY 0",
-                       "#define LOCISPOP 1",
+                       paste0("#define LOCISPOP ", ifelse(is.null(facet), 0, 1)),
                        paste0("#define LOCPRIORINIT ", locprior_init_r),
                        paste0("#define MAXLOCPRIOR ", locprior_max_r),
                        "#define PRINTNET     1",
@@ -3076,7 +3480,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     seps[1] <- -.5
     p <- p +
       ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
-      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, size = separator_thickness) +
+      ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, linewidth = separator_thickness) +
       ggplot2::xlab(label = facet[1])
   }
   else{

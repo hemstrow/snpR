@@ -9,9 +9,8 @@
 #'
 #' @export
 is.snpRdata <- function(x){
-  return("snpRdata" %in% class(x))
+  return(methods::is(x, "snpRdata"))
 }
-
 
 # Add facets to snpRdata objects
 # 
@@ -70,8 +69,8 @@ is.snpRdata <- function(x){
   # For snp facets, nothing to do here besides add them to the facet list and facet type list.
   # For complex facets, prep summary tables for the sample facet portion if they don't exist and add to facet list.
   added.facets <- character(0)
-  oac <- cbind(data.table::as.data.table(x@facet.meta[,c("facet", "subfacet", ".snp.id")]),
-               data.table::as.data.table(x@ac)) # grab original ac with meta for later
+  # oac <- cbind(data.table::as.data.table(x@facet.meta[,c("facet", "subfacet", ".snp.id")]),
+  #              data.table::as.data.table(x@ac)) # grab original ac with meta for later
   for(k in 1:length(facet.list)){
     facets <- facet.list[[k]] # column levels for this facet.
     #=========================figure out unique levels for the facet==========
@@ -142,13 +141,15 @@ is.snpRdata <- function(x){
     x@geno.tables <- gs
   }
   # add and sort ac formated data.
-  .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
-  nac <- data.table::as.data.table(nac)
-  nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
-  nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
-  nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
-  nac <- as.data.frame(nac)
-  x@ac <- nac[,-c(1:3)]
+  # if(.is.bi_allelic(x)){
+  #   .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
+  #   nac <- data.table::as.data.table(nac)
+  #   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
+  #   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
+  #   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
+  #   nac <- as.data.frame(nac)
+  #   x@ac <- nac[,-c(1:3)]
+  # }
   
   # add in dummy rows to stats
   sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
@@ -190,7 +191,7 @@ is.snpRdata <- function(x){
 #
 # \itemize{ \item{gs: } genotype tables \item{ac: } ac formatted data
 # \item{meta.gs: } facet, .snp.id metadata cbound genotype tables.
-# \item{ac.stats: } ac data cbound to stats \item{meta.ac: } ac data cbound to
+# \item{ac.stats: } ac data cbound to stats \item{meta.as: } as data cbound to
 # snp metadata. \item{snpRdata: } subset snpRdata object. }
 #
 # case:
@@ -264,7 +265,7 @@ is.snpRdata <- function(x){
       # return
       return(out)
     }
-    else if(req == "ac"){ # really simple, just here for consistancy across functions. you just... run it on the thing.
+    else if(req == "ac"){
       # subset
       ac <- x@ac[x@facet.meta$facet %in% facets,]
       
@@ -278,7 +279,7 @@ is.snpRdata <- function(x){
       return(out)
     }
     else if(req == "cast.gs" | req == "cast.ac"){
-      
+
       # need to split by phenotype + facet
       pheno.facets <- paste(facets, response, sep = ".")
       
@@ -300,12 +301,13 @@ is.snpRdata <- function(x){
         gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
       }
       else{
-        gs <- data.table::as.data.table(cbind(x@facet.meta, x@ac[, c("ni1", "ni2")]))
+        gs <- format_snps(x, "ac", pheno.facets)
+        gs <- gs[,-which(colnames(gs) %in% c("n_total", "n_alleles"))]
       }
       
       # initialize outputs
       comb <- vector("list", length = length(facets))
-      
+
       # get the input gs data. Split by facet, since we need to extract metadata differently for each.
       for(i in 1:length(facets)){
 
@@ -337,6 +339,17 @@ is.snpRdata <- function(x){
         comb[[i]] <- data.table::dcast(data.table::setDT(tgs), .snp.id + subfacet ~ phenotype, value.var = value.vars, fun.aggregate = sum)
         comb[[i]] <- merge(tgs[tgs$phenotype == unique(tgs$phenotype)[1],1:which(colnames(tgs) == ".snp.id")], comb[[i]], by = c(".snp.id", "subfacet"), all.y = T)
         
+        # levels where there is no case/no control
+        if(any(is.na(comb[[i]]$facet))){
+          ..target_cols <- NULL
+          fill <- merge(comb[[i]][is.na(comb[[i]]$facet),c(".snp.id", "subfacet")],
+                        tgs[tgs$phenotype == unique(tgs$phenotype),1:which(colnames(tgs) == ".snp.id")],
+                        by = c(".snp.id", "subfacet"), all.x = TRUE)
+          target_cols <- c("subfacet", "facet", "facet.type", 
+                           colnames(comb[[i]])[which(colnames(comb[[i]]) %in% colnames(snp.meta(x)) & colnames(comb[[i]]) != ".snp.id")])
+          data.table::set(comb[[i]], which(is.na(comb[[i]]$facet)), target_cols,
+                          .fix..call(fill[,..target_cols]))
+        }
         
         comb[[i]]$facet <- facets[i]
       }
@@ -535,7 +548,7 @@ is.snpRdata <- function(x){
     
   }
   else if(case == "ps.pf.psf"){
-    if(req == "meta.ac" | req == "pos.all.stats"){
+    if(req == "pos.all.stats" | req == "meta.as"){
       x@facet.meta$facet <- as.character(x@facet.meta$facet)
       x@facet.meta$subfacet <- as.character(x@facet.meta$subfacet)
       
@@ -567,7 +580,7 @@ is.snpRdata <- function(x){
         
         # run the function and create a snp res metadata df to bind to the results.
         # assign("last.warning", NULL, envir = baseenv())
-        res <- fun(cbind(meta[run.lines,], stats_to_use[run.lines,]), ...)
+        res <- fun(cbind(meta[run.lines,,drop = FALSE], stats_to_use[run.lines,,drop = FALSE]), ...)
         
         # return
         if(nrow(res) == 1){
@@ -585,9 +598,9 @@ is.snpRdata <- function(x){
       }
       
       
-      # get the statistics needed by the function and the task list. For now, expects only meta cbound to ac or snp-wise statistics.
-      if(req == "meta.ac"){
-        stats_to_use <- x@ac
+      # get the statistics needed by the function and the task list. For now, expects only meta cbound to as or snp-wise statistics.
+      if(req == "meta.as"){
+        stats_to_use <- x@geno.tables$as
         task.list <- .get.task.list(x, facets)
         meta.to.use <- x@facet.meta
       }
@@ -746,7 +759,7 @@ is.snpRdata <- function(x){
       stat.col <- (which(colnames(out) == "stat"))
       out <- out[,c((1:ncol(out))[-stat.col], stat.col)]
       meta <- out[,-ncol(out)]
-      meta[is.na(meta)] <- ".base"
+      meta[,c("facet", "subfacet", "snp.facet", "snp.subfacet")][is.na(meta[,c("facet", "subfacet", "snp.facet", "snp.subfacet")])] <- ".base"
       out[,1:(ncol(out) - 1)] <- meta
       return(out)
     }
@@ -815,13 +828,13 @@ is.snpRdata <- function(x){
   }
   else if(type == "window.stats"){
     # merge and return
-    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "snp.facet", "snp.subfacet", "step", "gaussian", "nk.status", "n_snps", "triple_sigma")
     starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
     n.s <- .smart.merge(stats, x@window.stats, meta.cols, starter.meta)
     x@window.stats <- n.s
   }
   else if(type == "pairwise.window.stats"){
-    meta.cols <- c("facet", "subfacet", "position", "sigma", "n_snps", "snp.facet", "snp.subfacet", "step", "nk.status", colnames(x@snp.meta))
+    meta.cols <- c("facet", "subfacet", "position", "sigma", "snp.facet", "snp.subfacet", "step", "gaussian", "nk.status", "n_snps", "triple_sigma")
     starter.meta <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position")
     n.s <- .smart.merge(stats, x@pairwise.window.stats, meta.cols, starter.meta)
     x@pairwise.window.stats <- n.s
@@ -1045,7 +1058,7 @@ is.snpRdata <- function(x){
   if(any(facets == "all")){
     facets <- x@facets
   }
-  if(is.null(facets) | isFALSE(facets)){
+  if(is.null(facets) | isFALSE(facets) | length(facets) == 0){
     facets <- ".base"
     if(return.type){
       return(list(facets, ".base"))
@@ -1117,6 +1130,33 @@ is.snpRdata <- function(x){
         facet.types[i] <- "snp"
       }
     }
+    
+    # check for bad characters in our facet level (slows things down a small bit, but avoids user errors that are uninformative)
+    bad.chars <- c("\\.", "\\~", " ")
+    bad.chars.rep <- c("'.'", "'~'", "' ' (spaces)")
+    for(j in 1:length(facets[[i]])){
+      if(facets[[i]][j] %in% colnames(x@snp.meta)){
+        bad <- lapply(bad.chars, function(y) any(grepl(y, x@snp.meta[,facets[[i]][j]])))
+      }
+      else if(facets[[i]][j] %in% colnames(x@sample.meta)){
+        bad <- lapply(bad.chars, function(y) any(grepl(y, x@sample.meta[,facets[[i]][j]])))
+      }
+      else if(facets[[i]][j] == ".base"){
+        next
+      }
+      else{
+        # if the facet doesn't exit, an error will pop up later
+        next
+      }
+      
+      bad <- which(unlist(bad))
+      if(length(bad) > 0){stop(paste0("Facet '", 
+                                      facets[[i]][j], 
+                                      "' cannot be used as a facet level since it contains: \n\t", 
+                                      paste0(bad.chars.rep[bad], collapse = "\n\t ")))}
+    }
+    
+    # update
     facets[[i]] <- paste(facets[[i]], collapse = ".")
   }
   
@@ -1152,7 +1192,6 @@ is.snpRdata <- function(x){
     }
   }
   
-  
   # fix the facet type for .base
   if(return.type){
     base.facets <- which(facet.types == "")
@@ -1161,12 +1200,14 @@ is.snpRdata <- function(x){
     }
   }
   
-  # remove duplicates and return
+  # remove duplicates
   dups <- duplicated(facets)
   if(any(dups)){
     facets <- facets[-which(dups)]
     facet.types <- facet.types[-which(dups)]
   }
+
+  # return
   if(return.type){
     return(list(unlist(facets), facet.types))
   }
@@ -1195,6 +1236,79 @@ is.snpRdata <- function(x){
 # 
 .tabulate_genotypes <- function(x, mDat, verbose = F){
   ..all_idents <- ..rm_cols <- NULL
+  
+  .tab_func <- function(x, snp_form, mDat){
+    x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
+    
+    gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
+    gmat <- gmat[,-1]
+    
+    # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
+    opts <- colnames(gmat)
+    opts1 <- substr(opts, 1, snp_form/2)
+    opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
+    rev_opts <- paste0(opts2, opts1)
+    reps <- which(opts %in% rev_opts & opts1 != opts2)
+    if(length(reps) > 0){
+      done <- character()
+      rm_cols <- numeric()
+      for(i in 1:length(reps)){
+        this_opt <- reps[i]
+        if(opts[this_opt] %in% done){next}
+        match <- which(rev_opts == opts[this_opt])
+        all_idents <- c(this_opt, match)
+        gmat[[this_opt]] <- .fix..call(rowSums(gmat[,..all_idents]))
+        done <- c(done, unique(opts[all_idents]))
+        rm_cols <- c(rm_cols, all_idents[-1])
+      }
+      
+      gmat <- .fix..call(gmat[,-..rm_cols])
+    }
+    
+    # remove missing
+    mis.cols <- -which(colnames(gmat) == mDat)
+    if(length(mis.cols) > 0){
+      tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
+    }
+    else{
+      tmat <- gmat
+    }
+    
+    #get matrix of allele counts
+    #initialize
+    hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
+    if(verbose){cat("Getting allele table...\n")}
+    split_pattern <- paste0("(?<=", paste0(rep(".", snp_form/2), collapse = ""), ")") # split by the correct allele size
+    as <- unique(unlist(strsplit(paste0(colnames(tmat)), split_pattern, perl = TRUE)))
+    amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
+    colnames(amat) <- as
+    
+    #fill in
+    for(i in 1:length(as)){
+      b <- grep(paste0(as[i], "$"), colnames(tmat))
+      b <- sort(unique(c(b, grep(paste0("^", as[i]), colnames(tmat)))))
+      hom <- which(colnames(tmat) == paste0(as[i], as[i]))
+      if(length(hom) == 0){
+        het <- b
+        set(amat, j = i, value = rowSums(tmat[,het, with = FALSE]))
+      }
+      else{
+        het <- b[b != hom]
+        if(length(het) > 0){
+          if(data.table::is.data.table(tmat[,het, with = FALSE])){
+            set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2) + rowSums(tmat[,het, with = FALSE]))
+          }
+          else{
+            amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
+          }
+        }
+        else{
+          set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2))
+        }
+      }
+    }
+    return(list(gs = tmat, as = amat, wm = gmat))
+  }
 
   # fix for if x is a vector (only one individual) and convert to data.table
   if(!is.data.frame(x)){
@@ -1203,76 +1317,53 @@ is.snpRdata <- function(x){
   x <- data.table::setDT(x)
   
   
+  
+  
   # get a genotype table
   snp_form <- nchar(x[1,1])   # get information on data format
-  x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
   
-  gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
-  gmat <- gmat[,-1]
   
-  # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
-  opts <- colnames(gmat)
-  opts1 <- substr(opts, 1, snp_form/2)
-  opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
-  rev_opts <- paste0(opts2, opts1)
-  reps <- which(opts %in% rev_opts & opts1 != opts2)
-  if(length(reps) > 0){
-    done <- character()
-    rm_cols <- numeric()
-    for(i in 1:length(reps)){
-      this_opt <- reps[i]
-      if(opts[this_opt] %in% done){next}
-      match <- which(rev_opts == opts[this_opt])
-      all_idents <- c(this_opt, match)
-      gmat[[this_opt]] <- rowSums(gmat[,..all_idents])
-      done <- c(done, unique(opts[all_idents]))
-      rm_cols <- c(rm_cols, all_idents[-1])
-    }
+  # loop to save memory if large
+  max_rows <- 100000000 # about 1.5G of storage for the big melt
+  max_snps <- ceiling(max_rows/ncol(x)) # max snps tolerable at once
+  n_iters <- ceiling(nrow(x)/max_snps)
+  titer <- 1
+  
+  # for each set of snps, get the weighted values and weights for all relevent windows.
+  geno.tables <- vector("list", n_iters)
+  for(i in 1:n_iters){
+    end <- i*max_snps
+    end <- ifelse(end > nrow(x), nrow(x), end)
+    trows <- titer:end
     
-    gmat <- gmat[,-..rm_cols]
+    
+    geno.tables[[i]] <- .tab_func(x[trows,], snp_form, mDat)
+
+    titer <- i*max_snps+ 1
   }
   
-  # remove missing
-  mis.cols <- -which(colnames(gmat) == mDat)
-  if(length(mis.cols) > 0){
-    tmat <- gmat[,mis.cols, with = FALSE] # remove missing data
+  gs <- purrr::map(geno.tables, "gs")
+  as <- purrr::map(geno.tables, "as")
+  wm <- purrr::map(geno.tables, "wm")
+  
+  gs <- as.matrix(data.table::rbindlist(gs, fill = TRUE))
+  as <- as.matrix(data.table::rbindlist(as, fill = TRUE))
+  wm <- as.matrix(data.table::rbindlist(wm, fill = TRUE))
+  if(any(colnames(wm) == mDat)){
+    wm <- wm[,mDat,drop=FALSE]
   }
   else{
-    tmat <- gmat
+    wm <- matrix(0, nrow = nrow(gs), 1)
+    colnames(wm) <- mDat
   }
   
-  #get matrix of allele counts
-  #initialize
-  hs <- substr(colnames(tmat),1,snp_form/2) != substr(colnames(tmat), (snp_form/2 + 1), snp_form*2) # identify heterozygotes.
-  if(verbose){cat("Getting allele table...\n")}
-  as <- unique(unlist(strsplit(paste0(colnames(tmat)), "")))
-  amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
-  colnames(amat) <- as
   
-  #fill in
-  for(i in 1:length(as)){
-    b <- grep(as[i], colnames(tmat))
-    hom <- which(colnames(tmat) == paste0(as[i], as[i]))
-    if(length(hom) == 0){
-      het <- b
-      set(amat, j = i, value = rowSums(tmat[,het, with = FALSE]))
-    }
-    else{
-      het <- b[b != hom]
-      if(length(het) > 0){
-        if(data.table::is.data.table(tmat[,het, with = FALSE])){
-          set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2) + rowSums(tmat[,het, with = FALSE]))
-        }
-        else{
-          amat[,i] <- (tmat[,hom] * 2) + tmat[,het]
-        }
-      }
-      else{
-        set(amat, j = i, value = (tmat[,hom, with = FALSE] * 2))
-      }
-    }
-  }
-  return(list(gs = as.matrix(tmat), as = as.matrix(amat), wm = as.matrix(gmat)))
+  gs[is.na(gs)] <- 0
+  as[is.na(as)] <- 0
+  wm[is.na(wm)] <- 0
+  
+  return(list(gs = gs, as = as, wm = wm))
+  
 }
 
 
@@ -1320,7 +1411,7 @@ is.snpRdata <- function(x){
   if(!method %in% c("bernoulli", "af", "iPCA")){
     stop("Unaccepted interpolation method. Accepted methods: bernoulli, af, IPCA.\n")
   }
-  
+
   if(method %in% c("bernoulli", "af")){
     # find allele frequencies
     sn <- as.matrix(sn)
@@ -1426,8 +1517,8 @@ is.snpRdata <- function(x){
     if(sigma >= 500 | sigma >= 500){
       warn.msg <- c(warn.msg, "Sigma and/or ws are larger than typically expected. Reminder: sigma and ws are given in kilobases!")
     }
-    else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
+    else if(sigma <= 10){
+      warn.msg <- c(warn.msg, paste0("Sigma is smaller that typically expected: ", sigma, " kb!"))
     }
   }
   else{
@@ -1437,8 +1528,8 @@ is.snpRdata <- function(x){
     if(sigma >= 500){
       warn.msg <- c(warn.msg, "Sigma is larger than typically expected. Reminder: sigma is given in kilobases!")
     }
-    else if(sigma <= 50){
-      warn.msg <- c(warn.msg, paste0("Provided sigma is very small: ", sigma, " kb!"))
+    else if(sigma <= 10){
+      warn.msg <- c(warn.msg, paste0("Sigma is smaller that typically expected: ", sigma, " kb!"))
     }
   }
   
@@ -2267,7 +2358,7 @@ is.snpRdata <- function(x){
 #
 # @return A vector of the filenames for the new datasets.
 .maf_func <- function(gs, m.al, ref = NULL){
-  
+
   maj_count <- NULL
   
   # for the base facet, determine the major and minor then calculate maf
@@ -2342,10 +2433,10 @@ is.snpRdata <- function(x){
 # @param gs @geno.tables part of a snpRdata object
 # 
 # @return a vector of observed heterozygosity
-.ho_func <- function(gs){
+.ho_func <- function(gs, snp_form){
   #identify heterozygote rows in genotype matrix
   genos <- colnames(gs$gs)
-  hets <- which(substr(genos, 1, 1) != substr(genos, 2,2))
+  hets <- which(substr(genos, 1, snp_form/2) != substr(genos, (snp_form/2) + 1, snp_form))
   
   # calculate ho
   ## if only one heterozygote...
@@ -2442,7 +2533,7 @@ is.snpRdata <- function(x){
 .boot_ac <- function(x, n, facet){
   ..tm <- NULL
 
-  # function to conver the output of .maf_func into ac
+  # function to convert the output of .maf_func into ac
   maf.to.ac <- function(maf){
     ac <- data.table::data.table(n_total = maf$maj.count + maf$min.count,
                                  n_alleles = rowSums(maf[,c("maj.count", "min.count")] != 0),
@@ -2492,6 +2583,76 @@ is.snpRdata <- function(x){
   return(out)
 }
 
+# Generate random bootstraps in as format
+# 
+# @param x snpRdata object to permute
+# @param n numeric, number of bootstrapped datasets to generate.
+# @param facet sample level facet to permute within
+#
+# @return A list containing permuted ac data.
+.boot_as <- function(x, n, facet, ret_gs = FALSE){
+  ..tm <- ..ord <-  NULL
+  
+  out <- vector("list", n)
+  opts <- .get.task.list(x, facet)
+  for(i in 1:n){
+    
+    # get the maf identities for the base facet
+    shuff <- genotypes(x)[,sample(ncol(x), ncol(x), replace = TRUE)]
+    shuff <- data.table::as.data.table(shuff)
+    colnames(shuff) <- colnames(genotypes(x))
+    tas <- vector("list", nrow(opts))
+    
+    # do for each facet level.
+    for(j in 1:nrow(opts)){
+      tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
+      ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
+      tas[[j]] <- data.table::as.data.table(ttab$as)
+      
+      # fix missing columns (no genotypes with this allele in this subfacet)
+      missing <- which(!colnames(x@geno.tables$as) %in% colnames(tas[[j]]))
+      if(length(missing) != 0){
+        fill <- matrix(0, nrow(tas[[j]]), length(missing))
+        fill <- as.data.table(fill)
+        colnames(fill) <- colnames(x@geno.tables$as)[missing]
+        tas[[j]] <- cbind(tas[[j]], fill)
+        ord <- colnames(x@geno.tables$as)
+        tas[[j]] <- .fix..call(tas[[j]][,..ord])
+      }
+      
+      if(ret_gs){
+        gst <- as.data.table(ttab$gs)
+
+        # fix missing columns (no genotypes with this allele in this subfacet)
+        missing <- which(!colnames(x@geno.tables$gs) %in% colnames(gst))
+        if(length(missing) != 0){
+          fill <- matrix(0, nrow(gst), length(missing))
+          fill <- as.data.table(fill)
+          colnames(fill) <- colnames(x@geno.tables$gs)[missing]
+          gst <- cbind(gst, fill)
+          ord <- colnames(x@geno.tables$gs)
+          gst<- .fix..call(gst[,..ord])
+        }
+        
+        tas[[j]] <- cbind(tas[[j]], gst)
+      }
+      
+      tas[[j]]$ho <- .ho_func(ttab, x@snp.form)
+      tas[[j]]$.snp.id <- x@snp.meta$.snp.id
+      tas[[j]]$subfacet <- opts[j,2]
+      tas[[j]]$facet <- facet
+      
+    }
+    tas <- data.table::rbindlist(tas)
+    tas[is.na(tas)] <- 0
+    ord <- c((ncol(tas) - 3):ncol(tas), 1:(ncol(tas) - 4))
+    out[[i]] <- .fix..call(tas[,..ord])
+    out[[i]] <- .suppress_specific_warning(cbind(snp.meta(x)[which(colnames(snp.meta(x)) != ".snp.id"),,drop=FALSE], out[[i]]), "row names were found from a short variable")
+  }
+  
+  return(out)
+}
+
 
 # variance components for fst, etc
 # @param intot number of genotypes in pop 1
@@ -2526,9 +2687,10 @@ is.snpRdata <- function(x){
   b <- (nbar/(nbar-1))*(inner1 - inner2 - inner4)
   c <- .5*hbar
   
-  # browser()
-  # write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "fis_temp2.txt")
-
+  # # browser()
+  # if(.print){
+  #   write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
+  # }
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same
@@ -2678,3 +2840,51 @@ is.snpRdata <- function(x){
 }
 
 .quick_grab_cite <- function(cite) paste0(utils::capture.output(cite), collapse = "")
+
+.par_checker <- function(par, ret_1_on_FALSE = FALSE){
+  if(!isFALSE(par)){
+    if(is.numeric(par)){
+      if(par != floor(par)){
+        stop("par must be an integer.\n")
+      }
+      cor_avail <- parallel::detectCores()
+      if(par > cor_avail){
+        par <- cor_avail
+      }
+    }
+    else{
+      stop("par must be a numeric value or FALSE.\n")
+    }
+  }
+  else{
+    if(ret_1_on_FALSE){
+      par <- 1
+    }
+  }
+  
+  return(par)
+}
+
+.is.bi_allelic <- function(x){
+  r <- try(x@bi_allelic, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    return(TRUE)
+  }
+  else{
+    return(x@bi_allelic)
+  }
+}
+
+.ploidy <- function(x){
+  r <- try(x@ploidy, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    return(2)
+  }
+  else{
+    return(x@ploidy)
+  }
+}
+
+.console_hline <- function(char = "="){
+  return(paste0(rep(char, getOption("width")), collapse = ""))
+}

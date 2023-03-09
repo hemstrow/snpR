@@ -23,6 +23,7 @@ format_snps(
   chr = "chr",
   position = "position",
   phenotype = "phenotype",
+  plink_recode_numeric = FALSE,
   verbose = FALSE
 )
 }
@@ -42,8 +43,8 @@ outputs. How many random loci should be selected? Can either be an integer
 or a numeric vector of loci to use.}
 
 \item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
-"sn" format, notes the interpolation method to be used to fill missing data.
-Options are "bernoulli", "af", "iPCA", or FALSE. See details.}
+"sn" or "pa" format, notes the interpolation method to be used to fill
+missing data. Options are "bernoulli", "af", "iPCA", or FALSE. See details.}
 
 \item{outfile}{character vector, default FALSE. If a file path is provided, a
 copy of the output will be saved to that location. For some output styles,
@@ -51,10 +52,10 @@ such as genepop, additional lines will be added to the output to allow them
 to be immediately run on commonly used programs.}
 
 \item{ped}{data.frame default NULL. Optional argument for the "plink" output
-format. A six column data frame containing Family ID, Individual ID, Paternal
-ID, Maternal ID, Sex, and Phenotype and one row per sample. If provided,
-outputs will contain information contained in ped. See plink documentation
-for more details.}
+format. A six column data frame containing Family ID, Individual ID,
+Paternal ID, Maternal ID, Sex, and Phenotype and one row per sample. If
+provided, outputs will contain information contained in ped. See plink
+documentation for more details.}
 
 \item{input_format}{Character, default NULL. Format of x, by default a
 snpRdata object. See description for details.}
@@ -96,6 +97,11 @@ position information, for VCF output.}
 
 \item{phenotype}{character, default "phenotype". Optional name of column
 containing phenotype information, for plink! output.}
+
+\item{plink_recode_numeric}{Logical, default FALSE. If FALSE, all chrs/scaffs
+will be renamed to numbers. This may be useful in some cases. If this is
+FALSE, chromosome names will be checked for leading numbers and replaced
+with a corresponding letter (0 becomes A, 1 becomes B, and so on).}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}

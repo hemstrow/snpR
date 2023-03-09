@@ -4,7 +4,7 @@
 \alias{plot_qq}
 \title{Generate qq plots from p values}
 \usage{
-plot_qq(x, plot_var, facets = NULL)
+plot_qq(x, plot_var, facets = NULL, lambda_gc_correction = FALSE)
 }
 \arguments{
 \item{x}{snpRdata object or data.frame containing p-values to plot.}
@@ -16,6 +16,10 @@ refer to the column name directly.}
 
 \item{facets}{character, default NULL. Facets by which to split the plot. See
 \code{\link{Facets_in_snpR}}.}
+
+\item{lambda_gc_correction}{Correct for inflated significance due to
+population and/or family structure using the \eqn{\gamma_{GC}} approach
+described in Price et al 2010.}
 }
 \description{
 Generate qq (quantile-quantile) plots for p-values, splitting by provided
@@ -47,6 +51,11 @@ z <- z[,c(1, 5)]
 colnames(z)[1] <- "pop"
 p <- plot_qq(z, "p_armitage_phenotype", "pop")
 }
+}
+\references{
+Price, A., Zaitlen, N., Reich, D. et al. New approaches to
+  population stratification in genome-wide association studies. Nat Rev Genet
+  11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 }
 \author{
 William Hemstrom

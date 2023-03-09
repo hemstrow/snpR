@@ -1,9 +1,10 @@
-citHeader("To cite snpR, use:")
+citHeader("To cite snpR, use the following. Note that you can also use the 'citations()' function to fetch and export all of the citations used in a single 'snpRdata' object.")
 
 bibentry(bibtype = "Article",
          title = "snpR: user friendly population genomics for SNP datasets with categorical metadata",
          author = c(person("William", "Hemstrom"),
                     person("Melissa", "Jones")),
-         year = 2021,
-         journal = "Authorea"
+         year = 2022,
+         journal = "Molecular Ecology Resources",
+         doi = "https://doi.org/10.1111/1755-0998.13721"
 )

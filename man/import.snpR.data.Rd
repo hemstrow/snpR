@@ -43,7 +43,7 @@ for each chromosome in order.}
 \emph{genotype} file name is passed that is not a vcf or ms file.}
 
 \item{header_cols}{numeric, default 0. Number of header columns containing
-sample metadata. Used if a tab delimited or STRUCTURE input file is
+SNP metadata. Used if a tab delimited or STRUCTURE input file is
 provided.}
 
 \item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
@@ -150,8 +150,7 @@ file extension (as appropriate).
  \item{mDat: } missing data format. \item{snp.form: } number of characters
  per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
  allele counts (as), and missing data (wm). facet.meta contains the
- corresponding metadata. \item{ac: } data in allele count format, used
- internally. facet.meta contains corresponding metadata. \item{facets: }
+ corresponding metadata. \item{facets: }
  vector of the facets that have been added to the data. \item{facet.type: }
  classes of the added facets (snp, sample, complex, or .base). \item{stats: }
  data.frame containing all calculated non-pairwise single-snp statistics and
@@ -172,7 +171,7 @@ file extension (as appropriate).
  distance data. \item{names: } column names for genotypes. \item{row.names: }
  row names for genotypes. \item{.Data: } list of vectors containing raw
  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
-
+ 
  Note that most of these slots are used primarily internally.
 
  All calculated data can be accessed using the \code{\link{get.snpR.stats}}

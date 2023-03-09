@@ -32,6 +32,7 @@ test_that("files",{
 })
 
 test_that("vcf", {
+  skip_if_not_installed("vcfR")
   format_snps(stickSNPs, output = "vcf", outfile = "test.vcf")
   
   expect_warning(.make_it_quiet(check <- import.snpR.data("test.vcf")), "sample metadata columns contain unacceptable special characters")
@@ -70,4 +71,11 @@ test_that("structure",{
                                                      rows_per_individual = 2, header_cols = 1)))
   
   file.remove("test.str")
+})
+
+test_that("non-biallelic",{
+  td <- read_non_biallelic(genotypes(steelMSATs), sample.meta = sample.meta(steelMSATs))
+  expect_true(is.snpRdata(td))
+  expect_false(.is.bi_allelic(td))
+  expect_equivalent(td, steelMSATs)
 })

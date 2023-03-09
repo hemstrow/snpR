@@ -23,20 +23,22 @@ setMethod("show", "snpRdata", function(object) {
   
   mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
   
-  cat(methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
-      "==============================================\n",
+  bi_allelic <- .is.bi_allelic(object)
+  
+  cat(ifelse(bi_allelic, "bi-allelic", "non bi-allelic"), methods::is(object)[1], "with", nrow(object), "SNPs and", ncol(object), "samples.\n",
+      .console_hline(), "\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
       "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),, drop = F])/nrow(object@sample.meta))), "\n",
-      "==============================================\n",
+      .console_hline(), "\n",
       "Possible sample metadata facets:\n", paste0(colnames(object@sample.meta), collapse = "\t"), "\n\n",
       "Possible SNP metadata facets:\n", paste0(colnames(object@snp.meta), collapse = "\t"), "\n\n",
-      "==============================================\n",
+      .console_hline(), "\n",
       "Currently tabulated facets:\n",
       paste0(object@facets, collapse = "\t"), "\n\n",
       "Currently calculated statistics:\n", calced_stats_print,
       "Calculated statistics can be accessed via get.snpR.stats()\n",
-      "==============================================\n"
+      .console_hline(), "\n"
   )
 })
 

@@ -30,6 +30,7 @@ plot_manhattan(
   rug_label = NULL,
   rug_alpha = 0.3,
   rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+  lambda_gc_correction = FALSE,
   chr_order = NULL,
   abbreviate_labels = FALSE
 )
@@ -147,6 +148,10 @@ height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
 Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
 avoid over-plotting.}
 
+\item{lambda_gc_correction}{Correct for inflated significance due to
+population and/or family structure using the \eqn{\gamma_{GC}} approach
+described in Price et al 2010.}
+
 \item{chr_order}{character, default NULL. If provided, an ordered vector of
 chromosome/scaffold/etc names by which to sort output.}
 
@@ -196,12 +201,11 @@ highlighted SNPs will be either chr_bp by default or given in the column
 named by the "snp" argument.
 }
 \examples{
-# association testing:
 # add a dummy phenotype and run an association test.
-x <- stickSNPs
-sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(stickSNPs), TRUE)
+x <- stickSNPs[pop = c("ASP", "SMR"), chr = c("groupIX", "groupIV")]
+sample.meta(x)$phenotype <- sample(c("A", "B"), nsamps(x), TRUE)
 x <- calc_association(x, response = "phenotype", method = "armitage")
-plot_manhattan(x, "p_armitage_phenotype", chr = "chr", 
+plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                log.p = TRUE)$plot
 
 
@@ -209,25 +213,27 @@ plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 # make some data
 x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
 
-# plot pi, breaking apart by population, keeping only the groupIX and
-# groupIV chromosomes and the ASP, PAL, and SMR populations, with
+# plot pi, breaking apart by population, keeping only the groupIX
+# and the ASP population, with
 # significant and suggestive lines plotted and SNPs
 # with pi below the significance level labeled.
 plot_manhattan(x, "pi", facets = "pop",
-               chr = "chr", chr.subfacet = c("groupIX", "groupIV"),
-               sample.subfacet = c("ASP", "OPL", "SMR"),
+               chr = "chr", chr.subfacet = "groupIX",
+               sample.subfacet = "ASP",
                significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
 
-# plot FST for the ASP/PAL comparison across all chromosomes,
+# plot FST for the ASP/SMR comparison across all chromosomes,
 # labeling the first 10 SNPs in x (by row) with their ID
+# Note that since this is thie ony comparison, we don't actually need to
+# specify it.
 plot_manhattan(x, "fst", facets = "pop.chr",
-               sample.subfacet = "ASP~PAL", highlight = 1:20,
+               sample.subfacet = "ASP~SMR", highlight = 1:10,
                chr = "chr", snp = ".snp.id")$plot
 
-# plot sliding-window FST between ASP and CLF
+# plot sliding-window FST between ASP and SMR
 # and between OPL and SMR
 plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
-               chr = "chr", sample.subfacet = c("ASP~CLF", "OPL~SMR"),
+               chr = "chr", sample.subfacet = "ASP~SMR",
                significant = .29, suggestive = .2)$plot
 
 # plot using a data.frame,
@@ -242,19 +248,18 @@ plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
 
 
 # plot with a rug
-rug_data <- data.frame(chr = c("groupX", "groupVIII"), start = c(0, 1000000),
+rug_data <- data.frame(chr = c("groupIX", "groupIV"), start = c(0, 1000000),
                        end = c(5000000, 6000000), gene = c("A", "B"))
-                       
+
 # point style, midpoints plotted
 plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                log.p = TRUE, rug_data = rug_data)
-               
+
 # ribbon style
 plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
-
-# with labels that are visible by examining with plotly!
-# not run to avoid pltoly dependancy
+               
+# with plotly to mouse over information
 \dontrun{
 plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                                 log.p = TRUE, rug_data = rug_data, 
@@ -262,6 +267,11 @@ plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                                 rug_label = "gene")$plot)
 
 }
+}
+\references{
+Price, A., Zaitlen, N., Reich, D. et al. New approaches to
+  population stratification in genome-wide association studies. Nat Rev Genet
+  11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 }
 \author{
 William Hemstrom

@@ -114,9 +114,7 @@ NULL
 #'@slot mDat character, missing data key
 #'@slot snp.form numeric, number of characters per genotype (not really used)
 #'@slot geno.tables list containing three matrices: gs (genotype counts), as
-#'  (allele counts), and wm (genotype counts + missing counts)
-#'@slot ac data.frame containing ac formatted data, see
-#'  \code{\link{format_snps}}.
+#'  (allele counts), and wm (missing counts)
 #'@slot facets character, vector of tabulated facets
 #'@slot facet.type character, types of each tabulated facet.
 #'@slot stats data.frame, all calculated single-snp non-pairwise stats.
@@ -145,9 +143,11 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        snp.meta = "data.frame",
                                        facet.meta = "data.frame",
                                        mDat = "character",
+                                       ploidy = "numeric",
+                                       bi_allelic = "logical",
+                                       data.type = "character",
                                        snp.form = "numeric",
                                        geno.tables = "list",
-                                       ac = "data.frame",
                                        facets = "character",
                                        facet.type = "character",
                                        stats = "data.frame",
@@ -259,8 +259,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  \item{mDat: } missing data format. \item{snp.form: } number of characters
 #'  per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
 #'  allele counts (as), and missing data (wm). facet.meta contains the
-#'  corresponding metadata. \item{ac: } data in allele count format, used
-#'  internally. facet.meta contains corresponding metadata. \item{facets: }
+#'  corresponding metadata. \item{facets: }
 #'  vector of the facets that have been added to the data. \item{facet.type: }
 #'  classes of the added facets (snp, sample, complex, or .base). \item{stats: }
 #'  data.frame containing all calculated non-pairwise single-snp statistics and
@@ -281,7 +280,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  distance data. \item{names: } column names for genotypes. \item{row.names: }
 #'  row names for genotypes. \item{.Data: } list of vectors containing raw
 #'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
-#'
+#'  
 #'  Note that most of these slots are used primarily internally.
 #'
 #'  All calculated data can be accessed using the \code{\link{get.snpR.stats}}
@@ -307,7 +306,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'@param ... Additional arguments passed to \code{\link[data.table]{fread}} if a
 #'  \emph{genotype} file name is passed that is not a vcf or ms file.
 #'@param header_cols numeric, default 0. Number of header columns containing
-#'  sample metadata. Used if a tab delimited or STRUCTURE input file is
+#'  SNP metadata. Used if a tab delimited or STRUCTURE input file is
 #'  provided.
 #'@param rows_per_individual numeric (1 or 2), default 2. Number of rows used
 #'  for each individual. For structure input files only.
@@ -441,6 +440,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))
+        if(sum(is.na(genotypes[,ncol(genotypes)])) == nrow(genotypes)){
+          genotypes <- genotypes[,-ncol(genotypes)]
+        }
       }
     }
     else{
@@ -484,7 +486,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   #couldn't find a supported format
   else{
-    stop("Genoytpes are not in a recognized format. First genotype:", genotypes[1,1], "\n")
+    stop("Genoytpes are not in a recognized format. First genotype:", genotypes[1,1], 
+         "\n. Do you have SNP meta-data in your genotype file or object? If so, you may either remove those columns or use the header_cols argument to use them as your snp.meta.\n")
   }
   
   
@@ -500,6 +503,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   # prepare things for addition to data
   if(any(is.na(genotypes))){
     stop("NA found in input genotypes. Often, this is in the last row or column.\n")
+  }
+  
+  if(nrow(snp.meta) != nrow(genotypes)){
+    stop(paste0("Number of rows in snp.meta (", nrow(snp.meta), ") not equal to number of SNPs in genotypes (", nrow(genotypes), "). Do you need to transpose your genotypes?\n"))
+  }
+  if(nrow(sample.meta) != ncol(genotypes)){
+    stop(paste0("Number of rows in sample.meta (", nrow(sample.meta), ") not equal to number of samples in genotypes (", ncol(genotypes), "). Do you need to transpose your genotypes?\n"))
   }
   
   if(any(colnames(snp.meta) == "position")){
@@ -560,6 +570,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                                        snp.meta),
                     geno.tables = gs,
                     mDat = mDat,
+                    ploidy = 2,
+                    bi_allelic = TRUE,
+                    data.type = "genotypic",
                     stats = cbind(data.table::data.table(facet = rep(".base", nrow(gs$gs)),
                                                          subfacet = rep(".base", nrow(gs$gs)),
                                                          facet.type = rep(".base", nrow(gs$gs)),
@@ -574,7 +587,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2021", details = "snpR package")))
+                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   
@@ -587,7 +600,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   .make_it_quiet(x <- calc_maf(x))
   
   # add ac
-  .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
+  # .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
   
   
   #========return=========
@@ -861,7 +874,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(!is.null(col_pattern)){
       keep.cols <- colnames(y)[keep.cols]
       
-      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop",
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
                                                     colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
