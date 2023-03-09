@@ -13,7 +13,7 @@ import.snpR.data(
   ...,
   header_cols = 0,
   rows_per_individual = 2,
-  marker_and_sample_names = FALSE,
+  marker_names = FALSE,
   verbose = FALSE
 )
 }
@@ -49,9 +49,8 @@ provided.}
 \item{rows_per_individual}{numeric (1 or 2), default 2. Number of rows used
 for each individual. For structure input files only.}
 
-\item{marker_and_sample_names}{logical, default FALSE. If TRUE, assumes that a
-header row of marker and sample/sample metadata names is present. For
-structure input files only.}
+\item{marker_names}{logical, default FALSE. If TRUE, assumes that a
+header row of marker is present. For structure input files only.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status
 updates and checks.}

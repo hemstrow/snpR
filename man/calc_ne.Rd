@@ -52,7 +52,8 @@ to consider per population.}
 
 \item{outfile}{character, default "ne_out". Prefix for output files. Note
 that this function will return outputs, so there isn't a strong reason to
-check this.}
+check this. At the moment, this cannot be a full file path, just a file
+prefix ('test_ne' is OK, '~/tests/test_ne' is not).}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}

@@ -13,6 +13,7 @@ plot_pairwise_ld_heatmap(
   r = NULL,
   l.text = "CLD",
   viridis.option = "inferno",
+  gradient_colors = NULL,
   title = NULL,
   t.sizes = c(16, 13, 10, 12, 10),
   background = "white"
@@ -45,6 +46,14 @@ to use. Other color scales may be substituted by appending the
 scale_color_continuous and scale_fill_continuous ggplot functions to the
 produced plot using the '+' operator. See
 \code{\link[ggplot2]{scale_gradient}} for details.}
+
+\item{gradient_colors}{character vector of length 2 or NULL, default NULL. If
+provided, the low and high LD colors for the color scale. Provided as an
+alternative to the viridis scales. Take care to set a \code{background}
+color not on this scale. For example, \code{c("white", "black")} is an
+excellent choice, but will make missing data inaccurately appear  appear as
+if it has a very low LD unless a different \code{background} color is
+selected.}
 
 \item{title}{character. Plot title.}
 

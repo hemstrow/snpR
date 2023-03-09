@@ -38,6 +38,13 @@
 #'  scale_color_continuous and scale_fill_continuous ggplot functions to the
 #'  produced plot using the '+' operator. See
 #'  \code{\link[ggplot2]{scale_gradient}} for details.
+#'@param gradient_colors character vector of length 2 or NULL, default NULL. If
+#'  provided, the low and high LD colors for the color scale. Provided as an
+#'  alternative to the viridis scales. Take care to set a \code{background}
+#'  color not on this scale. For example, \code{c("white", "black")} is an
+#'  excellent choice, but will make missing data inaccurately appear  appear as
+#'  if it has a very low LD unless a different \code{background} color is
+#'  selected.
 #'@param title character. Plot title.
 #'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
@@ -64,6 +71,7 @@
 #'
 plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, sample.subfacet = NULL, LD_measure = "CLD", r = NULL,
                                      l.text = "CLD", viridis.option = "inferno",
+                                     gradient_colors = NULL,
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
                                      background = "white"){
   #==============sanity checks===========
@@ -324,9 +332,13 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   LD_mats <- as.data.frame(LD_mats$dat)
 
   SNPa <- SNPb <- value <- NULL
+  
+  # base plot
   out <- ggplot2::ggplot(LD_mats, ggplot2::aes(x = SNPa, y=SNPb, fill=value, color = value)) +
-    ggplot2::geom_tile(color = "white")
+    ggplot2::geom_bin2d(stat = "identity")
 
+  
+  # wrapping
   if(length(unique(LD_mats$snp.subfacet)) > 1 & length(unique(LD_mats$var)) > 1){
     out <- out + ggplot2::facet_wrap(var~snp.subfacet, scales = "free")
   }
@@ -339,9 +351,20 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 
   comb.plot.levels <- levs$t.levs
 
+  # colors
+  if(!is.null(gradient_colors)){
+    out <- out +
+      ggplot2::scale_color_gradient2(low = gradient_colors[1], high = gradient_colors[2]) +
+      ggplot2::scale_fill_gradient2(low = gradient_colors[1], high = gradient_colors[2])
+  }
+  else{
+    out <- out + 
+      ggplot2::scale_fill_viridis_c(direction = -1, option = viridis.option) +
+      ggplot2::scale_color_viridis_c(direction = -1, option = viridis.option)
+  }
+  
+  # rest of the theme
   out <- out +
-    ggplot2::scale_fill_viridis_c(direction = -1, option = viridis.option) +
-    ggplot2::scale_color_viridis_c(direction = -1, option = viridis.option) +
     ggplot2::theme_bw() +
     ggplot2::labs(x = "",y="", fill=l.text) +
     ggplot2::theme(legend.title= ggplot2::element_text(size = t.sizes[2]),
@@ -354,8 +377,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
                    panel.background = ggplot2::element_rect(fill = background, colour = background)) +
     ggplot2::scale_x_discrete(breaks = comb.plot.levels, label = abbreviate) +
     ggplot2::scale_y_discrete(breaks = comb.plot.levels, label = abbreviate) +
-    ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)")
-
+    ggplot2::ylab("Position (Mb)") + ggplot2::xlab("Position (Mb)") +
+    ggplot2::guides(color = "none")
 
   if(!is.null(title)){
     out <- out + ggplot2::ggtitle(title)
@@ -2064,8 +2087,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' clusters within populations using the qsort option.
 #'
 #' Since the clustering and CLUMPP processes can be time consuming and outside
-#' tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of Q
-#' matrices, sorted by K and then rep or a character string giving a pattern
+#' tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a nested list of
+#' Q matrices, sorted by K and then rep or a character string giving a pattern
 #' matching saved Q matrix files in the current working directory may provided
 #' directly instead of a snpRdata object. Note that the output for this
 #' function, if run on a snpRdata object, will return a properly formatted list
@@ -2149,8 +2172,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   metadata containing sample IDs.
 #' @param viridis.option character, default "viridis". Viridis color scale
 #'   option. See \code{\link[ggplot2]{scale_gradient}} for details.
-#' @param alt.palette character or NULL, default NULL. Optional palette of colors
-#'   to use instead of the viridis palette.
+#' @param alt.palette character or NULL, default NULL. Optional palette of
+#'   colors to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
 #' @param separator_thickness numeric, default 1. Thickness of facet level
@@ -2250,8 +2273,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param strip_col_names string, default NULL. An optional regular expression
 #'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
-#'   argument is something like "meta$pop": "^.+\\$" would strip the "meta$pop"
-#'   part off. A vector of strings will strip multiple patterns.
+#'   argument is something like "meta$pop". A vector of strings will strip
+#'   multiple patterns.
 #' @param cleanup logical, default TRUE. If TRUE, extra files created during
 #'   assignment, clumpp, and plot construction will be removed. If FALSE, they
 #'   will be left in the working directory.

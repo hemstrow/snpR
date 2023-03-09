@@ -47,11 +47,21 @@ facet gets shapes is controlled by the `shape_has_more_levels` argument.
 * Fixed a bug where asking to filter by the `.base` facet with `filter_snps()` would cause an error and a spurious warning.
 * Standardized the defaults of both `facet` arguments to `filter_snps()` to use `NULL` as a default.
 
-
 # snpR 1.2.4 -- hot-fix
+
+## Features
+
+### Minor
+* Added the `gradient_colors` argument to `plot_pairwise_ld_heatmap()` to allow for custom sets of colors for the scale.
+* Updated the readme for github with a function table of contents.
+* Added another sanity check to `calc_ne()` to catch full file paths given to `outfile`.
 
 ## Bug fixes
 * Fixed a nasty bug during imputation of sn data where the wrong maf was found. Shouldn't directly bias clustering, but good to fix asap.
+* Swapped the `geom` used in `plot_pairwise_ld_heatmap()` to `geom_bin2d()` to prevent points from disappearing if too many loci are plotted on a chr.
+* Fixed `read_structure()` (and `import.snpR.data()`) to never assume sample names, just loci names (which is the standard) if noted.
+* Added better error checking for invalid NeEstimator exe files to `calc_ne()`.
+* Fixed a bug where vcf files with missing data would occasionally get read in as "."s instead of NAs by `vcfR`, which meant that they weren't being properly accounted for as missing data by snpR. Most functions actually still work fine, but a few, like `plot_structure()` were unhappy.
 
 
 # snpR 1.2.3

@@ -310,9 +310,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  provided.
 #'@param rows_per_individual numeric (1 or 2), default 2. Number of rows used
 #'  for each individual. For structure input files only.
-#'@param marker_and_sample_names logical, default FALSE. If TRUE, assumes that a
-#'  header row of marker and sample/sample metadata names is present. For
-#'  structure input files only.
+#'@param marker_names logical, default FALSE. If TRUE, assumes that a
+#'  header row of marker is present. For structure input files only.
 #'@param verbose Logical, default FALSE. If TRUE, will print a few status
 #'  updates and checks.
 #'  
@@ -377,7 +376,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0, rows_per_individual = 2, marker_and_sample_names = FALSE, verbose = FALSE){
+                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, verbose = FALSE){
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
@@ -434,7 +433,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       else if(grepl("\\.str$", genotypes)){
         return(.process_structure(genotypes, 
                                   rows_per_individual = rows_per_individual, 
-                                  marker_and_sample_names = marker_and_sample_names, 
+                                  marker_names = marker_names, 
                                   header_cols = header_cols, 
                                   snp.meta = snp.meta, 
                                   sample.meta = sample.meta))
