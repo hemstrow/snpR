@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.4-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.5-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
