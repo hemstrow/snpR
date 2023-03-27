@@ -1,5 +1,10 @@
 # snpR 1.2.6
 
+## Features
+
+### Minor
+* Added he/ho plotting to `plot_diagnostic()` and added manual control of which plots to generate. SFS skipped by default. Improved documentation and testing a bit.
+
 
 # snpR 1.2.5
 

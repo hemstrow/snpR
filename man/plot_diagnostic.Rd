@@ -8,33 +8,48 @@ plot_diagnostic(
   x,
   facet = NULL,
   projection = floor(nsnps(x)/1.2),
-  fold_sfs = TRUE
+  fold_sfs = TRUE,
+  plots = c("fis", "maf", "pca", "missingness", "heho")
 )
 }
 \arguments{
 \item{x}{snpRdata object}
 
 \item{facet}{character, default NULL. Categorical metadata variables by which
-to break up plots. Note that only one facet is allowed here. Missingness and
-the PCA will have individuals colored by the given sample facet. See
+to break up plots. Note that only one facet is allowed here. Missingness
+and the PCA will have individuals colored by the given sample facet. See
 \code{\link{Facets_in_snpR}} for more details.}
 
-\item{projection}{integer, default floor(nsnps(x)/1.2). A sample size to project
-the SFS to, in \emph{number of gene copies}. Sizes too large will result in
-a SFS containing few or no SNPs.}
+\item{projection}{integer, default floor(nsnps(x)/1.2). A sample size to
+project the SFS to, in \emph{number of gene copies}. Sizes too large will
+result in a SFS containing few or no SNPs.}
 
 \item{fold_sfs}{logical, default TRUE. Determines if the SFS should be folded
 or left polarized. If FALSE, snp metadata columns named "ref" and "anc"
 containing the identity of the derived and ancestral alleles, respectively,
 should be present for polarization to be meaningful.}
+
+\item{plots}{character vector, default all possible plots except for SFS.
+Plot options:
+\itemize{\item{fis: } density of FIS scores for all loci within each facet
+level.
+\item{sfs: } Site Frequency Spectra for the entire dataset.
+\item{maf: } density of minor allele frequencies for all loci within each
+facet.
+\item{pca: } Principal Component Analysis results for the given facet.
+\item{missingness: } Proportion of missing alleles across each individual
+withing each facet.
+\item{heho: } expected vs. observed heterozygosity for each locus within
+each facet. Very high expected or observed heterozygosities for many loci
+can indicate genotyping issues.}}
 }
 \value{
 A named list of diagnostic ggplot2 plots.
 }
 \description{
 Create a suite of basic diagnostic plots (FIS density, 1D SFS, maf density,
-PCA, and % missing data per individual) to describe the condition of the data
-in a snpRdata object.
+PCA, % missing data per individual, and he vs ho per SNP)
+to describe the condition of the data in a snpRdata object.
 }
 \examples{
 \dontrun{
