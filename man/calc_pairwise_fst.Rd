@@ -12,6 +12,7 @@ calc_pairwise_fst(
   boot_par = FALSE,
   zfst = FALSE,
   fst_over_one_minus_fst = FALSE,
+  keep_components = FALSE,
   cleanup = TRUE,
   verbose = FALSE
 )
@@ -34,12 +35,25 @@ be processed in parallel using the supplied number of cores.}
 
 \item{zfst}{logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
 will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
-The resulting values will be in the column "zfst", accessable using the
+The resulting values will be in the column "zfst", accessible using the
 usual \code{\link{get.snpR.stats}} method.}
 
 \item{fst_over_one_minus_fst}{logical, default FALSE. If TRUE, fst/(1-fst)
-will be calculated, and will be in the column "fst_id" accessable using the
+will be calculated, and will be in the column "fst_id" accessible using the
 usual \code{\link{get.snpR.stats}} method.}
+
+\item{keep_components}{logical, default FALSE. If TRUE, the variance
+components "a", "b", and "c" will be held and accessible from the
+\code{$pairwise} element (named "var_comp_a", "var_comp_b", and
+"var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
+method. This may be useful if working with very large datasets that need to
+be run with separate objects for each chromosome, etc. for memory purposes.
+Weighted averages can be generated identically to those from snpR by taking
+the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "a"
+divided by the sum of the weighted means of "a", "b", and "c" using the
+number of SNPs called in a comparison (returned in the "nk" column from
+\code{\link{get.snpR.stats}}) as weights within each population comparison.
+Note that this is different than taking the weighted mean of a/(a + b + c)!}
 
 \item{cleanup}{logical, default TRUE. If TRUE, any new files created during
 FST calculation will be automatically removed.}
@@ -63,16 +77,15 @@ Calculates FST according to either Weir and Cockerham 1984 or using the
 If the genepop option is used, several intermediate files will be created in
 the default temporary directory (see \code{\link{tempfile}}).
 
-The Weir and Cockerham (1984) and genepop methods tend to
-produce very similar results both per SNP and per population.
-Generally, the former option may be preferred for computational efficiency.
+The Weir and Cockerham (1984) and genepop methods tend to produce very similar
+results both per SNP and per population. Generally, the former option may be
+preferred for computational efficiency.
 
-P-values for group level comparisons can be calculated via bootstrapping
-using the boot option. Bootstraps are performed via randomly mixing
-individuals amongst different levels of the supplied facet, and thus
-the null hypothesis is that all groups are panmictic. P-values are calculated
-according to \code{\link[ade4]{randtest}}, although that function is not
-directly called. 
+P-values for group level comparisons can be calculated via bootstrapping using
+the boot option. Bootstraps are performed via randomly mixing individuals
+amongst different levels of the supplied facet, and thus the null hypothesis
+is that all groups are panmictic. P-values are calculated according to
+\code{\link[ade4]{randtest}}, although that function is not directly called.
 
 The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
