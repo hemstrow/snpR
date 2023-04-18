@@ -4000,25 +4000,38 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' Basic diagnostic plots
 #'
 #' Create a suite of basic diagnostic plots (FIS density, 1D SFS, maf density,
-#' PCA, and % missing data per individual) to describe the condition of the data
-#' in a snpRdata object.
+#' PCA, % missing data per individual, and he vs ho per SNP)
+#' to describe the condition of the data in a snpRdata object.
 #'
 #' @param x snpRdata object
 #' @param facet character, default NULL. Categorical metadata variables by which
-#' to break up plots. Note that only one facet is allowed here. Missingness and
-#' the PCA will have individuals colored by the given sample facet. See
-#' \code{\link{Facets_in_snpR}} for more details.
-#' @param projection integer, default floor(nsnps(x)/1.2). A sample size to project
-#'   the SFS to, in \emph{number of gene copies}. Sizes too large will result in
-#'   a SFS containing few or no SNPs.
+#'   to break up plots. Note that only one facet is allowed here. Missingness
+#'   and the PCA will have individuals colored by the given sample facet. See
+#'   \code{\link{Facets_in_snpR}} for more details.
+#' @param plots character vector, default all possible plots except for SFS.
+#'   Plot options:
+#'   \itemize{\item{fis: } density of FIS scores for all loci within each facet
+#'   level.
+#'   \item{sfs: } Site Frequency Spectra for the entire dataset.
+#'   \item{maf: } density of minor allele frequencies for all loci within each
+#'   facet.
+#'   \item{pca: } Principal Component Analysis results for the given facet.
+#'   \item{missingness: } Proportion of missing alleles across each individual
+#'   withing each facet.
+#'   \item{heho: } expected vs. observed heterozygosity for each locus within
+#'   each facet. Very high expected or observed heterozygosities for many loci
+#'   can indicate genotyping issues.}
+#' @param projection integer, default floor(nsnps(x)/1.2). A sample size to
+#'   project the SFS to, in \emph{number of gene copies}. Sizes too large will
+#'   result in a SFS containing few or no SNPs.
 #' @param fold_sfs logical, default TRUE. Determines if the SFS should be folded
 #'   or left polarized. If FALSE, snp metadata columns named "ref" and "anc"
 #'   containing the identity of the derived and ancestral alleles, respectively,
 #'   should be present for polarization to be meaningful.
-#'   
+#'
 #' @export
 #' @author William Hemstrom
-#' 
+#'
 #' @return A named list of diagnostic ggplot2 plots.
 #' 
 #' @examples 
@@ -4026,7 +4039,8 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' # missingness and pca colored by pop
 #' plot_diagnostic(stickSNPs, "pop")
 #' }
-plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE){
+plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE,
+                            plots = c("fis", "maf", "pca", "missingness", "heho")){
   Individual <- NULL
   #================checks and init===========
   if(!is.snpRdata(x)){
@@ -4044,55 +4058,119 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
     facet.vec <- .paste.by.facet(sample.meta(x), facets = unlist(split.facet))
   }
   
+  good.plots <- c("fis", "sfs", "maf", "pca", "missingness", "heho")
+  plots <- tolower(plots)
+  bad.plots <- which(!plots %in% good.plots)
+  if(length(bad.plots) > 0){
+    stop("Some bad plot types noted:\n\t", paste0(plots[bad.plots], collapse = "\n\t"), "\n\n",
+         "Acceptable plot types:", paste0(good.plots, collapse = "\n\t"))
+  }
+  
+  out <- list()
   
   #=================FIS======================
-  # calc
-  calced <- .check_calced_stats(x, ".base", "fis")
-  if(!unlist(calced)){
-    x <- calc_fis(x)
+  if("fis" %in% plots){
+    # calc
+    calced <- .check_calced_stats(x, facet, "fis")
+    if(!unlist(calced)){
+      x <- calc_fis(x, facet)
+    }
+    
+    # plot
+    fis <- get.snpR.stats(x, facet, "fis")$single
+    fis <- ggplot2::ggplot(fis, ggplot2::aes(x = fis, color = subfacet)) + ggplot2::geom_density() +
+      ggplot2::theme_bw() +
+      ggplot2::scale_color_viridis_d()
+    out$fis <- fis
   }
   
-  # plot
-  fis <- get.snpR.stats(x, ".base", "fis")$single
-  fis <- ggplot2::ggplot(fis, ggplot2::aes(x = fis)) + ggplot2::geom_density() +
-    ggplot2::theme_bw()
   
   #=================plot sfs=================
-  .make_it_quiet(sfs <- plot_sfs(x, projection = projection, fold = fold_sfs))
-  if(fold_sfs){
-    sfs <- sfs + ggplot2::xlab("Minor Allele Count")
+  if("sfs" %in% plots){
+    .make_it_quiet(sfs <- plot_sfs(x, projection = projection, fold = fold_sfs))
+    if(fold_sfs){
+      sfs <- sfs + ggplot2::xlab("Minor Allele Count")
+    }
+    else{
+      sfs <- sfs + ggplot2::xlab("Derived Allele Count")
+    }
+    
+    out$sfs <- sfs
   }
-  else{
-    sfs <- sfs + ggplot2::xlab("Derived Allele Count")
-  }
+  
   
   #=================plot maf density=========
-  maf <- get.snpR.stats(x, ".base", "maf")$single
-  maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf)) + ggplot2::geom_density() +
-    ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency")
+  if("maf" %in% plots){
+    maf <- get.snpR.stats(x, facet, "maf")$single
+    maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf, color = subfacet)) + ggplot2::geom_density() +
+      ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency") +
+      ggplot2::scale_color_viridis_d()
+    
+    out$maf <- maf
+  }
+ 
   
   #=================plot pca=================
-  .make_it_quiet(pca <- plot_clusters(x, facets = facet))
-  pca <- pca$plots$pca
+  if("pca" %in% plots){
+    .make_it_quiet(pca <- plot_clusters(x, facets = facet))
+    pca <- pca$plots$pca
+    
+    out$pca <- pca
+  }
+ 
   
   #=================missingness==============
-  miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
-  if(exists("facet.vec")){
-    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
-                            ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
-      ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet)
-  }
-  else{
-    miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss),
-                            ggplot2::aes(x = Individual, y = miss))
+  if("missingness" %in% plots){
+    miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
+    if(exists("facet.vec")){
+      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
+                              ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+        ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
+        ggplot2::geom_boxplot() +
+        ggplot2::geom_point(alpha = .5)
+    }
+    else{
+      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),
+                              ggplot2::aes(y = miss, x = Individual)) +
+        ggplot2::geom_boxplot() +
+        ggplot2::geom_point() +
+        ggplot2::theme()
+    }
+    
+    miss <- miss +
+      ggplot2::theme_bw() +
+      ggplot2::ylab("Proportion of loci with missing data")
+    
+    out$missingness <- miss
   }
   
-  miss <- miss +
-    ggplot2::geom_boxplot() +
-    ggplot2::geom_point(alpha = .5) + ggplot2::theme_bw() +
-    ggplot2::ylab("Proportion of loci with missing data")
   
-  return(list(fis = fis,sfs = sfs, maf = maf, pca = pca, missingness = miss))
+  #================heho=====================
+  if("heho" %in% plots){
+    calced <- .check_calced_stats(x, facet, "he")
+    if(!unlist(calced)){
+      x <- calc_he(x, facet)
+    }
+    
+    calced <- .check_calced_stats(x, facet, "ho")
+    if(!unlist(calced)){
+      x <- calc_ho(x, facet)
+    }
+    
+    heho <- get.snpR.stats(x, facet, c("he", "ho"))$single
+    
+    heho <- ggplot2::ggplot(heho, ggplot2::aes(x = ho, y = he)) + 
+      ggplot2::geom_hex(ggplot2::aes(fill = ggplot2::after_stat(log(count)))) +
+      ggplot2::theme_bw() + ggplot2::xlab("Observed Heterozygosity") +
+      ggplot2::ylab("Expected Heterozygosity") +
+      ggplot2::geom_abline(slope = 1, intercept = 0) +
+      ggplot2::facet_wrap(~subfacet) +
+      ggplot2::scale_fill_viridis_c()
+    
+    out$heho <- heho
+  }
+  
+  return(out)
 }
 
 

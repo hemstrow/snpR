@@ -14,7 +14,7 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
 window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
-                    col_pattern = list(c("fst", "zfst", "fst_id", "nk"),
+                    col_pattern = list(c("fst","var_comp_a", "var_comp_b", "var_comp_c", "zfst", "fst_id", "nk"),
                                        c("D_abba_baba", "abba", "baba", "nk")))
 sample.stats <- list(stat = c("het_hom_ratio", "hs"),
                   col_pattern = list("Het/Hom",

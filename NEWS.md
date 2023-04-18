@@ -1,3 +1,13 @@
+# snpR 1.2.6
+
+## Features
+
+### Minor
+* Added he/ho plotting to `plot_diagnostic()` and added manual control of which plots to generate. SFS skipped by default. Improved documentation and testing a bit.
+* Changed the behavior of `calc_pairwise_fst()` to take the ratio of average variance components instead of the average of ratios following the recommendations of [Bahtia et al. 2013](https://doi.org/10.1101/gr.154831.113).
+* To aid in calculating weighted mean $F_{ST}$ values for cases where the dataset is too big to run at once with snpR (as may be the case for large WGS data sets, for example), the `keep_components` argument was added to `calc_pairwise_fst()` to return the "a", "b", and "c" variance components for each locus for later processing. Brief instructions were added to the documentation for `calc_pairwise_fst()` to explain this process.
+
+
 # snpR 1.2.5
 
 ## Features

@@ -154,8 +154,8 @@ vignette("snpR_introduction")
     -   `calc_private()`: Private alleles across facet levels.
     -   `calc_genetic_distances()`: Genetic distances between
         individuals
-    -   `calc_fis()`: FIS
-    -   `calc_pairwise_fst()`: Pairwise FST between facet levels.
+    -   `calc_fis()`: $F_{IS}$
+    -   `calc_pairwise_fst()`: Pairwise $F_{ST}$ between facet levels.
     -   `calc_pairwise_ld()`: Pairwise LD between SNPs.
     -   `calc_abba_baba()`: ABBA/BABA tests.
 -   Association:

@@ -453,16 +453,15 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'If the genepop option is used, several intermediate files will be created in
 #'the default temporary directory (see \code{\link{tempfile}}).
 #'
-#'The Weir and Cockerham (1984) and genepop methods tend to
-#'produce very similar results both per SNP and per population.
-#'Generally, the former option may be preferred for computational efficiency.
+#'The Weir and Cockerham (1984) and genepop methods tend to produce very similar
+#'results both per SNP and per population. Generally, the former option may be
+#'preferred for computational efficiency.
 #'
-#'P-values for group level comparisons can be calculated via bootstrapping
-#'using the boot option. Bootstraps are performed via randomly mixing
-#'individuals amongst different levels of the supplied facet, and thus
-#'the null hypothesis is that all groups are panmictic. P-values are calculated
-#'according to \code{\link[ade4]{randtest}}, although that function is not
-#'directly called. 
+#'P-values for group level comparisons can be calculated via bootstrapping using
+#'the boot option. Bootstraps are performed via randomly mixing individuals
+#'amongst different levels of the supplied facet, and thus the null hypothesis
+#'is that all groups are panmictic. P-values are calculated according to
+#'\code{\link[ade4]{randtest}}, although that function is not directly called.
 #'
 #'The data can be broken up categorically by either SNP and/or sample metadata,
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
@@ -472,27 +471,39 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'item{"Genepop": }{As used in genepop, Rousset
 #'2008.}}
 #'
-#' @param x snpRdata. Input SNP data.
-#' @param facets character. Categorical metadata variables by which to break up
-#'   analysis. See \code{\link{Facets_in_snpR}} for more details.
-#' @param method character, default "wc". Defines the FST estimator to use.
+#'@param x snpRdata. Input SNP data.
+#'@param facets character. Categorical metadata variables by which to break up
+#'  analysis. See \code{\link{Facets_in_snpR}} for more details.
+#'@param method character, default "wc". Defines the FST estimator to use.
 #'   Options: \itemize{ \item{wc: } Weir and Cockerham (1984).
 #'   \item{genepop: } Rousset (2008), uses the genepop package. }
-#' @param boot numeric or FALSE, default FALSE. The number of bootstraps to do.
-#'   See details.
-#' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
-#'   be processed in parallel using the supplied number of cores.
-#' @param zfst logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
-#'   will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
-#'   The resulting values will be in the column "zfst", accessable using the
-#'   usual \code{\link{get.snpR.stats}} method.
-#' @param fst_over_one_minus_fst logical, default FALSE. If TRUE, fst/(1-fst)
-#'   will be calculated, and will be in the column "fst_id" accessable using the
-#'   usual \code{\link{get.snpR.stats}} method.
-#' @param cleanup logical, default TRUE. If TRUE, any new files created during
-#'   FST calculation will be automatically removed.
-#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
-#'   reported.
+#'@param boot numeric or FALSE, default FALSE. The number of bootstraps to do.
+#'  See details.
+#'@param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
+#'  be processed in parallel using the supplied number of cores.
+#'@param zfst logical, default FALSE. If TRUE, z-distributed Fst scores (zFST)
+#'  will be calculated, equal to (fst - mean(fst))/sd(fst) within each group.
+#'  The resulting values will be in the column "zfst", accessible using the
+#'  usual \code{\link{get.snpR.stats}} method.
+#'@param fst_over_one_minus_fst logical, default FALSE. If TRUE, fst/(1-fst)
+#'  will be calculated, and will be in the column "fst_id" accessible using the
+#'  usual \code{\link{get.snpR.stats}} method.
+#'@param keep_components logical, default FALSE. If TRUE, the variance
+#'  components "a", "b", and "c" will be held and accessible from the
+#'  \code{$pairwise} element (named "var_comp_a", "var_comp_b", and
+#'  "var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
+#'  method. This may be useful if working with very large datasets that need to
+#'  be run with separate objects for each chromosome, etc. for memory purposes.
+#'  Weighted averages can be generated identically to those from snpR by taking
+#'  the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "a"
+#'  divided by the sum of the weighted means of "a", "b", and "c" using the
+#'  number of SNPs called in a comparison (returned in the "nk" column from
+#'  \code{\link{get.snpR.stats}}) as weights within each population comparison.
+#'  Note that this is different than taking the weighted mean of a/(a + b + c)!
+#'@param cleanup logical, default TRUE. If TRUE, any new files created during
+#'  FST calculation will be automatically removed.
+#'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'  reported.
 #'
 #'@return A snpRdata object with pairwise FST as well as the number of total
 #'  observations at each SNP in each comparison merged in to the pairwise.stats
@@ -524,7 +535,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               boot_par = FALSE,
                               zfst = FALSE,
                               fst_over_one_minus_fst = FALSE,
-                              cleanup = TRUE, 
+                              keep_components = FALSE,
+                              cleanup = TRUE,
                               verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
   
@@ -707,7 +719,6 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 
 
     out <- data.table::as.data.table(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
-    
     #initialize pop comparison columns.
     comps <- c()
     i <- 1
@@ -720,8 +731,10 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       i <- i + 1
     }
     i <- 1
-
+    
     colnames(out) <- comps
+    
+    out <- list(Fst = out, a = as.data.table(out), b = as.data.table(out), c = as.data.table(out)) # not wrapping in as.data.table results in each object occupying the same spot in memory and thus overwriting eachother, which is not what we want!
 
     #loop through each comparison and calculate pairwise FST at each site
     c.col <- 1L
@@ -784,9 +797,12 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
           c <- matrix(unlist(purrr::map(parts, "c")), ncol = length(parts))
 
-          Fst <- rowSums(a)/rowSums(a + b + c)
+          data.table::set(out$a, j = c.col, value = rowSums(a)) # write a
+          data.table::set(out$b, j = c.col, value = rowSums(b)) # write b
+          data.table::set(out$c, j = c.col, value = rowSums(c)) # write v
+          # Fst <- rowSums(a)/rowSums(a + b + c)
           
-          data.table::set(out, j = c.col, value = Fst) # write fst
+          data.table::set(out$Fst, j = c.col, value = rowSums(a)/rowSums(a + b + c)) # write fst
         }
         
         else{
@@ -805,11 +821,14 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
     }
 
     # melt, cbind pnk
-    suppressWarnings(out <- data.table::melt(out))
-    colnames(out) <- c("comparison", "fst")
+    suppressWarnings(out <- cbind(data.table::melt(out$Fst),
+                                  data.table::melt(out$a)[,2],
+                                  data.table::melt(out$b)[,2],
+                                  data.table::melt(out$c)[,2]))
+    colnames(out) <- c("comparison", "fst", "a", "b", "c")
     # meta.cols <- (1:ncol(x))[-c(ac_cols, ncol(x))]
     out$nk <- pnk$ntotal
-    meta.cols <- 2:3
+    meta.cols <- 2:6
     out <- cbind(out[,"comparison"], .fix..call(x[x$subfacet == pops[1],..meta_colnames]), .fix..call(out[,..meta.cols]))
 
     # return
@@ -818,7 +837,14 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 
   
   one_wm <- function(x){
-    out <- x[,weighted.mean(fst, w = nk, na.rm = T), by = list(comparison)]
+    out <- x[,(stats::weighted.mean(a, w = nk, na.rm = T)/
+                 (stats::weighted.mean(a, w = nk, na.rm = T) +
+                  stats::weighted.mean(b, w = nk, na.rm = T) +
+                  stats::weighted.mean(c, w = nk, na.rm = T))), 
+             by = list(comparison)]
+    
+    # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
+    #          by = list(comparison)]
     colnames(out)[which(colnames(out) == "V1")] <- "weighted_mean_fst"
     return(out)
   }
@@ -993,6 +1019,16 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   }
   col.ord <- c(which(colnames(real_out) != "nk"), which(colnames(real_out) == "nk"))
   real_out <- .fix..call(real_out[,..col.ord])
+  
+  ## save components
+  component_cols <- which(colnames(real_out) %in% c("a", "b", "c"))
+  if(!keep_components){
+    real_out <- .fix..call(real_out[,-..component_cols])
+  }
+  else{
+    # need to give a more unique name than "a", "b", "c" to avoid issues with get.snpR.stats()
+    colnames(real_out)[match(c("a", "b", "c"), colnames(real_out))] <- paste0("var_comp_", c("a", "b", "c"))
+  }
   x <- .merge.snpR.stats(x, real_out, type = "pairwise")
   
   # cleanup
@@ -4692,3 +4728,53 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
   return(out)
 }
 
+
+calc_relatedness <- function(x, facets = NULL, methods = c("ql", "r")){
+  as <- stickSNPs@geno.tables$as
+  as <- as/rowSums(as)
+  x <- as.matrix(genotypes(stickSNPs))
+  x1 <- substr(x, 1, 1)
+  x2 <- substr(x, 2, 2)
+  
+  x1f <- (1:ncol(as))[match(x1, colnames(as))]
+  x1f <- matrix(as[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
+  x2f <- (1:ncol(as))[match(x2, colnames(as))]
+  x2f <- matrix(as[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
+  
+  res <- expand.grid(1:ncol(x), 1:ncol(x))
+  res <- res[-which(res$Var1 == res$Var2),]
+  
+  # I'm confused on the multilocus wording of Wang et al
+  for(i in 1:ncol(x)){
+    for(j in (i + 1):ncol(x)){
+      indicator <- as.numeric(x1[,i] == x1[,j]) +
+        as.numeric(x1[,i] == x2[,j]) +
+        as.numeric(x2[,i] == x1[,j]) +
+        as.numeric(x2[,i] == x2[,j])
+      
+      left_num <-  indicator - 
+        2*(x1f[i,] + x2f[i,])
+      left_dom <- 2 * (1 + as.numeric(x1[,i] == x2[,i]) - x1f[,i] - x2f[,i])
+      left <- left_num/left_dom
+      
+      
+      right_num <- indicator - 
+        2*(x1f[j,] + x2f[j,])
+      right_dom <- 2 * (1 + as.numeric(x1[,j] == x2[,j]) - x1f[,j] - x2f[,j])
+      right <- right_num/right_dom
+      
+      if(any(is.nan(left) | !is.finite(left))){
+        left[is.nan(left) | !is.finite(left)] <- 0
+      }
+      
+      if(any(is.nan(right) | !is.finite(right))){
+        right[is.nan(right) | !is.finite(right)] <- 0
+      }
+      
+      tot <- (sum(left) + sum(right))/2
+      
+        
+    }
+  }
+  
+}
