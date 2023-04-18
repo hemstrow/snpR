@@ -1,3 +1,6 @@
+# snpR 1.2.7
+
+
 # snpR 1.2.6
 
 ## Features
