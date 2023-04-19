@@ -3601,8 +3601,18 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     
   }
   
+  # fix any lingering "."'s
+  bad.snm.cols <- grep("\\.", colnames(snm.m))
+  if(length(bad.snm.cols) > 0){
+    colnames(snm.m)[bad.snm.cols] <- gsub("\\.", "_", colnames(snm.m)[bad.snm.cols])
+  }
+  bad.sm.cols <- grep("\\.", colnames(sm.m))
+  if(length(bad.sm.cols) > 0){
+    colnames(sm.m)[bad.sm.cols] <- gsub("\\.", "_", colnames(sm.m)[bad.sm.cols])
+  }
+
   return(import.snpR.data(genotypes = genotypes.m, 
-                          snp.meta = snm.m[,-grep("\\.snp\\.id", colnames(snm.m))],
-                          sample.meta = sm.m[,-grep("\\.sample\\.id", colnames(sm.m))],
+                          snp.meta = snm.m[,-grep("_snp_id", colnames(snm.m))],
+                          sample.meta = sm.m[,-grep("_sample_id", colnames(sm.m))],
                           mDat = x@mDat))
 }

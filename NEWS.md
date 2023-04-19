@@ -4,6 +4,7 @@
 * Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.
 * Fixed an un-informative error message when nothing remains after merging in `merge_snpRdata()`.
 * Fixed an issue where having no matching column names during merging in `merge_snpRdata()` would produce weird results.
+* Fixed an issue where having matching but not merged by column names during merging in `merge_snpRdata()` would produce an error.
 
 
 # snpR 1.2.6
