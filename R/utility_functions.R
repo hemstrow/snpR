@@ -3411,6 +3411,7 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
                            all.x.samples = all, all.y.samples = all,
                            resolve_conflicts = "error"){
 
+  .sample.id.from.x <- .sample.id.from.y <- .snp.id.from.x <- .snp.id.from.y <- .source.ob <- NULL
   #========sanity checks==============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -3452,16 +3453,48 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
   sm1 <- sample.meta(x)
   sm2 <- sample.meta(y)
   
-  sm.m <- merge(sm1, sm2, by.x = by.sample.x, by.y = by.sample.y,
-                all.x = all.x.samples, all.y = all.y.samples, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  # handle the case where there are no matching sample metadata columns.
+  if(length(by.sample.x) == 0 | length(by.sample.y) == 0){
+    if(all.x.samples & all.y.samples){
+      sm.m <- data.table::rbindlist(list(x = sm1, y = sm2), fill = TRUE, idcol = ".source.ob")
+      sm.m[,.sample.id.from.x := ifelse(.source.ob == "x", .sample.id, NA)]
+      sm.m[,.sample.id.from.y := ifelse(.source.ob == "y", .sample.id, NA)]
+      sm.m$.source.ob <- NULL
+      sm.m <- as.data.frame(sm.m)
+    }
+    else{
+      stop("No matching sample metadata columns by which to merge.\n")
+    }
+  }
+  else{
+    sm.m <- merge(sm1, sm2, by.x = by.sample.x, by.y = by.sample.y,
+                  all.x = all.x.samples, all.y = all.y.samples, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  }
+  
   sm.id.cols <- grep("^\\.sample\\.id", colnames(sm.m))
   
   
   snm1 <- snp.meta(x)
   snm2 <- snp.meta(y)
   
-  snm.m <- merge(snm1, snm2, by.x = by.snp.x, by.y = by.snp.y,
-                all.x = all.x.snps, all.y = all.y.snps, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  # handle the case where there are no matching snp metadata columns.
+  if(length(by.snp.x) == 0 | length(by.snp.y) == 0){
+    if(all.x.snps & all.y.snps){
+      snm.m <- data.table::rbindlist(list(x = snm1, y = snm2), fill = TRUE, idcol = ".source.ob")
+      snm.m[,.snp.id.from.x := ifelse(.source.ob == "x", .snp.id, NA)]
+      snm.m[,.snp.id.from.y := ifelse(.source.ob == "y", .snp.id, NA)]
+      snm.m$.source.ob <- NULL
+      snm.m <- as.data.frame(snm.m)
+    }
+    else{
+      stop("No matching snp metadata columns by which to merge.\n")
+    }
+  }
+  else{
+    snm.m <- merge(snm1, snm2, by.x = by.snp.x, by.y = by.snp.y,
+                   all.x = all.x.snps, all.y = all.y.snps, suffixes = c(".from.x", ".from.y"), sort = FALSE)
+  }
+  
   snm.id.cols <- grep("^\\.snp\\.id", colnames(snm.m))
   
   
@@ -3471,6 +3504,12 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
              wm = matrix(nrow = nrow(snm.m), ncol = 1))
   
   #=======merge genotypes by indices in merged metadata--genotypes present in both============
+  if(nrow(snm.m) == 0){
+    stop("No loci remain after merging.\n")
+  }
+  if(nrow(sm.m) == 0){
+    stop("No samples remain after merging.\n")
+  }
   idents.snp <- which(!is.na(snm.m$.snp.id.from.x) & !is.na(snm.m$.snp.id.from.y))
   idents.samp <- which(!is.na(sm.m$.sample.id.from.x) & !is.na(sm.m$.sample.id.from.y))
   
@@ -3561,6 +3600,7 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     
     
   }
+  
   return(import.snpR.data(genotypes = genotypes.m, 
                           snp.meta = snm.m[,-grep("\\.snp\\.id", colnames(snm.m))],
                           sample.meta = sm.m[,-grep("\\.sample\\.id", colnames(sm.m))],
