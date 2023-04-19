@@ -1,5 +1,8 @@
 # snpR 1.2.7
 
+## Bug fixes
+* Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.
+
 
 # snpR 1.2.6
 

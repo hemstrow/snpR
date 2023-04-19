@@ -990,6 +990,17 @@ is.snpRdata <- function(x){
     n.s <- cbind(new.meta, n.s[,-meta.cols, with = FALSE])
   }
   
+  ## check classes in meta to make sure there are no conflicts
+  o.class <- unlist(lapply(.fix..call(o.s[,..meta.cols]), class))
+  n.class <- unlist(lapply(.fix..call(n.s[,..meta.cols]), class))
+  miss.class <- which(o.class != n.class)
+  if(length(miss.class) > 0){
+    for(i in 1:length(miss.class)){
+      tfix <- meta.cols[miss.class[i]]
+      n.s[[tfix]] <- as(n.s[[tfix]], unlist(o.class[miss.class[i]]))
+    }
+  }
+  
   ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
   m.s <- merge(o.s, n.s, by = meta.cols, all = T)
   ### grab any columns that need to be fixed (end in .x or .y) and save any matching columns that are fine as is.
