@@ -837,14 +837,12 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 
   
   one_wm <- function(x){
-    out <- x[,(stats::weighted.mean(a, w = nk, na.rm = T)/
-                 (stats::weighted.mean(a, w = nk, na.rm = T) +
-                  stats::weighted.mean(b, w = nk, na.rm = T) +
-                  stats::weighted.mean(c, w = nk, na.rm = T))), 
-             by = list(comparison)]
+    out <- x[,stats::weighted.mean(a, w = nk, na.rm = T)/
+                 stats::weighted.mean(a + b + c, w = nk, na.rm = T), 
+             by = list(comparison)] # ratio of averages
     
     # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
-    #          by = list(comparison)]
+    #          by = list(comparison)] # this is the average of ratios...
     colnames(out)[which(colnames(out) == "V1")] <- "weighted_mean_fst"
     return(out)
   }
@@ -1075,6 +1073,18 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' @param x snpRdata. Input SNP data.
 #' @param facets character. Categorical metadata variables by which to break up
 #'   analysis. See \code{\link{Facets_in_snpR}} for more details.
+#' @param keep_components logical, default FALSE. If TRUE, the variance
+#'   components "b" and "c" will be held and accessible from the
+#'   \code{$single} element (named "var_comp_b" and
+#'   "var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
+#'   method. This may be useful if working with very large datasets that need to
+#'   be run with separate objects for each chromosome, etc. for memory purposes.
+#'   Weighted averages can be generated identically to those from snpR by taking
+#'   the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "c"
+#'   divided by the sum of the weighted mean of "b" + "c" using the
+#'   number of SNPs called in a comparison (returned in the "nk" column from
+#'   \code{\link{get.snpR.stats}}) as weights within each population comparison.
+#'   Note that this is different than taking the weighted mean of a/(a + b + c)!
 #'
 #' @export
 #' @author William Hemstrom
@@ -1084,8 +1094,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' x <- calc_fis(stickSNPs, c("pop", "pop.chr"))
 #' get.snpR.stats(x, c("pop", "pop.chr"), "fis")
 #' 
-calc_fis <- function(x, facets = NULL){
-  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..het_cols_containing_k <- NULL
+calc_fis <- function(x, facets = NULL, keep_components = FALSE){
+  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -1139,7 +1149,7 @@ calc_fis <- function(x, facets = NULL){
     
     fis <- 1 - rowSums(c)/rowSums(b + c)
 
-    return(fis)
+    return(data.frame(fis = fis, var_comp_c = rowSums(c), var_comp_b = rowSums(b)))
   }
   
   #===========run=============================================================
@@ -1166,14 +1176,46 @@ calc_fis <- function(x, facets = NULL){
   out <- func(.fix..call(input[,..ac.cols]), input$ho)
   
   meta.cols <- which(colnames(input) %in% colnames(x@facet.meta))
-  out <- cbind(.fix..call(input[,..meta.cols]), fis = out)
+  out <- cbind(.fix..call(input[,..meta.cols]),out)
   out$nk <- rowSums(.fix..call(input[,..ac.cols]))
   
   
+  # get the weighted mean ratio of averages and merge in
+  wm <- vector("list", length(ofacets))
+  for(i in 1:length(ofacets)){
+    snp.facet <- .check.snpR.facet.request(x, ofacets[i], remove.type = "sample")
+    if(snp.facet != ".base"){
+      split.snp.facet <- unlist(.split.facet(snp.facet))
+      out$snp.subfacet <- .paste.by.facet(out, split.snp.facet)
+      
+      wm <- out[,1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
+                        stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
+                by = list(facet, subfacet, snp.subfacet)]
+      wm$snp.facet <- snp.facet
+      out$snp.subfacet <- NULL
+    }
+    else{
+      wm <- out[,1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
+                        stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
+                by = list(facet, subfacet)] # ratio of averages
+      wm$snp.subfacet <- ".base"
+      wm$snp.facet <- ".base"
+    }
+    
+    colnames(wm)[which(colnames(wm) == "V1")] <- "weighted_mean_fis"
+    x <- .merge.snpR.stats(x, wm, "weighted.means")
+  }
+  
+  
+  
+  
   #========return==============
-  nk.col <- which(colnames(out) == "nk")
-  x <- .merge.snpR.stats(x, .fix..call(out[,-..nk.col]))
-  x <- .calc_weighted_stats(x, ofacets, "single", "fis")
+  if(!keep_components){
+    rm_cols <- which(colnames(out) %in% c("var_comp_c", "var_comp_b", "nk"))
+    out <- .fix..call(out[,-..rm_cols])
+  }
+  
+  x <- .merge.snpR.stats(x, out)
   x <- .update_calced_stats(x, ofacets, "fis")
   x <- .update_citations(x, "Weir1984", "fis", "FIS calculation")
   

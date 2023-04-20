@@ -1,4 +1,9 @@
 # snpR 1.2.7
+## Features
+
+### Minor
+* Changed the behavior of `calc_fis()` to take the ratio of average variance components instead of the average of ratios following the recommendations of [Bahtia et al. 2013](https://doi.org/10.1101/gr.154831.113) and in line with the new behavior of `calc_pairwise_fst()`.
+* To aid in calculating weighted mean $F_{IS}$ values for cases where the dataset is too big to run at once with snpR (as may be the case for large WGS data sets, for example), the `keep_components` argument was added to `calc_fis()` to return the "b" and "c" variance components for each locus for later processing. Brief instructions were added to the documentation for `calc_fis()` to explain this process. This brings `calc_fis()` behavior fully in line with `calc_pairwise_fst()` for bi-allelic markers, although it still needs to be fixed for poly-allelic markers (which are not yet supported on the front-end).
 
 ## Bug fixes
 * Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.

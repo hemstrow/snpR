@@ -4,13 +4,26 @@
 \alias{calc_fis}
 \title{Calculate FIS for individual populations.}
 \usage{
-calc_fis(x, facets = NULL)
+calc_fis(x, facets = NULL, keep_components = FALSE)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
 
 \item{facets}{character. Categorical metadata variables by which to break up
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
+
+\item{keep_components}{logical, default FALSE. If TRUE, the variance
+components "b" and "c" will be held and accessible from the
+\code{$single} element (named "var_comp_b" and
+"var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
+method. This may be useful if working with very large datasets that need to
+be run with separate objects for each chromosome, etc. for memory purposes.
+Weighted averages can be generated identically to those from snpR by taking
+the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "c"
+divided by the sum of the weighted mean of "b" + "c" using the
+number of SNPs called in a comparison (returned in the "nk" column from
+\code{\link{get.snpR.stats}}) as weights within each population comparison.
+Note that this is different than taking the weighted mean of a/(a + b + c)!}
 }
 \description{
 Calculates FIS for each individual level in each provided sample facet

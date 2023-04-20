@@ -2315,8 +2315,15 @@ is.snpRdata <- function(x){
 # @param df data.frame with data do paste
 # @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
 # @param sep character, default ".". Pasted facets will be split by this.
-.paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))
-
+.paste.by.facet <- function(df, facets, sep = "."){
+  ..facets <- NULL
+  if(is.data.table(df)){
+    return(do.call(paste, c(.fix..call(df[,..facets, drop = FALSE]), sep = sep)))
+  }
+  else{
+    return(do.call(paste, c(df[,facets, drop = FALSE], sep = sep)))
+  }
+}
 
 # Fixes calling scope warning in .. calls with data.table
 # 
