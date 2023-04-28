@@ -117,6 +117,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     stop(msg)
   }
   
+  step <- eval(step) # forces this to eval sigma now before we change it.
   sigma <- 1000*sigma
   if(!is.null(step)){
     step <- step * 1000

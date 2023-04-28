@@ -295,6 +295,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
     stop("x must be a snpRdata object.")
   }
   
+  step <- eval(step) # forces this to eval before we change sigma.
+  
   if(!is.null(sigma) & !is.null(step)){
     .sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
   }
