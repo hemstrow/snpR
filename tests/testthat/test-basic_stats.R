@@ -211,5 +211,11 @@ test_that("tajimas_d",{
   expect_warning(tsd2 <- calc_tajimas_d(.internal.data$test_snps, ".base", step = 400, triple_sigma = TRUE, sigma = 200), "Consider adding a snp level facet")
   tsdc2 <- get.snpR.stats(tsd2, ".base", "tajimas_d")
   expect_true(all(tsdc2$single.window$triple_sigma))
+  
+  # default bug
+  expect_warning(tsd <- calc_tajimas_d(.internal.data$test_snps, "pop", triple_sigma = FALSE, sigma = 400), "Consider adding a snp level facet")
+  tsd <- get.snpR.stats(tsd, "pop", "tajimas_d")
+  expect_true(all(tsd$single.window$step == 800))
+  
 })
   

@@ -122,7 +122,7 @@ test_that("merging errors",{
                        fams = c("A", "B", "C", "T", "T", "T"))
   
   y <- import.snpR.data(gy, snp.y, samp.y)
-  z <- merge_snpRdata(x, y)
+  expect_warning(z <- merge_snpRdata(x, y), "Some levels are duplicated")
   expect_equal(ncol(z), 106)
   expect_error(merge_snpRdata(x, y, all.x.samples = FALSE, all.y.samples = FALSE), "No matching sample metadata")
   

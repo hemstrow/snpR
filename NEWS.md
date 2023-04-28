@@ -4,6 +4,9 @@
 ### Minor
 * Changed the behavior of `calc_fis()` to take the ratio of average variance components instead of the average of ratios following the recommendations of [Bahtia et al. 2013](https://doi.org/10.1101/gr.154831.113) and in line with the new behavior of `calc_pairwise_fst()`.
 * To aid in calculating weighted mean $F_{IS}$ values for cases where the dataset is too big to run at once with snpR (as may be the case for large WGS data sets, for example), the `keep_components` argument was added to `calc_fis()` to return the "b" and "c" variance components for each locus for later processing. Brief instructions were added to the documentation for `calc_fis()` to explain this process. This brings `calc_fis()` behavior fully in line with `calc_pairwise_fst()` for bi-allelic markers, although it still needs to be fixed for poly-allelic markers (which are not yet supported on the front-end).
+* Changed the internal behavior of `sample.meta()<-` (setting new sample meta) to intelligently update `snpRdata()` objects by removing only calculated statistics and summary tabulations that applied to any changed facets instead
+of simply re-importing the entire dataset as before. This should *substantially* speed up this function for large
+data sets.
 
 ## Bug fixes
 * Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.
@@ -14,6 +17,12 @@
 * Fixed a bug where running the `.base` facet *alongside* other facets with `calc_pairwise_ld()` with the `CLD` option
 would cause an error during merging.
 * Fixed a bug where running the `.base` facet *alongside* other facets with different snp level facets during `calc_smoothed_averages()` would cause errors.
+
+
+# snpR 1.2.6.1 -- hotfix
+### bug fixes
+* Fixed a bug where `calc_smoothed_averages()` and `calc_tajimas_d()` would do a step 100 times larger than expected if the default was used! Thus the hotfix.
+
 
 
 # snpR 1.2.6

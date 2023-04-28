@@ -107,3 +107,80 @@ test_that("errors",{
   expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
   
 })
+
+
+
+test_that("sample meta fetching and updating",{
+  
+  # fetching
+  expect_identical(stickSNPs@sample.meta, sample.meta(stickSNPs))
+  
+  # replacement
+  x <- .internal.data$test_snps
+  sample.meta(x) <- cbind.data.frame(sample.meta(x), 
+                                     x = rnorm(ncol(x)),
+                                     y = rnorm(ncol(x)))
+  tf <- c("pop", "pop.chr", "pop.chr", "fam", ".base", "pop.fam")
+  x <- calc_pi(x, tf)
+  x <- calc_pairwise_fst(x, tf[-5])
+  x <- calc_pairwise_ld(x, tf)
+  x <- .suppress_specific_warning(calc_isolation_by_distance(x, tf), "Mantel tests for IBD")
+  x <- calc_hs(x, tf)
+  x <- calc_smoothed_averages(x, tf[-5], sigma =  100)
+  x <- do_bootstraps(x, tf[-5], 5, sigma = 100)
+  y <- x
+  
+  # adding a new col doesn't change anything, but does add a col to the sample.stats
+  sample.meta(y)$new <- "test"
+  expect_identical(x@stats, y@stats)
+  expect_true("new" %in% colnames(y@sample.stats))
+  
+  # altering a non-facet col doesn't change anything except for sample.stats
+  sample.meta(y)$new <- "hi"
+  expect_identical(x@stats, y@stats)
+  if("new" %in% colnames(y@sample.stats)){
+    expect_true(all(y@sample.stats$new == "hi"))
+  }
+  
+  
+  # removing an old col causes that col to be purged from the data
+  y <- x
+  sample.meta(y)$pop <- NULL
+  expect_false("pop" %in% 
+                 unlist(.split.facet(c(y@facet.meta$facet, y@facets, 
+                                       y@stats$facet, y@pairwise.stats$facet, 
+                                       y@window.stats$facet, y@pairwise.window.stats$facet,
+                                       y@pop.stats$facet, y@pairwise.LD$prox$sample.facet,
+                                       y@window.bootstraps$facet,
+                                       unlist(.split.facet(names(y@calced_stats))),
+                                       names(y@allele_frequency_matrices),
+                                       names(y@genetic_distances),
+                                       y@weighted.means$facet,
+                                       names(y@other$geo_dists),
+                                       names(y@other$ibd)))))
+  
+  expect_false("pop" %in% colnames(y@sample.stats))
+  
+  # similar result if we change that col, just with an update in sample.stats instead of a removal
+  y <- x
+  sample.meta(y)$pop <- rep(c("test", "PAL"), length.out = ncol(x))
+  expect_false("pop" %in% 
+                 unlist(.split.facet(c(y@facet.meta$facet, y@facets, 
+                                       y@stats$facet, y@pairwise.stats$facet, 
+                                       y@window.stats$facet, y@pairwise.window.stats$facet,
+                                       y@pop.stats$facet, y@pairwise.LD$prox$sample.facet,
+                                       y@window.bootstraps$facet,
+                                       unlist(.split.facet(names(y@calced_stats))),
+                                       names(y@allele_frequency_matrices),
+                                       names(y@genetic_distances),
+                                       y@weighted.means$facet,
+                                       names(y@other$geo_dists),
+                                       names(y@other$ibd)))))
+  expect_true("pop" %in% colnames(y@sample.stats))
+  if("pop" %in% colnames(y@sample.stats)){
+    expect_true(all(y@sample.stats$pop == rep(c("test", "PAL"), length.out = ncol(x))))
+  }
+  
+})
+
+

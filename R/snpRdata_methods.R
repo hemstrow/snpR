@@ -154,7 +154,6 @@ setGeneric("snp.meta<-", function(x, value) standardGeneric("snp.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set snp meta
 setMethod("snp.meta<-", "snpRdata", function(x, value){
-  browser()
   import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat)
   
 })
@@ -173,18 +172,21 @@ setMethod("sample.meta<-", "snpRdata", function(x, value){
   if(nrow(value) != ncol(x)){
     stop("Supplied ", nrow(value), " replacements for sample meta to data with", ncol(x), " samples.")
   }
-  
   value$.sample.id <- sample.meta(x)$.sample.id
-  
+  ord <- c(colnames(value)[-which(colnames(value) == ".sample.id")], ".sample.id")
+  value <- value[,ord]
+
   # check same cols
-  ocol <- which(colnames(value) %in% colnames(sample.meta(x)))
-  rcols <- which(!colnames(sample.meta(x)) %in% colnames(value))
+  ocol <- colnames(value)[which(colnames(value) %in% colnames(sample.meta(x)))]
+  rcols <- colnames(sample.meta(x))[which(!colnames(sample.meta(x)) %in% colnames(value))]
   if(length(ocol) > 0 | length(rcols) > 0){
+    
     diff <- .fix..call(as.data.table(sample.meta(x))[,..ocol] != as.data.table(value)[,..ocol])
-    changed_cols <- colnames(sample.meta(x))[which(colSums(diff) != 0)]
-    changed_cols <- c(changed_cols, colnames(sample.meta(x))[rcols])
+    changed_cols <- ocol[which(colSums(diff) != 0)]
+    changed_cols <- c(changed_cols, rcols)
     if(length(changed_cols) == 0){
       x@sample.meta <- value
+      x <- .update.sample.stats.with.new.metadata(x, value)
       .check.snpRdata(x)
       return(x)
     }
@@ -211,6 +213,7 @@ setMethod("sample.meta<-", "snpRdata", function(x, value){
   
   # if no conflict cols or cols that have been tablulated, update, check, and return.
   x@sample.meta <- value
+  x <- .update.sample.stats.with.new.metadata(x, value)
   .check.snpRdata(x)
   return(x)
 })

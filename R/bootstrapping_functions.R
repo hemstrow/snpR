@@ -161,7 +161,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
     if("pairwise" %in% stats.type){
       has.samp.part.pw <- which(x@pairwise.window.stats$facet == paste0(samp.part, collapse = "."))
       has.snp.part.pw <- which(x@pairwise.window.stats$snp.facet == paste0(snp.part, collapse = "."))
-      has.step.matches.pw <- which(x@pairwise.window.stats$step == step*1000)
+      has.step.matches.pw <- which(x@pairwise.window.stats$step == step)
       has.sigma.matches.pw <- which(x@pairwise.window.stats$sigma == sigma)
       has.gaus.matches.pw <- which(x@pairwise.window.stats$gaussian == gaussian)
       has.triple.matches.pw <- which(x@pairwise.window.stats$triple_sigma == triple_sigma)
@@ -173,7 +173,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
     if("single" %in% stats.type){
       has.samp.part.s <- which(x@window.stats$facet == paste0(samp.part, collapse = "."))
       has.snp.part.s <- which(x@window.stats$snp.facet == paste0(snp.part, collapse = "."))
-      has.step.matches.s <- which(x@window.stats$step == step*1000)
+      has.step.matches.s <- which(x@window.stats$step == step)
       has.sigma.matches.s <- which(x@window.stats$sigma == sigma)
       has.gaus.matches.s <- which(x@window.stats$gaussian == gaussian)
       has.triple.matches.s <- which(x@window.stats$triple_sigma == triple_sigma)
@@ -790,14 +790,14 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     if(type == "single"){
       scol <- which(colnames(x@window.stats) == statistic)
       meta.cols <- 1:which(colnames(x@window.stats) == "triple_sigma")
-      matches <- get.matches(x@window.stats, facet, subfacet, snp.facet, sigma, nk, step*1000, triple_sigma, gaussian, statistic)
+      matches <- get.matches(x@window.stats, facet, subfacet, snp.facet, sigma, nk, step, triple_sigma, gaussian, statistic)
       meta <- x@window.stats[matches, meta.cols, with = FALSE]
       matches <- x@window.stats[matches, scol, with = FALSE]
     }
     else{
       scol <- which(colnames(x@pairwise.window.stats) == statistic)
       meta.cols <- 1:which(colnames(x@pairwise.window.stats) == "triple_sigma")
-      matches <- get.matches(x@pairwise.window.stats, facet, subfacet, snp.facet, sigma, nk, step*1000, triple_sigma, gaussian, statistic)
+      matches <- get.matches(x@pairwise.window.stats, facet, subfacet, snp.facet, sigma, nk, step, triple_sigma, gaussian, statistic)
       meta <- x@pairwise.window.stats[matches, meta.cols, with = FALSE]
       matches <- x@pairwise.window.stats[matches,  scol, with = FALSE]
     }

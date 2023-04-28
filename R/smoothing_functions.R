@@ -98,7 +98,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                    par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
   .snp.id <- chr <- position <- start <- end <- ..col_ord <- NULL
-  browser()
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -118,8 +117,10 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     stop(msg)
   }
   
+  step <- eval(step) # forces this to eval before we change sigma.
   sigma <- 1000*sigma
   if(!is.null(step)){
+    step <- step *1000
     .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
   }
   else{
@@ -255,7 +256,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   
   
   if("pairwise" %in% stats.type){
-    browser()
     stats <- get.snpR.stats(x, facets = sample.facets, "pairwise")
     numeric.cols <- which(sapply(stats, class) %in% c("numeric", "integer") & colnames(stats) != "nk")
     numeric.cols <- intersect(numeric.cols, (which(colnames(stats) == ".snp.id") + 1):ncol(stats))
@@ -396,7 +396,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
 #' @importFrom foreach %do%
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
                           stats, gaussian = FALSE, nk = TRUE){
-  browser()
   ..scols <- ..chr <- NULL
 
   if(triple_sig){

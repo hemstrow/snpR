@@ -3140,13 +3140,23 @@ is.snpRdata <- function(x){
   rm.cols <- which(!osmc %in% colnames(nsm))
   if(length(rm.cols) > 0){
     t.cols <- osmc[rm.cols]
-    x@sample.stats[,rm.cols] <- NULL
+    x@sample.stats[,t.cols] <- NULL
     osmc <- osmc[-rm.cols]
   }
   
   # update maintained columns
   x@sample.stats[,osmc] <- 
     nsm[match(x@sample.stats$.sample.id, nsm$.sample.id),osmc]
+  
+  
+  # add any new columns
+  newcols <- colnames(nsm)[which(!colnames(nsm) %in% osmc)]
+  if(length(newcols) > 0){
+    x@sample.stats[,newcols] <- nsm[match(x@sample.stats$.sample.id, nsm$.sample.id),newcols]
+    ord <- c("facet", "subfacet", "snp.facet", "snp.subfacet", 
+             colnames(nsm)[-which(colnames(nsm) == ".sample.id")], ".sample.id")
+    ord <- c(ord, colnames(x@sample.stats)[which(!colnames(x@sample.stats) %in% ord)])
+  }
   
   return(x)
 }
