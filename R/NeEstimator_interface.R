@@ -231,8 +231,8 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     names(out)[i] <- type
   }
   setwd(owd)
-
-
+  
+  
   # fix pop names if possible
   if(!is.null(snpRdat)){
     facets <- .check.snpR.facet.request(snpRdat, facets)
@@ -244,8 +244,8 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     tab <- data.frame(index = index, ref = opts) #err
     out <- lapply(out, function(x){x$pop <- tab$ref[match(x$pop, tab$index)];return(x)})
   }
-
-
+  
+  
   # clean and merge
   out <- purrr::reduce(out, dplyr::full_join)
   out <- as.data.frame(out)
@@ -271,7 +271,7 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
     
   }
   cout <- dplyr::bind_cols(cout)
-
+  
   return(cout)
-
+  
 }

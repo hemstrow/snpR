@@ -12,7 +12,7 @@ NULL
 #' @importFrom methods show
 #' @export
 setMethod("show", "snpRdata", function(object) {
-  
+
   calced_stats_print <- character(0)
   if(length(object@calced_stats) > 0){
     for(i in 1:length(object@calced_stats)){
@@ -153,7 +153,11 @@ setMethod("snp.meta", "snpRdata", function(x, value) x@snp.meta)
 setGeneric("snp.meta<-", function(x, value) standardGeneric("snp.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set snp meta
-setMethod("snp.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat))
+setMethod("snp.meta<-", "snpRdata", function(x, value){
+  browser()
+  import.snpR.data(genotypes(x), value, sample.meta(x), mDat = x@mDat)
+  
+})
 
 
 setGeneric("sample.meta", function(x, value) standardGeneric("sample.meta"))
@@ -165,7 +169,51 @@ setMethod("sample.meta", "snpRdata", function(x, value) x@sample.meta)
 setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set sample meta
-setMethod("sample.meta<-", "snpRdata", function(x, value) import.snpR.data(genotypes(x), snp.meta(x), value, mDat = x@mDat))
+setMethod("sample.meta<-", "snpRdata", function(x, value){
+  if(nrow(value) != ncol(x)){
+    stop("Supplied ", nrow(value), " replacements for sample meta to data with", ncol(x), " samples.")
+  }
+  
+  value$.sample.id <- sample.meta(x)$.sample.id
+  
+  # check same cols
+  ocol <- which(colnames(value) %in% colnames(sample.meta(x)))
+  rcols <- which(!colnames(sample.meta(x)) %in% colnames(value))
+  if(length(ocol) > 0 | length(rcols) > 0){
+    diff <- .fix..call(as.data.table(sample.meta(x))[,..ocol] != as.data.table(value)[,..ocol])
+    changed_cols <- colnames(sample.meta(x))[which(colSums(diff) != 0)]
+    changed_cols <- c(changed_cols, colnames(sample.meta(x))[rcols])
+    if(length(changed_cols) == 0){
+      x@sample.meta <- value
+      .check.snpRdata(x)
+      return(x)
+    }
+    
+    check_facets <- x@facets[!x@facet.type %in% c(".base", "snp")]
+    
+    # will these changes effect anything tabulated if so, we need to return the object to the base level w/ no tabulated facets
+    tab_facets <- lapply(changed_cols, function(y) grepl(y, check_facets))
+    names(tab_facets) <- changed_cols
+    tab_facets <- as.data.frame(tab_facets)
+    tab_facets <- t(tab_facets)
+    colnames(tab_facets) <- check_facets
+    tab_facets <- colSums(tab_facets)
+    tab_facets <- tab_facets[which(tab_facets > 0)]
+    
+    if(length(tab_facets) > 0){
+      x <- .remove.facets.snpR.data(x, names(tab_facets))
+      x <- .update.sample.stats.with.new.metadata(x, value)
+      x@sample.meta <- value
+      .check.snpRdata(x)
+      return(x)
+    }
+  }
+  
+  # if no conflict cols or cols that have been tablulated, update, check, and return.
+  x@sample.meta <- value
+  .check.snpRdata(x)
+  return(x)
+})
 
 #' @export
 #' @describeIn subset_snpRdata extraction operator

@@ -10,6 +10,10 @@
 * Fixed an un-informative error message when nothing remains after merging in `merge_snpRdata()`.
 * Fixed an issue where having no matching column names during merging in `merge_snpRdata()` would produce weird results.
 * Fixed an issue where having matching but not merged by column names during merging in `merge_snpRdata()` would produce an error.
+* Fixed a niche bug in small data where attempting to build `geno.table` data during `snpRdata` facet tabulation when a facet level has no non-missing genotypes would error.
+* Fixed a bug where running the `.base` facet *alongside* other facets with `calc_pairwise_ld()` with the `CLD` option
+would cause an error during merging.
+* Fixed a bug where running the `.base` facet *alongside* other facets with different snp level facets during `calc_smoothed_averages()` would cause errors.
 
 
 # snpR 1.2.6

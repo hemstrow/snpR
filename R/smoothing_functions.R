@@ -98,6 +98,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                    par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
   .snp.id <- chr <- position <- start <- end <- ..col_ord <- NULL
+  browser()
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -119,7 +120,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   
   sigma <- 1000*sigma
   if(!is.null(step)){
-    step <- step * 1000
     .sanity_check_window(x, sigma/1000, step/1000, stats.type = stats.type, nk, facets = facets)
   }
   else{
@@ -167,7 +167,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                 sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                                 matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
                                 
-                                pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+                                pos_cols <- c(unlist(.split.facet(task_list[q,3])), "position")
                                 if(any(pos_cols == ".base")){
                                   pos_cols <- pos_cols[-which(pos_cols == ".base")]
                                 }
@@ -175,7 +175,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                 
                                 if(length(matches) != 0){
                                   out <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
-                                                          chr =  unlist(.split.facet(snp.facets)),
+                                                          chr =  unlist(.split.facet(task_list[q,3])),
                                                           sigma = sigma,
                                                           step = step, 
                                                           triple_sig = triple_sigma, 
@@ -199,7 +199,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     else{
       out <- vector("list", nrow(task_list))
       for(q in 1:nrow(task_list)){
-        
+
         if(verbose){cat(paste0(task_list[q,], collapse = "\t"), "\n")}
         
         .split.facet <- function(facet) strsplit(facet, "(?<!^)\\.", perl = T) # this tends to not pass correctly to workers
@@ -210,13 +210,13 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
         sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
         matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
         
-        pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+        pos_cols <- c(unlist(.split.facet(task_list[q,3])), "position")
         if(any(pos_cols == ".base")){
           pos_cols <- pos_cols[-which(pos_cols == ".base")]
         }
         if(length(matches) != 0){
           out[[q]] <- .average_windows(stats[matches,pos_cols, drop = FALSE], 
-                                  chr =  unlist(.split.facet(snp.facets)),
+                                  chr =  unlist(.split.facet(task_list[q,3])),
                                   sigma = sigma,
                                   step = step, 
                                   triple_sig = triple_sigma, 
@@ -238,7 +238,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     
     
     out <- dplyr::bind_rows(out)
-    out <- dplyr::arrange(out, snp.facets, position, start, end)
+    out <- dplyr::arrange(out, snp.facet, position, start, end)
     out$nk.status <- nk
     out$gaussian <- gaussian
     out$sigma <- sigma/1000
@@ -255,20 +255,21 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   
   
   if("pairwise" %in% stats.type){
+    browser()
     stats <- get.snpR.stats(x, facets = sample.facets, "pairwise")
     numeric.cols <- which(sapply(stats, class) %in% c("numeric", "integer") & colnames(stats) != "nk")
     numeric.cols <- intersect(numeric.cols, (which(colnames(stats) == ".snp.id") + 1):ncol(stats))
     
     
-    task_list <- .get.task.list(x, snp.facets)
-    task_list <- task_list[,3:4,drop = FALSE]
+    task_list <- .get.task.list(x, facets, source = "pairwise.stats")
+    # task_list <- task_list[,3:4,drop = FALSE]
     task_list <- as.data.frame(task_list)
     
-    sample_task_list <- unique(as.character(stats$comparison))
-    sample_task_list <- cbind(sample.facets, sample_task_list)
-    sample_task_list <- as.data.frame(sample_task_list)
+    # sample_task_list <- unique(as.character(stats$comparison))
+    # sample_task_list <- cbind(sample.facets, sample_task_list)
+    # sample_task_list <- as.data.frame(sample_task_list)
     
-    task_list <- merge(sample_task_list, task_list)
+    # task_list <- merge(sample_task_list, task_list)
     
     
     
@@ -289,14 +290,14 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                 sample.matches <- which(.paste.by.facet(stats, colnames(stats)[1:2]) == paste0(task_list[q,1], ".", task_list[q,2]))
                                 matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
                                 
-                                pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+                                pos_cols <- c(unlist(.split.facet(task_list[q,3])), "position")
                                 if(any(pos_cols == ".base")){
                                   pos_cols <- pos_cols[-which(pos_cols == ".base")]
                                 }
                                 
                                 if(length(matches) != 0){
                                   out <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
-                                                          chr =  unlist(.split.facet(snp.facets)),
+                                                          chr =  unlist(.split.facet(task_list[q,3])),
                                                           sigma = sigma,
                                                           step = step, 
                                                           triple_sig = triple_sigma, 
@@ -331,14 +332,14 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
         matches <- intersect(sample.matches, which(stats$.snp.id %in% snp.matches))
         
         
-        pos_cols <- c(unlist(.split.facet(snp.facets)), "position")
+        pos_cols <- c(unlist(.split.facet(task_list[q,3])), "position")
         if(any(pos_cols == ".base")){
           pos_cols <- pos_cols[-which(pos_cols == ".base")]
         }
         
         if(length(matches) != 0){
           out[[q]] <- .average_windows(stats[matches, pos_cols, drop = FALSE], 
-                                  chr =  unlist(.split.facet(snp.facets)),
+                                  chr =  unlist(.split.facet(task_list[q,3])),
                                   sigma = sigma,
                                   step = step, 
                                   triple_sig = triple_sigma, 
@@ -360,7 +361,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     
     
     out <- dplyr::bind_rows(out)
-    out <- dplyr::arrange(out, snp.facets, position, start, end)
+    out <- dplyr::arrange(out, snp.facet, position, start, end)
     out$nk.status <- nk
     out$gaussian <- gaussian
     out$sigma <- sigma/1000
@@ -395,6 +396,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
 #' @importFrom foreach %do%
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
                           stats, gaussian = FALSE, nk = TRUE){
+  browser()
   ..scols <- ..chr <- NULL
 
   if(triple_sig){
