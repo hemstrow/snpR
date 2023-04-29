@@ -3412,6 +3412,7 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
                            resolve_conflicts = "error"){
   
   .sample.id.from.x <- .sample.id.from.y <- .snp.id.from.x <- .snp.id.from.y <- .source.ob <- NULL
+  .sample.id <- .snp.id <- NULL
   #========sanity checks==============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")

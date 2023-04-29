@@ -97,7 +97,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                                    stats.type = c("single", "pairwise"), 
                                    par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
                                    verbose = FALSE) {
-  .snp.id <- chr <- position <- start <- end <- ..col_ord <- NULL
+  .snp.id <- chr <- position <- start <- end <- ..col_ord <- snp.facet <-  NULL
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

@@ -169,6 +169,7 @@ setGeneric("sample.meta<-", function(x, value) standardGeneric("sample.meta<-"))
 #' @export
 #' @describeIn extract_snpRdata set sample meta
 setMethod("sample.meta<-", "snpRdata", function(x, value){
+  ..ocol <- NULL
   if(nrow(value) != ncol(x)){
     stop("Supplied ", nrow(value), " replacements for sample meta to data with", ncol(x), " samples.")
   }

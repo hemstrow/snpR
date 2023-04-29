@@ -30,6 +30,10 @@ bootstraps.}
 \item{sigma}{numeric. Designates the width of windows in kilobases. Full
 window size is 6*sigma.}
 
+\item{step}{numeric or NULL, default default \code{2*sigma} (non-overlapping
+windows). Designates the number of kilobases between each window centroid.
+If NULL, windows are centered on each SNP.}
+
 \item{statistics}{character. Designates the statistic(s) to smooth, typically
 "all", "single", or "pairwise". See details for options.}
 
@@ -54,10 +58,6 @@ bootstrapped value is as small or smaller than observed. \item "greater":
 probability that a bootstrapped value is as large or larger than observed.
 \item "two-sided": probability that a bootstrapped value is as or more
 extreme than observed. }}
-
-\item{stepnumeric}{or NULL, default default \code{2*sigma} (non-overlapping
-windows). Designates the number of kilobases between each window centroid.
-If NULL, windows are centered on each SNP.}
 }
 \value{
 A snpRdata object with bootstrapped windows merged in to the

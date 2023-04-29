@@ -52,7 +52,7 @@
 #'@param boots numeric. Number of bootstraps to generate.
 #'@param sigma numeric. Designates the width of windows in kilobases. Full
 #'  window size is 6*sigma.
-#'@param stepnumeric or NULL, default default \code{2*sigma} (non-overlapping
+#'@param step numeric or NULL, default default \code{2*sigma} (non-overlapping
 #'  windows). Designates the number of kilobases between each window centroid.
 #'  If NULL, windows are centered on each SNP.
 #'@param statistics character. Designates the statistic(s) to smooth, typically

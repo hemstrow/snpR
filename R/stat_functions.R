@@ -541,7 +541,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               cleanup = TRUE,
                               verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
-  
+  a <- b <- ..component_cols <- NULL
   
   if(!isTRUE(verbose)){
     cat <- function(...){}
@@ -1098,6 +1098,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' 
 calc_fis <- function(x, facets = NULL, keep_components = FALSE){
   ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
+  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- NULL
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -4780,9 +4781,9 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
 
 
 calc_relatedness <- function(x, facets = NULL, methods = c("ql", "r")){
-  as <- stickSNPs@geno.tables$as
+  as <- x@geno.tables$as
   as <- as/rowSums(as)
-  x <- as.matrix(genotypes(stickSNPs))
+  x <- as.matrix(genotypes(x))
   x1 <- substr(x, 1, 1)
   x2 <- substr(x, 2, 2)
   

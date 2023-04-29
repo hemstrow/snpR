@@ -4041,7 +4041,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' }
 plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE,
                             plots = c("fis", "maf", "pca", "missingness", "heho")){
-  Individual <- NULL
+  Individual <- subfacet <- ho <- he <- count <- NULL
   #================checks and init===========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")

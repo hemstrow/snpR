@@ -1132,6 +1132,8 @@ is.snpRdata <- function(x){
 # @param meta.names names of the metadata columns, usually everything up to .snp.id
 # @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 .smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+  ..meta.cols <- NULL
+  
   # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
   take_new <- function(n.s, starter.meta){
     smc <- which(colnames(n.s) %in% starter.meta)
@@ -1205,7 +1207,7 @@ is.snpRdata <- function(x){
   if(length(miss.class) > 0){
     for(i in 1:length(miss.class)){
       tfix <- meta.cols[miss.class[i]]
-      n.s[[tfix]] <- as(n.s[[tfix]], unlist(o.class[miss.class[i]]))
+      n.s[[tfix]] <- methods::as(n.s[[tfix]], unlist(o.class[miss.class[i]]))
     }
   }
   
