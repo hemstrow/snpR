@@ -17,6 +17,7 @@ data sets.
 * Fixed a bug where running the `.base` facet *alongside* other facets with `calc_pairwise_ld()` with the `CLD` option
 would cause an error during merging.
 * Fixed a bug where running the `.base` facet *alongside* other facets with different snp level facets during `calc_smoothed_averages()` would cause errors.
+* Fixed a bug where running `calc_pairwise_ld()` would fail to return a proximity table if there were `NA` values in the sample metadata.
 
 
 # snpR 1.2.6.1 -- hotfix

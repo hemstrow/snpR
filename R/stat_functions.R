@@ -2748,7 +2748,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       bad.col <- which(colnames(prox) == "variable")
       prox <- prox[,-bad.col, with = FALSE]
       colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-      prox <- stats::na.omit(prox)
+      prox <- prox[-which(is.na(prox$CLD)),]
       prox <- as.data.table(prox)
       prox[,proximity := abs(s1_position - s2_position)]
       prox[,sample.facet := sample.facet]
