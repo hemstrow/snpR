@@ -461,6 +461,10 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  a SNP must be sequenced in to be used in generating plots.
 #'@param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
 #'  a sample must be sequenced at in order to be used in plots.
+#'@param smart_PCA logical, default TRUE. If TRUE, uses Patterson et. al 
+#'  (2006)'s centering approach prior to plot construction. Note that this also
+#'  avoids the need for interpolation, so interpolation is set to FALSE in this
+#'  case.
 #'@param interpolation_method character, default "bernoulli". Interpolation
 #'  method to use for missing data. Options: \itemize{\item{bernoulli:
 #'  }{Interpolated via binomial draw for each allele against minor allele
@@ -472,7 +476,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'  slower than the other methods, especially for large datasets. Setting an ncp
 #'  of 2-5 generally results in reasonable interpolations without the time
-#'  constraint.}}
+#'  constraint.}} Ignored if \code{smart_PCA} is TRUE.
 #'@param dims numeric, default 2. Output dimensionality, default 2.
 #'@param initial_dims numeric, default 50. The number of dimensions retained in
 #'  the initial PCA step during tSNE.
@@ -568,7 +572,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' # plot colored by population and family
 #' plot_clusters(stickSNPs, "pop.fam")
 plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
-                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, 
+                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE,
+                          smart_PCA = TRUE,
                           interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
                           viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5,
@@ -661,12 +666,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     }
   }
   
+  if(!smart_PCA){
+    if(isFALSE(interpolation_method) & length(plot_type) != 1 & plot_type[1] != "dapc"){
+      stop("All methods require no missing data. Please enable interpolation.\n")
+    }
+  }
+  else{
+    interpolation_method <- FALSE
+  }
   if(interpolation_method == "iPCA"){
     .check.installed("missMDA")
   }
-  if(isFALSE(interpolation_method) & length(plot_type) != 1 & plot_type[1] != "dapc"){
-    stop("All methods require no missing data. Please enable interpolation.\n")
-  }
+  
   
   if(any(c("umap", "tsne") %in% plot_type)){
     cat("Note that clusters and relative placements of samples in UMAP and tSNE dimension reductions may not properly represent higher dimensionality clustering.\n",
@@ -768,6 +779,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     
     if(verbose){cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")}
     sn <- t(sn)
+    
+    # do the centering if using smart_PCA approach
+    if(smart_PCA){
+      ms <- colMeans(sn, na.rm = TRUE)
+      ms <- ms[col(sn)]
+      afs <- (1+ms)/(2 + 2*nrow(sn)) # adjusted eqn, from Price et al 2006
+      # afs <- ms/2 # according to patterson
+      sn <- (sn - ms)/sqrt(afs*(1-afs)) # eqn 3, patterson et al 2006
+      sn[is.na(sn)] <- 0
+    }
   }
   else{
     meta <- x@sample.meta
@@ -780,9 +801,21 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 
   if("pca" %in% plot_type){
     if(verbose){cat("Preparing pca...\n")}
-    pca_r <- stats::prcomp(as.matrix(sn))
-    pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
-    plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
+
+    # did we do smart centering? if so, do svd instead of pca
+    if(smart_PCA){
+      pca_r <- svd(sn)
+      colnames(pca_r$u) <- paste0("PC", 1:ncol(pca_r$u))
+      plot_dats$pca <- cbind(meta, pca_r$u)
+    }
+    
+    # or just pca directly?
+    else{
+      pca_r <- stats::prcomp(as.matrix(sn))
+      pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
+      plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
+    }
+    
   }
   if("tsne" %in% plot_type){
     #get perplexity if not provided
@@ -1094,8 +1127,14 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     
 
     if(plot_type[i] == "pca"){
-      loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
-      loadings <- round(loadings * 100, 2)
+      if(smart_PCA){
+        loadings <- (pca_r$d^2)/sum(pca_r$d^2)
+        loadings <- round(loadings * 100, 2)
+      }
+      else{
+        loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
+        loadings <- round(loadings * 100, 2)
+      }
       out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
     }
     else{
@@ -1108,6 +1147,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   keys <- character(0)
   stats <- character(0)
   details <- character(0)
+  if(smart_PCA & !("dapc" %in% plot_type & length(plot_type) == 1)){
+    keys <- c(keys, "pricePrincipalComponentsAnalysis2006", "pattersonPopulationStructureEigenanalysis2006")
+    stats <- c(stats, "smart PCA", "smart PCA")
+    details <- c(details, "afs estimation during scaling and centering", "smart PCA centering and scaling adjustment")
+  }
+  
   if("tsne" %in% plot_type){
     keys <- c(keys, "Krijthe2015", "Maatan2008")
     stats <- c(stats, "RtSNE", "tSNE")
@@ -1120,7 +1165,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
   
   if("dapc" %in% plot_type){
-    keys <- c(keys, "jombart_discriminant_2010")
+    keys <- c(keys, "Jombart2010")
     stats <- c(stats, "DAPC")
     details <- c(details, "Discriminant Analysis of Principal Components core method.")
     

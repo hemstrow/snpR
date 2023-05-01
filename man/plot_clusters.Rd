@@ -11,6 +11,7 @@ plot_clusters(
   check_duplicates = FALSE,
   minimum_percent_coverage = FALSE,
   minimum_genotype_percentage = FALSE,
+  smart_PCA = TRUE,
   interpolation_method = "bernoulli",
   dims = 2,
   initial_dims = 50,
@@ -62,6 +63,11 @@ a SNP must be sequenced in to be used in generating plots.}
 \item{minimum_genotype_percentage}{numeric, default FALSE. Proportion of SNPs
 a sample must be sequenced at in order to be used in plots.}
 
+\item{smart_PCA}{logical, default TRUE. If TRUE, uses Patterson et. al 
+(2006)'s centering approach prior to plot construction. Note that this also
+avoids the need for interpolation, so interpolation is set to FALSE in this
+case.}
+
 \item{interpolation_method}{character, default "bernoulli". Interpolation
 method to use for missing data. Options: \itemize{\item{bernoulli:
 }{Interpolated via binomial draw for each allele against minor allele
@@ -73,7 +79,7 @@ defined, the number of components used for interpolation will be estimated
 using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 slower than the other methods, especially for large datasets. Setting an ncp
 of 2-5 generally results in reasonable interpolations without the time
-constraint.}}}
+constraint.}} Ignored if \code{smart_PCA} is TRUE.}
 
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 

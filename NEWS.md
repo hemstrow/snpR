@@ -7,6 +7,7 @@
 * Changed the internal behavior of `sample.meta()<-` (setting new sample meta) to intelligently update `snpRdata()` objects by removing only calculated statistics and summary tabulations that applied to any changed facets instead
 of simply re-importing the entire dataset as before. This should *substantially* speed up this function for large
 data sets.
+* Added the `smart_PCA` option to `plot_clusters()`. This will use Patterson et al. (2006)'s methods (with Price et al. (2006)'s allele frequency estimation) for centering and scaling genotypic data for PCA/tSNE/umap construction. This generally doesn't change much unless there is a lot of missing data, since this approach avoids imputation.
 
 ## Bug fixes
 * Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.
