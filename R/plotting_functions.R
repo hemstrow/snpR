@@ -4111,6 +4111,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
          "Acceptable plot types:", paste0(good.plots, collapse = "\n\t"))
   }
   
+  if("heho" %in% plots){
+    .check.installed("hexbin")
+  }
+  
   out <- list()
   
   #=================FIS======================
