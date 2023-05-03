@@ -19,6 +19,7 @@ data sets.
 would cause an error during merging.
 * Fixed a bug where running the `.base` facet *alongside* other facets with different snp level facets during `calc_smoothed_averages()` would cause errors.
 * Fixed a bug where running `calc_pairwise_ld()` would fail to return a proximity table if there were `NA` values in the sample metadata.
+* Fixed a bug where SFS construction by `calc_sfs()` and other SFS functions would error with some but not all data sets due to issues when adding `anc` and `ref` columns without using `snp.meta(x)<-`. Existing tests didn't catch this because it didn't occur with the `stickSNPs` test data or other test data sets.
 
 
 # snpR 1.2.6.1 -- hotfix
