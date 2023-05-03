@@ -10,7 +10,7 @@ data sets.
 * Added the `smart_PCA` option to `plot_clusters()`. This will use Patterson et al. (2006)'s methods (with Price et al. (2006)'s allele frequency estimation) for centering and scaling genotypic data for PCA/tSNE/umap construction. This generally doesn't change much unless there is a lot of missing data, since this approach avoids imputation.
 
 ## Bug fixes
-* Fixed a wierd bug where metadata class conversion during statistic calculation could result in merge errors.
+* Fixed a weird bug where metadata class conversion during statistic calculation could result in merge errors.
 * Fixed an un-informative error message when nothing remains after merging in `merge_snpRdata()`.
 * Fixed an issue where having no matching column names during merging in `merge_snpRdata()` would produce weird results.
 * Fixed an issue where having matching but not merged by column names during merging in `merge_snpRdata()` would produce an error.
@@ -49,11 +49,11 @@ creation times!
 * Added `merge_snpRdata()` to merge `snpRdata` objects using syntax equivalent to base R's `merge()` function. This can still be made more computationally efficient in the future by avoiding some internal summary tabulation.
 
 ### Minor
-* Reworked `calc_smoothed_averages()` to be more memory efficient (but sligtly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
-* Minor rework to importing and facet creation to be more memory efficient (but sligtly slower) when working with large datasets.
+* Reworked `calc_smoothed_averages()` to be more memory efficient (but slightly slower) when working with large datasets. Added `triple_sigma` and `gaussian` arguments that determine if $\sigma$ is tripled to have windows with a full size of 6 x sigma and determine if gaussian smoothing is actually used. Added more info to `get.snpR.stats()` window returns.
+* Minor rework to importing and facet creation to be more memory efficient (but slightly slower) when working with large datasets.
 * `calc_tajimas_d()` will now also return the number of raw segregating sites per window (which was already internally calculated, since it is a part of Watterson's Theta, but not returned).
 * Changed the defaults for smoothing and tajima's D to `2*sigma` (non-overlapping windows)
-* Added the `mac` argument to `filter_snps()` to filter by minor allele count instead of minor allele frequency. Currently doesn't support faceting, which will probably be added later depending on user need. The `singletons` argument is now depriceated.
+* Added the `mac` argument to `filter_snps()` to filter by minor allele count instead of minor allele frequency. Currently doesn't support faceting, which will probably be added later depending on user need. The `singletons` argument is now depreciated.
 * Added the `hwe_excess_side` argument ot `filter_snps()`, enabling users to only remove SNPs out of HWE that have either het or hom excesses. They default behavior is still to do both.
 * Added $ZF_{ST}$ and $F_{ST}/(1-F_{ST})$ to `calc_pairwise_fst()`.
 * Added the explicit option to recode chromosome names as simple numeric values to `format_snps()` with the `plink` option. For some cases with many scaffolds/etc, this may be necessary. Before this was the default behavior, not an option. To account for this, also added checks to ensure that, if this option is not used, that no chromosome names start in numbers (leading numbers will be replaced with a character equivalent -- 0 -> A, 1 -> B, 9 -> I).
