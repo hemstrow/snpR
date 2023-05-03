@@ -69,13 +69,13 @@
 #' ## call calc_sfs()
 #' sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(10,10))
 #' ## plot
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(x = sfs)
 #' 
 #' 
 #' # run for the overall dataset
 #' sfs <- calc_sfs(dat, projection = 30)
 #' ## plot
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(x = sfs)
 #' 
 #' # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
 #' plot_sfs(dat, projection = 30)
