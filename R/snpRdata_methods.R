@@ -188,7 +188,10 @@ setMethod("sample.meta<-", "snpRdata", function(x, value){
     if(length(changed_cols) == 0){
       x@sample.meta <- value
       x <- .update.sample.stats.with.new.metadata(x, value)
-      .check.snpRdata(x)
+      errs <- .check.snpRdata(x)
+      if(errs != TRUE){
+        stop(errs)
+      }
       return(x)
     }
     
@@ -207,7 +210,10 @@ setMethod("sample.meta<-", "snpRdata", function(x, value){
       x <- .remove.facets.snpR.data(x, names(tab_facets))
       x <- .update.sample.stats.with.new.metadata(x, value)
       x@sample.meta <- value
-      .check.snpRdata(x)
+      errs <- .check.snpRdata(x)
+      if(errs != TRUE){
+        stop(errs)
+      }
       return(x)
     }
   }
@@ -215,7 +221,10 @@ setMethod("sample.meta<-", "snpRdata", function(x, value){
   # if no conflict cols or cols that have been tablulated, update, check, and return.
   x@sample.meta <- value
   x <- .update.sample.stats.with.new.metadata(x, value)
-  .check.snpRdata(x)
+  errs <- .check.snpRdata(x)
+  if(errs != TRUE){
+    stop(errs)
+  }
   return(x)
 })
 

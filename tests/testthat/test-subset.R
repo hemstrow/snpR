@@ -109,7 +109,7 @@ test_that("errors",{
 })
 
 
-
+#========updating=======
 test_that("sample meta fetching and updating",{
   
   # fetching
@@ -180,6 +180,12 @@ test_that("sample meta fetching and updating",{
   if("pop" %in% colnames(y@sample.stats)){
     expect_true(all(y@sample.stats$pop == rep(c("test", "PAL"), length.out = ncol(x))))
   }
+  
+  
+  # error with identical
+  nmeta <- sample.meta(x)
+  colnames(nmeta)[1] <- "chr"
+  expect_error(sample.meta(x) <- nmeta, "Some unacceptable column names")
   
 })
 
