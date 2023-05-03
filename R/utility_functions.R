@@ -446,24 +446,24 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     # change snps and samps to snp and sample IDs
     keep.rows <- snps
     snps <- snp.meta(x)$.snp.id[snps]
-    
-    x <- snpRdata(.Data = genotypes(x)[which(snp.meta(x)$.snp.id %in% snps),],
+
+    x <- snpRdata(.Data = genotypes(x)[which(snp.meta(x)$.snp.id %in% snps),, drop = FALSE],
                   sample.meta = sample.meta(x),
-                  snp.meta = snp.meta(x)[which(snp.meta(x)$.snp.id %in% snps),],
-                  facet.meta = x@facet.meta[x@facet.meta$.snp.id %in% snps,],
+                  snp.meta = snp.meta(x)[which(snp.meta(x)$.snp.id %in% snps),, drop = FALSE],
+                  facet.meta = x@facet.meta[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
                   mDat = x@mDat,
                   snp.form = x@snp.form,
                   ploidy = .ploidy(x),
                   bi_allelic = .is.bi_allelic(x),
                   data.type = ifelse("data.type" %in% methods::slotNames(x), x@data.type, "genotypic"),
-                  geno.tables = list(gs = x@geno.tables$gs[x@facet.meta$.snp.id %in% snps,],
-                                     as = x@geno.tables$as[x@facet.meta$.snp.id %in% snps,],
-                                     wm = x@geno.tables$wm[x@facet.meta$.snp.id %in% snps,]),
+                  geno.tables = list(gs = x@geno.tables$gs[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
+                                     as = x@geno.tables$as[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
+                                     wm = x@geno.tables$wm[x@facet.meta$.snp.id %in% snps,, drop = FALSE]),
                   # ac = x@ac[x@facet.meta$.snp.id %in% snps,],
                   facets = x@facets,
                   facet.type = x@facet.type,
-                  stats = x@stats[x@stats$.snp.id %in% snps,],
-                  pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,],
+                  stats = x@stats[x@stats$.snp.id %in% snps, drop = FALSE],
+                  pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,, drop = FALSE],
                   sn = sn,
                   names = x@names,
                   row.names = x@row.names[keep.rows])
