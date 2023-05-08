@@ -60,6 +60,7 @@ Suggests:
     readr,
     remotes,
     Rtsne,
+    sequoia,
     shiny,
     umap,
     vcfR,

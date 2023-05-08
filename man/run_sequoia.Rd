@@ -12,7 +12,6 @@ run_sequoia(
   run_pedigree = FALSE,
   min_maf = 0.3,
   min_ind = 0.5,
-  ask = TRUE,
   ...
 )
 }
@@ -42,11 +41,11 @@ than this proportion of individuals. Note that \emph{individuals} with
 genotypes for fewer than half of the loci will be automatically removed by
 sequoia.}
 
-\item{ask}{logical, default TRUE. Should the function ask for confirmation
-before sourcing github code?}
-
 \item{...}{Additional arguments passed to\code{sequoia}
 (during parentage and pedigree reconstruction).}
+
+\item{ask}{logical, default TRUE. Should the function ask for confirmation
+before sourcing github code?}
 }
 \value{
 A nested list with each facet specified containing sequoia output 

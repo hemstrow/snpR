@@ -310,7 +310,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
     step <- NULL
   }
   if(is.null(facets[1]) | ".base" %in% facets | "sample" %in% .check.snpR.facet.request(x, facets, "none", TRUE)){
-    warning("Tajima's D has little meaning of snps on different chromosomes are considered together. Consider adding a snp level facet.")
+    warning("Tajima's D has little meaning if snps on different chromosomes are considered together. Consider adding a snp level facet.")
   }
   
   

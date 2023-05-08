@@ -89,7 +89,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       
       # try to eval text in two ways: once for a basic string, once for code the evaluates to a string
       .res1 <- try(list(eval(parse(text = .argnames[.is.facet][.candidate_facets]))), silent = TRUE)
-
+      
       if(methods::is(.res1, "try-error")){
         .argnames[.is.facet][.candidate_facets] <- list(eval(parse(text = paste0("c(\"", .argnames[.is.facet][.candidate_facets], "\")"))))
       }
@@ -189,7 +189,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
       msg <- c(msg, "All requested samples must be within 1:nsnps(x).\n")
     }
   }
-
+  
   
   
   if(length(msg) > 0){
@@ -446,7 +446,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     # change snps and samps to snp and sample IDs
     keep.rows <- snps
     snps <- snp.meta(x)$.snp.id[snps]
-
+    
     x <- snpRdata(.Data = genotypes(x)[which(snp.meta(x)$.snp.id %in% snps),, drop = FALSE],
                   sample.meta = sample.meta(x),
                   snp.meta = snp.meta(x)[which(snp.meta(x)$.snp.id %in% snps),, drop = FALSE],
@@ -1128,14 +1128,15 @@ filter_snps <- function(x, maf = FALSE,
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
 #''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
 #'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
-#'BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata for
-#'running Sequoia. For more information see sequoia documentation.} \item{fasta:
-#'} {fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format
-#'for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or
-#'./. (for missing values), with a healthy serving of additional metadata but
-#'very little sample metadata.} \item{genalex: }{GenAlEx format. If an outfile
-#'is requested, the data will be sorted according to any provided facets and
-#'written as an '.xlsx' object.} \item{snpRdata: }{a snpRdata object.} }
+#'BirthYear (or instead of BirthYear - BYmin and BYmax), optional column 
+#'Yearlast in sample metadata for running Sequoia. For more information see 
+#'sequoia documentation.} \item{fasta:} {fasta sequence format.} \item{vcf:}
+#'{Variant Call Format, a standard format for SNPs and other genomic variants. 
+#'Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a 
+#'healthy serving of additional metadata but very little sample metadata.} 
+#'\item{genalex: }{GenAlEx format. If an outfile is requested, the data will be 
+#'sorted according to any provided facets and written as an '.xlsx' object.} 
+#'\item{snpRdata: }{a snpRdata object.} }
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1307,13 +1308,15 @@ filter_snps <- function(x, maf = FALSE,
 #' #Sequoia format
 #' b <- sample.meta(stickSNPs)
 #' b$ID <- 1:nrow(b)
-#' b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
+#' b$Sex <- rep(c("F", "M", "U"), length.out=nrow(b))
 #' b$BirthYear <- round(runif(n = nrow(b), 1,1))
 #' a <- stickSNPs
-#' b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$ID)
+#' b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$.sample.id)
 #' sample.meta(a) <- b
-#' format_snps(x=a, output = "sequoia")
-#'
+#' format_snps(x = a, output = "sequoia")
+#' #note: if using the birth year windows BYmin and BYmax and or Yearlast, 
+#' ensure that the column names are not stored as BY.min, BY.max, Year.last for
+#' snpR. 
 #'
 #' # VCF format
 #' test <- format_snps(stickSNPs, "vcf", chr = "chr")
@@ -2395,13 +2398,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       colnames(rdata) <- 1:ncol(rdata)
       
       fix.sex.sequoia <- function(y){
-        #format sex for sequoia (1 = F,2 = M,3 = U,4 = H,NA)
+        #format sex for sequoia (1 = F,2 = M,3 = U,4 = H, NA)
         sexes <- c("F", "M", "U", "H", "1", "2", "3", "4")
-        sex <- x@sample.meta$Sex
+        sex <- sample.meta(x)$Sex
         sex[which(!sex %in% sexes)] <- 3
         sex[which(sex == "F")] <- 1
         sex[which(sex == "M")] <- 2
         sex[which(sex == "U")] <- 3
+        sex[which(is.na(sex) == TRUE)] <- 3
         sex[which(sex == "H")] <- 4
         return(sex)
       }
@@ -2409,20 +2413,23 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       #for lifehistory data input needs id, sex, year born
       if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
         if(all(c("BYmin", "BYmax") %in% colnames(sample.meta(x)))){
-          warning("BirthYear, BY.max, and BY.min columns all found in sample metadata. Defaulting to use BirthYear.\n")
+          warning("BirthYear, BYmax, and BYmin columns all found in sample metadata. Defaulting to use BirthYear.\n")
         }
+        
+         
+        
         ID <- x@sample.meta$ID
         sex <- fix.sex.sequoia(x)
         
         #ACTUALLY MAKE THE TABLE
         lhtable <- data.frame(ID=ID,
                               Sex = as.numeric(sex),
-                              BirthYear = x@sample.meta$BirthYear,
+                              BirthYear = sample.meta(x)$BirthYear,
                               stringsAsFactors = F)
         
       }
       else if(all(c("BYmin", "BYmax", "ID", "Sex") %in% colnames(sample.meta(x)))){
-        ID <- x@sample.meta$ID
+        ID <- sample.meta(x)$ID
         sex <- fix.sex.sequoia(x)
         
         #ACTUALLY MAKE THE TABLE
@@ -2432,7 +2439,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                               BY.max = sample.meta(x)$BYmax,
                               stringsAsFactors = F)
       }
-      else{stop("Needs 'ID' and 'Sex' and either 'BirthYear' or 'BYmin' and 'BYmax' columns in sample metadata. \n")}
+      else{stop("Needs 'ID', 'Sex', and either 'BirthYear' or 'BYmin' and 'BYmax' columns in sample metadata. \n")}
+      
+      if(!"Yearlast" %in% colnames(x@sample.meta)){
+        cat("Yearlast is not included in the dataset, last known reproductive year for individuals. Sequoia will run without it.\n")
+      }
+      else{
+        lhtable$Year.last <- sample.meta(x)$Yearlast
+      }
       
       rownames(rdata) <- ID
       rdata = list(dat=rdata, lh=lhtable)
