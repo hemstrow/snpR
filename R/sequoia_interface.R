@@ -2,14 +2,15 @@
 #'
 #' Runs the parentage assignment and pedigree construction tool from the
 #' \code{sequoia} package. Note that this function \emph{is not overwrite
-#' safe!}. This function is a wrapper which sources code from github.
+#' safe!}.
 #'
-#' This is an integration of the program and package written by Jisca Huisman.
-#' Note that there are many more Sequoia specific arguments that can be added to
-#' change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
-#' etc.) See documentation for \code{sequoia}. These can be
-#' passed to the pedigree and parentage reconstructions using the ... argument
-#' in run_sequoia.
+#' This is a limited integration of the program and package written by Jisca 
+#' Huisman. Note that there are many more Sequoia specific arguments that can 
+#' be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, 
+#' etc.) See documentation for \code{sequoia}. These can be passed to the 
+#' pedigree and parentage reconstructions using the ... argument in run_sequoia.
+#' The sequoia package has many features, and snpR facilitates the use of a 
+#' fraction of them. snpR users are encouraged to use the sequoia R package.
 #'
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Sample-specific facets over which the
@@ -22,6 +23,9 @@
 #'   run_pedigree command.
 #' @param run_pedigree FALSE or TRUE, default FALSE. Runs pedigree construction 
 #'   for the samples. This process can take a long time. 
+#' @param run_relatives FALSE or TRUE, default FALSE. Runs retrieval of other
+#'   relatives which did not pass thresholds for assignment in the main pedigree 
+#'   construction model.
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 #'   cutoff for analysis. Sequoia requires high minor allele frequencies for
 #'   parentage and pedigree construction.
@@ -29,8 +33,6 @@
 #'   than this proportion of individuals. Note that \emph{individuals} with
 #'   genotypes for fewer than half of the loci will be automatically removed by
 #'   sequoia.
-#' @param ask logical, default TRUE. Should the function ask for confirmation
-#'   before sourcing github code?
 #' @param ... Additional arguments passed to\code{sequoia}
 #'   (during parentage and pedigree reconstruction).
 #'
@@ -61,13 +63,17 @@
 #' # slow, so not run here
 #' \dontrun{
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, 
-#'                    run_pedigree = FALSE)
+#'                    run_pedigree = FALSE, run_relatives = FALSE)
 #' ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, 
-#'                    run_pedigree = TRUE)
+#'                    run_pedigree = TRUE, run_relatives = FALSE)
+#' rel <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = FALSE, 
+#'                    run_pedigree = FALSE, run_relatives = TRUE)
+#'                    
 #' }
 run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, 
                                   run_parents = FALSE, run_pedigree = FALSE, 
-                                  min_maf = 0.3, min_ind = 0.5, ...
+                                  run_relatives = FALSE, min_maf = 0.3, 
+                                  min_ind = 0.5, ...
                                   ){
   
   #===================sanity checks===============
@@ -91,20 +97,9 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE,
     warn <- c(warn, "Genotypes sequenced in fewer than 50% of individuals will automatically be removed by Sequoia.\n")
   }
   
-  req.columns <- c("ID", "Sex")
+  req.columns <- c("ID", "Sex", "BirthYear", "BYmin", "BYmax", "Yearlast")
   if(any(!req.columns %in% colnames(sample.meta(x)))){
-    msg <- c(msg, "Columns named 'ID' and 'Sex' are required in the sample metadata.\n")
-  }
-  
-  # check columns in metadata
-  col_logi <- sum(c("BirthYear" %in% colnames(sample.meta(x)),
-                    sum(c("BYmin", "BYmax") %in% colnames(sample.meta(x))) == 2))
-  
-  if(col_logi == 0){
-    msg <- c(msg, "Columns named either BirthYear or both BYmin and BYmax are required in sample meta.\n")
-  }
-  else if(col_logi == 2){
-    warn <- c("Both BirthYear, BYmin and BYmax are contained in the sample metadata, defaulting to BirthYear. To change this behavior, remove the BirthYear column.\n")
+    msg <- c(msg, "Columns named 'ID', 'Sex', 'BirthYear', 'BYmin', 'BYmax', 'Yearlast', are required in the sample metadata.\n")
   }
   
   if(length(warn) > 0){
@@ -164,6 +159,10 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE,
     
     if(run_pedigree){
       out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, Module = "ped", ...) 
+    }
+    
+    if(run_relatives){
+      out[[i]]$relatives <- sequoia::GetMaybeRel(GenoM = tdat$dat, LifeHistData = tdat$lh, ...)
     }
   }
   return(

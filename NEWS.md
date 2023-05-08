@@ -8,7 +8,7 @@
 of simply re-importing the entire dataset as before. This should *substantially* speed up this function for large
 data sets.
 * Added the `smart_PCA` option to `plot_clusters()`. This will use Patterson et al. (2006)'s methods (with Price et al. (2006)'s allele frequency estimation) for centering and scaling genotypic data for PCA/tSNE/umap construction. This generally doesn't change much unless there is a lot of missing data, since this approach avoids imputation.
-* Incorporated update of `sequoia V 2.5.3` which adds 'Year.last' - a cutoff for an individuals reproductive window into `format_snps()`. Returned `sequoia` to 'suggests'.   
+* Incorporated update of `sequoia V 2.5.3` which adds 'Year.last' - a cutoff for an individuals reproductive window into `format_snps()`. Returned `sequoia` to 'suggests'. Incorporated `sequoia` function `GetMaybeRel` in the `run_sequoia()` wrapper.
 
 ## Bug fixes
 * Fixed a weird bug where metadata class conversion during statistic calculation could result in merge errors.

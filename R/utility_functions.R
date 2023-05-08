@@ -2411,12 +2411,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       }
       
       #for lifehistory data input needs id, sex, year born
-      if(all(c("Sex", "BirthYear", "ID") %in% colnames(x@sample.meta))){
-        if(all(c("BYmin", "BYmax") %in% colnames(sample.meta(x)))){
-          warning("BirthYear, BYmax, and BYmin columns all found in sample metadata. Defaulting to use BirthYear.\n")
+      if(!all(c("Sex", "BirthYear", "ID", "BYmin", "BYmax", "Yearlast") %in% colnames(x@sample.meta))){
+          warning("Required columns Sex, ID, Yearlast, BirthYear, BYmax, and BYmin not found in sample metadata.\n")
         }
-        
-         
         
         ID <- x@sample.meta$ID
         sex <- fix.sex.sequoia(x)
@@ -2425,28 +2422,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         lhtable <- data.frame(ID=ID,
                               Sex = as.numeric(sex),
                               BirthYear = sample.meta(x)$BirthYear,
-                              stringsAsFactors = F)
-        
-      }
-      else if(all(c("BYmin", "BYmax", "ID", "Sex") %in% colnames(sample.meta(x)))){
-        ID <- sample.meta(x)$ID
-        sex <- fix.sex.sequoia(x)
-        
-        #ACTUALLY MAKE THE TABLE
-        lhtable <- data.frame(ID=ID,
-                              Sex = as.numeric(sex),
                               BY.min = sample.meta(x)$BYmin,
                               BY.max = sample.meta(x)$BYmax,
+                              Year.last = sample.meta(x)$Yearlast,
                               stringsAsFactors = F)
-      }
-      else{stop("Needs 'ID', 'Sex', and either 'BirthYear' or 'BYmin' and 'BYmax' columns in sample metadata. \n")}
-      
-      if(!"Yearlast" %in% colnames(x@sample.meta)){
-        cat("Yearlast is not included in the dataset, last known reproductive year for individuals. Sequoia will run without it.\n")
-      }
-      else{
-        lhtable$Year.last <- sample.meta(x)$Yearlast
-      }
       
       rownames(rdata) <- ID
       rdata = list(dat=rdata, lh=lhtable)
