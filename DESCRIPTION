@@ -46,6 +46,7 @@ Suggests:
     genepop,
     genio,
     geosphere,
+    ggspatial,
     ggrepel,
     GMMAT,
     hexbin,
