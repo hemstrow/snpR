@@ -71,28 +71,41 @@ test_that("snapclust",{
 })
 
 #===================plot_structure_map===================
-# test_that("structure map",{
-#   skip_on_cran(); skip_on_ci()
-#   skip_if_not_installed(c("LEA", "ggrepel", "sf", "ggsn", "scatterpie", "maps", "sf"))
-# 
-#   lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
-#   lat_long <- t(lat_long)
-#   colnames(lat_long) <- c("lat", "long")
-#   lat_long <- as.data.frame(lat_long)
-#   lat_long$pop <- rownames(lat_long)
-#   psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
-#   psf <- sf::`st_crs<-`(psf, "EPSG:4326")
-# 
-#   # get the assignments
-#   .make_it_quiet(assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE)) # get structure-like results
-# 
-#   # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
-#   background <- maps::map("state", "oregon", plot = FALSE)
-#   background <- sf::st_as_sf(background)
-# 
-#   p2 <- plot_structure_map(assignments, k = 3, facet = "pop", pop_coordinates = psf, sf = list(background), radius_scale = .2, scale_bar = list(dist = 40, dist_unit = "km", transform = T), compass = list(symbol = 16, scale = 0.2), ask = FALSE)
-#   expect_true(ggplot2::is.ggplot(p2))
-# })
+test_that("structure map",{
+  skip_on_cran(); skip_on_ci()
+  skip_if_not_installed(c("LEA", "ggrepel", "ggspatial", "scatterpie", "sf"))
+
+  lat_long <- data.frame(SMR = c(44.365931, -121.140420), CLF = c(44.267718, -121.255805), OPL = c(44.485958, -121.298360), ASP = c(43.891693, -121.448360), UPD = c(43.891755, -121.451600), PAL = c(43.714114, -121.272797)) # coords for point
+  lat_long <- t(lat_long)
+  colnames(lat_long) <- c("lat", "long")
+  lat_long <- as.data.frame(lat_long)
+  lat_long$pop <- rownames(lat_long)
+  psf <- sf::st_as_sf(as.data.frame(lat_long), coords = c("long", "lat"))
+  psf <- sf::`st_crs<-`(psf, "EPSG:4326")
+
+  # get the assignments
+  .make_it_quiet(assignments <- plot_structure(stickSNPs, "pop", alpha = 10, k = 3, clumpp = FALSE)) # get structure-like results
+
+  # get a map of oregon as a background from the maps package. Note that this map is a bit odd as an sf, but works as an example.
+  background <- rnaturalearth::ne_states(iso_a2 = "US", returnclass = "sp")
+  background <- sf::st_as_sf(background)
+  background <- background[background$name %in% "Oregon",]
+  
+  p1 <- plot_structure_map(assignments, k = 3, facet = "pop", 
+                           pop_coordinates = psf,
+                           radius_scale = .2,
+                           ask = FALSE)
+  expect_true(ggplot2::is.ggplot(p1))
+  expect_equal(length(p1$layers), 4)
+
+  p2 <- plot_structure_map(assignments, k = 3, facet = "pop", 
+                           pop_coordinates = psf, 
+                           layers = list(ggplot2::geom_sf(data = background)),
+                           radius_scale = .2,
+                           ask = FALSE)
+  expect_true(ggplot2::is.ggplot(p2))
+  expect_true(length(p2$layers), 5) # does it have the additional background layer?
+})
 
 #==================plot_clusters=====================
 

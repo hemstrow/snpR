@@ -3769,14 +3769,12 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #'   points/coordinates for each facet level. Must contain a column of data with
 #'   population labels named identically to the provided facet (for example,
 #'   named "pop" if "pop" is the provided facet.)
-#' @param sf list of sf objects, default NULL. Additional features to be plotted
-#'   alongside points, such as rivers or county lines.
-#' @param sf_fill_colors character vector, default "viridis". A vector of colors
-#'   to use to fill each polygon sf object. By default, uses the viridis palette
-#'   with an alpha of 0.2.
-#' @param sf_line_colors character vector, default "viridis". A vector of colors
-#'   to use to color lines in in each sf object. By default, uses the viridis
-#'   palette with an alpha of 0.2.
+#' @param layers list of \code{ggplot2} layer objects, default NULL. Additional
+#'   ggplot layers to be plotted in order, below the pie charts, such as maps
+#'   with borders, temperatures, forest cover, etc. As a special note,
+#'   \code{link[ggnewscale]{new_scale_fill}} can be used to add additional
+#'   \code{fill} aesthetic layers without conflict from the resulting pie
+#'   charts. See examples.
 #' @param pop_names logical, default T. If true, facet level names will be
 #'   displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
@@ -3792,12 +3790,16 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' @param crop logical, default F. If TRUE, will will crop the plot around the
 #'   sample points. If false will show the full extent of the data, often set by
 #'   any additional sf objects being plotted.
-#' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km",
-#'   transform = T). Arguments passed to the \code{scalebar} function from
-#'   \code{ggsn} to add a scale to the plot. If NULL, no scale added.
-#' @param compass list or NULL, list(symbol = 16). Arguments passed to
-#'   \code{north} function from \code{ggsn} to add a compass to the plot. If
-#'   NULL, no compass added.
+#' @param scale_bar list or NULL, default \code{list()}. Arguments passed to the
+#'   \code{\link[ggspatial]{annotation_scale}} function from \code{ggspatial} to
+#'   add a scale to the plot. If NULL, no scale added.
+#' @param compass list or NULL, default \code{list(style =
+#'   ggspatial::north_arrow_fancy_orienteering, location = "br")}. Arguments
+#'   passed to \code{\link[ggspatial]{annotation_north_arrow}} function from
+#'   \code{ggspatial} to add a compass to the plot. If NULL, no compass added.
+#'   Note that calls to alternative styles, like
+#'   \code{\link[ggspatial]{north_arrow_fancy_orienteering}} cannot have
+#'   \code{()} after them, like they would if called directly.
 #' @param ask logical, default TRUE. Should the function ask for confirmation
 #'   before sourcing github code?
 #'
@@ -3823,21 +3825,22 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) 
 #'
 #' # get a map of oregon as a background from the maps package. 
-#' # Note that this map is a bit odd as an sf, but works as an example.
-#' background <- maps::map("state", "oregon")
+#' background <- rnaturalearth::ne_states(iso_a2 = "US", returnclass = "sp")
 #' background <- sf::st_as_sf(background)
+#' background <- background[background$name %in% "Oregon",]
 #'
 #' # make the plot
-#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, 
-#'                    sf = list(background), radius_scale = .2, 
-#'                    scale_bar = list(dist = 40, dist_unit = "km", 
-#'                                     transform = T), 
-#'                    compass = list(symbol = 16, scale = 0.2))
+#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf,
+#'                    layers = list(ggplot2::geom_sf(data = background, 
+#'                                      ggplot2::aes(fill = "example")),
+#'                    ggnewscale::new_scale_fill()), radius_scale = .2)
 #' }
-plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
+plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = NULL,
                                pop_names = T, viridis.option = "viridis", alt.palette = NULL,
                                radius_scale = 0.05, label_args = NULL, crop = FALSE,
-                               scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16), ask = TRUE){
+                               scale_bar = list(), 
+                               compass = list(style = ggspatial::north_arrow_fancy_orienteering, location = "br"), 
+                               ask = TRUE){
   
   plot_structure_map_extension <- NULL
 
@@ -3850,21 +3853,19 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     resp <- tolower(resp)
     
     while(resp != "y"){
-      cat("(y or n)\n")
-      if(resp != "n"){
+      if(resp == "n"){
         return(FALSE)
       }
-      else{
-        resp <- readLines(n = 1)
-        resp <- tolower(resp)
-      }
+      cat("(y or n)\n")
+      resp <- readLines(n = 1)
+      resp <- tolower(resp)
     }
   }
   
   .check.installed("sf")
   .check.installed("scatterpie")
   .check.installed("viridis")
-  if(!is.null(compass) | !is.null(scale_bar)){.check.installed("ggsn")}
+  if(!is.null(compass) | !is.null(scale_bar)){.check.installed("ggspatial")}
   
   
   
@@ -3889,9 +3890,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
                                      k = k, 
                                      facet = facet, 
                                      pop_coordinates = pop_coordinates,
-                                     sf = sf, 
-                                     sf_fill_colors = sf_fill_colors, 
-                                     sf_line_colors = sf_line_colors,
+                                     layers = layers,
                                      pop_names = pop_names, 
                                      viridis.option = viridis.option, 
                                      alt.palette = alt.palette,

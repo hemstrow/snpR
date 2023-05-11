@@ -9,6 +9,7 @@ of simply re-importing the entire dataset as before. This should *substantially*
 data sets.
 * Added the `smart_PCA` option to `plot_clusters()`. This will use Patterson et al. (2006)'s methods (with Price et al. (2006)'s allele frequency estimation) for centering and scaling genotypic data for PCA/tSNE/umap construction. This generally doesn't change much unless there is a lot of missing data, since this approach avoids imputation.
 * Incorporated update of `sequoia V 2.5.3` which adds 'Year.last' - a cutoff for an individuals reproductive window into `format_snps()`. Returned `sequoia` to 'suggests'. Incorporated `sequoia` function `GetMaybeRel` in the `run_sequoia()` wrapper.
+* Changed `plot_structure_map()` to take additional `ggplot2` layers directly and plot them prior to the pie charts instead of taking `sf` objects and trying to guess what the user wanted to do with them. This makes things considerably more flexible and makes it much easier to do things like plot precipitation/etc under the pie charts, although it means the user needs to be a bit more savy. Updated documentation to reflect.
 
 ## Bug fixes
 * Fixed a weird bug where metadata class conversion during statistic calculation could result in merge errors.
