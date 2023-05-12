@@ -3295,6 +3295,11 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   \item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.}
 #' @param max_ind_per_pop numeric, default NULL. Maximum number of individuals
 #'   to consider per population.
+#' @param nsnps numeric, default \code{nrow(x)}. The number of SNPs to use
+#'   for the analysis, defaulting to all of the snps in the data set. Using
+#'   very large numbers of SNPs (10k+) doesn't usually improve the ne estimates
+#'   much but costs a lot of time, since computing time scales with the square
+#'   of the number of sites.
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
 #'   check this. At the moment, this cannot be a full file path, just a file
@@ -3332,11 +3337,13 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     # temporal_methods = c("Pollak", "Nei", "Jorde"),
                     # temporal_gens = NULL, 
                     max_ind_per_pop = NULL,
+                    nsnps = nrow(x),
                     outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
+  x <- eval(x) # in case of subsetting, this'll prevent re-evaling this or having wierd eval errors due to the nrow(x) default above
   
   msg <- character()
   NeEstimator_path <- normalizePath(NeEstimator_path)
@@ -3366,7 +3373,13 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   
   wrn <- character(0)
-  if(nsnps(x) > 5000){
+  if(nsnps < nrow(x)){
+    y <- x[sample(nrow(x), nsnps, replace = F),] 
+  }
+  else{
+    y <- x
+  }
+  if(nsnps > 5000){
     wrn <- c(wrn, "Large numbers of loci don't usually improve Ne estimates by a substantial margin and can massively increase run times and memory requirements. Loci counts of ~3,000 are usually sufficient to generate accurate Ne esitmates, but estimates are improved substantially by selecting loci with little missing data. See https://doi.org/10.1002/ece3.6016\n")
   }
   if(is.null(chr)){
@@ -3384,7 +3397,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   out <- vector("list", length(facets))
   for(i in 1:length(facets)){
     # write inputs
-    write_neestimator_inputs(x = x,
+    write_neestimator_inputs(x = y,
                              facets = facets[i],
                              chr = chr,
                              methods = methods,

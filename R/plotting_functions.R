@@ -4149,6 +4149,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================plot maf density=========
   if("maf" %in% plots){
+    calced <- .check_calced_stats(x, facet, "maf")
+    if(!unlist(calced)){
+      x <- calc_maf(x, facet)
+    }
     maf <- get.snpR.stats(x, facet, "maf")$single
     maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf, color = subfacet)) + ggplot2::geom_density() +
       ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency") +

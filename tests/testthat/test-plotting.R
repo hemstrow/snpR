@@ -430,5 +430,8 @@ test_that("diagnostic plots",{
   expect_true("colour" %in% names(dp3$missingness$labels))
   p1 <- ggplot2::ggplot_build(dp3$heho)
   expect_identical(p1$layout$layout$subfacet, c("ASP", "PAL"))
+  
+  # maf doesn't error if run alone
+  expect_no_error(plot_diagnostic(.internal.data$test_snps, facet = "pop", plots = "maf"))
 })
 

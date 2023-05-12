@@ -10,6 +10,7 @@ data sets.
 * Added the `smart_PCA` option to `plot_clusters()`. This will use Patterson et al. (2006)'s methods (with Price et al. (2006)'s allele frequency estimation) for centering and scaling genotypic data for PCA/tSNE/umap construction. This generally doesn't change much unless there is a lot of missing data, since this approach avoids imputation.
 * Incorporated update of `sequoia V 2.5.3` which adds 'Year.last' - a cutoff for an individuals reproductive window into `format_snps()`. Returned `sequoia` to 'suggests'. Incorporated `sequoia` function `GetMaybeRel` in the `run_sequoia()` wrapper.
 * Changed `plot_structure_map()` to take additional `ggplot2` layers directly and plot them prior to the pie charts instead of taking `sf` objects and trying to guess what the user wanted to do with them. This makes things considerably more flexible and makes it much easier to do things like plot precipitation/etc under the pie charts, although it means the user needs to be a bit more savy. Updated documentation to reflect.
+* Added `nsnps` argument to `calc_ne()` to do automatic subsetting to run with less SNPs while still merging results into the original dataset. Note that this isn't terribly quick at the moment since it passes to the still somewhat inefficient subset operator `[`. With reasonably small numbers of SNPs, like what is usually suggested for LDNe, it should be fine.
 
 ## Bug fixes
 * Fixed a weird bug where metadata class conversion during statistic calculation could result in merge errors.
@@ -22,6 +23,7 @@ would cause an error during merging.
 * Fixed a bug where running the `.base` facet *alongside* other facets with different snp level facets during `calc_smoothed_averages()` would cause errors.
 * Fixed a bug where running `calc_pairwise_ld()` would fail to return a proximity table if there were `NA` values in the sample metadata.
 * Fixed a bug where SFS construction by `calc_sfs()` and other SFS functions would error with some but not all data sets due to issues when adding `anc` and `ref` columns without using `snp.meta(x)<-`. Existing tests didn't catch this because it didn't occur with the `stickSNPs` test data or other test data sets.
+* Fixed a bug where `plot_diagnostic()` would fail if run with a new facet and the `maf` plot option but not the `fis` plot option.
 
 
 # snpR 1.2.6.1 -- hotfix

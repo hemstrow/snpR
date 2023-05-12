@@ -13,6 +13,7 @@ calc_ne(
   pcrit = c(0.05, 0.02, 0.01),
   methods = "LD",
   max_ind_per_pop = NULL,
+  nsnps = nrow(x),
   outfile = "ne_out",
   verbose = TRUE,
   cleanup = TRUE
@@ -49,6 +50,12 @@ Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
 
 \item{max_ind_per_pop}{numeric, default NULL. Maximum number of individuals
 to consider per population.}
+
+\item{nsnps}{numeric, default \code{nrow(x)}. The number of SNPs to use
+for the analysis, defaulting to all of the snps in the data set. Using
+very large numbers of SNPs (10k+) doesn't usually improve the ne estimates
+much but costs a lot of time, since computing time scales with the square
+of the number of sites.}
 
 \item{outfile}{character, default "ne_out". Prefix for output files. Note
 that this function will return outputs, so there isn't a strong reason to
