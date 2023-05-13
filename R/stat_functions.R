@@ -258,9 +258,14 @@ calc_maf <- function(x, facets = NULL){
 #'  whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param triple_sigma Logical, default TRUE. If TRUE, sigma will be tripled to
+#'@param triple_sigma logical, default TRUE. If TRUE, sigma will be tripled to
 #'  create windows of 6*sigma total.
-#'@param verbose Logical, default FALSE. If TRUE progress will be printed to the
+#'@param global logical, default FALSE. If TRUE, all window parameters will
+#'  be ignored and the global Tajima's D across all sites will instead be 
+#'  calculated. In this instance, \code{global_x} values will be merged into
+#'  the \code{weighted.means} slot instead of weighted mean values and no values
+#'  will be merged into the \code{window.stats} slot.
+#'@param verbose logical, default FALSE. If TRUE progress will be printed to the
 #'  console.
 #'
 #'@return snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's
@@ -288,67 +293,20 @@ calc_maf <- function(x, facets = NULL){
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
-                           triple_sigma = TRUE,
+                           triple_sigma = TRUE, global = FALSE,
                            verbose = FALSE){
-  #===============sanity checks==========================
-  if(!is.snpRdata(x)){
-    stop("x must be a snpRdata object.")
-  }
-  
-  step <- eval(step) # forces this to eval before we change sigma.
-  
-  if(!is.null(sigma) & !is.null(step)){
-    .sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
-  }
-  else if(is.null(step) & !is.null(sigma)){
-    sigma <- NULL
-    step <- NULL
-    warning("If no step size is provided but sigma is, the entire facet level will be considerd as a single window (sigma will be ignored).\n")
-  }
-  else{
-    sigma <- NULL
-    step <- NULL
-  }
-  if(is.null(facets[1]) | ".base" %in% facets | "sample" %in% .check.snpR.facet.request(x, facets, "none", TRUE)){
-    warning("Tajima's D has little meaning if snps on different chromosomes are considered together. Consider adding a snp level facet.")
-  }
-  
   
   #=================subfunction=========
-  func <- function(as, par, sigma, step, report){
-    out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
-    tps <- sort(as$position) #get the site positions, sort
-    lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
-    c <- 0 #set starting position
-    i <- 1 #set starting iteration for writing output
-    
-    # if sigma is null, set to run everything in one window
-    if(is.null(sigma)){
-      sigma <- range(as$position)
-      c <- mean(sigma)
-      step <- c + 1
-      sigma <- sigma[2] - sigma[1]
-    }
-    else{
-      sigma <- 1000*sigma
-    }
-    
-    
-    # run the loop
-    while (c <= lsp){
+  func <- function(as, par, sigma, step, report, global = FALSE){
+    one_window <- function(wsnps){
       
-      start <- c - ifelse(triple_sigma, sigma*3, sigma) #change window start
-      end <- c + ifelse(triple_sigma, sigma*3, sigma) #change window end
-      
-      # take all the snps in the window, calculate T's theta, W's theta, and T's D
-      wsnps <- as[as$position <= end & as$position >= start,] # get only the sites in the window
       
       ac_cols <- which(colnames(wsnps) %in% colnames(x@geno.tables$as))
       
       wsnps <- wsnps[!(rowSums(wsnps[,ac_cols]) == 0),] # remove any sites that are not sequenced in this pop/group/whatever
       if(nrow(wsnps) == 0){ #if no snps in window
         c <- c + step*1000 #step along
-        next #go to the next window
+        return(list()) #go to the next window
       }
       
       # binomials for each allele
@@ -380,15 +338,64 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
       e2 <- c2/(a1^2 + a2)
       D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
       
-      #output result for this window, step to the next window
-      if("pop" %in% colnames(x)){
-        out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
+      return(list(ts.theta = ts.theta, ws.theta = ws.theta, D = D, n_seg = n_seg))
+    }
+
+    out <- data.frame(position = numeric(0), sigma = numeric(0), ws.theta = numeric(0), ts.theta = numeric(0), D = numeric(0), n_snps = numeric(0)) #initialize output
+    
+    # short circut if global (all snps)
+    if(global){
+      tr <- one_window(as)
+      out[1,"ws.theta"] <- tr[[2]]
+      out[1,"ts.theta"] <- tr[[1]]
+      out[1,"num_seg"] <- tr[[4]]
+      out[1,"D"] <-tr[[3]]
+      out[1, "n_snps"] <- nrow(as)
+      return(out)
+    }
+    
+    tps <- sort(as$position) #get the site positions, sort
+    lsp <- tps[length(tps)] #get the position of the last site to use as endpoint
+    c <- 0 #set starting position
+    i <- 1 #set starting iteration for writing output
+    
+    # if sigma is null, set to run everything in one window
+    if(is.null(sigma)){
+      sigma <- range(as$position)
+      c <- mean(sigma)
+      step <- c + 1
+      sigma <- sigma[2] - sigma[1]
+    }
+    else{
+      sigma <- 1000*sigma
+    }
+    
+    
+    # run the loop
+    while (c <= lsp){
+
+      start <- c - ifelse(triple_sigma, sigma*3, sigma) #change window start
+      end <- c + ifelse(triple_sigma, sigma*3, sigma) #change window end
+      
+      # take all the snps in the window, calculate T's theta, W's theta, and T's D
+      wsnps <- as[as$position <= end & as$position >= start,] # get only the sites in the window
+      
+      tr <- one_window(wsnps)
+      
+      if(length(tr) == 0){
+        c <- c + step*1000
+        next
       }
+      
+      #output result for this window, step to the next window
+      # if("pop" %in% colnames(x)){
+      #   out[i,"pop"] = x[1,"pop"] #if a pop column is in the input, add a pop column here.
+      # }
       out[i,"position"] <- c
-      out[i,"ws.theta"] <- ws.theta
-      out[i,"ts.theta"] <- ts.theta
-      out[i,"num_seg"] <- n_seg
-      out[i,"D"] <- D
+      out[i,"ws.theta"] <- tr[[2]]
+      out[i,"ts.theta"] <- tr[[1]]
+      out[i,"num_seg"] <- tr[[4]]
+      out[i,"D"] <-tr[[3]]
       out[i, "n_snps"] <- nrow(wsnps)
       out[i, "start"] <- start
       out[i, "end"] <- end
@@ -404,6 +411,31 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
     }
     return(out)
   }
+  #===============sanity checks==========================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.")
+  }
+  
+  step <- eval(step) # forces this to eval before we change sigma.
+  
+  if(!is.null(sigma) & !is.null(step)){
+    .sanity_check_window(x, sigma, step, stats.type = "single", nk = TRUE, facets = facets)
+  }
+  else if(is.null(step) & !is.null(sigma)){
+    sigma <- NULL
+    step <- NULL
+    warning("If no step size is provided but sigma is, the entire facet level will be considerd as a single window (sigma will be ignored).\n")
+  }
+  else{
+    sigma <- NULL
+    step <- NULL
+  }
+  if((is.null(facets[1]) | ".base" %in% facets | "sample" %in% .check.snpR.facet.request(x, facets, "none", TRUE)) & !global){
+    warning("Tajima's D has little meaning if snps on different chromosomes are considered together. Consider adding a snp level facet.")
+  }
+  
+  
+  
   
   
   #=================prep==========
@@ -427,18 +459,29 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
                             par = par,
                             sigma = sigma,
                             step = step,
+                            global = global,
                             verbose = verbose)
-  
+
   #===========merge and clean============
-  x <- .merge.snpR.stats(x, out, type = "window.stats")
-  x <- .update_calced_stats(x, facets, "tajimas_d")
-  x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "num_seg", "D"))
+  if(!global){
+    x <- .merge.snpR.stats(x, out, type = "window.stats")
+    x <- .update_calced_stats(x, facets, "tajimas_d")
+    x <- .calc_weighted_stats(x, facets, type = "single.window", c("ws.theta", "ts.theta", "num_seg", "D"))
+  }
+  else{
+    out$position <- NULL
+    out$sigma <- NULL
+    out$step <- NULL
+    out$n_snps <- NULL
+    colnames(out)[5:8] <- paste0("global_", colnames(out)[5:8])
+    x <- .merge.snpR.stats(x, out, type = "weighted.means")
+    x <- .update_calced_stats(x, ".base", "global_tajimas_d")
+  }
+ 
   x <- .update_citations(x, "Tajima1989", "Tajima's_d", "Tajima's D, as well as Watterson's and Tajima's Theta")
+ 
   
-  # calc weights ignoring any snp levels (for stuff like overall population means)
-  samp.facets <- .check.snpR.facet.request(x, facets)
   return(x)
-  
 }
 
 

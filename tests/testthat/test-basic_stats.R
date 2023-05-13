@@ -217,5 +217,18 @@ test_that("tajimas_d",{
   tsd <- get.snpR.stats(tsd, "pop", "tajimas_d")
   expect_true(all(tsd$single.window$step == 800))
   
+  # global
+  tsd <- calc_tajimas_d(.internal.data$test_snps, tf, step = 200, triple_sigma = FALSE, sigma = 400, global = TRUE)
+  tsdc <- get.snpR.stats(tsd, tf, "tajimas_d")
+  levs <- unique(tsdc$weighted.means[,1:4])
+  levs_pasted <- .paste.by.facet(levs, colnames(levs), sep = ".")
+  sf <- summarize_facets(.internal.data$test_snps, tf)
+  expect_true(".base..base..base..base" %in% levs_pasted)
+  expect_true(all(paste0("pop.", lapply(strsplit(sf$chr.pop, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("fam.", lapply(strsplit(sf$chr.fam, "\\."), function(x){paste0(x[2], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(paste0("fam.", sf$fam, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("pop.", sf$pop, "..base..base") %in% levs_pasted))
+  expect_true(all(paste0("fam.pop.", lapply(strsplit(sf$chr.fam.pop, "\\."), function(x){paste0(x[2], ".", x[3], ".chr.", x[1])})) %in% levs_pasted))
+  expect_true(all(c("global_ws.theta", "global_ts.theta", "global_D", "global_num_seg") %in% colnames(tsdc$weighted.means)))
 })
   

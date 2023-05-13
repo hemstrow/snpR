@@ -11,6 +11,7 @@ calc_tajimas_d(
   step = 2 * sigma,
   par = FALSE,
   triple_sigma = TRUE,
+  global = FALSE,
   verbose = FALSE
 )
 }
@@ -36,10 +37,16 @@ whole chromosome).}
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+\item{triple_sigma}{logical, default TRUE. If TRUE, sigma will be tripled to
 create windows of 6*sigma total.}
 
-\item{verbose}{Logical, default FALSE. If TRUE progress will be printed to the
+\item{global}{logical, default FALSE. If TRUE, all window parameters will
+be ignored and the global Tajima's D across all sites will instead be 
+calculated. In this instance, \code{global_x} values will be merged into
+the \code{weighted.means} slot instead of weighted mean values and no values
+will be merged into the \code{window.stats} slot.}
+
+\item{verbose}{logical, default FALSE. If TRUE progress will be printed to the
 console.}
 }
 \value{
