@@ -11,6 +11,7 @@ data sets.
 * Incorporated update of `sequoia V 2.5.3` which adds 'Year.last' - a cutoff for an individuals reproductive window into `format_snps()`. Returned `sequoia` to 'suggests'. Incorporated `sequoia` function `GetMaybeRel` in the `run_sequoia()` wrapper.
 * Changed `plot_structure_map()` to take additional `ggplot2` layers directly and plot them prior to the pie charts instead of taking `sf` objects and trying to guess what the user wanted to do with them. This makes things considerably more flexible and makes it much easier to do things like plot precipitation/etc under the pie charts, although it means the user needs to be a bit more savy. Updated documentation to reflect.
 * Added `nsnps` argument to `calc_ne()` to do automatic subsetting to run with less SNPs while still merging results into the original dataset. Note that this isn't terribly quick at the moment since it passes to the still somewhat inefficient subset operator `[`. With reasonably small numbers of SNPs, like what is usually suggested for LDNe, it should be fine.
+* Added a few aliases to `get.snpR.stats()` for IBD ("ibd") and Tajima's D ("tsd", "d") to make it easier to fetch the correct values. Also adjusted the requested statistics to send everything to lower case, so things like "LD", "D", or "He" will still work.
 
 ## Bug fixes
 * Fixed a weird bug where metadata class conversion during statistic calculation could result in merge errors.

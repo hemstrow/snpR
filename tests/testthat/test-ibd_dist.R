@@ -26,6 +26,11 @@ test_that("correct ibd", {
   rownames(geoloc) <- upops
   geoloc <- geoloc[sort(rownames(geoloc)),]
   expect_equivalent(res$pop$Edwards, stats::dist(geoloc)) # check pop
+  
+  # check fetching with aliases
+  y <- calc_he(y, c(".base", "pop", "pop.chr","pop.chr.fam"))
+  res <- get.snpR.stats(y, facets = c(".base", "pop", "pop.chr","pop.chr.fam"), stats = c("ibd", "he")) # fetch result
+  expect_true("ibd" %in% names(res))
 })
 
 test_that("correct genetic distances", {
