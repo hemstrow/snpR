@@ -53,6 +53,10 @@ test_that("snmf",{
   expect_true(max(p$plot_data$Percentage) <= 1)
   expect_equal(as.character(unique(p$plot_data$pop)), c("ASP", "PAL"))
   # not internally calced, just a check for proper prep and parsing. Note that the K plot details were all checked against structure harvester
+  
+  # check that it works OK with ".base"
+  
+  .make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], ".base", k = 2:3, clumpp = FALSE))
 })
 
 test_that("snapclust",{

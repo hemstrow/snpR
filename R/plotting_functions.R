@@ -2570,11 +2570,16 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       msg <- c(msg, "Only one facet may be plotted at once.\n")
     }
     if(!is.null(facet[[1]])){
-      fcheck <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
-      if(any(fcheck[[2]] != "sample")){
-        stop("Only simple, sample level facets allowed.\n")
+      if(facet[[1]] == ".base"){
+        facet <- NULL
       }
-      facets <- .check.snpR.facet.request(x, facet, remove.type = "snp")
+      else{
+        fcheck <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+        if(any(fcheck[[2]] != "sample")){
+          stop("Only simple, sample level facets allowed.\n")
+        }
+        facets <- .check.snpR.facet.request(x, facet, remove.type = "snp")
+      }
     }
     if(!is.null(facet.order)){
       cats <- .get.task.list(x, facet)
