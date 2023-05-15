@@ -8,6 +8,7 @@ filter_snps(
   x,
   maf = FALSE,
   mac = 0,
+  mgc = 0,
   hf_hets = FALSE,
   hwe = FALSE,
   fwe_method = "none",
@@ -29,9 +30,16 @@ filter_snps(
 \item{maf}{numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 minor allele frequency. Either maf or mac filtering are allowed, not both.}
 
-\item{mac}{numeric, between 0 and 1 minus the total number of individuals.
-Loci with less than this many minor alleles will be removed. Either maf or
-mac filtering are allowed, not both.}
+\item{mac}{integer, between 0 and 1 minus the total number of individuals.
+Loci with less \emph{or equal to} this many minor alleles will be removed.
+Either maf or mac filtering are allowed, not both. \code{mac = 1} is
+therefore a singleton filter.}
+
+\item{mgc}{integer, between 0 and the total number of individuals/2. Loci
+where the minor allele is present in less \emph{or equal to} this many
+individuals will be removed. Either mac or mgc filtering are allowed, not
+both. \code{mgc = 1} is analagous to a singleton filter, but will also
+remove loci with one homozygous minor individual.}
 
 \item{hf_hets}{numeric between 0 and 1 or FALSE, default FALSE. Maximum
 acceptable heterozygote frequency.}

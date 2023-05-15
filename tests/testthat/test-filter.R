@@ -180,6 +180,22 @@ test_that("mac",{
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
+
+#==========mgc=============================
+test_that("mgc",{
+  expect_error(filter_snps(.internal.data$test_snps, mac = 1, mgc = 1), "mac and mgc cannot both be set")
+  expect_error(filter_snps(.internal.data$test_snps, mgc = 5), "mgc must be greater than or")
+  expect_error(filter_snps(.internal.data$test_snps, mgc = 3.5), "mgc must be an integer")
+  
+  td <- filter_snps(.internal.data$test_snps, mgc = 3, verbose = FALSE)
+  
+  hs <- colnames(.internal.data$test_snps@geno.tables$gs) %in% c("AC", "AG", "CT", "GT")
+  hs_c <- rowSums(.internal.data$test_snps@geno.tables$gs[, which(hs)])
+  mg <- rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
+  bad.snps <- which(hs_c + mg <= 3)
+  expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
+})
+
 #==========errors==========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]

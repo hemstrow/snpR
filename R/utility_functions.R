@@ -535,9 +535,15 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'@param x snpRdata object.
 #'@param maf numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  minor allele frequency. Either maf or mac filtering are allowed, not both.
-#'@param mac numeric, between 0 and 1 minus the total number of individuals.
-#'  Loci with less than this many minor alleles will be removed. Either maf or
-#'  mac filtering are allowed, not both.
+#'@param mac integer, between 0 and 1 minus the total number of individuals.
+#'  Loci with less \emph{or equal to} this many minor alleles will be removed.
+#'  Either maf or mac filtering are allowed, not both. \code{mac = 1} is
+#'  therefore a singleton filter.
+#'@param mgc integer, between 0 and the total number of individuals/2. Loci
+#'  where the minor allele is present in less \emph{or equal to} this many
+#'  individuals will be removed. Either mac or mgc filtering are allowed, not
+#'  both. \code{mgc = 1} is analagous to a singleton filter, but will also
+#'  remove loci with one homozygous minor individual.
 #'@param hf_hets numeric between 0 and 1 or FALSE, default FALSE. Maximum
 #'  acceptable heterozygote frequency.
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
@@ -604,6 +610,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'
 filter_snps <- function(x, maf = FALSE, 
                         mac = 0,
+                        mgc = 0,
                         hf_hets = FALSE, 
                         hwe = FALSE, fwe_method = "none",
                         hwe_excess_side = "both",
@@ -614,7 +621,7 @@ filter_snps <- function(x, maf = FALSE,
                         maf_facets = NULL,
                         hwe_facets = NULL,
                         non_poly = TRUE, 
-                        bi_al = TRUE, 
+                        bi_al = TRUE,
                         verbose = TRUE){
   
   #==============do sanity checks====================
@@ -667,6 +674,9 @@ filter_snps <- function(x, maf = FALSE,
   }
   
   if(mac){
+    if(mgc){
+      stop("mac and mgc cannot both be set.")
+    }
     if(!is.numeric(mac)){
       stop("mac must be a numeric value.")
     }
@@ -678,6 +688,21 @@ filter_snps <- function(x, maf = FALSE,
     }
     if(mac != as.integer(mac)){
       stop("mac must be an integer (but can be a numeric object).")
+    }
+  }
+  
+  if(mgc){
+    if(!is.numeric(mgc)){
+      stop("mgc must be a numeric value.")
+    }
+    if(length(mgc) != 1){
+      stop("mgc must be a numeric vector of length 1.")
+    }
+    if(mgc >= nsamps(x)/2 | mgc < 0){
+      stop("mgc must be greater than or equal to zero and less than half the number of samples (a maf of 0.5 in fully sequenced loci).")
+    }
+    if(mgc != as.integer(mgc)){
+      stop("mgc must be an integer (but can be a numeric object).")
     }
   }
   
@@ -866,16 +891,33 @@ filter_snps <- function(x, maf = FALSE,
       }
     }
     
-    #========mac========================================
-    if(mac){
-      if(verbose){cat("Filtering low minor allele counts.\n")}
-      
-      # singletons exist wherever the total allele count - the maf count is 1.
-      mac.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat) <= mac)
-      
-      if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
-      
-      vio.snps[mac.vio] <- T
+    #========mac/mgc========================================
+    if(mac | mgc){
+      if(mgc){
+        # in this case, this is the count of *individuals with the minor allele*
+        if(verbose){cat("Filtering low minor genotype counts.\n")}
+        hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
+        het_c <- matrixStats::rowSums2(gmat[,hs])
+        min_g_c <- matrixStats::rowSums2(gmat[,-hs]) - matrixStats::rowMaxs(gmat[,-hs])
+        
+        tgac <- het_c + min_g_c
+        
+        mgc.vio <- which(tgac <= mgc)
+        if(verbose){cat(paste0("\t", length(mgc.vio), " bad loci\n"))}
+        
+        vio.snps[mgc.vio] <- T
+        
+      }
+      else{
+        if(verbose){cat("Filtering low minor genotype counts.\n")}
+        
+        # singletons exist wherever the total allele count - the maf count is 1.
+        mac.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat) <= mac)
+        
+        if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
+        
+        vio.snps[mac.vio] <- T
+      }
     }
     #========hf_hets. Should only run if bi_al = TRUE.==========
     if(hf_hets){
