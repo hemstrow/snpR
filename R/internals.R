@@ -1760,6 +1760,9 @@ is.snpRdata <- function(x){
   if(!any(colnames(x@snp.meta) == "position")){
     msg <- c(msg, "No column named position found in snp metadata.")
   }
+  else{
+    if(any(is.na(snp.meta(x)$position))){msg <- c(msg, "NA values found in position data in snp metadata.\n")}
+  }
   
   # facets
   if(is.null(facets[1]) & any(stats.type == "pairwise")){
