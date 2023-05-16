@@ -4178,25 +4178,34 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================missingness==============
   if("missingness" %in% plots){
+    
     miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
-    if(exists("facet.vec")){
-      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
-                              ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
-        ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
-        ggplot2::geom_boxplot() +
-        ggplot2::geom_point(alpha = .5)
-    }
-    else{
-      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),
-                              ggplot2::aes(y = miss, x = Individual)) +
-        ggplot2::geom_boxplot() +
-        ggplot2::geom_point() +
-        ggplot2::theme()
+    if(any(miss > 0)){
+      if(exists("facet.vec")){
+        miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
+                                ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+          ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
+          ggplot2::geom_boxplot() +
+          ggplot2::geom_point(alpha = .5)
+      }
+      else{
+        miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),
+                                ggplot2::aes(y = miss, x = Individual)) +
+          ggplot2::geom_boxplot() +
+          ggplot2::geom_point() +
+          ggplot2::theme()
+      }
+      
+      miss <- miss +
+        ggplot2::theme_bw() +
+        ggplot2::ylab("Proportion of loci with missing data")
     }
     
-    miss <- miss +
-      ggplot2::theme_bw() +
-      ggplot2::ylab("Proportion of loci with missing data")
+    else{
+      cat("No missing data.\n")
+      miss <- NA
+    }
+    
     
     out$missingness <- miss
   }
