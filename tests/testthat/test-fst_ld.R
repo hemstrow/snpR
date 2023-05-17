@@ -48,6 +48,16 @@ test_that("zfst and 1/1-fst",{
   expect_true(all(round(tapply(tdfst$pairwise$zfst, tdfst$pairwise$comparison, mean), 3) == 0))
 })
 
+
+test_that("fst errors",{
+  x <- .internal.data$test_snps
+  sample.meta(x)$test <- "fill"
+  expect_error(calc_pairwise_fst(x, c("pop", "test")), "Some facets do not have more than one level")
+  
+  expect_error(calc_pairwise_fst(x, c("pop", "not_a_facet")), "not found in x metadata")
+  
+})
+
 test_that("correct fis",{
   # check
   x <- calc_fis(stickSNPs[1:10, pop = c("ASP")], c("pop"))

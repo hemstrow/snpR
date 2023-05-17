@@ -610,6 +610,15 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   if(any(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
+
+  # check that each facet has more than one level
+  samp.facets <- .check.snpR.facet.request(x, facets[[1]])
+  samp.facets <- summarize_facets(x, samp.facets)
+  bad.facets <- which(lapply(samp.facets, length) < 2)
+  if(length(bad.facets) > 0){
+    stop(paste0("Some facets do not have more than one level. Bad facets: ", paste0(names(samp.facets)[bad.facets], collapse = ", "), ".\n"))
+  }
+  
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
@@ -4835,52 +4844,162 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
   return(out)
 }
 
-
-calc_relatedness <- function(x, facets = NULL, methods = c("ql", "r")){
+# eqns from https://doi.org/10.1038/hdy.2017.52
+calc_relatedness <- function(x, facets = NULL, methods = c("rt", "ql")){
+  
+  # # would love to pass this off to related::coancestry, but it crashes on windows...
+  # d <- format_snps(x, "rafm")
+  # d[is.na(d)] <- 0
+  # d <- cbind.data.frame(ID = colnames(genotypes(x)), d)
+  # 
+  # coan <- related::coancestry(d, quellergt = 1)
+  
+  # browser()
   as <- x@geno.tables$as
-  as <- as/rowSums(as)
-  x <- as.matrix(genotypes(x))
-  x1 <- substr(x, 1, 1)
-  x2 <- substr(x, 2, 2)
+  gs <- x@geno.tables$gs
+  # as <- as/rowSums(as)
+  y <- as.matrix(genotypes(x))
+  x1 <- substr(y, 1, 1)
+  x2 <- substr(y, 2, 2)
   
-  x1f <- (1:ncol(as))[match(x1, colnames(as))]
-  x1f <- matrix(as[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
-  x2f <- (1:ncol(as))[match(x2, colnames(as))]
-  x2f <- matrix(as[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
+  # get the estimated frequency of the observed alleles: the below will implement according to wang et al eqn 2, but should always be identical to the simpler version below that...
+  # xf <- matrix(0, nrow(as), ncol(as))
+  # for(i in 1:ncol(as)){
+  #   x@snp.form
+  #   icols <- which(substr(colnames(gs), 1, x@snp.form/2) == colnames(as)[i] &
+  #                    substr(colnames(gs), (x@snp.form/2) + 1, x@snp.form) == colnames(as)[i])
+  #   jcols <- which(xor(substr(colnames(gs), 1, x@snp.form/2) == colnames(as)[i], 
+  #                    substr(colnames(gs), (x@snp.form/2) + 1, x@snp.form) == colnames(as)[i]))
+  #   xf[,i] <- (2*gs[,icols] + rowSums(gs[,jcols]))/(2*rowSums(gs)) # Wang et al eqn 2
+  # }
   
+  xf <- as/rowSums(as)
+  
+  # transform into allele-matched p and q
+  x1f <- (1:ncol(xf))[match(x1, colnames(xf))]
+  x1f <- matrix(xf[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
+  x2f <- (1:ncol(xf))[match(x2, colnames(xf))]
+  x2f <- matrix(xf[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
+
   res <- expand.grid(1:ncol(x), 1:ncol(x))
-  res <- res[-which(res$Var1 == res$Var2),]
-  
-  # I'm confused on the multilocus wording of Wang et al
-  for(i in 1:ncol(x)){
-    for(j in (i + 1):ncol(x)){
-      indicator <- as.numeric(x1[,i] == x1[,j]) +
-        as.numeric(x1[,i] == x2[,j]) +
-        as.numeric(x2[,i] == x1[,j]) +
-        as.numeric(x2[,i] == x2[,j])
+  res <- res[-which(res$Var1 <= res$Var2),]
+  res <- res[,2:1]
+
+  for(i in unique(res[,1])){
+    for(j in unique(res[,2])[which(unique(res[,2]) > i)]){
       
-      left_num <-  indicator - 
-        2*(x1f[i,] + x2f[i,])
-      left_dom <- 2 * (1 + as.numeric(x1[,i] == x2[,i]) - x1f[,i] - x2f[,i])
-      left <- left_num/left_dom
-      
-      
-      right_num <- indicator - 
-        2*(x1f[j,] + x2f[j,])
-      right_dom <- 2 * (1 + as.numeric(x1[,j] == x2[,j]) - x1f[,j] - x2f[,j])
-      right <- right_num/right_dom
-      
-      if(any(is.nan(left) | !is.finite(left))){
-        left[is.nan(left) | !is.finite(left)] <- 0
+      # indicator lambda variables
+      kAC <- as.numeric(x1[,i] == x1[,j])
+      kAD <- as.numeric(x1[,i] == x2[,j])
+      kBC <- as.numeric(x2[,i] == x1[,j])
+      kBD <- as.numeric(x2[,i] == x2[,j])
+      kAB <- as.numeric(x1[,i] == x2[,i])
+      kCD <- as.numeric(x1[,j] == x2[,j])
+
+      if("QG" %in% methods){
+        # equation 3
+        left_num <-  kAC + kAD + kBC + kBD - (
+          2*(x1f[i,] + x2f[i,]))
+        left_dom <- 2 * (1 + kAB - x1f[,i] - x2f[,i])
+        # left <- left_num/left_dom
+        
+        
+        right_num <-  kAC + kAD + kBC + kBD - (
+          2*(x1f[j,] + x2f[j,]))
+        right_dom <- 2 * (1 + kCD - x1f[,j] - x2f[,j])
+        # right <- right_num/right_dom
+        
+        # rQG <- (right + left)/2
+        
+        # set to zero estimator parts where undefined
+        lud <- which(left_dom == 0)
+        left_num[lud] <- 0
+        left_dom[lud] <- 0
+        
+        rud <- which(right_dom == 0)
+        right_num[rud] <- 0
+        right_dom[rud] <- 0
+        
+        # sum the components across loci first before solving
+        left_numt <- sum(left_num, na.rm = TRUE)
+        left_domt <- sum(left_dom, na.rm = TRUE)
+        right_numt <- sum(right_num, na.rm = TRUE)
+        right_domt <- sum(right_dom, na.rm = TRUE)
+        tot <- (left_numt/left_domt) + (right_numt/right_domt)
+        tot <- tot*.5
+        
+        res[which(res[,1] == i & res[,2] == j),]$QG <- tot
       }
       
-      if(any(is.nan(right) | !is.finite(right))){
-        right[is.nan(right) | !is.finite(right)] <- 0
+      if("LL" %in% methods | "W" %in% methods){
+        # eqn 13
+        num <- kAC + kAD + kBC + kBD
+        left_dom <- 2*(1 + kAB)
+        right_dom <- 2*(1 + kCD)
+        Sxy <- .5*((num/left_dom) + (num/right_dom))
+        
+        # do LL if bi-allelic, since it is identical to W in that case
+        if(.is.bi_allelic(x)){
+          if(!"LL" %in% methods){
+            methods <- c(methods, "LL")
+          }
+        }
+        
+        if("LL" %in% methods){
+          
+          # eqns 15 and 16
+          S0 <- (2 * rowSums(xf^2)) - rowSums(xf^3)
+          
+          top <- sxy - S0
+          bottom <- 1 - S0
+          
+          # eqn 14
+          res[which(res[,1] == i & res[,2] == j),]$LL <- sum(top)/sum(bottom)
+        }
+        if("W" %in% methods){
+          if(.is.bi_allelic(x)){
+            res[which(res[,1] == i & res[,2] == j),]$W <- res[which(res[,1] == i & res[,2] == j),]$LL
+          }
+          else{
+            warning("Wang's estimator is not yet implemented for non-biallelic loci. Please let us know on the GitHub issues page if you would like this implemented (see start-up message).\n")
+          }
+        }
+        
+        
+        
       }
       
-      tot <- (sum(left) + sum(right))/2
+      if("R" %in% methods){
+        # each column is an allele the A/B/C/D are being compared to
+        comp.mat <- matrix(colnames(as), nrow = length(x1[,i]), ncol = ncol(as), byrow = TRUE)
+        kAi <- x1[,i] == comp.mat
+        kBi <- x2[,i] == comp.mat
+        kCi <- x1[,j] == comp.mat
+        kDi <- x2[,j] == comp.mat
+        
+        # equation 7
+        top <- (kAi + kBi)*(kCi + kDi)
+        inside <- top/xf
+        inside <- rowSums(inside, na.rm = TRUE) - 1
+        nal <- rowSums(as != 0)
+        left <- 2*(nal - 1)
+        rR <- left*inside
+        
+        # multilocus (eqn under 7)
+        res[which(res[,1] == i & res[,2] == j),]$R <- sum(rR * (nal - 1))/sum(nal - 1)
+      }
       
-      
+      if("LR" %in% methods){
+        # eqn 10
+        left_top <- (x1f[,i]*(kBC + kBD)) + (x2f[,i]*(kAC + kAD)) - 4*x1f[,i]*x2f[,i]
+        left_bottom <- 2*(1 + kAB)*(x1f[,i] + x2f[,i]) - 8*(x1f[,i]*x2f[,i])
+        
+        
+        right_top <- (x1f[,j]*(kAD + kBD)) + (x2f[,j]*(kAC + kAD)) - 4*x1f[,j]*x2f[,j]
+        right_bottom <- 2*(1 + kCD)*(x1f[,j] + x2f[,j]) - 8*(x1f[,j]*x2f[,j])
+        
+        # need to figure out what the inversese of sampling variance derived by assuming zero relateness means.
+      }
     }
   }
   

@@ -2059,7 +2059,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       #add subpop numbers, if given
       rdata <- cbind(x@sample.meta[,colnames(x@sample.meta) %in% facets],
                      as.data.frame(outm, stringsAsFactors = F))
-      colnames(rdata)[1:sum(colnames(x@sample.meta) %in% facets)] <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
+      if(any(colnames(x@sample.meta) %in% facets)){
+        colnames(rdata)[1:sum(colnames(x@sample.meta) %in% facets)] <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% facets]
+      }
     }
   }
   

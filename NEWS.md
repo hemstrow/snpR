@@ -34,6 +34,7 @@ would cause an error during merging.
 * Fixed a bug where an inappropriate error would be returned if `plot_structure()` was run with `facet = ".base"`, which should be treated like `facet = NULL`.
 * `plot_diagnostic()` no longer plots anything for missingness if there is no missing data!
 * Added a sanity check to any window functions to throw an error when the position value for a SNP is `NA`.
+* Added a more informative error when `calc_pairwise_fst()` is run with a facet with only one level.
 
 
 # snpR 1.2.6.1 -- hotfix
