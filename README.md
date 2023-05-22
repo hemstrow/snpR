@@ -172,29 +172,13 @@ A CRAN version should be available soon.
 ## Example
 
 snpR is focused on ease-of-use. Primarily, it achieves this via the use
-of , which describe sample or SNP metadata. snpR is built to
+of *facets*, which describe sample or SNP metadata. snpR is built to
 automatically split up analysis by facet. For example, calculating
 observed heterozygosity for each population or family, or for each
 population/family combination is easy!
 
 ``` r
 library(snpR)
-#> Loading required package: data.table
-#> Warning: package 'data.table' was built under R version 4.2.3
-#> Loading required package: foreach
-#> snpR version: 1.2.6.9000 loaded.
-#> ================================================================================
-#> This is a development build of snpR.
-#> While this version is (probably) passing all tests, there may still be bugs present.
-#> Please report any issues to the github issues page (https://github.com/hemstrow/snpR/issues)!
-#> Check out the NEWS page on github for update notes (https://github.com/hemstrow/snpR/blob/dev/NEWS.md)
-#> ================================================================================
-#> Support for non-bialleic markers is currently under development.
-#> 
-#> To allow for non-biallilic markers, the internal structure of snpRdata objects has been changed slightly. While this version has been written to be backwards compatable, some issues may persist.
-#> 
-#> If you encounter any issues relating to a 'bi-allelic' or 'ploidy' slot, please report these and remake the snpRdata object using, for example:
-#>   x <- import.snpR.data(genotypes(x), snp.meta(x), sample.meta(x), mDat = 'NN')
 ## basic example code
 
 x <- calc_ho(stickSNPs, facets = c("pop")) # split by pop (stickSNPs is an example dataset included in snpR)
