@@ -29,6 +29,30 @@ is.snpRdata <- function(x){
   if(is.null(facets[1])){return(x)}
   facets <- .check.snpR.facet.request(x, facets)
   if(is.null(facets[1])){return(x)}
+  
+  #===========================smart rbind fil function========================
+  .smart.rbind.fill.matrix <- function(x, y, nrf = 1){
+    if(nrow(y) != 0 & nrow(x) != 0){
+      return(plyr::rbind.fill.matrix(x, y))
+    }
+    
+    if(nrow(y) == 0 & nrow(x) == 0){
+      return(matrix(NA, nrow = 0, ncol = 0))
+    }
+    
+    if(nrow(y) == 0){
+      fill <- matrix(0, nrf, ncol(x))
+      colnames(fill) <- colnames(x)
+      return(plyr::rbind.fill.matrix(x, fill))
+    }
+    
+    if(nrow(x) == 0){
+      fill <- matrix(0, nrf, ncol(y))
+      colnames(fill) <- colnames(y)
+      return(plyr::rbind.fill.matrix(fill, y))
+    }
+  }
+  
   #===========================turn into list========
   # need to fix any multivariate facets (those with a .)
   comp.facets <- grep("(?<!^)\\.", facets, perl = T)
@@ -109,20 +133,21 @@ is.snpRdata <- function(x){
     #=========================get gs matrices==========
     for(i in 1:nrow(sample.opts)){
       matches <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[i,]))))
-      t.x <- genotypes(x)[,matches]
+      t.x <- genotypes(x)[,matches, drop = FALSE]
       tgs <- .tabulate_genotypes(t.x, x@mDat)
-      gs$gs <- plyr::rbind.fill.matrix(gs$gs, tgs$gs)
-      gs$as <- plyr::rbind.fill.matrix(gs$as, tgs$as)
-      gs$wm <- plyr::rbind.fill.matrix(gs$wm, tgs$wm)
+      
+      gs$gs <- .smart.rbind.fill.matrix(gs$gs, tgs$gs, nrow(t.x))
+      gs$as <- .smart.rbind.fill.matrix(gs$as, tgs$as, nrow(t.x))
+      gs$wm <- .smart.rbind.fill.matrix(gs$wm, tgs$wm, nrow(t.x))
       # fix NAs that show up when there are less called genotype options in one facet level than in all levels!
       if(ncol(gs$gs) != ncol(tgs$gs)){
         gs <- lapply(gs, function(x){x[is.na(x)] <- 0;x})
       }
       
       x@facet.meta <- rbind(x@facet.meta,
-                            cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(tgs$gs)),
-                                             subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(tgs$gs)),
-                                             facet.type = rep("sample", nrow(tgs$gs)), stringsAsFactors = F),
+                            cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(t.x)),
+                                             subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(t.x)),
+                                             facet.type = rep("sample", nrow(t.x)), stringsAsFactors = F),
                                   x@snp.meta))
     }
     
@@ -169,6 +194,189 @@ is.snpRdata <- function(x){
   x@stats <- as.data.table(dplyr::arrange(os, .snp.id, facet, subfacet))
   
   
+  return(x)
+}
+
+# Remove tabulated facets. Useful mostly for subsetting where a sample facet
+# needs to be cleaned up and removed.
+#
+# @param x snpRdata object
+# @param facets sample-level facets to remove. Will remove the full tabulation,
+#   not by parts. For example, "pop.fam" will remove JUST pop-fam, not "pop" or
+#   "fam".
+.remove.facets.snpR.data <- function(x, facets = NULL){
+  #==========check removal request=============
+  if(is.null(facets)){
+    return(x)
+  }
+  if(any(facets == ".base")){
+    facets <- facets[-which(facets == ".base")]
+    if(length(facets) == 0){
+      return(x)
+    }
+  }
+
+  # anything to remove?
+  rm.facets <- x@facets[which(x@facets %in% facets)]
+  if(length(rm.facets) == 0){
+    return(x)
+  }
+  
+  #==========remove every trace of that facet============
+  # otherwise continue and find the rows to remove
+  rm.rows <- which(x@facet.meta$facet %in% rm.facets)
+  
+  # remove everything
+  x@geno.tables <- lapply(x@geno.tables, function(x) x[-rm.rows,])
+  x@stats <- x@stats[-rm.rows,]
+  
+  # pairwise
+  rm.pairwise.rows <- which(x@pairwise.stats$facet %in% rm.facets)
+  if(length(rm.pairwise.rows) > 0){
+    x@pairwise.stats <- x@pairwise.stats[-rm.pairwise.rows,]
+    if(nrow(x@pairwise.window.stats) == 0){
+      x@pairwise.window.stats <- data.frame()
+    }
+  }
+  
+  # window pairwise
+  rm.window.pairwise.rows <- which(x@pairwise.window.stats$facet %in% rm.facets)
+  if(length(rm.window.pairwise.rows) > 0){
+    x@pairwise.window.stats <- x@pairwise.window.stats[-rm.window.pairwise.rows,]
+    if(nrow(x@pairwise.window.stats) == 0){
+      x@pairwise.window.stats <- data.frame()
+    }
+  }
+  
+  # standard window
+  rm.window.rows <- which(x@window.stats$facet %in% rm.facets)
+  if(length(rm.window.rows) > 0){
+    x@window.stats <- x@window.stats[-rm.window.rows,]
+    if(nrow(x@window.stats) == 0){
+      x@window.stats <- data.frame()
+    }
+  }
+  
+  # window bootstraps
+  if(nrow(x@window.bootstraps) > 0){
+    rm.window.bootstraps.rows <- which(x@window.bootstraps$facet %in% rm.facets)
+    if(length(rm.window.bootstraps.rows) > 0){
+      x@window.bootstraps <- x@window.bootstraps[-rm.window.bootstraps.rows,]
+      if(nrow(x@window.bootstraps) == 0){
+        x@window.bootstraps <- data.frame()
+      }
+    }
+  }
+  
+  # sample stats -- no need to remove anything (but may need to edit metadata if this is called due to facet removal!)
+  
+  # pop stats
+  if(nrow(x@pop.stats) > 0){
+    rm.pop.stat.rows <- which(x@pop.stats$facet %in% rm.facets)
+    if(length(rm.pop.stat.rows) > 0){
+      x@pop.stats <- x@pop.stats[-rm.pop.stat.rows,]
+      if(nrow(x@pop.stats) == 0){
+        x@pop.stats <- data.frame()
+      }
+    }
+  }
+  
+  # LD
+  if(length(x@pairwise.LD) != 0){
+    prox.rm <- which(x@pairwise.LD$prox$sample.facet %in% rm.facets)
+    if(length(prox.rm) > 0){
+      x@pairwise.LD$prox <- x@pairwise.LD$prox[-prox.rm,]
+      
+      # if nothing remains, done
+      if(nrow(x@pairwise.LD$prox) == 0){
+        x@pairwise.LD <- list()
+      }
+      
+      # otherwise check matrices and remove any with removed components
+      else{
+        bad.matrices <- .split.facet(names(x@pairwise.LD$LD_matrices))
+        bad.matrices <- lapply(bad.matrices, function(y) .check.snpR.facet.request(x, y))
+        bad.matrices <- lapply(bad.matrices, function(y){
+          return(unlist(lapply(rm.facets, function(z){z == y})))
+        })
+        bad.matrices <- which(unlist(lapply(bad.matrices, function(y) ifelse(sum(y) == 0, FALSE, TRUE))))
+        
+        x@pairwise.LD$LD_matrices[bad.matrices] <- NULL
+      }
+    }
+  }
+  
+  # calced stats
+  bad.stats <- .split.facet(names(x@calced_stats))
+  bad.stats <- lapply(bad.stats, function(y) .check.snpR.facet.request(x, y))
+  bad.stats <- lapply(bad.stats, function(y){
+    return(unlist(lapply(rm.facets, function(z){z == y})))
+  })
+  bad.stats <- which(unlist(lapply(bad.stats, function(y) ifelse(sum(y) == 0, FALSE, TRUE))))
+  x@calced_stats[bad.stats] <- NULL
+  
+  
+  # af matrices
+  if(length(x@allele_frequency_matrices) > 0){
+    bad.matrices <- .split.facet(names(x@allele_frequency_matrices))
+    bad.matrices <- lapply(bad.matrices, function(y) .check.snpR.facet.request(x, y))
+    bad.matrices <- lapply(bad.matrices, function(y){
+      return(unlist(lapply(rm.facets, function(z){z == y})))
+    })
+    bad.matrices <- which(unlist(lapply(bad.matrices, function(y) ifelse(sum(y) == 0, FALSE, TRUE))))
+    
+    x@allele_frequency_matrices[bad.matrices] <- NULL
+  }
+  
+  # genetic distances
+  if(length(x@genetic_distances) > 0){
+    bad.matrices <- .split.facet(names(x@genetic_distances))
+    bad.matrices <- lapply(bad.matrices, function(y) .check.snpR.facet.request(x, y))
+    bad.matrices <- lapply(bad.matrices, function(y){
+      return(unlist(lapply(rm.facets, function(z){z == y})))
+    })
+    bad.matrices <- which(unlist(lapply(bad.matrices, function(y) ifelse(sum(y) == 0, FALSE, TRUE))))
+    
+    x@genetic_distances[bad.matrices] <- NULL
+  }
+  
+  # weighted means
+  if(nrow(x@weighted.means) > 0){
+    rm.mean.rows <- which(x@weighted.means$facet %in% rm.facets)
+    if(length(rm.mean.rows) > 0){
+      x@weighted.means <- x@weighted.means[-rm.mean.rows,]
+      if(nrow(x@weighted.means) == 0){
+        x@weighted.means <- data.frame()
+      }
+    }
+  }
+  
+  # IBD
+  if("ibd" %in% names(x@other)){
+    bad.ibd <- .split.facet(names(x@other$ibd))
+    bad.ibd <- lapply(bad.ibd, function(y) .check.snpR.facet.request(x, y))
+    bad.ibd <- lapply(bad.ibd, function(y){
+      return(unlist(lapply(rm.facets, function(z){z == y})))
+    })
+    bad.ibd <- which(unlist(lapply(bad.ibd, function(y) ifelse(sum(y) == 0, FALSE, TRUE))))
+    
+    x@other$ibd[bad.ibd] <- NULL
+    x@other$geo_dists[bad.ibd] <- NULL
+    if(length(x@other$ibd) == 0){
+      x@other$ibd <- NULL
+      x@other$geo_dists <- NULL
+    }
+  }
+  
+  # facet meta
+  x@facet.meta <- x@facet.meta[-rm.rows,]
+  
+  # facets and facet type
+  rmfn <- which(x@facets %in% facets)
+  x@facets <- x@facets[-rmfn]
+  x@facet.type <- x@facet.type[-rmfn]
+
+  #============return=========
   return(x)
 }
 
@@ -924,6 +1132,8 @@ is.snpRdata <- function(x){
 # @param meta.names names of the metadata columns, usually everything up to .snp.id
 # @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 .smart.merge <- function(n.s, o.s, meta.names, starter.meta){
+  ..meta.cols <- NULL
+  
   # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
   take_new <- function(n.s, starter.meta){
     smc <- which(colnames(n.s) %in% starter.meta)
@@ -988,6 +1198,17 @@ is.snpRdata <- function(x){
   }
   if(ncol(n.s) - length(new.meta) != 0){
     n.s <- cbind(new.meta, n.s[,-meta.cols, with = FALSE])
+  }
+  
+  ## check classes in meta to make sure there are no conflicts
+  o.class <- unlist(lapply(.fix..call(o.s[,..meta.cols]), class))
+  n.class <- unlist(lapply(.fix..call(n.s[,..meta.cols]), class))
+  miss.class <- which(o.class != n.class)
+  if(length(miss.class) > 0){
+    for(i in 1:length(miss.class)){
+      tfix <- meta.cols[miss.class[i]]
+      n.s[[tfix]] <- methods::as(n.s[[tfix]], unlist(o.class[miss.class[i]]))
+    }
   }
   
   ## do the merge, then fix the .y and .x columns by replacing NAs in y with their value in x
@@ -1273,6 +1494,9 @@ is.snpRdata <- function(x){
     else{
       tmat <- gmat
     }
+    if(nrow(tmat) == 0){
+      return(list(gs = data.table(), as = data.table(), wm = gmat))
+    }
     
     #get matrix of allele counts
     #initialize
@@ -1335,7 +1559,6 @@ is.snpRdata <- function(x){
     end <- i*max_snps
     end <- ifelse(end > nrow(x), nrow(x), end)
     trows <- titer:end
-    
     
     geno.tables[[i]] <- .tab_func(x[trows,], snp_form, mDat)
 
@@ -1537,6 +1760,9 @@ is.snpRdata <- function(x){
   if(!any(colnames(x@snp.meta) == "position")){
     msg <- c(msg, "No column named position found in snp metadata.")
   }
+  else{
+    if(any(is.na(snp.meta(x)$position))){msg <- c(msg, "NA values found in position data in snp metadata.\n")}
+  }
   
   # facets
   if(is.null(facets[1]) & any(stats.type == "pairwise")){
@@ -1559,6 +1785,14 @@ is.snpRdata <- function(x){
     if(length(missing.stats) > 0){
       msg <- c(msg, paste0("Some of the statistics for which smoothing have been suggested have not been yet been calculated: ", paste0(stats[missing.stats], collapse = " "),
                            ". Please run these statistics for the supplied facets!"))
+    }
+  }
+  
+  # cannot smooth on .base with pairwise
+  if("pairwise" %in% stats.type){
+    sample.facets <- .check.snpR.facet.request(x, facets, "snp")
+    if(".base" %in% sample.facets){
+      msg <- c(msg, "Cannot conduct pairwise smoothing with a .base sample facet\n.")
     }
   }
   
@@ -1830,6 +2064,9 @@ is.snpRdata <- function(x){
     
     # for the methods already implemented in R, really easy.
     sig_tab <- sapply(methods, function(x) stats::p.adjust(tp, x)) # run those methods
+    if(is.null(ncol(sig_tab))){
+      sig_tab <- as.data.frame(matrix(sig_tab, 1, 1))
+    }
     colnames(sig_tab) <- methods
     sig_tab <- as.data.frame(sig_tab)
     
@@ -2304,8 +2541,15 @@ is.snpRdata <- function(x){
 # @param df data.frame with data do paste
 # @param facets facets to paste together. Often produced by \code{\link{.split.facet}}. Can also be a numeric vector of columns to use.
 # @param sep character, default ".". Pasted facets will be split by this.
-.paste.by.facet <- function(df, facets, sep = ".") do.call(paste, c(df[,facets, drop = FALSE], sep = sep))
-
+.paste.by.facet <- function(df, facets, sep = "."){
+  ..facets <- NULL
+  if(is.data.table(df)){
+    return(do.call(paste, c(.fix..call(df[,..facets, drop = FALSE]), sep = sep)))
+  }
+  else{
+    return(do.call(paste, c(df[,facets, drop = FALSE], sep = sep)))
+  }
+}
 
 # Fixes calling scope warning in .. calls with data.table
 # 
@@ -2887,4 +3131,37 @@ is.snpRdata <- function(x){
 
 .console_hline <- function(char = "="){
   return(paste0(rep(char, getOption("width")), collapse = ""))
+}
+
+.update.sample.stats.with.new.metadata <- function(x, nsm){
+  if(nrow(x@sample.stats) == 0){
+    return(x)
+  }
+
+  # identify columns in the new data also in the old
+  osmc <- colnames(x@sample.stats)[which(colnames(x@sample.stats) %in% colnames(sample.meta(x)))]
+  
+  # identify and remove an removed columns
+  rm.cols <- which(!osmc %in% colnames(nsm))
+  if(length(rm.cols) > 0){
+    t.cols <- osmc[rm.cols]
+    x@sample.stats[,t.cols] <- NULL
+    osmc <- osmc[-rm.cols]
+  }
+  
+  # update maintained columns
+  x@sample.stats[,osmc] <- 
+    nsm[match(x@sample.stats$.sample.id, nsm$.sample.id),osmc]
+  
+  
+  # add any new columns
+  newcols <- colnames(nsm)[which(!colnames(nsm) %in% osmc)]
+  if(length(newcols) > 0){
+    x@sample.stats[,newcols] <- nsm[match(x@sample.stats$.sample.id, nsm$.sample.id),newcols]
+    ord <- c("facet", "subfacet", "snp.facet", "snp.subfacet", 
+             colnames(nsm)[-which(colnames(nsm) == ".sample.id")], ".sample.id")
+    ord <- c(ord, colnames(x@sample.stats)[which(!colnames(x@sample.stats) %in% ord)])
+  }
+  
+  return(x)
 }

@@ -48,6 +48,16 @@ test_that("zfst and 1/1-fst",{
   expect_true(all(round(tapply(tdfst$pairwise$zfst, tdfst$pairwise$comparison, mean), 3) == 0))
 })
 
+
+test_that("fst errors",{
+  x <- .internal.data$test_snps
+  sample.meta(x)$test <- "fill"
+  expect_error(calc_pairwise_fst(x, c("pop", "test")), "Some facets do not have more than one level")
+  
+  expect_error(calc_pairwise_fst(x, c("pop", "not_a_facet")), "not found in x metadata")
+  
+})
+
 test_that("correct fis",{
   # check
   x <- calc_fis(stickSNPs[1:10, pop = c("ASP")], c("pop"))
@@ -97,6 +107,17 @@ test_that("correct fis",{
   b <- dplyr::arrange(b, subfacet, lev)
   expect_equivalent(a,b)
   expect_true(all(c("ho", "fis") %in% colnames(fisr)))
+  
+  # check that we have components if requested and not if not
+  expect_false(any(c("var_comp_b", "var_comp_c", "nk") %in% colnames(fisr)))
+  fis <- calc_fis(fis, "pop", keep_components = TRUE)
+  fisr <- get.snpR.stats(fis, "pop", "fis")$single
+  expect_true(all(c("var_comp_b", "var_comp_c", "nk") %in% colnames(fisr)))
+  
+  # check that we are producing the correct averages
+  fis <- calc_fis(.internal.data$test_snps, c("pop", "pop.chr"), keep_components = TRUE)
+  fisr <- get.snpR.stats(fis, c("pop", "pop.chr"), "fis")$weighted.means
+  expect_true(nrow(fisr) == 18)
   
 })
 

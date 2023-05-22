@@ -5,6 +5,7 @@ test_that("NeEstimator",{
   ne_path <- "C://usr/bin/Ne2-1.exe"
   skip_if(!file.exists(ne_path))
   
+  
   ne <- calc_ne(stickSNPs[pop = "ASP"], NeEstimator_path = ne_path, chr = "chr", facets = "pop")
   ne <- get.snpR.stats(ne, "pop", "ne")
   
@@ -19,6 +20,13 @@ test_that("NeEstimator",{
   ne <- calc_ne(stickSNPs[pop = "ASP"], pcrit = 0, NeEstimator_path = ne_path, chr = "chr", facets = "pop", methods = c("het", "coan", "LD"))
   ne <- get.snpR.stats(ne, "pop", "ne")
   expect_equal(as.numeric(unlist(ne$pop[1,-c(1:2), drop = TRUE])), c(10.8, 3.2, 22.8, 9.2, 5, 127.9, 108.3, 27.1, Inf, 20.9, Inf)) # tests multiple methods at once
+  
+  set.seed(12342)
+  # subsampling -- note that this isn't a direct test, but the numbers below are what should be created if this ran correctly with 50 SNPs.
+  ne2 <- calc_ne(stickSNPs[pop = "ASP"], pcrit = 0, NeEstimator_path = ne_path, chr = "chr", facets = "pop", methods = c("het", "coan", "LD"), nsnps = 50)
+  ne2 <- get.snpR.stats(ne2, "pop", "ne")
+  expect_equal(as.numeric(unlist(ne2$pop[1,-c(1:2), drop = TRUE])),
+               c(4.6, 2.2, 8.0, 16.1, 4.9, Inf, 39.8, 10.6, Inf, 7.0, Inf))
 })
 
 

@@ -41,3 +41,10 @@ test_that("no_chr",{
   expect_true(all(checkp$snp.facet == ".base" & checkp$snp.subfacet == ".base"))
   expect_true(all(checks$snp.facet == ".base" & checks$snp.subfacet == ".base"))
 })
+
+test_that("default bug",{
+  check <- calc_ho(stickSNPs, "pop")
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250)
+  check <- get.snpR.stats(check, "chr.pop", "maf")$single.window
+  expect_true(all(check$step == 500))
+})

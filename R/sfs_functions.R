@@ -69,13 +69,13 @@
 #' ## call calc_sfs()
 #' sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(10,10))
 #' ## plot
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(x = sfs)
 #' 
 #' 
 #' # run for the overall dataset
 #' sfs <- calc_sfs(dat, projection = 30)
 #' ## plot
-#' plot_sfs(sfs = sfs)
+#' plot_sfs(x = sfs)
 #' 
 #' # note that plot_sfs() will take a snpRdata object, calling calc_sfs()
 #' plot_sfs(dat, projection = 30)
@@ -116,8 +116,10 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
   
   
   if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
-    x@snp.meta$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
-    x@snp.meta$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
+    om <- snp.meta(x)
+    om$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
+    om$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
+    snp.meta(x) <- om
 
     if(fold == FALSE){
       warning("Without ancestral and derived character states, unfolded spectra will be misleading.\n")

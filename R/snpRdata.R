@@ -587,7 +587,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
+                    citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   
@@ -695,10 +695,23 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' get.snpR.stats(dat, "chr.pop", "weighted.means")
 #' 
 get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALSE){
+  #===========quick and easy if referencing storage slot===============
   if(length(stats) == 1 & stats[1] %in% 
      c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
        "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means")){
     return(.get.snpR.stats(x, facets, type = stats))
+  }
+  
+  #===========aliases=========
+  stats <- tolower(stats)
+  aliases <- c(ibd = "isolation_by_distance",
+               tsd = "tajimas_d",
+               d = "tajimas_d")
+  
+  need_unaliased <- which(stats %in% names(aliases))
+  
+  if(length(need_unaliased) > 0){
+    stats[need_unaliased] <- aliases[stats[need_unaliased]]
   }
   
   #====================sanity checks=====================
@@ -715,6 +728,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   facets <- .check.snpR.facet.request(x, facets, "none")
+  
+  stats <- unique(stats)
   
   if(!all(stats %in% names(.internal.data$statistic_index))){
     msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(.internal.data$statistic_index))], collapse = ", "),

@@ -523,6 +523,9 @@
   #======use genio to read in data===========
   res <- genio::read_plink(file = plink_file, verbose = F)
   colnames(res$bim)[which(colnames(res$bim) == "id")] <- ".snp.id"
+  if(any(colnames(res$bim) == "pos")){
+    colnames(res$bim)[which(colnames(res$bim) == "pos")] <- "position"
+  }
   colnames(res$fam)[which(colnames(res$fam) == "id")] <- ".sample.id"
   
   
@@ -781,7 +784,7 @@
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
+                    citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
 }
 
 read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
@@ -948,7 +951,7 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
                     genetic_distances = list(),
                     weighted.means = data.frame(),
                     other = list(),
-                    citations = list(snpR = list(key = "Hemstrom2022", details = "snpR package")))
+                    citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   

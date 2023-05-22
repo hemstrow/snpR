@@ -10,7 +10,7 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                 c("pHWE"),
                                 c("RF_importance", "RF_importance_pvals"),
                                 c("gp_effect"),
-                                "fis"))
+                                c("fis", "var_comp_b", "var_comp_c", "nk")))
 window.stats <- list(stat = "tajimas_d",
                   col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),

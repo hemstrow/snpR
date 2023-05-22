@@ -2,14 +2,15 @@
 #'
 #' Runs the parentage assignment and pedigree construction tool from the
 #' \code{sequoia} package. Note that this function \emph{is not overwrite
-#' safe!}. This function is a wrapper which sources code from github.
+#' safe!}.
 #'
-#' This is an integration of the program and package written by Jisca Huisman.
-#' Note that there are many more Sequoia specific arguments that can be added to
-#' change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
-#' etc.) See documentation for \code{sequoia}. These can be
-#' passed to the pedigree and parentage reconstructions using the ... argument
-#' in run_sequoia.
+#' This is a limited integration of the program and package written by Jisca 
+#' Huisman. Note that there are many more Sequoia specific arguments that can 
+#' be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, 
+#' etc.) See documentation for \code{sequoia}. These can be passed to the 
+#' pedigree and parentage reconstructions using the ... argument in run_sequoia.
+#' The sequoia package has many features, and snpR facilitates the use of a 
+#' fraction of them. snpR users are encouraged to use the sequoia R package.
 #'
 #' @param x snpRdata object.
 #' @param facets character, default NULL. Sample-specific facets over which the
@@ -22,6 +23,9 @@
 #'   run_pedigree command.
 #' @param run_pedigree FALSE or TRUE, default FALSE. Runs pedigree construction 
 #'   for the samples. This process can take a long time. 
+#' @param run_relatives FALSE or TRUE, default FALSE. Runs retrieval of other
+#'   relatives which did not pass thresholds for assignment in the main pedigree 
+#'   construction model.
 #' @param min_maf numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 #'   cutoff for analysis. Sequoia requires high minor allele frequencies for
 #'   parentage and pedigree construction.
@@ -29,8 +33,6 @@
 #'   than this proportion of individuals. Note that \emph{individuals} with
 #'   genotypes for fewer than half of the loci will be automatically removed by
 #'   sequoia.
-#' @param ask logical, default TRUE. Should the function ask for confirmation
-#'   before sourcing github code?
 #' @param ... Additional arguments passed to\code{sequoia}
 #'   (during parentage and pedigree reconstruction).
 #'
@@ -61,67 +63,110 @@
 #' # slow, so not run here
 #' \dontrun{
 #' dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, 
-#'                    run_pedigree = FALSE)
+#'                    run_pedigree = FALSE, run_relatives = FALSE)
 #' ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, 
-#'                    run_pedigree = TRUE)
+#'                    run_pedigree = TRUE, run_relatives = FALSE)
+#' rel <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = FALSE, 
+#'                    run_pedigree = FALSE, run_relatives = TRUE)
+#'                    
 #' }
-run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, run_parents = FALSE, 
-                        run_pedigree = FALSE, min_maf = 0.3, min_ind = 0.5, ask = TRUE, ...){
+run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE, 
+                                  run_parents = FALSE, run_pedigree = FALSE, 
+                                  run_relatives = FALSE, min_maf = 0.3, 
+                                  min_ind = 0.5, ...
+                                  ){
   
-  run_sequoia_extension <- NULL
+  #===================sanity checks===============
+  # check that provided snpRdata objects are in the correct format
+  if(!snpR::is.snpRdata(x)){
+    stop("Not a snpRdata object.\n")
+  }
+  .check.installed("sequoia")
   
-  if(ask){
-    # confirm we want to run this
-    cat("run_sequoia depends on the 'sequoia' package, which is not currently on CRAN.\nThis function is a wrapper that sources R scripts from github to pull in the run_sequoia function.\nIt is tested and should function normally.\nProceed?\t")
-    cat("(y or n)\n")
+  msg <- character(0)
+  warn <- character(0)
+  
+  if(run_pedigree & !run_parents){
+    msg <- c(msg, "Parents must be run before pedigree construction!\n")
+  }
+  
+  if(min_maf < 0.25){
+    warn <- c(warn, "Minor allele frequencies below 0.25 are not recommended for sequoia.\n")
+  }
+  if(min_ind < 0.5){
+    warn <- c(warn, "Genotypes sequenced in fewer than 50% of individuals will automatically be removed by Sequoia.\n")
+  }
+  
+  req.columns <- c("ID", "Sex", "BirthYear", "BYmin", "BYmax", "Yearlast")
+  if(any(!req.columns %in% colnames(sample.meta(x)))){
+    msg <- c(msg, "Columns named 'ID', 'Sex', 'BirthYear', 'BYmin', 'BYmax', 'Yearlast', are required in the sample metadata.\n")
+  }
+  
+  if(length(warn) > 0){
+    warning(warn)
+  }
+  
+  if(length(msg) > 0){
+    stop(msg)
+  }
+  
+  #===================prep=========================
+  # prep facets
+  facets <- .check.snpR.facet.request(x, facets, "none")
+  x <- .add.facets.snpR.data(x, facets)
+  tasks <- .get.task.list(x, facets = facets)
+  
+  # initialize
+  out <- vector("list", nrow(tasks))
+  
+  #==================run===========================
+  for(i in 1:nrow(tasks)){
     
-    resp <- readLines(n = 1)
-    resp <- tolower(resp)
+    names(out)[i] <- paste0(tasks[i,], collapse = "_")
+    cat("Running facet: ", paste0(tasks[i,c(1,3)], collapse = " "), "\tsubfacet: ", paste0(tasks[i,c(2,4)], collapse = " "))
     
-    while(resp != "y"){
-      cat("(y or n)\n")
-      if(resp != "n"){
-        return(FALSE)
-      }
-      else{
-        resp <- readLines(n = 1)
-        resp <- tolower(resp)
-      }
+    
+    # subset the data
+    tmatches <- .fetch.sample.meta.matching.task.list(x, tasks[i,])
+    if(tasks[i,3] == ".base"){
+      snpmatches <- 1:nsnps(x)
+    }
+    else{
+      snpmatches <- which(snp.meta(x)[,tasks[i, 3]] == tasks[i,4])
+    }
+    tdat <- x[snpmatches, tmatches]
+    
+    
+    
+    # filter snps for running sequoia - requires high MAF >0.25 and 50% inds otherwise inds dropped from seq
+    tdat <- filter_snps(x = tdat, maf = min_maf, min_ind = min_ind, re_run = "full") # set as arguments later
+    
+    # format the snps for sequoia
+    tdat <- format_snps(x = tdat, output = "sequoia")
+    
+    # initialize output
+    out[[i]] <- vector("list")
+    
+    # run sequoia
+    if(run_dupcheck){
+      dups <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Module = "dup")
+      out[[i]]$dups <- dups
+    }
+    
+    if(run_parents){
+      out[[i]]$parents <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, Module = "par", ...)
+    }
+    
+    if(run_pedigree){
+      out[[i]]$pedigree <- sequoia::sequoia(GenoM=tdat$dat, LifeHistData = tdat$lh, SeqList = out[[i]]$parents, Module = "ped", ...) 
+    }
+    
+    if(run_relatives){
+      out[[i]]$relatives <- sequoia::GetMaybeRel(GenoM = tdat$dat, LifeHistData = tdat$lh, ...)
     }
   }
-  
-  .check.installed("sequoia", install.type = "github", source = "JiscaH/sequoia")
-  if(utils::packageVersion("sequoia") < as.package_version("2.2")){
-    cat("Sequoia version is too old, version 2.2 or greater is required.\n")
-    .check.installed("remotes")
-    remotes::install_github("JiscaH/sequoia", ref = "stable")
-  }
-
-  # source scripts and pull up internals
-  source_file <-  tempfile()
-  utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR_extensions/main/run_sequoia.R", 
-                       destfile = source_file)
-  source(source_file)
-  file.remove(source_file)
-  
-  internals <- list(.add.facets.snpR.data = .add.facets.snpR.data,
-                    .check.snpR.facet.request = .check.snpR.facet.request, 
-                    .split.facet = .split.facet, 
-                    .tabulate_genotypes = .tabulate_genotypes, 
-                    .make_it_quiet = .make_it_quiet,
-                    .get.task.list = .get.task.list,
-                    .fetch.sample.meta.matching.task.list = .fetch.sample.meta.matching.task.list,
-                    .fetch.snp.meta.matching.task.list = .fetch.snp.meta.matching.task.list)
-  
-  # run and return
-  out <- run_sequoia_extension(x = x, 
-                               facets = facets, 
-                               run_dupcheck = run_dupcheck, 
-                               run_parents = run_parents, 
-                               run_pedigree = run_pedigree, 
-                               min_maf = min_maf, 
-                               min_ind = min_ind,
-                               ..., internals = internals)
-  
-  return(out)
+  return(
+    out)
 }
+
+

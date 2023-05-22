@@ -165,14 +165,15 @@ numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
 'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
 converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
-BirthYear (or instead of BirthYear - BY.min and BY.max) in sample metadata for
-running Sequoia. For more information see sequoia documentation.} \item{fasta:
-} {fasta sequence format.} \item{vcf:}{Variant Call Format, a standard format
-for SNPs and other genomic variants. Genotypes are coded as 0/0, 0/1, 1/1, or
-./. (for missing values), with a healthy serving of additional metadata but
-very little sample metadata.} \item{genalex: }{GenAlEx format. If an outfile
-is requested, the data will be sorted according to any provided facets and
-written as an '.xlsx' object.} \item{snpRdata: }{a snpRdata object.} }
+BirthYear (or instead of BirthYear - BYmin and BYmax), optional column 
+Yearlast in sample metadata for running Sequoia. For more information see 
+sequoia documentation.} \item{fasta:} {fasta sequence format.} \item{vcf:}
+{Variant Call Format, a standard format for SNPs and other genomic variants. 
+Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a 
+healthy serving of additional metadata but very little sample metadata.} 
+\item{genalex: }{GenAlEx format. If an outfile is requested, the data will be 
+sorted according to any provided facets and written as an '.xlsx' object.} 
+\item{snpRdata: }{a snpRdata object.} }
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -274,13 +275,15 @@ format_snps(stickSNPs, "plink", outfile = "plink_out",
 #Sequoia format
 b <- sample.meta(stickSNPs)
 b$ID <- 1:nrow(b)
-b$Sex <- rep(c("F", "M", "U", "no", "j"), length.out=nrow(b))
+b$Sex <- rep(c("F", "M", "U"), length.out=nrow(b))
 b$BirthYear <- round(runif(n = nrow(b), 1,1))
 a <- stickSNPs
-b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$ID)
+b$ID <- paste0(sample.meta(a)$pop, sample.meta(a)$fam, sample.meta(a)$.sample.id)
 sample.meta(a) <- b
-format_snps(x=a, output = "sequoia")
-
+format_snps(x = a, output = "sequoia")
+#note: if using the birth year windows BYmin and BYmax and or Yearlast, 
+ensure that the column names are not stored as BY.min, BY.max, Year.last for
+snpR. 
 
 # VCF format
 test <- format_snps(stickSNPs, "vcf", chr = "chr")

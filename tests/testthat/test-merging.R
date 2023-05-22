@@ -80,4 +80,87 @@ test_that("merging",{
   expect_equal(dim(z), c(100, 6))
   
 })
+
+test_that("merging errors",{
+  # bad matches in SNP metadata
+  gy <- data.frame(s1 = c("GG", "NN"),
+                   s2 = c("GG", "TG"),
+                   s3 = c("NN", "TT"),
+                   s4 = c("GA", "TT"),
+                   s5 = c("GG", "GT"),
+                   s6 = c("NN", "GG"))
+  
+  snp.y <- data.frame(CHROM = c("groupVI", "test_chr"),
+                      pos = c(212436, 10))
+  
+  samp.y <- data.frame(pop = c("ASP", "ASP", "ASP", "test1", "test2", "test3"),
+                       ID = c(1, 2, 3, "A1", "A2", "A3"),
+                       fam = c("A", "B", "C", "T", "T", "T"))
+  
+  y <- import.snpR.data(gy, snp.y, samp.y)
+  
+  x <- stickSNPs
+  sample.meta(x)$ID <- 1:ncol(x)
+  
+  z <- merge_snpRdata(x, y)
+  expect_equal(nrow(z), 102) # treats snps as no overlap
+  expect_error(merge_snpRdata(x, y, all.x.snps = FALSE, all.y.snps = FALSE), "No matching snp metadata")
+  
+  # bad matches in sample metadata
+  gy <- data.frame(s1 = c("GG", "NN"),
+                   s2 = c("GG", "TG"),
+                   s3 = c("NN", "TT"),
+                   s4 = c("GA", "TT"),
+                   s5 = c("GG", "GT"),
+                   s6 = c("NN", "GG"))
+  
+  snp.y <- data.frame(chr = c("groupVI", "test_chr"),
+                      position = c(212436, 10))
+  
+  samp.y <- data.frame(pops = c("ASP", "ASP", "ASP", "test1", "test2", "test3"),
+                       IDs = c(1, 2, 3, "A1", "A2", "A3"),
+                       fams = c("A", "B", "C", "T", "T", "T"))
+  
+  y <- import.snpR.data(gy, snp.y, samp.y)
+  expect_warning(z <- merge_snpRdata(x, y), "Some levels are duplicated")
+  expect_equal(ncol(z), 106)
+  expect_error(merge_snpRdata(x, y, all.x.samples = FALSE, all.y.samples = FALSE), "No matching sample metadata")
+  
+  
+  # nothing remains -- snps
+  gy <- data.frame(s1 = c("GG", "NN"),
+                   s2 = c("GG", "TG"),
+                   s3 = c("NN", "TT"),
+                   s4 = c("GA", "TT"),
+                   s5 = c("GG", "GT"),
+                   s6 = c("NN", "GG"))
+  
+  snp.y <- data.frame(chr = c("groupVI", "test_chr"),
+                      position = c(212437, 11))
+  
+  samp.y <- data.frame(pop = c("ASP", "ASP", "ASP", "test1", "test2", "test3"),
+                       ID = c(1, 2, 3, "A1", "A2", "A3"),
+                       fam = c("A", "B", "C", "T", "T", "T"))
+  
+  y <- import.snpR.data(gy, snp.y, samp.y)
+  expect_error(merge_snpRdata(x, y, all.x.snps = FALSE, all.y.snps = FALSE), "No loci remain after merging")
+  
+  # nothing remains -- samps
+  gy <- data.frame(s1 = c("GG", "NN"),
+                   s2 = c("GG", "TG"),
+                   s3 = c("NN", "TT"),
+                   s4 = c("GA", "TT"),
+                   s5 = c("GG", "GT"),
+                   s6 = c("NN", "GG"))
+  
+  snp.y <- data.frame(chr = c("groupVI", "test_chr"),
+                      position = c(212436, 10))
+  
+  samp.y <- data.frame(pop = c("hi", "hi", "hi", "hello", "hello", "hello"),
+                       ID = c(1, 2, 3, "A1", "A2", "A3"),
+                       fam = c("A", "B", "C", "T", "T", "T"))
+  
+  y <- import.snpR.data(gy, snp.y, samp.y)
+  expect_error(merge_snpRdata(x, y, all.x.samples = FALSE, all.y.samples = FALSE), "No samples remain after merging")
+})
   

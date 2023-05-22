@@ -10,9 +10,9 @@ run_sequoia(
   run_dupcheck = FALSE,
   run_parents = FALSE,
   run_pedigree = FALSE,
+  run_relatives = FALSE,
   min_maf = 0.3,
   min_ind = 0.5,
-  ask = TRUE,
   ...
 )
 }
@@ -33,6 +33,10 @@ run_pedigree command.}
 \item{run_pedigree}{FALSE or TRUE, default FALSE. Runs pedigree construction 
 for the samples. This process can take a long time.}
 
+\item{run_relatives}{FALSE or TRUE, default FALSE. Runs retrieval of other
+relatives which did not pass thresholds for assignment in the main pedigree 
+construction model.}
+
 \item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency
 cutoff for analysis. Sequoia requires high minor allele frequencies for
 parentage and pedigree construction.}
@@ -41,9 +45,6 @@ parentage and pedigree construction.}
 than this proportion of individuals. Note that \emph{individuals} with
 genotypes for fewer than half of the loci will be automatically removed by
 sequoia.}
-
-\item{ask}{logical, default TRUE. Should the function ask for confirmation
-before sourcing github code?}
 
 \item{...}{Additional arguments passed to\code{sequoia}
 (during parentage and pedigree reconstruction).}
@@ -55,15 +56,16 @@ A nested list with each facet specified containing sequoia output
 \description{
 Runs the parentage assignment and pedigree construction tool from the
 \code{sequoia} package. Note that this function \emph{is not overwrite
-safe!}. This function is a wrapper which sources code from github.
+safe!}.
 }
 \details{
-This is an integration of the program and package written by Jisca Huisman.
-Note that there are many more Sequoia specific arguments that can be added to
-change from the default settings (eg. ErrorM, Tassign, Tfilt, GetMaybeRel,
-etc.) See documentation for \code{sequoia}. These can be
-passed to the pedigree and parentage reconstructions using the ... argument
-in run_sequoia.
+This is a limited integration of the program and package written by Jisca 
+Huisman. Note that there are many more Sequoia specific arguments that can 
+be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, 
+etc.) See documentation for \code{sequoia}. These can be passed to the 
+pedigree and parentage reconstructions using the ... argument in run_sequoia.
+The sequoia package has many features, and snpR facilitates the use of a 
+fraction of them. snpR users are encouraged to use the sequoia R package.
 }
 \examples{
 # to follow an example using the stickSNPs example dataset you need 
@@ -81,9 +83,12 @@ sample.meta(stk)$Sex <- sample(x= b, size = nsamps(stk),
 # slow, so not run here
 \dontrun{
 dup <- run_sequoia(x = stk, run_dupcheck = TRUE, run_parents = FALSE, 
-                   run_pedigree = FALSE)
+                   run_pedigree = FALSE, run_relatives = FALSE)
 ped <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = TRUE, 
-                   run_pedigree = TRUE)
+                   run_pedigree = TRUE, run_relatives = FALSE)
+rel <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = FALSE, 
+                   run_pedigree = FALSE, run_relatives = TRUE)
+                   
 }
 }
 \references{

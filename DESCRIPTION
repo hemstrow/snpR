@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-Genome Analysis Tools for Use with Single Nucleotide Polymorphism Data
-Version: 1.2.6.1
+Version: 1.2.7
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
@@ -46,8 +46,10 @@ Suggests:
     genepop,
     genio,
     geosphere,
+    ggspatial,
     ggrepel,
     GMMAT,
+    hexbin,
     knitr,
     LEA,
     markdown,
@@ -59,6 +61,7 @@ Suggests:
     readr,
     remotes,
     Rtsne,
+    sequoia,
     shiny,
     umap,
     vcfR,

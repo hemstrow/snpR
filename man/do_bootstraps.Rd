@@ -9,7 +9,7 @@ do_bootstraps(
   facets = NULL,
   boots,
   sigma,
-  step = NULL,
+  step = 2 * sigma,
   statistics = "all",
   nk = TRUE,
   par = FALSE,
@@ -30,8 +30,9 @@ bootstraps.}
 \item{sigma}{numeric. Designates the width of windows in kilobases. Full
 window size is 6*sigma.}
 
-\item{step}{numeric or NULL, default NULL. Designates the number of kilobases
-between each window centroid. If NULL, windows are centered on each SNP.}
+\item{step}{numeric or NULL, default default \code{2*sigma} (non-overlapping
+windows). Designates the number of kilobases between each window centroid.
+If NULL, windows are centered on each SNP.}
 
 \item{statistics}{character. Designates the statistic(s) to smooth, typically
 "all", "single", or "pairwise". See details for options.}

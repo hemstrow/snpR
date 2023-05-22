@@ -461,6 +461,10 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  a SNP must be sequenced in to be used in generating plots.
 #'@param minimum_genotype_percentage numeric, default FALSE. Proportion of SNPs
 #'  a sample must be sequenced at in order to be used in plots.
+#'@param smart_PCA logical, default TRUE. If TRUE, uses Patterson et. al 
+#'  (2006)'s centering approach prior to plot construction. Note that this also
+#'  avoids the need for interpolation, so interpolation is set to FALSE in this
+#'  case.
 #'@param interpolation_method character, default "bernoulli". Interpolation
 #'  method to use for missing data. Options: \itemize{\item{bernoulli:
 #'  }{Interpolated via binomial draw for each allele against minor allele
@@ -472,7 +476,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'  slower than the other methods, especially for large datasets. Setting an ncp
 #'  of 2-5 generally results in reasonable interpolations without the time
-#'  constraint.}}
+#'  constraint.}} Ignored if \code{smart_PCA} is TRUE.
 #'@param dims numeric, default 2. Output dimensionality, default 2.
 #'@param initial_dims numeric, default 50. The number of dimensions retained in
 #'  the initial PCA step during tSNE.
@@ -568,7 +572,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #' # plot colored by population and family
 #' plot_clusters(stickSNPs, "pop.fam")
 plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates = FALSE,
-                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE, 
+                          minimum_percent_coverage = FALSE, minimum_genotype_percentage = FALSE,
+                          smart_PCA = TRUE,
                           interpolation_method = "bernoulli",
                           dims = 2, initial_dims = 50, perplexity = FALSE, theta = 0, iter = 1000,
                           viridis.option = "viridis", alt.palette = NULL, ncp = NULL, ncp.max = 5,
@@ -661,12 +666,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     }
   }
   
+  if(!smart_PCA){
+    if(isFALSE(interpolation_method) & length(plot_type) != 1 & plot_type[1] != "dapc"){
+      stop("All methods require no missing data. Please enable interpolation.\n")
+    }
+  }
+  else{
+    interpolation_method <- FALSE
+  }
   if(interpolation_method == "iPCA"){
     .check.installed("missMDA")
   }
-  if(isFALSE(interpolation_method) & length(plot_type) != 1 & plot_type[1] != "dapc"){
-    stop("All methods require no missing data. Please enable interpolation.\n")
-  }
+  
   
   if(any(c("umap", "tsne") %in% plot_type)){
     cat("Note that clusters and relative placements of samples in UMAP and tSNE dimension reductions may not properly represent higher dimensionality clustering.\n",
@@ -768,6 +779,16 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     
     if(verbose){cat("Plotting using", rm.snps, "loci and", rm.ind, "samples.\n")}
     sn <- t(sn)
+    
+    # do the centering if using smart_PCA approach
+    if(smart_PCA){
+      ms <- colMeans(sn, na.rm = TRUE)
+      ms <- ms[col(sn)]
+      afs <- (1+ms)/(2 + 2*nrow(sn)) # adjusted eqn, from Price et al 2006
+      # afs <- ms/2 # according to patterson
+      sn <- (sn - ms)/sqrt(afs*(1-afs)) # eqn 3, patterson et al 2006
+      sn[is.na(sn)] <- 0
+    }
   }
   else{
     meta <- x@sample.meta
@@ -780,9 +801,21 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 
   if("pca" %in% plot_type){
     if(verbose){cat("Preparing pca...\n")}
-    pca_r <- stats::prcomp(as.matrix(sn))
-    pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
-    plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
+
+    # did we do smart centering? if so, do svd instead of pca
+    if(smart_PCA){
+      pca_r <- svd(sn)
+      colnames(pca_r$u) <- paste0("PC", 1:ncol(pca_r$u))
+      plot_dats$pca <- cbind(meta, pca_r$u)
+    }
+    
+    # or just pca directly?
+    else{
+      pca_r <- stats::prcomp(as.matrix(sn))
+      pca <- as.data.frame(pca_r$x) #grab the PCA vectors.
+      plot_dats$pca <- cbind(meta, pca)  #add metadata that is present in the input.
+    }
+    
   }
   if("tsne" %in% plot_type){
     #get perplexity if not provided
@@ -1094,8 +1127,14 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     
 
     if(plot_type[i] == "pca"){
-      loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
-      loadings <- round(loadings * 100, 2)
+      if(smart_PCA){
+        loadings <- (pca_r$d^2)/sum(pca_r$d^2)
+        loadings <- round(loadings * 100, 2)
+      }
+      else{
+        loadings <- (pca_r$sdev^2)/sum(pca_r$sdev^2)
+        loadings <- round(loadings * 100, 2)
+      }
       out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
     }
     else{
@@ -1108,6 +1147,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   keys <- character(0)
   stats <- character(0)
   details <- character(0)
+  if(smart_PCA & !("dapc" %in% plot_type & length(plot_type) == 1)){
+    keys <- c(keys, "pricePrincipalComponentsAnalysis2006", "pattersonPopulationStructureEigenanalysis2006")
+    stats <- c(stats, "smart PCA", "smart PCA")
+    details <- c(details, "afs estimation during scaling and centering", "smart PCA centering and scaling adjustment")
+  }
+  
   if("tsne" %in% plot_type){
     keys <- c(keys, "Krijthe2015", "Maatan2008")
     stats <- c(stats, "RtSNE", "tSNE")
@@ -1120,7 +1165,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
   }
   
   if("dapc" %in% plot_type){
-    keys <- c(keys, "jombart_discriminant_2010")
+    keys <- c(keys, "Jombart2010")
     stats <- c(stats, "DAPC")
     details <- c(details, "Discriminant Analysis of Principal Components core method.")
     
@@ -2525,11 +2570,16 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       msg <- c(msg, "Only one facet may be plotted at once.\n")
     }
     if(!is.null(facet[[1]])){
-      fcheck <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
-      if(any(fcheck[[2]] != "sample")){
-        stop("Only simple, sample level facets allowed.\n")
+      if(facet[[1]] == ".base"){
+        facet <- NULL
       }
-      facets <- .check.snpR.facet.request(x, facet, remove.type = "snp")
+      else{
+        fcheck <- .check.snpR.facet.request(x, facet, remove.type = "none", return.type = T)
+        if(any(fcheck[[2]] != "sample")){
+          stop("Only simple, sample level facets allowed.\n")
+        }
+        facets <- .check.snpR.facet.request(x, facet, remove.type = "snp")
+      }
     }
     if(!is.null(facet.order)){
       cats <- .get.task.list(x, facet)
@@ -3724,14 +3774,12 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #'   points/coordinates for each facet level. Must contain a column of data with
 #'   population labels named identically to the provided facet (for example,
 #'   named "pop" if "pop" is the provided facet.)
-#' @param sf list of sf objects, default NULL. Additional features to be plotted
-#'   alongside points, such as rivers or county lines.
-#' @param sf_fill_colors character vector, default "viridis". A vector of colors
-#'   to use to fill each polygon sf object. By default, uses the viridis palette
-#'   with an alpha of 0.2.
-#' @param sf_line_colors character vector, default "viridis". A vector of colors
-#'   to use to color lines in in each sf object. By default, uses the viridis
-#'   palette with an alpha of 0.2.
+#' @param layers list of \code{ggplot2} layer objects, default NULL. Additional
+#'   ggplot layers to be plotted in order, below the pie charts, such as maps
+#'   with borders, temperatures, forest cover, etc. As a special note,
+#'   \code{link[ggnewscale]{new_scale_fill}} can be used to add additional
+#'   \code{fill} aesthetic layers without conflict from the resulting pie
+#'   charts. See examples.
 #' @param pop_names logical, default T. If true, facet level names will be
 #'   displayed on the map.
 #' @param viridis.option character, default "viridis". Viridis color scale
@@ -3747,12 +3795,16 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' @param crop logical, default F. If TRUE, will will crop the plot around the
 #'   sample points. If false will show the full extent of the data, often set by
 #'   any additional sf objects being plotted.
-#' @param scale_bar list or NULL, default list(dist = 4, dist_unit = "km",
-#'   transform = T). Arguments passed to the \code{scalebar} function from
-#'   \code{ggsn} to add a scale to the plot. If NULL, no scale added.
-#' @param compass list or NULL, list(symbol = 16). Arguments passed to
-#'   \code{north} function from \code{ggsn} to add a compass to the plot. If
-#'   NULL, no compass added.
+#' @param scale_bar list or NULL, default \code{list()}. Arguments passed to the
+#'   \code{\link[ggspatial]{annotation_scale}} function from \code{ggspatial} to
+#'   add a scale to the plot. If NULL, no scale added.
+#' @param compass list or NULL, default \code{list(style =
+#'   ggspatial::north_arrow_fancy_orienteering, location = "br")}. Arguments
+#'   passed to \code{\link[ggspatial]{annotation_north_arrow}} function from
+#'   \code{ggspatial} to add a compass to the plot. If NULL, no compass added.
+#'   Note that calls to alternative styles, like
+#'   \code{\link[ggspatial]{north_arrow_fancy_orienteering}} cannot have
+#'   \code{()} after them, like they would if called directly.
 #' @param ask logical, default TRUE. Should the function ask for confirmation
 #'   before sourcing github code?
 #'
@@ -3778,21 +3830,22 @@ plot_sfs <- function(x = NULL, facet = NULL, viridis.option = "inferno", log = T
 #' assignments <- plot_structure(stickSNPs, "pop", alpha = 1) 
 #'
 #' # get a map of oregon as a background from the maps package. 
-#' # Note that this map is a bit odd as an sf, but works as an example.
-#' background <- maps::map("state", "oregon")
+#' background <- rnaturalearth::ne_states(iso_a2 = "US", returnclass = "sp")
 #' background <- sf::st_as_sf(background)
+#' background <- background[background$name %in% "Oregon",]
 #'
 #' # make the plot
-#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf, 
-#'                    sf = list(background), radius_scale = .2, 
-#'                    scale_bar = list(dist = 40, dist_unit = "km", 
-#'                                     transform = T), 
-#'                    compass = list(symbol = 16, scale = 0.2))
+#' plot_structure_map(assignments, k = 2, facet = "pop", pop_coordinates = psf,
+#'                    layers = list(ggplot2::geom_sf(data = background, 
+#'                                      ggplot2::aes(fill = "example")),
+#'                    ggnewscale::new_scale_fill()), radius_scale = .2)
 #' }
-plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL, sf_fill_colors = "viridis", sf_line_colors = "viridis",
+plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = NULL,
                                pop_names = T, viridis.option = "viridis", alt.palette = NULL,
                                radius_scale = 0.05, label_args = NULL, crop = FALSE,
-                               scale_bar = list(dist = 4, dist_unit = "km", transform = T), compass = list(symbol = 16), ask = TRUE){
+                               scale_bar = list(), 
+                               compass = list(style = ggspatial::north_arrow_fancy_orienteering, location = "br"), 
+                               ask = TRUE){
   
   plot_structure_map_extension <- NULL
 
@@ -3805,21 +3858,19 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
     resp <- tolower(resp)
     
     while(resp != "y"){
-      cat("(y or n)\n")
-      if(resp != "n"){
+      if(resp == "n"){
         return(FALSE)
       }
-      else{
-        resp <- readLines(n = 1)
-        resp <- tolower(resp)
-      }
+      cat("(y or n)\n")
+      resp <- readLines(n = 1)
+      resp <- tolower(resp)
     }
   }
   
   .check.installed("sf")
   .check.installed("scatterpie")
   .check.installed("viridis")
-  if(!is.null(compass) | !is.null(scale_bar)){.check.installed("ggsn")}
+  if(!is.null(compass) | !is.null(scale_bar)){.check.installed("ggspatial")}
   
   
   
@@ -3844,9 +3895,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, sf = NULL
                                      k = k, 
                                      facet = facet, 
                                      pop_coordinates = pop_coordinates,
-                                     sf = sf, 
-                                     sf_fill_colors = sf_fill_colors, 
-                                     sf_line_colors = sf_line_colors,
+                                     layers = layers,
                                      pop_names = pop_names, 
                                      viridis.option = viridis.option, 
                                      alt.palette = alt.palette,
@@ -4041,7 +4090,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
 #' }
 plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), fold_sfs = TRUE,
                             plots = c("fis", "maf", "pca", "missingness", "heho")){
-  Individual <- NULL
+  Individual <- subfacet <- ho <- he <- count <- NULL
   #================checks and init===========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -4064,6 +4113,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   if(length(bad.plots) > 0){
     stop("Some bad plot types noted:\n\t", paste0(plots[bad.plots], collapse = "\n\t"), "\n\n",
          "Acceptable plot types:", paste0(good.plots, collapse = "\n\t"))
+  }
+  
+  if("heho" %in% plots){
+    .check.installed("hexbin")
   }
   
   out <- list()
@@ -4101,6 +4154,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================plot maf density=========
   if("maf" %in% plots){
+    calced <- .check_calced_stats(x, facet, "maf")
+    if(!unlist(calced)){
+      x <- calc_maf(x, facet)
+    }
     maf <- get.snpR.stats(x, facet, "maf")$single
     maf <- ggplot2::ggplot(maf, ggplot2::aes(x = maf, color = subfacet)) + ggplot2::geom_density() +
       ggplot2::theme_bw() + ggplot2::xlab("Minor Allele Frequency") +
@@ -4121,25 +4178,34 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================missingness==============
   if("missingness" %in% plots){
+    
     miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
-    if(exists("facet.vec")){
-      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
-                              ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
-        ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
-        ggplot2::geom_boxplot() +
-        ggplot2::geom_point(alpha = .5)
-    }
-    else{
-      miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),
-                              ggplot2::aes(y = miss, x = Individual)) +
-        ggplot2::geom_boxplot() +
-        ggplot2::geom_point() +
-        ggplot2::theme()
+    if(any(miss > 0)){
+      if(exists("facet.vec")){
+        miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
+                                ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+          ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
+          ggplot2::geom_boxplot() +
+          ggplot2::geom_point(alpha = .5)
+      }
+      else{
+        miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),
+                                ggplot2::aes(y = miss, x = Individual)) +
+          ggplot2::geom_boxplot() +
+          ggplot2::geom_point() +
+          ggplot2::theme()
+      }
+      
+      miss <- miss +
+        ggplot2::theme_bw() +
+        ggplot2::ylab("Proportion of loci with missing data")
     }
     
-    miss <- miss +
-      ggplot2::theme_bw() +
-      ggplot2::ylab("Proportion of loci with missing data")
+    else{
+      cat("No missing data.\n")
+      miss <- NA
+    }
+    
     
     out$missingness <- miss
   }

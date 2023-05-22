@@ -79,3 +79,21 @@ test_that("non-biallelic",{
   expect_false(.is.bi_allelic(td))
   expect_equivalent(td, steelMSATs)
 })
+
+
+test_that("plink",{
+  format_snps(stickSNPs, output = "plink", outfile = "test")
+  test <- read_plink("test")
+  
+  expect_true("position" %in% colnames(snp.meta(test)))
+  expect_true("chr" %in% colnames(snp.meta(test)))
+  
+  test <- calc_ho(test)
+  t2 <- calc_ho(stickSNPs)
+  test <- get.snpR.stats(test, stats = "ho")$single
+  t2 <- get.snpR.stats(t2, stats = "ho")$single
+  tm <- merge(test, t2, by = c("chr", "position"))
+  expect_identical(tm$ho.x, tm$ho.y)
+  
+  file.remove("test.bed", "test.map", "test.fam", "test.ped", "test.bim")
+})
