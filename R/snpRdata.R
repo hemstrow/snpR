@@ -337,7 +337,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #' # from an adegenet genlight object
 #' genlight <- dartR::gi2gl(ex.genind)
-#' L
+#' 
 #' ## run the conversion, could be run without the snp or sample metadatas.
 #' dat <- import.snpR.data(genlight)
 #'

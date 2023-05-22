@@ -199,23 +199,9 @@ ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:2)]),
 import.snpR.data(ex.genind, snp_meta, sample_meta) 
 
 # from an adegenet genlight object
-## create a dummy dataset, add some metadata
-dat <- lapply(1:50, function(i) sample(c(0,1,2, NA), 1000, 
-              prob=c(.25, .49, .25, .01), replace=TRUE))
-names(dat) <- paste("indiv", 1:length(dat))
-print(object.size(dat), unit="aut") # size of the original data
-genlight <- methods::new("genlight", dat) # conversion
-newalleles <- character(adegenet::nLoc(genlight))
-for(i in 1:length(newalleles)){
-  newalleles[i] <- paste0(sample(c("a", "c", "g", "t"), 2, FALSE), 
-                          collapse = "/")
-}
-adegenet::alleles(genlight) <- newalleles
-adegenet::pop(genlight) <- sample(LETTERS[1:4], 50, TRUE)
-adegenet::position(genlight) <- sample(100000, 1000, FALSE)
-adegenet::chr(genlight) <- sample(10, 1000, TRUE)
+genlight <- dartR::gi2gl(ex.genind)
 
-## run the conversion
+## run the conversion, could be run without the snp or sample metadatas.
 dat <- import.snpR.data(genlight)
 
 \dontrun{
