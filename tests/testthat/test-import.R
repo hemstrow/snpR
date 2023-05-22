@@ -97,3 +97,23 @@ test_that("plink",{
   
   file.remove("test.bed", "test.map", "test.fam", "test.ped", "test.bim")
 })
+
+
+test_that("genlight and genind",{
+  # gi
+  gi <- format_snps(stickSNPs, output = "adegenet")
+  test <- convert_genind(gi)
+  
+  test <- calc_ho(test)
+  t2 <- calc_ho(stickSNPs)
+  testm <- get.snpR.stats(test, stats = "ho")$weighted.means
+  t2m <- get.snpR.stats(t2, stats = "ho")$weighted.means
+  expect_identical(testm, t2m)
+  
+  # gl--note this wraps into gi first
+  .make_it_quiet(gl <- dartR::gi2gl(gi))
+  expect_warning(.make_it_quiet(t3 <- convert_genlight(gl)))
+  t3 <- calc_ho(t3)
+  t3m <- get.snpR.stats(t3, stats = "ho")$weighted.means
+  expect_identical(testm, t3m)
+})

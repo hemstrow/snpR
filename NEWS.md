@@ -1,3 +1,8 @@
+# snpR 1.2.7.1 -- hotfix
+
+## Bug fixes
+* Changed `import.snpR.data()` (and `process_genlight()`) to rely on `dartR`'s `gl2gi()` function to import `genlight` objects, since these can be a bit variable. This does mean adding a suggests for `dartR`, unfortunately. Also fixed typos in both `process_genlight()` and `process_genind()` that were causing the wrappers to fail.
+
 # snpR 1.2.7
 ## Features
 

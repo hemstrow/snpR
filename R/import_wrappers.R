@@ -172,13 +172,13 @@ read_structure <- function(file, snp.meta = NULL, sample.meta = NULL,
 #' @export
 #' @describeIn snpR_import_wrappers Convert adegenet genlight objects.
 convert_genlight <- function(genlight, snp.meta = NULL, sample.meta = NULL){
-  return(import.snpR.data(file, snp.meta, sample.meta))
+  return(import.snpR.data(genlight, snp.meta, sample.meta))
 }
 
 #' @export
 #' @describeIn snpR_import_wrappers Convert adegenet genind objects
 convert_genind <- function(genind, snp.meta = NULL, sample.meta = NULL){
-  return(import.snpR.data(file, snp.meta, sample.meta))
+  return(import.snpR.data(genind, snp.meta, sample.meta))
 }
 
 #' @export

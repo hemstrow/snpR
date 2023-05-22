@@ -155,10 +155,10 @@ A CRAN version should be available soon.
 
 ## Example
 
-snpR is focused on ease-of-use. Primarily, it achieves this via the use of \emph{facets}, which describe sample or SNP metadata. snpR is built to automatically split up analysis by facet. For example, calculating observed heterozygosity for each population or family, or for each population/family combination is easy!
+snpR is focused on ease-of-use. Primarily, it achieves this via the use of *facets*, which describe sample or SNP metadata. snpR is built to automatically split up analysis by facet. For example, calculating observed heterozygosity for each population or family, or for each population/family combination is easy!
 
 
-```{r example}
+```{r example, eval=FALSE}
 library(snpR)
 ## basic example code
 
