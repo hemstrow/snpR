@@ -523,6 +523,9 @@
   #======use genio to read in data===========
   res <- genio::read_plink(file = plink_file, verbose = F)
   colnames(res$bim)[which(colnames(res$bim) == "id")] <- ".snp.id"
+  if(any(colnames(res$bim) == "pos")){
+    colnames(res$bim)[which(colnames(res$bim) == "pos")] <- "position"
+  }
   colnames(res$fam)[which(colnames(res$fam) == "id")] <- ".sample.id"
   
   

@@ -36,6 +36,7 @@ would cause an error during merging.
 * Added a sanity check to any window functions to throw an error when the position value for a SNP is `NA`.
 * Added a more informative error when `calc_pairwise_fst()` is run with a facet with only one level.
 * Fixed an error when running `format_snps()` with the `output = "rafm"` option without facets.
+* Fixed the the SNP metadata position column being named `pos` insted of `position` from `read_plink()`.
 
 
 # snpR 1.2.6.1 -- hotfix
