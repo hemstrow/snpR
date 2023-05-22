@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.4-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.5-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -135,6 +135,7 @@ vignette("snpR_introduction")
     -   `[`: The usual bracket operator. Subset by SNP or sample index,
         or by facet.
     -   `subset_snpR_data()`: Wrapper for the bracket operator.
+    -   `merge_snpRdata()`: Merge two existing `snpRdata` objects jointly by sample and SNP.
 
 ### Statistics:
 
@@ -192,7 +193,7 @@ vignette("snpR_introduction")
 
 ### Plotting:
 
--   `plot_clusters()`: PCA, UMAP, and tSNE plots.
+-   `plot_clusters()`: PCA, UMAP, tSNE, and DAPC plots.
 -   `plot_structure()`: Run STRUCTURE or several alternatives OR read in
     existing “q” files and generate plots.
 -   `plot_structure_map()`: Plots `plot_structure()` or parsed in q file
