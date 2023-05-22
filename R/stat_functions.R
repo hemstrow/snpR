@@ -295,7 +295,7 @@ calc_maf <- function(x, facets = NULL){
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
                            triple_sigma = TRUE, global = FALSE,
                            verbose = FALSE){
-  
+
   #=================subfunction=========
   func <- function(as, par, sigma, step, report, global = FALSE){
     one_window <- function(wsnps){
