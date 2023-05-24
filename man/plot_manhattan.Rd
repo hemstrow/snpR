@@ -241,7 +241,7 @@ plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
 ## grab data
 y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 ## plot
-plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
+plot_manhattan(y, "pHWE", facets = "subfacet", chr = "chr",
                significant = 0.0001, suggestive = 0.001,
                log.p = TRUE, highlight = FALSE)$plot
 
