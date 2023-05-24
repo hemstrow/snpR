@@ -1,3 +1,9 @@
+# snpR 1.2.8
+
+## Bug fixes
+* Fixed a bug in `plot_manhattan()` where facet specification was not working correctly for data plotted from a `data.frame` rather than a `snpRdata` object directly.
+* Fixed a bug where `plot_pairwise_ld()` in parallel with the `CLD` option would error after completion.
+
 # snpR 1.2.7.1 -- hotfix
 
 ## Bug fixes

@@ -3015,7 +3015,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     #release cores and clean up
     parallel::stopCluster(cl)
-    parallel::stopCluster(cl)
     gc();gc()
     
     # split apart matrices and decompose

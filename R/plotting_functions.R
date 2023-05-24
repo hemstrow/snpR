@@ -1411,7 +1411,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            abbreviate_labels = FALSE){
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
-  
+
   #=============sanity checks==============================
   msg <- character()
   if(highlight_style == "label" & !isFALSE(highlight)){
@@ -1535,7 +1535,46 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #====otherwise=====
   else if(is.data.frame(x)){
     if(data.table::is.data.table(x)){x <- as.data.frame(x)}
-    stats <- x
+    stats <- x[,which(colnames(x) %in% c(plot_var, bp, chr))]
+    
+    # deal with facets provided--may be column names or snpR style facets
+    if(!is.null(facets)){
+      
+      # if length = 1, check if it's in snpR style and confirm everything is OK
+      if(length(facets) == 1){
+        
+        if(facets %in% colnames(x)){
+          stats$subfacet <- x[,facets]
+        }
+        
+        else if(grepl("\\.", facets)){
+          check <- .split.facet(facets)[[1]]
+          
+          if(all(check %in% colnames(x))){
+            stats$subfacet <- .paste.by.facet(x, check)
+          }
+          else{
+            stop(paste0("Some facets not found in column names of x. Bad facets: ", 
+                        paste0(check[which(! check %in% colnames(x))], collapse = ", "),
+                        "\n"))
+          }
+        }
+        else{
+          stop("Facet not found in column names of x.\n")
+        }
+        
+      }
+      
+      # other wise check OK
+      else if(any(!facets %in% colnames(x))){
+        stop(paste0("Some facets not found in column names of x. Bad facets: ", 
+                    paste0(facets[which(! facets %in% colnames(x))], collapse = ", "),
+                    "\n"))
+      }
+      else{
+        stats$subfacet <- .paste.by.facet(x, facets)
+      }
+    }
   }
   else{
     stop("x must be a data.frame or snpRdata object.\n")
