@@ -83,7 +83,7 @@ test_that("non-biallelic",{
 
 test_that("plink",{
   format_snps(stickSNPs, output = "plink", outfile = "test")
-  test <- read_plink("test")
+  expect_warning(test <- read_plink("test"))
   
   expect_true("position" %in% colnames(snp.meta(test)))
   expect_true("chr" %in% colnames(snp.meta(test)))
@@ -102,7 +102,7 @@ test_that("plink",{
 test_that("genlight and genind",{
   # gi
   gi <- format_snps(stickSNPs, output = "adegenet")
-  test <- convert_genind(gi)
+  expect_warning(test <- convert_genind(gi))
   
   test <- calc_ho(test)
   t2 <- calc_ho(stickSNPs)

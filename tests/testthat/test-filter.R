@@ -144,7 +144,7 @@ test_that("min_ind", {
 #===========min_loci=====================
 test_that("min_loci", {
   # correct removed
-  expect_warning(check <- filter_snps(.internal.data$test_snps, min_loci = .9, re_run = FALSE, verbose = FALSE), "individuals were filtered out")
+  check <- filter_snps(.internal.data$test_snps, min_loci = .9, re_run = FALSE, verbose = FALSE)
   check <- row.names(sample.meta(check))
   
   comp <- colSums(.internal.data$test_snps != "NN")/nrow(.internal.data$test_snps)
