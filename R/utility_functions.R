@@ -632,7 +632,7 @@ filter_snps <- function(x, maf = FALSE,
                         singletons = FALSE,
                         min_ind = FALSE,
                         min_loci = FALSE,
-                        inds_fist = FALSE,
+                        inds_first = FALSE,
                         remove_garbage = FALSE,
                         re_run = "partial", 
                         maf_facets = NULL,
@@ -1135,7 +1135,7 @@ filter_snps <- function(x, maf = FALSE,
     rm(mi, mcounts, rejects)
   }
   
-  if(!inds_fist){
+  if(!inds_first){
     if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
       if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
       
@@ -1165,7 +1165,7 @@ filter_snps <- function(x, maf = FALSE,
     }
   }
   
-  if(inds_fist){
+  if(inds_first){
     if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
       if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
       
@@ -1182,7 +1182,7 @@ filter_snps <- function(x, maf = FALSE,
   
   
   if(re_run != FALSE){
-    if(!inds_fist){
+    if(!inds_first){
       if(verbose){cat("Re-filtering loci...\n")}
       
       if(re_run == "partial"){

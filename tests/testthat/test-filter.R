@@ -214,6 +214,23 @@ test_that("garbage",{
   
 })
 
+#==========filter order=========================
+test_that("ind_first",{
+  # check for the reports corresponding to correct removal order
+  td <- capture.output(y <- filter_snps(stickSNPs, maf = .07, min_ind = .8, min_loci = .8))
+  ind.call.line <- grep("^Filtering individuals. Starting individuals",td)
+  loc.call.line <- grep("^Filtering loci. Starting loci",td)
+  expect_true(ind.call.line > loc.call.line)
+  expect_true(any(grepl("^Re-filtering loci", td)))
+  
+  # check for the reports corresponding to correct removal order
+  td <- capture.output(y <- filter_snps(stickSNPs, maf = .07, min_ind = .8, min_loci = .8, inds_first = TRUE))
+  ind.call.line <- grep("^Filtering individuals. Starting individuals",td)
+  loc.call.line <- grep("^Filtering loci. Starting loci",td)
+  expect_true(ind.call.line < loc.call.line)
+  expect_true(any(grepl("^Re-Filtering individuals", td)))
+})
+
 #==========errors==========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]

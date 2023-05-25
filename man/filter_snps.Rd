@@ -16,7 +16,7 @@ filter_snps(
   singletons = FALSE,
   min_ind = FALSE,
   min_loci = FALSE,
-  inds_fist = FALSE,
+  inds_first = FALSE,
   remove_garbage = FALSE,
   re_run = "partial",
   maf_facets = NULL,
@@ -73,6 +73,10 @@ proportion of individuals in which a loci must be sequenced.}
 \item{min_loci}{numeric between 0 and 1 or FALSE, default FALSE. Minimum
 proportion of SNPs at which an individual must be genotyped.}
 
+\item{inds_first}{logical, default FALSE. If TRUE, individuals will be
+filtered out for missing data if that option is selected prior to loci being
+filtered. Otherwise loci are filtered first.}
+
 \item{remove_garbage}{numeric between 0 and 1 or FALSE, default FALSE. Optionally
 do a filter to remove very poorly sequenced individuals and loci
 jointly before applying other filters. This can be used to reduce biases
@@ -110,10 +114,6 @@ functions will fail to work if there are more than two alleles at a locus.}
 
 \item{verbose}{Logical, default TRUE. If TRUE, some progress updates and
 filtering notes will be printed to the console.}
-
-\item{inds_first}{logical, default FALSE. If TRUE, individuals will be
-filtered out for missing data if that option is selected prior to loci being
-filtered. Otherwise loci are filtered first.}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and
