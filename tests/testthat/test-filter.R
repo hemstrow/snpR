@@ -196,6 +196,24 @@ test_that("mgc",{
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
+#==========garbage=========================
+test_that("garbage",{
+  expect_error(filter_snps(stickSNPs, min_ind = .5, remove_garbage = .8), "min_ind threshold should be higher")
+  expect_error(filter_snps(stickSNPs, min_loci = .5, remove_garbage = .8), "min_loci threshold should be higher")
+  expect_error(filter_snps(stickSNPs, remove_garbage = 1.2), "between 0 and 1")
+  expect_error(filter_snps(stickSNPs, min_ind = .5, remove_garbage = ".8"), "must be a numeric")
+  
+
+  # for our test data this ends up not changing anything, so just check for the reports corresponding to correct removal.
+  td <- capture.output(y <- filter_snps(stickSNPs, min_ind = .8, min_loci = .8, remove_garbage = .7))
+  expect_true(any(grepl("Removing garbage individuals/loci", td)))
+  expect_true(any(grepl("Removed 2 bad individuals", td)))
+  expect_true(any(grepl("Removed 4 bad loci", td)))
+  expect_true(any(grepl("Starting individuals: 98", td)))
+  expect_true(any(grepl("Starting loci: 96", td)))
+  
+})
+
 #==========errors==========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]
@@ -203,5 +221,6 @@ test_that("errors",{
   td <- .internal.data$test_snps[,-c(7:8)]
   expect_error(filter_snps(td, min_loci = .99, non_poly = FALSE, verbose = FALSE), "No individuals passed filters.")
 })
+
 
 

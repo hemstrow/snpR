@@ -16,6 +16,8 @@ filter_snps(
   singletons = FALSE,
   min_ind = FALSE,
   min_loci = FALSE,
+  inds_fist = FALSE,
+  remove_garbage = FALSE,
   re_run = "partial",
   maf_facets = NULL,
   hwe_facets = NULL,
@@ -71,21 +73,31 @@ proportion of individuals in which a loci must be sequenced.}
 \item{min_loci}{numeric between 0 and 1 or FALSE, default FALSE. Minimum
 proportion of SNPs at which an individual must be genotyped.}
 
+\item{remove_garbage}{numeric between 0 and 1 or FALSE, default FALSE. Optionally
+do a filter to remove very poorly sequenced individuals and loci
+jointly before applying other filters. This can be used to reduce biases
+caused by very bad loci/individuals prior to full filtering. This number
+should be lower than either the \code{min_ind} or \code{min_loci} parameters
+if those arguments are used and should generally be quite permissive to 
+remove only truly bad loci or individuals.}
+
 \item{re_run}{character or FALSE, default "partial". When individuals are
 removed via min_ind, it is possible that some SNPs that initially passed
 filtering steps will now violate some filters. SNP filters can be re-run
 automatically via several methods: \itemize{ \item{partial: } Re-filters for
 non-polymorphic loci (non_poly) only, if that filter was requested
 initially. \item{full: } Re-runs the full filtering scheme (save for
-min_loci).}}
+min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+FALSE will re-run the individual filter for missing data again after loci 
+filtering.}
 
-\item{maf_facets}{character or NULL, default NULL. Defines a sample facet
-over which the minor allele frequency can be checked. SNPs will only fail
-the maf filter if they fail in every level of every provided facet.}
+\item{maf_facets}{character or NULL, default NULL. Defines a sample facet over
+which the minor allele frequency can be checked. SNPs will only fail the maf
+filter if they fail in every level of every provided facet.}
 
-\item{hwe_facets}{character or NULL, default NULL. Defines a sample facet
-over which the hwe filter can be checked. SNPs will fail the hwe filter if
-they fail in any level of any provided facet.}
+\item{hwe_facets}{character or NULL, default NULL. Defines a sample facet over
+which the hwe filter can be checked. SNPs will fail the hwe filter if they
+fail in any level of any provided facet.}
 
 \item{non_poly}{logical, default TRUE. If TRUE, non-polymorphic loci will be
 removed.}
@@ -98,6 +110,10 @@ functions will fail to work if there are more than two alleles at a locus.}
 
 \item{verbose}{Logical, default TRUE. If TRUE, some progress updates and
 filtering notes will be printed to the console.}
+
+\item{inds_first}{logical, default FALSE. If TRUE, individuals will be
+filtered out for missing data if that option is selected prior to loci being
+filtered. Otherwise loci are filtered first.}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and
@@ -130,16 +146,19 @@ population all carry the only instances of a rare minor allele that still
 passes the maf threshold, removing those individuals may cause the loci to no
 longer be polymorphic in the sample.
 
-To counter this, the "re_run" argument can be used to pass the data through a
-second filtering step after individuals are removed. By default, the "partial"
-re-run option is used, which re-runs only the non-polymorphic filter (if it
-was originally set). The "full" option re-runs all set filters. Note that
-re-running any of these filters may cause individuals to fail the individual
-filter after loci removal, and so subsequent tertiary re-running of the
-individual filters, followed by the loci filters, and so on, could be
-justified. This is not done automatically here.
+To counter this, the \code{re_run} argument can be used to pass the data
+through a second filtering step after individuals are removed. By default, the
+"partial" re-run option is used, which re-runs only the non-polymorphic filter
+(if it was originally set). The "full" option re-runs all set filters. Note
+that re-running any of these filters may cause individuals to fail the
+individual filter after loci removal, and so subsequent tertiary re-running of
+the individual filters, followed by the loci filters, and so on, could be
+justified. This is not done automatically here, however, if the
+\code{inds_first} option is selected to filter poorly sequenced individuals
+prior to applying loci filters, any re-run option will re-run individuals
+filters after the loci filters have been applied.
 
-Via the "maf_facets" argument, this function can filter by minor allele
+Via the \code{maf_facets} argument, this function can filter by minor allele
 frequencies in either \emph{all} samples or \emph{each level of a supplied
 sample specific facet and the entire dataset}. In the latter case, any SNPs
 that pass the maf filter in \emph{any} facet level are considered to pass the
@@ -148,7 +167,7 @@ different, there are \emph{many} populations, and/or allele frequencies are
 very different between populations and thus common alleles of interest in one
 population might be otherwise filtered out.
 
-The "hwe_facets" argument is the inverse of this: loci will be removed if they
+The \code{hwe_facets} argument is the inverse of this: loci will be removed if they
 fail the provided hwe filter in any facet level. In both cases, Facets should
 be provided as described in \code{\link{Facets_in_snpR}}.
 }

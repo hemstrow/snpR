@@ -509,16 +509,19 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'passes the maf threshold, removing those individuals may cause the loci to no
 #'longer be polymorphic in the sample.
 #'
-#'To counter this, the "re_run" argument can be used to pass the data through a
-#'second filtering step after individuals are removed. By default, the "partial"
-#'re-run option is used, which re-runs only the non-polymorphic filter (if it
-#'was originally set). The "full" option re-runs all set filters. Note that
-#'re-running any of these filters may cause individuals to fail the individual
-#'filter after loci removal, and so subsequent tertiary re-running of the
-#'individual filters, followed by the loci filters, and so on, could be
-#'justified. This is not done automatically here.
+#'To counter this, the \code{re_run} argument can be used to pass the data
+#'through a second filtering step after individuals are removed. By default, the
+#'"partial" re-run option is used, which re-runs only the non-polymorphic filter
+#'(if it was originally set). The "full" option re-runs all set filters. Note
+#'that re-running any of these filters may cause individuals to fail the
+#'individual filter after loci removal, and so subsequent tertiary re-running of
+#'the individual filters, followed by the loci filters, and so on, could be
+#'justified. This is not done automatically here, however, if the
+#'\code{inds_first} option is selected to filter poorly sequenced individuals
+#'prior to applying loci filters, any re-run option will re-run individuals
+#'filters after the loci filters have been applied.
 #'
-#'Via the "maf_facets" argument, this function can filter by minor allele
+#'Via the \code{maf_facets} argument, this function can filter by minor allele
 #'frequencies in either \emph{all} samples or \emph{each level of a supplied
 #'sample specific facet and the entire dataset}. In the latter case, any SNPs
 #'that pass the maf filter in \emph{any} facet level are considered to pass the
@@ -527,7 +530,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'very different between populations and thus common alleles of interest in one
 #'population might be otherwise filtered out.
 #'
-#'The "hwe_facets" argument is the inverse of this: loci will be removed if they
+#'The \code{hwe_facets} argument is the inverse of this: loci will be removed if they
 #'fail the provided hwe filter in any facet level. In both cases, Facets should
 #'be provided as described in \code{\link{Facets_in_snpR}}.
 #'
@@ -566,20 +569,32 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
 #'  proportion of individuals in which a loci must be sequenced.
 #'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
-#'  proportion of SNPs at which an individual must be genotyped.
+#'proportion of SNPs at which an individual must be genotyped.
+#'@param inds_first logical, default FALSE. If TRUE, individuals will be
+#'  filtered out for missing data if that option is selected prior to loci being
+#'  filtered. Otherwise loci are filtered first.
+#'@param remove_garbage numeric between 0 and 1 or FALSE, default FALSE. Optionally
+#'  do a filter to remove very poorly sequenced individuals and loci
+#'  jointly before applying other filters. This can be used to reduce biases
+#'  caused by very bad loci/individuals prior to full filtering. This number
+#'  should be lower than either the \code{min_ind} or \code{min_loci} parameters
+#'  if those arguments are used and should generally be quite permissive to 
+#'  remove only truly bad loci or individuals.
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
 #'  automatically via several methods: \itemize{ \item{partial: } Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
-#'  min_loci).}
-#'@param maf_facets character or NULL, default NULL. Defines a sample facet
-#'  over which the minor allele frequency can be checked. SNPs will only fail
-#'  the maf filter if they fail in every level of every provided facet.
-#'@param hwe_facets character or NULL, default NULL. Defines a sample facet
-#'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
-#'  they fail in any level of any provided facet.
+#'  min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+#'  FALSE will re-run the individual filter for missing data again after loci 
+#'  filtering.
+#'@param maf_facets character or NULL, default NULL. Defines a sample facet over
+#'  which the minor allele frequency can be checked. SNPs will only fail the maf
+#'  filter if they fail in every level of every provided facet.
+#'@param hwe_facets character or NULL, default NULL. Defines a sample facet over
+#'  which the hwe filter can be checked. SNPs will fail the hwe filter if they
+#'  fail in any level of any provided facet.
 #'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
 #'  removed.
 #'@param bi_al logical, default TRUE. If TRUE, loci with more than two alleles
@@ -617,6 +632,8 @@ filter_snps <- function(x, maf = FALSE,
                         singletons = FALSE,
                         min_ind = FALSE,
                         min_loci = FALSE,
+                        inds_fist = FALSE,
+                        remove_garbage = FALSE,
                         re_run = "partial", 
                         maf_facets = NULL,
                         hwe_facets = NULL,
@@ -759,6 +776,29 @@ filter_snps <- function(x, maf = FALSE,
   if(min_loci){
     if(!is.numeric(min_loci) | (min_loci <= 0 | min_loci >= 1) | length(min_loci) != 1){
       stop("min_loci must be a numeric value between but not equal to 0 and 1.")
+    }
+  }
+  
+  if(!isFALSE(remove_garbage)){
+    if(!is.numeric(remove_garbage)){
+      stop("remove_garbage must be a numeric value.")
+    }
+    if(length(remove_garbage) != 1){
+      stop("remove_garbage must be a numeric vector of length 1.")
+    }
+    if(remove_garbage > 1 | remove_garbage < 0){
+      stop("remove_garbage is a minimum proportion of sequenced individuals/loci, and so must be between 0 and 1.\n")
+    }
+    
+    if(is.numeric(min_loci)){
+      if(min_loci <= remove_garbage){
+        stop("The min_loci threshold should be higher than the garbage removal threshold if supplied.\n")
+      }
+    }
+    if(is.numeric(min_ind)){
+      if(min_ind <= remove_garbage){
+        stop("The min_ind threshold should be higher than the garbage removal threshold if supplied.\n")
+      }
     }
   }
   
@@ -1057,25 +1097,59 @@ filter_snps <- function(x, maf = FALSE,
       if(any(old.facets != ".base")){
         x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
-      
-      warning("Any calculated stats will be removed, since individuals were filtered out!\n")
     }
     return(list(x = x, rejects = rejects))
   }
   
   #==========================call the functions as requested.==================
-  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-    if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+  if(is.numeric(remove_garbage)){
+    if(verbose){cat("Removing garbage individuals/loci.\n")}
+    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    rejects <- which(mcounts/nrow(x) < remove_garbage)
     
-    # run the filter
-    x <- filt_by_loci()
+    mi <- x@geno.tables$wm[,colnames(x@geno.tables$wm) == mDat] # for backwards compat
+    mi <- which((nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < remove_garbage)
     
-    if(nrow(x) == 0 | is.null(nrow(x))){
-      stop("No loci remain after filters.")
+    if(length(rejects) > 0){
+      if(length(mi) > 0){
+        .make_it_quiet(x <- x[-mi,-rejects])
+      }
+      else{
+        .make_it_quiet(x <- x[,-rejects])
+      }
+    }
+    else if(length(mi) > 0){
+      .make_it_quiet(x <- x[-mi,])
     }
     
-    if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    
+    if(verbose){cat("\tRemoved", length(mi), "bad loci.\n\tRemoved", length(rejects), "bad individuals.\n")}
+    
+    if(nrow(x) == 0){
+      stop("No SNPs passed garbage removal.\n")
+    }
+    if(ncol(x) == 0){
+      stop("No loci passed garbage removal.\n")
+    }
+    
+    rm(mi, mcounts, rejects)
   }
+  
+  if(!inds_fist){
+    if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+      if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+      
+      # run the filter
+      x <- filt_by_loci()
+      
+      if(nrow(x) == 0 | is.null(nrow(x))){
+        stop("No loci remain after filters.")
+      }
+      
+      if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    }
+  }
+  
   
   # run the minimum sequenced loci filter
   if(min_loci){
@@ -1088,27 +1162,59 @@ filter_snps <- function(x, maf = FALSE,
     else{
       x <- x$x
       if(verbose){cat("\tEnding individuals:", ncol(x), "\n")}
-      if(re_run != FALSE){
-        if(verbose){cat("Re-filtering loci...\n")}
-        
-        if(re_run == "partial"){
-          maf <- FALSE
-          hf_hets <- FALSE
-          min_ind <- FALSE
-          bi_al <- FALSE
-          hwe <- FALSE
-          mac <- 0
-          singletons <- FALSE
-        }
-        if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-          x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
-          if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
-        }
-        else{
-          if(verbose){cat("\tNo variables to re-fitler.\n")}
-        }
+    }
+  }
+  
+  if(inds_fist){
+    if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+      if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+      
+      # run the filter
+      x <- filt_by_loci()
+      
+      if(nrow(x) == 0 | is.null(nrow(x))){
+        stop("No loci remain after filters.")
+      }
+      
+      if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    }
+  }
+  
+  
+  if(re_run != FALSE){
+    if(!inds_fist){
+      if(verbose){cat("Re-filtering loci...\n")}
+      
+      if(re_run == "partial"){
+        maf <- FALSE
+        hf_hets <- FALSE
+        min_ind <- FALSE
+        bi_al <- FALSE
+        hwe <- FALSE
+        mac <- 0
+        singletons <- FALSE
+      }
+      if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+        x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
+        if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
+      }
+      else{
+        if(verbose){cat("\tNo variables to re-fitler.\n")}
       }
     }
+    else{
+      if(verbose){cat("Re-Filtering individuals. Starting individuals:", ncol(x), "\n")}
+      x <- min_loci_filt()
+      if(length(x$rejects) == 0){
+        if(verbose){cat("No individuals removed.\n")}
+        x <- x$x
+      }
+      else{
+        x <- x$x
+        if(verbose){cat("\tEnding individuals:", ncol(x), "\n")}
+      }
+    }
+    
   }
   
   # return results
