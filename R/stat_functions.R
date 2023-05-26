@@ -1128,18 +1128,18 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' @param facets character. Categorical metadata variables by which to break up
 #'   analysis. See \code{\link{Facets_in_snpR}} for more details.
 #' @param keep_components logical, default FALSE. If TRUE, the variance
-#'   components "b" and "c" will be held and accessible from the
-#'   \code{$single} element (named "var_comp_b" and
-#'   "var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
-#'   method. This may be useful if working with very large datasets that need to
-#'   be run with separate objects for each chromosome, etc. for memory purposes.
-#'   Weighted averages can be generated identically to those from snpR by taking
-#'   the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "c"
-#'   divided by the sum of the weighted mean of "b" + "c" using the
-#'   number of SNPs called in a comparison (returned in the "nk" column from
-#'   \code{\link{get.snpR.stats}}) as weights within each population comparison.
-#'   Note that this is different than taking the weighted mean of a/(a + b + c)!
-#'
+#'   components "b" and "c" will be held and accessible from the \code{$single}
+#'   element (named "var_comp_b" and "var_comp_c", respectively) using the usual
+#'   \code{\link{get.snpR.stats}} method. This may be useful if working with
+#'   very large datasets that need to be run with separate objects for each
+#'   chromosome, etc. for memory purposes. Weighted averages can be generated
+#'   identically to those from snpR by taking one minus the weighted mean (via
+#'   the \code{\link[stats]{weighted.mean}}) of "c" divided by the sum of the
+#'   weighted mean of "b" + "c" using the number of SNPs called in a comparison
+#'   (returned in the "nk" column from \code{\link{get.snpR.stats}}) as weights
+#'   within each population comparison. Note that this is different than taking
+#'   the weighted mean of 1 - c/(b + c)!
+#' 
 #' @export
 #' @author William Hemstrom
 #' @references Weir and Cockerham (1984). \emph{Evolution}

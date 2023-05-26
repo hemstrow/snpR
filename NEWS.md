@@ -6,6 +6,9 @@
 * Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.
 * Added the `remove_garbage` argument to `filter_snps()` to allow users to quickly remove very poorly sequenced loci and individuals (jointly, so neither first) prior to applying all of the other filters. This could remove bias caused by very bad loci or samples causing other loci or samples to appear more poorly sequenced than they actually are.
 
+## Documentation
+* Fixed typos in the documentation for the `keep_components` argument of `calc_fis()`.
+
 ## Bug fixes
 * Fixed a bug in `plot_manhattan()` where facet specification was not working correctly for data plotted from a `data.frame` rather than a `snpRdata` object directly.
 * Fixed a bug where `plot_pairwise_ld()` in parallel with the `CLD` option would error after completion.
