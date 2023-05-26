@@ -96,6 +96,9 @@
 #'  for each individual.
 #'@param marker_names logical, default FALSE. If TRUE, assumes that a
 #'  header row of marker is present.
+#'  
+#'@author William Hemstrom
+#'@author Brent Gruber (genlight conversion re-distributed here) 
 #'
 #'@aliases read_vcf read_ms read_delimited_snps read_genepop read_FSTAT convert_genlight convert_genind
 #'@name snpR_import_wrappers

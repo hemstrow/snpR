@@ -185,3 +185,8 @@ taken from the fixed fields in the VCF and sample metadata from the sample
 IDs. Note that this only imports SNPs with called genotypes!}
 }
 
+\author{
+William Hemstrom
+
+Brent Gruber (genlight conversion re-distributed here)
+}

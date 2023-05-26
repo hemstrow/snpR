@@ -10,6 +10,9 @@
 * Fixed a bug in `plot_manhattan()` where facet specification was not working correctly for data plotted from a `data.frame` rather than a `snpRdata` object directly.
 * Fixed a bug where `plot_pairwise_ld()` in parallel with the `CLD` option would error after completion.
 
+## Errata
+* Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
+
 # snpR 1.2.7.1 -- hotfix
 
 ## Bug fixes
