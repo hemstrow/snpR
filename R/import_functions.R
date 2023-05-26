@@ -112,8 +112,73 @@
 #
 # @author William Hemstrom
 .genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
-  .check.installed("dartR")
-  return(.genind.tosnpRdata(dartR::gl2gi(genlight), snp.meta, sample.meta))
+  # this internal function is re-distrubuted with author permission from dartR to avoid
+  # the dependancy
+  .gl2gi <- function(x,
+                     probar = TRUE) {
+    # convert to genind....
+    x2 <- as.matrix(x[,])
+    
+    if (probar) {
+      pb <- utils::txtProgressBar(
+        min = 0,
+        max = 1,
+        style = 3,
+        initial = NA
+      )
+    }
+    
+    if (is.null(x@loc.all)) {
+      x@loc.all <- rep("A/T", adegenet::nLoc(x))
+      x@loc.all[1] <- "C/G"
+    }
+    
+    
+    homs1 <-
+      paste(substr(x@loc.all, 1, 1), "/", substr(x@loc.all, 1, 1), sep = "")
+    hets <- x@loc.all
+    homs2 <-
+      paste(substr(x@loc.all, 3, 3), "/", substr(x@loc.all, 3, 3), sep = "")
+    xx <- matrix(NA, ncol = ncol(x2), nrow = nrow(x2))
+    for (i in 1:nrow(x2)) {
+      for (ii in 1:ncol(x2)) {
+        inp <- x2[i, ii]
+        if (!is.na(inp)) {
+          if (inp == 0)
+            xx[i, ii] <- homs1[ii]
+          else if (inp == 1)
+            xx[i, ii] <- hets[ii]
+          else if (inp == 2)
+            xx[i, ii] <- homs2[ii]
+        } else
+          xx[i, ii] <-"-/-"
+      }
+      if (probar) {
+        utils::setTxtProgressBar(pb, i / nrow(x2))
+      }
+    }
+    if (probar) {
+      close(pb)
+    }
+    
+    gen <-
+      adegenet::df2genind(
+        xx[,],
+        sep = "/",
+        ncode = 1,
+        ind.names = x@ind.names,
+        pop = x@pop,
+        ploidy = 2,
+        NA.char = "-"
+      )  #, probar=probar)
+    gen@other <- x@other
+    adegenet::locNames(gen) <- adegenet::locNames(x)
+    
+    .yell_citation("Gruber2018", "genlight import", "genlight import managed by dartR's gl2gi function")
+    
+    return(gen)
+  }
+  return(.genind.tosnpRdata(.gl2gi(genlight), snp.meta, sample.meta))
 }
 
 
