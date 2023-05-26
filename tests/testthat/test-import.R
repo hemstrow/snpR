@@ -110,11 +110,10 @@ test_that("genlight and genind",{
   t2m <- get.snpR.stats(t2, stats = "ho")$weighted.means
   expect_identical(testm, t2m)
   
-  skip_if_not_installed("dartR")
-  
+
   # gl--note this wraps into gi first
   num <- format_snps(stickSNPs, "sn", interpolate = FALSE)
-  gi <- as(t(num[,-c(1:2)]), "genlight")
+  gl <- methods::as(t(num[,-c(1:2)]), "genlight")
   expect_warning(.make_it_quiet(t3 <- convert_genlight(gl)))
   t3 <- calc_ho(t3)
   t3m <- get.snpR.stats(t3, stats = "ho")$weighted.means

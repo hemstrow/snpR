@@ -199,7 +199,8 @@ ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:2)]),
 import.snpR.data(ex.genind, snp_meta, sample_meta) 
 
 # from an adegenet genlight object
-genlight <- dartR::gi2gl(ex.genind)
+num <- format_snps(stickSNPs, "sn", interpolate = FALSE)
+genlight <- methods::as(t(num[,-c(1:2)]), "genlight")
 
 ## run the conversion, could be run without the snp or sample metadatas.
 dat <- import.snpR.data(genlight)
