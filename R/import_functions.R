@@ -260,7 +260,7 @@
   .check.installed("vcfR")
   
   #========import data=======================
-  if(!"vcfR" %in% class(vcf_file)){
+  if(!is(vcf_file, "vcfR")){
     vcf <- vcfR::read.vcfR(vcf_file)
   }
   else{

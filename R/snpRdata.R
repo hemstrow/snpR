@@ -386,13 +386,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   # genotypes
-  if("genind" %in% class(genotypes)){
+  if(methods::is(genotypes, "genind")){
     return(.genind.tosnpRdata(genotypes, snp.meta, sample.meta))
   }
-  if("genlight" %in% class(genotypes)){
+  if(methods::is(genotypes, "genlight")){
     return(.genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
   }
-  if("vcfR" %in% class(genotypes)){
+  if(methods::is(genotypes, "vcfR")){
     return(.process_vcf(genotypes, snp.meta, sample.meta))
   }
   if(is.matrix(genotypes)){

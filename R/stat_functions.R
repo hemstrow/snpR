@@ -3611,7 +3611,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     # the nice thing with this is that it should keep all of the names from x natively!
     out <- lapply(x, function(y){
       lapply(y, function(z) {
-        if("matrix" %in% class(z)){
+        if(is.matrix(z)){
           .get_dist(z, method = method)
         }
         else{
