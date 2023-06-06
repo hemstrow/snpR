@@ -423,7 +423,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                                   marker_names = marker_names, 
                                   header_cols = header_cols, 
                                   snp.meta = snp.meta, 
-                                  sample.meta = sample.meta))
+                                  sample.meta = sample.meta,
+                                  mDat = mDat))
       }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))

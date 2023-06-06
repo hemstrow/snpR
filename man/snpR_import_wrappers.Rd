@@ -38,7 +38,8 @@ read_structure(
   sample.meta = NULL,
   rows_per_individual = 2,
   marker_names = FALSE,
-  header_cols = 0
+  header_cols = 0,
+  mDat = -9
 )
 
 convert_genlight(genlight, snp.meta = NULL, sample.meta = NULL)
@@ -65,7 +66,8 @@ named columns.}
 value assumes that each chromosome is of equal length whereas a vector of
 values gives the length for each chromosome in order.}
 
-\item{mDat}{character, defaults "0000" or "NN". Note, if the default is set but the
+\item{mDat}{character, defaults "0000", "NN", or "-9" depending on method. 
+Note, if the default is set but the
 data has genotypes stored in 6 characters, mDat will be set to "000000".}
 
 \item{header_cols}{numeric, default 0. The number of snp metadata columns prior

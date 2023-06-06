@@ -13,6 +13,9 @@
 * Fixed a bug in `plot_manhattan()` where facet specification was not working correctly for data plotted from a `data.frame` rather than a `snpRdata` object directly.
 * Fixed a bug where `plot_pairwise_ld()` in parallel with the `CLD` option would error after completion.
 * Fixed an error in `dartR` object import, which should have been natively handled by `convert_genlight()` due to the use of ` %in% class()` instead of `methods::is()`. Fixed a few other uses of `%in% class()` to stave off future errors.
+* Added an `mDat` argument to `read_structure()` to support slighly unorthodox structure files with different missing
+data identifiers. Note that most structure datasets will have `-9`, which is still the default.
+* Added an `na.omit()` call to marker name parsing with `read_structure()` to support oddly formatted data with tabs or spaces separating locus names.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.

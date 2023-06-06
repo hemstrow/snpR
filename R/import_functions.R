@@ -605,7 +605,7 @@
 .process_structure <- function(structure_file, rows_per_individual = 2, 
                                marker_names = FALSE,
                                header_cols = 1,
-                               snp.meta = NULL, sample.meta = NULL){
+                               snp.meta = NULL, sample.meta = NULL, mDat = -9){
   #==========read in and categorize input data============
   if(marker_names){
     header <- data.table::fread(structure_file, nrows = 1, header = FALSE)
@@ -630,12 +630,13 @@
   # process snp metadata
   if(marker_names & is.null(snp.meta)){
     snp.meta <- data.frame(ID = unlist(header))
+    snp.meta <- na.omit(snp.meta)
   }
   
   #================process genotypes=======================
   # replace missing data with "X"
   dat <- as.matrix(dat)
-  dat[dat == -9] <- NA
+  dat[dat == mDat] <- NA
   dat <- t(dat)
   if(rows_per_individual == 1){
     num_individuals <- ncol(dat)

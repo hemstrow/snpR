@@ -88,7 +88,8 @@
 #'@param chr.length numeric, Specifies chromosome lengths. Note that a single
 #'  value assumes that each chromosome is of equal length whereas a vector of
 #'  values gives the length for each chromosome in order.
-#'@param mDat character, defaults "0000" or "NN". Note, if the default is set but the
+#'@param mDat character, defaults "0000", "NN", or "-9" depending on method. 
+#'  Note, if the default is set but the
 #'  data has genotypes stored in 6 characters, mDat will be set to "000000".
 #'@param header_cols numeric, default 0. The number of snp metadata columns prior
 #'  to snp genotypes when importing delimited snps.
@@ -163,13 +164,14 @@ read_plink <- function(file){
 #' @describeIn snpR_import_wrappers Import STRUCTURE data files.
 read_structure <- function(file, snp.meta = NULL, sample.meta = NULL, 
                            rows_per_individual = 2, marker_names = FALSE,
-                           header_cols = 0){
+                           header_cols = 0, mDat = -9){
   if(!grepl("\\.str$", file)){
     stop("File extension is not .str. Please check that the correct file has been entered and rename if needed.\n")
   }
+  
   return(import.snpR.data(genotypes = file, rows_per_individual = rows_per_individual, 
                             marker_names = marker_names, 
-                            header_cols = header_cols, snp.meta = snp.meta, sample.meta = sample.meta))
+                            header_cols = header_cols, snp.meta = snp.meta, sample.meta = sample.meta, mDat = mDat))
 }
 
 #' @export
