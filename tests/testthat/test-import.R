@@ -68,7 +68,7 @@ test_that("structure",{
   expect_identical(suppressWarnings(read_structure("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
                                                    rows_per_individual = 2, header_cols = 1)),
                    suppressWarnings(import.snpR.data("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
-                                                     rows_per_individual = 2, header_cols = 1)))
+                                                     rows_per_individual = 2, header_cols = 1, mDat = -9)))
   
   file.remove("test.str")
 })

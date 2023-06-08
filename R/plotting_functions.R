@@ -1173,7 +1173,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     stats <- c(stats, "adegenet")
     details <- c(details, "DAPC run via interface to adegenet.")
   }
-  
+
   if(length(keys) > 0){
     .yell_citation(keys, stats, details, update_bib)
   }
