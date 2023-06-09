@@ -568,7 +568,7 @@
   return(ac)
 }
 
-.bind_and_check_num_levs_a1_a2 <- function(a1, a2, mDat, form = NULL){
+.bind_and_check_num_levs_a1_a2 <- function(a1, a2, mDat, form = NULL, omit_non_biallelic = TRUE){
   ac <- cbind(a1, a2)
   rm(a1, a2); gc();
   if(!is.null(form)){
@@ -578,8 +578,16 @@
   ac <- dplyr::mutate_all(ac, function(x) as.numeric(as.factor(x)))
   ac <- as.matrix(ac)
   
-  if(any(matrixStats::colMaxs(ac, na.rm = T) > 2)){
-    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+  nlevs <- matrixStats::colMaxs(ac, na.rm = T)
+  
+  if(any(nlevs > 2)){
+    if(omit_non_biallelic){
+      warning("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+      ac <- ac[,-which(nlevs > 2)]
+    }
+    else{
+      stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+    }
   }
   return(ac)
 }
