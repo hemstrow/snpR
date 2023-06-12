@@ -1113,7 +1113,7 @@ is.snpRdata <- function(x){
     }
   }
   else if(type == "pop"){
-    meta.names <- c("facet", "subfacet")
+    meta.names <- c("facet", "pop")
     starter.meta <- meta.names
     x@pop.stats <- .smart.merge(stats, x@pop.stats, meta.names, starter.meta)
   }

@@ -1,6 +1,7 @@
 # snpR 1.2.8
 
 ## Features
+* Added support for the temporal method into `calc_ne()`.
 
 ### Minor
 * Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.
@@ -17,6 +18,8 @@
 * Added an `mDat` argument to `read_structure()` to support slighly unorthodox structure files with different missing
 data identifiers. Note that most structure datasets will have `-9`, which is still the default.
 * Added an `na.omit()` call to marker name parsing with `read_structure()` to support oddly formatted data with tabs or spaces separating locus names.
+* Fixed a bug in `calc_ne()` where errors midway through computation would sometime result in the working
+directory being changed to `./NeEstimator`.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.

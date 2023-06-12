@@ -3327,7 +3327,10 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param facets character, default NULL. Categorical metadata variables by
 #'   which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 #'   details. Only sample specific categories are allowed, all others will be
-#'   removed. If NULL, Ne will be calculated for all samples.
+#'   removed. If NULL, Ne will be calculated for all samples. Note that for
+#'   the temporal method specifically, and unusually for \code{snpR}, components
+#'   of complex facets need to be provided alphabetically (\code{"fam.pop"} not
+#'   \code{"pop.fam"}).
 #' @param chr character, default NULL. An optional but recommended SNP specific
 #'   categorical metadata variable which designates chromosomes/linkage
 #'   groups/etc. Pairwise LD scores for SNPs with the same level of this
@@ -3343,7 +3346,23 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   a range of values should be checked.
 #' @param methods character, default "LD". LD estimation methods to use.
 #'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-#'   \item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.}
+#'   \item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.
+#'   \item{"temporal"} Temporal-based. 
+#'   Requires muliple time-points for a population}
+#' @param temporal_methods character, default 
+#'   \code{c("Pollak", "Nei", "Jorde")}. Temporal methods to use. See 
+#'   \code{NeEstimator} documentation.
+#' @param temporal_details Three or four column \code{data.frame} or 
+#'   \code{NULL}, default \code{NULL}. Details for the generation/population 
+#'   layout to use for the temporal method if requested. Columns one and two
+#'   are levels of the provided facet given corresponding to the first and 
+#'   second time point of the population, respectively. Column three is a number
+#'   indicating the number of generations between samples. Column four is
+#'   optionally the census population size at time one. Any values other than
+#'   zero will use \code{NeEstimator}'s Plan II. Note that level components of 
+#'   complex facets need to be provided in the same order as the facet 
+#'   (for \code{"fam.pop"}, family "A" population "ASP" should be provided
+#'   as \code{"A.ASP"}), as usual.
 #' @param max_ind_per_pop numeric, default NULL. Maximum number of individuals
 #'   to consider per population.
 #' @param nsnps numeric, default \code{nrow(x)}. The number of SNPs to use
@@ -3385,8 +3404,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     mating = "random",
                     pcrit = c(0.05, 0.02, 0.01),
                     methods = "LD",
-                    # temporal_methods = c("Pollak", "Nei", "Jorde"),
-                    # temporal_gens = NULL, 
+                    temporal_methods = c("Pollak", "Nei", "Jorde"),
+                    temporal_details = NULL,
                     max_ind_per_pop = NULL,
                     nsnps = nrow(x),
                     outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
@@ -3411,13 +3430,31 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     }
   }
   
-  if("temporal" %in% tolower(methods)){msg <- c(msg, "Implementation for NeEstimator's temporal method is in progress but currently not supported.\n")}
-  
+  ffacets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
+  if("temporal" %in% tolower(methods)){
+    
+    if(length(facets) > 1){
+      stop("Only one facet can be run at a time for the temporal method. Complex facets ('pop.fam') are permitted.\n")
+    }
+    if(facets == ".base"){
+      stop("The temporal method cannot be used for the base level facet.\n")
+    }
+    
+    if(facets[1] != ffacets[1]){
+      stop("For the temporal method, complex facets must be provided in alphabetical order in both the 'facets' and 'temporal_details' arguments (for example, 'fam.pop' not 'pop.fam') to prevent downstream issues.")
+    }
+  }
+  facets <- ffacets
+
   if(basename(outfile) != outfile){
     msg <- c(msg, "At the moment, the outfile name must be a file name prefix (such as 'test_ne'), not a full path (such as '~/tests/test_ne').\n")
   }
   
-  facets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
+  if(file.exists("./NeEstimator")){
+    msg <- c(msg, "'NeEstimtor' directory already detected in working directory prior to execution. Please remove or rename!")
+  }
+  
+  
   if(length(msg) > 0){
     stop(msg)
   }
@@ -3446,14 +3483,17 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   #=============run====================================
   out <- vector("list", length(facets))
-  for(i in 1:length(facets)){
+  owd <- getwd()
+  
+  # function operation is wrapped in try to reset working directory and cleanup on error
+  worked <- try(for(i in 1:length(facets)){
     # write inputs
     write_neestimator_inputs(x = y,
                              facets = facets[i],
                              chr = chr,
                              methods = methods,
-                             # temporal_methods = temporal_methods,
-                             # temporal_gens = temporal_gens,
+                             temporal_methods = temporal_methods,
+                             temporal_details = temporal_details,
                              pcrit = pcrit,
                              mating = mating,
                              outfile = paste0(outfile, ".txt"),
@@ -3467,17 +3507,40 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     out[[i]] <- parse_neestimator(path = "NeEstimator/",
                                   pattern = outfile,
                                   facets = facets[i],
-                                  snpRdat = x)
+                                  snpRdat = x, 
+                                  temporal_methods = temporal_methods,
+                                  temporal_details = temporal_details)
+  }, silent = TRUE)
+  
+  
+  
+  
+  # reset the WD if we errored and report the error
+  if(is(worked, "try-error")){
+    setwd(owd)
+    
+    # cleanup if requested
+    if(cleanup & dir.exists("./NeEstimator")){
+      if(Sys.info()["sysname"] == "Windows"){
+        shell("rm -r ./NeEstimator")
+      }
+      else{
+        system("rm -r ./NeEstimator")
+      }
+    }
+    
+    stop(paste0(worked, collapse = "\n"))
   }
   
   names(out) <- facets
   out <- dplyr::bind_rows(out, .id = "facet")
-  
+
   #=============return===========
   x <- .merge.snpR.stats(x, out, "pop")
   x <- .update_calced_stats(x, facets, "ne")
   x <- .update_citations(x, "Do2014", "ne", "Ne, via interface to NeEstimator")
   
+  # cleanup if requested
   if(cleanup){
     if(Sys.info()["sysname"] == "Windows"){
       shell("rm -r ./NeEstimator")

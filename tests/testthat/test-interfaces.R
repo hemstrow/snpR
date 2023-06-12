@@ -27,6 +27,43 @@ test_that("NeEstimator",{
   ne2 <- get.snpR.stats(ne2, "pop", "ne")
   expect_equal(as.numeric(unlist(ne2$pop[1,-c(1:2), drop = TRUE])),
                c(4.6, 2.2, 8.0, 16.1, 4.9, Inf, 39.8, 10.6, Inf, 7.0, Inf))
+  
+  
+  # temporal
+  set.seed(12342)
+  # errors
+  expect_error(n3 <- calc_ne(stickSNPs, "pop", "chr", methods = c("LD", "Het", "Coan", "temporal"), pcrit = c(0, .02, 0.07),
+                temporal_details = data.frame(t1 = c("ASP", "PAL", "OPL"),
+                                              t2 = c("UPD", "CLF", "SMR"),
+                                              gens = c(30, 30, 30))),
+               "The temporal method cannot currently be run alongside other methods.")
+  
+  expect_error(n3 <- calc_ne(stickSNPs, c("pop", "fam"), "chr", methods = "temporal", pcrit = c(0, .02, 0.07),
+                             temporal_details = data.frame(t1 = c("ASP", "PAL", "OPL"),
+                                                           t2 = c("UPD", "CLF", "SMR"),
+                                                           gens = c(30, 30, 30))),
+               "Only one facet.")
+  expect_error(n3 <- calc_ne(stickSNPs, "pop.fam", "chr", methods = "temporal", pcrit = c(0, .02, 0.07),
+                temporal_details = data.frame(t1 = c("ASP.A"),
+                                              t2 = c("UPD.A"),
+                                              gens = c(30))),
+               "alphabetical order")
+  
+  # basic
+  n3 <- calc_ne(stickSNPs, "fam.pop", "chr", methods = "temporal", pcrit = c(0, .02, 0.07),
+                temporal_details = data.frame(t1 = c("A.ASP"),
+                                              t2 = c("A.UPD"),
+                                              gens = c(30)))
+  n3 <- get.snpR.stats(n3, "pop.fam", "ne")
+  expect_true(ncol(n3$pop) == 47)
+  expect_true(n3$pop$pop == "A.ASP~A.UPD")
+  
+  # check that plan I works without error (the test is actually in what is printed...)
+  n3 <- calc_ne(stickSNPs, "fam.pop", "chr", methods = "temporal", pcrit = c(0, .02, 0.07),
+                temporal_details = data.frame(t1 = c("A.ASP"),
+                                              t2 = c("A.UPD"),
+                                              gens = c(30),
+                                              N = 10))
 })
 
 
