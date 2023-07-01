@@ -3,6 +3,9 @@
 ## Features
 * Added support for the temporal method into `calc_ne()`.
 
+## Major
+* Added internal filter tracking for easy look-up and reporting of applied filters. Applied filters can be returned using `filters()`. `format_snps()` with `vcf` output option will now automatically append these filters to the vcf header. Added two internal options to `import.snpR.data` to allow for this and fixed a bit of un-needed redundancy in the process.
+
 ### Minor
 * Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.
 * Added the `remove_garbage` argument to `filter_snps()` to allow users to quickly remove very poorly sequenced loci and individuals (jointly, so neither first) prior to applying all of the other filters. This could remove bias caused by very bad loci or samples causing other loci or samples to appear more poorly sequenced than they actually are.

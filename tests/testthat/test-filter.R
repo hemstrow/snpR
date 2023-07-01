@@ -239,5 +239,19 @@ test_that("errors",{
   expect_error(filter_snps(td, min_loci = .99, non_poly = FALSE, verbose = FALSE), "No individuals passed filters.")
 })
 
+#==========filter reporting================
+test_that("reporting",{
+  .make_it_quiet(x <- filter_snps(stickSNPs, 
+                                  min_ind = .75, 
+                                  min_loc = .75, maf = .1, 
+                                  maf_facets = "pop",
+                                  hwe = .01, 
+                                  hwe_excess_side = "heterozygote",
+                                  hwe_facets = "pop"))
+  .make_it_quiet(res <- filters(x))
+  
+  expect_equal(res, "bi-allelic;bi-allelic;non-polymorphic;min_ind=0.75,facet=.base;maf=0.1,facet=pop;hwe=0.01, excess side = heterozygote,facet=pop;min_loci=0.75;non-polymorphic")
+})
+
 
 

@@ -3026,6 +3026,39 @@ is.snpRdata <- function(x){
   }
 }
 
+# update filters
+#
+# Note that filters are stored as a data.table instead of a named list by filter 
+# type because the order they were applied matters!
+#
+# @param x snpRdata object
+# @param type The type of filter (maf, mac, etc)
+# @param stringency The filter stringency
+# @param facet Any facets the filter was computed across
+.update_filters <- function(x, type, stringency, facet){
+
+  # update old objects
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    .suppress_specific_warning(x@filters <- data.table::data.table(type = character(0),
+                                                                   stringency = character(0),
+                                                                   facet = character(0)), "Not a validObject")
+  }
+  else{
+    if(ncol(x@filters) == 0){
+      r <- data.table::data.table(type = character(0),
+                                  stringency = character(0),
+                                  facet = character(0))
+    }
+    
+    for(i in 1:length(type)){
+      x@filters <- rbind(x@filters,
+                         data.table(type = type, stringency = stringency, facet = facet))
+    }
+  }
+  
+  return(x)
+}
 
 .heterozygosity <- function(x, mDat, method){
   # make x into a logical for heterozygous

@@ -25,7 +25,7 @@ If return_bib is TRUE, a list containing four parts:
   see \code{\link[rbibutils]{readBib}}.}
 }
 \description{
-snpR will automatically track the methods used when for calculations on a
+snpR will automatically track the methods used for calculations on a
 snpRdata object. Using \code{\link{citations}} on that object will provide
 details on the the methods used, and can optionally write a .bib bibtex
 formatted library containing citations for these methods.

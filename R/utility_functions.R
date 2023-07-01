@@ -306,7 +306,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   
   nsnpm <- snp.meta(x)[.snps,]
   return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
-                          sample.meta = nsampm, mDat = x@mDat))
+                          sample.meta = nsampm, mDat = x@mDat, .pass_filters = x@filters, 
+                          .skip_filters = TRUE))
 }
 
 
@@ -455,6 +456,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
                   snp.form = x@snp.form,
                   ploidy = .ploidy(x),
                   bi_allelic = .is.bi_allelic(x),
+                  filters = x@filters,
                   data.type = ifelse("data.type" %in% methods::slotNames(x), x@data.type, "genotypic"),
                   geno.tables = list(gs = x@geno.tables$gs[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
                                      as = x@geno.tables$as[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
@@ -640,7 +642,7 @@ filter_snps <- function(x, maf = FALSE,
                         non_poly = TRUE, 
                         bi_al = TRUE,
                         verbose = TRUE){
-  
+
   #==============do sanity checks====================
   if(singletons){
     warning("The singletons argument is depriceated. Please use mac = 1 instead!")
@@ -808,7 +810,7 @@ filter_snps <- function(x, maf = FALSE,
     }
   }
   
-  #==============set up, get values used later, clean up data a bit,define subfunctions==========
+  #==============set up, get values used later, clean up data a bit, define subfunctions==========
   if(verbose){cat("Initializing...\n")}
   
   #get headers
@@ -837,6 +839,7 @@ filter_snps <- function(x, maf = FALSE,
         bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
         vio.snps[which(bi)] <- T
+        x <- .update_filters(x, "bi-allelic", NA, NA)
       }
       
       if(non_poly){
@@ -844,6 +847,7 @@ filter_snps <- function(x, maf = FALSE,
         np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(np), " bad loci\n"))}
         vio.snps[which(np)] <- T
+        x <- .update_filters(x, "non-polymorphic", NA, NA)
       }
     }
     
@@ -854,6 +858,8 @@ filter_snps <- function(x, maf = FALSE,
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
       vio.snps[which(mi)] <- T
       if(verbose){cat(paste0("\t", sum(mi), " bad loci\n"))}
+      
+      x <- .update_filters(x, "poorly sequenced loci--min_ind", min_ind, ".base")
     }
     
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
@@ -929,6 +935,12 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat(paste0("\t", length(maf.vio), " bad loci\n"))}
         vio.snps[maf.vio] <- T
       }
+      
+      
+      # update note-keeping
+      x <- .update_filters(x, "Minor Allele Frequency--maf", maf, 
+                           ifelse(is.null(maf_facets) | isFALSE(maf_facets), ".base", maf_facets))
+      
     }
     
     #========mac/mgc========================================
@@ -947,6 +959,7 @@ filter_snps <- function(x, maf = FALSE,
         
         vio.snps[mgc.vio] <- T
         
+        x <- .update_filters(x, "minor genotype count--mgc", mgc, ".base")
       }
       else{
         if(verbose){cat("Filtering low minor genotype counts.\n")}
@@ -957,6 +970,8 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
         
         vio.snps[mac.vio] <- T
+        
+        x <- .update_filters(x, "minor allele count--mac", mac, ".base")
       }
     }
     #========hf_hets. Should only run if bi_al = TRUE.==========
@@ -971,6 +986,8 @@ filter_snps <- function(x, maf = FALSE,
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
       if(verbose){cat(paste0("\t", sum(het_f), " bad loci\n"))}
       vio.snps[which(het_f)] <- T
+      
+      x <- .update_filters(x, "high-frequency heterozygotes--hf_hets", hf_hets, ".base")
     }
     
     #========hwe violation======================================
@@ -1069,6 +1086,10 @@ filter_snps <- function(x, maf = FALSE,
         
         vio.snps[bad.loci] <- TRUE
       }
+      
+      x <- .update_filters(x, "Hardy-Weinburg Proportions--hwe", 
+                           paste0(hwe, ", excess side = ", hwe_excess_side),
+                           ifelse(is.null(hwe_facets) | isFALSE(hwe_facets), ".base", hwe_facets))
     }
     
     #==========remove violating loci==================
@@ -1098,6 +1119,9 @@ filter_snps <- function(x, maf = FALSE,
         x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
     }
+    
+    x <- .update_filters(x, "poorly sequenced individuals--min_loci", min_loci, NA)
+    
     return(list(x = x, rejects = rejects))
   }
   
@@ -1133,6 +1157,9 @@ filter_snps <- function(x, maf = FALSE,
     }
     
     rm(mi, mcounts, rejects)
+    
+    x <- .update_filters(x, "poorly sequenced individuals and loci jointly--remove_garbage",
+                         remove_garbage, NA)
   }
   
   if(!inds_first){
@@ -2662,13 +2689,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   # VCF
   if(output == "vcf"){
     # meta
-    vcf_meta <- c("##fileformat=VCFv4.0",
-                  paste0("##fileDate=", gsub("-", "", Sys.Date())),
-                  "##source=snpR",
-                  '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
-                  '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
-                  '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'
-    )
+    .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
+                                 paste0("##fileDate=", gsub("-", "", Sys.Date())),
+                                 "##source=snpR",
+                                 '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+                                 '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+                                 '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
+                                 paste0("##snpR filter_snps=", filters(x))
+    ))
     
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
@@ -3275,7 +3303,7 @@ gap_snps <- function(x, facet = NULL, n){
 
 #' Gather citations for methods used with a snpRdata object
 #' 
-#' snpR will automatically track the methods used when for calculations on a
+#' snpR will automatically track the methods used for calculations on a
 #' snpRdata object. Using \code{\link{citations}} on that object will provide
 #' details on the the methods used, and can optionally write a .bib bibtex
 #' formatted library containing citations for these methods.
@@ -3373,6 +3401,67 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   }
 }
 
+#' Report on filters used on a snpRdata object.
+#' 
+#' snpR will automatically track the methods used on a
+#' snpRdata object. Using \code{\link{filters}} on that object will provide
+#' details on the the filters used.
+#'
+#' Printed outputs contain the filters used in the order they were applied
+#' alongside the filtering stringency and any facets applied over, if 
+#' applicable. Note that some output formats from \code{format_snps}, like the
+#' \code{vcf} format, will notes on the filters used as well.
+#'
+#' @param x snpRdata object
+#'
+#' @author William Hemstrom
+#' 
+#' @return Prints easily human readable results to the console and also returns
+#' a more machine readable string.
+#' 
+#' @export
+#' @examples 
+#' # filter the data
+#' x <- filter_snps(stickSNPs, 
+#'                  min_ind = 0.75, 
+#'                  min_loci = 0.75,
+#'                  maf = 0.1,
+#'                  maf_facets = "pop")
+#' 
+#' # fetch the filters used
+#' filters(x)
+#' 
+filters <- function(x){
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    cat("This is an old `snpRdata` object that did not track filters.\n")
+  }
+  else{
+    line <- character(0)
+    for(i in 1:nrow(r)){
+      cat("Filter:", r[[1]][i], "\n")
+      line_part <- unlist(strsplit(r[[1]][i], "--"))
+      line_part <- line_part[length(line_part)]
+      
+      
+      if(!is.na(r[[2]][i])){
+        cat("\tStringency:", r[[2]][i], "\n")
+        line_part <- c(line_part, paste0("=", r[[2]][i]))
+      }
+      
+      
+      if(!is.na(r[[3]][i])){
+        cat("\tFacet:", r[[3]][i], "\n")
+        line_part <- c(line_part, paste0(",facet=", r[[3]][i]))
+      }
+      cat("\n")
+      
+      line <- c(line, paste0(line_part, collapse = ""))
+    }
+  }
+  
+  return(paste0(line, collapse = ";"))
+}
 
 #' Summarize possible snpRdata object facet options
 #' 
