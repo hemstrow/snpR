@@ -70,6 +70,7 @@ A CRAN version should be available soon.
 - `summarize_facets()`: Summarized available facets.
 - `citations()`: Fetch citations for all methods used in calculations
   for a specific `snpRdata` object.
+- `filters()`: Fetch filtering history.
 - `check_duplicates()`: Check data for potentially duplicated samples.
 - `gap_snps()`: Select a SNP every *n* bases (simple physical LD
   filtering).
