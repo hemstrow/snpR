@@ -3187,7 +3187,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'Calculate basic SNP statistics
 #'
 #'Automatically calculate most basic statistics from snpRdata. Calculates maf,
-#'pi, ho, he, pairwise Fst, HWE divergence, finds private alleles, and uses Gaussian
+#'pi, ho, he, pairwise Fst, Fis, HWE divergence, finds private alleles, and uses Gaussian
 #'smoothing to produce per-window averages of all of these.
 #'
 #'The data can be broken up categorically by sample or SNP metadata, as
@@ -3258,6 +3258,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   x <- calc_hwe(x, facets)
   x <- calc_ho(x, facets)
   x <- calc_he(x, facets)
+  x <- calc_fis(x, facets)
   if(!is.null(facets[1]) & !any(.check.snpR.facet.request(x, facets, return.type = TRUE)[[2]] == ".base")){
     x <- calc_pairwise_fst(x, facets, method = fst.method)
     x <- calc_private(x, facets)
@@ -3270,6 +3271,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
       x <- calc_pi(x)
       x <- calc_hwe(x)
       x <- calc_ho(x)
+      x <- calc_he(x)
+      x <- calc_fis(x)
     }
   }
   
