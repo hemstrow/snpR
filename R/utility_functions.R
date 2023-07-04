@@ -15,19 +15,28 @@
 #'  SNPs to keep. Negative subscripts allowed.
 #'@param .samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
 #'  to samples to keep. Negative subscripts allowed.
-#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep. Negative subscripts allowed.
-#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep. Negative subscripts allowed.
-#'@param ... Facet subsetting may be specified by providing the facet as an 
-#'  argument and then providing the levels to keep or remove. Setting
-#'  pop = "ASP", for example, would keep only samples in the "ASP" level of the
-#'  pop facet, and setting pop.fam = "ASP.A" would keep only samples the ASP
-#'  pop and the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL")
-#'  would remove samples in the ASP or PAL pops. Subsetting by 
-#'  multiple facets is supported, although negative and positive subscripts
-#'  cannot be mixed across sample or SNP facets. They may be mixed between the
-#'  two.
+#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+#'  to keep. Negative subscripts allowed.
+#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+#'  to keep. Negative subscripts allowed.
+#'@param ... Facet subsetting may be specified by providing the facet as an
+#'  argument and then providing the levels to keep or remove. Setting pop =
+#'  "ASP", for example, would keep only samples in the "ASP" level of the pop
+#'  facet, and setting pop.fam = "ASP.A" would keep only samples the ASP pop and
+#'  the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL") would
+#'  remove samples in the ASP or PAL pops. Subsetting by multiple facets is
+#'  supported, although negative and positive subscripts cannot be mixed across
+#'  sample or SNP facets. They may be mixed between the two.
+#'@param .facets Character, default NULL. Sample facet to select by. Alternative
+#'  to direct specification as in \code{pop = "ASP"}.
+#'@param .subfacets Character, default NULL. Sample facet level matching a level
+#'  of the provided \code{.facets}. Alternative to direct specification as in
+#'  \code{pop = "ASP"}.
+#'@param .snp.facets Character, default NULL. SNP facet to select by.
+#'  Alternative to direct specification as in \code{chr = "groupIX"}.
+#'@param .snp.subfacets Character, default NULL. SNP facet level matching a
+#'  level of the provided \code{.snp.facets}. Alternative to direct
+#'  specification as in \code{chr = "groupIX"}.
 #'@param drop logical, default FALSE. Deprecated.
 #'
 #'@name subset_snpRdata
@@ -56,19 +65,33 @@
 #' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
 #' # fam = B
 #' stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
+#' 
+#' # using the .facet etc arguments, useful when the facet is stored as an
+#' # object
+#' target_facet <- "pop"
+#' target_subfacet <- "ASP"
+#' subset_snpR_data(stickSNPs, 
+#'                  .facets = target_facet, 
+#'                  .subfacets = target_subfacet)
 NULL
 
 
 #' @export
 #' @describeIn subset_snpRdata subset_snpR_data
-subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
+subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .facets = NULL, .subfacets = NULL, .snp.facets = NULL, .snp.subfacets = NULL){
   #============extract facet info===============
   .argnames <- match.call()
   .argnames <- as.list(.argnames)
   .argnames <- .argnames[-1]
-  
-  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps"))
+
+  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps", ".facets", ".subfacets", ".snp.facets", ".snp.subfacets"))
   if(length(.is.facet) > 0){
+    
+    if(any(!is.null(.facets), !is.null(.subfacets), 
+           !is.null(.snp.facets), !is.null(.snp.subfacets))){
+      stop("The '.facets', '.subfacets', '.snp.facets', or '.snp.subfacets' arguments cannot be used with arguments other than '.snps' or '.samps' (such as pop = 'ASP'). If you wish to subset using the 'facet = subfacet' approach, please do not use these arguments.\n")
+    }
+    
     facets <- names(.argnames)[.is.facet]
     
     # eval the facets
@@ -100,6 +123,16 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     
     
   }
+  else if(any(!is.null(.facets), !is.null(.subfacets), 
+              !is.null(.snp.facets), !is.null(.snp.subfacets))){
+    return(.subset_snpR_data(x, 
+                             snps = .snps, 
+                             samps = .samps, 
+                             facets = .facets, 
+                             subfacets = .subfacets, 
+                             snp.facets = .snp.facets, 
+                             snp.subfacets = .snp.subfacets))
+  }
   else{
     facets <- NULL
   }
@@ -114,7 +147,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   # check facet types
   if(!is.null(facets)){
     if(any(facets %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
-      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments. If you wish to subset using the facet = 'pop', subfacet = 'ASP'-style approach, please use the '.facets', '.subfacets', '.snp.facets', or '.snp.subfacets' arguments.\n")
     }
     facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
     if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
