@@ -35,7 +35,7 @@ remotes::install_github("hemstrow/snpR", build_vignettes = T, build_opts = c("--
 ```
 
 If you wish to try out the latest features or bug fixes, the dev version
-can be installed from [GitHub](https://github.com/hemstrow/snpR) as
+can be installed from [the dev branch on GitHub](https://github.com/hemstrow/snpR/tree/dev) as
 well:
 
 ``` r
