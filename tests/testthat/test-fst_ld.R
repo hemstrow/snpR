@@ -218,17 +218,26 @@ test_that("fis bootstrapping",{
   bs1_par <- calc_fis(.internal.data$test_snps, "pop", boot = 10, boot_par = 2)
   bs1_res <- get.snpR.stats(bs1_par, "pop", "fis")
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
-  skip_if_not("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
-  
+
   # complex facets
   bs1_par <- calc_fis(.internal.data$test_snps, c("pop", "fam", "pop.chr", "chr"), boot = 10)
   bs1_res <- get.snpR.stats(bs1_par, c("pop", "fam", "pop.chr", "chr"), "fis")
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
-  skip_if_not("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
   expect_true(all(c("fam", "pop", ".base") %in% bs1_res$weighted.means$facet))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "fam",]$snp.subfacet == ".base"))
   expect_true(all(c(".base", "chr") %in% bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.facet))
   
+  # base facet
+  bs1 <- calc_fis(.internal.data$test_snps, boot = 10)
+  bs1_res <- get.snpR.stats(bs1, stats =  "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true(all(unlist(bs1_res$weighted.mean[,c("facet", "subfacet", "snp.facet", "snp.subfacet")]) == ".base"))
   
+  # base facet mixed in
+  bs1 <- calc_fis(.internal.data$test_snps, c("pop", ".base"), boot = 10)
+  bs1_res <- get.snpR.stats(bs1, c(".base", "pop"), stats =  "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
+  expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.subfacet == ".base"))
 })

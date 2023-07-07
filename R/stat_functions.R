@@ -1210,6 +1210,7 @@ calc_fis <- function(x, facets = NULL,
   if(!all(facets %in% x@facets)){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
+  ofacets <- .check.snpR.facet.request(x, ofacets, "none", purge_duplicates = FALSE)
   
   boot_par <- .par_checker(boot_par)
   
