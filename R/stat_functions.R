@@ -606,7 +606,10 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   # add any missing facets
   ofacets <- facets
-  facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
+  facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F, purge_duplicates = FALSE) # have to lapply this to avoid the unique at the end...
+
+  
+  # facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   if(any(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
@@ -632,7 +635,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
-    
+
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
@@ -875,10 +878,10 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
     }
     
     # melt, cbind pnk
-    suppressWarnings(out <- cbind(data.table::melt(out$Fst),
-                                  data.table::melt(out$a)[,2],
-                                  data.table::melt(out$b)[,2],
-                                  data.table::melt(out$c)[,2]))
+    out <- .suppress_specific_warning(cbind(data.table::melt(out$Fst),
+                                            data.table::melt(out$a)[,2],
+                                            data.table::melt(out$b)[,2],
+                                            data.table::melt(out$c)[,2]), "are internally guessed when both are ")
     colnames(out) <- c("comparison", "fst", "a", "b", "c")
     # meta.cols <- (1:ncol(x))[-c(ac_cols, ncol(x))]
     out$nk <- pnk$ntotal
@@ -890,10 +893,12 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   }
   
   
-  one_wm <- function(x){
+  one_wm <- function(x, other_facets){
+    groups <- c("comparison", other_facets)
+    
     out <- x[,stats::weighted.mean(a, w = nk, na.rm = T)/
                stats::weighted.mean(a + b + c, w = nk, na.rm = T), 
-             by = list(comparison)] # ratio of averages
+             by = groups] # ratio of averages
     
     # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
     #          by = list(comparison)] # this is the average of ratios...
@@ -902,9 +907,13 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   }
   
   
-  one_run <- function(x, method, facet, g.filename, rac = NULL){
+  one_run <- function(x, method, facet, ofacet, g.filename, rac = NULL){
+
+    other_facets <- .split.facet(ofacet)[[1]]
+    other_facets <- other_facets[which(!other_facets %in% .split.facet(facet)[[1]])]
+    
     if(method == "genepop"){
-      real_out <- func(x, method, facets = facet, g.filename = g.filename)
+      real_out <- func(x, method, facets = ofacet, g.filename = g.filename)
       real_wm <- real_out[[2]]
       real_out <- real_out[[1]]
     }
@@ -913,8 +922,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         if(is.null(rac)){
           rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
         }
-        real_out <- func(rac[which(rac$facet == facet),], method, facet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
-        real_wm <- one_wm(real_out)
+        real_out <- func(rac[which(rac$facet == facet),], method, ofacet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
+        real_wm <- one_wm(real_out, other_facets)
       }
       else{
         if(is.null(rac)){
@@ -924,7 +933,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                          ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
                          meta_colnames = colnames(snp.meta(x)),
                          gc_cols = which(colnames(rac) %in% colnames(x@geno.tables$gs)))
-        real_wm <- one_wm(real_out)
+        real_wm <- one_wm(real_out, other_facets)
       }
     }
     
@@ -950,7 +959,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
     
     real[[i]] <- one_run(x,
                          method =  method, 
-                         facet = facets[i], 
+                         facet = facets[i],
+                         ofacet = ofacets[i],
                          g.filename = paste0(facets[i], "_genepop_input.txt"))
     
     if(method == "genepop"){
@@ -982,13 +992,14 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
             gp.filenames <- NULL
             wc.inputs <- .boot_as(x, 1, facets[f], ret_gs = !bi_allelic)
           }
-          boots[[i]] <- one_run(x, method = method, facet = facets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
+          
+          boots[[i]] <- one_run(x, method = method, facet = facets[f], ofacet = ofacets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
         }
       }
       
       
       else{
-        
+
         boot <- 1:boot
         if(boot_par < length(boot)){
           pboot <- split(boot, rep(1:boot_par, length.out = length(boot), each = ceiling(length(boot)/boot_par)))
@@ -997,7 +1008,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           boot_par <- length(boot)
           pboot <- split(boot, 1:boot_par, drop = F)
         }
-        
+
         cl <- parallel::makePSOCKcluster(boot_par)
         doParallel::registerDoParallel(cl)
         
@@ -1010,7 +1021,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         
         #loop through each set
         boots <- foreach::foreach(q = 1:ntasks,
-                                  .packages = c("snpR", "data.table"), .export = ".make_it_quiet"
+                                  .packages = c("snpR", "data.table"), .export = c(".make_it_quiet", ".boot_as")
         ) %dopar% {
           
           boots <- vector("list", length(pboot[[q]]))
@@ -1019,7 +1030,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
               gp.filenames <- NULL
               wc.inputs <- .boot_as(x, 1, facets[f], ret_gs = !bi_allelic)
             }
-            boots[[i]] <- one_run(x, method = method, facet = facets[f], 
+            
+            boots[[i]] <- one_run(x, method = method, facet = facets[f], ofacet = ofacets[f],
                                   gp.filenames[pboot[[q]][i]], wc.inputs[[1]])$real_wm
           }
           boots
@@ -1030,8 +1042,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         boots <- unlist(boots, recursive = F)
         boot <- max(boot)
       }
-      
-      
+
       # bind
       if(method == "genepop"){
         boots <- data.frame(boots)
@@ -1043,6 +1054,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         boots <- dplyr::bind_cols(boots)
       }
       
+
+      
       # calculate p-values vs real
       real[[f]]$real_wm$weighted_mean_fst_p <- (rowSums(as.matrix(boots) >= real[[f]]$real_wm$weighted_mean_fst) + 1)/(boot + 1)
     }
@@ -1051,12 +1064,23 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   #==================merge and return============================
   cat("Collating results...")
-  
+
   # merge the means
-  real_wm <- data.table::rbindlist(purrr::map(real, "real_wm"), idcol = "facet")
+  snp.facet <- unlist(lapply(ofacets, function(y) .check.snpR.facet.request(x, y, "sample")))
+  real_wm <- purrr::map(real, 2)
+  for(i in 1:length(real_wm)){
+    real_wm[[i]]$snp.facet <- snp.facet[i]
+    if(snp.facet[i] == ".base"){
+      real_wm[[i]]$snp.subfacet <- ".base"
+    }
+    else{
+      real_wm[[i]]$snp.subfacet <- .paste.by.facet(real_wm[[i]], facets = snp.facet[i])
+      rm.cols <- unlist(.split.facet(snp.facet[i]))
+      real_wm[[i]] <- real_wm[[i]][,-..rm.cols]
+    }
+  }
+  real_wm <- data.table::rbindlist(real_wm, idcol = "facet", fill = TRUE)
   colnames(real_wm)[which(colnames(real_wm) == "comparison")] <- "subfacet"
-  real_wm$snp.facet <- ".base"
-  real_wm$snp.subfacet <- ".base"
   x <- .merge.snpR.stats(x, real_wm, "weighted.means")
   
   
@@ -1123,11 +1147,28 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' If the base facet (facets = NULL or facets = ".base") is requested, FIS will
 #' compare individual to total variance across all samples instead (equivalent
 #' to overall FIT).
+#' 
+#' Bootstrapping across loci can be done to assess FIS significance. This is 
+#' done by re-drawing loci randomly with replacement for each facet level,
+#' calculating the resulting FIS values, and doing one sample \emph{t}-test
+#' with the null hypothesis that FIS = 0 to calculate p-values.
 #'
 #' @param x snpRdata. Input SNP data.
 #' @param facets character. Categorical metadata variables by which to break up
 #'   analysis. See \code{\link{Facets_in_snpR}} for more details.
-#' @param keep_components logical, default FALSE. If TRUE, the variance
+#' @param boot numeric or \code{FALSE}, default \code{FALSE}. The number of
+#'   bootstraps to do. See details.
+#' @param boot_par numeric or \code{FALSE}, default \code{FALSE}. If a number,
+#'   bootstraps will be processed in parallel using the supplied number of
+#'   cores.
+#' @param boot_alt character, default "two-sided". The type of \emph{t}-test
+#'   to conduct on the bootstrapped FIS values. Options: \itemize{
+#'   \item{two-sided: } A two-sided \emph{t}-test, with the alternative 
+#'   hypothesis that FIS is not equal to 0. \item{greater: } A one-sided 
+#'   \emph{t}-test, with the alternative hypothesis that FIS is greater than 0.
+#'   \item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
+#'   that FIS is less than 0.}
+#' @param keep_components logical, default \code{FALSE}. If TRUE, the variance
 #'   components "b" and "c" will be held and accessible from the \code{$single}
 #'   element (named "var_comp_b" and "var_comp_c", respectively) using the usual
 #'   \code{\link{get.snpR.stats}} method. This may be useful if working with
@@ -1148,9 +1189,15 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
 #' x <- calc_fis(stickSNPs, c("pop", "pop.chr"))
 #' get.snpR.stats(x, c("pop", "pop.chr"), "fis")
 #' 
-calc_fis <- function(x, facets = NULL, keep_components = FALSE){
-  ..ac.cols <- ..meta.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
+calc_fis <- function(x, facets = NULL, 
+                     boot = FALSE, 
+                     boot_par = FALSE,
+                     boot_alt = "two-sided",
+                     keep_components = FALSE){
+  
+  ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
   var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- NULL
+  
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -1158,15 +1205,18 @@ calc_fis <- function(x, facets = NULL, keep_components = FALSE){
   
   # add any missing facets
   ofacets <- facets
-  facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
+  facets <- .check.snpR.facet.request(x, ofacets, return.type = T, fill_with_base = TRUE, return_base_when_empty = TRUE, purge_duplicates = FALSE)
   facets <- facets[[1]]
   if(!all(facets %in% x@facets)){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
-  #===========subfunctions=====================================================
+  boot_par <- .par_checker(boot_par)
+  
+  #===========sub-functions=====================================================
   
   # cracked the problem: ho_i needs to be the proportion of individuals heterozygous for an allele, not heterozygous for all alleles! Need to fix for Fst too. Revert these to there bi-allelic form for that case since it is faster if ac is already calced?
+  # direct FIS functionn
   func <- function(ac_i, ho_i){
     count_tot <- rowSums(ac_i)
     parts <- vector("list", ncol(ac_i))
@@ -1207,6 +1257,52 @@ calc_fis <- function(x, facets = NULL, keep_components = FALSE){
     return(data.frame(fis = fis, var_comp_c = rowSums(c), var_comp_b = rowSums(b)))
   }
   
+  # run the function once given x (snpRdata, for the metadata), as (bootstrapped or not), ho (x@stats[,c(colnames(x@snp.meta), "ho")])
+  one_run <- function(x, as_ho, ofacets){
+
+    
+    # run and finish
+    ac.cols <- which(colnames(as_ho) %in% colnames(x@geno.tables$as))
+    out <- func(.fix..call(as_ho[,..ac.cols]), as_ho$ho)
+    
+    meta.cols <- c("facet", "subfacet", colnames(snp.meta(x)))
+    out <- cbind(.fix..call(as_ho[,..meta.cols]), out)
+    out$nk <- rowSums(.fix..call(as_ho[,..ac.cols]))
+    
+    
+    # get the weighted mean ratio of averages and merge in
+    wm <- vector("list", length(ofacets))
+    for(i in 1:length(ofacets)){
+      snp.facet <- .check.snpR.facet.request(x, ofacets[i], remove.type = "sample", return_base_when_empty = TRUE)
+      sample.facet <- .check.snpR.facet.request(x, ofacets[i], remove.type = "snp", return_base_when_empty = TRUE)
+      
+      if(snp.facet != ".base"){
+        split.snp.facet <- unlist(.split.facet(snp.facet))
+        
+        groups <- c("subfacet", split.snp.facet)
+        wm[[i]] <- out[which(facet == sample.facet),1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
+                          stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
+                  by = c(groups)]
+        wm[[i]]$facet <- sample.facet
+        wm[[i]]$snp.facet <- snp.facet
+        wm[[i]]$snp.subfacet <- .paste.by.facet(wm[[i]], .check.snpR.facet.request(x, split.snp.facet, remove.type = "none"))
+      }
+      else{
+        wm[[i]] <- out[which(facet == sample.facet), 1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
+                          stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
+                  by = list(facet, subfacet)] # ratio of averages
+        wm[[i]]$snp.subfacet <- ".base"
+        wm[[i]]$snp.facet <- ".base"
+      }
+      
+      keep.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "V1")
+      wm[[i]] <- .fix..call(wm[[i]][,..keep.cols])
+    }
+    
+    wm <- data.table::rbindlist(wm)
+    return(list(out, wm))
+  }
+  
   #===========run=============================================================
   # add ho
   needed <- .check_calced_stats(x, facets, "ho")
@@ -1215,62 +1311,140 @@ calc_fis <- function(x, facets = NULL, keep_components = FALSE){
     x <- calc_ho(x, needed)
   }
   
-  # grab inputs
-  samp.facets <- .check.snpR.facet.request(x, facets, fill_with_base = TRUE, return_base_when_empty = TRUE)
-  meta.match <- which(x@facet.meta$facet %in% samp.facets)
+  # run for the real data
+  mcols <- c("facet", "subfacet", "facet.type", colnames(x@snp.meta), "ho")
+  real <- one_run(x, cbind(data.table::as.data.table(x@geno.tables$as), .fix..call(x@stats[,..mcols])), ofacets)
+  colnames(real[[2]])[which(colnames(real[[2]]) == "V1")] <- "weighted_mean_fis"
   
-  tas <- cbind(as.data.table(x@geno.tables$as[meta.match,]), as.data.table(x@facet.meta[meta.match,]))
-  
-  stat.match <- which(x@stats$facet %in% samp.facets)
-  ho <- as.data.table(x@stats[stat.match,])
-  
-  input <- merge(tas, ho, by = c("facet", "subfacet", "facet.type", colnames(x@snp.meta)))
-  
-  # run and finish
-  ac.cols <- which(colnames(input) %in% colnames(x@geno.tables$as))
-  out <- func(.fix..call(input[,..ac.cols]), input$ho)
-  
-  meta.cols <- which(colnames(input) %in% colnames(x@facet.meta))
-  out <- cbind(.fix..call(input[,..meta.cols]),out)
-  out$nk <- rowSums(.fix..call(input[,..ac.cols]))
-  
-  
-  # get the weighted mean ratio of averages and merge in
-  wm <- vector("list", length(ofacets))
-  for(i in 1:length(ofacets)){
-    snp.facet <- .check.snpR.facet.request(x, ofacets[i], remove.type = "sample")
-    if(snp.facet != ".base"){
-      split.snp.facet <- unlist(.split.facet(snp.facet))
-      out$snp.subfacet <- .paste.by.facet(out, split.snp.facet)
-      
-      wm <- out[,1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
-                        stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
-                by = list(facet, subfacet, snp.subfacet)]
-      wm$snp.facet <- snp.facet
-      out$snp.subfacet <- NULL
-    }
-    else{
-      wm <- out[,1 - (stats::weighted.mean(var_comp_c, w = nk, na.rm = T)/
-                        stats::weighted.mean(var_comp_b + var_comp_c, w = nk, na.rm = T)), 
-                by = list(facet, subfacet)] # ratio of averages
-      wm$snp.subfacet <- ".base"
-      wm$snp.facet <- ".base"
+  # do bootstraps if requested
+  if(!isFALSE(boot)){
+    
+    all_boots <- vector("list", length(facets))
+    n.opts <- nrow(real[[2]])
+    
+    
+    if(isFALSE(boot_par)){
+      boot_fis <- matrix(as.numeric(NA), n.opts, boot)
+      for(i in 1:boot){
+        boot_as <- lapply(facets, function(y) .boot_as(x, 1, facet = y, ret_gs = TRUE, "snp")[[1]])
+        boot_as <- data.table::rbindlist(boot_as)
+        if(i == 1){
+          boot_meta <- one_run(x, boot_as, ofacets)[[2]]
+          boot_fis[,i] <- boot_meta[["V1"]]
+          boot_meta$V1 <- NULL
+        }
+        else{
+          boot_fis[,i] <- one_run(x, boot_as, ofacets)[[2]][["V1"]]
+        }
+      }
+      boot_fis <- cbind(boot_meta, boot_fis)
     }
     
-    colnames(wm)[which(colnames(wm) == "V1")] <- "weighted_mean_fis"
-    x <- .merge.snpR.stats(x, wm, "weighted.means")
+    else{
+      
+      pboot <- 1:boot
+      if(boot_par < length(pboot)){
+        pboot <- split(pboot, rep(1:boot_par, length.out = length(pboot), each = ceiling(length(pboot)/boot_par)))
+      }
+      else{
+        boot_par <- length(pboot)
+        pboot <- split(pboot, 1:boot_par, drop = F)
+      }
+      
+      cl <- parallel::makePSOCKcluster(boot_par)
+      doParallel::registerDoParallel(cl)
+      
+      #prepare reporting function
+      ntasks <- length(pboot)
+      # progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+      # opts <- list(progress=progress)
+      
+      #loop through each set
+      boot_fis <- foreach::foreach(q = 1:ntasks,
+                                   .packages = c("snpR", "data.table"), .export = c(".make_it_quiet", ".boot_as")
+      ) %dopar% {
+        
+        boot_fis <- matrix(as.numeric(NA), n.opts, length(pboot[[q]]))
+        
+        for(i in 1:length(pboot[[q]])){
+          
+          boot_as <- lapply(facets, function(y) .boot_as(x, 1, facet = y, ret_gs = TRUE, "snp")[[1]])
+          boot_as <- data.table::rbindlist(boot_as)
+          if(i == 1){
+            boot_meta <- one_run(x, boot_as, ofacets)[[2]]
+            boot_fis[,i] <- boot_meta[["V1"]]
+            boot_meta$V1 <- NULL
+          }
+          else{
+            boot_fis[,i] <- one_run(x, boot_as, ofacets)[[2]][["V1"]]
+          }
+        }
+        
+        boot_fis <- cbind(boot_meta, boot_fis)
+        boot_fis
+      }
+      
+      
+      # merge
+      parallel::stopCluster(cl)
+      meta.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet")
+      meta <- .fix..call(boot_fis[[1]][,..meta.cols])
+      boot_fis <- Reduce(function(...) merge(..., by = meta.cols), boot_fis)
+      colnames(boot_fis) <- c(meta.cols, paste0("V", 1:boot))
+    }
+    
+    
+
+    # get p-values
+    real[[2]] <- merge(real[[2]], boot_fis, by = c("facet", "subfacet", "snp.facet", "snp.subfacet"))
+    boot_cols <- paste0("V", 1:boot)
+    
+    # get p-values using a one-sample t-test for each boot
+    # boot_var <- rowSums((all_boots - rowMeans(all_boots))^2)/(boot - 1) # note, this is the typical formula estimating variance from a sample, like we are doing here.
+    boot_vars <- matrixStats::rowVars(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)
+    boot_se <- sqrt(boot_vars)/sqrt(boot)
+    boot_t <- rowMeans(.fix..call(real[[2]][,..boot_cols]), na.rm = TRUE)/boot_se
+    df <- rowSums(!is.na(.fix..call(real[[2]][,..boot_cols]))) - 1
+    
+    pfis <- if(boot_alt == "two-sided"){
+      2 * pt(abs(boot_t), df = df, lower.tail = FALSE) # same as running t.test on all rows
+    }
+    else if(boot_alt == "greater"){
+      pt(boot_t, df = df, lower.tail = FALSE)
+    }
+    else{
+      pt(boot_t, df = df, lower.tail = TRUE)
+    }
+    
+    # by direct comparison... but I think this doesn't have the correct null hypothesis
+    # # null is that the fis is = 0
+    # if(boot_alt == "two-sided"){
+    #   real[[2]]$weighted_mean_fis_p <- (rowSums(abs(.fix..call(real[[2]][,..boot_cols])) >= abs(real[[2]]$weighted_mean_fis)) + 1)/(boot + 1)
+    # }
+    # else if(boot_alt == "greater"){
+    #   real[[2]]$weighted_mean_fis_p <- (rowSums(.fix..call(real[[2]][,..boot_cols]) >= real[[2]]$weighted_mean_fis) + 1)/(boot + 1)
+    # }
+    # else if(boot_alt == "lesser"){
+    #   real[[2]]$weighted_mean_fis_p <- (rowSums(.fix..call(real[[2]][,..boot_cols]) <= real[[2]]$weighted_mean_fis) + 1)/(boot + 1)
+    # }
+    
+    # update and fill NAs
+    real[[2]] <- .fix..call(real[[2]][,-..boot_cols])
+    real[[2]]$weighted_mean_fis_p <- pfis
+    nas <- is.na(real[[2]]$weighted_mean_fis) 
+    if(any(nas)){
+      real[[2]]$weighted_mean_fis_p[which(nas)] <- real[[2]]$weighted_mean_fis[which(nas)]
+    }
   }
-  
-  
-  
   
   #========return==============
   if(!keep_components){
-    rm_cols <- which(colnames(out) %in% c("var_comp_c", "var_comp_b", "nk"))
-    out <- .fix..call(out[,-..rm_cols])
+    rm_cols <- which(colnames(real[[1]]) %in% c("var_comp_c", "var_comp_b", "nk"))
+    real[[1]] <- .fix..call(real[[1]][,-..rm_cols])
   }
   
-  x <- .merge.snpR.stats(x, out)
+  x <- .merge.snpR.stats(x, real[[2]], "weighted.means")
+  x <- .merge.snpR.stats(x, real[[1]])
   x <- .update_calced_stats(x, ofacets, "fis")
   x <- .update_citations(x, "Weir1984", "fis", "FIS calculation")
   

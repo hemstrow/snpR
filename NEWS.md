@@ -13,6 +13,7 @@
 * Added back in some old behavior to `subset_snpR_data()` to allow for naming the facet and subfacets to subset with using the `.facets`, `.subfacets`, `.snp.facets`, and `.snp.subfacets` arguments. These were previously used instead of the current syntax but were more cumbersome and replaced. They have been re-added because they are useful when the facet is stored as an object and then called (due to pipeline scripts, etc.), which is otherwise not easily done. See the documentation for `subset_snpR_data()` for examples. This older syntax is not available via the bracket operator (`[`).
 * Added expected heterozygosity to the single-SNP statistics run by `do_bootstraps()`.
 * Added $F_{IS}$ to `calc_basic_snp_stats()`.
+* Added bootstrap-by-loci support to `calc_fis()`.
 
 ## Documentation
 * Fixed typos in the documentation for the `keep_components` argument of `calc_fis()`.
@@ -26,6 +27,7 @@ data identifiers. Note that most structure datasets will have `-9`, which is sti
 * Added an `na.omit()` call to marker name parsing with `read_structure()` to support oddly formatted data with tabs or spaces separating locus names.
 * Fixed a bug in `calc_ne()` where errors midway through computation would sometime result in the working
 directory being changed to `./NeEstimator`.
+* Fixed a bug where complex facets (locus and sample joint facets) weren't being handled correctly by `calc_pairwise_fst()`. The fix isn't perfectly efficient if multiple facets referring to the same sample facet are all passed at once due to bootstrapping needs.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
