@@ -2722,14 +2722,24 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   # VCF
   if(output == "vcf"){
     # meta
-    .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
-                                 paste0("##fileDate=", gsub("-", "", Sys.Date())),
-                                 "##source=snpR",
-                                 '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
-                                 '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
-                                 '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
-                                 paste0("##snpR filter_snps=", filters(x))
-    ))
+    r <- try(x@filters, silent = TRUE)
+    if(methods::is(r, "try-error")){
+      .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
+                                   paste0("##fileDate=", gsub("-", "", Sys.Date())),
+                                   "##source=snpR",
+                                   '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+                                   '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'))
+    }
+    else{
+      .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
+                                   paste0("##fileDate=", gsub("-", "", Sys.Date())),
+                                   "##source=snpR",
+                                   '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+                                   '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
+                                   paste0("##snpR filter_snps=", filters(x))))
+    }
     
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
@@ -3463,7 +3473,6 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
 #' 
 #' # fetch the filters used
 #' filters(x)
-#' 
 filters <- function(x){
   r <- try(x@filters, silent = TRUE)
   if(methods::is(r, "try-error")){
