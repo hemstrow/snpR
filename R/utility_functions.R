@@ -2771,8 +2771,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata[is.na(rdata)] <- "./."
     rdata <- as.data.frame(rdata)
     rdata <- cbind(data_meta, rdata)
-    rdata <- list(meta = vcf_meta, genotypes = rdata)
     
+    # reorder by chr then pos
+    rdata <- dplyr::arrange(rdata, `#CHROM`, `POS`)
+    rdata <- list(meta = vcf_meta, genotypes = rdata)
   }
   
   #======================return the final product, printing an outfile if requested.=============
