@@ -12,7 +12,9 @@ test_that("vcf",{
                  "FORMAT",
                  colnames(genotypes(.internal.data$test_snps))))
   
-  expect_equal(which(genotypes(.internal.data$test_snps) == "NN"), which(vcf$genotypes[,-c(1:9)] == "./."))
+  sort_genos <- cbind(snp.meta(.internal.data$test_snps), genotypes(.internal.data$test_snps))
+  sort_genos <- dplyr::arrange(sort_genos, chr, position)
+  expect_equal(which(sort_genos[,-c(1:3)] == "NN"), which(vcf$genotypes[,-c(1:9)] == "./."))
 })
 
 
