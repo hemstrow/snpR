@@ -176,6 +176,7 @@ is.snpRdata <- function(x){
   #   x@ac <- nac[,-c(1:3)]
   # }
   
+
   # add in dummy rows to stats
   sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
   if(ncol(x@stats) - ncol(sm) > 0){
@@ -1132,7 +1133,7 @@ is.snpRdata <- function(x){
 # @param meta.names names of the metadata columns, usually everything up to .snp.id
 # @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 .smart.merge <- function(n.s, o.s, meta.names, starter.meta){
-  ..meta.cols <- NULL
+  ..meta.cols <- ..col.ord <- NULL
   
   # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
   take_new <- function(n.s, starter.meta){
@@ -1249,6 +1250,12 @@ is.snpRdata <- function(x){
       m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
     }
   }
+  
+  # ensure that the starter meta is in the correct spot
+  col.ord <- unique(c(starter.meta, meta.cols, colnames(m.s)))
+  col.ord <- col.ord[which(col.ord %in% colnames(m.s))]
+  m.s <- .fix..call(m.s[,..col.ord])
+  
   return(m.s)
 }
 

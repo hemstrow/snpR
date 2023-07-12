@@ -338,9 +338,18 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
   nsampm <- sample.meta(x)[.samps,]
   
   nsnpm <- snp.meta(x)[.snps,]
-  return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
-                          sample.meta = nsampm, mDat = x@mDat, .pass_filters = x@filters, 
-                          .skip_filters = TRUE))
+  
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
+                            sample.meta = nsampm, mDat = x@mDat,
+                            .skip_filters = TRUE))
+  }
+  else{
+    return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
+                            sample.meta = nsampm, mDat = x@mDat, .pass_filters = x@filters, 
+                            .skip_filters = TRUE))
+  }
 }
 
 
