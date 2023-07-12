@@ -28,6 +28,7 @@ data identifiers. Note that most structure datasets will have `-9`, which is sti
 * Fixed a bug in `calc_ne()` where errors midway through computation would sometime result in the working
 directory being changed to `./NeEstimator`.
 * Fixed a bug where complex facets (locus and sample joint facets) weren't being handled correctly by `calc_pairwise_fst()`. The fix isn't perfectly efficient if multiple facets referring to the same sample facet are all passed at once due to bootstrapping needs.
+* Fixed a bug in the sorting of output VCF files from `format_snps()`. `snpR` sorts internally by position first (since the chromosome column doesn't have a fixed name and is supplied as a facet to functions), but VCF files should sort by `#CHROM`.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
