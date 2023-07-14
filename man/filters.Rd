@@ -34,7 +34,6 @@ x <- filter_snps(stickSNPs,
 
 # fetch the filters used
 filters(x)
-
 }
 \author{
 William Hemstrom
