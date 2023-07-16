@@ -3517,24 +3517,27 @@ filters <- function(x){
 }
 
 #' Summarize possible snpRdata object facet options
-#' 
-#' List either all of the possible SNP and sample facets (if called with no facets)
-#' or all of the categories for each requested facet.
-#' 
+#'
+#' List either all of the possible SNP and sample facets (if called with no
+#' facets) or all of the categories for each requested facet.
+#'
+#' If called with sample facets, returns a table of counts of each category
+#' otherwise returns a vector of categories.
+#'
 #' @param x snpRdata object
 #' @param facets character. Categorical metadata variables by which to break up
-#'  analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the 
-#'  possible SNP and sample facets will be listed. If facets are instead provided,
-#'  the \emph{categories} for each facet will instead be listed.
-#' 
+#'   analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the
+#'   possible SNP and sample facets will be listed. If facets are instead
+#'   provided, the \emph{categories} for each facet will instead be listed.
+#'
 #' @export
 #' @author William Hemstrom
 #' @return A named list containing either the possible SNP and sample facets or
 #'   the categories for all of the requested facets.
-#' @examples 
+#' @examples
 #' # list available facets
 #' summarize_facets(stickSNPs)
-#' 
+#'
 #' # return details for a few facets
 #' summarize_facets(stickSNPs, c("pop", "chr.pop", "fam.pop"))
 summarize_facets <- function(x, facets = NULL){
@@ -3566,10 +3569,11 @@ summarize_facets <- function(x, facets = NULL){
     names(out) <- facets[[1]]
     for(i in 1:length(out)){
       if(facets[[2]][i] == "snp"){
-        out[[i]] <- .get.task.list(x, facets[[1]][i])[,4]
+        out[[i]] <- unique(.get.task.list(x, facets[[1]][i])[,4])
       }
       else if(facets[[2]][i] == "sample"){
         out[[i]] <- .paste.by.facet(sample.meta(x), unlist(.split.facet(facets[[1]][i])))
+        out[[i]] <- table(out[[i]])
       }
       else if(facets[[2]][i] == "complex"){
         split_facet <- unlist(.split.facet(facets[[1]][i]))
@@ -3581,12 +3585,10 @@ summarize_facets <- function(x, facets = NULL){
         snp_part <- lapply(snp_part, unique)
         
         opts <- expand.grid(c(samp_part, snp_part))
-        out[[i]] <- .paste.by.facet(opts, split_facet)
+        out[[i]] <- unique(.paste.by.facet(opts, split_facet))
       }
     }
   }
-  
-  out <- lapply(out, unique)
   
   return(out)
 }

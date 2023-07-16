@@ -14,6 +14,7 @@
 * Added expected heterozygosity to the single-SNP statistics run by `do_bootstraps()`.
 * Added $F_{IS}$ to `calc_basic_snp_stats()`.
 * Added bootstrap-by-loci support to `calc_fis()`.
+* Changed `summarize_facets()` to return a table of counts of options when provided sample facets.
 
 ## Documentation
 * Fixed typos in the documentation for the `keep_components` argument of `calc_fis()`.
@@ -30,6 +31,7 @@ data identifiers. Note that most structure datasets will have `-9`, which is sti
 directory being changed to `./NeEstimator`.
 * Fixed a bug where complex facets (locus and sample joint facets) weren't being handled correctly by `calc_pairwise_fst()`. The fix isn't perfectly efficient if multiple facets referring to the same sample facet are all passed at once due to bootstrapping needs.
 * Fixed a bug in the sorting of output VCF files from `format_snps()`. `snpR` sorts internally by position first (since the chromosome column doesn't have a fixed name and is supplied as a facet to functions), but VCF files should sort by `#CHROM`.
+* Fixed a bug with `run_random_forest()` where non-polymorphic SNPs would cause an error.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.

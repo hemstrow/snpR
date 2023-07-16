@@ -63,7 +63,7 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
       msg <- c(msg, "Some facet levels are both the time = 1 and time = 2 for the same comparison!\n")
     }
     options <- c(options[,1], options[,2])
-    possible_levels <- unlist(summarize_facets(x, facets))
+    possible_levels <- unlist(lapply(summarize_facets(x, facets), names))
     
     bad_levels <- !options %in% possible_levels
     if(any(bad_levels)){

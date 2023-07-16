@@ -10,17 +10,21 @@ summarize_facets(x, facets = NULL)
 \item{x}{snpRdata object}
 
 \item{facets}{character. Categorical metadata variables by which to break up
-analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the 
-possible SNP and sample facets will be listed. If facets are instead provided,
-the \emph{categories} for each facet will instead be listed.}
+analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the
+possible SNP and sample facets will be listed. If facets are instead
+provided, the \emph{categories} for each facet will instead be listed.}
 }
 \value{
 A named list containing either the possible SNP and sample facets or
   the categories for all of the requested facets.
 }
 \description{
-List either all of the possible SNP and sample facets (if called with no facets)
-or all of the categories for each requested facet.
+List either all of the possible SNP and sample facets (if called with no
+facets) or all of the categories for each requested facet.
+}
+\details{
+If called with sample facets, returns a table of counts of each category
+otherwise returns a vector of categories.
 }
 \examples{
 # list available facets

@@ -22,7 +22,7 @@ test_that("summarize_facets",{
   
   # facet reporting
   check_sum <- summarize_facets(stickSNPs, c("pop", "pop.chr", "chr", "pop.chr.fam"))
-  expect_equal(check_sum$pop, unique(sample.meta(stickSNPs)$pop))
+  expect_equal(check_sum$pop, table(sample.meta(stickSNPs)$pop))
   expect_equal(check_sum$chr, unique(snp.meta(stickSNPs)$chr))
   chr_pop_check <- unique(.paste.by.facet(expand.grid(list(unique(snp.meta(stickSNPs)$chr), 
                                                            unique(sample.meta(stickSNPs)$pop))), 
