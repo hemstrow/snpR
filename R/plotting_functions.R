@@ -642,7 +642,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     pkg.check <- .check.installed("adegenet")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
     
-    if(!is.null(dapc_clustering_max_n_clust)){
+    if(is.null(dapc_clustering_max_n_clust)){
       if(!interactive()){
         msg <- c(msg, "If plot_clusters() is not run interactively, dapc interactive parameter picking cannot be used. Please set 'dapc_clustering_max_n_clust' to NULL and supply all dapc parameters.\n")
       }
@@ -651,18 +651,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       }
     }
     
-    if(any(is.null(c(dapc_npca, dapc_ndisc)))){
+    if(any(c(is.null(dapc_npca), is.null(dapc_ndisc)))){
       if(!interactive()){
         msg <- c(msg, "If plot_clusters() is not run interactively please supply all dapc parameters.\n")
       }
       
-      if(sum(is.null(c(dapc_npca, dapc_ndisc))) == 1){
+      if(sum(c(is.null(dapc_npca), is.null(dapc_ndisc))) == 1){
         msg <- c(msg, "Please supply both dapc_npca and dapc_ndisc arguments or choose interactively instead.\n")
       }
     }
     
-    if(sum(is.null(c(dapc_clustering_npca, dapc_clustering_nclust))) == 1){
-      msg <- c(msg, "Please supply all dapc clustering arguments or choose interactively instead.\n")
+    if(sum(c(is.null(dapc_clustering_npca), is.null(dapc_clustering_nclust))) == 1){
+      msg <- c(msg, "Please supply both dapc_clustering_npca and dapc_clustering_ndisc arguments or choose interactively instead.\n")
     }
   }
   

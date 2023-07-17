@@ -151,11 +151,14 @@ test_that("dapc",{
   skip_if_not_installed("adegenet")
   
   set.seed(1212)
-  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc"), "supply all dapc clustering arguments or choose interactively")
-  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "please supply all dapc")
   expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", 
-                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_npca = 20, dapc_clustering_nclust = 5), 
-               "supply both dapc_npca and dapc_ndisc arguments or choose interactively instead")
+                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_nclust = 5), 
+               "supply both dapc_clustering_npca and dapc_clustering_ndisc")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc",
+                                  dapc_clustering_max_n_clust = NULL,
+                                  dapc_npca = 5, dapc_ndisc = NULL), 
+               "pply both dapc_npca and dapc_ndisc")
   
   .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
                                     dapc_clustering_max_n_clust = NULL, 

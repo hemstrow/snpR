@@ -32,6 +32,7 @@ directory being changed to `./NeEstimator`.
 * Fixed a bug where complex facets (locus and sample joint facets) weren't being handled correctly by `calc_pairwise_fst()`. The fix isn't perfectly efficient if multiple facets referring to the same sample facet are all passed at once due to bootstrapping needs.
 * Fixed a bug in the sorting of output VCF files from `format_snps()`. `snpR` sorts internally by position first (since the chromosome column doesn't have a fixed name and is supplied as a facet to functions), but VCF files should sort by `#CHROM`.
 * Fixed a bug with `run_random_forest()` where non-polymorphic SNPs would cause an error.
+* Fixed some logic on the `dapc` `plot_clusters()` option sanity checks.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
