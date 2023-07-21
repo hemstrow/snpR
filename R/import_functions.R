@@ -369,11 +369,28 @@
   
   #===============prep genotypes===========
   gt <- dat[-c(1:(poplines[1] - 1), poplines)]
-  gt <- data.table::fread(text = gt, colClasses = "character")
-  gt <- t(gt)
-  gt[1,] <- gsub("\\s,$", "", gt[1,])
-  colnames(gt) <- gt[1,]
-  gt <- gt[-1,]
+  uses_tabs <- grepl("\t", gt[[1]])
+  if(uses_tabs){
+    gt <- data.table::fread(text = gt, colClasses = "character")
+    gt <- t(gt)
+    gt[1,] <- gsub("\\s,$", "", gt[1,])
+    colnames(gt) <- gt[1,]
+    gt <- gt[-1,]
+  }
+  
+  else{
+    gt <- data.table::fread(text = gt, colClasses = "character", sep = " ")
+    gt <- t(gt)
+    if(gt[2,1] == ","){
+      gt <- gt[-2,]
+    }
+    else{
+      gt[1,] <- gsub("\\s,$", "", gt[1,])
+    }
+    colnames(gt) <- gt[1,]
+    gt <- gt[-1,]
+  }
+  
   
   #===============prep sample metadata===========
   ps <- poplines - ((1:length(poplines)) + (poplines[1] - 2))

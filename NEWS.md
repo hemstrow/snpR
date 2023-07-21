@@ -33,6 +33,7 @@ directory being changed to `./NeEstimator`.
 * Fixed a bug in the sorting of output VCF files from `format_snps()`. `snpR` sorts internally by position first (since the chromosome column doesn't have a fixed name and is supplied as a facet to functions), but VCF files should sort by `#CHROM`.
 * Fixed a bug with `run_random_forest()` where non-polymorphic SNPs would cause an error.
 * Fixed some logic on the `dapc` `plot_clusters()` option sanity checks.
+* Fixed a bug where `read_genepop()` would error with space-delimited genepop files.
 
 ## Errata
 * Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
