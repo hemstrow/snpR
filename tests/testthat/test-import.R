@@ -68,7 +68,7 @@ test_that("structure",{
   expect_identical(suppressWarnings(read_structure("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
                                                    rows_per_individual = 2, header_cols = 1)),
                    suppressWarnings(import.snpR.data("test.str", snp.meta = snp.meta(stickSNPs), sample.meta = sample.meta(stickSNPs),
-                                                     rows_per_individual = 2, header_cols = 1)))
+                                                     rows_per_individual = 2, header_cols = 1, mDat = -9)))
   
   file.remove("test.str")
 })
@@ -83,7 +83,7 @@ test_that("non-biallelic",{
 
 test_that("plink",{
   format_snps(stickSNPs, output = "plink", outfile = "test")
-  test <- read_plink("test")
+  expect_warning(test <- read_plink("test"))
   
   expect_true("position" %in% colnames(snp.meta(test)))
   expect_true("chr" %in% colnames(snp.meta(test)))
@@ -102,7 +102,7 @@ test_that("plink",{
 test_that("genlight and genind",{
   # gi
   gi <- format_snps(stickSNPs, output = "adegenet")
-  test <- convert_genind(gi)
+  expect_warning(test <- convert_genind(gi))
   
   test <- calc_ho(test)
   t2 <- calc_ho(stickSNPs)
@@ -110,8 +110,10 @@ test_that("genlight and genind",{
   t2m <- get.snpR.stats(t2, stats = "ho")$weighted.means
   expect_identical(testm, t2m)
   
+
   # gl--note this wraps into gi first
-  .make_it_quiet(gl <- dartR::gi2gl(gi))
+  num <- format_snps(stickSNPs, "sn", interpolate = FALSE)
+  gl <- methods::as(t(num[,-c(1:2)]), "genlight")
   expect_warning(.make_it_quiet(t3 <- convert_genlight(gl)))
   t3 <- calc_ho(t3)
   t3m <- get.snpR.stats(t3, stats = "ho")$weighted.means

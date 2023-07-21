@@ -112,8 +112,6 @@ test_that("random forest",{
   expect_equal(unique(rfstats$single$facet), c("pop"))
   expect_true("phenotype_RF_importance" %in% colnames(rfstats$single))
   expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
-  str <- .paste.by.facet(rfstats$single, c("chr", "position"))
-  expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
 
   
   

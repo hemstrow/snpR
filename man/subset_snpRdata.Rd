@@ -11,26 +11,34 @@
 \usage{
 \S4method{[}{snpRdata,ANY,ANY,ANY}(x, i, j, ..., drop = FALSE)
 
-subset_snpR_data(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...)
+subset_snpR_data(
+  x,
+  .snps = 1:nsnps(x),
+  .samps = 1:nsamps(x),
+  ...,
+  .facets = NULL,
+  .subfacets = NULL,
+  .snp.facets = NULL,
+  .snp.subfacets = NULL
+)
 }
 \arguments{
 \item{x}{snpRdata object.}
 
-\item{i}{numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-SNPs to keep. Negative subscripts allowed.}
+\item{i}{numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+to keep. Negative subscripts allowed.}
 
-\item{j}{numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-SNPs to keep. Negative subscripts allowed.}
+\item{j}{numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+to keep. Negative subscripts allowed.}
 
-\item{...}{Facet subsetting may be specified by providing the facet as an 
-argument and then providing the levels to keep or remove. Setting
-pop = "ASP", for example, would keep only samples in the "ASP" level of the
-pop facet, and setting pop.fam = "ASP.A" would keep only samples the ASP
-pop and the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL")
-would remove samples in the ASP or PAL pops. Subsetting by 
-multiple facets is supported, although negative and positive subscripts
-cannot be mixed across sample or SNP facets. They may be mixed between the
-two.}
+\item{...}{Facet subsetting may be specified by providing the facet as an
+argument and then providing the levels to keep or remove. Setting pop =
+"ASP", for example, would keep only samples in the "ASP" level of the pop
+facet, and setting pop.fam = "ASP.A" would keep only samples the ASP pop and
+the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL") would
+remove samples in the ASP or PAL pops. Subsetting by multiple facets is
+supported, although negative and positive subscripts cannot be mixed across
+sample or SNP facets. They may be mixed between the two.}
 
 \item{drop}{logical, default FALSE. Deprecated.}
 
@@ -39,6 +47,20 @@ SNPs to keep. Negative subscripts allowed.}
 
 \item{.samps}{numeric, default \code{1:ncol(x)}. Column numbers corresponding
 to samples to keep. Negative subscripts allowed.}
+
+\item{.facets}{Character, default NULL. Sample facet to select by. Alternative
+to direct specification as in \code{pop = "ASP"}.}
+
+\item{.subfacets}{Character, default NULL. Sample facet level matching a level
+of the provided \code{.facets}. Alternative to direct specification as in
+\code{pop = "ASP"}.}
+
+\item{.snp.facets}{Character, default NULL. SNP facet to select by.
+Alternative to direct specification as in \code{chr = "groupIX"}.}
+
+\item{.snp.subfacets}{Character, default NULL. SNP facet level matching a
+level of the provided \code{.snp.facets}. Alternative to direct
+specification as in \code{chr = "groupIX"}.}
 }
 \description{
 Subsets snpRdata objects by specific snps, samples, facets, subfacets, etc.
@@ -81,4 +103,12 @@ stickSNPs[pop = c("ASP", "PAL"), chr = c("groupIX", "groupIV")]
 # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
 # fam = B
 stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
+
+# using the .facet etc arguments, useful when the facet is stored as an
+# object
+target_facet <- "pop"
+target_subfacet <- "ASP"
+subset_snpR_data(stickSNPs, 
+                 .facets = target_facet, 
+                 .subfacets = target_subfacet)
 }

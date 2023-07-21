@@ -160,6 +160,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        window.bootstraps = "data.frame",
                                        sn = "list",
                                        calced_stats = "list",
+                                       filters = "data.frame",
                                        allele_frequency_matrices = "list",
                                        genetic_distances = "list",
                                        weighted.means = "data.frame",
@@ -314,6 +315,10 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  header row of marker is present. For structure input files only.
 #'@param verbose Logical, default FALSE. If TRUE, will print a few status
 #'  updates and checks.
+#'@param .pass_filters Internal, probably not for user use. Used to pass 
+#'  filtering history when sub-setting when this function is called internally.
+#'@param .skip_filters Internal, probably not for user use. Used to skip 
+#'  re-filtering during sub-setting when this function is called internally.
 #'  
 #'@examples
 #' # import example data as a snpRdata object
@@ -336,7 +341,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #' import.snpR.data(ex.genind, snp_meta, sample_meta) 
 #'
 #' # from an adegenet genlight object
-#' genlight <- dartR::gi2gl(ex.genind)
+#' num <- format_snps(stickSNPs, "sn", interpolate = FALSE)
+#' genlight <- methods::as(t(num[,-c(1:2)]), "genlight")
 #' 
 #' ## run the conversion, could be run without the snp or sample metadatas.
 #' dat <- import.snpR.data(genlight)
@@ -362,7 +368,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, verbose = FALSE){
+                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, verbose = FALSE,
+                             .pass_filters = FALSE, .skip_filters = FALSE){
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========
@@ -385,13 +392,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   # genotypes
-  if("genind" %in% class(genotypes)){
+  if(methods::is(genotypes, "genind")){
     return(.genind.tosnpRdata(genotypes, snp.meta, sample.meta))
   }
-  if("genlight" %in% class(genotypes)){
+  if(methods::is(genotypes, "genlight")){
     return(.genlight.to.snpRdata(genotypes, snp.meta, sample.meta))
   }
-  if("vcfR" %in% class(genotypes)){
+  if(methods::is(genotypes, "vcfR")){
     return(.process_vcf(genotypes, snp.meta, sample.meta))
   }
   if(is.matrix(genotypes)){
@@ -422,7 +429,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                                   marker_names = marker_names, 
                                   header_cols = header_cols, 
                                   snp.meta = snp.meta, 
-                                  sample.meta = sample.meta))
+                                  sample.meta = sample.meta,
+                                  mDat = mDat))
       }
       else{
         genotypes <- as.data.frame(data.table::fread(genotypes, ...))
@@ -572,15 +580,17 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     allele_frequency_matrices = list(),
                     genetic_distances = list(),
                     weighted.means = data.frame(),
+                    filters = data.table::data.table(),
                     other = list(),
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
   
-  
-  # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
-  if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
-  .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
+  if(!.skip_filters){
+    # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
+    if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
+    .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
+  }
   
   # add basic maf
   .make_it_quiet(x <- calc_maf(x))
@@ -588,6 +598,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   # add ac
   # .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
   
+  if(is.data.frame(.pass_filters)){
+    x@filters <- rbind(x@filters, .pass_filters)
+  }
   
   #========return=========
   return(x)

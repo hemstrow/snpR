@@ -35,7 +35,7 @@ remotes::install_github("hemstrow/snpR", build_vignettes = T, build_opts = c("--
 ```
 
 If you wish to try out the latest features or bug fixes, the dev version
-can be installed from [GitHub](https://github.com/hemstrow/snpR) as
+can be installed from [the dev branch on GitHub](https://github.com/hemstrow/snpR/tree/dev) as
 well:
 
 ``` r
@@ -70,6 +70,7 @@ A CRAN version should be available soon.
 - `summarize_facets()`: Summarized available facets.
 - `citations()`: Fetch citations for all methods used in calculations
   for a specific `snpRdata` object.
+- `filters()`: Fetch filtering history.
 - `check_duplicates()`: Check data for potentially duplicated samples.
 - `gap_snps()`: Select a SNP every *n* bases (simple physical LD
   filtering).

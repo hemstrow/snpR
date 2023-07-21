@@ -4,7 +4,14 @@
 \alias{calc_fis}
 \title{Calculate FIS for individual populations.}
 \usage{
-calc_fis(x, facets = NULL, keep_components = FALSE)
+calc_fis(
+  x,
+  facets = NULL,
+  boot = FALSE,
+  boot_par = FALSE,
+  boot_alt = "two-sided",
+  keep_components = FALSE
+)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -12,18 +19,33 @@ calc_fis(x, facets = NULL, keep_components = FALSE)
 \item{facets}{character. Categorical metadata variables by which to break up
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{keep_components}{logical, default FALSE. If TRUE, the variance
-components "b" and "c" will be held and accessible from the
-\code{$single} element (named "var_comp_b" and
-"var_comp_c", respectively) using the usual \code{\link{get.snpR.stats}}
-method. This may be useful if working with very large datasets that need to
-be run with separate objects for each chromosome, etc. for memory purposes.
-Weighted averages can be generated identically to those from snpR by taking
-the weighted mean (via the \code{\link[stats]{weighted.mean}}) of "c"
-divided by the sum of the weighted mean of "b" + "c" using the
-number of SNPs called in a comparison (returned in the "nk" column from
-\code{\link{get.snpR.stats}}) as weights within each population comparison.
-Note that this is different than taking the weighted mean of a/(a + b + c)!}
+\item{boot}{numeric or \code{FALSE}, default \code{FALSE}. The number of
+bootstraps to do. See details.}
+
+\item{boot_par}{numeric or \code{FALSE}, default \code{FALSE}. If a number,
+bootstraps will be processed in parallel using the supplied number of
+cores.}
+
+\item{boot_alt}{character, default "two-sided". The type of \emph{t}-test
+to conduct on the bootstrapped FIS values. Options: \itemize{
+\item{two-sided: } A two-sided \emph{t}-test, with the alternative 
+hypothesis that FIS is not equal to 0. \item{greater: } A one-sided 
+\emph{t}-test, with the alternative hypothesis that FIS is greater than 0.
+\item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
+that FIS is less than 0.}}
+
+\item{keep_components}{logical, default \code{FALSE}. If TRUE, the variance
+components "b" and "c" will be held and accessible from the \code{$single}
+element (named "var_comp_b" and "var_comp_c", respectively) using the usual
+\code{\link{get.snpR.stats}} method. This may be useful if working with
+very large datasets that need to be run with separate objects for each
+chromosome, etc. for memory purposes. Weighted averages can be generated
+identically to those from snpR by taking one minus the weighted mean (via
+the \code{\link[stats]{weighted.mean}}) of "c" divided by the sum of the
+weighted mean of "b" + "c" using the number of SNPs called in a comparison
+(returned in the "nk" column from \code{\link{get.snpR.stats}}) as weights
+within each population comparison. Note that this is different than taking
+the weighted mean of 1 - c/(b + c)!}
 }
 \description{
 Calculates FIS for each individual level in each provided sample facet
@@ -39,6 +61,11 @@ values are calculated on a per-snp basis and thus ignore these levels.
 If the base facet (facets = NULL or facets = ".base") is requested, FIS will
 compare individual to total variance across all samples instead (equivalent
 to overall FIT).
+
+Bootstrapping across loci can be done to assess FIS significance. This is 
+done by re-drawing loci randomly with replacement for each facet level,
+calculating the resulting FIS values, and doing one sample \emph{t}-test
+with the null hypothesis that FIS = 0 to calculate p-values.
 }
 \examples{
 x <- calc_fis(stickSNPs, c("pop", "pop.chr"))

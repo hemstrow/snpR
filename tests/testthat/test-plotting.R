@@ -151,11 +151,14 @@ test_that("dapc",{
   skip_if_not_installed("adegenet")
   
   set.seed(1212)
-  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc"), "supply all dapc clustering arguments or choose interactively")
-  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "supply all dapc clustering arguments or choose interactively")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "please supply all dapc")
   expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", 
-                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_npca = 20, dapc_clustering_nclust = 5), 
-               "supply both dapc_npca and dapc_ndisc arguments or choose interactively instead")
+                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_nclust = 5), 
+               "supply both dapc_clustering_npca and dapc_clustering_ndisc")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc",
+                                  dapc_clustering_max_n_clust = NULL,
+                                  dapc_npca = 5, dapc_ndisc = NULL), 
+               "pply both dapc_npca and dapc_ndisc")
   
   .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
                                     dapc_clustering_max_n_clust = NULL, 
@@ -181,10 +184,55 @@ test_that("manhattan plots", {
   
   # with data.frame
   y <- get.snpR.stats(x, stats = "association")
-  p2 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
+  p2 <- plot_manhattan(y$single, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE)
+  ggplot2::ggplot_build(p2$plot)$layout$panel_params[[1]]$x$get_labels()
   expect_true(ggplot2::is.ggplot(p2$plot))
-  expect_equivalent(p$data, p2$data)
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$layout$panel_params[[1]]$x$get_labels(),
+                    ggplot2::ggplot_build(p$plot)$layout$panel_params[[1]]$x$get_labels())
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$data[[1]]$y,
+                    ggplot2::ggplot_build(p$plot)$data[[1]]$y)
+  
+  ## simple facets
+  x <- calc_ho(x, "pop")
+  y <- get.snpR.stats(x, "pop", "ho")
+  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet")
+  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop")
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$layout$layout$subfacet,
+                    ggplot2::ggplot_build(p1$plot)$layout$layout$subfacet)
+  
+  ## multilevel facets
+  x <- calc_ho(x, "pop.fam")
+  y <- get.snpR.stats(x, "pop.fam", "ho")
+  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet")
+  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop.fam")
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$layout$panel_params[[1]]$x$get_labels(),
+                    ggplot2::ggplot_build(p1$plot)$layout$panel_params[[1]]$x$get_labels())
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$data[[1]]$y,
+                    ggplot2::ggplot_build(p1$plot)$data[[1]]$y)
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$layout$layout$subfacet,
+                    ggplot2::ggplot_build(p1$plot)$layout$layout$subfacet)
+  y$single$fam <- gsub("\\..+", "", y$single$subfacet)
+  y$single$pop <- gsub(".+\\.", "", y$single$subfacet)
+  
+  ### snpR style facet call
+  p3 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "fam.pop")
+  expect_equivalent(ggplot2::ggplot_build(p2$plot)$layout$layout$subfacet,
+                    ggplot2::ggplot_build(p3$plot)$layout$layout$subfacet)
+  
+  ### not snpR style facet call
+  p4 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = c("fam", "pop"))
+  expect_equivalent(ggplot2::ggplot_build(p3$plot)$layout$layout$subfacet,
+                    ggplot2::ggplot_build(p4$plot)$layout$layout$subfacet)
+  
+  ### errors
+  expect_error(plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = c("fam", "hi")),
+               "Some facets not found.+hi.+")
+  expect_error(plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "fam.hi"),
+               "Some facets not found.+hi.+")
+  expect_error(plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "hi"),
+               "Facet not found in")
+  
   
   
   # with lambda correction

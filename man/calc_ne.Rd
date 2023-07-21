@@ -12,6 +12,8 @@ calc_ne(
   mating = "random",
   pcrit = c(0.05, 0.02, 0.01),
   methods = "LD",
+  temporal_methods = c("Pollak", "Nei", "Jorde"),
+  temporal_details = NULL,
   max_ind_per_pop = NULL,
   nsnps = nrow(x),
   outfile = "ne_out",
@@ -25,7 +27,10 @@ calc_ne(
 \item{facets}{character, default NULL. Categorical metadata variables by
 which to break up analysis. See \code{\link{Facets_in_snpR}} for more
 details. Only sample specific categories are allowed, all others will be
-removed. If NULL, Ne will be calculated for all samples.}
+removed. If NULL, Ne will be calculated for all samples. Note that for
+the temporal method specifically, and unusually for \code{snpR}, components
+of complex facets need to be provided alphabetically (\code{"fam.pop"} not
+\code{"pop.fam"}).}
 
 \item{chr}{character, default NULL. An optional but recommended SNP specific
 categorical metadata variable which designates chromosomes/linkage
@@ -46,7 +51,25 @@ a range of values should be checked.}
 
 \item{methods}{character, default "LD". LD estimation methods to use.
 Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-\item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.}}
+\item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.
+\item{"temporal"} Temporal-based. 
+Requires muliple time-points for a population}}
+
+\item{temporal_methods}{character, default 
+\code{c("Pollak", "Nei", "Jorde")}. Temporal methods to use. See 
+\code{NeEstimator} documentation.}
+
+\item{temporal_details}{Three or four column \code{data.frame} or 
+\code{NULL}, default \code{NULL}. Details for the generation/population 
+layout to use for the temporal method if requested. Columns one and two
+are levels of the provided facet given corresponding to the first and 
+second time point of the population, respectively. Column three is a number
+indicating the number of generations between samples. Column four is
+optionally the census population size at time one. Any values other than
+zero will use \code{NeEstimator}'s Plan II. Note that level components of 
+complex facets need to be provided in the same order as the facet 
+(for \code{"fam.pop"}, family "A" population "ASP" should be provided
+as \code{"A.ASP"}), as usual.}
 
 \item{max_ind_per_pop}{numeric, default NULL. Maximum number of individuals
 to consider per population.}

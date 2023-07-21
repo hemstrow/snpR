@@ -112,8 +112,73 @@
 #
 # @author William Hemstrom
 .genlight.to.snpRdata <- function(genlight, snp.meta = NULL, sample.meta = NULL){
-  .check.installed("dartR")
-  return(.genind.tosnpRdata(dartR::gl2gi(genlight), snp.meta, sample.meta))
+  # this internal function is re-distrubuted with author permission from dartR to avoid
+  # the dependancy
+  .gl2gi <- function(x,
+                     probar = TRUE) {
+    # convert to genind....
+    x2 <- as.matrix(x[,])
+    
+    if (probar) {
+      pb <- utils::txtProgressBar(
+        min = 0,
+        max = 1,
+        style = 3,
+        initial = NA
+      )
+    }
+    
+    if (is.null(x@loc.all)) {
+      x@loc.all <- rep("A/T", adegenet::nLoc(x))
+      x@loc.all[1] <- "C/G"
+    }
+    
+    
+    homs1 <-
+      paste(substr(x@loc.all, 1, 1), "/", substr(x@loc.all, 1, 1), sep = "")
+    hets <- x@loc.all
+    homs2 <-
+      paste(substr(x@loc.all, 3, 3), "/", substr(x@loc.all, 3, 3), sep = "")
+    xx <- matrix(NA, ncol = ncol(x2), nrow = nrow(x2))
+    for (i in 1:nrow(x2)) {
+      for (ii in 1:ncol(x2)) {
+        inp <- x2[i, ii]
+        if (!is.na(inp)) {
+          if (inp == 0)
+            xx[i, ii] <- homs1[ii]
+          else if (inp == 1)
+            xx[i, ii] <- hets[ii]
+          else if (inp == 2)
+            xx[i, ii] <- homs2[ii]
+        } else
+          xx[i, ii] <-"-/-"
+      }
+      if (probar) {
+        utils::setTxtProgressBar(pb, i / nrow(x2))
+      }
+    }
+    if (probar) {
+      close(pb)
+    }
+    
+    gen <-
+      adegenet::df2genind(
+        xx[,],
+        sep = "/",
+        ncode = 1,
+        ind.names = x@ind.names,
+        pop = x@pop,
+        ploidy = 2,
+        NA.char = "-"
+      )  #, probar=probar)
+    gen@other <- x@other
+    adegenet::locNames(gen) <- adegenet::locNames(x)
+    
+    .yell_citation("Gruber2018", "genlight import", "genlight import managed by dartR's gl2gi function")
+    
+    return(gen)
+  }
+  return(.genind.tosnpRdata(.gl2gi(genlight), snp.meta, sample.meta))
 }
 
 
@@ -195,7 +260,7 @@
   .check.installed("vcfR")
   
   #========import data=======================
-  if(!"vcfR" %in% class(vcf_file)){
+  if(!is(vcf_file, "vcfR")){
     vcf <- vcfR::read.vcfR(vcf_file)
   }
   else{
@@ -304,11 +369,28 @@
   
   #===============prep genotypes===========
   gt <- dat[-c(1:(poplines[1] - 1), poplines)]
-  gt <- data.table::fread(text = gt, colClasses = "character")
-  gt <- t(gt)
-  gt[1,] <- gsub("\\s,$", "", gt[1,])
-  colnames(gt) <- gt[1,]
-  gt <- gt[-1,]
+  uses_tabs <- grepl("\t", gt[[1]])
+  if(uses_tabs){
+    gt <- data.table::fread(text = gt, colClasses = "character")
+    gt <- t(gt)
+    gt[1,] <- gsub("\\s,$", "", gt[1,])
+    colnames(gt) <- gt[1,]
+    gt <- gt[-1,]
+  }
+  
+  else{
+    gt <- data.table::fread(text = gt, colClasses = "character", sep = " ")
+    gt <- t(gt)
+    if(gt[2,1] == ","){
+      gt <- gt[-2,]
+    }
+    else{
+      gt[1,] <- gsub("\\s,$", "", gt[1,])
+    }
+    colnames(gt) <- gt[1,]
+    gt <- gt[-1,]
+  }
+  
   
   #===============prep sample metadata===========
   ps <- poplines - ((1:length(poplines)) + (poplines[1] - 2))
@@ -503,7 +585,7 @@
   return(ac)
 }
 
-.bind_and_check_num_levs_a1_a2 <- function(a1, a2, mDat, form = NULL){
+.bind_and_check_num_levs_a1_a2 <- function(a1, a2, mDat, form = NULL, omit_non_biallelic = TRUE){
   ac <- cbind(a1, a2)
   rm(a1, a2); gc();
   if(!is.null(form)){
@@ -513,8 +595,16 @@
   ac <- dplyr::mutate_all(ac, function(x) as.numeric(as.factor(x)))
   ac <- as.matrix(ac)
   
-  if(any(matrixStats::colMaxs(ac, na.rm = T) > 2)){
-    stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+  nlevs <- matrixStats::colMaxs(ac, na.rm = T)
+  
+  if(any(nlevs > 2)){
+    if(omit_non_biallelic){
+      warning("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+      ac <- ac[,-which(nlevs > 2)]
+    }
+    else{
+      stop("Some loci with more than two alleles detected. snpR only accepts SNP (or SNP-like) data with two alleles per loci. This can happen in biallelic data if the missing data value is not properly set or, if from a STRUCTURE formatted file, the correct number of header columns containing sample metadata are not specified using the 'header_cols' argument.\n")
+    }
   }
   return(ac)
 }
@@ -540,7 +630,7 @@
 .process_structure <- function(structure_file, rows_per_individual = 2, 
                                marker_names = FALSE,
                                header_cols = 1,
-                               snp.meta = NULL, sample.meta = NULL){
+                               snp.meta = NULL, sample.meta = NULL, mDat = -9){
   #==========read in and categorize input data============
   if(marker_names){
     header <- data.table::fread(structure_file, nrows = 1, header = FALSE)
@@ -565,12 +655,13 @@
   # process snp metadata
   if(marker_names & is.null(snp.meta)){
     snp.meta <- data.frame(ID = unlist(header))
+    snp.meta <- na.omit(snp.meta)
   }
   
   #================process genotypes=======================
   # replace missing data with "X"
   dat <- as.matrix(dat)
-  dat[dat == -9] <- NA
+  dat[dat == mDat] <- NA
   dat <- t(dat)
   if(rows_per_individual == 1){
     num_individuals <- ncol(dat)

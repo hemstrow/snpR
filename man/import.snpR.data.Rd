@@ -14,7 +14,9 @@ import.snpR.data(
   header_cols = 0,
   rows_per_individual = 2,
   marker_names = FALSE,
-  verbose = FALSE
+  verbose = FALSE,
+  .pass_filters = FALSE,
+  .skip_filters = FALSE
 )
 }
 \arguments{
@@ -54,6 +56,12 @@ header row of marker is present. For structure input files only.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status
 updates and checks.}
+
+\item{.pass_filters}{Internal, probably not for user use. Used to pass 
+filtering history when sub-setting when this function is called internally.}
+
+\item{.skip_filters}{Internal, probably not for user use. Used to skip 
+re-filtering during sub-setting when this function is called internally.}
 }
 \description{
 \code{import.snpR.data} converts genotype and meta data to the snpRdata class,
@@ -199,7 +207,8 @@ ex.genind  <- adegenet::df2genind(t(stickRAW[,-c(1:2)]),
 import.snpR.data(ex.genind, snp_meta, sample_meta) 
 
 # from an adegenet genlight object
-genlight <- dartR::gi2gl(ex.genind)
+num <- format_snps(stickSNPs, "sn", interpolate = FALSE)
+genlight <- methods::as(t(num[,-c(1:2)]), "genlight")
 
 ## run the conversion, could be run without the snp or sample metadatas.
 dat <- import.snpR.data(genlight)

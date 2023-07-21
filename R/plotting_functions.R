@@ -642,27 +642,29 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     pkg.check <- .check.installed("adegenet")
     if(is.character(pkg.check)){msg <- c(msg, pkg.check)}
     
-    if(!is.null(dapc_clustering_max_n_clust)){
-      if(!interactive()){
-        msg <- c(msg, "If plot_clusters() is not run interactively, dapc interactive parameter picking cannot be used. Please set 'dapc_clustering_max_n_clust' to NULL and supply all dapc parameters.\n")
-      }
+    if(is.null(dapc_clustering_max_n_clust)){
       if(any(is.null(c(dapc_clustering_npca, dapc_clustering_nclust, dapc_npca, dapc_ndisc)))){
         msg <- c(msg, "If plot_clusters() is not run interactively please supply all dapc parameters.\n")
       }
     }
+    else{
+      if(!interactive()){
+          msg <- c(msg, "If plot_clusters() is not run interactively, dapc interactive parameter picking cannot be used. Please set 'dapc_clustering_max_n_clust' to NULL and supply all dapc parameters.\n")
+      }
+    }
     
-    if(any(is.null(c(dapc_npca, dapc_ndisc)))){
+    if(any(c(is.null(dapc_npca), is.null(dapc_ndisc)))){
       if(!interactive()){
         msg <- c(msg, "If plot_clusters() is not run interactively please supply all dapc parameters.\n")
       }
       
-      if(sum(is.null(c(dapc_npca, dapc_ndisc))) == 1){
+      if(sum(c(is.null(dapc_npca), is.null(dapc_ndisc))) == 1){
         msg <- c(msg, "Please supply both dapc_npca and dapc_ndisc arguments or choose interactively instead.\n")
       }
     }
     
-    if(sum(is.null(c(dapc_clustering_npca, dapc_clustering_nclust))) == 1){
-      msg <- c(msg, "Please supply all dapc clustering arguments or choose interactively instead.\n")
+    if(sum(c(is.null(dapc_clustering_npca), is.null(dapc_clustering_nclust))) == 1){
+      msg <- c(msg, "Please supply both dapc_clustering_npca and dapc_clustering_ndisc arguments or choose interactively instead.\n")
     }
   }
   
@@ -1173,7 +1175,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     stats <- c(stats, "adegenet")
     details <- c(details, "DAPC run via interface to adegenet.")
   }
-  
+
   if(length(keys) > 0){
     .yell_citation(keys, stats, details, update_bib)
   }
@@ -1366,7 +1368,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' ## grab data
 #' y <- get.snpR.stats(x, "pop", stats = "hwe")$single
 #' ## plot
-#' plot_manhattan(y, "pHWE", facets = "pop", chr = "chr",
+#' plot_manhattan(y, "pHWE", facets = "subfacet", chr = "chr",
 #'                significant = 0.0001, suggestive = 0.001,
 #'                log.p = TRUE, highlight = FALSE)$plot
 #' 
@@ -1411,7 +1413,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            abbreviate_labels = FALSE){
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
-  
+
   #=============sanity checks==============================
   msg <- character()
   if(highlight_style == "label" & !isFALSE(highlight)){
@@ -1535,7 +1537,46 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #====otherwise=====
   else if(is.data.frame(x)){
     if(data.table::is.data.table(x)){x <- as.data.frame(x)}
-    stats <- x
+    stats <- x[,which(colnames(x) %in% c(plot_var, bp, chr))]
+    
+    # deal with facets provided--may be column names or snpR style facets
+    if(!is.null(facets)){
+      
+      # if length = 1, check if it's in snpR style and confirm everything is OK
+      if(length(facets) == 1){
+        
+        if(facets %in% colnames(x)){
+          stats$subfacet <- x[,facets]
+        }
+        
+        else if(grepl("\\.", facets)){
+          check <- .split.facet(facets)[[1]]
+          
+          if(all(check %in% colnames(x))){
+            stats$subfacet <- .paste.by.facet(x, check)
+          }
+          else{
+            stop(paste0("Some facets not found in column names of x. Bad facets: ", 
+                        paste0(check[which(! check %in% colnames(x))], collapse = ", "),
+                        "\n"))
+          }
+        }
+        else{
+          stop("Facet not found in column names of x.\n")
+        }
+        
+      }
+      
+      # other wise check OK
+      else if(any(!facets %in% colnames(x))){
+        stop(paste0("Some facets not found in column names of x. Bad facets: ", 
+                    paste0(facets[which(! facets %in% colnames(x))], collapse = ", "),
+                    "\n"))
+      }
+      else{
+        stats$subfacet <- .paste.by.facet(x, facets)
+      }
+    }
   }
   else{
     stop("x must be a data.frame or snpRdata object.\n")

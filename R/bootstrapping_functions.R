@@ -109,7 +109,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
 
   # figure out which stats we are using!
   pairwise.types <- c("fst")
-  single.types <- c("pi", "ho", "pa", "pHWE", "fis")
+  single.types <- c("pi", "ho", "pa", "pHWE", "fis", "he")
   all.types <- c(pairwise.types, single.types)
   o.stats <- statistics
   if(statistics == "all"){

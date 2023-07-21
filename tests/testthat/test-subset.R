@@ -95,6 +95,62 @@ test_that("complex facet",{
   expect_equal(sort(unique(check$chr)), sort(c("groupIX", "groupXII", "groupXIX")))
 })
 
+#========by facet and subfacet args=======
+test_that(".facet and .subfacet",{
+  id <- .internal.data$test_snps
+  
+  tfacet <- "pop"
+  tlev <- "ASP"
+  
+  # error if using old syntax
+  o1 <- .suppress_specific_warning(subset_snpR_data(id, .facets = tfacet, .subfacets = tlev), "samples were subset")
+  o2 <- id[pop = "ASP"]
+  expect_true(all(sort(sample.meta(o2)$.sample.id) == sort(sample.meta(o1)$.sample.id)))
+  
+  # correct parts, simple
+  o2 <- id[pop = c("ASP", "PAL")]
+  tlev <- c("ASP", "PAL")
+  o1 <- .suppress_specific_warning(subset_snpR_data(id, .facets = tfacet, .subfacets = tlev), "samples were subset")
+  expect_true(all(sort(sample.meta(o2)$.sample.id) == sort(sample.meta(o1)$.sample.id)))
+  
+  
+  
+  # correct parts, complex
+  o2 <- id[pop.fam = c("ASP.A", "PAL.B")]
+  tfacet <- "pop.fam"
+  tlev <- c("ASP.A", "PAL.B")
+  o1 <- .suppress_specific_warning(subset_snpR_data(id, .facets = tfacet, .subfacets = tlev), "samples were subset")
+  expect_true(all(sort(sample.meta(o2)$.sample.id) == sort(sample.meta(o1)$.sample.id)))
+})
+
+
+test_that(".snp.facet and .snp.subfacet",{
+  id <- .internal.data$test_snps
+  
+  tfacet <- "chr"
+  tlev <- c("groupIX", "groupXIX")
+  # correct parts, simple
+  o2 <- id[chr = c("groupIX", "groupXIX")]
+  o1 <- .suppress_specific_warning(subset_snpR_data(id, .snp.facets = tfacet, .snp.subfacets = tlev), "samples were subset")
+  expect_true(all(sort(snp.meta(o2)$.snp.id) == sort(snp.meta(o1)$.snp.id)))
+  
+})
+
+
+test_that("complex facet",{
+  id <- .internal.data$test_snps
+  
+  # correct parts, simple
+  tmfacet <- "pop"
+  tmlev <- c("ASP", "PAL")
+  tnfacet <- "chr"
+  tnlev <- "groupXIX"
+  o2 <- id[pop = c("ASP", "PAL"), chr = c("groupXIX")]
+  o1 <- .suppress_specific_warning(subset_snpR_data(id, .facets = tmfacet, .subfacets = tmlev, .snp.facets = tnfacet, .snp.subfacets = tnlev), "samples were subset")
+  expect_true(all(sort(snp.meta(o2)$.snp.id) == sort(snp.meta(o1)$.snp.id)))
+  expect_true(all(sort(sample.meta(o2)$.sample.id) == sort(sample.meta(o1)$.sample.id)))
+})
+
 
 #========errors=========
 test_that("errors",{
@@ -106,6 +162,7 @@ test_that("errors",{
   expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
   expect_error(id[popl = "ASP"], regexp = "popl not found in x ")
   
+  expect_error(subset_snpR_data(id, pop = "ASP", .facets = "pop", ".subfacet" = "ASP"), "If you wish to subset using the")
 })
 
 

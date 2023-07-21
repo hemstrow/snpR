@@ -176,6 +176,7 @@ is.snpRdata <- function(x){
   #   x@ac <- nac[,-c(1:3)]
   # }
   
+
   # add in dummy rows to stats
   sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
   if(ncol(x@stats) - ncol(sm) > 0){
@@ -1113,7 +1114,7 @@ is.snpRdata <- function(x){
     }
   }
   else if(type == "pop"){
-    meta.names <- c("facet", "subfacet")
+    meta.names <- c("facet", "pop")
     starter.meta <- meta.names
     x@pop.stats <- .smart.merge(stats, x@pop.stats, meta.names, starter.meta)
   }
@@ -1132,7 +1133,7 @@ is.snpRdata <- function(x){
 # @param meta.names names of the metadata columns, usually everything up to .snp.id
 # @param starter.meta any metadata columns that should specifically be put at the start of the output data (such as facet, subfacet, facet.type)
 .smart.merge <- function(n.s, o.s, meta.names, starter.meta){
-  ..meta.cols <- NULL
+  ..meta.cols <- ..col.ord <- NULL
   
   # subfunction to sort by starter meta, then return the new data without respect to old. Used if old is empty or contains identical data.
   take_new <- function(n.s, starter.meta){
@@ -1249,6 +1250,12 @@ is.snpRdata <- function(x){
       m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
     }
   }
+  
+  # ensure that the starter meta is in the correct spot
+  col.ord <- unique(c(starter.meta, meta.cols, colnames(m.s)))
+  col.ord <- col.ord[which(col.ord %in% colnames(m.s))]
+  m.s <- .fix..call(m.s[,..col.ord])
+  
   return(m.s)
 }
 
@@ -1275,7 +1282,9 @@ is.snpRdata <- function(x){
 #   will pass .base if true.
 # 
 # @author William Hemstrom
-.check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, fill_with_base = TRUE, return_base_when_empty = TRUE){
+.check.snpR.facet.request <- function(x, facets, remove.type = "snp", return.type = FALSE, 
+                                      fill_with_base = TRUE, return_base_when_empty = TRUE, purge_duplicates = TRUE){
+
   if(any(facets == "all")){
     facets <- x@facets
   }
@@ -1288,7 +1297,7 @@ is.snpRdata <- function(x){
       return(".base")
     }
   }
-  
+
   
   # remove the facet parts as requested.
   facets <- .split.facet(facets)
@@ -1390,13 +1399,13 @@ is.snpRdata <- function(x){
   }
   
   if(any(to.remove)){
-    facets <- facets[-which(to.remove)]
-    facet.types <- facet.types[-which(to.remove)]
     if(fill_with_base){
-      if(!".base" %in% facets){
-        facets <- c(facets, ".base")
-        facet.types <- c(facet.types, ".base")
-      }
+      facets[which(to.remove)] <- ".base"
+      facet.types <- facet.types[-which(to.remove)] <- ".base"
+    }
+    else{
+      facets <- facets[-which(to.remove)]
+      facet.types <- facet.types[-which(to.remove)]
     }
   }
   
@@ -1422,11 +1431,14 @@ is.snpRdata <- function(x){
   }
   
   # remove duplicates
-  dups <- duplicated(facets)
-  if(any(dups)){
-    facets <- facets[-which(dups)]
-    facet.types <- facet.types[-which(dups)]
+  if(purge_duplicates){
+    dups <- duplicated(facets)
+    if(any(dups)){
+      facets <- facets[-which(dups)]
+      facet.types <- facet.types[-which(dups)]
+    }
   }
+  
 
   # return
   if(return.type){
@@ -2832,9 +2844,10 @@ is.snpRdata <- function(x){
 # @param x snpRdata object to permute
 # @param n numeric, number of bootstrapped datasets to generate.
 # @param facet sample level facet to permute within
+# @param by char, default "sample". Permute by samples or snps
 #
 # @return A list containing permuted ac data.
-.boot_as <- function(x, n, facet, ret_gs = FALSE){
+.boot_as <- function(x, n, facet, ret_gs = FALSE, by = "sample"){
   ..tm <- ..ord <-  NULL
   
   out <- vector("list", n)
@@ -2842,7 +2855,12 @@ is.snpRdata <- function(x){
   for(i in 1:n){
     
     # get the maf identities for the base facet
-    shuff <- genotypes(x)[,sample(ncol(x), ncol(x), replace = TRUE)]
+    if(by == "sample"){
+      shuff <- genotypes(x)[,sample(ncol(x), ncol(x), replace = TRUE)]
+    }
+    else{
+      shuff <- genotypes(x)[sample(nrow(x), nrow(x), replace = TRUE),]
+    }
     shuff <- data.table::as.data.table(shuff)
     colnames(shuff) <- colnames(genotypes(x))
     tas <- vector("list", nrow(opts))
@@ -2860,9 +2878,9 @@ is.snpRdata <- function(x){
         fill <- as.data.table(fill)
         colnames(fill) <- colnames(x@geno.tables$as)[missing]
         tas[[j]] <- cbind(tas[[j]], fill)
-        ord <- colnames(x@geno.tables$as)
-        tas[[j]] <- .fix..call(tas[[j]][,..ord])
       }
+      ord <- colnames(x@geno.tables$as)
+      tas[[j]] <- .fix..call(tas[[j]][,..ord])
       
       if(ret_gs){
         gst <- as.data.table(ttab$gs)
@@ -2874,9 +2892,9 @@ is.snpRdata <- function(x){
           fill <- as.data.table(fill)
           colnames(fill) <- colnames(x@geno.tables$gs)[missing]
           gst <- cbind(gst, fill)
-          ord <- colnames(x@geno.tables$gs)
-          gst<- .fix..call(gst[,..ord])
         }
+        ord <- colnames(x@geno.tables$gs)
+        gst<- .fix..call(gst[,..ord])
         
         tas[[j]] <- cbind(tas[[j]], gst)
       }
@@ -2891,7 +2909,7 @@ is.snpRdata <- function(x){
     tas[is.na(tas)] <- 0
     ord <- c((ncol(tas) - 3):ncol(tas), 1:(ncol(tas) - 4))
     out[[i]] <- .fix..call(tas[,..ord])
-    out[[i]] <- .suppress_specific_warning(cbind(snp.meta(x)[which(colnames(snp.meta(x)) != ".snp.id"),,drop=FALSE], out[[i]]), "row names were found from a short variable")
+    out[[i]] <- .suppress_specific_warning(cbind(snp.meta(x)[,which(colnames(snp.meta(x)) != ".snp.id"),drop=FALSE], out[[i]]), "row names were found from a short variable")
   }
   
   return(out)
@@ -3026,6 +3044,39 @@ is.snpRdata <- function(x){
   }
 }
 
+# update filters
+#
+# Note that filters are stored as a data.table instead of a named list by filter 
+# type because the order they were applied matters!
+#
+# @param x snpRdata object
+# @param type The type of filter (maf, mac, etc)
+# @param stringency The filter stringency
+# @param facet Any facets the filter was computed across
+.update_filters <- function(x, type, stringency, facet){
+
+  # update old objects
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    .suppress_specific_warning(x@filters <- data.table::data.table(type = character(0),
+                                                                   stringency = character(0),
+                                                                   facet = character(0)), "Not a validObject")
+  }
+  else{
+    if(ncol(x@filters) == 0){
+      r <- data.table::data.table(type = character(0),
+                                  stringency = character(0),
+                                  facet = character(0))
+    }
+    
+    for(i in 1:length(type)){
+      x@filters <- rbind(x@filters,
+                         data.table(type = type, stringency = stringency, facet = facet))
+    }
+  }
+  
+  return(x)
+}
 
 .heterozygosity <- function(x, mDat, method){
   # make x into a logical for heterozygous

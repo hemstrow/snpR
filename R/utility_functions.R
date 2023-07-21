@@ -15,19 +15,28 @@
 #'  SNPs to keep. Negative subscripts allowed.
 #'@param .samps numeric, default \code{1:ncol(x)}. Column numbers corresponding
 #'  to samples to keep. Negative subscripts allowed.
-#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep. Negative subscripts allowed.
-#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to
-#'  SNPs to keep. Negative subscripts allowed.
-#'@param ... Facet subsetting may be specified by providing the facet as an 
-#'  argument and then providing the levels to keep or remove. Setting
-#'  pop = "ASP", for example, would keep only samples in the "ASP" level of the
-#'  pop facet, and setting pop.fam = "ASP.A" would keep only samples the ASP
-#'  pop and the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL")
-#'  would remove samples in the ASP or PAL pops. Subsetting by 
-#'  multiple facets is supported, although negative and positive subscripts
-#'  cannot be mixed across sample or SNP facets. They may be mixed between the
-#'  two.
+#'@param i numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+#'  to keep. Negative subscripts allowed.
+#'@param j numeric, default \code{1:nrow(x)}. Row numbers corresponding to SNPs
+#'  to keep. Negative subscripts allowed.
+#'@param ... Facet subsetting may be specified by providing the facet as an
+#'  argument and then providing the levels to keep or remove. Setting pop =
+#'  "ASP", for example, would keep only samples in the "ASP" level of the pop
+#'  facet, and setting pop.fam = "ASP.A" would keep only samples the ASP pop and
+#'  the A fam. Negative subscripts are allowed: pop = -c("ASP", "PAL") would
+#'  remove samples in the ASP or PAL pops. Subsetting by multiple facets is
+#'  supported, although negative and positive subscripts cannot be mixed across
+#'  sample or SNP facets. They may be mixed between the two.
+#'@param .facets Character, default NULL. Sample facet to select by. Alternative
+#'  to direct specification as in \code{pop = "ASP"}.
+#'@param .subfacets Character, default NULL. Sample facet level matching a level
+#'  of the provided \code{.facets}. Alternative to direct specification as in
+#'  \code{pop = "ASP"}.
+#'@param .snp.facets Character, default NULL. SNP facet to select by.
+#'  Alternative to direct specification as in \code{chr = "groupIX"}.
+#'@param .snp.subfacets Character, default NULL. SNP facet level matching a
+#'  level of the provided \code{.snp.facets}. Alternative to direct
+#'  specification as in \code{chr = "groupIX"}.
 #'@param drop logical, default FALSE. Deprecated.
 #'
 #'@name subset_snpRdata
@@ -56,19 +65,33 @@
 #' # bracket operator, excluding first ten SNPs and only keeping pop = PAL,
 #' # fam = B
 #' stickSNPs[-c(1:10), pop.fam = c("PAL.B")]
+#' 
+#' # using the .facet etc arguments, useful when the facet is stored as an
+#' # object
+#' target_facet <- "pop"
+#' target_subfacet <- "ASP"
+#' subset_snpR_data(stickSNPs, 
+#'                  .facets = target_facet, 
+#'                  .subfacets = target_subfacet)
 NULL
 
 
 #' @export
 #' @describeIn subset_snpRdata subset_snpR_data
-subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
+subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .facets = NULL, .subfacets = NULL, .snp.facets = NULL, .snp.subfacets = NULL){
   #============extract facet info===============
   .argnames <- match.call()
   .argnames <- as.list(.argnames)
   .argnames <- .argnames[-1]
-  
-  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps"))
+
+  .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps", ".facets", ".subfacets", ".snp.facets", ".snp.subfacets"))
   if(length(.is.facet) > 0){
+    
+    if(any(!is.null(.facets), !is.null(.subfacets), 
+           !is.null(.snp.facets), !is.null(.snp.subfacets))){
+      stop("The '.facets', '.subfacets', '.snp.facets', or '.snp.subfacets' arguments cannot be used with arguments other than '.snps' or '.samps' (such as pop = 'ASP'). If you wish to subset using the 'facet = subfacet' approach, please do not use these arguments.\n")
+    }
+    
     facets <- names(.argnames)[.is.facet]
     
     # eval the facets
@@ -100,6 +123,16 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
     
     
   }
+  else if(any(!is.null(.facets), !is.null(.subfacets), 
+              !is.null(.snp.facets), !is.null(.snp.subfacets))){
+    return(.subset_snpR_data(x, 
+                             snps = .snps, 
+                             samps = .samps, 
+                             facets = .facets, 
+                             subfacets = .subfacets, 
+                             snp.facets = .snp.facets, 
+                             snp.subfacets = .snp.subfacets))
+  }
   else{
     facets <- NULL
   }
@@ -114,7 +147,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   # check facet types
   if(!is.null(facets)){
     if(any(facets %in% c("facet", "subfacet", "facets", "subfacets", "snp.facet", "snp.subfacet", "snp.subfacets", "snp.facets"))){
-      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments.\n")
+      stop("Facets and subfacets are now desginated directly using, for example, pop = c('my.pop1', 'my.pop2'), not using the 'facet', 'subfacet', etc arguments. If you wish to subset using the facet = 'pop', subfacet = 'ASP'-style approach, please use the '.facets', '.subfacets', '.snp.facets', or '.snp.subfacets' arguments.\n")
     }
     facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
     if(any(c("sample", "complex") %in% facets[[2]]) & !identical(.samps, 1:nsamps(x))){
@@ -305,8 +338,18 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
   nsampm <- sample.meta(x)[.samps,]
   
   nsnpm <- snp.meta(x)[.snps,]
-  return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
-                          sample.meta = nsampm, mDat = x@mDat))
+  
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
+                            sample.meta = nsampm, mDat = x@mDat,
+                            .skip_filters = TRUE))
+  }
+  else{
+    return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
+                            sample.meta = nsampm, mDat = x@mDat, .pass_filters = x@filters, 
+                            .skip_filters = TRUE))
+  }
 }
 
 
@@ -455,6 +498,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
                   snp.form = x@snp.form,
                   ploidy = .ploidy(x),
                   bi_allelic = .is.bi_allelic(x),
+                  filters = x@filters,
                   data.type = ifelse("data.type" %in% methods::slotNames(x), x@data.type, "genotypic"),
                   geno.tables = list(gs = x@geno.tables$gs[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
                                      as = x@geno.tables$as[x@facet.meta$.snp.id %in% snps,, drop = FALSE],
@@ -509,16 +553,19 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'passes the maf threshold, removing those individuals may cause the loci to no
 #'longer be polymorphic in the sample.
 #'
-#'To counter this, the "re_run" argument can be used to pass the data through a
-#'second filtering step after individuals are removed. By default, the "partial"
-#'re-run option is used, which re-runs only the non-polymorphic filter (if it
-#'was originally set). The "full" option re-runs all set filters. Note that
-#'re-running any of these filters may cause individuals to fail the individual
-#'filter after loci removal, and so subsequent tertiary re-running of the
-#'individual filters, followed by the loci filters, and so on, could be
-#'justified. This is not done automatically here.
+#'To counter this, the \code{re_run} argument can be used to pass the data
+#'through a second filtering step after individuals are removed. By default, the
+#'"partial" re-run option is used, which re-runs only the non-polymorphic filter
+#'(if it was originally set). The "full" option re-runs all set filters. Note
+#'that re-running any of these filters may cause individuals to fail the
+#'individual filter after loci removal, and so subsequent tertiary re-running of
+#'the individual filters, followed by the loci filters, and so on, could be
+#'justified. This is not done automatically here, however, if the
+#'\code{inds_first} option is selected to filter poorly sequenced individuals
+#'prior to applying loci filters, any re-run option will re-run individuals
+#'filters after the loci filters have been applied.
 #'
-#'Via the "maf_facets" argument, this function can filter by minor allele
+#'Via the \code{maf_facets} argument, this function can filter by minor allele
 #'frequencies in either \emph{all} samples or \emph{each level of a supplied
 #'sample specific facet and the entire dataset}. In the latter case, any SNPs
 #'that pass the maf filter in \emph{any} facet level are considered to pass the
@@ -527,7 +574,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'very different between populations and thus common alleles of interest in one
 #'population might be otherwise filtered out.
 #'
-#'The "hwe_facets" argument is the inverse of this: loci will be removed if they
+#'The \code{hwe_facets} argument is the inverse of this: loci will be removed if they
 #'fail the provided hwe filter in any facet level. In both cases, Facets should
 #'be provided as described in \code{\link{Facets_in_snpR}}.
 #'
@@ -566,20 +613,32 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ...){
 #'@param min_ind numeric between 0 and 1 or FALSE, default FALSE. Minimum
 #'  proportion of individuals in which a loci must be sequenced.
 #'@param min_loci numeric between 0 and 1 or FALSE, default FALSE. Minimum
-#'  proportion of SNPs at which an individual must be genotyped.
+#'proportion of SNPs at which an individual must be genotyped.
+#'@param inds_first logical, default FALSE. If TRUE, individuals will be
+#'  filtered out for missing data if that option is selected prior to loci being
+#'  filtered. Otherwise loci are filtered first.
+#'@param remove_garbage numeric between 0 and 1 or FALSE, default FALSE. Optionally
+#'  do a filter to remove very poorly sequenced individuals and loci
+#'  jointly before applying other filters. This can be used to reduce biases
+#'  caused by very bad loci/individuals prior to full filtering. This number
+#'  should be lower than either the \code{min_ind} or \code{min_loci} parameters
+#'  if those arguments are used and should generally be quite permissive to 
+#'  remove only truly bad loci or individuals.
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
 #'  automatically via several methods: \itemize{ \item{partial: } Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
 #'  initially. \item{full: } Re-runs the full filtering scheme (save for
-#'  min_loci).}
-#'@param maf_facets character or NULL, default NULL. Defines a sample facet
-#'  over which the minor allele frequency can be checked. SNPs will only fail
-#'  the maf filter if they fail in every level of every provided facet.
-#'@param hwe_facets character or NULL, default NULL. Defines a sample facet
-#'  over which the hwe filter can be checked. SNPs will fail the hwe filter if
-#'  they fail in any level of any provided facet.
+#'  min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+#'  FALSE will re-run the individual filter for missing data again after loci 
+#'  filtering.
+#'@param maf_facets character or NULL, default NULL. Defines a sample facet over
+#'  which the minor allele frequency can be checked. SNPs will only fail the maf
+#'  filter if they fail in every level of every provided facet.
+#'@param hwe_facets character or NULL, default NULL. Defines a sample facet over
+#'  which the hwe filter can be checked. SNPs will fail the hwe filter if they
+#'  fail in any level of any provided facet.
 #'@param non_poly logical, default TRUE. If TRUE, non-polymorphic loci will be
 #'  removed.
 #'@param bi_al logical, default TRUE. If TRUE, loci with more than two alleles
@@ -617,13 +676,15 @@ filter_snps <- function(x, maf = FALSE,
                         singletons = FALSE,
                         min_ind = FALSE,
                         min_loci = FALSE,
+                        inds_first = FALSE,
+                        remove_garbage = FALSE,
                         re_run = "partial", 
                         maf_facets = NULL,
                         hwe_facets = NULL,
                         non_poly = TRUE, 
                         bi_al = TRUE,
                         verbose = TRUE){
-  
+
   #==============do sanity checks====================
   if(singletons){
     warning("The singletons argument is depriceated. Please use mac = 1 instead!")
@@ -762,13 +823,36 @@ filter_snps <- function(x, maf = FALSE,
     }
   }
   
+  if(!isFALSE(remove_garbage)){
+    if(!is.numeric(remove_garbage)){
+      stop("remove_garbage must be a numeric value.")
+    }
+    if(length(remove_garbage) != 1){
+      stop("remove_garbage must be a numeric vector of length 1.")
+    }
+    if(remove_garbage > 1 | remove_garbage < 0){
+      stop("remove_garbage is a minimum proportion of sequenced individuals/loci, and so must be between 0 and 1.\n")
+    }
+    
+    if(is.numeric(min_loci)){
+      if(min_loci <= remove_garbage){
+        stop("The min_loci threshold should be higher than the garbage removal threshold if supplied.\n")
+      }
+    }
+    if(is.numeric(min_ind)){
+      if(min_ind <= remove_garbage){
+        stop("The min_ind threshold should be higher than the garbage removal threshold if supplied.\n")
+      }
+    }
+  }
+  
   if(re_run != FALSE){
     if(re_run != "partial" & re_run != "full"){
       if(verbose){cat("re_run must be set to partial or full if not FALSE.\n")}
     }
   }
   
-  #==============set up, get values used later, clean up data a bit,define subfunctions==========
+  #==============set up, get values used later, clean up data a bit, define subfunctions==========
   if(verbose){cat("Initializing...\n")}
   
   #get headers
@@ -797,6 +881,7 @@ filter_snps <- function(x, maf = FALSE,
         bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
         vio.snps[which(bi)] <- T
+        x <- .update_filters(x, "bi-allelic", NA, NA)
       }
       
       if(non_poly){
@@ -804,6 +889,7 @@ filter_snps <- function(x, maf = FALSE,
         np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(np), " bad loci\n"))}
         vio.snps[which(np)] <- T
+        x <- .update_filters(x, "non-polymorphic", NA, NA)
       }
     }
     
@@ -814,6 +900,8 @@ filter_snps <- function(x, maf = FALSE,
       mi <- (nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < min_ind
       vio.snps[which(mi)] <- T
       if(verbose){cat(paste0("\t", sum(mi), " bad loci\n"))}
+      
+      x <- .update_filters(x, "poorly sequenced loci--min_ind", min_ind, ".base")
     }
     
     #========minor allele frequency, both total and by pop. Should only run if bi_al = TRUE.=========
@@ -889,6 +977,12 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat(paste0("\t", length(maf.vio), " bad loci\n"))}
         vio.snps[maf.vio] <- T
       }
+      
+      
+      # update note-keeping
+      x <- .update_filters(x, "Minor Allele Frequency--maf", maf, 
+                           ifelse(is.null(maf_facets) | isFALSE(maf_facets), ".base", maf_facets))
+      
     }
     
     #========mac/mgc========================================
@@ -907,6 +1001,7 @@ filter_snps <- function(x, maf = FALSE,
         
         vio.snps[mgc.vio] <- T
         
+        x <- .update_filters(x, "minor genotype count--mgc", mgc, ".base")
       }
       else{
         if(verbose){cat("Filtering low minor genotype counts.\n")}
@@ -917,6 +1012,8 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
         
         vio.snps[mac.vio] <- T
+        
+        x <- .update_filters(x, "minor allele count--mac", mac, ".base")
       }
     }
     #========hf_hets. Should only run if bi_al = TRUE.==========
@@ -931,6 +1028,8 @@ filter_snps <- function(x, maf = FALSE,
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
       if(verbose){cat(paste0("\t", sum(het_f), " bad loci\n"))}
       vio.snps[which(het_f)] <- T
+      
+      x <- .update_filters(x, "high-frequency heterozygotes--hf_hets", hf_hets, ".base")
     }
     
     #========hwe violation======================================
@@ -1029,6 +1128,10 @@ filter_snps <- function(x, maf = FALSE,
         
         vio.snps[bad.loci] <- TRUE
       }
+      
+      x <- .update_filters(x, "Hardy-Weinburg Proportions--hwe", 
+                           paste0(hwe, ", excess side = ", hwe_excess_side),
+                           ifelse(is.null(hwe_facets) | isFALSE(hwe_facets), ".base", hwe_facets))
     }
     
     #==========remove violating loci==================
@@ -1057,25 +1160,65 @@ filter_snps <- function(x, maf = FALSE,
       if(any(old.facets != ".base")){
         x <- .add.facets.snpR.data(x, old.facets[-which(old.facets == ".base")])
       }
-      
-      warning("Any calculated stats will be removed, since individuals were filtered out!\n")
     }
+    
+    x <- .update_filters(x, "poorly sequenced individuals--min_loci", min_loci, NA)
+    
     return(list(x = x, rejects = rejects))
   }
   
   #==========================call the functions as requested.==================
-  if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-    if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+  if(is.numeric(remove_garbage)){
+    if(verbose){cat("Removing garbage individuals/loci.\n")}
+    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    rejects <- which(mcounts/nrow(x) < remove_garbage)
     
-    # run the filter
-    x <- filt_by_loci()
+    mi <- x@geno.tables$wm[,colnames(x@geno.tables$wm) == mDat] # for backwards compat
+    mi <- which((nrow(x@sample.meta) - mi)/nrow(x@sample.meta) < remove_garbage)
     
-    if(nrow(x) == 0 | is.null(nrow(x))){
-      stop("No loci remain after filters.")
+    if(length(rejects) > 0){
+      if(length(mi) > 0){
+        .make_it_quiet(x <- x[-mi,-rejects])
+      }
+      else{
+        .make_it_quiet(x <- x[,-rejects])
+      }
+    }
+    else if(length(mi) > 0){
+      .make_it_quiet(x <- x[-mi,])
     }
     
-    if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    
+    if(verbose){cat("\tRemoved", length(mi), "bad loci.\n\tRemoved", length(rejects), "bad individuals.\n")}
+    
+    if(nrow(x) == 0){
+      stop("No SNPs passed garbage removal.\n")
+    }
+    if(ncol(x) == 0){
+      stop("No loci passed garbage removal.\n")
+    }
+    
+    rm(mi, mcounts, rejects)
+    
+    x <- .update_filters(x, "poorly sequenced individuals and loci jointly--remove_garbage",
+                         remove_garbage, NA)
   }
+  
+  if(!inds_first){
+    if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+      if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+      
+      # run the filter
+      x <- filt_by_loci()
+      
+      if(nrow(x) == 0 | is.null(nrow(x))){
+        stop("No loci remain after filters.")
+      }
+      
+      if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    }
+  }
+  
   
   # run the minimum sequenced loci filter
   if(min_loci){
@@ -1088,27 +1231,59 @@ filter_snps <- function(x, maf = FALSE,
     else{
       x <- x$x
       if(verbose){cat("\tEnding individuals:", ncol(x), "\n")}
-      if(re_run != FALSE){
-        if(verbose){cat("Re-filtering loci...\n")}
-        
-        if(re_run == "partial"){
-          maf <- FALSE
-          hf_hets <- FALSE
-          min_ind <- FALSE
-          bi_al <- FALSE
-          hwe <- FALSE
-          mac <- 0
-          singletons <- FALSE
-        }
-        if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
-          x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
-          if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
-        }
-        else{
-          if(verbose){cat("\tNo variables to re-fitler.\n")}
-        }
+    }
+  }
+  
+  if(inds_first){
+    if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+      if(verbose){cat("Filtering loci. Starting loci:", nrow(x), "\n")}
+      
+      # run the filter
+      x <- filt_by_loci()
+      
+      if(nrow(x) == 0 | is.null(nrow(x))){
+        stop("No loci remain after filters.")
+      }
+      
+      if(verbose){cat("\tEnding loci:", nrow(x), "\n")}
+    }
+  }
+  
+  
+  if(re_run != FALSE){
+    if(!inds_first){
+      if(verbose){cat("Re-filtering loci...\n")}
+      
+      if(re_run == "partial"){
+        maf <- FALSE
+        hf_hets <- FALSE
+        min_ind <- FALSE
+        bi_al <- FALSE
+        hwe <- FALSE
+        mac <- 0
+        singletons <- FALSE
+      }
+      if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
+        x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.
+        if(verbose){cat("\tFinal loci count:", nrow(x), "\n")}
+      }
+      else{
+        if(verbose){cat("\tNo variables to re-fitler.\n")}
       }
     }
+    else{
+      if(verbose){cat("Re-Filtering individuals. Starting individuals:", ncol(x), "\n")}
+      x <- min_loci_filt()
+      if(length(x$rejects) == 0){
+        if(verbose){cat("No individuals removed.\n")}
+        x <- x$x
+      }
+      else{
+        x <- x$x
+        if(verbose){cat("\tEnding individuals:", ncol(x), "\n")}
+      }
+    }
+    
   }
   
   # return results
@@ -2556,13 +2731,24 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   # VCF
   if(output == "vcf"){
     # meta
-    vcf_meta <- c("##fileformat=VCFv4.0",
-                  paste0("##fileDate=", gsub("-", "", Sys.Date())),
-                  "##source=snpR",
-                  '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
-                  '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
-                  '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'
-    )
+    r <- try(x@filters, silent = TRUE)
+    if(methods::is(r, "try-error")){
+      .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
+                                   paste0("##fileDate=", gsub("-", "", Sys.Date())),
+                                   "##source=snpR",
+                                   '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+                                   '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'))
+    }
+    else{
+      .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
+                                   paste0("##fileDate=", gsub("-", "", Sys.Date())),
+                                   "##source=snpR",
+                                   '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
+                                   '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
+                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
+                                   paste0("##snpR filter_snps=", filters(x))))
+    }
     
     # meta columns
     data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
@@ -2594,8 +2780,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata[is.na(rdata)] <- "./."
     rdata <- as.data.frame(rdata)
     rdata <- cbind(data_meta, rdata)
-    rdata <- list(meta = vcf_meta, genotypes = rdata)
     
+    # reorder by chr then pos
+    rdata <- dplyr::arrange(rdata, `#CHROM`, `POS`)
+    rdata <- list(meta = vcf_meta, genotypes = rdata)
   }
   
   #======================return the final product, printing an outfile if requested.=============
@@ -3169,7 +3357,7 @@ gap_snps <- function(x, facet = NULL, n){
 
 #' Gather citations for methods used with a snpRdata object
 #' 
-#' snpR will automatically track the methods used when for calculations on a
+#' snpR will automatically track the methods used for calculations on a
 #' snpRdata object. Using \code{\link{citations}} on that object will provide
 #' details on the the methods used, and can optionally write a .bib bibtex
 #' formatted library containing citations for these methods.
@@ -3267,26 +3455,89 @@ citations <- function(x, outbib = FALSE, return_bib = FALSE){
   }
 }
 
+#' Report on filters used on a snpRdata object.
+#' 
+#' snpR will automatically track the methods used on a
+#' snpRdata object. Using \code{\link{filters}} on that object will provide
+#' details on the the filters used.
+#'
+#' Printed outputs contain the filters used in the order they were applied
+#' alongside the filtering stringency and any facets applied over, if 
+#' applicable. Note that some output formats from \code{format_snps}, like the
+#' \code{vcf} format, will notes on the filters used as well.
+#'
+#' @param x snpRdata object
+#'
+#' @author William Hemstrom
+#' 
+#' @return Prints easily human readable results to the console and also returns
+#' a more machine readable string.
+#' 
+#' @export
+#' @examples 
+#' # filter the data
+#' x <- filter_snps(stickSNPs, 
+#'                  min_ind = 0.75, 
+#'                  min_loci = 0.75,
+#'                  maf = 0.1,
+#'                  maf_facets = "pop")
+#' 
+#' # fetch the filters used
+#' filters(x)
+filters <- function(x){
+  r <- try(x@filters, silent = TRUE)
+  if(methods::is(r, "try-error")){
+    cat("This is an old `snpRdata` object that did not track filters.\n")
+  }
+  else{
+    line <- character(0)
+    for(i in 1:nrow(r)){
+      cat("Filter:", r[[1]][i], "\n")
+      line_part <- unlist(strsplit(r[[1]][i], "--"))
+      line_part <- line_part[length(line_part)]
+      
+      
+      if(!is.na(r[[2]][i])){
+        cat("\tStringency:", r[[2]][i], "\n")
+        line_part <- c(line_part, paste0("=", r[[2]][i]))
+      }
+      
+      
+      if(!is.na(r[[3]][i])){
+        cat("\tFacet:", r[[3]][i], "\n")
+        line_part <- c(line_part, paste0(",facet=", r[[3]][i]))
+      }
+      cat("\n")
+      
+      line <- c(line, paste0(line_part, collapse = ""))
+    }
+  }
+  
+  return(paste0(line, collapse = ";"))
+}
 
 #' Summarize possible snpRdata object facet options
-#' 
-#' List either all of the possible SNP and sample facets (if called with no facets)
-#' or all of the categories for each requested facet.
-#' 
+#'
+#' List either all of the possible SNP and sample facets (if called with no
+#' facets) or all of the categories for each requested facet.
+#'
+#' If called with sample facets, returns a table of counts of each category
+#' otherwise returns a vector of categories.
+#'
 #' @param x snpRdata object
 #' @param facets character. Categorical metadata variables by which to break up
-#'  analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the 
-#'  possible SNP and sample facets will be listed. If facets are instead provided,
-#'  the \emph{categories} for each facet will instead be listed.
-#' 
+#'   analysis. See \code{\link{Facets_in_snpR}} for more details. If NULL, the
+#'   possible SNP and sample facets will be listed. If facets are instead
+#'   provided, the \emph{categories} for each facet will instead be listed.
+#'
 #' @export
 #' @author William Hemstrom
 #' @return A named list containing either the possible SNP and sample facets or
 #'   the categories for all of the requested facets.
-#' @examples 
+#' @examples
 #' # list available facets
 #' summarize_facets(stickSNPs)
-#' 
+#'
 #' # return details for a few facets
 #' summarize_facets(stickSNPs, c("pop", "chr.pop", "fam.pop"))
 summarize_facets <- function(x, facets = NULL){
@@ -3318,10 +3569,11 @@ summarize_facets <- function(x, facets = NULL){
     names(out) <- facets[[1]]
     for(i in 1:length(out)){
       if(facets[[2]][i] == "snp"){
-        out[[i]] <- .get.task.list(x, facets[[1]][i])[,4]
+        out[[i]] <- unique(.get.task.list(x, facets[[1]][i])[,4])
       }
       else if(facets[[2]][i] == "sample"){
         out[[i]] <- .paste.by.facet(sample.meta(x), unlist(.split.facet(facets[[1]][i])))
+        out[[i]] <- table(out[[i]])
       }
       else if(facets[[2]][i] == "complex"){
         split_facet <- unlist(.split.facet(facets[[1]][i]))
@@ -3333,12 +3585,10 @@ summarize_facets <- function(x, facets = NULL){
         snp_part <- lapply(snp_part, unique)
         
         opts <- expand.grid(c(samp_part, snp_part))
-        out[[i]] <- .paste.by.facet(opts, split_facet)
+        out[[i]] <- unique(.paste.by.facet(opts, split_facet))
       }
     }
   }
-  
-  out <- lapply(out, unique)
   
   return(out)
 }

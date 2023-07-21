@@ -1,3 +1,43 @@
+# snpR 1.2.8
+
+## Features
+* Added support for the temporal method into `calc_ne()`.
+
+## Major
+* Added internal filter tracking for easy look-up and reporting of applied filters. Applied filters can be returned using `filters()`. `format_snps()` with `vcf` output option will now automatically append these filters to the vcf header. Added two internal options to `import.snpR.data` to allow for this and fixed a bit of un-needed redundancy in the process.
+
+### Minor
+* Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.
+* Added the `remove_garbage` argument to `filter_snps()` to allow users to quickly remove very poorly sequenced loci and individuals (jointly, so neither first) prior to applying all of the other filters. This could remove bias caused by very bad loci or samples causing other loci or samples to appear more poorly sequenced than they actually are.
+* Adjusted the behavior of `read_structure()` to omit non-biallelic loci instead of erroring. This will be changed later to optionally allow them once non-biallelic support is fully added.
+* Added back in some old behavior to `subset_snpR_data()` to allow for naming the facet and subfacets to subset with using the `.facets`, `.subfacets`, `.snp.facets`, and `.snp.subfacets` arguments. These were previously used instead of the current syntax but were more cumbersome and replaced. They have been re-added because they are useful when the facet is stored as an object and then called (due to pipeline scripts, etc.), which is otherwise not easily done. See the documentation for `subset_snpR_data()` for examples. This older syntax is not available via the bracket operator (`[`).
+* Added expected heterozygosity to the single-SNP statistics run by `do_bootstraps()`.
+* Added $F_{IS}$ to `calc_basic_snp_stats()`.
+* Added bootstrap-by-loci support to `calc_fis()`.
+* Changed `summarize_facets()` to return a table of counts of options when provided sample facets.
+
+## Documentation
+* Fixed typos in the documentation for the `keep_components` argument of `calc_fis()`.
+* Fixed a cutt-off description of the `facet` argument for `calc_tree()`.
+
+## Bug fixes
+* Fixed a bug in `plot_manhattan()` where facet specification was not working correctly for data plotted from a `data.frame` rather than a `snpRdata` object directly.
+* Fixed a bug where `plot_pairwise_ld()` in parallel with the `CLD` option would error after completion.
+* Fixed an error in `dartR` object import, which should have been natively handled by `convert_genlight()` due to the use of ` %in% class()` instead of `methods::is()`. Fixed a few other uses of `%in% class()` to stave off future errors.
+* Added an `mDat` argument to `read_structure()` to support slighly unorthodox structure files with different missing
+data identifiers. Note that most structure datasets will have `-9`, which is still the default.
+* Added an `na.omit()` call to marker name parsing with `read_structure()` to support oddly formatted data with tabs or spaces separating locus names.
+* Fixed a bug in `calc_ne()` where errors midway through computation would sometime result in the working
+directory being changed to `./NeEstimator`.
+* Fixed a bug where complex facets (locus and sample joint facets) weren't being handled correctly by `calc_pairwise_fst()`. The fix isn't perfectly efficient if multiple facets referring to the same sample facet are all passed at once due to bootstrapping needs.
+* Fixed a bug in the sorting of output VCF files from `format_snps()`. `snpR` sorts internally by position first (since the chromosome column doesn't have a fixed name and is supplied as a facet to functions), but VCF files should sort by `#CHROM`.
+* Fixed a bug with `run_random_forest()` where non-polymorphic SNPs would cause an error.
+* Fixed some logic on the `dapc` `plot_clusters()` option sanity checks.
+* Fixed a bug where `read_genepop()` would error with space-delimited genepop files.
+
+## Errata
+* Removed `dartR` dependency in favor of re-distribution of `gl2gi()` function for reading in `genlight` objects, with author permission.
+
 # snpR 1.2.7.1 -- hotfix
 
 ## Bug fixes

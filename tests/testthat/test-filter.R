@@ -144,7 +144,7 @@ test_that("min_ind", {
 #===========min_loci=====================
 test_that("min_loci", {
   # correct removed
-  expect_warning(check <- filter_snps(.internal.data$test_snps, min_loci = .9, re_run = FALSE, verbose = FALSE), "individuals were filtered out")
+  check <- filter_snps(.internal.data$test_snps, min_loci = .9, re_run = FALSE, verbose = FALSE)
   check <- row.names(sample.meta(check))
   
   comp <- colSums(.internal.data$test_snps != "NN")/nrow(.internal.data$test_snps)
@@ -196,6 +196,41 @@ test_that("mgc",{
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
+#==========garbage=========================
+test_that("garbage",{
+  expect_error(filter_snps(stickSNPs, min_ind = .5, remove_garbage = .8), "min_ind threshold should be higher")
+  expect_error(filter_snps(stickSNPs, min_loci = .5, remove_garbage = .8), "min_loci threshold should be higher")
+  expect_error(filter_snps(stickSNPs, remove_garbage = 1.2), "between 0 and 1")
+  expect_error(filter_snps(stickSNPs, min_ind = .5, remove_garbage = ".8"), "must be a numeric")
+  
+
+  # for our test data this ends up not changing anything, so just check for the reports corresponding to correct removal.
+  td <- capture.output(y <- filter_snps(stickSNPs, min_ind = .8, min_loci = .8, remove_garbage = .7))
+  expect_true(any(grepl("Removing garbage individuals/loci", td)))
+  expect_true(any(grepl("Removed 2 bad individuals", td)))
+  expect_true(any(grepl("Removed 4 bad loci", td)))
+  expect_true(any(grepl("Starting individuals: 98", td)))
+  expect_true(any(grepl("Starting loci: 96", td)))
+  
+})
+
+#==========filter order=========================
+test_that("ind_first",{
+  # check for the reports corresponding to correct removal order
+  td <- capture.output(y <- filter_snps(stickSNPs, maf = .07, min_ind = .8, min_loci = .8))
+  ind.call.line <- grep("^Filtering individuals. Starting individuals",td)
+  loc.call.line <- grep("^Filtering loci. Starting loci",td)
+  expect_true(ind.call.line > loc.call.line)
+  expect_true(any(grepl("^Re-filtering loci", td)))
+  
+  # check for the reports corresponding to correct removal order
+  td <- capture.output(y <- filter_snps(stickSNPs, maf = .07, min_ind = .8, min_loci = .8, inds_first = TRUE))
+  ind.call.line <- grep("^Filtering individuals. Starting individuals",td)
+  loc.call.line <- grep("^Filtering loci. Starting loci",td)
+  expect_true(ind.call.line < loc.call.line)
+  expect_true(any(grepl("^Re-Filtering individuals", td)))
+})
+
 #==========errors==========================
 test_that("errors",{
   td <- .internal.data$test_snps[-c(1:2, 5, 8, 9:10)]
@@ -203,5 +238,20 @@ test_that("errors",{
   td <- .internal.data$test_snps[,-c(7:8)]
   expect_error(filter_snps(td, min_loci = .99, non_poly = FALSE, verbose = FALSE), "No individuals passed filters.")
 })
+
+#==========filter reporting================
+test_that("reporting",{
+  .make_it_quiet(x <- filter_snps(stickSNPs, 
+                                  min_ind = .75, 
+                                  min_loc = .75, maf = .1, 
+                                  maf_facets = "pop",
+                                  hwe = .01, 
+                                  hwe_excess_side = "heterozygote",
+                                  hwe_facets = "pop"))
+  .make_it_quiet(res <- filters(x))
+  
+  expect_equal(res, "bi-allelic;bi-allelic;non-polymorphic;min_ind=0.75,facet=.base;maf=0.1,facet=pop;hwe=0.01, excess side = heterozygote,facet=pop;min_loci=0.75;non-polymorphic")
+})
+
 
 

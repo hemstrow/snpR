@@ -22,8 +22,7 @@ calc_tree(
 \item{facets}{character or NULL, default NULL. Facets for which to calculate
 genetic distances, as described in \code{\link{Facets_in_snpR}}. If snp or
 base level facets are requested, distances will be between individuals.
-Otherwise, distances will be between the levels of the sample facets. If
-bootstraps are requested, SNPs will}
+Otherwise, distances will be between the levels of the sample facets.}
 
 \item{distance_method}{character, default "Edwards". Name of the method to
 use. Options: \itemize{\item{Edwards} Angular distance as described in

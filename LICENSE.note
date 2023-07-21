@@ -3,3 +3,4 @@ The snpR package as a whole is distributed under GPLv3. It includes other open s
 * pophelper: GPLv3
 * snpR: written by package authors
 * ade4: GPLv3
+* dartR: gl2gi function by author permission (B Gruber)
