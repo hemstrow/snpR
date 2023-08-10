@@ -60,11 +60,19 @@ test_that("ho", {
 
 
 test_that("private", {
-  tdm <- calc_private(tdm, "pop")
-  expect_true(all(unlist(.check_calced_stats(tdm, c("pop"), "pa"))))
-  pa <- get.snpR.stats(tdm, "pop", "private")$single
+  x <- calc_private(stickSNPs[pop = c("ASP", "OPL")], "pop", rarefaction = FALSE)
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "pa"))))
+  pa <- get.snpR.stats(x, "pop", "private")
   
-  expect_equal(pa$pa, c(0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)) # hand calced
+  expect_equal(which(pa$single$pa_uncorrected == 1), c(37, 98, 108, 122, 138, 156, 166, 180, 188, 193)) # hand calced
+  expect_equal(pa$weighted.means$total_pa_uncorrected, c(2, 8)) # hand calced
+  
+  
+  
+  x <- calc_private(x, "pop", rarefaction = TRUE)
+  pa2 <- get.snpR.stats(x, "pop", "private")
+  expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
+  expect_true(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
 })
 
 test_that("hwe", {
@@ -231,4 +239,14 @@ test_that("tajimas_d",{
   expect_true(all(paste0("fam.pop.", lapply(strsplit(sf$chr.fam.pop, "\\."), function(x){paste0(x[2], ".", x[3], ".chr.", x[1])})) %in% levs_pasted))
   expect_true(all(c("global_ws.theta", "global_ts.theta", "global_D", "global_num_seg") %in% colnames(tsdc$weighted.means)))
 })
-  
+
+test_that("private", {
+  x <- calc_allelic_richness(stickSNPs[pop = c("ASP", "OPL")], "pop")
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "richness"))))
+  ar <- get.snpR.stats(x, "pop", "allelic_richness")
+ 
+  expect_true("richness" %in% colnames(ar$single))
+  expect_equal(round(ar$weighted.means$weighted_mean_richness, 3), 
+               c(1.893, 1.885))
+})
+

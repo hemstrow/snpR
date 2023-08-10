@@ -3216,3 +3216,45 @@ is.snpRdata <- function(x){
   
   return(x)
 }
+
+# g: number to rarefact to
+.richness_parts <- function(gs, private = TRUE, alleles){
+  facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- NULL
+  # equations from https://doi.org/10.1023/B:COGE.0000041021.91777.1a
+  # Nij is the table
+  # Nj is the rowsums
+  # m is the row sum of != 0
+
+  # step: need to calculate g for each row
+  as <- gs$as
+  rm(gs); gc();
+  as <- data.table::as.data.table(as)
+  al_cols <- alleles
+  as[,.sum := rowSums(.SD), .SDcols = al_cols] # sums for each row
+  as[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
+  
+  Nj <- as$.sum
+  g <- as$.g
+  meta <- .fix..call(as[,-..al_cols])
+  as <- as.matrix(.fix..call(as[,..al_cols]))
+  Qijg <- choose(Nj - as, g)/choose(Nj, g) # eqn 2a
+  Pijg <- 1 - Qijg # eqn 2b
+  
+  alpha_g <- matrixStats::rowSums2(Pijg)
+  if(private){ # eqn 4
+    meta <- cbind(meta, data.table::as.data.table(Qijg))
+    meta[, paste0(al_cols, "_p") := lapply(.SD, prod), .SDcols = c(al_cols), by = .(facet, .snp.id)] # product across all populations
+    p_al_cols <- paste0(al_cols, "_p")
+    
+    
+    # next, need to divide out the value for each, since it's actually the product across all save this population
+    acs <- as.matrix(.fix..call(meta[,..al_cols]))
+    prods <- as.matrix(.fix..call(meta[,..p_al_cols]))
+    pi_g <- rowSums(Pijg*(prods/acs), na.rm = TRUE)
+    pi_g[which(is.nan(alpha_g))] <- NaN # add back in the NaN values where our sample size was too small in one pop. This got dropped in the above na.rm, which was needed due to the 0/0 prob.
+    return(list(richness = alpha_g, pa = pi_g))
+  }
+  else{
+    return(list(richness = alpha_g, g = g))
+  }
+}

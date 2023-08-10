@@ -705,7 +705,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   stats <- tolower(stats)
   aliases <- c(ibd = "isolation_by_distance",
                tsd = "tajimas_d",
-               d = "tajimas_d")
+               d = "tajimas_d",
+               ar = "allelic_richness",
+               richness = "allelic_richness")
   
   need_unaliased <- which(stats %in% names(aliases))
   

@@ -8,6 +8,7 @@
 \alias{calc_private}
 \alias{calc_maf}
 \alias{calc_he}
+\alias{calc_allelic_richness}
 \title{Calculate standard single-SNP genetic statistics}
 \usage{
 calc_pi(x, facets = NULL)
@@ -16,7 +17,7 @@ calc_maf(x, facets = NULL)
 
 calc_ho(x, facets = NULL)
 
-calc_private(x, facets = NULL)
+calc_private(x, facets = NULL, rarefaction = TRUE)
 
 calc_hwe(
   x,
@@ -27,6 +28,8 @@ calc_hwe(
 )
 
 calc_he(x, facets = NULL)
+
+calc_allelic_richness(x, facets = NULL)
 }
 \arguments{
 \item{x}{snpRdata. Input SNP data.}
@@ -41,8 +44,8 @@ Uses a chi-squared test. } See details}
 
 \item{fwe_method}{character, default "BY". Type of Family-Wise Error
 correction (multiple testing correction) to use. For details and options,
-see \code{\link[stats]{p.adjust}}. If no correction is desired, set this argument
-to "none".}
+see \code{\link[stats]{p.adjust}}. If no correction is desired, set this
+argument to "none".}
 
 \item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall").
 How should Family-Wise Error correction (multiple testing correction) be
@@ -78,6 +81,8 @@ The data can be broken up categorically by sample metadata, as described in
 
 \item \code{calc_he()}: expected heterozygosity
 
+\item \code{calc_allelic_richness()}: allelic richness (standardized number of alleles per locus via rarefaction)
+
 }}
 \section{\eqn{\pi}}{
 
@@ -111,7 +116,14 @@ The data can be broken up categorically by sample metadata, as described in
 
 
  Determines if each SNP is a private allele across all levels in each sample
- facet. Will return an error if no sample facets are provided.
+ facet. Will return an error if no sample facets are provided. If rarefaction
+ is requested, the estimated number of private alleles will be calculated
+ according to Smith and Grassle (1977). Note that the standardized sample
+ size (\emph{g}) will vary across loci due to differences in sequencing
+ coverage at those loci, equal to the smallest number of alleles sequenced in
+ any population at that locus minus one. Instead of weighted averages, the
+ value stored in the \code{$weighted.means} slot in the returned value is
+ the total number of private alleles per population.
 }
 
 \section{hwe}{
@@ -125,6 +137,17 @@ The data can be broken up categorically by sample metadata, as described in
 
  For the exact test, code derived from
  \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
+}
+
+\section{allelic richness}{
+
+
+ Calculates the allelic richness, the estimated number of alleles per locus
+ standardized via rarefaction for sample size according to Hurlburt (1971).
+ Note that the standardized sample size (\emph{g}) will vary across loci
+ due to differences in sequencing coverage at those loci, equal to the 
+ smallest number of alleles sequenced in any population at that locus minus 
+ one. Weighted averages are weighted by \emph{g}.
 }
 
 \examples{
@@ -143,10 +166,14 @@ get.snpR.stats(x, c("pop", "pop.fam"))
 }
 }
 \references{
-Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American
- Journal of Human Genetics}
-
-Hohenlohe et al. (2010). \emph{PLOS Genetics}
+Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). 
+ \emph{American Journal of Human Genetics}
+ 
+ Hohenlohe et al. (2010). \emph{PLOS Genetics}.
+ 
+ Hurlburt (1971). \emph{Ecology}.
+ 
+ Smith and Grassle (1977). \emph{Biometrics}
 }
 \author{
 William Hemstrom

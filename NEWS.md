@@ -1,15 +1,21 @@
 # snpR 1.2.9
 
+## Features
 
+### Major
+* Added `calc_allelic_richness()` to calculate allelic richness via rarefaction according to [Hurlburt 1971](https://doi.org/10.2307/1934145).
+* Adjusted `calc_private()` to detect private alleles with rarefaction according to [Smith and Grassle 1977](https://doi.org/10.2307/2529778) by default. This behavior can be controlled with the `rarefaction` argument if the raw
+private alleles are desired instead.
 
 
 # snpR 1.2.8
 
 ## Features
-* Added support for the temporal method into `calc_ne()`.
 
-## Major
+### Major
+* Added support for the temporal method into `calc_ne()`.
 * Added internal filter tracking for easy look-up and reporting of applied filters. Applied filters can be returned using `filters()`. `format_snps()` with `vcf` output option will now automatically append these filters to the vcf header. Added two internal options to `import.snpR.data` to allow for this and fixed a bit of un-needed redundancy in the process.
+
 
 ### Minor
 * Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.

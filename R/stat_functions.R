@@ -32,7 +32,14 @@
 #'@section private alleles:
 #'
 #'  Determines if each SNP is a private allele across all levels in each sample
-#'  facet. Will return an error if no sample facets are provided.
+#'  facet. Will return an error if no sample facets are provided. If rarefaction
+#'  is requested, the estimated number of private alleles will be calculated
+#'  according to Smith and Grassle (1977). Note that the standardized sample
+#'  size (\emph{g}) will vary across loci due to differences in sequencing
+#'  coverage at those loci, equal to the smallest number of alleles sequenced in
+#'  any population at that locus minus one. Instead of weighted averages, the
+#'  value stored in the \code{$weighted.means} slot in the returned value is
+#'  the total number of private alleles per population.
 #'
 #'@section hwe:
 #'
@@ -44,6 +51,15 @@
 #'
 #'  For the exact test, code derived from
 #'  \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
+#'  
+#'@section allelic richness:
+#'
+#'  Calculates the allelic richness, the estimated number of alleles per locus
+#'  standardized via rarefaction for sample size according to Hurlburt (1971).
+#'  Note that the standardized sample size (\emph{g}) will vary across loci
+#'  due to differences in sequencing coverage at those loci, equal to the 
+#'  smallest number of alleles sequenced in any population at that locus minus 
+#'  one. Weighted averages are weighted by \emph{g}.
 #'
 #'@param x snpRdata. Input SNP data.
 #'@param facets character. Categorical metadata variables by which to break up
@@ -54,8 +70,8 @@
 #'  Uses a chi-squared test. } See details
 #'@param fwe_method character, default "BY". Type of Family-Wise Error
 #'  correction (multiple testing correction) to use. For details and options,
-#'  see \code{\link[stats]{p.adjust}}. If no correction is desired, set this argument
-#'  to "none".
+#'  see \code{\link[stats]{p.adjust}}. If no correction is desired, set this
+#'  argument to "none".
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
 #'  How should Family-Wise Error correction (multiple testing correction) be
 #'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
@@ -72,9 +88,15 @@
 #'
 #'@author William Hemstrom
 #'
-#'@references Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). \emph{American
-#'  Journal of Human Genetics}
-#'@references Hohenlohe et al. (2010). \emph{PLOS Genetics}
+#'@references 
+#'  Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005). 
+#'  \emph{American Journal of Human Genetics}
+#'  
+#'  Hohenlohe et al. (2010). \emph{PLOS Genetics}.
+#'  
+#'  Hurlburt (1971). \emph{Ecology}.
+#'  
+#'  Smith and Grassle (1977). \emph{Biometrics}
 #'
 #' @examples
 #' # base facet
@@ -1482,7 +1504,8 @@ calc_ho <- function(x, facets = NULL){
 
 #'@export
 #'@describeIn calc_single_stats find private alleles
-calc_private <- function(x, facets = NULL){
+calc_private <- function(x, facets = NULL, rarefaction = TRUE){
+  facet <- subfacet <- NULL
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
     # temp <- tail(gs$as)
@@ -1539,10 +1562,35 @@ calc_private <- function(x, facets = NULL){
     .make_it_quiet(x <- .add.facets.snpR.data(x, facets))
   }
   
-  out <- .apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
-  colnames(out)[ncol(out)] <- "pa"
+  # run with or without rarefaction
+  if(rarefaction){
+    out <- .apply.snpR.facets(x, facets, "meta.gs", .richness_parts, case = "ps.pf", alleles = colnames(x@geno.tables$as))
+    colnames(out)[which(colnames(out) == "pa")] <- "pa_corrected"
+    out$richness <- NULL
+    sdc <- c("pa_corrected")
+  }
+  else{
+    out <- .apply.snpR.facets(x, facets, "meta.gs", func, case = "ps.pf")
+    out <- data.table::as.data.table(out)
+    colnames(out)[ncol(out)] <- "pa_uncorrected"
+    sdc <- c("pa_uncorrected")
+  }
+  
   x <- .merge.snpR.stats(x, out)
+  
+  totals <- out[, sum(.SD, na.rm = TRUE), .SDcols = sdc, by = .(facet, subfacet)]
+  colnames(totals)[ncol(totals)] <- paste0("total_", sdc)
+  totals$snp.facet <- ".base"
+  totals$snp.subfacet <- ".base"
+  
   x <- .update_calced_stats(x, facets, "pa", "snp")
+  
+  x <- .merge.snpR.stats(x, totals, "weighted.means")
+  
+  if(rarefaction){
+    x <- .update_citations(x, "smithSamplingPropertiesFamily1977", stats = "private alleles", "private alleles via rarefaction")
+  }
+  
   return(x)
 }
 
@@ -5343,4 +5391,34 @@ calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
   }
   
   
+}
+
+#'@export
+#'@describeIn calc_single_stats allelic richness (standardized number of alleles per locus via rarefaction)
+calc_allelic_richness <- function(x, facets = NULL){
+  ..keep.cols <- facet <- subfacet <- NULL
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
+  x <- .add.facets.snpR.data(x, facets)
+  
+  # run
+  ar <- .apply.snpR.facets(x, fun = .richness_parts, facets, req = "meta.gs", private = FALSE, alleles = colnames(x@geno.tables$as))
+  
+  # update
+  keep.cols <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "richness")
+  x <- .merge.snpR.stats(x, .fix..call(ar[,..keep.cols]))
+  
+  ## weighted means, weighting by g this time
+  wm <- ar[, weighted.mean(richness, g, na.rm = TRUE), by = .(facet, subfacet)]
+  colnames(wm)[ncol(wm)] <- "weighted_mean_richness"
+  wm$snp.facet <- wm$snp.subfacet <- ".base"
+  x <- .merge.snpR.stats(x, wm, "weighted.means")
+  
+  # return
+  x <- .update_calced_stats(x, facets, "richness", "snp")
+  x <- .update_citations(x, "hurlbertNonconceptSpeciesDiversity1971", "allelic richness", "allelic richness via rarefaction")
+  return(x)
 }
