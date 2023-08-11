@@ -250,3 +250,33 @@ test_that("richness", {
                c(1.893, 1.885))
 })
 
+test_that("seg_sites", {
+  # rarefaction
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop")
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "seg_sites"))))
+  s <- get.snpR.stats(x, "pop", "seg_sites")
+  expect_true("g" %in% colnames(s$single))
+  expect_equal(round(s$weighted.means$seg_sites, 3), 
+               c(84.264, 86.622))
+  
+  # no rarefaction
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE)
+  s <- get.snpR.stats(x, "pop", "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               c(90, 96))
+  
+  # base facet, try to rarefact
+  expect_warning(x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")]), "There is no reason to conduct rarefaction")
+  expect_true(all(unlist(.check_calced_stats(x, ".base", "seg_sites"))))
+  s <- get.snpR.stats(x, stats =  "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               98)
+  
+  # base facet, don't try to rarefact
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], rarefaction = FALSE)
+  expect_true(all(unlist(.check_calced_stats(x, ".base", "seg_sites"))))
+  s <- get.snpR.stats(x, stats =  "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               98)
+})
+

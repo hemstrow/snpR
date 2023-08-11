@@ -78,6 +78,8 @@
 #'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
 #'  each subfacet is treated as a separate set of tests. \item{"overall":} All
 #'  tests are treated as a set.}
+#'@param rarefaction logical, default TRUE. Should the number of segregating
+#'  sites be estimated via rarefaction? See details.
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf calc_he
 #'
@@ -5408,7 +5410,7 @@ calc_allelic_richness <- function(x, facets = NULL){
   ar <- .apply.snpR.facets(x, fun = .richness_parts, facets, req = "meta.gs", private = FALSE, alleles = colnames(x@geno.tables$as))
   
   # update
-  keep.cols <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "richness")
+  keep.cols <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "g", "richness")
   x <- .merge.snpR.stats(x, .fix..call(ar[,..keep.cols]))
   
   ## weighted means, weighting by g this time
@@ -5420,5 +5422,110 @@ calc_allelic_richness <- function(x, facets = NULL){
   # return
   x <- .update_calced_stats(x, facets, "richness", "snp")
   x <- .update_citations(x, "hurlbertNonconceptSpeciesDiversity1971", "allelic richness", "allelic richness via rarefaction")
+  return(x)
+}
+
+#' Calculate the number of segregating sites.
+#'
+#' Calculates the segregating loci for each facet level with or without 
+#' rarefaction to account for differing sample size and missing data levels
+#' across populations.
+#' 
+#' Rarefaction is done by determining the probability of drawing at least one
+#' copy of each allele given a standardized sample size, \emph{g} for each loci.
+#' This is then summed across all loci to estimate the number of segregating
+#' sites.
+#' 
+#' Note that \emph{g} will vary across loci due to differences in sequencing
+#' coverage at those loci, equal to the smallest number of alleles sequenced in
+#' any population at that locus minus one.
+#' 
+#' @param x snpRdata object
+#' @param facets facets over which to calculate the number of segregating sites.
+#'   See \code{\link{Facets_in_snpR}} for details.
+#' @param rarefaction logical, default TRUE. Should the number of segregating
+#'   sites be estimated via rarefaction? See details.
+#'
+#' @return A snpRdata object with seg_sites merged into the weighted.means 
+#'   slot.
+#'   
+#' @author William Hemstrom
+#' @export
+#' 
+#' @examples
+#' # base facet
+#' x <- calc_seg_sites(stickSNPs, rarefaction = FALSE)
+#' get.snpR.stats(x, stats = "seg_sites")$weighted.means
+#'
+#' # multiple facets
+#' x <- calc_seg_sites(stickSNPs, c("pop", "fam"))
+#' get.snpR.stats(x, c("pop", "fam"), 
+#'                stats = "seg_sites")$weighted.means
+#'
+calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
+  facet <- subfacet <- NULL
+  
+  #===========sanity checks============
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "none")
+  x <- .add.facets.snpR.data(x, facets)
+  
+  if(length(facets) == 1 & facets[1] == ".base"){
+    if(rarefaction){warning("There is no reason to conduct rarefaction for the number of segregating sites without facets. The number will instead be directly calculated.\n")}
+    rarefaction <- FALSE
+  }
+  
+  #===============run==================
+  if(rarefaction){
+    needed.facets <- .check_calced_stats(x, facets, "ar")
+    needed.facets <- facets[which(!unlist(needed.facets))]
+    if(length(needed.facets) > 0){
+      x <- calc_allelic_richness(x, facets)
+    }
+    
+    needed.facets <- .check_calced_stats(x, facets, "maf")
+    needed.facets <- facets[which(!unlist(needed.facets))]
+    if(length(needed.facets) > 0){
+      x <- calc_maf(x, facets)
+    }
+    
+    # calculate
+    res <- get.snpR.stats(x, facets, c("richness", "maf"))$single
+    res <- data.table::as.data.table(res)
+    res[,prob_seg := 1 - ((maf^g) + ((1 - maf)^g))]
+    res$prob_seg[which(res$g < 1)] <- NA
+    
+    totals <- res[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
+    colnames(totals)[3] <- "seg_sites"
+    totals$snp.facet <- ".base"
+    totals$snp.subfacet <- ".base"
+    
+    # publish?
+    # x <- .update_citations(x, "hurlbertNonconceptSpeciesDiversity1971", "allelic richness", "allelic richness via rarefaction")
+  }
+  
+  else{
+    needed.facets <- .check_calced_stats(x, facets, "prop_poly")
+    needed.facets <- facets[which(!unlist(needed.facets))]
+    if(length(needed.facets) > 0){
+      x <- calc_prop_poly(x, facets)
+    }
+    
+    totals <- get.snpR.stats(x, facets, "prop_poly")$weighted.means
+    totals$seg_sites <- totals$prop_poly*nsnps(x)
+    totals$prop_poly <- NULL
+  }
+  
+  
+  
+  #===========update===============
+  x <- .merge.snpR.stats(x, totals, "weighted.means")
+  
+  # return
+  x <- .update_calced_stats(x, facets, "seg_sites", "snp")
+  
   return(x)
 }

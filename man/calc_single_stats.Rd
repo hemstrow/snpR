@@ -37,6 +37,9 @@ calc_allelic_richness(x, facets = NULL)
 \item{facets}{character. Categorical metadata variables by which to break up
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
+\item{rarefaction}{logical, default TRUE. Should the number of segregating
+sites be estimated via rarefaction? See details.}
+
 \item{method}{character, default "exact". Defines the method to use for
 calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
 Uses the exact test as described in Wigginton et al (2005). \item{chisq: }

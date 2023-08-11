@@ -3252,9 +3252,10 @@ is.snpRdata <- function(x){
     prods <- as.matrix(.fix..call(meta[,..p_al_cols]))
     pi_g <- rowSums(Pijg*(prods/acs), na.rm = TRUE)
     pi_g[which(is.nan(alpha_g))] <- NaN # add back in the NaN values where our sample size was too small in one pop. This got dropped in the above na.rm, which was needed due to the 0/0 prob.
-    return(list(richness = alpha_g, pa = pi_g))
+    return(list(richness = alpha_g, pa = pi_g, g = g))
   }
   else{
+    alpha_g[which(g < 2)] <- NaN
     return(list(richness = alpha_g, g = g))
   }
 }

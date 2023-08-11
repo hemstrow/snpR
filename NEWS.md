@@ -6,6 +6,7 @@
 * Added `calc_allelic_richness()` to calculate allelic richness via rarefaction according to [Hurlburt 1971](https://doi.org/10.2307/1934145).
 * Adjusted `calc_private()` to detect private alleles with rarefaction according to [Smith and Grassle 1977](https://doi.org/10.2307/2529778) by default. This behavior can be controlled with the `rarefaction` argument if the raw
 private alleles are desired instead.
+* Added `calc_seg_sites()` to calculate the number of segregating sites, optionally via rarefaction by an in-house approach (that will probably be published in a small note if we cannot find it documented elsewhere.)
 
 
 # snpR 1.2.8
