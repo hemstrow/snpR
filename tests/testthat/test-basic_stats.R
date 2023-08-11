@@ -72,7 +72,7 @@ test_that("private", {
   x <- calc_private(x, "pop", rarefaction = TRUE)
   pa2 <- get.snpR.stats(x, "pop", "private")
   expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
-  expect_true(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
+  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
 })
 
 test_that("hwe", {
@@ -240,7 +240,7 @@ test_that("tajimas_d",{
   expect_true(all(c("global_ws.theta", "global_ts.theta", "global_D", "global_num_seg") %in% colnames(tsdc$weighted.means)))
 })
 
-test_that("private", {
+test_that("richness", {
   x <- calc_allelic_richness(stickSNPs[pop = c("ASP", "OPL")], "pop")
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "richness"))))
   ar <- get.snpR.stats(x, "pop", "allelic_richness")
