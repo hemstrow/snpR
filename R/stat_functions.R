@@ -5461,7 +5461,6 @@ calc_allelic_richness <- function(x, facets = NULL){
 #' x <- calc_seg_sites(stickSNPs, c("pop", "fam"))
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
-#'
 calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
   facet <- subfacet <- NULL
   
