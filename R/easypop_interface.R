@@ -16,7 +16,7 @@ run_easypop <- function(nloci = 100, two_sexes = TRUE, mating_system = "random",
                         save_pedigress = FALSE,
                         outfiles = "easypop_from_snpR",
                         easypop_path = "/usr/bin/easypop.revised.windows.exe"){
-  browser()
+  #browser()
   
   # write the prompt file--running interactively to generate this will error via system on windows...
   

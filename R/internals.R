@@ -2581,7 +2581,7 @@ is.snpRdata <- function(x){
 # @param x matrix, genotypes or other character states
 # @param method character, default Edwards. Dist method.
 .get_dist <- function(x, method = "Edwards"){
-  browser()
+  #browser()
   if(method == "Edwards"){
     x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
     nloc <- ncol(x)
