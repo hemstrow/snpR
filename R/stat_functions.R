@@ -3790,7 +3790,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'
 #' If a sample facet is requested, distances are calculated via code adapted
 #' from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
-#' alongside the tree-building and distance methods Available methods:
+#' alongside the tree-building and distance methods. Available methods:
 #' \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
 #' \item{Nei: } Nei's (1978) genetic distance measure.}
 #'
@@ -5427,18 +5427,22 @@ calc_allelic_richness <- function(x, facets = NULL){
 
 #' Calculate the number of segregating sites.
 #'
-#' Calculates the segregating loci for each facet level with or without 
+#' Calculates the number segregating loci for each facet level with or without
 #' rarefaction to account for differing sample size and missing data levels
 #' across populations.
-#' 
+#'
 #' Rarefaction is done by determining the probability of drawing at least one
-#' copy of each allele given a standardized sample size, \emph{g} for each loci.
-#' This is then summed across all loci to estimate the number of segregating
-#' sites.
-#' 
+#' copy of each allele given a standardized sample size, \emph{g}, given the
+#' observed genotype frequencies at each locus. Using the observed genotype
+#' frequencies ensures that this is not biased by deviations from Hardy-Weinburg
+#' equilibrium. This is then summed across all loci to get the expected number
+#' of segregating sites for each population/subfacet.
+#'
 #' Note that \emph{g} will vary across loci due to differences in sequencing
-#' coverage at those loci, equal to the smallest number of alleles sequenced in
-#' any population at that locus minus one.
+#' coverage at those loci, equal to the smallest number of genotypes sequenced
+#' in any population at that locus minus one.
+#' 
+#' Note no sample-specific facet is requested, rarefaction will not be used.
 #' 
 #' @param x snpRdata object
 #' @param facets facets over which to calculate the number of segregating sites.
@@ -5479,31 +5483,27 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
   
   #===============run==================
   if(rarefaction){
-    needed.facets <- .check_calced_stats(x, facets, "ar")
-    needed.facets <- facets[which(!unlist(needed.facets))]
-    if(length(needed.facets) > 0){
-      x <- calc_allelic_richness(x, facets)
-    }
+    matches <- which(x@facet.meta$facet %in% facets)
+    homs <- which(substr(colnames(x@geno.tables$gs), 1, x@snp.form/2) ==
+                    substr(colnames(x@geno.tables$gs), (x@snp.form/2) + 1, x@snp.form))
     
-    needed.facets <- .check_calced_stats(x, facets, "maf")
-    needed.facets <- facets[which(!unlist(needed.facets))]
-    if(length(needed.facets) > 0){
-      x <- calc_maf(x, facets)
-    }
+    gs <- x@geno.tables$gs[matches,homs]
+    gs <- data.table::as.data.table(gs)
+    gs$.sum <- rowSums(gs) # sums for each row
+    gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
+    gs[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
     
-    # calculate
-    res <- get.snpR.stats(x, facets, c("richness", "maf"))$single
-    res <- data.table::as.data.table(res)
-    res[,prob_seg := 1 - ((maf^g) + ((1 - maf)^g))]
-    res$prob_seg[which(res$g < 1)] <- NA
+    hom_probs <- x@geno.tables$gs[matches, homs]/(gs$.sum^gs$.g)
+    gs$prob_seg <- 1 - rowSums(hom_probs)
+    gs$prob_seg[gs$.g < 1] <- NA
     
-    totals <- res[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
+    totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
     colnames(totals)[3] <- "seg_sites"
     totals$snp.facet <- ".base"
     totals$snp.subfacet <- ".base"
     
     # publish?
-    # x <- .update_citations(x, "hurlbertNonconceptSpeciesDiversity1971", "allelic richness", "allelic richness via rarefaction")
+    x <- .update_citations(x, "hemstromSnpRUserFriendly2023", "seg_sites", "number of segregating sites via rarefaction")
   }
   
   else{

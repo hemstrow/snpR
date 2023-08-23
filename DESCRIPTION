@@ -76,6 +76,7 @@ Collate:
     'bootstrapping_functions.R'
     'colony_interface.R'
     'dataset_documentation.R'
+    'easypop_interface.R'
     'import_functions.R'
     'import_wrappers.R'
     'internals.R'

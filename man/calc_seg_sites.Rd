@@ -20,19 +20,23 @@ A snpRdata object with seg_sites merged into the weighted.means
   slot.
 }
 \description{
-Calculates the segregating loci for each facet level with or without 
+Calculates the number segregating loci for each facet level with or without
 rarefaction to account for differing sample size and missing data levels
 across populations.
 }
 \details{
 Rarefaction is done by determining the probability of drawing at least one
-copy of each allele given a standardized sample size, \emph{g} for each loci.
-This is then summed across all loci to estimate the number of segregating
-sites.
+copy of each allele given a standardized sample size, \emph{g}, given the
+observed genotype frequencies at each locus. Using the observed genotype
+frequencies ensures that this is not biased by deviations from Hardy-Weinburg
+equilibrium. This is then summed across all loci to get the expected number
+of segregating sites for each population/subfacet.
 
 Note that \emph{g} will vary across loci due to differences in sequencing
-coverage at those loci, equal to the smallest number of alleles sequenced in
-any population at that locus minus one.
+coverage at those loci, equal to the smallest number of genotypes sequenced
+in any population at that locus minus one.
+
+Note no sample-specific facet is requested, rarefaction will not be used.
 }
 \examples{
 # base facet
