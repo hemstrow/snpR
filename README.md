@@ -103,6 +103,7 @@ A CRAN version should be available soon.
       ratios within individuals.
   - `calc_ne()`: Effective population size.
   - `calc_prop_poly()`: The proportion of polymorphic loci.
+  - `calc_seg_sites()`: The number of segregating (polymorphic) loci.
   - `calc_maf()`: Minor allele frequencies, calculated automatically
     when any facet operations are performed.
   - `calc_private()`: Private alleles across facet levels.
