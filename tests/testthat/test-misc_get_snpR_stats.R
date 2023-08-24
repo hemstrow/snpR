@@ -36,7 +36,7 @@ test_that("summarize_facets",{
   
 })
 
-test_that("bad facet request with duplicates"{
+test_that("bad facet request with duplicates",{
   
   meta <- sample.meta(stickSNPs)
   meta$dup_test <- "ASP"
