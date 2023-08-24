@@ -256,7 +256,7 @@ test_that("seg_sites", {
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "seg_sites"))))
   s <- get.snpR.stats(x, "pop", "seg_sites")
   expect_equal(round(s$weighted.means$seg_sites, 3), 
-               c(91.824, 94.567))
+               c(88.946, 88.321))
   
   # no rarefaction
   x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE)

@@ -1297,7 +1297,7 @@ is.snpRdata <- function(x){
       return(".base")
     }
   }
-
+  
   
   # remove the facet parts as requested.
   facets <- .split.facet(facets)
@@ -1384,6 +1384,33 @@ is.snpRdata <- function(x){
                                       facets[[i]][j], 
                                       "' cannot be used as a facet level since it contains: \n\t", 
                                       paste0(bad.chars.rep[bad], collapse = "\n\t ")))}
+    }
+    
+    # check for duplicates in our multi-part facets (also slows down but helps catch errors)
+    if(length(facets[[i]]) > 0){
+      d <- vector("list", 0)
+      for(j in 1:length(facets[[i]])){
+        if(facets[[i]][j] %in% colnames(x@snp.meta)){
+          d[length(d) + 1] <- x@snp.meta[,facets[[i]][j], drop = FALSE]
+          names(d)[length(d)] <- facets[[i]][j]
+        }
+        else if(facets[[i]][j] %in% colnames(x@sample.meta)){
+          d[length(d) + 1] <- x@sample.meta[,facets[[i]][j], drop = FALSE]
+          names(d)[length(d)] <- facets[[i]][j]
+        }
+      }
+      
+      uniques <- lapply(d, unique)
+      uniques <- unlist(uniques)
+      if(any(duplicated(uniques))){
+        dups <- sort(uniques[which(duplicated(uniques) | duplicated(uniques, fromLast = TRUE))])
+        msg <- unique(dups)
+        pst_msg <- "Some levels are duplicated across multiple facets.\nThis will cause issues if those facets are run during analysis.\nIssues:\n"
+        for(q in 1:length(msg)){
+          pst_msg <- paste0(pst_msg, "\nLevel: ", msg, "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
+        }
+        stop(pst_msg)
+      }
     }
     
     # update

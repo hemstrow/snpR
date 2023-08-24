@@ -5487,14 +5487,20 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
     homs <- which(substr(colnames(x@geno.tables$gs), 1, x@snp.form/2) ==
                     substr(colnames(x@geno.tables$gs), (x@snp.form/2) + 1, x@snp.form))
     
-    gs <- x@geno.tables$gs[matches,homs]
+    gs <- x@geno.tables$gs[matches,]
     gs <- data.table::as.data.table(gs)
     gs$.sum <- rowSums(gs) # sums for each row
     gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
     gs[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
     
-    hom_probs <- x@geno.tables$gs[matches, homs]/(gs$.sum^gs$.g)
-    gs$prob_seg <- 1 - rowSums(hom_probs)
+    # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
+    prob_top <- .suppress_specific_warning(rowSums(factorial(x@geno.tables$gs[matches, homs])/
+                          factorial(x@geno.tables$gs[matches, homs] - gs$.g), na.rm = TRUE), "NaNs produced")
+    prob_bottom <- (factorial(gs$.sum)/factorial(gs$.sum - gs$.g))
+    
+    # probability of getting anything else (some of each hom or any hets)
+    gs$prob_seg <- 1 - (prob_top/prob_bottom)
+      
     gs$prob_seg[gs$.g < 1] <- NA
     
     totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]

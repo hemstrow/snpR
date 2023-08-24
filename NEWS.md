@@ -8,6 +8,9 @@
 private alleles are desired instead.
 * Added `calc_seg_sites()` to calculate the number of segregating sites, optionally via rarefaction by an in-house approach (that will probably be published in a small note if we cannot find it documented elsewhere.)
 
+### Minor
+* Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
+* Checking facet requests for hybrid facets (like `pop.fam` or `pop.chr`) will now double check for any duplicates and error if detected. This is a bit slower but will be safer.
 
 # snpR 1.2.8
 
