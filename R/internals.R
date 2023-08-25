@@ -1401,13 +1401,16 @@ is.snpRdata <- function(x){
       }
       
       uniques <- lapply(d, unique)
-      uniques <- unlist(uniques)
+      un <- rep(names(uniques), lengths(uniques))
+      uniques <- unlist(uniques, use.names = FALSE)
+      names(uniques) <- un
+      rm(un)
       if(any(duplicated(uniques))){
         dups <- sort(uniques[which(duplicated(uniques) | duplicated(uniques, fromLast = TRUE))])
         msg <- unique(dups)
         pst_msg <- "Some levels are duplicated across multiple facets.\nThis will cause issues if those facets are run during analysis.\nIssues:\n"
         for(q in 1:length(msg)){
-          pst_msg <- paste0(pst_msg, "\nLevel: ", msg, "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
+          pst_msg <- paste0(pst_msg, "\nLevel: ", msg[q], "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
         }
         stop(pst_msg)
       }

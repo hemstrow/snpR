@@ -90,18 +90,19 @@ NULL
   
   
   # warn if anything repeated across sample level factors
-  uniques <- lapply(object@sample.meta, unique)
-  uniques <- c(uniques, lapply(object@snp.meta, unique))
-  uniques <- uniques[-which(names(uniques) == ".sample.id")]
-  uniques <- uniques[-which(names(uniques) == ".snp.id")]
-  uniques <- unlist(uniques)
+  uniques <- lapply(object@sample.meta[,-which(names(object@sample.meta) == ".sample.id"), drop = FALSE], unique)
+  uniques <- c(uniques, lapply(object@snp.meta[,-which(names(object@snp.meta) == ".snp.id"), drop = FALSE], unique))
+  un <- rep(names(uniques), lengths(uniques))
+  uniques <- unlist(uniques, use.names = FALSE)
+  names(uniques) <- un
+  rm(un)
   if(any(duplicated(uniques))){
     
     dups <- sort(uniques[which(duplicated(uniques) | duplicated(uniques, fromLast = TRUE))])
     msg <- unique(dups)
     pst_msg <- "Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n"
     for(q in 1:length(msg)){
-      pst_msg <- paste0(pst_msg, "\nLevel: ", msg, "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
+      pst_msg <- paste0(pst_msg, "\nLevel: ", msg[q], "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
     }
     warns <- c(warns, pst_msg)
   }
