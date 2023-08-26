@@ -100,7 +100,7 @@ test_that("facet error reporting",{
   snpm$test2 <- NULL
   
   # dupliates
-  expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm), "ome levels are duplicated.+Level: ASP\tin facets: pop1, dup_test, dup_test2")
+  expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm), "ome levels are duplicated.+Level: ASP\tin facets: pop, dup_test, dup_test2")
   
 })
 
