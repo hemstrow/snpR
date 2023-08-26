@@ -1,8 +1,8 @@
 test_that("correct abba_baba", {
   x <- stickSNPs
   maf <- get.snpR.stats(x, ".base", stats = "maf")$single
-  snp.meta(x)$ref <- maf$major
-  snp.meta(x)$anc <- maf$minor
+  expect_warning(snp.meta(x)$ref <- maf$major, "duplicated")
+  expect_warning(snp.meta(x)$anc <- maf$minor, "duplicated")
 
   x <- calc_abba_baba(x, "pop.chr", "ASP", "UPD", "PAL", TRUE, sigma = 1000)
   r1 <- get.snpR.stats(x, "pop.chr", "abba_baba") # gets the per chr results

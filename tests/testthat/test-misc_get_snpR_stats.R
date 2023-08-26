@@ -46,7 +46,7 @@ test_that("bad facet request with duplicates",{
   expect_warning(test <- import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm))
   
   
-  expect_error(calc_pi(test, "pop.dup_test"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test, pop1")
-  expect_error(calc_pi(test, "pop.dup_test2"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test2, pop1")
+  expect_error(calc_pi(test, "pop.dup_test"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test, pop")
+  expect_error(calc_pi(test, "pop.dup_test2"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test2, pop")
   
 })

@@ -119,7 +119,7 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
     om <- snp.meta(x)
     om$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
     om$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
-    snp.meta(x) <- om
+    .suppress_specific_warning(snp.meta(x) <- om, "duplicated")
 
     if(fold == FALSE){
       warning("Without ancestral and derived character states, unfolded spectra will be misleading.\n")

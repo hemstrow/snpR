@@ -28,7 +28,7 @@ test_that("merging",{
   
   # correct merging
   ## merge favoring x
-  z <- merge_snpRdata(x, y, resolve_conflicts = "x")
+  expect_warning(z <- merge_snpRdata(x, y, resolve_conflicts = "x"), "duplicated")
   expect_equal(nrow(z), nrow(x) + 1)
   expect_equal(ncol(z), ncol(x) + 3)
   
@@ -37,7 +37,7 @@ test_that("merging",{
   expect_equivalent(comp2[1:3], genotypes(x)[1,1:3])
   
   ## merge favoring y
-  z <- merge_snpRdata(x, y, resolve_conflicts = "y")
+  expect_warning(z <- merge_snpRdata(x, y, resolve_conflicts = "y"), "duplicated")
   
   comp2 <- genotypes(z)[which(snp.meta(z)$chr == "groupVI" & snp.meta(z)$position == 212436),]
   expect_equivalent(comp2[101:103], c("GA", "GG", "NN"))
@@ -46,33 +46,33 @@ test_that("merging",{
   ## random favoring
   ## merge favoring y
   set.seed(1232)
-  z <- merge_snpRdata(x, y, resolve_conflicts = "random")
+  expect_warning(z <- merge_snpRdata(x, y, resolve_conflicts = "random"), "duplicated")
   
   comp2 <- genotypes(z)[which(snp.meta(z)$chr == "groupVI" & snp.meta(z)$position == 212436),]
-  comp2[1:3]
+  # comp2[1:3]
   
   expect_equivalent(comp2[101:103], c("GA", "GG", "NN"))
   expect_equivalent(comp2[1:3], c("GG", "GG", "AA")) # also check smart NN replacement!
   
   
   set.seed(1234)
-  z <- merge_snpRdata(x, y, resolve_conflicts = "random")
+  expect_warning(z <- merge_snpRdata(x, y, resolve_conflicts = "random"), "duplicated")
   
   comp2 <- genotypes(z)[which(snp.meta(z)$chr == "groupVI" & snp.meta(z)$position == 212436),]
-  comp2[1:3]
+  # comp2[1:3]
   
   expect_equivalent(comp2[101:103], c("GA", "GG", "NN"))
   expect_equivalent(comp2[1:3], c("AG", "GG", "AA")) # also check smart NN replacement!
   
   
   # all options
-  z <- merge_snpRdata(x, y, all.x.snps = FALSE, resolve_conflicts = "x")
+  expect_warning(z <- merge_snpRdata(x, y, all.x.snps = FALSE, resolve_conflicts = "x"), "duplicated")
   expect_equal(dim(z), c(2, 103))
   z <- merge_snpRdata(x, y, all.y.snps = FALSE, resolve_conflicts = "x")
   expect_equal(dim(z), c(100, 103))
   z <- merge_snpRdata(x, y, all.x.samples = FALSE, resolve_conflicts = "x")
   expect_equal(dim(z), c(101, 6))
-  z <- merge_snpRdata(x, y, all.y.samples = FALSE, resolve_conflicts = "x")
+  expect_warning(z <- merge_snpRdata(x, y, all.y.samples = FALSE, resolve_conflicts = "x"), "duplicated")
   expect_equal(dim(z), c(101, 100))
   z <- merge_snpRdata(x, y, all = FALSE, resolve_conflicts = "x")
   expect_equal(dim(z), c(1, 3))
@@ -102,7 +102,7 @@ test_that("merging errors",{
   x <- stickSNPs
   sample.meta(x)$ID <- 1:ncol(x)
   
-  z <- merge_snpRdata(x, y)
+  expect_warning(z <- merge_snpRdata(x, y), "duplicated")
   expect_equal(nrow(z), 102) # treats snps as no overlap
   expect_error(merge_snpRdata(x, y, all.x.snps = FALSE, all.y.snps = FALSE), "No matching snp metadata")
   
