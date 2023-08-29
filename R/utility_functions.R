@@ -2730,6 +2730,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   # VCF
   if(output == "vcf"){
+    maxes <- tapply(snp.meta(x)[,position], snp.meta(x)[,chr], max)
+    chr_opts <- unique(snp.meta(x)[,chr])
+    maxes <- maxes[match(chr_opts, names(maxes))]
+    chr_filt_lines <- paste0("##contig=<ID=", chr_opts, ",length=", maxes,">")
     # meta
     r <- try(x@filters, silent = TRUE)
     if(methods::is(r, "try-error")){
@@ -2738,7 +2742,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                                    "##source=snpR",
                                    '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
                                    '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
-                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">'))
+                                   '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
+                                   chr_filt_lines))
     }
     else{
       .make_it_quiet(vcf_meta <- c("##fileformat=VCFv4.0",
@@ -2747,7 +2752,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                                    '##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">',
                                    '##INFO=<ID=AC,Number=1,Type=Integer,Description="Allele Count">',
                                    '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
-                                   paste0("##snpR filter_snps=", filters(x))))
+                                   paste0("##snpR filter_snps=", filters(x)),
+                                   chr_filt_lines))
     }
     
     # meta columns
@@ -2788,6 +2794,9 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   #======================return the final product, printing an outfile if requested.=============
   if(outfile != FALSE){
+    osp <- options("scipen")$scipen
+    options(scipen = 999)
+    
     cat("Writing output file...\n")
     
     if(any(facets == ".base")){
@@ -2956,6 +2965,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     else{
       data.table::fwrite(rdata, outfile, quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
+    
+    options(scipen = osp)
+    
+    return(TRUE)
   }
   
   #return results
