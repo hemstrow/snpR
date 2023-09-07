@@ -3965,6 +3965,10 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = 
 #'  to break up plots. Must match facets for which Fst data has been previously
 #'  calculated via \code{\link{calc_pairwise_fst}}. 
 #'  See \code{\link{Facets_in_snpR}} for more details.
+#'@param facet.order character, default NULL. Optional order in which the
+#'  levels of the provided facet should appear on the plot, bottom to top/left
+#'  to right. If multiple facets are plotted, this must be a named list, named
+#'  by facet, otherwise a character vector. See examples.
 #'@param viridis.option character, default "inferno". Viridis color scale option
 #'  to use. Other color scales may be substituted by appending the
 #'  scale_color_continuous and scale_fill_continuous ggplot functions to the
@@ -4000,7 +4004,13 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = 
 #'# put labels in lower triangle
 #'plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2, lab_lower = TRUE) 
 #'
-plot_pairwise_fst_heatmap <- function(x, facets = NULL, 
+#'# provide facet orders
+#'plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+#'                          list(pop = c("PAL", "ASP", "UPD", 
+#'                                       "CLF", "SMR", "OPL"),
+#'                              fam = c("A", "B", "C", "D")),
+#'                          print_fst = TRUE, lab_lower = TRUE)
+plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
                                       viridis.option = "inferno", 
                                       print_fst = TRUE, mark_sig = FALSE,
                                       lab_lower = FALSE){
@@ -4023,12 +4033,34 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   }
   
   #============function=============
-  make_one_plot <- function(mean_fst){
+  make_one_plot <- function(mean_fst, facet.order = NULL){
     mean_fst <- as.data.table(mean_fst)
     mean_fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
-    levs <- unique(c(mean_fst$p1, mean_fst$p2))
-    mean_fst$p1 <- factor(mean_fst$p1, levs)
-    mean_fst$p2 <- factor(mean_fst$p2, levs)
+    
+    if(!is.null(facet.order)){
+      levs <- facet.order
+      if(!all(sort(unique(c(mean_fst$p1, mean_fst$p2))) == sort(facet.order))){
+        stop(paste0("Subfacets in provided facet.order do not exactly match all of those in the provided data for facet: ", 
+                    facets[i], ".\n")) # abuses lexical context, but easy.
+      }
+      
+      i1 <- match(mean_fst$p1, levs)
+      i2 <- match(mean_fst$p2, levs)
+      flip <- which(i1 > i2)
+      if(length(flip) > 0){
+        mean_fst[flip, c("p1", "p2") := .(p2, p1)]
+      }
+      
+      mean_fst$p1 <- factor(mean_fst$p1, levs)
+      mean_fst$p2 <- factor(mean_fst$p2, levs)
+    }
+    else{
+      levs <- unique(c(mean_fst$p1, mean_fst$p2))
+      mean_fst$p1 <- factor(mean_fst$p1, levs)
+      mean_fst$p2 <- factor(mean_fst$p2, levs)
+    }
+    
+
     if(!isFALSE(mark_sig)){
       if(!any(colnames(mean_fst) == "weighted_mean_fst_p")){
         mark_sig <- FALSE
@@ -4047,6 +4079,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
     if(print_fst){
       if(mark_sig){
         if(lab_lower){
+          p <- p +
+            ggplot2::scale_x_discrete(drop = FALSE) +
+            ggplot2::scale_y_discrete(drop = FALSE)
           p <- p + ggplot2::geom_label(ggplot2::aes(label = paste0(round(weighted_mean_fst, 4), sig), x = p2, y = p1), fill = "white", alpha = .5)
         }
         else{
@@ -4055,6 +4090,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
       }
       else{
         if(lab_lower){
+          p <- p +
+            ggplot2::scale_x_discrete(drop = FALSE) +
+            ggplot2::scale_y_discrete(drop = FALSE)
           p <- p + ggplot2::geom_label(ggplot2::aes(label = round(weighted_mean_fst, 4), x = p2, y = p1), fill = "white", alpha = .5)
         }
         else{
@@ -4064,6 +4102,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
     }
     else if(mark_sig){
       if(lab_lower){
+        p <- p +
+          ggplot2::scale_x_discrete(drop = FALSE) +
+          ggplot2::scale_y_discrete(drop = FALSE)
         p <- p + ggplot2::geom_label(data = mean_fst[which(mean_fst$sig == "*"),], 
                                      ggplot2::aes(label = sig, x = p2, y = p1), fill = "white", alpha = .5)
       }
@@ -4079,8 +4120,20 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   #============make plots===========
   plots <- vector("list", length(facets))
   names(plots) <- facets
+  if(!is.list(facet.order)){
+    if(length(facets) > 1){
+      stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list, see documentation.\n")
+    }
+    facet.order <- list(facet.order); 
+    names(facet.order) <- facets
+  }
+  else if(length(facet.order) != length(facets)){
+    stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list with no extra elements, see documentation.\n")
+  }
+  
+  
   for(i in 1:length(facets)){
-    plots[[i]] <- make_one_plot(get.snpR.stats(x, facets[i], "fst")$weighted.means)
+    plots[[i]] <- make_one_plot(get.snpR.stats(x, facets[i], "fst")$weighted.means, facet.order[[facets[i]]])
   }
   if(length(plots) == 1){plots <- plots[[1]]}
   

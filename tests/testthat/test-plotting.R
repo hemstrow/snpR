@@ -366,6 +366,43 @@ test_that("FST heatmap",{
   
   p2 <- plot_pairwise_fst_heatmap(fst, "pop", print_fst = FALSE)
   expect_true(!"label" %in% names(p2$labels))
+  
+  # lab ordering
+  fst <- calc_pairwise_fst(stickSNPs, c("pop", "fam"))
+  p3 <- plot_pairwise_fst_heatmap(fst, c("pop", "fam"), 
+                                  list(pop = c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"),
+                                       fam = c("A", "B", "C", "D")),print_fst = FALSE)
+  p3 <- lapply(p3, ggplot2::ggplot_build)
+  expect_equal(p3$pop$layout$panel_params[[1]]$y$get_labels(), c("ASP", "UPD", "CLF", "SMR", "OPL"))
+  expect_equal(p3$pop$layout$panel_params[[1]]$x$get_labels(), c("PAL", "ASP", "UPD", "CLF", "SMR"))
+  expect_equal(p3$fam$layout$panel_params[[1]]$y$get_labels(), c("B", "C", "D"))
+  expect_equal(p3$fam$layout$panel_params[[1]]$x$get_labels(), c("A", "B", "C"))
+  
+  # print below
+  fst <- calc_pairwise_fst(stickSNPs, c("pop", "fam"))
+  p3 <- plot_pairwise_fst_heatmap(fst, c("pop", "fam"), 
+                                  list(pop = c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"),
+                                       fam = c("A", "B", "C", "D")), lab_lower = TRUE)
+  
+  p3 <- lapply(p3, ggplot2::ggplot_build)
+  expect_equal(p3$pop$layout$panel_params[[1]]$y$get_labels(), c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"))
+  expect_equal(p3$pop$layout$panel_params[[1]]$x$get_labels(), c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"))
+  expect_equal(p3$fam$layout$panel_params[[1]]$y$get_labels(), c("A", "B", "C", "D"))
+  expect_equal(p3$fam$layout$panel_params[[1]]$x$get_labels(), c("A", "B", "C", "D"))
+  
+  # errs
+  expect_error(.suppress_specific_warning(plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+                                                                    list(pop = c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"),
+                                                                         fam = c("A", "B", "D")),print_fst = TRUE, lab_lower = TRUE), "longer object length"),
+               "Subfacets in provided facet.order do not exactly match all of those in the provided data for facet: fam.")
+  
+  expect_error(plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+                            c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"), print_fst = TRUE, lab_lower = TRUE),
+               "If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list, see documentation.")
+  
+  expect_error(plot_pairwise_fst_heatmap(x, c("pop"), 
+                                         list(c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"), c("A", "B", "C", "D")), print_fst = TRUE, lab_lower = TRUE),
+               "If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list with no extra elements, see documentation.\n")
 })
 
 
