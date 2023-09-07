@@ -53,7 +53,7 @@ Fst values and marks those with significant p-values.
 }
 \examples{
 # Calculate pairwise fst
-x <- calc_pairwise_fst(stickSNPs, "pop")
+x <- calc_pairwise_fst(stickSNPs, c("pop", "fam"))
 
 # plot
 plot_pairwise_fst_heatmap(x, "pop")
