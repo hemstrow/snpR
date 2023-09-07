@@ -391,16 +391,16 @@ test_that("FST heatmap",{
   expect_equal(p3$fam$layout$panel_params[[1]]$x$get_labels(), c("A", "B", "C", "D"))
   
   # errs
-  expect_error(.suppress_specific_warning(plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+  expect_error(.suppress_specific_warning(plot_pairwise_fst_heatmap(stickSNPs, c("pop", "fam"), 
                                                                     list(pop = c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"),
                                                                          fam = c("A", "B", "D")),print_fst = TRUE, lab_lower = TRUE), "longer object length"),
                "Subfacets in provided facet.order do not exactly match all of those in the provided data for facet: fam.")
   
-  expect_error(plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+  expect_error(plot_pairwise_fst_heatmap(stickSNPs, c("pop", "fam"), 
                             c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"), print_fst = TRUE, lab_lower = TRUE),
                "If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list, see documentation.")
   
-  expect_error(plot_pairwise_fst_heatmap(x, c("pop"), 
+  expect_error(plot_pairwise_fst_heatmap(stickSNPs, c("pop"), 
                                          list(c("PAL", "ASP", "UPD", "CLF", "SMR", "OPL"), c("A", "B", "C", "D")), print_fst = TRUE, lab_lower = TRUE),
                "If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list with no extra elements, see documentation.\n")
 })
