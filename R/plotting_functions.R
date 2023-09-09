@@ -138,7 +138,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   prep_hm_dat <- function(x, r = NULL){
 
     # remove columns and rows with no data
-    x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
+    x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y))), drop = FALSE]
 
     # set rownames as first column.
     x <- cbind(position = rownames(x), x)
