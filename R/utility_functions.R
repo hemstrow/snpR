@@ -2730,6 +2730,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   # VCF
   if(output == "vcf"){
+    pos <- `#CHROM` <- NULL
     maxes <- tapply(snp.meta(x)[,position], snp.meta(x)[,chr], max)
     chr_opts <- unique(snp.meta(x)[,chr])
     maxes <- maxes[match(chr_opts, names(maxes))]
@@ -2757,16 +2758,33 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     
     # meta columns
-    data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
-                            POS = snp.meta(x)[,position],
-                            ID = paste0("SNP_", 1:nrow(x)),
-                            REF = .get.snpR.stats(x)$major,
-                            ALT = .get.snpR.stats(x)$minor,
-                            QUAL = ".",
-                            FILTER = "PASS",
-                            INFO = paste0("NS=", .get.snpR.stats(x)$maj.count + .get.snpR.stats(x)$min.count,
-                                          ";AC=", .get.snpR.stats(x)$min.count),
-                            FORMAT = "GT")
+    if(all(c("REF", "ALT") %in% colnames(snp.meta(x)))){
+      cat("Pulling REF and ALT from snp.metadata. If this was defined elsewhere than in a source .vcf file, this may cause issues--please remove these columns from the snp.metadata and re-run in this case.\n")
+      data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
+                              POS = snp.meta(x)[,position],
+                              ID = paste0("SNP_", 1:nrow(x)),
+                              REF = snp.meta(x)$REF,
+                              ALT = snp.meta(x)$ALT,
+                              QUAL = ".",
+                              FILTER = "PASS",
+                              INFO = paste0("NS=", .get.snpR.stats(x)$maj.count + .get.snpR.stats(x)$min.count,
+                                            ";AC=", .get.snpR.stats(x)$min.count),
+                              FORMAT = "GT")
+    }
+    else{
+      data_meta <- data.frame(CHROM = snp.meta(x)[,chr],
+                              POS = snp.meta(x)[,position],
+                              ID = paste0("SNP_", 1:nrow(x)),
+                              REF = .get.snpR.stats(x)$major,
+                              ALT = .get.snpR.stats(x)$minor,
+                              QUAL = ".",
+                              FILTER = "PASS",
+                              INFO = paste0("NS=", .get.snpR.stats(x)$maj.count + .get.snpR.stats(x)$min.count,
+                                            ";AC=", .get.snpR.stats(x)$min.count),
+                              FORMAT = "GT")
+    }
+    
+    
     colnames(data_meta)[1] <- "#CHROM"
     malt <- which(data_meta$ALT == "N")
     mref <- which(data_meta$REF == "N")
@@ -2785,11 +2803,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata[rdata == 2] <- "1/1"
     rdata[is.na(rdata)] <- "./."
     rdata <- as.data.frame(rdata)
-    rdata <- cbind(data_meta, rdata)
-    
-    # reorder by chr then pos
-    rdata <- dplyr::arrange(rdata, `#CHROM`, `POS`)
-    rdata <- list(meta = vcf_meta, genotypes = rdata)
+
+    rdata <- list(meta = vcf_meta, genotypes = rdata, data_meta = data_meta)
   }
   
   #======================return the final product, printing an outfile if requested.=============
@@ -2907,8 +2922,73 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       data.table::fwrite(rdata$lh, paste0("lh_", outfile), quote = FALSE, col.names = T, sep = "\t", row.names = F)
     }
     else if(output == "vcf"){
-      writeLines(rdata$meta, outfile)
-      data.table::fwrite(rdata$genotypes, outfile, append = T, quote = F, sep = "\t", row.names = F, col.names = T)
+      if(length(facets) > 0){
+        facets <- .check.snpR.facet.request(x, facets, "none")
+        cat("\tWriting VCF file for each facet level.\t")
+        
+        # write per facet
+        for(i in 1:length(facets)){
+          # cat(snpR:::.console_hline())
+          # cat(i, "\n\n")
+          samp.facet <- .check.snpR.facet.request(x, facets[i])
+          if(samp.facet %in% x@facets){
+            x <- .add.facets.snpR.data(x, .check.snpR.facet.request(x, facets[i]))
+          }
+          
+          # write per facet level
+          task.list <- .get.task.list(x, facets[i])
+          for(j in 1:nrow(task.list)){
+            # cat(j, "\n")
+            # determine matching data
+            matches <- list(.fetch.snp.meta.matching.task.list(x, task.list[j,]),
+                            .fetch.sample.meta.matching.task.list(x, task.list[j,]))
+            
+            # outfile name
+            ofn <- task.list[j,c(2,4)]
+            if(any(ofn == ".base")) ofn <- ofn[-which(ofn == ".base")]
+            if(length(ofn) == 0){
+              ofn <- outfile
+            }
+            else{
+              ofn <- paste0(tools::file_path_sans_ext(outfile), "_", paste0(ofn, collapse = "_"), ".vcf")
+            }
+            
+            trm <- rdata$meta
+            contig_matches <- grep("contig", trm)
+            missing_contigs <- trm[contig_matches]
+            missing_contigs <- gsub("^##contig=<ID=", "", unlist(missing_contigs))
+            missing_contigs <- gsub(",length=.+$", "", missing_contigs)
+            missing_contigs <- which(!missing_contigs %in% snp.meta(x)[matches[[1]],chr])
+            if(length(missing_contigs) > 0){
+              trm <- trm[-contig_matches[missing_contigs]]
+            }
+            writeLines(trm, ofn)
+            
+            
+            data.table::fwrite(dplyr::arrange(cbind(rdata$data_meta[matches[[1]],], 
+                                                    rdata$genotypes[matches[[1]], matches[[2]]]), 
+                                              `#CHROM`, POS), 
+                               ofn, 
+                               append = T, 
+                               quote = F, 
+                               sep = "\t", 
+                               row.names = F,
+                               col.names = T)
+          }
+        }
+      }
+      else{
+        writeLines(rdata$meta, outfile)
+        data.table::fwrite(dplyr::arrange(cbind(rdata$data_meta,
+                                                rdata$genotypes), 
+                                          `#CHROM`, POS), 
+                           outfile, 
+                           append = T, 
+                           quote = F, 
+                           sep = "\t", 
+                           row.names = F, 
+                           col.names = T)
+      }
     }
     else if(output == "genalex"){
       wb <- openxlsx::createWorkbook(creator = "snpR")

@@ -12,10 +12,14 @@ private alleles are desired instead.
 * Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
 * Checking facet requests for hybrid facets (like `pop.fam` or `pop.chr`) will now double check for any duplicates and error if detected. This is a bit slower but will be safer.
 * Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
+* Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
 
 ## Bug Fixes
 * Fixed `format_snps()` to avoid any scientific notation. Added `contig` flags to the headers printed with `format = "vcf"`.
 * Fixed a bug in `plot_pairwise_ld_heatmap()` when comparing only two snps on a contig/chr/etc.
+
+## Known Bugs
+* `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.
 
 # snpR 1.2.8
 
