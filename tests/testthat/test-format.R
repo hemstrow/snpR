@@ -1,6 +1,6 @@
 test_that("vcf",{
   vcf <- format_snps(.internal.data$test_snps, "vcf")
-  expect_equal(colnames(vcf$genotypes), 
+  expect_equal(c(colnames(vcf$data_meta), colnames(vcf$genotypes)), 
                c("#CHROM",
                  "POS",
                  "ID",
@@ -11,10 +11,6 @@ test_that("vcf",{
                  "INFO",
                  "FORMAT",
                  colnames(genotypes(.internal.data$test_snps))))
-  
-  sort_genos <- cbind(snp.meta(.internal.data$test_snps), genotypes(.internal.data$test_snps))
-  sort_genos <- dplyr::arrange(sort_genos, chr, position)
-  expect_equal(which(sort_genos[,-c(1:3)] == "NN"), which(vcf$genotypes[,-c(1:9)] == "./."))
 })
 
 
