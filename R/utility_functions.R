@@ -1396,7 +1396,8 @@ filter_snps <- function(x, maf = FALSE,
 #'@param output Character, default "snpRdata". The desired output format, see
 #'  description for details.
 #'@param facets Character or NULL, default NULL. Facets over which to break up
-#'  data for some output formats, following the format described in
+#'  data for some output formats, such as within one file for \code{genepop} or
+#'  across multiple files for \code{vcf}, following the format described in
 #'  \code{\link{Facets_in_snpR}}.
 #'@param n_samp Integer or numeric vector, default NA. For structure or RAFM
 #'  outputs. How many random loci should be selected? Can either be an integer
