@@ -12,7 +12,7 @@ calc_pairwise_ld(
   par = FALSE,
   CLD = "only",
   use.ME = FALSE,
-  sigma = 0.0001,
+  sigma = 1e-04,
   verbose = FALSE
 )
 }

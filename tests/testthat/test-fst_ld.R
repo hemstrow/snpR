@@ -241,3 +241,19 @@ test_that("fis bootstrapping",{
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.subfacet == ".base"))
 })
+
+# test_that("global fst",{
+#   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc", global = TRUE)
+#   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+#   expect_equal(round(tdfst$pairwise$fst, 4), 
+#                round(c(0.034091, 0, -0.122941, 0, -0.09375, -0.026012, 
+#                        0.166667, 0.107143, -0.057692, -0.086957, 0.016548), 
+#                      4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+#   expect_equal(round(tdfst$weighted.means$weighted_mean_fst, 5), -0.00343) # hand calced due to weighting and ratio of averages approach
+#   
+#   # var comps
+#   expect_false(any(paste0("var_comp_", c("a", "b", "c")) %in% colnames(tdfst$pairwise))) # didn't ask for var comps
+#   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "wc", keep_components = TRUE)
+#   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+#   expect_true(all(paste0("var_comp_", c("a", "b", "c")) %in% colnames(tdfst$pairwise))) # did ask for var comps
+# })

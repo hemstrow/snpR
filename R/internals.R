@@ -2957,8 +2957,8 @@ is.snpRdata <- function(x){
 # @param nc If CV = coefficient of variation in sample size, nc = nbar*(1-(CV^2)/r)
 # @param iho ho for pop 1
 # @param jho ho for pop 2
-.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL){
-  if(r == 2){
+.per_all_f_stat_components <- function(intot = NULL, jntot = NULL, ps1 = NULL, ps2 = NULL, r, nbar, nc, iho = NULL, jho = NULL, ntotm = NULL, psm = NULL, hom = NULL){
+  if(r == 2 & !is.null(intot)){
     pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
     ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
     hbar <- ((intot*iho) + (jntot*jho))/(r*nbar) #average heterozygote frequencies
@@ -2967,6 +2967,11 @@ is.snpRdata <- function(x){
     pbar <- ps1 #average sample allele frequency
     ssq <- 0 #sample variance of allele frequencies
     hbar <- iho #average heterozygote frequencies
+  }
+  else if(r > 2 | (r == 2 & is.null(intot))){
+    pbar <- rowSums(ntotm * psm)/(r*nbar) #average sample allele frequency
+    ssq <- rowSums(ntotm*(psm-pbar)^2)/((r - 1)*nbar)
+    hbar <- rowSums(ntotm*hom)/(r*nbar)
   }
   
   

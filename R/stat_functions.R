@@ -569,6 +569,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'  number of SNPs called in a comparison (returned in the "nk" column from
 #'  \code{\link{get.snpR.stats}}) as weights within each population comparison.
 #'  Note that this is different than taking the weighted mean of a/(a + b + c)!
+#'@param global logical, default FALSE. If TRUE, global FST will be calculated
+#'  instead (across all subfacets simultaneously per facet). This is currently
+#'  in development and will not run.
 #'@param cleanup logical, default TRUE. If TRUE, any new files created during
 #'  FST calculation will be automatically removed.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
@@ -605,6 +608,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
                               zfst = FALSE,
                               fst_over_one_minus_fst = FALSE,
                               keep_components = FALSE,
+                              global = FALSE,
                               cleanup = TRUE,
                               verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
@@ -654,7 +658,18 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   method <- tolower(method)
   
+  if(method != "wc" & global){
+    stop("Only the WC method is currently supported for global FST.\n")
+  }
+  
   bi_allelic <- .is.bi_allelic(x)
+  
+  if(!bi_allelic & global){
+    stop("Global fst is currently not supported for global fst.\n")
+  }
+  if(global){
+    stop("Global fst is in development and not yet working correctly.\n")
+  }
   
   
   #============================subfunctions=========================
@@ -798,6 +813,82 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
     #===============others=====================
     data.table::setkey(x, subfacet, .snp.id) # sort the data
     
+    ##==============do global Fst if that is what is requested===============
+    if(global){
+      nt <- data.table::dcast(x[,rowSums(.SD), .SDcols = ac_cols, by = .(subfacet, .snp.id)], .snp.id ~ subfacet, value.var = "V1")
+      psm <- x[,.SD/rowSums(.SD), .SDcols = ac_cols, by = .(subfacet, .snp.id)]
+      hom <- psm
+      ntotm <- nt/2
+      ntotm[,1] <- nt[,1]
+      
+      
+      # if(!bi_allelic){
+      #   snp_form <- nchar(gc_colnames[1])/2
+      #   gc_colnames_1 <- substr(gc_colnames, 1, snp_form)
+      #   gc_colnames_2 <- substr(gc_colnames, snp_form + 1, snp_form*2)
+      # }
+      #else{
+        hom <- data.table::dcast(x, .snp.id ~ subfacet, value.var = "ho")
+
+      #}
+      
+      r <- length(pops) # number of comps
+      nbar <- rowMeans(ntotm[,-1]) #average sample size in individuals
+      CV <- matrixStats::rowSds(as.matrix(ntotm[,-1]))/nbar # coefficient of variation in sample size
+      nc <- nbar*(1-(CV^2)/r)
+      parts <- vector("list", length(ac_cols))
+      
+      out <- data.table::data.table(.snp.id = sort(unique(x$.snp.id)),
+                                    fst = 0,
+                                    a = 0,
+                                    b = 0,
+                                    c = 0)
+      
+      for(k in 1:length(ac_cols)){
+        psf_m <- dcast(psm, .snp.id ~ subfacet, value.var = colnames(psm)[k + 2])
+        
+        # need to determine per-allele hom
+        # if(!bi_allelic){
+        #   het_cols_containing_k <- which(xor(gc_colnames_1 == colnames(ps1_f)[k], gc_colnames_2 == colnames(ps1_f)[k])) # hets (xor) with this allele
+        #   tiho <- .fix..call(rowSums(idat[,..gc_cols][,..het_cols_containing_k])/intot)
+        #   tjho <- .fix..call(rowSums(jdat[,..gc_cols][,..het_cols_containing_k])/jntot)
+        # }
+        
+        # otherwise we have the ho already
+        absent <- which(rowSums(psf_m[,-1]) == 0)
+        thom <- hom
+        if(length(absent) != 0){
+          data.table::set(thom, absent, 2:ncol(thom), value = 0)
+        }
+        
+        parts[[k]] <- .per_all_f_stat_components(ntotm = ntotm[,-1], psm = psf_m[,-1], r = r, nbar = nbar, nc = nc, hom = thom[,-1])
+      }
+      
+      a <- matrix(unlist(purrr::map(parts, "a")), ncol = length(parts))
+      b <- matrix(unlist(purrr::map(parts, "b")), ncol = length(parts))
+      c <- matrix(unlist(purrr::map(parts, "c")), ncol = length(parts))
+      
+      data.table::set(out, j = "a", value = rowSums(a)) # write a
+      data.table::set(out, j = "b", value = rowSums(b)) # write b
+      data.table::set(out, j = "c", value = rowSums(c)) # write v
+      # Fst <- rowSums(a)/rowSums(a + b + c)
+      
+      out[,fst := a/(a + b + c)]
+      out <- merge(out, .fix..call(x[subfacet == pops[1],..meta_colnames]),
+                   by = ".snp.id")
+      
+      
+      out <- cbind(comparison = ".GLOBAL", out)
+      out$nk <- rowSums(nt[,-1])
+      
+      col.ord <- c("comparison", meta_colnames, "fst", "a", "b", "c", "nk")
+      out <- .fix..call(out[,..col.ord])
+      
+      return(out)
+    }
+    
+    
+    ##==============pairwise=================================================
     
     out <- data.table::as.data.table(matrix(NA, ncol = (length(pops)*(length(pops) - 1)/2), nrow = nrow(x)/length(pops)))
     #initialize pop comparison columns.
@@ -932,7 +1023,6 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   
   one_run <- function(x, method, facet, ofacet, g.filename, rac = NULL){
-
     other_facets <- .split.facet(ofacet)[[1]]
     other_facets <- other_facets[which(!other_facets %in% .split.facet(facet)[[1]])]
     
@@ -1107,7 +1197,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   colnames(real_wm)[which(colnames(real_wm) == "comparison")] <- "subfacet"
   x <- .merge.snpR.stats(x, real_wm, "weighted.means")
   
-  
+
   # merge the per-snp
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
   ## zfst and fst/1-fst
@@ -1156,6 +1246,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   return(x)
 }
+
 
 #' Calculate FIS for individual populations.
 #'
@@ -5492,17 +5583,21 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
     gs$.sum <- rowSums(gs) # sums for each row
     gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
     gs[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
+
+    top <- rowSums(choose(x@geno.tables$gs[matches, homs], gs$.g))
+    bottom <- choose(rowSums(x@geno.tables$gs[matches,]), gs$.g)
+    gs$prob_seg <- 1 - (top/bottom)
     
-    # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
-    prob_top <- .suppress_specific_warning(rowSums(factorial(x@geno.tables$gs[matches, homs])/
-                          factorial(x@geno.tables$gs[matches, homs] - gs$.g), na.rm = TRUE), "NaNs produced")
-    prob_bottom <- (factorial(gs$.sum)/factorial(gs$.sum - gs$.g))
-    
-    # probability of getting anything else (some of each hom or any hets)
-    gs$prob_seg <- 1 - (prob_top/prob_bottom)
-      
+    # # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
+    # prob_top <- .suppress_specific_warning(rowSums(factorial(x@geno.tables$gs[matches, homs])/
+    #                       factorial(x@geno.tables$gs[matches, homs] - gs$.g), na.rm = TRUE), "NaNs produced")
+    # prob_bottom <- (factorial(gs$.sum)/factorial(gs$.sum - gs$.g))
+    # 
+    # # probability of getting anything else (some of each hom or any hets)
+    # gs$prob_seg <- 1 - (prob_top/prob_bottom)
+    #   
     gs$prob_seg[gs$.g < 1] <- NA
-    
+
     totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
     colnames(totals)[3] <- "seg_sites"
     totals$snp.facet <- ".base"

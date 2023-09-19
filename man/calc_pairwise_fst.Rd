@@ -13,6 +13,7 @@ calc_pairwise_fst(
   zfst = FALSE,
   fst_over_one_minus_fst = FALSE,
   keep_components = FALSE,
+  global = FALSE,
   cleanup = TRUE,
   verbose = FALSE
 )
@@ -54,6 +55,10 @@ divided by the sum of the weighted means of "a", "b", and "c" using the
 number of SNPs called in a comparison (returned in the "nk" column from
 \code{\link{get.snpR.stats}}) as weights within each population comparison.
 Note that this is different than taking the weighted mean of a/(a + b + c)!}
+
+\item{global}{logical, default FALSE. If TRUE, global FST will be calculated
+instead (across all subfacets simultaneously per facet). This is currently
+in development and will not run.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, any new files created during
 FST calculation will be automatically removed.}
