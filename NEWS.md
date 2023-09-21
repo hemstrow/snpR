@@ -7,12 +7,16 @@
 * Adjusted `calc_private()` to detect private alleles with rarefaction according to [Smith and Grassle 1977](https://doi.org/10.2307/2529778) by default. This behavior can be controlled with the `rarefaction` argument if the raw
 private alleles are desired instead.
 * Added `calc_seg_sites()` to calculate the number of segregating sites, optionally via rarefaction by an in-house approach (that will probably be published in a small note if we cannot find it documented elsewhere.)
+* Added `calc_global_fst()` to calculate $F{ST}$ globally across all facet subfacets.
 
 ### Minor
 * Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
 * Checking facet requests for hybrid facets (like `pop.fam` or `pop.chr`) will now double check for any duplicates and error if detected. This is a bit slower but will be safer.
 * Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
 * Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
+
+## Documentation
+* Updated the readme to be a bit cleaner.
 
 ## Bug Fixes
 * Fixed `format_snps()` to avoid any scientific notation. Added `contig` flags to the headers printed with `format = "vcf"`.

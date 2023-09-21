@@ -2975,6 +2975,7 @@ is.snpRdata <- function(x){
   }
   
   
+  
   #equation parts used in both
   inner1 <- pbar*(1-pbar)
   inner2 <- ((r-1)/r)*ssq
@@ -2986,9 +2987,10 @@ is.snpRdata <- function(x){
   c <- .5*hbar
   
   # # browser()
-  # if(.print){
-  #   write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
+  # if(.print & !is.null(intot)){
+  #   saveRDS(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "test.RDS")
   # }
+  # else if(.print){browser()}
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same

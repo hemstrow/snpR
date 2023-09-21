@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.7.1-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.8.0001-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -35,7 +35,7 @@ remotes::install_github("hemstrow/snpR", build_vignettes = T, build_opts = c("--
 ```
 
 If you wish to try out the latest features or bug fixes, the dev version
-can be installed from [the dev branch on GitHub](https://github.com/hemstrow/snpR/tree/dev) as
+can be installed from [GitHub](https://github.com/hemstrow/snpR) as
 well:
 
 ``` r
@@ -70,7 +70,6 @@ A CRAN version should be available soon.
 - `summarize_facets()`: Summarized available facets.
 - `citations()`: Fetch citations for all methods used in calculations
   for a specific `snpRdata` object.
-- `filters()`: Fetch filtering history.
 - `check_duplicates()`: Check data for potentially duplicated samples.
 - `gap_snps()`: Select a SNP every *n* bases (simple physical LD
   filtering).
@@ -97,19 +96,19 @@ A CRAN version should be available soon.
   - `calc_pi()`: Nucleotide diversity.
   - `calc_ho()`: Observed heterozygosity.
   - `calc_he()`: Expected heterosygosity.
-  - `calc_hwe()`: HWE.
+  - `calc_hwe()`: Hardy-Weinburg equilibrium (HWE).
   - `calc_hs()`: Standardized individual heterozygosity.
     - `calc_het_hom_ratios()`: Alternative, raw heterozygote/homozygote
       ratios within individuals.
   - `calc_ne()`: Effective population size.
   - `calc_prop_poly()`: The proportion of polymorphic loci.
-  - `calc_seg_sites()`: The number of segregating (polymorphic) loci.
   - `calc_maf()`: Minor allele frequencies, calculated automatically
     when any facet operations are performed.
   - `calc_private()`: Private alleles across facet levels.
-  - `calc_genetic_distances()`: Genetic distances between individuals
-  - `calc_fis()`: FIS
-  - `calc_pairwise_fst()`: Pairwise FST between facet levels.
+  - `calc_genetic_distances()`: Genetic distances between individuals.
+  - `calc_fis()`: $F_{IS}$ (inbreeding coefficients).
+  - `calc_pairwise_fst()`: Pairwise $F_{ST}$ between facet levels.
+  - `calc_global_fst()`: Global $F_{ST}$ across facet levels.
   - `calc_pairwise_ld()`: Pairwise LD between SNPs.
   - `calc_abba_baba()`: ABBA/BABA tests.
 - Association:

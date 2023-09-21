@@ -511,13 +511,15 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 
 
 
-#'Pairwise FST from SNP data.
+#'FST from SNP data.
 #'
 #'\code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
-#'possible pairwise combination of populations.
+#'possible pairwise combination of populations. \code{calc_global_fst}
+#'calculates FST for each facet globally across all subfacet levels.
 #'
 #'Calculates FST according to either Weir and Cockerham 1984 or using the
 #'\code{\link[genepop]{Fst}} function from the genepop package (see references).
+#'Genepop is not supported for global FST.
 #'
 #'If the genepop option is used, several intermediate files will be created in
 #'the default temporary directory (see \code{\link{tempfile}}).
@@ -569,9 +571,6 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'  number of SNPs called in a comparison (returned in the "nk" column from
 #'  \code{\link{get.snpR.stats}}) as weights within each population comparison.
 #'  Note that this is different than taking the weighted mean of a/(a + b + c)!
-#'@param global logical, default FALSE. If TRUE, global FST will be calculated
-#'  instead (across all subfacets simultaneously per facet). This is currently
-#'  in development and will not run.
 #'@param cleanup logical, default TRUE. If TRUE, any new files created during
 #'  FST calculation will be automatically removed.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
@@ -587,7 +586,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'@references Rousset (2008). \emph{Molecular Ecology Resources}
 #'
 #'@author William Hemstrom
-#'@export
+#'
+#'@name calc_fst
+#'@aliases calc_pairwise_fst calc_global_fst
 #'
 #' @examples
 #' # Using Weir and Cockerham 1984's method
@@ -603,14 +604,53 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #' x <- calc_pairwise_fst(stickSNPs, "pop", boot = 5)
 #' get.snpR.stats(x, "pop", "fst")
 #' }
+NULL
+
+#' @describeIn calc_fst Calculate FST across each pair of pairwise subfacet
+#'   comparisons.
+#' @export
 calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE, 
                               boot_par = FALSE,
                               zfst = FALSE,
                               fst_over_one_minus_fst = FALSE,
                               keep_components = FALSE,
-                              global = FALSE,
                               cleanup = TRUE,
                               verbose = FALSE){
+  
+  return(.calc_fst(x, facets = facets, boot = boot, boot_par = boot_par,
+                   zfst = zfst, fst_over_one_minus_fst = fst_over_one_minus_fst,
+                   keep_components = keep_components, verbose = verbose, global = FALSE,
+                   method = method,
+                   cleanup = cleanup))
+  
+}
+
+
+
+#' @describeIn calc_fst Calculate FST globally across all subfacet
+#'   levels.
+#' @export
+calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FALSE,
+                            fst_over_one_minus_fst = FALSE,
+                            keep_components = FALSE,
+                            verbose = FALSE){
+  
+  return(.calc_fst(x, facets = facets, boot = boot, boot_par = boot_par,
+                   zfst = zfst, fst_over_one_minus_fst = fst_over_one_minus_fst,
+                   keep_components = keep_components, verbose = verbose, global = TRUE,
+                   method = "wc",
+                   cleanup = TRUE))
+  
+}
+
+.calc_fst <- function(x, facets, method = "wc", boot = FALSE, 
+                      boot_par = FALSE,
+                      zfst = FALSE,
+                      fst_over_one_minus_fst = FALSE,
+                      keep_components = FALSE,
+                      global = FALSE,
+                      cleanup = TRUE,
+                      verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
   a <- b <- ..component_cols <- NULL
   
@@ -635,13 +675,13 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   # add any missing facets
   ofacets <- facets
   facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F, purge_duplicates = FALSE) # have to lapply this to avoid the unique at the end...
-
+  
   
   # facets <- .check.snpR.facet.request(x, facets, return.type = T, fill_with_base = F)
   if(any(facets[[2]] == ".base")){
     stop("At least one sample level facet is required for pairwise Fst estimation.")
   }
-
+  
   # check that each facet has more than one level
   samp.facets <- .check.snpR.facet.request(x, facets[[1]])
   samp.facets <- summarize_facets(x, samp.facets)
@@ -667,14 +707,11 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   if(!bi_allelic & global){
     stop("Global fst is currently not supported for global fst.\n")
   }
-  if(global){
-    stop("Global fst is in development and not yet working correctly.\n")
-  }
   
   
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
-
+    
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
       data.table::setkey(x, subfacet, .snp.id)
@@ -828,8 +865,8 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       #   gc_colnames_2 <- substr(gc_colnames, snp_form + 1, snp_form*2)
       # }
       #else{
-        hom <- data.table::dcast(x, .snp.id ~ subfacet, value.var = "ho")
-
+      hom <- data.table::dcast(x, .snp.id ~ subfacet, value.var = "ho")
+      
       #}
       
       r <- length(pops) # number of comps
@@ -856,7 +893,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         
         # otherwise we have the ho already
         absent <- which(rowSums(psf_m[,-1]) == 0)
-        thom <- hom
+        thom <- data.table::copy(hom)
         if(length(absent) != 0){
           data.table::set(thom, absent, 2:ncol(thom), value = 0)
         }
@@ -975,6 +1012,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           # Fst <- rowSums(a)/rowSums(a + b + c)
           
           data.table::set(out$Fst, j = c.col, value = rowSums(a)/rowSums(a + b + c)) # write fst
+          saveRDS(out, "temp.RDS")
         }
         
         else{
@@ -1113,7 +1151,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
       
       
       else{
-
+        
         boot <- 1:boot
         if(boot_par < length(boot)){
           pboot <- split(boot, rep(1:boot_par, length.out = length(boot), each = ceiling(length(boot)/boot_par)))
@@ -1122,7 +1160,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
           boot_par <- length(boot)
           pboot <- split(boot, 1:boot_par, drop = F)
         }
-
+        
         cl <- parallel::makePSOCKcluster(boot_par)
         doParallel::registerDoParallel(cl)
         
@@ -1156,7 +1194,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         boots <- unlist(boots, recursive = F)
         boot <- max(boot)
       }
-
+      
       # bind
       if(method == "genepop"){
         boots <- data.frame(boots)
@@ -1168,7 +1206,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
         boots <- dplyr::bind_cols(boots)
       }
       
-
+      
       
       # calculate p-values vs real
       real[[f]]$real_wm$weighted_mean_fst_p <- (rowSums(as.matrix(boots) >= real[[f]]$real_wm$weighted_mean_fst) + 1)/(boot + 1)
@@ -1178,7 +1216,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   
   #==================merge and return============================
   cat("Collating results...")
-
+  
   # merge the means
   snp.facet <- unlist(lapply(ofacets, function(y) .check.snpR.facet.request(x, y, "sample")))
   real_wm <- purrr::map(real, 2)
@@ -1197,7 +1235,7 @@ calc_pairwise_fst <- function(x, facets, method = "wc", boot = FALSE,
   colnames(real_wm)[which(colnames(real_wm) == "comparison")] <- "subfacet"
   x <- .merge.snpR.stats(x, real_wm, "weighted.means")
   
-
+  
   # merge the per-snp
   real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
   ## zfst and fst/1-fst
