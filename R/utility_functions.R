@@ -506,7 +506,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
                   # ac = x@ac[x@facet.meta$.snp.id %in% snps,],
                   facets = x@facets,
                   facet.type = x@facet.type,
-                  stats = x@stats[x@stats$.snp.id %in% snps, drop = FALSE],
+                  stats = x@stats[x@stats$.snp.id %in% snps,, drop = FALSE],
                   pairwise.stats = x@pairwise.stats[x@pairwise.stats$.snp.id %in% snps,, drop = FALSE],
                   sn = sn,
                   names = x@names,
