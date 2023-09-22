@@ -21,6 +21,7 @@ private alleles are desired instead.
 ## Bug Fixes
 * Fixed `format_snps()` to avoid any scientific notation. Added `contig` flags to the headers printed with `format = "vcf"`.
 * Fixed a bug in `plot_pairwise_ld_heatmap()` when comparing only two snps on a contig/chr/etc.
+* Fixed a bug in `subset_snpR_data()` due to a typo in stats passing that occasionally caused issues.
 
 ## Known Bugs
 * `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.
