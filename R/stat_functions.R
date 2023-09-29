@@ -1282,6 +1282,10 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     x <- .update_citations(x, "Rousset2008", "fst", "Pairwise FST calculation")
   }
   
+  if(zfst){
+    x <- .update_citations(x, "axelssonGenomicSignatureDog2013", "zfst", "Z-score standardized FST.")
+  }
+  
   return(x)
 }
 
