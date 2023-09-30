@@ -566,7 +566,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
       else{
-        phen <- strsplit(formula, "~")
+        phen <- strsplit(as.character(formula), "~")
         phen <- phen[[1]][1]
         phen <- gsub(" ", "", phen)
         if(phen != response){
