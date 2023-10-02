@@ -468,6 +468,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   relatedness matrix.
 #' @param par numeric or FALSE, default FALSE. Number of parallel cores to use
 #'   for computation.
+#' @param cleanup logical, default TRUE. If TRUE, files produced by and for the
+#'   "gmmat" option will be removed after completion.
 #' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'   printed to the console.
 #'
@@ -496,7 +498,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' 
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
                              formula = NULL, family.override = FALSE, maxiter = 500, 
-                             sampleID = NULL, Gmaf = 0, par = FALSE, verbose = FALSE){
+                             sampleID = NULL, Gmaf = 0, par = FALSE, 
+                             cleanup = TRUE, verbose = FALSE){
   #==============sanity checks===========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -790,7 +793,9 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     
     score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
-    file.remove(c("asso_in.txt", "asso_out_score.txt"))
+    if(cleanup){
+      file.remove(c("asso_in.txt", "asso_out_score.txt"))
+    }
     return(score.out)
   }
 

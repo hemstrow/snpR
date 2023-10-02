@@ -16,6 +16,7 @@ calc_association(
   sampleID = NULL,
   Gmaf = 0,
   par = FALSE,
+  cleanup = TRUE,
   verbose = FALSE
 )
 }
@@ -61,6 +62,9 @@ relatedness matrix.}
 
 \item{par}{numeric or FALSE, default FALSE. Number of parallel cores to use
 for computation.}
+
+\item{cleanup}{logical, default TRUE. If TRUE, files produced by and for the
+"gmmat" option will be removed after completion.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 printed to the console.}

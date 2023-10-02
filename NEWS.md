@@ -14,6 +14,7 @@ private alleles are desired instead.
 * Checking facet requests for hybrid facets (like `pop.fam` or `pop.chr`) will now double check for any duplicates and error if detected. This is a bit slower but will be safer.
 * Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
 * Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
+* Added a `cleanup` argument to `calc_association()` to allow the intermediate files from `GMMAT` to be retained.
 
 ## Documentation
 * Updated the readme to be a bit cleaner.
