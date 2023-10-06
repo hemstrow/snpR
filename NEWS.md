@@ -24,6 +24,7 @@ private alleles are desired instead.
 * Fixed a bug in `plot_pairwise_ld_heatmap()` when comparing only two snps on a contig/chr/etc.
 * Fixed a bug in `subset_snpR_data()` due to a typo in stats passing that occasionally caused issues.
 * Tiny bug fix in `calc_association()` when using a formula but snpR was expecting a character for splitting reasons.
+* Fixed a bug that would cause `ranger` to fail if using the `par` arg to `run_random_forest()`.
 
 ## Known Bugs
 * `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.

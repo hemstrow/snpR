@@ -1033,7 +1033,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     #================run the model:=====================
     # set par correctly, NULL if par is FALSE or we are looping through facet levels. Otherwise (.base and par provided), tpar = par.
     if(par == FALSE){
-      tpar <- NULL
+      par <- NULL
     }
 
     # run with or without formula
@@ -1042,14 +1042,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, verbose = T, ...)
+                             importance = importance, num.threads = par, verbose = T, ...)
     }
     else{
       rout <- ranger::ranger(formula = .formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, verbose = T, ...)
+                             importance = importance, num.threads = par, verbose = T, ...)
     }
 
     #===============make sense of output=================
