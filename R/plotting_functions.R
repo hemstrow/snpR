@@ -4258,7 +4258,7 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   #=================plot pca=================
   if("pca" %in% plots){
     .make_it_quiet(pca <- plot_clusters(x, facets = facet))
-    pca <- pca$plots$pca
+    pca <- pca$pca
     
     out$pca <- pca
   }
