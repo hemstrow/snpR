@@ -383,7 +383,6 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     out <- out + ggplot2::ggtitle(title)
   }
 
-  out <- list(plot = out)
   return(out)
 }
 
@@ -3593,7 +3592,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
   }
   
-  
+
   # cite
   keys <- character(0)
   stats <- character(0)
@@ -3604,7 +3603,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     details <- c(details, paste0("CLUMPP on ", method, " results."))
   }
   if(method == "snmf"){
-    keys <- c(keys, "Frichot973")
+    keys <- c(keys, "Frichot2015")
     stats <- c(stats, "sNMF")
     details <- c(details, "sparse Non-Negative Matrix Factorization (sNMF)")
   }
