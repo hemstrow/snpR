@@ -162,8 +162,7 @@ minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
 }
 \value{
-A list containing \itemize{\item{plot: } A ggplot manhattan plot.
-  \item{data: } Raw plot data.}
+A ggplot manhattan plot.
 }
 \description{
 Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are

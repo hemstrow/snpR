@@ -160,11 +160,9 @@ reported.}
 \code{\link[umap]{umap}}.}
 }
 \value{
-A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
- DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
- Each of these two lists may contain one to four objects, one for each PCA,
- tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
- respectively.
+A list containing: ggplot PCA, tSNE, umap, and/or DAPC plots. May
+ contain one to four objects, one for each PCA, tSNE, umap, or DAPC plot
+ requested, named "pca" "tsne", "umap", and "dapc" respectively.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at

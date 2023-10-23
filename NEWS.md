@@ -15,6 +15,7 @@ private alleles are desired instead.
 * Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
 * Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
 * Added a `cleanup` argument to `calc_association()` to allow the intermediate files from `GMMAT` to be retained.
+* To save on memory use, `plot_clusters()`, `plot_manhattan()`, and `plot_pairwise_ld_heatmap()` no longer return the data used to produce the plots in the `$plots` section--this is redundant since `ggplot2` objects already contain the data in `$data`. Note that some old scripts may need to be revised following this change.
 
 ## Documentation
 * Updated the readme to be a bit cleaner.
@@ -25,6 +26,7 @@ private alleles are desired instead.
 * Fixed a bug in `subset_snpR_data()` due to a typo in stats passing that occasionally caused issues.
 * Tiny bug fix in `calc_association()` when using a formula but snpR was expecting a character for splitting reasons.
 * Fixed a bug that would cause `ranger` to fail if using the `par` arg to `run_random_forest()`.
+* Fixed a bug where `plot_structure()` wouldn't properly say its citation information.
 
 ## Known Bugs
 * `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.

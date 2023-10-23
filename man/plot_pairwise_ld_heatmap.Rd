@@ -63,8 +63,7 @@ c(title, legend.title, legend.ticks, axis, axis.ticks).}
 \item{background}{character, default "white". Background color for plot.}
 }
 \value{
-A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
- ggplot object. \item{dat: } Data used to generate the ggplot object. }
+A pairwise LD heatmap as a ggplot object.
 }
 \description{
 Prepares a ggplot2 heatmap from pairwise linkage disequilibrium data stored in

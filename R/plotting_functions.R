@@ -50,8 +50,7 @@
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
 #'@param background character, default "white". Background color for plot.
 #'
-#'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
-#'  ggplot object. \item{dat: } Data used to generate the ggplot object. }
+#'@return A pairwise LD heatmap as a ggplot object.
 #'
 #'@author William Hemstrom
 #'@author Nicholas Sard
@@ -384,7 +383,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     out <- out + ggplot2::ggtitle(title)
   }
 
-  out <- list(plot = out, dat = LD_mats)
+  out <- list(plot = out)
   return(out)
 }
 
@@ -536,11 +535,9 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
-#'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
-#'  Each of these two lists may contain one to four objects, one for each PCA,
-#'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
-#'  respectively.
+#'@return A list containing: ggplot PCA, tSNE, umap, and/or DAPC plots. May
+#'  contain one to four objects, one for each PCA, tSNE, umap, or DAPC plot
+#'  requested, named "pca" "tsne", "umap", and "dapc" respectively.
 #'
 #'@author William Hemstrom
 #'@author Matt Thorstensen
@@ -1180,7 +1177,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     .yell_citation(keys, stats, details, update_bib)
   }
   
-  return(list(data = plot_dats, plots = plots))
+  return(plots)
 }
 
 #' Generate a manhattan plot from snpRdata or a data.frame.
@@ -1323,8 +1320,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @author William Hemstrom
 #' @export
 #'
-#' @return A list containing \itemize{\item{plot: } A ggplot manhattan plot.
-#'   \item{data: } Raw plot data.}
+#' @return A ggplot manhattan plot.
 #'
 #'
 #' @examples
@@ -1932,7 +1928,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     }
   }
   
-  return(list(plot = p, data = stats))
+  return(p)
 }
 
 
@@ -3598,14 +3594,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
   
   
-  if(exists("K_plot")){
-    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
-  }
-  else{
-    return(list(plot = p, data = qlist, plot_data = pdat))
-  }
-  
-  
   # cite
   keys <- character(0)
   stats <- character(0)
@@ -3642,6 +3630,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   
   .yell_citation(keys, stats, details, update_bib)
 
+  
+  if(exists("K_plot")){
+    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
+  }
+  else{
+    return(list(plot = p, data = qlist, plot_data = pdat))
+  }
 }
 
 
