@@ -202,6 +202,24 @@ test_that("correct ME ld",{
   expect_snapshot_value(prox, style = "serialize")
 })
 
+test_that("correct window ld",{
+  skip_on_cran();
+  set.seed(1212)
+  tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE)
+  tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  
+  expect_true(any(tdld$facet == ".base" & tdld$snp.facet == ".base"))
+  expect_true(any(tdld$facet == ".base" & tdld$snp.facet == "chr"))
+  expect_true(any(tdld$facet == "pop" & tdld$snp.facet == ".base"))
+  expect_true(any(tdld$facet == "pop" & tdld$snp.facet == "chr"))
+  expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD") %in% colnames(tdld)))
+  
+  skip_on_cran();
+  tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, CLD = TRUE)
+  tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD", "rsq", "Dprime", "pval") %in% colnames(tdld)))
+})
+
 test_that("fis bootstrapping",{
   bs1 <- calc_fis(.internal.data$test_snps, "pop", boot = 10)
   bs1_res <- get.snpR.stats(bs1, "pop", "fis")

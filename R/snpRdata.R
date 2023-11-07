@@ -946,6 +946,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   extract.LD <- function(y, facets){
+    if(length(y) == 0){return(NULL)} # for window only
     # get sample facets
     samp.facets <- .check.snpR.facet.request(x, facets)
     if(length(samp.facets) != length(facets)){

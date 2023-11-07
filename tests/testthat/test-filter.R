@@ -196,6 +196,23 @@ test_that("mgc",{
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
+#==========LD=============================
+test_that("LD_pruning",{
+  expect_error(filter_snps(stickSNPs, LD_prune_r = 1.1, LD_prune_sigma = 100), "0 and 1")
+  expect_error(filter_snps(stickSNPs, LD_prune_r = .8, LD_prune_sigma = 100, LD_prune_method = "test"), "not recognized")
+  expect_error(filter_snps(stickSNPs, LD_prune_facet = c("pop", "fam"), LD_prune_r = .8, LD_prune_sigma = 100), "Only one LD_prune_facet")
+  expect_warning(filter_snps(stickSNPs, LD_prune_facet = "pop.chr", LD_prune_r = .8, LD_prune_sigma = 100, verbose = FALSE), "No valid LD loci pairs")
+  
+  td <- filter_snps(stickSNPs, LD_prune_facet = "pop.chr", LD_prune_r = .8, LD_prune_sigma = 1600, verbose = FALSE)
+  expect_true(nrow(td) == 95) # should remove 5 SNPs
+  
+  td <- filter_snps(stickSNPs, LD_prune_facet = "pop.chr", LD_prune_r = .8, LD_prune_sigma = 1600, LD_prune_method = "Dprime", verbose = FALSE)
+  expect_true(nrow(td) == 70) # should remove 30 SNPs
+  
+  # td <- filter_snps(stickSNPs, LD_prune_facet = "pop.chr", LD_prune_r = .8, LD_prune_sigma = 1600, LD_prune_method = "Dprime", LD_prune_use_ME = TRUE, verbose = FALSE)
+  # expect_true(nrow(td) == 70) # should remove 29 SNPs
+})
+
 #==========garbage=========================
 test_that("garbage",{
   expect_error(filter_snps(stickSNPs, min_ind = .5, remove_garbage = .8), "min_ind threshold should be higher")
@@ -247,10 +264,12 @@ test_that("reporting",{
                                   maf_facets = "pop",
                                   hwe = .01, 
                                   hwe_excess_side = "heterozygote",
-                                  hwe_facets = "pop"))
+                                  hwe_facets = "pop",
+                                  LD_prune_sigma = 1600,
+                                  LD_prune_r = .8))
   .make_it_quiet(res <- filters(x))
   
-  expect_equal(res, "bi-allelic;bi-allelic;non-polymorphic;min_ind=0.75,facet=.base;maf=0.1,facet=pop;hwe=0.01, excess side = heterozygote,facet=pop;min_loci=0.75;non-polymorphic")
+  expect_equal(res, "bi-allelic;bi-allelic;non-polymorphic;min_ind=0.75,facet=.base;maf=0.1,facet=pop;hwe=0.01, excess side = heterozygote,facet=pop;LD pruning=r=0.8 window_sigma=1600 window_step=1600 LD_method=CLD,facet=.base;min_loci=0.75;non-polymorphic")
 })
 
 

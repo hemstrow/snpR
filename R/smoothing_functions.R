@@ -396,8 +396,9 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
 # @param nk logical, default TRUE. If TRUE, weights by nk - 1. Expects 'nk' column in stats.
 #' @importFrom foreach %do%
 .average_windows <- function(x, sigma, step = NULL, chr = "chr", triple_sig = FALSE,
-                          stats, gaussian = FALSE, nk = TRUE){
+                          stats, gaussian = FALSE, nk = TRUE, pairwise_snps = FALSE){
   ..scols <- ..chr <- NULL
+
 
   if(triple_sig){
     sigma <- sigma * 3
@@ -415,18 +416,26 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   }
   else if(chr == ".base" | is.null(chr)){
     x$chr <- ".base"
-    stats$chr <- ".base"
+    if(!is.null(stats)){stats$chr <- ".base"}
     chr <- "chr"
   }
   
   # window start and end points
   unique.chr <- sort(unique(x[,chr]))
-  chr.max <- tapply(x$position, x[,chr], max)
-  chr.min <- tapply(x$position, x[,chr], min)
-  chr.range <- matrix(c(chr.max, chr.min), ncol = 2)
+  if(pairwise_snps){
+    chr.max <- tapply(c(x$s1_position, x$s2_position), rep(x[,chr], 2), max)
+    chr.min <- tapply(c(x$s1_position, x$s2_position), rep(x[,chr], 2), min)
+    chr.range <- matrix(c(chr.max, chr.min), ncol = 2)
+  }
+  else{
+    chr.max <- tapply(x$position, x[,chr], max)
+    chr.min <- tapply(x$position, x[,chr], min)
+    chr.range <- matrix(c(chr.max, chr.min), ncol = 2)
+  }
   
+
   if(!is.null(step)){
-    centers <- apply(chr.range, 1, function(y) seq(from = 0, to = y[1], by = step))
+    centers <- apply(chr.range, 1, function(y) seq(from = 0, to = y[1] + step, by = step))
   }
   else{
     centers <- lapply(unique.chr, function(y) unique(x[x[,chr] == y,]$position))
@@ -457,18 +466,59 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   ## function per chr
   assign_windows <- function(y, starts, ends, centers, stats, chrs){
     comp_fun <- function(y, starts, ends, centers, stats, scols, nk_dt){
-      # find snps in windows
-      lmat <- outer(y$position, starts, function(pos, starts) pos > starts)
-      lmat <- lmat * outer(y$position, ends, function(pos, ends) pos <= ends)
-      
-      tnsnps <- colSums(lmat)
 
-      # weight (gaussian)
-      if(gaussian){
-        lmat <-  outer(y$pos, centers, gaussian_weight, s = sigma)*lmat
+      if(pairwise_snps){
+        # find snps in windows
+        lmat <- outer(y$s1_position, starts, function(pos, starts) pos > starts)
+        lmat <- lmat * outer(y$s1_position, ends, function(pos, ends) pos <= ends)
+        lmat <- lmat * outer(y$s2_position, ends, function(pos, ends) pos <= ends)
+        lmat <- lmat * outer(y$s2_position, ends, function(pos, ends) pos > starts)
+        
+        tnsnps <- colSums(lmat)
+        
+        # weight (gaussian) -- use the BOTH positions to determine weighting (the closer to the center they both are the better)
+        if(gaussian){
+          lmat <-  matrixStats::colMeans2(rbind(as.numeric(outer(y$s1_position, centers, gaussian_weight, s = sigma)),
+            as.numeric(outer(y$s2_position, centers, gaussian_weight, s = sigma)))) *
+            lmat
+        }
+      }
+      else{
+        # find snps in windows
+        lmat <- outer(y$position, starts, function(pos, starts) pos > starts)
+        lmat <- lmat * outer(y$position, ends, function(pos, ends) pos <= ends)
+        
+        tnsnps <- colSums(lmat)
+        
+        # weight (gaussian)
+        if(gaussian){
+          lmat <-  outer(y$pos, centers, gaussian_weight, s = sigma)*lmat
+        }
       }
       
+      
       lmat[is.na(lmat)] <- 0
+      
+      # short-circut if no stats to smooth, just want window info
+      if(is.null(stats)){
+        rownames(lmat) <- y$.snp.id
+        colnames(lmat) <- centers
+        
+        # detect levels without any valid pairwise comparisons (for small datasets)
+        lmat <- lmat[, matrixStats::colSums2(lmat) >= 2, drop = FALSE]
+        lmat <- lmat[matrixStats::rowSums2(lmat) > 0,, drop = FALSE]
+        if(nrow(lmat) == 0) return(NULL)
+        
+        # transform into the list structure expected
+        n <- names(lmat)
+        
+        out <- rep(rownames(lmat), ncol(lmat))
+        out <- as.numeric(out[lmat == 1])
+        out <- split(out, f = rep(1:ncol(lmat), matrixStats::colSums2(lmat)))
+        names(out) <- colnames(lmat)
+        
+        return(out)
+      }
       
 
       # calculate weighted stats
@@ -484,33 +534,32 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
       return(list(build = build, build_weights = build_weights, n_snps = tnsnps))
     }
     
-    scols <- which(!colnames(stats) %in% c(chr, "position", "nk"))
-    
-    # check for NAs in either stats or weights (don't want them to contribute)
-    nk_dt <- data.table::as.data.table(matrix(stats$nk, nrow = nrow(stats), ncol = length(scols)))
-    if(nk){
-      nk_NAs <- which(is.na(stats$nk))
-      if(length(nk_NAs) > 0){
-        data.table::set(stats, i = as.integer(nk_NAs), j = scols, value = 0)
-        stats$nk[nk_NAs] <- 0
-        data.table::set(nk_dt, nk_NAs, 1:ncol(nk_dt), value = 0)
-      }
-    }
-    for(k in 1:length(scols)){
+    if(!is.null(stats)){
+      scols <- which(!colnames(stats) %in% c(chr, "position", "nk"))
+      
+      # check for NAs in either stats or weights (don't want them to contribute)
       if(nk){
-        data.table::set(nk_dt, which(is.na(stats[[scols[k]]])), k, value = 0)
+        nk_dt <- data.table::as.data.table(matrix(stats$nk, nrow = nrow(stats), ncol = length(scols)))
+        nk_NAs <- which(is.na(stats$nk))
+        if(length(nk_NAs) > 0){
+          data.table::set(stats, i = as.integer(nk_NAs), j = scols, value = 0)
+          stats$nk[nk_NAs] <- 0
+          data.table::set(nk_dt, nk_NAs, 1:ncol(nk_dt), value = 0)
+        }
       }
-      data.table::set(stats,which(is.na(stats[[scols[k]]])),scols[k],0)
-    }
-    
-    if(nk){
-      for(k in 1:ncol(nk_dt)){
-        data.table::set(nk_dt, which(nk_dt[[k]] == 0), k, value = 1) # set missing data to 1 to prevent negative weights (since we do nk - 1)
+      for(k in 1:length(scols)){
+        if(nk){
+          data.table::set(nk_dt, which(is.na(stats[[scols[k]]])), k, value = 0)
+        }
+        data.table::set(stats,which(is.na(stats[[scols[k]]])),scols[k],0)
+      }
+      
+      if(nk){
+        for(k in 1:ncol(nk_dt)){
+          data.table::set(nk_dt, which(nk_dt[[k]] == 0), k, value = 1) # set missing data to 1 to prevent negative weights (since we do nk - 1)
+        }
       }
     }
-    
-    
-    
     # if large (say, 50k snps), will iterate through in chunks, solve, and then combine results to minimize memory usage
     max_snps <- 50000
     if(nrow(y) > max_snps){
@@ -518,36 +567,66 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
       titer <- 1
       
       # initialize storage: build will hold the building weighted values for each stat for each window, build_weights will hold the total weights for those windows
-      build <- matrix(0, length(starts), length(scols))
-      build <- data.table::as.data.table(build)
-      colnames(build) <- colnames(stats)[scols]
-      build <- list(build = build, build_weights = build, n_snps = numeric(length(starts)))
-
+      if(!is.null(stats)){
+        build <- matrix(0, length(starts), length(scols))
+        build <- data.table::as.data.table(build)
+        colnames(build) <- colnames(stats)[scols]
+        build <- list(build = build, build_weights = build, n_snps = numeric(length(starts)))
+      }
+      else{
+        build <- vector("list", length = length(centers))
+        names(build) <- centers
+      }
+      
       # for each set of snps, get the weighted values and weights for all relevent windows.
       for(i in 1:n_iters){
         end <- i*max_snps
         end <- ifelse(end > nrow(y), nrow(y), end)
         trows <- titer:end
         consider_windows <- starts <= max(y$position[trows]) & ends >= min(y$position[trows])
-        bpart <- comp_fun(y[trows,], 
-                          starts[consider_windows], 
-                          ends[consider_windows], 
-                          centers[consider_windows], 
-                          stats[trows,], 
-                          scols,
-                          nk_dt[trows,])
-        titer <- i*max_snps+ 1
         
-        build$build[consider_windows,] <- build$build[consider_windows,] + bpart$build
-        build$build_weights[consider_windows,] <- build$build_weights[consider_windows,] + bpart$build_weights
-        build$n_snps[consider_windows] <- build$n_snps[consider_windows] + bpart$n_snps
+        # short-circut if no stats to smooth, just want window info
+        if(is.null(stats)){
+          bpart <- comp_fun(y[trows,], 
+                            starts[consider_windows], 
+                            ends[consider_windows], 
+                            centers[consider_windows], 
+                            NULL, 
+                            NULL,
+                            NULL)
+          keys <- unique(c(names(build), names(bpart)))
+          build <- setNames(mapply(c, build[keys], bpart[keys]), keys)
+          titer <- i*max_snps + 1
+        }
+        else{
+          bpart <- comp_fun(y[trows,], 
+                            starts[consider_windows], 
+                            ends[consider_windows], 
+                            centers[consider_windows], 
+                            stats[trows,], 
+                            scols,
+                            nk_dt[trows,])
+          titer <- i*max_snps + 1
+          
+          build$build[consider_windows,] <- build$build[consider_windows,] + bpart$build
+          build$build_weights[consider_windows,] <- build$build_weights[consider_windows,] + bpart$build_weights
+          build$n_snps[consider_windows] <- build$n_snps[consider_windows] + bpart$n_snps
+        }
       }
     }
     else{
+      # short-circut if no stats to smooth, just want window info
+      if(is.null(stats)){
+        return(comp_fun(y, starts, ends, centers, NULL, chrs))
+      }
+      
       build <- comp_fun(y, starts, ends, centers, stats, scols, nk_dt)
       build[1:2] <- lapply(build[1:2], data.table::as.data.table)
     }
     
+    if(is.null(stats)){
+      return(build)
+    }
     
     # calculate weighted values
     out <- build$build / build$build_weights
@@ -569,15 +648,32 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   
   ## note: need to make sure that the window ids are unique!
   windows <- vector("list", length(unique.chr))
+  names(windows) <- unique.chr
   for(i in 1:length(chr.max)){
     matches <- which(x[,chr] == unique.chr[i])
-    windows[[i]] <- assign_windows(x[matches,], starts[[i]], ends[[i]], centers[[i]], 
-                                   stats = stats[matches,], chrs = chrs[[i]])
+    if(is.null(stats)){
+      twin <- assign_windows(x[matches,,drop = FALSE], starts[[i]], ends[[i]], centers[[i]], 
+                             stats = NULL, chrs = chrs[[i]])
+      if(!is.null(twin)){
+        windows[[i]] <- twin
+      }
+    }
+    else{
+       windows[[i]] <- assign_windows(x[matches,,drop = FALSE], starts[[i]], ends[[i]], centers[[i]], 
+                                   stats = stats[matches,,drop = FALSE], chrs = chrs[[i]])
+    }
+  }
+  
+  if(is.null(stats)){
+    return(windows)
   }
   
   windows <- data.table::rbindlist(windows)
   
-  windows[,chr] <- NULL
+  if(!pairwise_snps){
+    windows[,chr] <- NULL
+  }
+  
 
   return(windows)
 }

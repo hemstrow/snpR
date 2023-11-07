@@ -8,6 +8,8 @@
 private alleles are desired instead.
 * Added `calc_seg_sites()` to calculate the number of segregating sites, optionally via rarefaction by an in-house approach (that will probably be published in a small note if we cannot find it documented elsewhere.)
 * Added `calc_global_fst()` to calculate $F{ST}$ globally across all facet subfacets.
+* Added local window-smoothed pairwise LD calculation to `calc_pairwise_ld()`. This is a fast alternative to global LD if the user is interested only local LD fluctuations.
+* Added LD pruning to `filter_snps()` to remove loci out of LD within windows.
 
 ### Minor
 * Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
@@ -19,6 +21,8 @@ private alleles are desired instead.
 
 ## Documentation
 * Updated the readme to be a bit cleaner.
+* Added sections and details to the documentation for `filter_snps()`
+* Fixed a few typos and formatting issues.
 
 ## Bug Fixes
 * Fixed `format_snps()` to avoid any scientific notation. Added `contig` flags to the headers printed with `format = "vcf"`.

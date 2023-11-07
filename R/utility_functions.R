@@ -532,7 +532,6 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'this should usually be the first step in an analysis. See details for filters.
 #'
 #'
-#'
 #'Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
 #'where the minor allele frequency is too low. Can look for mafs below
 #'#'provided either globally or search each population individually.}
@@ -544,7 +543,13 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
 #'two observed alleles. This is mostly an internal argument, since the various
 #'snpRdata import options use it automatically to prevent downstream errors in
-#'other snpR functions. } }
+#'other snpR functions. } \item{remove_garbage: }{Quickly removes any loci or
+#'samples that are jointly poorly genotyped prior to other filtering. This can
+#'be useful if some individuals or loci are of poor enough quality that they
+#'will bias other filters.} \item{LD_prune_sigma: }{Sliding-window based Linkage
+#'Disequilibrium filtering to remove non-independant loci}.}
+#'
+#'@section Filter order:
 #'
 #'Note that filtering out poorly sequenced individuals creates a possible
 #'conflict with the loci filters, since after individuals are removed, some loci
@@ -565,6 +570,21 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'prior to applying loci filters, any re-run option will re-run individuals
 #'filters after the loci filters have been applied.
 #'
+#'Filter order (snps vs samples first) can be controlled with the \code{inds_fist}
+#'argument. If individuals are filtered first, poorly sequenced individuals
+#'will be re-filtered following locus removal if re-running is requested.
+#'
+#'@section LD pruning:
+#'
+#'LD pruning can be conducted using any of the methods described in 
+#'\code{\link{calc_pairwise_ld}} using the \code{LD_prune_} argument family.
+#'Loci are removed greedily: starting from the first locus pair with elevated
+#'LD, the more poorly sequenced loci is removed. If each locus is equally well
+#'sequenced, the second loci (by position) is removed. If any elevated locus
+#'pairs remain, the next pair is addressed the same way until no pairs remain.
+#'
+#'@section Facet-based filters (within-group filtering):
+#'
 #'Via the \code{maf_facets} argument, this function can filter by minor allele
 #'frequencies in either \emph{all} samples or \emph{each level of a supplied
 #'sample specific facet and the entire dataset}. In the latter case, any SNPs
@@ -577,6 +597,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'The \code{hwe_facets} argument is the inverse of this: loci will be removed if they
 #'fail the provided hwe filter in any facet level. In both cases, Facets should
 #'be provided as described in \code{\link{Facets_in_snpR}}.
+#'
+#'LD filtering can likewise be conducted within facets. SNP-level facets dictate
+#'the levels within which LD values are calculated (chromosome, etc.),
+#'and loci will be removed if they display elevated LD within sample-level facets.
 #'
 #'
 #'@param x snpRdata object.
@@ -599,8 +623,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'  \itemize{\item{heterozygote:} only loci with a heterozygote excess are 
 #'  removed.
 #'  \item{homozygote:} only loci with a homozygote excess are removed.
-#'  \itemize{\item{both:} loci with either a heterozygote or homozygote excess 
-#'  are removed.}}.
+#'  \item{both:} loci with either a heterozygote or homozygote excess 
+#'  are removed.}.
 #'@param fwe_method character, default "none". Option to use for Family-Wise
 #'  Error rate correction for HWE filtering. If requested, only SNPs with
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
@@ -646,6 +670,33 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'  rarely be used directly, since import.snpR.data and other snpRdata object
 #'  creation functions all pass SNPs through this filter because many snpR
 #'  functions will fail to work if there are more than two alleles at a locus.
+#'@param LD_prune_sigma numeric or FALSE, default FALSE. If LD pruning, the
+#'  window size in kb across which to consider LD loci pairs. Windows will be
+#'  equal to two times \code{LD_prune_sigma}.
+#'@param LD_prune_step numeric, default equal to \code{LD_prune_sigma}. Step
+#'  size between LD windows, in kb. The default ensures that each SNP is in
+#'  exactly two windows, allowing for smoother filtering.
+#'@param LD_prune_r numeric, default FALSE. The LD filter cutt-off value. Pairs
+#'  above this value will be greedily pruned. Must be between 0 and 1 if LD
+#'  prunning is conducted.
+#'@param LD_prune_facet character, default NULL. Defines a facet over which the
+#'  minor allele frequency can be checked. Windows will be calculated within any
+#'  SNP parts of the facet, LD values will be calculated only with levels of any
+#'  sample parts. For example 'chr.pop' would calculate LD values across
+#'  windows, then filter SNPs above \code{LD_prune_r} in any populations.
+#'@param LD_prune_par numeric, default FALSE. If numeric, LD calculation will be
+#'  conducted in parallel using \code{LD_prune_par} threads.
+#'@param LD_prune_method character, default "CLD". The method to use for LD
+#'  calculations and prunning. The options are:
+#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}}. See
+#'  \code{\link{calc_pairwise_ld}} for details.
+#'@param LD_prune_use_ME logical, default FALSE. If TRUE, uses
+#'  Minimization-Expectation to do LD calculations for all
+#'  \code{LD_prune_method} options other than "CLD". This can be very slow. See
+#'  \code{\link{calc_pairwise_ld}} for details.
+#'@param LD_prune_ME_sigma numeric, default 0.0001. The cutt-off value for difference
+#'  in haplotype frequencies to use when conducting ME. See
+#'  \code{\link{calc_pairwise_ld}} for details.
 #'@param verbose Logical, default TRUE. If TRUE, some progress updates and
 #'  filtering notes will be printed to the console.
 #'
@@ -683,6 +734,14 @@ filter_snps <- function(x, maf = FALSE,
                         hwe_facets = NULL,
                         non_poly = TRUE, 
                         bi_al = TRUE,
+                        LD_prune_sigma = FALSE,
+                        LD_prune_step = LD_prune_sigma,
+                        LD_prune_r = FALSE,
+                        LD_prune_method = "CLD",
+                        LD_prune_facet = NULL,
+                        LD_prune_par = FALSE,
+                        LD_prune_use_ME = FALSE,
+                        LD_prune_ME_sigma = 0.0001,
                         verbose = TRUE){
 
   #==============do sanity checks====================
@@ -820,6 +879,51 @@ filter_snps <- function(x, maf = FALSE,
   if(min_loci){
     if(!is.numeric(min_loci) | (min_loci <= 0 | min_loci >= 1) | length(min_loci) != 1){
       stop("min_loci must be a numeric value between but not equal to 0 and 1.")
+    }
+  }
+  
+  if(is.numeric(LD_prune_sigma)){
+
+    good.methods <- c("CLD", "Dprime", "rsq")
+    if(!LD_prune_method %in% good.methods){
+      stop("LD_prune_method not recognized. Options:", paste0(good.methods, collapse = ", "), "\n")
+    }
+    
+    if(!is.numeric(LD_prune_r)){
+      stop("LD_prune_r must be a numeric value between 0 and 1\n")
+    }
+    if(LD_prune_r > 1 | LD_prune_r <= 0){
+      stop("LD_prune_r must be a numeric value between 0 and 1\n")
+    }
+    
+    if(!is.numeric(LD_prune_step)){
+      stop("LD_prune_step must be a numeric value (step length in kb).\n")
+    }
+    
+    if(LD_prune_step >= 2*LD_prune_step){
+      warning("Non-overlapping windows may result in odd pruning at window edges--did you mean to have a higher sigma or lower step size?\n")
+    }
+    
+    LD_prune_step <- eval(LD_prune_step) # force eval now
+    
+    LD_prune_facet <- .check.snpR.facet.request(x, LD_prune_facet, remove.type = "none", fill_with_base = TRUE, return_base_when_empty = TRUE)
+    if(length(LD_prune_facet) != 1){
+      stop("Only one LD_prune_facet can be provided.\n")
+    }
+    
+    LDf_snp <- .check.snpR.facet.request(x, LD_prune_facet, "sample")
+    LDf_samp <- .check.snpR.facet.request(x, LD_prune_facet, "snp")
+    
+    if(!isFALSE(LD_prune_par)){
+      LD_prune_par <- .par_checker(LD_prune_par)
+    }
+    
+    # add any needed facets...
+    miss.facets <- LDf_samp[which(!(LDf_samp %in% x@facets))]
+    if(length(miss.facets) != 0){
+      if(verbose){cat("Adding missing LD facets...\n")}
+      # need to fix any multivariate facets (those with a .)
+      x <- .add.facets.snpR.data(x, miss.facets)
     }
   }
   
@@ -1141,6 +1245,76 @@ filter_snps <- function(x, maf = FALSE,
       }
       x <- x[-which(vio.snps),]
     }
+    
+    #=========do LD filtering--this happens after previous filters for compute time=========
+    if(is.numeric(LD_prune_sigma)){
+      if(verbose){cat("Filtering loci with high LD...\n")}
+      
+      # get LD values
+      LD <- calc_pairwise_ld(x, facets = LD_prune_facet, par = LD_prune_par, 
+                           window_sigma = LD_prune_sigma, 
+                           window_gaussian = FALSE, 
+                           window_step = LD_prune_step, 
+                           window_triple_sigma = FALSE, 
+                           verbose = FALSE, CLD = ifelse(LD_prune_method == "CLD", "only", FALSE),
+                           use.ME = LD_prune_use_ME,
+                           sigma = LD_prune_ME_sigma,
+                           .prox_only = TRUE)
+      if(nrow(LD) == 0){
+        warning("No valid LD loci pairs detected--often this means that window sizes are too small to have multiple SNPs in any single window.\n")
+      }
+      else{
+        # choose loci to remove greedily:
+        # 1) find loci with values above the cuttoff
+        # 2) for each pair, remove the locus with less genotypes (or the randomly otherwise)
+        # 3) repeat until nothing above the cuttoff
+        tar_col <- which(colnames(LD) == LD_prune_method)
+        LD <- LD[which(LD[[tar_col]] > LD_prune_r),]
+        LD <- unique(LD)
+        
+        vio.snps <- numeric()
+        # add on genotyping counts
+        if(nrow(LD) > 0){
+          base_lev_rows <- which(x@facet.meta$facet == ".base" & x@facet.meta$subfacet == ".base")
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+                      by.x = "s1_.snp.id",
+                      by.y = ".snp.id",
+                      all.x = TRUE)
+          
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+                      by.x = "s2_.snp.id",
+                      by.y = ".snp.id",
+                      all.x = TRUE)
+        }
+        
+        # loop through rejects, removing all offending pairs untill we are done
+        while(nrow(LD) > 0){
+          trm <- ifelse(LD$.count.x[1] < LD$.count.y[1], LD$s1_.snp.id[1], LD$s2_.snp.id[1])
+          vio.snps <- c(vio.snps, trm)
+          rmr <- which(LD$s1_.snp.id == trm | LD$s2_.snp.id == trm)
+          LD <- LD[-rmr,,drop = FALSE]
+        }
+        
+        # report and subset
+        if(verbose){cat(paste0("\t", length(vio.snps), " bad loci\n"))}
+        vio.snps <- match(vio.snps, snp.meta(x)$.snp.id)
+        
+        if(length(vio.snps) == nrow(x)){
+          stop("No loci passed filters.\n")
+        }
+        
+        x <- x[-vio.snps,]
+        
+        x <- .update_filters(x, "LD pruning",
+                             paste0("r=", LD_prune_r,
+                                    " window_sigma=", LD_prune_sigma,
+                                    " window_step=", LD_prune_step,
+                                    " LD_method=", LD_prune_method,
+                                    ifelse(LD_prune_use_ME, paste0(" ME_sigma=", LD_prune_ME_sigma), "")),
+                             LD_prune_facet)
+      }
+    }
+    
     return(x)
   }
   
@@ -1262,6 +1436,7 @@ filter_snps <- function(x, maf = FALSE,
         hwe <- FALSE
         mac <- 0
         singletons <- FALSE
+        LD_prune_sigma <- FALSE
       }
       if(any(c(non_poly, bi_al, maf, hf_hets, min_ind) != FALSE)){
         x <- filt_by_loci() # re-filter loci to make sure that we don't have any surprise non-polys etc.

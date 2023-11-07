@@ -12,8 +12,13 @@ calc_pairwise_ld(
   par = FALSE,
   CLD = "only",
   use.ME = FALSE,
-  sigma = 1e-04,
-  verbose = FALSE
+  sigma = 0.0001,
+  window_sigma = NULL,
+  window_step = window_sigma * 2,
+  window_gaussian = TRUE,
+  window_triple_sigma = TRUE,
+  verbose = FALSE,
+  .prox_only = FALSE
 )
 }
 \arguments{
@@ -45,8 +50,28 @@ Minimization-Expectation haplotype estimation should be used. See details.}
 minimum difference required between steps before haplotype frequencies are
 accepted.}
 
+\item{window_sigma}{numeric, default NULL. Size of windows in kb within which
+to calculate ld values, if requested. Windows will be two times
+\code{window_sigma} in size unless \code{window_triple_sigma} is true, in
+which case they will be six times \code{window_sigma}.}
+
+\item{window_step}{numeric or NULL, default two times \code{window_sigma}
+(non-overlapping windows if \code{window_triple_sigma} is \code{FALSE}).
+Size of the steps between windows, in kb.}
+
+\item{window_gaussian}{logical, default TRUE. If TRUE, windows will be
+gaussian-smoothed. Otherwise, raw averages will be returned. See
+\code{\link{calc_smoothed_averages}} for details.}
+
+\item{window_triple_sigma}{logical, default TRUE. If TRUE, \code{window_sigma}
+values will be tripled prior to averaging.}
+
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}
+
+\item{.prox_only}{Logical, default FALSE. Primarily for internal use. if TRUE
+returns \emph{ONLY} a proximity table of LD values, not a
+\code{\link{snpRdata}} object.}
 }
 \value{
 a snpRdata object with linkage results stored in the pairwise.LD slot.
@@ -71,11 +96,15 @@ be \emph{very} slow and often produces qualitatively equivalent results, and
 so is not preferred during casual or preliminary analysis. Either method will
 calculate D', r-squared, and the p-value for that r-squared.
 
-Since this process involves many pairwise comparisons, it can be very slow.
+Since this process involves many pairwise comparisons, it can be very slow. As
+an alternative, average LD values can be calculated within sliding windows
+using the \code{window_} family of arguments. This will be substantially
+faster, but individual snp/snp LD values will not be returned. See
+\code{\link{calc_smoothed_averages}} for details.
 
 In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be calculated
 very quickly via the \code{\link{cor}} function from base R.
-\code{LD_full_pairwise} will perform this method alongside the other methods
+\code{calc_pairwise_ld} will perform this method alongside the other methods
 if cld = TRUE and by itself if cld = "only". For most analyses, this will be
 sufficient and much faster than the other methods. This is the default
 behavior.
@@ -84,7 +113,7 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}.
 
 Heatmaps of the resulting data can be easily plotted using
-\code{\link{plot_pairwise_ld_heatmap}}
+\code{\link{plot_pairwise_ld_heatmap}}.
 }
 \examples{
 \dontrun{

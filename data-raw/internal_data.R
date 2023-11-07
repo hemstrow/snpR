@@ -25,12 +25,12 @@ sample.stats <- list(stat = c("het_hom_ratio", "hs"),
 pop.stats <- list(stat = "ne",
                col_pattern = list(c("LDNe_", "Neb_", "He_", "Ne", "CI")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", "prop_poly"),
-                    types = list(c("LD"),
+                    types = list(c("LD", "single.window"),
                                  c("genetic_distances"),
                                  c("ibd"),
                                  c("geo_dist"),
                                  c("weighted.means")),
-                    col_patttern = c(NA, NA, NA, NA, "prop_poly"))
+                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly"))
 
 
 #=============build lists for each stat====================

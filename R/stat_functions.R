@@ -1746,11 +1746,15 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE){
 #'so is not preferred during casual or preliminary analysis. Either method will
 #'calculate D', r-squared, and the p-value for that r-squared.
 #'
-#'Since this process involves many pairwise comparisons, it can be very slow.
+#'Since this process involves many pairwise comparisons, it can be very slow. As
+#'an alternative, average LD values can be calculated within sliding windows
+#'using the \code{window_} family of arguments. This will be substantially
+#'faster, but individual snp/snp LD values will not be returned. See
+#'\code{\link{calc_smoothed_averages}} for details.
 #'
 #'In contrast, Burrow's Composite Linkage Disequilibrium (CLD) can be calculated
 #'very quickly via the \code{\link{cor}} function from base R.
-#'\code{LD_full_pairwise} will perform this method alongside the other methods
+#'\code{calc_pairwise_ld} will perform this method alongside the other methods
 #'if cld = TRUE and by itself if cld = "only". For most analyses, this will be
 #'sufficient and much faster than the other methods. This is the default
 #'behavior.
@@ -1759,7 +1763,7 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE){
 #'as described in \code{\link{Facets_in_snpR}}.
 #'
 #'Heatmaps of the resulting data can be easily plotted using
-#'\code{\link{plot_pairwise_ld_heatmap}}
+#'\code{\link{plot_pairwise_ld_heatmap}}.
 #'
 #'@param x snpRdata. Input SNP data. Note that a SNP column containing snp
 #'  position in base pairs named 'position' is required.
@@ -1781,8 +1785,23 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE){
 #'@param sigma numeric, default 0.0001. If the ME method is used, specifies the
 #'  minimum difference required between steps before haplotype frequencies are
 #'  accepted.
+#'@param window_sigma numeric, default NULL. Size of windows in kb within which
+#'  to calculate ld values, if requested. Windows will be two times
+#'  \code{window_sigma} in size unless \code{window_triple_sigma} is true, in
+#'  which case they will be six times \code{window_sigma}.
+#'@param window_step numeric or NULL, default two times \code{window_sigma}
+#'  (non-overlapping windows if \code{window_triple_sigma} is \code{FALSE}).
+#'  Size of the steps between windows, in kb.
+#'@param window_gaussian logical, default TRUE. If TRUE, windows will be
+#'  gaussian-smoothed. Otherwise, raw averages will be returned. See
+#'  \code{\link{calc_smoothed_averages}} for details.
+#'@param window_triple_sigma logical, default TRUE. If TRUE, \code{window_sigma}
+#'  values will be tripled prior to averaging.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
+#'@param .prox_only Logical, default FALSE. Primarily for internal use. if TRUE
+#'  returns \emph{ONLY} a proximity table of LD values, not a
+#'  \code{\link{snpRdata}} object.
 #'
 #'@return a snpRdata object with linkage results stored in the pairwise.LD slot.
 #'  Specifically, this slot will contain a list containing any LD matrices in a
@@ -1828,7 +1847,11 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE){
 #' }
 calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                              par = FALSE, CLD = "only", use.ME = FALSE, sigma = 0.0001,
-                             verbose = FALSE){
+                             window_sigma = NULL, window_step = window_sigma*2,
+                             window_gaussian = TRUE,
+                             window_triple_sigma = TRUE,
+                             verbose = FALSE,
+                             .prox_only = FALSE){
   #========================sanity checks=============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -1875,6 +1898,17 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(cinst){
       .check.installed("bigmemory")
       .check.installed("bigtabulate")
+    }
+  }
+  
+  if(is.numeric(window_sigma)){
+    if(is.numeric(window_step)){
+      window_step <- window_step*1000
+    }
+    window_sigma <- window_sigma*1000
+    
+    if(window_triple_sigma){
+      window_sigma <- window_sigma*3
     }
   }
   
@@ -2289,9 +2323,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     smDat <- substr(mDat, 1, nchar(mDat)/2)
     
     # subset the requested samps
+    if(!is.matrix(x)){x <- as.matrix(x)}
     x <- x[,snp.list$samps]
     
-    if(!is.matrix(x)){x <- as.matrix(x)}
     
     #double check that the position variable is numeric!
     if(!is.numeric(meta$position)){meta$position <- as.numeric(meta$position)}
@@ -2441,210 +2475,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
   }
   
-  # function to figure out which snps we are comparing to each
-  # outputs a nested list. Each entry in the list is a unique sample facet. In each of these lists is an entry for each unique subfacet level.
-  # in this is an entry for each snp that lists the snps it is compared to.
-  # If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
-  # this function also does the composite LD calculations, since that's most efficiently done here for each subfacet level.
-  determine.comparison.snps <- function(x, facets, facet.types){
-    
-    
-    # sub-subfunctions to get the options for the snp and sample facets
-    get.samp.opts <- function(x, t.facet){
-      sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% t.facet]
-      sample.meta <- sample.meta[,sort(colnames(sample.meta))]
-      if(!is.data.frame(sample.meta)){
-        sample.meta <- as.data.frame(sample.meta)
-        colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% t.facet]
-      }
-      sample.opts <- unique(sample.meta)
-      if(!is.data.frame(sample.opts)){
-        sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
-        colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
-      }
-      sample.opts <- dplyr::arrange_all(sample.opts)
-      
-      return(list(sample.opts, sample.meta))
-    }
-    
-    get.snp.opts <- function(x, t.facet){
-      snp.meta <- x@snp.meta[colnames(x@snp.meta) %in% t.facet]
-      snp.meta <- snp.meta[,sort(colnames(snp.meta))]
-      if(!is.data.frame(snp.meta)){
-        snp.meta <- as.data.frame(snp.meta)
-        colnames(snp.meta) <- colnames(x@snp.meta)[colnames(x@snp.meta) %in% t.facet]
-      }
-      snp.opts <- unique(snp.meta)
-      if(!is.data.frame(snp.opts)){
-        snp.opts <- as.data.frame(snp.opts, stringsAsFactors = F)
-        colnames(snp.opts) <- facets[which(facets %in% colnames(x@snp.meta))]
-      }
-      snp.opts <- dplyr::arrange_all(snp.opts)
-      
-      return(list(snp.opts, snp.meta))
-    }
-    
-    # pull out just the sample facets
-    sample.facets <- .check.snpR.facet.request(x, facets) # the sample level facets that we are working with.
-    
-    # initialize the output list
-    out <- vector(mode = "list", length(sample.facets))
-    names(out) <- sample.facets
-    if(any(facet.types == "snp")){
-      out <- c(out, list(.base = list(.base = list(snps = vector("list", nrow(x)), samps = 1:nrow(x@sample.meta)))))
-    }
-    
-    # loop through each facet, do different things depending on facet type
-    for(i in 1:length(facets)){
-      
-      # grab the facet level list we are writing to.
-      t.samp.facet <- .check.snpR.facet.request(x, facets[i])
-      write.facet <- which(names(out) == t.samp.facet)
-      if(length(write.facet) == 0){
-        t.samp.facet <- ".base"
-        write.facet <- which(names(out) == ".base")
-      }
-      t.facet <- unlist(.split.facet(facets[i]))
-      
-      this.out <- out[[write.facet]]
-      
-      # for sample only, need to loop through each sample level subfacet, then loop through all snps
-      if(facet.types[i] == c("sample")){
-        
-        # get options
-        opts <- get.samp.opts(x, t.facet)
-        sample.opts <- opts[[1]]
-        sample.meta <- opts[[2]]
-        
-        if(t.facet == ".base"){
-          sample.opts <- matrix(".base")
-          sample.meta <- matrix(".base", nrow = nrow(x@sample.meta))
-        }
-        
-        # add snp/snp comparisons. Since the facet is simple, we do all snps. Do so with a loop through all subfacets
-        if(is.null(this.out)){
-          this.out <- vector("list", nrow(sample.opts))
-          names(this.out) <- do.call(paste, as.data.frame(sample.opts))
-        }
-        
-        for(j in 1:nrow(sample.opts)){
-          
-          # grab the subfacet level we are writing to.
-          write.subfacet <- which(names(this.out) == paste(sample.opts[j,], collapse = " "))
-          this.subfacet <- this.out[[write.subfacet]]
-          
-          
-          if(is.null(this.subfacet)){
-            samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
-            this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
-          }
-          
-          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
-          for(k in 1:(nrow(x) - 1)){
-            c.comps <- this.subfacet$snps[[k]]
-            c.comps <- c(c.comps, (k + 1):nrow(x))
-            dups <- which(duplicated(c.comps))
-            if(length(dups) > 0){
-              this.subfacet$snps[[k]] <- c.comps[-dups]
-            }
-            else{
-              this.subfacet$snps[[k]] <- c.comps
-            }
-          }
-          
-          # add back to this.out
-          this.out[[write.subfacet]] <- this.subfacet
-        }
-        
-      }
-      
-      # for snp only, need to loop through each snp level subfacet, then through all snps on that subfacet
-      else if(facet.types[i] == "snp"){
-        # get the subfacet options
-        opts <- get.snp.opts(x, t.facet)
-        snp.opts <- opts[[1]]
-        snp.meta <- opts[[2]]
-        
-        # add snp/snp comparisons. Since the facet is simple, we do all samples, but pick the correct snps. This will be at the .base facet and .base subfacet!
-        for(j in 1:nrow(snp.opts)){
-          snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[j,]))))
-          
-          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
-          for(k in 1:(length(snps.in.subfacet) - 1)){
-            c.comps <- this.out$.base$snps[[snps.in.subfacet[k]]]
-            c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
-            dups <- which(duplicated(c.comps))
-            if(length(dups) > 0){
-              this.out$.base$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
-            }
-            else{
-              this.out$.base$snps[[snps.in.subfacet[k]]] <- c.comps
-            }
-          }
-        }
-      }
-      
-      # for complex, need to loop through first each sample level subfacet, then through the snp level subfacet, then through each snp on that subfacet.
-      else if(facet.types[i] == "complex"){
-        
-        # get the subfacet sample options, snp and sample
-        sample.opts <- get.samp.opts(x, t.facet)
-        snp.opts <- get.snp.opts(x, t.facet)
-        sample.meta <- sample.opts[[2]]
-        sample.opts <- sample.opts[[1]]
-        snp.meta <- snp.opts[[2]]
-        snp.opts <- snp.opts[[1]]
-        
-        
-        if(is.null(this.out)){
-          this.out <- vector("list", nrow(sample.opts))
-          names(this.out) <- do.call(paste, as.data.frame(sample.opts))
-        }
-        
-        
-        # for each sample level option, we make sure that we compare only within snp facet level
-        for(j in 1:nrow(sample.opts)){
-          
-          # grab the subfacet level we are writing to.
-          write.subfacet <-which(names(this.out) == paste(sample.opts[j,], collapse = " "))
-          this.subfacet <- this.out[[write.subfacet]]
-          
-          if(is.null(this.subfacet)){
-            samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
-            this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
-          }
-          
-          for(l in 1:nrow(snp.opts)){
-            snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[l,]))))
-            
-            # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
-            if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
-            for(k in 1:(length(snps.in.subfacet) - 1)){
-              c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
-              c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
-              dups <- which(duplicated(c.comps))
-              if(length(dups) > 0){
-                this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
-              }
-              else{
-                this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps
-              }
-            }
-          }
-          
-          # add back to this.out
-          this.out[[write.subfacet]] <- this.subfacet
-        }
-      }
-      
-      # save the output for this subfacet.
-      out[[write.facet]] <- this.out
-    }
-    
-    # return
-    return(out)
-  }
-  
   
   # function to unpack a nested output list to parse out for snp level facets.
   decompose.LD.matrix <- function(x, LD_matrix, facets, facet.types){
@@ -2714,16 +2544,13 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   }
   
   
-  
-  
   #========================primary looping function==========================
   # this will determine how to call the LD_func.
   # if just one level (".basic"), call the function simply, possibly par.
-  # if multiple, take the output of determine.comparison.snps and loop through each subfacet level, doing the comps included.
+  # if multiple, take the output of .determine.comparison.snps and loop through each subfacet level, doing the comps included.
   
   # the overall function. x is snpRdata object.
-  func <- function(x, facets, snp.facets, par, verbose){
-    
+  func <- function(x, facets, snp.facets, par, verbose, window_sigma, window_step){
     facet.types <- facets[[2]]
     facets <- facets[[1]]
     
@@ -2735,11 +2562,16 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #=====================no facets==============
     if( (length(facets) == 1 & facets[1] == ".base") | all(facet.types == "snp")){
       if(length(facets) == 1 & facets[1] == ".base"){
-        comps <- determine.comparison.snps(x, facets, "sample")
+        comps <- .determine.comparison.snps(x, facets, "sample", window_sigma, window_step)
       }
       
       else{
-        comps <- determine.comparison.snps(x, facets, facet.types)
+        comps <- .determine.comparison.snps(x, facets, facet.types, window_sigma, window_step)
+      }
+      
+      if(is.numeric(window_sigma)){
+        cl <- comps$cl
+        comps <- comps[[1]]
       }
       
       
@@ -2854,6 +2686,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         
         out <- list(prox = prox, LD_matrices = LD_mats)
         
+        if(is.numeric(window_sigma)){
+          return(list(out, cl))
+        }
         return(out)
       }
       
@@ -2876,7 +2711,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         out <- decompose.LD.matrix(x, LD_mats, facets, facet.types)
         out <- list(prox = prox, LD_matrices = out)
         
-        return(out)
+        if(is.numeric(window_sigma)){
+          return(list(out, cl))
+        }
       }
     }
     
@@ -2901,7 +2738,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     # as a part of this, need a function to determine the comparisons to do for each facet and subfacet.
     
-    comps <- determine.comparison.snps(x, facets, facet.types)
+    comps <- .determine.comparison.snps(x, facets, facet.types, window_sigma, window_step)
+    if(is.numeric(window_sigma)){
+      cl <- comps$cl
+      comps <- comps[[1]]
+    }
     
     #prepare output list
     w_list<- vector("list", length = length(comps))
@@ -2921,12 +2762,13 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     #not in parallel
     if(par == FALSE){
-      
+
       #loop through each set of facets
       progress <- 1
       for (i in 1:length(comps)){
         for(j in 1:length(comps[[i]])){
           if(verbose){cat("Subfacet #:", progress, "of", tot_subfacets, " Name:", paste0(names(comps)[i], " " , names(comps[[i]])[j]), "\n")}
+          
           out <- LD_func(x, meta = x@snp.meta, mDat = x@mDat, snp.list = comps[[i]][[j]], verbose = verbose)
           #report progress
           progress <- progress + 1
@@ -2934,7 +2776,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
           w_list$LD_mats[[i]][[j]][[1]] <- out$Dprime
           w_list$LD_mats[[i]][[j]][[2]] <- out$rsq
           w_list$LD_mats[[i]][[j]][[3]] <- out$pval
-          
         }
       }
       
@@ -2943,6 +2784,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       mats <- decompose.LD.matrix(x, w_list$LD_mats, facets, facet.types)
       w_list <- list(prox = prox, LD_matrices = mats)
       
+      if(is.numeric(window_sigma)){
+        return(list(w_list, cl))
+      }
       return(w_list)
     }
     
@@ -2997,6 +2841,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       w_list <- list(prox = prox, LD_matrices = mats)
       
       #return
+      if(is.numeric(window_sigma)){
+        return(list(w_list, cl))
+      }
       return(w_list)
     }
   }
@@ -3089,50 +2936,92 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     facets_trad <- .check.snpR.facet.request(x, facets, remove.type = "none", return.type = T)
     
     # run the function
-    out <- func(x, facets = facets_trad, snp.facets = snp.facets, par = par, verbose = verbose)
-    
+    out <- func(x, facets = facets_trad, snp.facets = snp.facets, par = par, verbose = verbose, window_sigma, window_step)
+
     # add to snpRdata object and return
-    if(exists("old.x")){
-      out <- .merge.snpR.stats(old.x, out, "LD")
+    if(is.numeric(window_sigma)){
       
+      cl <- out[[2]]
+      out <- out[[1]]
+      
+      # if doing filtering, short circuit and return prox alone
+      if(.prox_only){return(out$prox)}
+      
+      cl <- .window_LD_averages(out$prox, facets, window_gaussian, window_triple_sigma, window_step, window_sigma, x = x)
+      
+      if(exists("old.x")){
+        x <- .merge.snpR.stats(old.x, cl, "window.stats")
+      }
+      else{
+        x <- .merge.snpR.stats(x, cl, "window.stats")
+      }
     }
     else{
-      out <- .merge.snpR.stats(x, out, "LD")
+      if(exists("old.x")){
+        x <- .merge.snpR.stats(old.x, out, "LD")
+        
+      }
+      else{
+        x <- .merge.snpR.stats(x, out, "LD")
+      }
     }
+    
   }
   # run CLD components
   if(CLD != F){
     # run the function
-    out <- .calc_CLD(x, facets, par, verbose = verbose)
-    
-    # add to snpRdata object and return
-    if(CLD != "only"){
-      out <- .merge.snpR.stats(x, out, "LD")
-    }
-    else{
-      if(exists("old.x")){
-        out <- .merge.snpR.stats(old.x, out, "LD")
-        
+    if(is.numeric(window_sigma)){
+      out <- .calc_CLD_window(x, facets, par = par, verbose = verbose, window_sigma = window_sigma, window_step = window_step,
+                              window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, .prox_only = .prox_only)
+      
+      if(.prox_only){return(out)}
+      
+      # add to snpRdata object and return
+      if(CLD != "only"){
+        x <- .merge.snpR.stats(x, out, "window.stats")
       }
       else{
-        out <- .merge.snpR.stats(x, out, "LD")
+        if(exists("old.x")){
+          x <- .merge.snpR.stats(old.x, out, "window.stats")
+          
+        }
+        else{
+          x <- .merge.snpR.stats(x, out, "window.stats")
+        }
+      }
+      
+    }
+    else{
+      out <- .calc_CLD(x, facets, par, verbose = verbose)
+      # add to snpRdata object and return
+      if(CLD != "only"){
+        x <- .merge.snpR.stats(x, out, "LD")
+      }
+      else{
+        if(exists("old.x")){
+          x <- .merge.snpR.stats(old.x, out, "LD")
+          
+        }
+        else{
+          x <- .merge.snpR.stats(x, out, "LD")
+        }
       }
     }
   }
   
   #======================update and return============
-  out <- .update_calced_stats(out, facets, "LD")
+  x <- .update_calced_stats(x, facets, "LD")
   if(!isFALSE(CLD)){
-    out <- .update_citations(out, "Cockerham1977", "LD_CLD", "Burrows' Composite Linkage Disequlibrium")
+    x <- .update_citations(x, "Cockerham1977", "LD_CLD", "Burrows' Composite Linkage Disequlibrium")
   }
   if(CLD != "only"){
-    out <- .update_citations(out, "Lewontin1964", "LD_D", "D and D'")
+    x <- .update_citations(x, "Lewontin1964", "LD_D", "D and D'")
     if(use.ME){
-      out <- .update_citations(out, "Excoffier1995", "LD_MLE", "Maximization-Expectation Algorithim for caluculating haplotype frequencies")
+      x <- .update_citations(x, "Excoffier1995", "LD_MLE", "Maximization-Expectation Algorithim for caluculating haplotype frequencies")
     }
   }
   
-  return(out)
+  return(x)
 }
 
 # Calculate Burrow's composite LD. Internal.
@@ -3146,58 +3035,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 # @param par number of parallel cores
 #
 # @author William Hemstrom
-.calc_CLD <- function(x, facets = NULL, par = FALSE, verbose = FALSE){
+.calc_CLD <- function(x, facets = NULL, par = FALSE,
+                      verbose = FALSE){
   proximity <- s1_position <- s2_position <- NULL
   
   #============subfunctions==============
-  # calculate composite LD for a single facet of data.
-  do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
-    melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
-      prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
-      prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
-      prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
-      bad.col <- which(colnames(prox) == "variable")
-      prox <- prox[,-bad.col, with = FALSE]
-      colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-      prox <- prox[-which(is.na(prox$CLD)),]
-      prox <- as.data.table(prox)
-      prox[,proximity := abs(s1_position - s2_position)]
-      prox[,sample.facet := sample.facet]
-      prox[,sample.subfacet := sample.subfacet]
-      setcolorder(prox, c(1:ncol(snp.meta),
-                          (ncol(snp.meta) + 2):(ncol(prox) - 3),
-                          ncol(prox) - 2,
-                          ncol(snp.meta) + 1,
-                          (ncol(prox) - 1):ncol(prox)))
-      return(prox)
-    }
-    
-    # do the CLD calculation, add column/row names, NA out the lower triangle and diag
-    ## CLD
-    suppressWarnings(CLD <- stats::cor(t(genos), use = "pairwise.complete.obs")^2)
-    ## matrix of complete case sample sizes
-    complete.cases.matrix <- !is.na(t(genos))
-    complete.cases.matrix <- crossprod(complete.cases.matrix)
-    
-    # fill in NAs
-    CLD[which(lower.tri(CLD))] <- NA
-    diag(CLD) <- NA
-    complete.cases.matrix[is.na(CLD)] <- NA
-    
-    # add metadata and melt
-    prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
-    prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
-    colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
-    
-    # merge
-    prox <- merge.data.table(prox, prox_S)
-    
-    # add column/row names
-    colnames(CLD) <- snp.meta$position
-    rownames(CLD) <- snp.meta$position
-    return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
-  }
-  
   # take an output lists of matrices and prox tables and sort and name them for merging.
   decompose_outputs <- function(matrix_storage, prox_storage, tasks){
     # figure out the facet names
@@ -3283,13 +3125,12 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                       " Sample Facet:", paste0(tasks[i,1:2], collapse = "\t"),
                       " SNP Facet:", paste0(tasks[i,3:4], collapse = "\t"), "\n")}
       
-      # can't integrate this part into do_CLD without screwing up the parallel due to s4 issues.
       suppressWarnings(y <- .subset_snpR_data(x, facets = tasks[i,1],
                                               subfacets = tasks[i,2],
                                               snp.facets = tasks[i,3],
                                               snp.subfacets = tasks[i,4]))
       
-      out <- do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
+      out <- .do_CLD(y@sn$sn[,-c(1:(ncol(y@snp.meta) - 1))], y@snp.meta, tasks[i, 1], tasks[i, 2])
       
       # extract
       matrix_storage[[i]] <- list(CLD = out$LD_matrix, S = out$S)
@@ -3359,7 +3200,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       for(i in 1:nrow(tasks)){
         
         # run
-        out <- do_CLD(genos = geno.storage[[tasks[i,"ord"]]]$geno,
+        out <- .do_CLD(genos = geno.storage[[tasks[i,"ord"]]]$geno,
                       snp.meta = geno.storage[[tasks[i,"ord"]]]$snp.meta,
                       sample.facet = tasks[i, 1], sample.subfacet = tasks[i, 2])
         
@@ -3386,6 +3227,79 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     matrix_out <- unlist(matrix_out, recursive = F)
     return(decompose_outputs(matrix_out, prox, dplyr::bind_rows(ptasks)[,-5]))
   }
+}
+
+.calc_CLD_window <- function(x, facets = NULL, par = FALSE,  
+                      window_sigma = NULL, 
+                      window_step = window_sigma*2,
+                      window_gaussian = TRUE,
+                      window_triple_sigma = TRUE, 
+                      verbose = FALSE,
+                      .prox_only = FALSE){
+
+  # get the comparisons
+  facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
+  facet.types <- facets[[2]]
+  facets <- facets[[1]]
+  comps <- .determine.comparison.snps(x, facets, facet.types, window_sigma = window_sigma, window_step = window_step, transpose_windows = FALSE)
+  cl <- comps$cl
+  comps <- comps[[1]]
+  
+  sn <- format_snps(x, "sn", interpolate = FALSE)
+  sn <- sn[,-c(1:(ncol(snp.meta(x)) - 1))]
+
+  # loop through each job
+  if(!is.numeric(par)){
+    cld <- vector("list", nrow(cl))
+    for(i in 1:nrow(cl)){
+      tcomps <- comps[[unlist(cl[i,1])]][[unlist(cl[i,2])]]
+      samps <- tcomps$samps
+      tsnps <- tcomps$snps[[unlist(cl[i,3])]][[unlist(cl[i,4])]][[as.character(unlist(cl[i,5]))]]
+      
+      if(length(tsnps) > 0){
+        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,], 
+                            sample.facet = unlist(cl[i,1]), sample.subfacet = unlist(cl[i,2]))$prox
+        
+      }
+    }
+    
+    cld <- data.table::rbindlist(cld)
+    if(.prox_only){return(cld)}
+    out <- .window_LD_averages(cld, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+  }
+  
+  else{
+    cls <- split(cl, sort(rep(1:par, length.out = nrow(cl))))
+    
+    
+    #now need to start the parallel job:
+    cl <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(cl)
+    
+    out <- foreach::foreach(q = 1:par, .export = c(".do_CLD"), .packages = c("data.table", "snpR"), .errorhandling = "pass") %dopar% {
+      options(scipen = 999) # since it will mess up the names otherwise
+      cld <- vector("list", nrow(cls[[q]]))
+      for(i in 1:nrow(cls[[q]])){
+        tcomps <- comps[[unlist(cls[[q]][i,1])]][[unlist(cls[[q]][i,2])]]
+        samps <- tcomps$samps
+        tsnps <- tcomps$snps[[unlist(cls[[q]][i,3])]][[unlist(cls[[q]][i,4])]][[as.character(unlist(cls[[q]][i,5]))]]
+        
+        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,],
+                            sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+      }
+      cld <- data.table::rbindlist(cld)
+      cld
+    }
+    
+    #release cores
+    parallel::stopCluster(cl)
+    
+    out <- data.table::rbindlist(out)
+    if(.prox_only){return(out)}
+    out <- .window_LD_averages(out, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+  }
+  
+  return(out)
 }
 
 #'@export
