@@ -10,6 +10,7 @@ private alleles are desired instead.
 * Added `calc_global_fst()` to calculate $F{ST}$ globally across all facet subfacets.
 * Added local window-smoothed pairwise LD calculation to `calc_pairwise_ld()`. This is a fast alternative to global LD if the user is interested only local LD fluctuations.
 * Added LD pruning to `filter_snps()` to remove loci out of LD within windows.
+* Changed the behavior of any windowing functions slightly. Previously, the final window center would be positioned no further than the end of the chromosome. Window centers can now be positioned within one $\sigma$ (or $3\sigma$ if the `triple_sigma` argument is set) beyond the end of the chromosome. This will ensure that SNPs at the ends of chromosomes are properly within windows, although it will cause truncated windows. This is a trade-off, but doing things this way ensures proper filtering when using `filter_snps()` to do LD pruning.
 
 ### Minor
 * Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
@@ -31,6 +32,7 @@ private alleles are desired instead.
 * Tiny bug fix in `calc_association()` when using a formula but snpR was expecting a character for splitting reasons.
 * Fixed a bug that would cause `ranger` to fail if using the `par` arg to `run_random_forest()`.
 * Fixed a bug where `plot_structure()` wouldn't properly say its citation information.
+* Changed the behavior of `calc_smoothed_averages()` to not throw an error if requesting both single and pairwise stats with `stats.type` if only one of the two has been calculated.
 
 ## Known Bugs
 * `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.

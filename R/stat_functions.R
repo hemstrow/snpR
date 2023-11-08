@@ -2714,6 +2714,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         if(is.numeric(window_sigma)){
           return(list(out, cl))
         }
+        return(out)
       }
     }
     
@@ -2737,7 +2738,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     #     Parse and output results.
     
     # as a part of this, need a function to determine the comparisons to do for each facet and subfacet.
-    
     comps <- .determine.comparison.snps(x, facets, facet.types, window_sigma, window_step)
     if(is.numeric(window_sigma)){
       cl <- comps$cl

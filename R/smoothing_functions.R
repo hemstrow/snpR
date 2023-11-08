@@ -109,7 +109,23 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   }
   if("pairwise" %in% stats.type){
     if(nrow(x@pairwise.stats) == 0){
-      msg <- c(msg, "No pairwise stats calculated.\n")
+      if("single" %in% stats.type & nrow(x@stats) > 0){
+        stats.type <- "single"
+      }
+      else{
+        msg <- c(msg, "No pairwise stats calculated.\n")
+      }
+    }
+  }
+  
+  if("single" %in% stats.type){
+    if(nrow(x@stats) == 0){
+      if("pairwise" %in% stats.type & nrow(x@pairwise.stats) > 0){
+        stats.type <- "pairwise"
+      }
+      else{
+        msg <- c(msg, "No single-population stats calculated.\n")
+      }
     }
   }
   
@@ -403,7 +419,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
   if(triple_sig){
     sigma <- sigma * 3
   }
-  
+
   if(length(chr) > 1){
     nccn <- paste0(chr, collapse = ".")
     
@@ -433,7 +449,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     chr.range <- matrix(c(chr.max, chr.min), ncol = 2)
   }
   
-
   if(!is.null(step)){
     centers <- apply(chr.range, 1, function(y) seq(from = 0, to = y[1] + step, by = step))
   }

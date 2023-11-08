@@ -189,6 +189,9 @@ test_that("correct traditional ld",{
   prox <- tdld$LD$prox
   expect_snapshot_value(tdld$LD$matrices, style = "serialize") # hand checked
   expect_snapshot_value(prox, style = "serialize")
+  
+  n <- nsnps(.internal.data$test_snps)
+  expect_equal(nrow(prox), n*(n-1)/2)
 })
 
 test_that("correct ME ld",{
@@ -200,6 +203,9 @@ test_that("correct ME ld",{
   prox <- tdldme$LD$prox
   expect_snapshot_value(tdldme$LD$matrices, style = "serialize") # hand checked
   expect_snapshot_value(prox, style = "serialize")
+  
+  n <- nsnps(.internal.data$test_snps)
+  expect_equal(nrow(prox), n*(n-1)/2)
 })
 
 test_that("correct window ld",{

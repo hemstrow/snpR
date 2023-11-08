@@ -37,7 +37,7 @@ test_that("correct abba_baba", {
   # smoothed windowed averages
   x <- calc_smoothed_averages(x, "pop.chr", sigma = 200, step = 200,
      nk = TRUE, stats.type = "pairwise")
-  expect_equal(nrow(get.snpR.stats(x, "pop.chr", "abba_baba")$pairwise.window),
-               487)
+  r <- get.snpR.stats(x, "pop.chr", "abba_baba")$pairwise.window
+  expect_equal(nrow(r), 508)
 })
   

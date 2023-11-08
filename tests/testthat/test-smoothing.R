@@ -7,9 +7,9 @@ test_that("basic",{
   # tests
   expect_true("maf" %in% colnames(check))
   expect_true(all(c("facet", "subfacet", "snp.facet", "snp.subfacet", "position") %in% colnames(check)))
-  expect_equal(nrow(check), 2838)
+  expect_equal(nrow(check), 2964)
   expect_true(all(check[check$subfacet == "ASP" & check$snp.subfacet == "groupVI",]$position %in% 
-                     seq(0, 14000000, by = 250*1000)))
+                     seq(0, 14000000 + 250*1000, by = 250*1000)))
 })
 
 
@@ -22,9 +22,9 @@ test_that("pairwise",{
   # tests
   expect_true("fst" %in% colnames(check))
   expect_true(all(c("facet", "subfacet", "snp.facet", "snp.subfacet", "position") %in% colnames(check)))
-  expect_equal(nrow(check), 6904)
+  expect_equal(nrow(check), 7208)
   expect_true(all(check[check$subfacet == "ASP" & check$snp.subfacet == "groupVI",]$position %in% 
-                    seq(0, 14000000, by = 250*1000)))
+                    seq(0, 14000000 + 250*1000, by = 250*1000)))
 })
 
 
@@ -47,4 +47,13 @@ test_that("default bug",{
   check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250)
   check <- get.snpR.stats(check, "chr.pop", "maf")$single.window
   expect_true(all(check$step == 500))
+})
+
+test_that("stats.type reassignment",{
+  # single
+  check <- calc_ho(stickSNPs)
+  expect_error(check <- calc_smoothed_averages(check,  stats.type = "pairwise", sigma = 250),
+               "No pairwise stats calculated")
+  check <- calc_smoothed_averages(check, sigma = 250)
+  expect_true("single.window" %in% names(get.snpR.stats(check, stats = "ho")))
 })
