@@ -69,7 +69,7 @@ test_that("private", {
   
   
   
-  x <- calc_private(x, "pop", rarefaction = TRUE)
+  x <- calc_private(x, "pop", rarefaction = TRUE, g = -1)
   pa2 <- get.snpR.stats(x, "pop", "private")
   expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
   expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
@@ -241,7 +241,7 @@ test_that("tajimas_d",{
 })
 
 test_that("richness", {
-  x <- calc_allelic_richness(stickSNPs[pop = c("ASP", "OPL")], "pop")
+  x <- calc_allelic_richness(stickSNPs[pop = c("ASP", "OPL")], "pop", g = -1)
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "richness"))))
   ar <- get.snpR.stats(x, "pop", "allelic_richness")
  
@@ -252,14 +252,14 @@ test_that("richness", {
 
 test_that("seg_sites", {
   # rarefaction
-  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop")
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", g = -1)
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "seg_sites"))))
   s <- get.snpR.stats(x, "pop", "seg_sites")
   expect_equal(round(s$weighted.means$seg_sites, 3), 
                c(88.946, 88.321))
   
   # no rarefaction
-  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE)
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE, g = -1)
   s <- get.snpR.stats(x, "pop", "seg_sites")
   expect_equal(s$weighted.means$seg_sites, 
                c(90, 96))

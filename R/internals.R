@@ -3256,7 +3256,7 @@ is.snpRdata <- function(x){
 }
 
 # g: number to rarefact to
-.richness_parts <- function(gs, private = TRUE, alleles){
+.richness_parts <- function(gs, private = TRUE, alleles, g = 0){
   facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- NULL
   # equations from https://doi.org/10.1023/B:COGE.0000041021.91777.1a
   # Nij is the table
@@ -3269,7 +3269,20 @@ is.snpRdata <- function(x){
   as <- data.table::as.data.table(as)
   al_cols <- alleles
   as[,.sum := rowSums(.SD), .SDcols = al_cols] # sums for each row
-  as[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
+  
+  if(g == 0){
+    as[,.g := min(.sum), by = .(facet, .snp.id)] # min across all levels
+  }
+  else if(g < 0){
+    as[,.g := min(.sum) + g, by = .(facet, .snp.id)] # min across all levels - g
+  }
+  else if(g > 0){
+    as[,.g := g] # fixed g
+    nans <- which(as$.sum < g)
+    nans <- as$.snp.id[nans]
+    nans <- which(as$.snp.id %in% nans)
+  }
+  
   
   Nj <- as$.sum
   g <- as$.g
@@ -3294,6 +3307,11 @@ is.snpRdata <- function(x){
   }
   else{
     alpha_g[which(g < 2)] <- NaN
+    if(exists("nans")){
+      if(length(nans) > 0){
+        alpha_g[nans] <- NaN
+      }
+    }
     return(list(richness = alpha_g, g = g))
   }
 }

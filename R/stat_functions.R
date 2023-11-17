@@ -80,6 +80,12 @@
 #'  tests are treated as a set.}
 #'@param rarefaction logical, default TRUE. Should the number of segregating
 #'  sites be estimated via rarefaction? See details.
+#'@param g numeric, default 0. If doing rarefaction, controls the number of
+#'  \emph{alleles/gene copies} to rarefact to. If 0, this will rarefact to the
+#'  smallest sample size per locus. If g < 0, this will rarefact to to the
+#'  smallest sample size per locus minus the absolute value of g. If positive,
+#'  this will rarefact to g, and any loci where the smallest sample size is less
+#'  than g will be dropped from the calculation.
 #'
 #'@aliases calc_pi calc_hwe calc_ho calc_private calc_maf calc_he
 #'
@@ -1639,7 +1645,7 @@ calc_ho <- function(x, facets = NULL){
 
 #'@export
 #'@describeIn calc_single_stats find private alleles
-calc_private <- function(x, facets = NULL, rarefaction = TRUE){
+calc_private <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
   facet <- subfacet <- NULL
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
@@ -1699,7 +1705,7 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE){
   
   # run with or without rarefaction
   if(rarefaction){
-    out <- .apply.snpR.facets(x, facets, "meta.gs", .richness_parts, case = "ps.pf", alleles = colnames(x@geno.tables$as))
+    out <- .apply.snpR.facets(x, facets, "meta.gs", .richness_parts, case = "ps.pf", alleles = colnames(x@geno.tables$as), g = g)
     colnames(out)[which(colnames(out) == "pa")] <- "pa_corrected"
     out$richness <- NULL
     sdc <- c("pa_corrected")
@@ -5444,7 +5450,7 @@ calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
 
 #'@export
 #'@describeIn calc_single_stats allelic richness (standardized number of alleles per locus via rarefaction)
-calc_allelic_richness <- function(x, facets = NULL){
+calc_allelic_richness <- function(x, facets = NULL, g = 0){
   ..keep.cols <- facet <- subfacet <- NULL
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
@@ -5454,7 +5460,7 @@ calc_allelic_richness <- function(x, facets = NULL){
   x <- .add.facets.snpR.data(x, facets)
   
   # run
-  ar <- .apply.snpR.facets(x, fun = .richness_parts, facets, req = "meta.gs", private = FALSE, alleles = colnames(x@geno.tables$as))
+  ar <- .apply.snpR.facets(x, fun = .richness_parts, facets, req = "meta.gs", private = FALSE, alleles = colnames(x@geno.tables$as), g = g)
   
   # update
   keep.cols <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "g", "richness")
@@ -5496,6 +5502,12 @@ calc_allelic_richness <- function(x, facets = NULL){
 #'   See \code{\link{Facets_in_snpR}} for details.
 #' @param rarefaction logical, default TRUE. Should the number of segregating
 #'   sites be estimated via rarefaction? See details.
+#' @param g numeric, default 0. If doing rarefaction, controls the number of 
+#'   \emph{genotypes} to rarefact to. If 0, this will rarefact to the smallest
+#'   sample size per locus. If g < 0, this will rarefact to to the smallest 
+#'   sample size per locus minus the absolute value of g. If positive,  this
+#'   will rarefact to g, and any loci where the smallest sample size is less
+#'   than g will be dropped from the calculation.
 #'
 #' @return A snpRdata object with seg_sites merged into the weighted.means 
 #'   slot.
@@ -5512,7 +5524,7 @@ calc_allelic_richness <- function(x, facets = NULL){
 #' x <- calc_seg_sites(stickSNPs, c("pop", "fam"))
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
-calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
+calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
   facet <- subfacet <- NULL
   
   #===========sanity checks============
@@ -5538,7 +5550,19 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
     gs <- data.table::as.data.table(gs)
     gs$.sum <- rowSums(gs) # sums for each row
     gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
-    gs[,.g := min(.sum) - 1, by = .(facet, .snp.id)] # min across all levels
+    if(g == 0){
+      gs[,.g := min(.sum), by = .(facet, .snp.id)] # min across all levels
+    }
+    else if(g < 0){
+      gs[,.g := min(.sum) + g, by = .(facet, .snp.id)] # min across all levels - g
+    }
+    else if(g > 0){
+      gs[,.g := g] # fixed g
+      nans <- which(gs$.sum < g)
+      nans <- gs$.snp.id[nans]
+      nans <- which(gs$.snp.id %in% nans)
+    }
+    
 
     top <- rowSums(choose(x@geno.tables$gs[matches, homs], gs$.g))
     bottom <- choose(rowSums(x@geno.tables$gs[matches,]), gs$.g)
@@ -5553,6 +5577,11 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE){
     # gs$prob_seg <- 1 - (prob_top/prob_bottom)
     #   
     gs$prob_seg[gs$.g < 1] <- NA
+    if(exists("nans")){
+      if(length(nans) > 0){
+        gs$prob_seg[nans] <- NA
+      }
+    }
 
     totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
     colnames(totals)[3] <- "seg_sites"

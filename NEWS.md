@@ -35,7 +35,6 @@ private alleles are desired instead.
 * Changed the behavior of `calc_smoothed_averages()` to not throw an error if requesting both single and pairwise stats with `stats.type` if only one of the two has been calculated.
 
 ## Known Bugs
-* `calc_pairwise_ld()` can error if a specific comparison level has no SNPs.
 * `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
 
 # snpR 1.2.8
