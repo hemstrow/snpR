@@ -33,6 +33,7 @@ private alleles are desired instead.
 * Fixed a bug that would cause `ranger` to fail if using the `par` arg to `run_random_forest()`.
 * Fixed a bug where `plot_structure()` wouldn't properly say its citation information.
 * Changed the behavior of `calc_smoothed_averages()` to not throw an error if requesting both single and pairwise stats with `stats.type` if only one of the two has been calculated.
+* Fixed a bug where calling an `mgc` filter with `filter_snps()` with data with only one option for a heterozygous genotype across all loci would produce an error due to matrix dropping.
 
 ## Known Bugs
 * `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.

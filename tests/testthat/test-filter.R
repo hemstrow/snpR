@@ -194,6 +194,12 @@ test_that("mgc",{
   mg <- rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
   bad.snps <- which(hs_c + mg <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
+  
+  # error that occured with less than 2 heterozygote options
+  d <- format_snps(.internal.data$test_snps, output = "sn")
+  d <- import.snpR.data(d[,-c(1:2)], snp.meta = d[,1:2])
+  d <- filter_snps(d, mgc = 2, verbose = FALSE)
+  expect_equal(nrow(d), 7)
 })
 
 #==========LD=============================

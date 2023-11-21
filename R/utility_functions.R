@@ -1095,8 +1095,8 @@ filter_snps <- function(x, maf = FALSE,
         # in this case, this is the count of *individuals with the minor allele*
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-        het_c <- matrixStats::rowSums2(gmat[,hs])
-        min_g_c <- matrixStats::rowSums2(gmat[,-hs]) - matrixStats::rowMaxs(gmat[,-hs])
+        het_c <- matrixStats::rowSums2(gmat[,hs,drop = FALSE])
+        min_g_c <- matrixStats::rowSums2(gmat[,-hs,drop = FALSE]) - matrixStats::rowMaxs(gmat[,-hs,drop = FALSE])
         
         tgac <- het_c + min_g_c
         
