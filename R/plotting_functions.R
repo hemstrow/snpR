@@ -4008,7 +4008,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
                                       viridis.option = "inferno", 
                                       print_fst = TRUE, mark_sig = FALSE,
                                       lab_lower = FALSE){
-  subfacet <- sig <- weighted_mean_fst_p <- p1 <- p2 <- weighted_mean_fst <- NULL
+  subfacet <- sig <- weighted_mean_fst_p <- p1 <- p2 <- weighted_mean_fst <- . <- NULL
   
   #=============sanity checks============
   if(!is.snpRdata(x)){
@@ -4028,6 +4028,7 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
   
   #============function=============
   make_one_plot <- function(mean_fst, facet.order = NULL){
+    . <- NULL
     mean_fst <- as.data.table(mean_fst)
     mean_fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
     

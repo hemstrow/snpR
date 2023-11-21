@@ -3257,7 +3257,7 @@ is.snpRdata <- function(x){
 
 # g: number to rarefact to
 .richness_parts <- function(gs, private = TRUE, alleles, g = 0){
-  facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- NULL
+  facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- .sum <- .g <- . <- .snp.id <- prob_seg <- NULL
   # equations from https://doi.org/10.1023/B:COGE.0000041021.91777.1a
   # Nij is the table
   # Nj is the rowsums
@@ -3320,6 +3320,8 @@ is.snpRdata <- function(x){
 
 
 .do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
+  proximity <- s1_position <- s2_position <- NULL
+  
   melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
     prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
     prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
@@ -3615,7 +3617,10 @@ is.snpRdata <- function(x){
   # return
   return(out)
 }
+
 .determine.ld.comps.window <- function(x, facets = NULL, par = FALSE, window_sigma, window_step, verbose = FALSE, transpose_windows = TRUE){
+  lev <- NULL
+  
   # one task per facet -- standardize via get.task.list
   tasks <- .get.task.list(x, .check.snpR.facet.request(x, facets, "sample"))
   tasks <- unique(tasks[,3])
@@ -3676,6 +3681,8 @@ is.snpRdata <- function(x){
 
 # function to figure out window values
 .window_LD_averages <- function(prox, facets, window_gaussian, window_triple_sigma, window_step, window_sigma, x){
+  sample.facet <- sample.subfacet <- s1_snp_subfacet <- s2_snp_subfacet <- sigma <- step <- nk.status <- gaussian <- triple_sigma <- NULL
+  
   facet.types <- .check.snpR.facet.request(x, facets, "none", TRUE)[[2]]
   sample.facets <- facets
   sample.facets[facet.types == "snp"] <- ".base"

@@ -610,7 +610,7 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
                             NULL,
                             NULL)
           keys <- unique(c(names(build), names(bpart)))
-          build <- setNames(mapply(c, build[keys], bpart[keys]), keys)
+          build <- stats::setNames(mapply(c, build[keys], bpart[keys]), keys)
           titer <- i*max_snps + 1
         }
         else{

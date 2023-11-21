@@ -114,8 +114,8 @@ write_neestimator_inputs <- function(x, facets, chr = NULL, methods = "LD",
     options <- as.character(t(temporal_details[,1:2]))
     for(i in 1:length(options)){
       write("POP", "snps.gen", append = TRUE)
-      write.table(fd[[options[i]]], "snps.gen", append = TRUE, 
-                  quote = FALSE, row.names = FALSE, col.names = FALSE)
+      utils::write.table(fd[[options[i]]], "snps.gen", append = TRUE, 
+                         quote = FALSE, row.names = FALSE, col.names = FALSE)
       
     }
     

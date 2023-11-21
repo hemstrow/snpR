@@ -14,6 +14,6 @@
   
   
   
-  packageStartupMessage("Support for non-bialleic markers is currently under development.\n\nTo allow for non-biallilic markers, the internal structure of snpRdata objects has been changed slightly. While this version has been written to be backwards compatable, some issues may persist.\n\nIf you encounter any issues relating to a 'bi-allelic' or 'ploidy' slot, please report these and remake the snpRdata object using, for example:\n\t x <- import.snpR.data(genotypes(x), snp.meta(x), sample.meta(x), mDat = 'NN')\n")
+  packageStartupMessage("Note that objects returned by most 'plot_' functions have changed and now return the plot alone, since the data is already accessable using plot$data. This may slightly disrupt old code.\n")
   
 }

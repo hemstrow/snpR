@@ -1725,6 +1725,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
                         phenotype = "phenotype", plink_recode_numeric = FALSE, 
                         verbose = FALSE){
+  
+  POS <- NULL
   if(!isTRUE(verbose)){
     cat <- function(...){}
   }

@@ -196,10 +196,11 @@ test_that("mgc",{
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
   
   # error that occured with less than 2 heterozygote options
-  d <- format_snps(.internal.data$test_snps, output = "sn")
-  d <- import.snpR.data(d[,-c(1:2)], snp.meta = d[,1:2])
+  d <- format_snps(.internal.data$test_snps, output = "sn", interpolate = FALSE)
+  d[is.na(d)] <- -9
+  d <- import.snpR.data(d[,-c(1:2)], snp.meta = d[,1:2], mDat = -9)
   d <- filter_snps(d, mgc = 2, verbose = FALSE)
-  expect_equal(nrow(d), 7)
+  expect_equal(nrow(d), 6)
 })
 
 #==========LD=============================

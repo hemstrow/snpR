@@ -658,7 +658,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
                       cleanup = TRUE,
                       verbose = FALSE){
   facet <- subfacet <- .snp.id <-  weighted.mean <- nk <- fst <- comparison <- ..meta.cols <- ..meta_colnames <- ..ac_cols <- ..col.ord <- fst_id <- . <- ..gc_cols <- ..het_cols_containing_k <- NULL
-  a <- b <- ..component_cols <- NULL
+  a <- b <- ..component_cols <- ..rm.cols <- NULL
   
   if(!isTRUE(verbose)){
     cat <- function(...){}
@@ -1234,7 +1234,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     else{
       real_wm[[i]]$snp.subfacet <- .paste.by.facet(real_wm[[i]], facets = snp.facet[i])
       rm.cols <- unlist(.split.facet(snp.facet[i]))
-      real_wm[[i]] <- real_wm[[i]][,-..rm.cols]
+      .fix..call(real_wm[[i]] <- real_wm[[i]][,-..rm.cols])
     }
   }
   real_wm <- data.table::rbindlist(real_wm, idcol = "facet", fill = TRUE)
@@ -1359,7 +1359,7 @@ calc_fis <- function(x, facets = NULL,
                      keep_components = FALSE){
   
   ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
-  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- NULL
+  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- ..boot_cols <- pt <- NULL
   
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
@@ -1646,7 +1646,7 @@ calc_ho <- function(x, facets = NULL){
 #'@export
 #'@describeIn calc_single_stats find private alleles
 calc_private <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
-  facet <- subfacet <- NULL
+  facet <- subfacet <- . <- NULL
   func <- function(gs){
     # # things to add two kinds of private alleles for debugging purposes.
     # temp <- tail(gs$as)
@@ -3797,7 +3797,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   
   # reset the WD if we errored and report the error
-  if(is(worked, "try-error")){
+  if(methods::is(worked, "try-error")){
     setwd(owd)
     
     # cleanup if requested
@@ -5188,6 +5188,7 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
 
 # eqns from https://doi.org/10.1038/hdy.2017.52
 calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
+  weighted.mean <- NULL
   # browser()
   as <- x@geno.tables$as
   gs <- x@geno.tables$gs
@@ -5451,7 +5452,7 @@ calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
 #'@export
 #'@describeIn calc_single_stats allelic richness (standardized number of alleles per locus via rarefaction)
 calc_allelic_richness <- function(x, facets = NULL, g = 0){
-  ..keep.cols <- facet <- subfacet <- NULL
+  ..keep.cols <- facet <- subfacet <- weighted.mean <- richness <- . <- NULL
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
@@ -5525,7 +5526,7 @@ calc_allelic_richness <- function(x, facets = NULL, g = 0){
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
 calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
-  facet <- subfacet <- NULL
+  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- NULL
   
   #===========sanity checks============
   if(!is.snpRdata(x)){
