@@ -49,8 +49,13 @@
 #'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
 #'@param background character, default "white". Background color for plot.
+#'@param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code.
 #'
-#'@return A pairwise LD heatmap as a ggplot object.
+#'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
+#'  ggplot object. \item{dat: } Data used to generate the ggplot object. } If
+#'  \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
 #'
 #'@author William Hemstrom
 #'@author Nicholas Sard
@@ -72,7 +77,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
                                      l.text = "CLD", viridis.option = "inferno",
                                      gradient_colors = NULL,
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
-                                     background = "white"){
+                                     background = "white",
+                                     simplify_output = FALSE){
   #==============sanity checks===========
   msg <- character()
 
@@ -383,6 +389,12 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     out <- out + ggplot2::ggtitle(title)
   }
 
+  if(simplify_output){
+    return(out)
+  }
+  else{
+    out <- list(plot = out, dat = LD_mats)
+  }
   return(out)
 }
 
@@ -531,12 +543,20 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  \code{\link{citations}} cannot be used to fetch references.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates may be
 #'  reported.
+#'@param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code. Note, however,
+#'  that PCA loadings will only be returned if this is true.
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: ggplot PCA, tSNE, umap, and/or DAPC plots. May
-#'  contain one to four objects, one for each PCA, tSNE, umap, or DAPC plot
-#'  requested, named "pca" "tsne", "umap", and "dapc" respectively.
+#'@return @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
+#'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+#'  Each of these two lists may contain one to four objects, one for each PCA,
+#'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
+#'  respectively. If a PCA was run, the loadings will also be returned in the 
+#'  top-level list. If \code{simplify_output} is \code{FALSE}, only the ggplot 
+#'  list is returned.
 #'
 #'@author William Hemstrom
 #'@author Matt Thorstensen
@@ -577,7 +597,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
                           dapc_clustering_npca = NULL, dapc_clustering_nclust = NULL,
                           dapc_npca = NULL, dapc_ndisc = NULL, ellipse_size = 1.5,
                           seg_lines = TRUE, shape_has_more_levels = TRUE,
-                          update_bib = FALSE, verbose = FALSE,...){
+                          update_bib = FALSE, verbose = FALSE,
+                          simplify_output = FALSE,
+                          ...){
 
   #=============sanity checks============
   y <- cluster <- .cluster <- NULL
@@ -1176,7 +1198,17 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     .yell_citation(keys, stats, details, update_bib)
   }
   
-  return(plots)
+  if(!simplify_output){
+    if("pca" %in% plot_type){
+      return(list(data = plot_dats, plots = plots, pca_loadings = loadings))
+    }
+    else{
+      return(list(data = plot_dats, plots = plots))
+    }
+  }
+  else{
+    return(plots)
+  }
 }
 
 #' Generate a manhattan plot from snpRdata or a data.frame.
@@ -1311,6 +1343,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param lambda_gc_correction Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
+#' @param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code.
 #'
 #' @references Price, A., Zaitlen, N., Reich, D. et al. New approaches to
 #'   population stratification in genome-wide association studies. Nat Rev Genet
@@ -1319,7 +1354,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @author William Hemstrom
 #' @export
 #'
-#' @return A ggplot manhattan plot.
+#' @return A list containing \itemize{\item{plot: } A ggplot manhattan plot.
+#'   \item{data: } Raw plot data.} If \code{simplify_output} is \code{FALSE}, 
+#'   only the ggplot object is returned.
 #'
 #'
 #' @examples
@@ -1405,7 +1442,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
                            lambda_gc_correction = FALSE,
                            chr_order = NULL,
-                           abbreviate_labels = FALSE){
+                           abbreviate_labels = FALSE,
+                           simplify_output = FALSE){
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
 
@@ -1927,7 +1965,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     }
   }
   
-  return(p)
+  if(!simplify_output){
+    return(list(plot = p, data = stats))
+  }
+  else{
+    return(p)
+  }
 }
 
 
@@ -4258,7 +4301,7 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================plot pca=================
   if("pca" %in% plots){
-    .make_it_quiet(pca <- plot_clusters(x, facets = facet))
+    .make_it_quiet(pca <- plot_clusters(x, facets = facet, simplify_output = TRUE))
     pca <- pca$pca
     
     out$pca <- pca

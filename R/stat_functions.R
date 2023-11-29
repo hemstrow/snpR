@@ -1018,7 +1018,6 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
           # Fst <- rowSums(a)/rowSums(a + b + c)
           
           data.table::set(out$Fst, j = c.col, value = rowSums(a)/rowSums(a + b + c)) # write fst
-          saveRDS(out, "temp.RDS")
         }
         
         else{
@@ -1055,13 +1054,15 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   one_wm <- function(x, other_facets){
     groups <- c("comparison", other_facets)
     
-    out <- x[,stats::weighted.mean(a, w = nk, na.rm = T)/
+    out <- x[,list(stats::weighted.mean(a, w = nk, na.rm = T)/
                stats::weighted.mean(a + b + c, w = nk, na.rm = T), 
+               mean(a)/mean(a + b + c)), 
              by = groups] # ratio of averages
     
     # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
     #          by = list(comparison)] # this is the average of ratios...
     colnames(out)[which(colnames(out) == "V1")] <- "weighted_mean_fst"
+    colnames(out)[which(colnames(out) == "V2")] <- "mean_fst"
     return(out)
   }
   

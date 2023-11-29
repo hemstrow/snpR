@@ -16,7 +16,8 @@ plot_pairwise_ld_heatmap(
   gradient_colors = NULL,
   title = NULL,
   t.sizes = c(16, 13, 10, 12, 10),
-  background = "white"
+  background = "white",
+  simplify_output = FALSE
 )
 }
 \arguments{
@@ -61,9 +62,15 @@ selected.}
 c(title, legend.title, legend.ticks, axis, axis.ticks).}
 
 \item{background}{character, default "white". Background color for plot.}
+
+\item{simplify_output}{If TRUE, only the ggplot object will be return. This
+is optimal, since the data is already returned in that object, but is not
+the default due to backwards consistency with old code.}
 }
 \value{
-A pairwise LD heatmap as a ggplot object.
+A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
+ ggplot object. \item{dat: } Data used to generate the ggplot object. } If
+ \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
 }
 \description{
 Prepares a ggplot2 heatmap from pairwise linkage disequilibrium data stored in

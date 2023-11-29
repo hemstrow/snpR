@@ -18,7 +18,9 @@ private alleles are desired instead.
 * Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
 * Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
 * Added a `cleanup` argument to `calc_association()` to allow the intermediate files from `GMMAT` to be retained.
-* To save on memory use, `plot_clusters()`, `plot_manhattan()`, and `plot_pairwise_ld_heatmap()` no longer return the data used to produce the plots in the `$plots` section--this is redundant since `ggplot2` objects already contain the data in `$data`. Note that some old scripts may need to be revised following this change.
+* To save on memory use, `plot_clusters()`, `plot_manhattan()`, and `plot_pairwise_ld_heatmap()` now have the `simplify_output` argument which can be used to return only the `ggplot` objects, not the data used to produce them. The data otherwise in the `$data` is redundant, since `ggplot2` objects already contain the data in `$data`. The default behavior remains the same since otherwise some old scripts would need to be revised following this change.
+* `plot_clusters()` with `simplify_output = FALSE` will now also return all of the PCA loadings (for all PCs) in `$pca_loadings` provided a PCA was requested.
+* `calc_pairwise_fst()` and `calc_global_fst()` now both return raw, un-weighted $F_{ST}$ averages as well as the usual `$n_{k}$ weighted averages. While weighted averages should perform better with any missing data, some users may desire the classical solution. 
 
 ## Documentation
 * Updated the readme to be a bit cleaner.

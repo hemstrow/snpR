@@ -32,7 +32,8 @@ plot_manhattan(
   rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
   lambda_gc_correction = FALSE,
   chr_order = NULL,
-  abbreviate_labels = FALSE
+  abbreviate_labels = FALSE,
+  simplify_output = FALSE
 )
 }
 \arguments{
@@ -160,9 +161,15 @@ x-axis chromosome names will be abbreviated using
 \code{\link[base]{abbreviate}}, with each abbreviated label having the
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
+
+\item{simplify_output}{If TRUE, only the ggplot object will be return. This
+is optimal, since the data is already returned in that object, but is not
+the default due to backwards consistency with old code.}
 }
 \value{
-A ggplot manhattan plot.
+A list containing \itemize{\item{plot: } A ggplot manhattan plot.
+  \item{data: } Raw plot data.} If \code{simplify_output} is \code{FALSE}, 
+  only the ggplot object is returned.
 }
 \description{
 Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are

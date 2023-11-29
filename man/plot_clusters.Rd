@@ -32,6 +32,7 @@ plot_clusters(
   shape_has_more_levels = TRUE,
   update_bib = FALSE,
   verbose = FALSE,
+  simplify_output = FALSE,
   ...
 )
 }
@@ -156,13 +157,22 @@ given that this function does not return a snpRdata object, so a
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates may be
 reported.}
 
+\item{simplify_output}{If TRUE, only the ggplot object will be return. This
+is optimal, since the data is already returned in that object, but is not
+the default due to backwards consistency with old code. Note, however,
+that PCA loadings will only be returned if this is true.}
+
 \item{...}{Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 \code{\link[umap]{umap}}.}
 }
 \value{
-A list containing: ggplot PCA, tSNE, umap, and/or DAPC plots. May
- contain one to four objects, one for each PCA, tSNE, umap, or DAPC plot
- requested, named "pca" "tsne", "umap", and "dapc" respectively.
+@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
+ DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+ Each of these two lists may contain one to four objects, one for each PCA,
+ tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
+ respectively. If a PCA was run, the loadings will also be returned in the 
+ top-level list. If \code{simplify_output} is \code{FALSE}, only the ggplot 
+ list is returned.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at

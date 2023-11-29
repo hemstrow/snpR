@@ -118,9 +118,13 @@ test_that("pca",{
   skip_on_cran();
   
   set.seed(1212)
-  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "pca"))
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "pca", simplify_output = TRUE))
   expect_true(ggplot2::is.ggplot(p$pca))
   # expect_snapshot_value(p$data$pca[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
+  
+  # check that loadings are returned if requested
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "pca", simplify_output = FALSE))
+  expect_true("pca_loadings" %in% names(p))
 })
 
 test_that("tsne",{
@@ -129,7 +133,7 @@ test_that("tsne",{
   
   skip_if_not_installed(c("Rtsne", "mmtsne"))
   set.seed(1212)
-  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne"))
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "tsne", simplify_output = TRUE))
   
   expect_true(ggplot2::is.ggplot(p$tsne))
   # expect_snapshot_value(p$data$tsne[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
@@ -140,7 +144,7 @@ test_that("umap",{
   skip_on_cran();
   skip_if_not_installed(c("umap"))
   set.seed(1212)
-  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap"))
+  .make_it_quiet(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", plot_type = "umap", simplify_output = TRUE))
   
   expect_true(ggplot2::is.ggplot(p$umap))
   # expect_snapshot_value(p$data$umap[,c("PC1", "PC2")], style = "serialize") # run entirely via R's prcomp function, shouldn't change with a set seed.
@@ -151,13 +155,13 @@ test_that("dapc",{
   skip_if_not_installed("adegenet")
   
   set.seed(1212)
-  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL), "please supply all dapc")
+  expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", dapc_clustering_max_n_clust = NULL, simplify_output = TRUE), "please supply all dapc")
   expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc", 
-                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_nclust = 5), 
+                                  dapc_clustering_max_n_clust = NULL, dapc_clustering_nclust = 5, simplify_output = TRUE), 
                "supply both dapc_clustering_npca and dapc_clustering_ndisc")
   expect_error(p <- plot_clusters(stickSNPs[pop = c("ASP", "PAL")], "pop", "dapc",
                                   dapc_clustering_max_n_clust = NULL,
-                                  dapc_npca = 5, dapc_ndisc = NULL), 
+                                  dapc_npca = 5, dapc_ndisc = NULL, simplify_output = TRUE), 
                "pply both dapc_npca and dapc_ndisc")
   
   .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
@@ -165,7 +169,7 @@ test_that("dapc",{
                                     dapc_clustering_npca = 20, 
                                     dapc_clustering_nclust = 5, 
                                     dapc_npca = 20, 
-                                    dapc_ndisc = 4))
+                                    dapc_ndisc = 4, simplify_output = TRUE))
   
   expect_true(ggplot2::is.ggplot(p$dapc))
 })
@@ -178,14 +182,14 @@ test_that("manhattan plots", {
   sample.meta(x)$phenotype <- sample(c("case", "control"), nsamps(stickSNPs), TRUE)
   x <- calc_association(x, response = "phenotype", method = "armitage")
   p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                      log.p = TRUE)
+                      log.p = TRUE, simplify_output = TRUE)
   expect_true(ggplot2::is.ggplot(p))
   
   
   # with data.frame
   y <- get.snpR.stats(x, stats = "association")
   p2 <- plot_manhattan(y$single, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE)
+                       log.p = TRUE, simplify_output = TRUE)
   ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$x$get_labels()
   expect_true(ggplot2::is.ggplot(p2))
   expect_equivalent(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$x$get_labels(),
@@ -196,16 +200,16 @@ test_that("manhattan plots", {
   ## simple facets
   x <- calc_ho(x, "pop")
   y <- get.snpR.stats(x, "pop", "ho")
-  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet")
-  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop")
+  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet", simplify_output = TRUE)
+  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop", simplify_output = TRUE)
   expect_equivalent(ggplot2::ggplot_build(p2)$layout$layout$subfacet,
                     ggplot2::ggplot_build(p1)$layout$layout$subfacet)
   
   ## multilevel facets
   x <- calc_ho(x, "pop.fam")
   y <- get.snpR.stats(x, "pop.fam", "ho")
-  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet")
-  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop.fam")
+  p1 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "subfacet", simplify_output = TRUE)
+  p2 <- plot_manhattan(x, chr = "chr", bp = "position", plot_var = "ho", facets = "pop.fam", simplify_output = TRUE)
   expect_equivalent(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$x$get_labels(),
                     ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$x$get_labels())
   expect_equivalent(ggplot2::ggplot_build(p2)$data[[1]]$y,
@@ -216,12 +220,12 @@ test_that("manhattan plots", {
   y$single$pop <- gsub(".+\\.", "", y$single$subfacet)
   
   ### snpR style facet call
-  p3 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "fam.pop")
+  p3 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = "fam.pop", simplify_output = TRUE)
   expect_equivalent(ggplot2::ggplot_build(p2)$layout$layout$subfacet,
                     ggplot2::ggplot_build(p3)$layout$layout$subfacet)
   
   ### not snpR style facet call
-  p4 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = c("fam", "pop"))
+  p4 <- plot_manhattan(y$single, chr = "chr", bp = "position", plot_var = "ho", facets = c("fam", "pop"), simplify_output = TRUE)
   expect_equivalent(ggplot2::ggplot_build(p3)$layout$layout$subfacet,
                     ggplot2::ggplot_build(p4)$layout$layout$subfacet)
   
@@ -237,7 +241,7 @@ test_that("manhattan plots", {
   
   # with lambda correction
   pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, lambda_gc_correction = TRUE)
+                       log.p = TRUE, lambda_gc_correction = TRUE, simplify_output = TRUE)
   expect_true(".lam" %in% colnames(pl$data))
   if(".lam" %in% colnames(pl$data)){
     expect_true(length(unique(pl$data$.lam)) == 1)
@@ -248,12 +252,12 @@ test_that("manhattan plots", {
   # with facets
   x <- calc_association(x, response = "phenotype", method = "armitage", facets = "pop")
   p <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
-                      log.p = TRUE)
+                      log.p = TRUE, simplify_output = TRUE)
   p1 <- ggplot2::ggplot_build(p)
   expect_true(all(p1$layout$layout$subfacet == c("ASP", "CLF", "OPL", "PAL", "SMR", "UPD")))
   ## also with lambda correction
   pl <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr", facets = "pop",
-                       log.p = TRUE, lambda_gc_correction = TRUE)
+                       log.p = TRUE, lambda_gc_correction = TRUE, simplify_output = TRUE)
   expect_true(".lam" %in% colnames(pl$data))
   if(".lam" %in% colnames(pl$data)){
     expect_true(length(unique(pl$data$.lam)) == 6)
@@ -271,29 +275,29 @@ test_that("manhattan plots", {
 
   # point style
   p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, rug_data = rug_data)
+                       log.p = TRUE, rug_data = rug_data, simplify_output = TRUE)
   expect_true(is(p3$layers[[2]]$geom, "GeomRug"))
 
   # ribbon style
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", simplify_output = TRUE)
   expect_true(is(p4$layers[[2]]$geom, "GeomSegment"))
   
   # with rug labels
   ## point
   p3 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, rug_data = rug_data, rug_label = "gene")
+                       log.p = TRUE, rug_data = rug_data, rug_label = "gene", simplify_output = TRUE)
   expect_true(all(c("label", "position") %in% names(p3$layers[[2]]$mapping)))
   ## ribbon
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene")
+                       log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", rug_label = "gene", simplify_output = TRUE)
   expect_true(all(c("label", "start_position", "end_position") %in% names(p4$layers[[2]]$mapping)))
   
   
   # with tajimas D
   skip_on_cran(); # slower
   x <- calc_tajimas_d(x, facets = "pop.chr", sigma = 100, step = 50)
-  expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr")))
+  expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr", simplify_output = TRUE)))
 })
 
 #=================qq=====================
@@ -343,13 +347,13 @@ test_that("qq plots",{
 #=================LD======================
 test_that("LD heatmap", {
   ld <- calc_pairwise_ld(stickSNPs, "pop.chr", subfacets = list(pop = c("ASP", "PAL"), chr = c("groupXIX", "groupIV")))
-  p <- plot_pairwise_ld_heatmap(ld, "pop.chr")
+  p <- plot_pairwise_ld_heatmap(ld, "pop.chr", simplify_output = TRUE)
   
   expect_true(ggplot2::is.ggplot(p))
   expect_equal(unique(p$data$snp.subfacet), c("groupXIX", "groupIV"))
   expect_equal(unique(p$data$var), c("ASP", "PAL"))
   
-  p2 <- plot_pairwise_ld_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP")
+  p2 <- plot_pairwise_ld_heatmap(ld, "pop.chr", snp.subfacet = "groupIV", sample.subfacet = "ASP", simplify_output = TRUE)
   expect_true(ggplot2::is.ggplot(p2))
   expect_equal(unique(p2$data$snp.subfacet), c("groupIV"))
   expect_equal(unique(p2$data$var), c("ASP"))

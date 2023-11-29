@@ -21,6 +21,8 @@ test_that("correct wc", {
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_true(all(paste0("var_comp_", c("a", "b", "c")) %in% colnames(tdfst$pairwise))) # did ask for var comps
   
+  # both weighted and unweighted fsts
+  expect_true(all(c("weighted_mean_fst", "mean_fst") %in% colnames(tdfst$weighted.means)))
 })
 
 
@@ -290,4 +292,7 @@ test_that("global fst",{
                     c(0.078, -0.002, -0.025, 0.143, 0.011, 0.136, 0.059, 0.08, 0.04, 0.025)) # from pegas, see above
   
   expect_equal(round(tdfst$weighted.means$weighted_mean_fst, 3), 0.094)
+  
+  # both weighted and unweighted fsts
+  expect_true(all(c("weighted_mean_fst", "mean_fst") %in% colnames(tdfst$weighted.means)))
 })
