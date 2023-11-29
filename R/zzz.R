@@ -10,10 +10,4 @@
     packageStartupMessage("Check out the NEWS page on github for update notes (https://github.com/hemstrow/snpR/blob/master/NEWS.md)\n", .console_hline(), "\n")
     
   }
-  
-  
-  
-  
-  packageStartupMessage("Note that objects returned by most 'plot_' functions have changed and now return the plot alone, since the data is already accessable using plot$data. This may slightly disrupt old code.\n")
-  
 }
