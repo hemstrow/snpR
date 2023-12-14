@@ -607,11 +607,16 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
-  
+
+  starting_snps <- nrow(x)
   if(!.skip_filters){
     # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
     if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
     .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
+  }
+  ending_snps <- nrow(x)
+  if(starting_snps != ending_snps){
+    warning(paste0(starting_snps - ending_snps, " SNPs were removed from the input data set because they were not bi-allelic.\n"))
   }
   
   # add basic maf
