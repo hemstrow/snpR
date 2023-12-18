@@ -35,7 +35,8 @@ input formats.}
 description for details.}
 
 \item{facets}{Character or NULL, default NULL. Facets over which to break up
-data for some output formats, following the format described in
+data for some output formats, such as within one file for \code{genepop} or
+across multiple files for \code{vcf}, following the format described in
 \code{\link{Facets_in_snpR}}.}
 
 \item{n_samp}{Integer or numeric vector, default NA. For structure or RAFM

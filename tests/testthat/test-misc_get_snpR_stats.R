@@ -35,3 +35,18 @@ test_that("summarize_facets",{
   expect_equal(sort(check_sum$chr.fam.pop), sort(chr_pop_fam_check))
   
 })
+
+test_that("bad facet request with duplicates",{
+  
+  meta <- sample.meta(stickSNPs)
+  meta$dup_test <- "ASP"
+  
+  snpm <- snp.meta(stickSNPs)
+  snpm$dup_test2 <- "ASP"
+  expect_warning(test <- import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm))
+  
+  
+  expect_error(calc_pi(test, "pop.dup_test"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test, pop")
+  expect_error(calc_pi(test, "pop.dup_test2"), "This will cause issues if those facets are run during analysis.+Level: ASP\tin facets: dup_test2, pop")
+  
+})

@@ -40,7 +40,7 @@ For details on methods, see details.
 \details{
 If a sample facet is requested, distances are calculated via code adapted
 from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
-alongside the tree-building and distance methods Available methods:
+alongside the tree-building and distance methods. Available methods:
 \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
 \item{Nei: } Nei's (1978) genetic distance measure.}
 

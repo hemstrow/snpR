@@ -60,11 +60,19 @@ test_that("ho", {
 
 
 test_that("private", {
-  tdm <- calc_private(tdm, "pop")
-  expect_true(all(unlist(.check_calced_stats(tdm, c("pop"), "pa"))))
-  pa <- get.snpR.stats(tdm, "pop", "private")$single
+  x <- calc_private(stickSNPs[pop = c("ASP", "OPL")], "pop", rarefaction = FALSE)
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "pa"))))
+  pa <- get.snpR.stats(x, "pop", "private")
   
-  expect_equal(pa$pa, c(0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)) # hand calced
+  expect_equal(which(pa$single$pa_uncorrected == 1), c(37, 98, 108, 122, 138, 156, 166, 180, 188, 193)) # hand calced
+  expect_equal(pa$weighted.means$total_pa_uncorrected, c(2, 8)) # hand calced
+  
+  
+  
+  x <- calc_private(x, "pop", rarefaction = TRUE, g = -1)
+  pa2 <- get.snpR.stats(x, "pop", "private")
+  expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
+  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
 })
 
 test_that("hwe", {
@@ -231,4 +239,43 @@ test_that("tajimas_d",{
   expect_true(all(paste0("fam.pop.", lapply(strsplit(sf$chr.fam.pop, "\\."), function(x){paste0(x[2], ".", x[3], ".chr.", x[1])})) %in% levs_pasted))
   expect_true(all(c("global_ws.theta", "global_ts.theta", "global_D", "global_num_seg") %in% colnames(tsdc$weighted.means)))
 })
+
+test_that("richness", {
+  x <- calc_allelic_richness(stickSNPs[pop = c("ASP", "OPL")], "pop", g = -1)
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "richness"))))
+  ar <- get.snpR.stats(x, "pop", "allelic_richness")
+ 
+  expect_true("richness" %in% colnames(ar$single))
+  expect_equal(round(ar$weighted.means$weighted_mean_richness, 3), 
+               c(1.893, 1.885))
+})
+
+test_that("seg_sites", {
+  # rarefaction
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", g = -1)
+  expect_true(all(unlist(.check_calced_stats(x, c("pop"), "seg_sites"))))
+  s <- get.snpR.stats(x, "pop", "seg_sites")
+  expect_equal(round(s$weighted.means$seg_sites, 3), 
+               c(88.946, 88.321))
   
+  # no rarefaction
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE, g = -1)
+  s <- get.snpR.stats(x, "pop", "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               c(90, 96))
+  
+  # base facet, try to rarefact
+  expect_warning(x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")]), "There is no reason to conduct rarefaction")
+  expect_true(all(unlist(.check_calced_stats(x, ".base", "seg_sites"))))
+  s <- get.snpR.stats(x, stats =  "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               98)
+  
+  # base facet, don't try to rarefact
+  x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], rarefaction = FALSE)
+  expect_true(all(unlist(.check_calced_stats(x, ".base", "seg_sites"))))
+  s <- get.snpR.stats(x, stats =  "seg_sites")
+  expect_equal(s$weighted.means$seg_sites, 
+               98)
+})
+

@@ -260,7 +260,7 @@
   .check.installed("vcfR")
   
   #========import data=======================
-  if(!is(vcf_file, "vcfR")){
+  if(!methods::is(vcf_file, "vcfR")){
     vcf <- vcfR::read.vcfR(vcf_file)
   }
   else{
@@ -631,6 +631,8 @@
                                marker_names = FALSE,
                                header_cols = 1,
                                snp.meta = NULL, sample.meta = NULL, mDat = -9){
+  
+  
   #==========read in and categorize input data============
   if(marker_names){
     header <- data.table::fread(structure_file, nrows = 1, header = FALSE)
@@ -655,7 +657,7 @@
   # process snp metadata
   if(marker_names & is.null(snp.meta)){
     snp.meta <- data.frame(ID = unlist(header))
-    snp.meta <- na.omit(snp.meta)
+    snp.meta <- stats::na.omit(snp.meta)
   }
   
   #================process genotypes=======================

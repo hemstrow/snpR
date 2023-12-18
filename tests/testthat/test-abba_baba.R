@@ -1,8 +1,8 @@
 test_that("correct abba_baba", {
   x <- stickSNPs
   maf <- get.snpR.stats(x, ".base", stats = "maf")$single
-  snp.meta(x)$ref <- maf$major
-  snp.meta(x)$anc <- maf$minor
+  expect_warning(snp.meta(x)$ref <- maf$major, "duplicated")
+  expect_warning(snp.meta(x)$anc <- maf$minor, "duplicated")
 
   x <- calc_abba_baba(x, "pop.chr", "ASP", "UPD", "PAL", TRUE, sigma = 1000)
   r1 <- get.snpR.stats(x, "pop.chr", "abba_baba") # gets the per chr results
@@ -37,7 +37,7 @@ test_that("correct abba_baba", {
   # smoothed windowed averages
   x <- calc_smoothed_averages(x, "pop.chr", sigma = 200, step = 200,
      nk = TRUE, stats.type = "pairwise")
-  expect_equal(nrow(get.snpR.stats(x, "pop.chr", "abba_baba")$pairwise.window),
-               487)
+  r <- get.snpR.stats(x, "pop.chr", "abba_baba")$pairwise.window
+  expect_equal(nrow(r), 508)
 })
   

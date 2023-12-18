@@ -1297,7 +1297,7 @@ is.snpRdata <- function(x){
       return(".base")
     }
   }
-
+  
   
   # remove the facet parts as requested.
   facets <- .split.facet(facets)
@@ -1384,6 +1384,36 @@ is.snpRdata <- function(x){
                                       facets[[i]][j], 
                                       "' cannot be used as a facet level since it contains: \n\t", 
                                       paste0(bad.chars.rep[bad], collapse = "\n\t ")))}
+    }
+    
+    # check for duplicates in our multi-part facets (also slows down but helps catch errors)
+    if(length(facets[[i]]) > 0){
+      d <- vector("list", 0)
+      for(j in 1:length(facets[[i]])){
+        if(facets[[i]][j] %in% colnames(x@snp.meta)){
+          d[length(d) + 1] <- x@snp.meta[,facets[[i]][j], drop = FALSE]
+          names(d)[length(d)] <- facets[[i]][j]
+        }
+        else if(facets[[i]][j] %in% colnames(x@sample.meta)){
+          d[length(d) + 1] <- x@sample.meta[,facets[[i]][j], drop = FALSE]
+          names(d)[length(d)] <- facets[[i]][j]
+        }
+      }
+      
+      uniques <- lapply(d, unique)
+      un <- rep(names(uniques), lengths(uniques))
+      uniques <- unlist(uniques, use.names = FALSE)
+      names(uniques) <- un
+      rm(un)
+      if(any(duplicated(uniques))){
+        dups <- sort(uniques[which(duplicated(uniques) | duplicated(uniques, fromLast = TRUE))])
+        msg <- unique(dups)
+        pst_msg <- "Some levels are duplicated across multiple facets.\nThis will cause issues if those facets are run during analysis.\nIssues:\n"
+        for(q in 1:length(msg)){
+          pst_msg <- paste0(pst_msg, "\nLevel: ", msg[q], "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
+        }
+        stop(pst_msg)
+      }
     }
     
     # update
@@ -2581,6 +2611,7 @@ is.snpRdata <- function(x){
 # @param x matrix, genotypes or other character states
 # @param method character, default Edwards. Dist method.
 .get_dist <- function(x, method = "Edwards"){
+  #browser()
   if(method == "Edwards"){
     x <- x[,which(colSums(is.na(x)) == 0)] # remove anywhere where there is missing data!
     nloc <- ncol(x)
@@ -2926,8 +2957,8 @@ is.snpRdata <- function(x){
 # @param nc If CV = coefficient of variation in sample size, nc = nbar*(1-(CV^2)/r)
 # @param iho ho for pop 1
 # @param jho ho for pop 2
-.per_all_f_stat_components <- function(intot, jntot = NULL, ps1, ps2 = NULL, r, nbar, nc, iho, jho = NULL){
-  if(r == 2){
+.per_all_f_stat_components <- function(intot = NULL, jntot = NULL, ps1 = NULL, ps2 = NULL, r, nbar, nc, iho = NULL, jho = NULL, ntotm = NULL, psm = NULL, hom = NULL){
+  if(r == 2 & !is.null(intot)){
     pbar <- ((intot*ps1) + (jntot*ps2))/(r*nbar) #average sample allele frequency
     ssq <- (((intot)*(ps1-pbar)^2) + ((jntot)*(ps2-pbar)^2))/((r-1)*nbar) #sample variance of allele frequencies
     hbar <- ((intot*iho) + (jntot*jho))/(r*nbar) #average heterozygote frequencies
@@ -2937,6 +2968,12 @@ is.snpRdata <- function(x){
     ssq <- 0 #sample variance of allele frequencies
     hbar <- iho #average heterozygote frequencies
   }
+  else if(r > 2 | (r == 2 & is.null(intot))){
+    pbar <- rowSums(ntotm * psm)/(r*nbar) #average sample allele frequency
+    ssq <- rowSums(ntotm*(psm-pbar)^2)/((r - 1)*nbar)
+    hbar <- rowSums(ntotm*hom)/(r*nbar)
+  }
+  
   
   
   #equation parts used in both
@@ -2950,9 +2987,10 @@ is.snpRdata <- function(x){
   c <- .5*hbar
   
   # # browser()
-  # if(.print){
-  #   write.table(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "check.txt")
+  # if(.print & !is.null(intot)){
+  #   saveRDS(data.frame(pbar = pbar, ssq = ssq, hbar = hbar, iho = iho, intot = intot, jntot = jntot, jho = jho, inner1 = inner1, inner2 = inner2, inner3 = inner3, inner4 = inner4, a = a, b = b, c = c), "test.RDS")
   # }
+  # else if(.print){browser()}
   return(list(a = a, b = b, c = c))
   
   # weir--exactly the same
@@ -3215,4 +3253,513 @@ is.snpRdata <- function(x){
   }
   
   return(x)
+}
+
+# g: number to rarefact to
+.richness_parts <- function(gs, private = TRUE, alleles, g = 0){
+  facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- .sum <- .g <- . <- .snp.id <- prob_seg <- NULL
+  # equations from https://doi.org/10.1023/B:COGE.0000041021.91777.1a
+  # Nij is the table
+  # Nj is the rowsums
+  # m is the row sum of != 0
+
+  # step: need to calculate g for each row
+  as <- gs$as
+  rm(gs); gc();
+  as <- data.table::as.data.table(as)
+  al_cols <- alleles
+  as[,.sum := rowSums(.SD), .SDcols = al_cols] # sums for each row
+  
+  if(g == 0){
+    as[,.g := min(.sum), by = .(facet, .snp.id)] # min across all levels
+  }
+  else if(g < 0){
+    as[,.g := min(.sum) + g, by = .(facet, .snp.id)] # min across all levels - g
+  }
+  else if(g > 0){
+    as[,.g := g] # fixed g
+    nans <- which(as$.sum < g)
+    nans <- as$.snp.id[nans]
+    nans <- which(as$.snp.id %in% nans)
+  }
+  
+  
+  Nj <- as$.sum
+  g <- as$.g
+  meta <- .fix..call(as[,-..al_cols])
+  as <- as.matrix(.fix..call(as[,..al_cols]))
+  Qijg <- choose(Nj - as, g)/choose(Nj, g) # eqn 2a
+  Pijg <- 1 - Qijg # eqn 2b
+  
+  alpha_g <- matrixStats::rowSums2(Pijg)
+  if(private){ # eqn 4
+    meta <- cbind(meta, data.table::as.data.table(Qijg))
+    meta[, paste0(al_cols, "_p") := lapply(.SD, prod), .SDcols = c(al_cols), by = .(facet, .snp.id)] # product across all populations
+    p_al_cols <- paste0(al_cols, "_p")
+    
+    
+    # next, need to divide out the value for each, since it's actually the product across all save this population
+    acs <- as.matrix(.fix..call(meta[,..al_cols]))
+    prods <- as.matrix(.fix..call(meta[,..p_al_cols]))
+    pi_g <- rowSums(Pijg*(prods/acs), na.rm = TRUE)
+    pi_g[which(is.nan(alpha_g))] <- NaN # add back in the NaN values where our sample size was too small in one pop. This got dropped in the above na.rm, which was needed due to the 0/0 prob.
+    return(list(richness = alpha_g, pa = pi_g, g = g))
+  }
+  else{
+    alpha_g[which(g < 2)] <- NaN
+    if(exists("nans")){
+      if(length(nans) > 0){
+        alpha_g[nans] <- NaN
+      }
+    }
+    return(list(richness = alpha_g, g = g))
+  }
+}
+
+
+
+
+.do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
+  proximity <- s1_position <- s2_position <- NULL
+  
+  melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
+    prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
+    prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
+    prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
+    bad.col <- which(colnames(prox) == "variable")
+    prox <- prox[,-bad.col, with = FALSE]
+    colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
+    prox <- prox[-which(is.na(prox$CLD)),]
+    prox <- as.data.table(prox)
+    prox[,proximity := abs(s1_position - s2_position)]
+    prox[,sample.facet := sample.facet]
+    prox[,sample.subfacet := sample.subfacet]
+    setcolorder(prox, c(1:ncol(snp.meta),
+                        (ncol(snp.meta) + 2):(ncol(prox) - 3),
+                        ncol(prox) - 2,
+                        ncol(snp.meta) + 1,
+                        (ncol(prox) - 1):ncol(prox)))
+    return(prox)
+  }
+  
+  # do the CLD calculation, add column/row names, NA out the lower triangle and diag
+  ## CLD
+  suppressWarnings(CLD <- stats::cor(t(genos), use = "pairwise.complete.obs")^2)
+  ## matrix of complete case sample sizes
+  complete.cases.matrix <- !is.na(t(genos))
+  complete.cases.matrix <- crossprod(complete.cases.matrix)
+  
+  # fill in NAs
+  CLD[which(lower.tri(CLD))] <- NA
+  diag(CLD) <- NA
+  complete.cases.matrix[is.na(CLD)] <- NA
+  
+  # add metadata and melt
+  prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
+  prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
+  colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
+  
+  # merge
+  prox <- merge.data.table(prox, prox_S)
+  
+  # add column/row names
+  colnames(CLD) <- snp.meta$position
+  rownames(CLD) <- snp.meta$position
+  return(list(prox = prox, LD_matrix = CLD, S = complete.cases.matrix))
+}
+
+# function to figure out which snps we are comparing to each
+# outputs a nested list. Each entry in the list is a unique sample facet. In each of these lists is an entry for each unique subfacet level.
+# in this is an entry for each snp that lists the snps it is compared to.
+# If multiple entries would write to the same sample facet and subfacet, it will just add any new comparisons needed.
+# this function also does the composite LD calculations, since that's most efficiently done here for each subfacet level.
+.determine.comparison.snps <- function(x, facets, facet.types, window_sigma, window_step, transpose_windows = TRUE){
+  if(is.list(facet.types)){
+    facet.types <- facet.types[[2]]
+  }
+  
+  if(is.numeric(window_sigma)){
+    
+    
+    # correct format (for sample facets, noting samples)
+    sample.facets <- facets
+    if(any(facet.types == "snp")){sample.facets[facet.types == "snp"] <- ".base"}
+    if(any(facet.types == "complex")){sample.facets[facet.types == "complex"] <- unlist(lapply(sample.facets[facet.types == "complex"], function(tf) .check.snpR.facet.request(x, tf, "snp")))}
+    
+    snp.facets <- facets
+    if(any(facet.types == "sample")){snp.facets[facet.types == "sample"] <- ".base"}
+    if(any(facet.types == "complex")){snp.facets[facet.types == "complex"] <- unlist(lapply(snp.facets[facet.types == "complex"], function(tf) .check.snpR.facet.request(x, tf, "sample")))}
+    
+    usamp <- unique(sample.facets)
+    out <- vector("list", length(usamp))
+    names(out) <- usamp
+    cl <- data.table(facet = character(), subfacet = character(), 
+                     snp.facet = character(), snp.subfacet = character(),
+                     center = numeric(),
+                     start = numeric(),
+                     end = numeric())
+    
+    # loop through and apply
+    for(i in 1:length(usamp)){
+      comps <- .determine.ld.comps.window(x, snp.facets[which(sample.facets == usamp[i])], facet.types, window_sigma, window_step, transpose_windows = transpose_windows)
+      
+      tl <- .get.task.list(x, usamp[i])
+      out[[i]] <- vector("list", length = nrow(tl))
+      names(out[[i]]) <- tl[,2]
+      for(j in 1:nrow(tl)){
+        out[[i]][[j]] <- list(snps = comps[[1]],
+                              samps = .fetch.sample.meta.matching.task.list(x, tl[j,]))
+        
+        cl <- rbind(cl,
+                    cbind(facet = usamp[i], subfacet = tl[j,2], comps$cl))
+      }
+    }
+    
+    
+    return(list(out, cl = cl))
+  }
+  
+  # sub-subfunctions to get the options for the snp and sample facets
+  get.samp.opts <- function(x, t.facet){
+    sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% t.facet]
+    sample.meta <- sample.meta[,sort(colnames(sample.meta))]
+    if(!is.data.frame(sample.meta)){
+      sample.meta <- as.data.frame(sample.meta)
+      colnames(sample.meta) <- colnames(x@sample.meta)[colnames(x@sample.meta) %in% t.facet]
+    }
+    sample.opts <- unique(sample.meta)
+    if(!is.data.frame(sample.opts)){
+      sample.opts <- as.data.frame(sample.opts, stringsAsFactors = F)
+      colnames(sample.opts) <- facets[which(facets %in% colnames(x@sample.meta))]
+    }
+    sample.opts <- dplyr::arrange_all(sample.opts)
+    
+    return(list(sample.opts, sample.meta))
+  }
+  
+  get.snp.opts <- function(x, t.facet){
+    snp.meta <- x@snp.meta[colnames(x@snp.meta) %in% t.facet]
+    snp.meta <- snp.meta[,sort(colnames(snp.meta))]
+    if(!is.data.frame(snp.meta)){
+      snp.meta <- as.data.frame(snp.meta)
+      colnames(snp.meta) <- colnames(x@snp.meta)[colnames(x@snp.meta) %in% t.facet]
+    }
+    snp.opts <- unique(snp.meta)
+    if(!is.data.frame(snp.opts)){
+      snp.opts <- as.data.frame(snp.opts, stringsAsFactors = F)
+      colnames(snp.opts) <- facets[which(facets %in% colnames(x@snp.meta))]
+    }
+    snp.opts <- dplyr::arrange_all(snp.opts)
+    
+    return(list(snp.opts, snp.meta))
+  }
+  
+  # pull out just the sample facets
+  sample.facets <- .check.snpR.facet.request(x, facets) # the sample level facets that we are working with.
+  
+  # initialize the output list
+  out <- vector(mode = "list", length(sample.facets))
+  names(out) <- sample.facets
+  if(any(facet.types == "snp")){
+    out <- c(out[-which(names(out) == ".base")], list(.base = list(.base = list(snps = vector("list", nrow(x)), samps = 1:nrow(x@sample.meta)))))
+  }
+  
+  # loop through each facet, do different things depending on facet type
+  for(i in 1:length(facets)){
+    
+    # grab the facet level list we are writing to.
+    t.samp.facet <- .check.snpR.facet.request(x, facets[i])
+    write.facet <- which(names(out) == t.samp.facet)
+    if(length(write.facet) == 0){
+      t.samp.facet <- ".base"
+      write.facet <- which(names(out) == ".base")
+    }
+    t.facet <- unlist(.split.facet(facets[i]))
+    
+    this.out <- out[[write.facet]]
+    
+    # for sample only, need to loop through each sample level subfacet, then loop through all snps
+    if(facet.types[i] == c("sample")){
+      
+      # get options
+      opts <- get.samp.opts(x, t.facet)
+      sample.opts <- opts[[1]]
+      sample.meta <- opts[[2]]
+      
+      if(t.facet == ".base"){
+        sample.opts <- matrix(".base")
+        sample.meta <- matrix(".base", nrow = nrow(x@sample.meta))
+      }
+      
+      # add snp/snp comparisons. Since the facet is simple, we do all snps. Do so with a loop through all subfacets
+      if(is.null(this.out)){
+        this.out <- vector("list", nrow(sample.opts))
+        names(this.out) <- do.call(paste, as.data.frame(sample.opts))
+      }
+      
+      for(j in 1:nrow(sample.opts)){
+        
+        # grab the subfacet level we are writing to.
+        write.subfacet <- which(names(this.out) == paste(sample.opts[j,], collapse = " "))
+        this.subfacet <- this.out[[write.subfacet]]
+        
+        
+        if(is.null(this.subfacet)){
+          samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
+          this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
+        }
+        
+        # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+        for(k in 1:(nrow(x) - 1)){
+          c.comps <- this.subfacet$snps[[k]]
+          c.comps <- c(c.comps, (k + 1):nrow(x))
+          dups <- which(duplicated(c.comps))
+          if(length(dups) > 0){
+            this.subfacet$snps[[k]] <- c.comps[-dups]
+          }
+          else{
+            this.subfacet$snps[[k]] <- c.comps
+          }
+        }
+        
+        # add back to this.out
+        this.out[[write.subfacet]] <- this.subfacet
+      }
+      
+    }
+    
+    # for snp only, need to loop through each snp level subfacet, then through all snps on that subfacet
+    else if(facet.types[i] == "snp"){
+      # get the subfacet options
+      opts <- get.snp.opts(x, t.facet)
+      snp.opts <- opts[[1]]
+      snp.meta <- opts[[2]]
+      
+      # add snp/snp comparisons. Since the facet is simple, we do all samples, but pick the correct snps. This will be at the .base facet and .base subfacet!
+      for(j in 1:nrow(snp.opts)){
+        snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[j,]))))
+        
+        # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+        for(k in 1:(length(snps.in.subfacet) - 1)){
+          if(length(snps.in.subfacet) == 1){
+            next
+          }
+          c.comps <- this.out$.base$snps[[snps.in.subfacet[k]]]
+          c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
+          dups <- which(duplicated(c.comps))
+          if(length(dups) > 0){
+            this.out$.base$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
+          }
+          else{
+            this.out$.base$snps[[snps.in.subfacet[k]]] <- c.comps
+          }
+        }
+      }
+    }
+    
+    # for complex, need to loop through first each sample level subfacet, then through the snp level subfacet, then through each snp on that subfacet.
+    else if(facet.types[i] == "complex"){
+      
+      # get the subfacet sample options, snp and sample
+      sample.opts <- get.samp.opts(x, t.facet)
+      snp.opts <- get.snp.opts(x, t.facet)
+      sample.meta <- sample.opts[[2]]
+      sample.opts <- sample.opts[[1]]
+      snp.meta <- snp.opts[[2]]
+      snp.opts <- snp.opts[[1]]
+      
+      
+      if(is.null(this.out)){
+        this.out <- vector("list", nrow(sample.opts))
+        names(this.out) <- do.call(paste, as.data.frame(sample.opts))
+      }
+      
+      
+      # for each sample level option, we make sure that we compare only within snp facet level
+      for(j in 1:nrow(sample.opts)){
+        
+        # grab the subfacet level we are writing to.
+        write.subfacet <-which(names(this.out) == paste(sample.opts[j,], collapse = " "))
+        this.subfacet <- this.out[[write.subfacet]]
+        
+        if(is.null(this.subfacet)){
+          samps.in.subfacet <- which(apply(sample.meta, 1, function(x) identical(as.character(x), as.character(sample.opts[j,]))))
+          this.subfacet <- list(snps = vector("list", nrow(x)), samps = samps.in.subfacet)
+        }
+        
+        for(l in 1:nrow(snp.opts)){
+          snps.in.subfacet <- which(apply(snp.meta, 1, function(x) identical(as.character(x), as.character(snp.opts[l,]))))
+          
+          # add comparisons for each snp. Note that the last snp, with no comparisons to do, will recieve a NULL
+          if(length(snps.in.subfacet) == 1){next} # if only one snp here, no LD to calculate
+          for(k in 1:(length(snps.in.subfacet) - 1)){
+            c.comps <- this.subfacet$snps[[snps.in.subfacet[k]]]
+            c.comps <- c(c.comps, snps.in.subfacet[(k + 1):length(snps.in.subfacet)])
+            dups <- which(duplicated(c.comps))
+            if(length(dups) > 0){
+              this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps[-dups]
+            }
+            else{
+              this.subfacet$snps[[snps.in.subfacet[k]]] <- c.comps
+            }
+          }
+        }
+        
+        # add back to this.out
+        this.out[[write.subfacet]] <- this.subfacet
+      }
+    }
+    
+    # save the output for this subfacet.
+    out[[write.facet]] <- this.out
+  }
+  
+  # return
+  return(out)
+}
+
+.determine.ld.comps.window <- function(x, facets = NULL, par = FALSE, window_sigma, window_step, verbose = FALSE, transpose_windows = TRUE){
+  lev <- NULL
+  
+  # one task per facet -- standardize via get.task.list
+  tasks <- .get.task.list(x, .check.snpR.facet.request(x, facets, "sample"))
+  tasks <- unique(tasks[,3])
+  comps <- vector("list", length(tasks))
+  names(comps) <- tasks
+  center_list <- data.table(snp.facet = character(),
+                            snp.subfacet = character(),
+                            center = numeric(),
+                            start = numeric(),
+                            end = numeric())
+  
+  # get comps for each
+  osp <- options("scipen") # change scipen to avoid mangling names
+  options(scipen = 999)
+  for(i in 1:length(tasks)){
+    comps[[i]] <- .average_windows(snp.meta(x), window_sigma, window_step, chr = tasks[i], triple_sig = FALSE, stats = NULL, gaussian = FALSE, nk = FALSE)
+    ncomps <- vector("list", nrow(x))
+    # back-process into which comparisons to do for each snp
+    ucomps <- unlist(comps[[i]], recursive = F)
+    if(length(ucomps) == 0){next}
+    # window info
+    cinf <- .split.facet(names(ucomps))
+    cinf <- t(as.data.frame(cinf))
+    cinf <- as.data.table(cinf)
+    cinf[,lev := .paste.by.facet(cinf, colnames(cinf)[-ncol(cinf)])]
+    ..keep_col <- NULL
+    keep_col <- ncol(cinf):(ncol(cinf) - 1)
+    cinf <- .fix..call(cinf[,..keep_col])
+    cinf[,2] <- as.numeric(cinf[[2]])
+    center_list <- rbind(center_list, data.table(snp.facet = tasks[i],
+                                                 snp.subfacet = cinf[[1]],
+                                                 center = cinf[[2]],
+                                                 start = cinf[[2]] - window_sigma,
+                                                 end = cinf[[2]] + window_sigma))
+    
+    # process
+    if(transpose_windows){
+      for(k in 1:length(ucomps)){
+        cs <- t(utils::combn(ucomps[[k]], 2))
+        for(h in 1:(length(ucomps[[k]]))){
+          csn <- cs[which(ucomps[[k]][[h]] == cs[,1]),2]
+          if(length(csn) > 0){ncomps[[ucomps[[k]][[h]]]] <- csn}
+        }
+      }
+      comps[[i]] <- lapply(ncomps, unique)
+    }
+  }
+  
+  # condense comparisons across facets
+  if(!transpose_windows){return(list(comps, cl = center_list))}
+  comps <- do.call(mapply, c(FUN = c, comps, SIMPLIFY = FALSE))
+  comps <- lapply(comps, unique)
+  
+  options(scipen = osp)
+  return(list(comps, cl = center_list))
+}
+
+
+# function to figure out window values
+.window_LD_averages <- function(prox, facets, window_gaussian, window_triple_sigma, window_step, window_sigma, x){
+  sample.facet <- sample.subfacet <- s1_snp_subfacet <- s2_snp_subfacet <- sigma <- step <- nk.status <- gaussian <- triple_sigma <- NULL
+  
+  facet.types <- .check.snpR.facet.request(x, facets, "none", TRUE)[[2]]
+  sample.facets <- facets
+  sample.facets[facet.types == "snp"] <- ".base"
+  sample.facets[facet.types == "complex"] <- unlist(lapply(sample.facets[facet.types == "complex"], function(tf) .check.snpR.facet.request(x, tf, "snp")))
+  
+  snp.facets <- facets
+  snp.facets[facet.types == "sample"] <- ".base"
+  snp.facets[facet.types == "complex"] <- unlist(lapply(snp.facets[facet.types == "complex"], function(tf) .check.snpR.facet.request(x, tf, "sample")))
+  
+  prox <- as.data.table(prox)
+  ..stats <- NULL
+  stats <- c("rsq", "Dprime", "pval", "CLD")
+  stats <- stats[which(stats %in% colnames(prox))]
+  
+  win_res <- vector("list", 0)
+  
+  # loop through facets
+  for(i in 1:length(sample.facets)){
+    tasks <- .get.task.list(x, sample.facets[i])
+    
+    # loop through each sample facet option, get window averages
+    for(j in 1:nrow(tasks)){
+      tprox <- prox[sample.facet == sample.facets[i] &
+                      sample.subfacet == tasks[j,2],]
+      if(nrow(tprox) == 0){next}
+      
+      # run for either the base or the snp subfacets
+      if(snp.facets[i] != ".base"){
+        tprox[, s1_snp_subfacet := .paste.by.facet(tprox, paste0(c("s1_"), .split.facet(snp.facets[i])))]
+        tprox[, s2_snp_subfacet := .paste.by.facet(tprox, paste0(c("s2_"), .split.facet(snp.facets[i])))]
+        tprox <- tprox[s1_snp_subfacet == s2_snp_subfacet,]
+        dups <- duplicated(tprox[,c("s1_snp_subfacet", "s1_position", "s2_position", "sample.subfacet")])
+        if(any(dups)){
+          tprox <- tprox[-which(dups),]
+        }
+        
+        win_res[[length(win_res) + 1]] <- .average_windows(as.data.frame(tprox), sigma = window_sigma, step = window_step, stats = .fix..call(prox[,..stats]), chr = "s1_snp_subfacet", 
+                                                           gaussian = window_gaussian, nk = FALSE, pairwise_snps = TRUE, triple_sig = FALSE)
+        win_res[[length(win_res)]]$snp.subfacet <- win_res[[length(win_res)]]$s1_snp_subfacet
+        win_res[[length(win_res)]]$s1_snp_subfacet <- NULL
+      }
+      else{
+        dups <- duplicated(tprox[,c("s1_position", "s2_position", "sample.subfacet")])
+        
+        if(any(dups)){
+          tprox <- tprox[-which(dups),]
+        }
+        
+        win_res[[length(win_res) + 1]] <- .average_windows(as.data.frame(tprox), sigma = window_sigma, step = window_step, stats = .fix..call(prox[,..stats]), 
+                                                           gaussian = window_gaussian, nk = FALSE, pairwise_snps = TRUE, chr = ".base", triple_sig = FALSE)
+        win_res[[length(win_res)]]$snp.subfacet <- win_res[[length(win_res)]]$chr
+        win_res[[length(win_res)]]$chr <- NULL
+      }
+      
+      # add facet metadata
+      win_res[[length(win_res)]]$facet <- sample.facets[i]
+      win_res[[length(win_res)]]$subfacet <- tasks[j,2]
+      win_res[[length(win_res)]]$snp.facet <- snp.facets[i]
+    }
+  }
+  
+  # combine and finalize outputs
+  win_res <- data.table::rbindlist(win_res)
+  win_res[,sigma := window_sigma/1000]
+  if(window_triple_sigma){
+    win_res[,sigma := window_sigma/3]
+  }
+  win_res[,step := window_step/1000]
+  win_res[,nk.status := FALSE]
+  win_res[,gaussian := window_gaussian]
+  win_res[,triple_sigma := window_triple_sigma]
+  
+  col_ord <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "sigma",
+               "step", "nk.status", "gaussian", "n_snps", "triple_sigma",
+               stats)
+  ..col_ord <- NULL
+  win_res <- .fix..call(win_res[,..col_ord])
+  
+  return(win_res)
 }

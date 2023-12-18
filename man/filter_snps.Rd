@@ -23,6 +23,14 @@ filter_snps(
   hwe_facets = NULL,
   non_poly = TRUE,
   bi_al = TRUE,
+  LD_prune_sigma = FALSE,
+  LD_prune_step = LD_prune_sigma,
+  LD_prune_r = FALSE,
+  LD_prune_method = "CLD",
+  LD_prune_facet = NULL,
+  LD_prune_par = FALSE,
+  LD_prune_use_ME = FALSE,
+  LD_prune_ME_sigma = 1e-04,
   verbose = TRUE
 )
 }
@@ -59,8 +67,8 @@ information on method options.}
 \itemize{\item{heterozygote:} only loci with a heterozygote excess are 
 removed.
 \item{homozygote:} only loci with a homozygote excess are removed.
-\itemize{\item{both:} loci with either a heterozygote or homozygote excess 
-are removed.}}.}
+\item{both:} loci with either a heterozygote or homozygote excess 
+are removed.}.}
 
 \item{singletons}{logical, default FALSE. Depricated, use \code{mac = 1} to
 remove singletons. If TRUE, removes singletons (loci where there is only a
@@ -112,6 +120,41 @@ rarely be used directly, since import.snpR.data and other snpRdata object
 creation functions all pass SNPs through this filter because many snpR
 functions will fail to work if there are more than two alleles at a locus.}
 
+\item{LD_prune_sigma}{numeric or FALSE, default FALSE. If LD pruning, the
+window size in kb across which to consider LD loci pairs. Windows will be
+equal to two times \code{LD_prune_sigma}.}
+
+\item{LD_prune_step}{numeric, default equal to \code{LD_prune_sigma}. Step
+size between LD windows, in kb. The default ensures that each SNP is in
+exactly two windows, allowing for smoother filtering.}
+
+\item{LD_prune_r}{numeric, default FALSE. The LD filter cutt-off value. Pairs
+above this value will be greedily pruned. Must be between 0 and 1 if LD
+prunning is conducted.}
+
+\item{LD_prune_method}{character, default "CLD". The method to use for LD
+calculations and prunning. The options are:
+\itemize{\item{CLD}\item{Dprime}\item{rsq}}. See
+\code{\link{calc_pairwise_ld}} for details.}
+
+\item{LD_prune_facet}{character, default NULL. Defines a facet over which the
+minor allele frequency can be checked. Windows will be calculated within any
+SNP parts of the facet, LD values will be calculated only with levels of any
+sample parts. For example 'chr.pop' would calculate LD values across
+windows, then filter SNPs above \code{LD_prune_r} in any populations.}
+
+\item{LD_prune_par}{numeric, default FALSE. If numeric, LD calculation will be
+conducted in parallel using \code{LD_prune_par} threads.}
+
+\item{LD_prune_use_ME}{logical, default FALSE. If TRUE, uses
+Minimization-Expectation to do LD calculations for all
+\code{LD_prune_method} options other than "CLD". This can be very slow. See
+\code{\link{calc_pairwise_ld}} for details.}
+
+\item{LD_prune_ME_sigma}{numeric, default 0.0001. The cutt-off value for difference
+in haplotype frequencies to use when conducting ME. See
+\code{\link{calc_pairwise_ld}} for details.}
+
 \item{verbose}{Logical, default TRUE. If TRUE, some progress updates and
 filtering notes will be printed to the console.}
 }
@@ -137,7 +180,14 @@ non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
 SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
 two observed alleles. This is mostly an internal argument, since the various
 snpRdata import options use it automatically to prevent downstream errors in
-other snpR functions. } }
+other snpR functions. } \item{remove_garbage: }{Quickly removes any loci or
+samples that are jointly poorly genotyped prior to other filtering. This can
+be useful if some individuals or loci are of poor enough quality that they
+will bias other filters.} \item{LD_prune_sigma: }{Sliding-window based Linkage
+Disequilibrium filtering to remove non-independant loci}.}
+}
+\section{Filter order}{
+
 
 Note that filtering out poorly sequenced individuals creates a possible
 conflict with the loci filters, since after individuals are removed, some loci
@@ -158,6 +208,25 @@ justified. This is not done automatically here, however, if the
 prior to applying loci filters, any re-run option will re-run individuals
 filters after the loci filters have been applied.
 
+Filter order (snps vs samples first) can be controlled with the \code{inds_fist}
+argument. If individuals are filtered first, poorly sequenced individuals
+will be re-filtered following locus removal if re-running is requested.
+}
+
+\section{LD pruning}{
+
+
+LD pruning can be conducted using any of the methods described in 
+\code{\link{calc_pairwise_ld}} using the \code{LD_prune_} argument family.
+Loci are removed greedily: starting from the first locus pair with elevated
+LD, the more poorly sequenced loci is removed. If each locus is equally well
+sequenced, the second loci (by position) is removed. If any elevated locus
+pairs remain, the next pair is addressed the same way until no pairs remain.
+}
+
+\section{Facet-based filters (within-group filtering)}{
+
+
 Via the \code{maf_facets} argument, this function can filter by minor allele
 frequencies in either \emph{all} samples or \emph{each level of a supplied
 sample specific facet and the entire dataset}. In the latter case, any SNPs
@@ -170,7 +239,12 @@ population might be otherwise filtered out.
 The \code{hwe_facets} argument is the inverse of this: loci will be removed if they
 fail the provided hwe filter in any facet level. In both cases, Facets should
 be provided as described in \code{\link{Facets_in_snpR}}.
+
+LD filtering can likewise be conducted within facets. SNP-level facets dictate
+the levels within which LD values are calculated (chromosome, etc.),
+and loci will be removed if they display elevated LD within sample-level facets.
 }
+
 \examples{
 # Filter with a minor allele frequency of 0.05, maximum heterozygote 
 # frequency of 0.55, 50\% minimum individuals, and at least 75\% of loci 

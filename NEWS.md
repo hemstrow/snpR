@@ -1,10 +1,54 @@
+# snpR 1.2.9
+
+## Features
+
+### Major
+* Added `calc_allelic_richness()` to calculate allelic richness via rarefaction according to [Hurlburt 1971](https://doi.org/10.2307/1934145).
+* Adjusted `calc_private()` to detect private alleles with rarefaction according to [Smith and Grassle 1977](https://doi.org/10.2307/2529778) by default. This behavior can be controlled with the `rarefaction` argument if the raw
+private alleles are desired instead.
+* Added `calc_seg_sites()` to calculate the number of segregating sites, optionally via rarefaction by an in-house approach (that will probably be published in a small note if we cannot find it documented elsewhere.)
+* Added `calc_global_fst()` to calculate $F{ST}$ globally across all facet subfacets.
+* Added local window-smoothed pairwise LD calculation to `calc_pairwise_ld()`. This is a fast alternative to global LD if the user is interested only local LD fluctuations.
+* Added LD pruning to `filter_snps()` to remove loci out of LD within windows.
+* Changed the behavior of any windowing functions slightly. Previously, the final window center would be positioned no further than the end of the chromosome. Window centers can now be positioned within one $\sigma$ (or $3\sigma$ if the `triple_sigma` argument is set) beyond the end of the chromosome. This will ensure that SNPs at the ends of chromosomes are properly within windows, although it will cause truncated windows. This is a trade-off, but doing things this way ensures proper filtering when using `filter_snps()` to do LD pruning.
+
+### Minor
+* Updated the warning messages returned when importing with potentially problematic metadata to be more descriptive.
+* Checking facet requests for hybrid facets (like `pop.fam` or `pop.chr`) will now double check for any duplicates and error if detected. This is a bit slower but will be safer.
+* Added the `facet.order` argument to `plot_pairwise_fst_heatmap()` function to control the order of subfacet plotting.
+* Using the `facets` argument with `format_snps(format = "vcf")` will now write a file with each possible metadata level.
+* Added a `cleanup` argument to `calc_association()` to allow the intermediate files from `GMMAT` to be retained.
+* To save on memory use, `plot_clusters()`, `plot_manhattan()`, and `plot_pairwise_ld_heatmap()` now have the `simplify_output` argument which can be used to return only the `ggplot` objects, not the data used to produce them. The data otherwise in the `$data` is redundant, since `ggplot2` objects already contain the data in `$data`. The default behavior remains the same since otherwise some old scripts would need to be revised following this change.
+* `plot_clusters()` with `simplify_output = FALSE` will now also return all of the PCA loadings (for all PCs) in `$pca_loadings` provided a PCA was requested.
+* `calc_pairwise_fst()` and `calc_global_fst()` now both return raw, un-weighted $F_{ST}$ averages as well as the usual `$n_{k}$ weighted averages. While weighted averages should perform better with any missing data, some users may desire the classical solution. 
+
+## Documentation
+* Updated the readme to be a bit cleaner.
+* Added sections and details to the documentation for `filter_snps()`
+* Fixed a few typos and formatting issues.
+
+## Bug Fixes
+* Fixed `format_snps()` to avoid any scientific notation. Added `contig` flags to the headers printed with `format = "vcf"`.
+* Fixed a bug in `plot_pairwise_ld_heatmap()` when comparing only two snps on a contig/chr/etc.
+* Fixed a bug in `subset_snpR_data()` due to a typo in stats passing that occasionally caused issues.
+* Tiny bug fix in `calc_association()` when using a formula but snpR was expecting a character for splitting reasons.
+* Fixed a bug that would cause `ranger` to fail if using the `par` arg to `run_random_forest()`.
+* Fixed a bug where `plot_structure()` wouldn't properly say its citation information.
+* Changed the behavior of `calc_smoothed_averages()` to not throw an error if requesting both single and pairwise stats with `stats.type` if only one of the two has been calculated.
+* Fixed a bug where calling an `mgc` filter with `filter_snps()` with data with only one option for a heterozygous genotype across all loci would produce an error due to matrix dropping.
+* Added a warning when loci are removed during `snpRdata` object creation due to not being bi-allelic.
+
+## Known Bugs
+* `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
+
 # snpR 1.2.8
 
 ## Features
-* Added support for the temporal method into `calc_ne()`.
 
-## Major
+### Major
+* Added support for the temporal method into `calc_ne()`.
 * Added internal filter tracking for easy look-up and reporting of applied filters. Applied filters can be returned using `filters()`. `format_snps()` with `vcf` output option will now automatically append these filters to the vcf header. Added two internal options to `import.snpR.data` to allow for this and fixed a bit of un-needed redundancy in the process.
+
 
 ### Minor
 * Added the `inds_first` argument to `filter_snps()` to allow users to filter on individuals prior to loci. The default remains to filter on loci first for consistancy.

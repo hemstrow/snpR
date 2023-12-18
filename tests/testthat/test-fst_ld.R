@@ -21,6 +21,8 @@ test_that("correct wc", {
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
   expect_true(all(paste0("var_comp_", c("a", "b", "c")) %in% colnames(tdfst$pairwise))) # did ask for var comps
   
+  # both weighted and unweighted fsts
+  expect_true(all(c("weighted_mean_fst", "mean_fst") %in% colnames(tdfst$weighted.means)))
 })
 
 
@@ -189,6 +191,9 @@ test_that("correct traditional ld",{
   prox <- tdld$LD$prox
   expect_snapshot_value(tdld$LD$matrices, style = "serialize") # hand checked
   expect_snapshot_value(prox, style = "serialize")
+  
+  n <- nsnps(.internal.data$test_snps)
+  expect_equal(nrow(prox), n*(n-1)/2)
 })
 
 test_that("correct ME ld",{
@@ -200,6 +205,27 @@ test_that("correct ME ld",{
   prox <- tdldme$LD$prox
   expect_snapshot_value(tdldme$LD$matrices, style = "serialize") # hand checked
   expect_snapshot_value(prox, style = "serialize")
+  
+  n <- nsnps(.internal.data$test_snps)
+  expect_equal(nrow(prox), n*(n-1)/2)
+})
+
+test_that("correct window ld",{
+  skip_on_cran();
+  set.seed(1212)
+  tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE)
+  tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  
+  expect_true(any(tdld$facet == ".base" & tdld$snp.facet == ".base"))
+  expect_true(any(tdld$facet == ".base" & tdld$snp.facet == "chr"))
+  expect_true(any(tdld$facet == "pop" & tdld$snp.facet == ".base"))
+  expect_true(any(tdld$facet == "pop" & tdld$snp.facet == "chr"))
+  expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD") %in% colnames(tdld)))
+  
+  skip_on_cran();
+  tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, CLD = TRUE)
+  tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD", "rsq", "Dprime", "pval") %in% colnames(tdld)))
 })
 
 test_that("fis bootstrapping",{
@@ -240,4 +266,33 @@ test_that("fis bootstrapping",{
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.subfacet == ".base"))
+})
+
+test_that("global fst",{
+  
+  # should yield the same as global = FALSE for two comps
+  tdfst <- calc_global_fst(.internal.data$test_snps, "pop")
+  tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+  expect_equal(round(tdfst$pairwise$fst, 4),
+               round(c(0.034091, 0, -0.122941, 0, -0.09375, -0.026012,
+                       0.166667, 0.107143, -0.057692, -0.086957, 0.016548),
+                     4)) # values from pegas, also double checked by hand. Note that heirfstat slightly disagrees on a few of these (where the allele is fixed in one loci)
+  expect_equal(round(tdfst$weighted.means$weighted_mean_fst, 5), -0.00343) # hand calced due to weighting and ratio of averages approach
+  
+  # actual multipop
+  tdfst <- calc_global_fst(stickSNPs, "pop")
+  tdfst <- get.snpR.stats(tdfst, "pop", "fst")
+  
+  # peg <- snpR::format_snps(stickSNPs, facets = "pop", output = "adegenet")
+  # peg <- pegas::genind2loci(peg)
+  # peg_fst <- pegas::Fst(peg)
+  # round(peg_fst[,2], 3)
+  
+  expect_equivalent(round(tdfst$pairwise$fst, 3)[1:10],
+                    c(0.078, -0.002, -0.025, 0.143, 0.011, 0.136, 0.059, 0.08, 0.04, 0.025)) # from pegas, see above
+  
+  expect_equal(round(tdfst$weighted.means$weighted_mean_fst, 3), 0.094)
+  
+  # both weighted and unweighted fsts
+  expect_true(all(c("weighted_mean_fst", "mean_fst") %in% colnames(tdfst$weighted.means)))
 })

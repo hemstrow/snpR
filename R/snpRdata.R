@@ -60,18 +60,51 @@ NULL
   chr.cols.snp <- chr.cols.snp[which(chr.cols.snp == "character")]
 
   if(length(chr.cols.samp) > 0){
-    l1 <- unlist(lapply(object@sample.meta[,names(chr.cols.samp)], grepl, pattern = bad.chars))
-    if(sum(l1) > 0){
-      msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\n")
-      warns <- c(warns, msg)
+    l1 <- lapply(object@sample.meta[,names(chr.cols.samp), drop = FALSE], grepl, pattern = bad.chars)
+    l1s <- unlist(lapply(l1, sum))
+    if(any(l1s > 0)){
+      pst_msg <- paste0("Some sample metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\nIssues:\n")
+      for(q in 1:length(l1s)){
+        if(l1s[q] > 0){
+          pst_msg <- paste0(pst_msg, "\nFacet: ", names(l1s)[q], "\tlevels: ", 
+                            paste0(unique(object@sample.meta[which(l1[[q]]),names(chr.cols.samp),drop = FALSE][,q]), collapse = ", "))
+        }
+      }
+      warns <- c(warns, pst_msg)
     }
   }
   if(length(chr.cols.snp) > 0){
-    l1 <- unlist(lapply(object@snp.meta[,names(chr.cols.snp)], grepl, pattern = bad.chars))
-    if(sum(l1) > 0){
-      msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\n")
-      warns <- c(warns, msg)
+    l1 <- lapply(object@snp.meta[,names(chr.cols.snp), drop = FALSE], grepl, pattern = bad.chars)
+    l1s <- unlist(lapply(l1, sum))
+    if(any(l1s > 0)){
+      pst_msg <- paste0("Some snp metadata columns contain unacceptable special characters. Unaccepted characters: '.', '~', or any whitespace.\nThese can cause unexpected behaviour if the subect columns are used as facets.\nIssues:\n")
+      for(q in 1:length(l1s)){
+        if(l1s[q] > 0){
+          pst_msg <- paste0(pst_msg, "\nFacet: ", names(l1s)[q], "\tlevels: ", 
+                            paste0(unique(object@snp.meta[which(l1[[q]]),names(chr.cols.snp), drop = FALSE][,q]), collapse = ", "))
+        }
+      }
+      warns <- c(warns, pst_msg)
     }
+  }
+  
+  
+  # warn if anything repeated across sample level factors
+  uniques <- lapply(object@sample.meta[,-which(names(object@sample.meta) == ".sample.id"), drop = FALSE], unique)
+  uniques <- c(uniques, lapply(object@snp.meta[,-which(names(object@snp.meta) == ".snp.id"), drop = FALSE], unique))
+  un <- rep(names(uniques), lengths(uniques))
+  uniques <- unlist(uniques, use.names = FALSE)
+  names(uniques) <- un
+  rm(un)
+  if(any(duplicated(uniques))){
+    
+    dups <- sort(uniques[which(duplicated(uniques) | duplicated(uniques, fromLast = TRUE))])
+    msg <- unique(dups)
+    pst_msg <- "Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n"
+    for(q in 1:length(msg)){
+      pst_msg <- paste0(pst_msg, "\nLevel: ", msg[q], "\tin facets: ", paste0(names(dups)[which(dups == msg[q])], collapse = ", "))
+    }
+    warns <- c(warns, pst_msg)
   }
   
   
@@ -83,7 +116,7 @@ NULL
     errors <- c(errors, ".sample.id not last column in sample.meta. This is a developer error--please report on the github issues page with a reproducable example.\n")
   }
   
-  if(length(warns) > 0){warning(paste0(warns, collapse = "\n"))}
+  if(length(warns) > 0){warning(paste0(warns, collapse = paste0("\n\n", .console_hline(), "\n")))}
 
   if(length(errors) == 0){return(TRUE)}
   else{return(errors)}
@@ -539,17 +572,6 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   snp.meta <- dplyr::mutate_if(.tbl = snp.meta, is.factor, as.character)
   genotypes <- dplyr::mutate_if(.tbl = genotypes, is.factor, as.character)
   
-  
-  # warn if anything repeated across sample level factors
-  uniques <- lapply(sample.meta, unique)
-  uniques <- uniques[-which(names(uniques) == ".sample.id")]
-  uniques <- unlist(uniques)
-  if(any(duplicated(uniques))){
-    warning(paste0("Some levels are duplicated across multiple sample meta facets.\nThis will cause issues if those sample facets are run during analysis.\nIssues:\n",
-                paste0(uniques[which(duplicated(uniques))], "\n", collapse = "")))
-  }
-  
-  
   #===========format and calculate some basics=========
   rownames(genotypes) <- 1:nrow(genotypes)
   rownames(snp.meta) <- 1:nrow(snp.meta)
@@ -585,11 +607,16 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
-  
+
+  starting_snps <- nrow(x)
   if(!.skip_filters){
     # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
     if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
     .make_it_quiet(x <- filter_snps(x, non_poly = FALSE))
+  }
+  ending_snps <- nrow(x)
+  if(starting_snps != ending_snps){
+    warning(paste0(starting_snps - ending_snps, " SNPs were removed from the input data set because they were not bi-allelic.\n"))
   }
   
   # add basic maf
@@ -705,7 +732,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   stats <- tolower(stats)
   aliases <- c(ibd = "isolation_by_distance",
                tsd = "tajimas_d",
-               d = "tajimas_d")
+               d = "tajimas_d",
+               ar = "allelic_richness",
+               richness = "allelic_richness")
   
   need_unaliased <- which(stats %in% names(aliases))
   
@@ -922,6 +951,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   extract.LD <- function(y, facets){
+    if(length(y) == 0){return(NULL)} # for window only
     # get sample facets
     samp.facets <- .check.snpR.facet.request(x, facets)
     if(length(samp.facets) != length(facets)){

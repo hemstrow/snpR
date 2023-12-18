@@ -468,6 +468,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   relatedness matrix.
 #' @param par numeric or FALSE, default FALSE. Number of parallel cores to use
 #'   for computation.
+#' @param cleanup logical, default TRUE. If TRUE, files produced by and for the
+#'   "gmmat" option will be removed after completion.
 #' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'   printed to the console.
 #'
@@ -496,7 +498,8 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #' 
 calc_association <- function(x, facets = NULL, response, method = "gmmat.score", w = c(0,1,2),
                              formula = NULL, family.override = FALSE, maxiter = 500, 
-                             sampleID = NULL, Gmaf = 0, par = FALSE, verbose = FALSE){
+                             sampleID = NULL, Gmaf = 0, par = FALSE, 
+                             cleanup = TRUE, verbose = FALSE){
   #==============sanity checks===========
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
@@ -566,7 +569,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
                  "formula must be a valid formula. Type ?formula for help.\n")
       }
       else{
-        phen <- strsplit(formula, "~")
+        phen <- strsplit(as.character(formula), "~")
         phen <- phen[[1]][1]
         phen <- gsub(" ", "", phen)
         if(phen != response){
@@ -790,7 +793,9 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     
     score.out <- utils::read.table("asso_out_score.txt", header = T, stringsAsFactors = F)
 
-    file.remove(c("asso_in.txt", "asso_out_score.txt"))
+    if(cleanup){
+      file.remove(c("asso_in.txt", "asso_out_score.txt"))
+    }
     return(score.out)
   }
 
@@ -830,7 +835,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'
 #' Random forest models can be created across multiple facets of the data at
 #' once following the typical snpR framework explained in
-#' \code{\link[snpR]{Facets_in_snpR}}. Since RF models are calculated without
+#' \code{\link{Facets_in_snpR}}. Since RF models are calculated without
 #' allowing for any SNP-specific categories (e.g. independent of chromosome
 #' etc.), any sample level facets provided will be ignored. As usual, if facets
 #' is set to NULL, an RF will be calculated for all samples without splitting
@@ -1028,7 +1033,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     #================run the model:=====================
     # set par correctly, NULL if par is FALSE or we are looping through facet levels. Otherwise (.base and par provided), tpar = par.
     if(par == FALSE){
-      tpar <- NULL
+      par <- NULL
     }
 
     # run with or without formula
@@ -1037,14 +1042,14 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, verbose = T, ...)
+                             importance = importance, num.threads = par, verbose = T, ...)
     }
     else{
       rout <- ranger::ranger(formula = .formula,
                              data = sn,
                              num.trees = num.trees,
                              mtry = mtry,
-                             importance = importance, num.threads = tpar, verbose = T, ...)
+                             importance = importance, num.threads = par, verbose = T, ...)
     }
 
     #===============make sense of output=================

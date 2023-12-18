@@ -97,7 +97,7 @@ basic format specified in \code{\link{formula}}.
 \details{
 Random forest models can be created across multiple facets of the data at
 once following the typical snpR framework explained in
-\code{\link[snpR]{Facets_in_snpR}}. Since RF models are calculated without
+\code{\link{Facets_in_snpR}}. Since RF models are calculated without
 allowing for any SNP-specific categories (e.g. independent of chromosome
 etc.), any sample level facets provided will be ignored. As usual, if facets
 is set to NULL, an RF will be calculated for all samples without splitting

@@ -80,6 +80,28 @@ test_that("facet error reporting",{
   expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), ` pop` = "test"), "unexpected"), "Bad column names: \\ pop\\.")
   expect_error(.suppress_specific_warning(snp.meta(test) <- cbind(snp.meta(test), all = "test"), "unexpected"), "Bad column names: all\\.")
   
+  
+  
+  # facet contents detailed reporting
+  meta <- sample.meta(stickSNPs)
+  meta$test <- "."
+  
+  snpm <- snp.meta(stickSNPs)
+  snpm$test2 <- "."
+  
+  ## bad characters
+  expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = sample.meta(stickSNPs), snp.meta = snpm), "ome snp metadata columns contain.+Facet: test2\tlevels: \\.")
+  expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snp.meta(stickSNPs)), "ome sample metadata columns contain.+Facet: test\tlevels: \\.")
+  
+  
+  meta$dup_test <- "ASP"
+  meta$test <- NULL
+  snpm$dup_test2 <- "ASP"
+  snpm$test2 <- NULL
+  
+  # dupliates
+  expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm), "ome levels are duplicated.+Level: ASP\tin facets: pop, dup_test, dup_test2")
+  
 })
 
 

@@ -49,9 +49,13 @@
 #'@param t.sizes numeric, default c(16, 13, 10, 12, 10). Text sizes, given as
 #'  c(title, legend.title, legend.ticks, axis, axis.ticks).
 #'@param background character, default "white". Background color for plot.
+#'@param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code.
 #'
 #'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
-#'  ggplot object. \item{dat: } Data used to generate the ggplot object. }
+#'  ggplot object. \item{dat: } Data used to generate the ggplot object. } If
+#'  \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
 #'
 #'@author William Hemstrom
 #'@author Nicholas Sard
@@ -73,7 +77,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
                                      l.text = "CLD", viridis.option = "inferno",
                                      gradient_colors = NULL,
                                      title = NULL, t.sizes = c(16, 13, 10, 12, 10),
-                                     background = "white"){
+                                     background = "white",
+                                     simplify_output = FALSE){
   #==============sanity checks===========
   msg <- character()
 
@@ -138,7 +143,7 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
   prep_hm_dat <- function(x, r = NULL){
 
     # remove columns and rows with no data
-    x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y)))]
+    x <- x[!apply(x, 1, function(y)all(is.na(y))), !apply(x, 2, function(y)all(is.na(y))), drop = FALSE]
 
     # set rownames as first column.
     x <- cbind(position = rownames(x), x)
@@ -384,7 +389,12 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
     out <- out + ggplot2::ggtitle(title)
   }
 
-  out <- list(plot = out, dat = LD_mats)
+  if(simplify_output){
+    return(out)
+  }
+  else{
+    out <- list(plot = out, dat = LD_mats)
+  }
   return(out)
 }
 
@@ -533,14 +543,20 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  \code{\link{citations}} cannot be used to fetch references.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates may be
 #'  reported.
+#'@param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code. Note, however,
+#'  that PCA loadings will only be returned if this is true.
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
+#'@return @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
 #'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
 #'  Each of these two lists may contain one to four objects, one for each PCA,
 #'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
-#'  respectively.
+#'  respectively. If a PCA was run, the loadings will also be returned in the 
+#'  top-level list. If \code{simplify_output} is \code{FALSE}, only the ggplot 
+#'  list is returned.
 #'
 #'@author William Hemstrom
 #'@author Matt Thorstensen
@@ -581,7 +597,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
                           dapc_clustering_npca = NULL, dapc_clustering_nclust = NULL,
                           dapc_npca = NULL, dapc_ndisc = NULL, ellipse_size = 1.5,
                           seg_lines = TRUE, shape_has_more_levels = TRUE,
-                          update_bib = FALSE, verbose = FALSE,...){
+                          update_bib = FALSE, verbose = FALSE,
+                          simplify_output = FALSE,
+                          ...){
 
   #=============sanity checks============
   y <- cluster <- .cluster <- NULL
@@ -1180,7 +1198,17 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     .yell_citation(keys, stats, details, update_bib)
   }
   
-  return(list(data = plot_dats, plots = plots))
+  if(!simplify_output){
+    if("pca" %in% plot_type){
+      return(list(data = plot_dats, plots = plots, pca_loadings = loadings))
+    }
+    else{
+      return(list(data = plot_dats, plots = plots))
+    }
+  }
+  else{
+    return(plots)
+  }
 }
 
 #' Generate a manhattan plot from snpRdata or a data.frame.
@@ -1315,6 +1343,9 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param lambda_gc_correction Correct for inflated significance due to
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
+#' @param simplify_output If TRUE, only the ggplot object will be return. This
+#'  is optimal, since the data is already returned in that object, but is not
+#'  the default due to backwards consistency with old code.
 #'
 #' @references Price, A., Zaitlen, N., Reich, D. et al. New approaches to
 #'   population stratification in genome-wide association studies. Nat Rev Genet
@@ -1324,7 +1355,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @export
 #'
 #' @return A list containing \itemize{\item{plot: } A ggplot manhattan plot.
-#'   \item{data: } Raw plot data.}
+#'   \item{data: } Raw plot data.} If \code{simplify_output} is \code{FALSE}, 
+#'   only the ggplot object is returned.
 #'
 #'
 #' @examples
@@ -1410,7 +1442,8 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
                            lambda_gc_correction = FALSE,
                            chr_order = NULL,
-                           abbreviate_labels = FALSE){
+                           abbreviate_labels = FALSE,
+                           simplify_output = FALSE){
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
 
@@ -1932,7 +1965,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     }
   }
   
-  return(list(plot = p, data = stats))
+  if(!simplify_output){
+    return(list(plot = p, data = stats))
+  }
+  else{
+    return(p)
+  }
 }
 
 
@@ -3597,15 +3635,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     }
   }
   
-  
-  if(exists("K_plot")){
-    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
-  }
-  else{
-    return(list(plot = p, data = qlist, plot_data = pdat))
-  }
-  
-  
+
   # cite
   keys <- character(0)
   stats <- character(0)
@@ -3616,7 +3646,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     details <- c(details, paste0("CLUMPP on ", method, " results."))
   }
   if(method == "snmf"){
-    keys <- c(keys, "Frichot973")
+    keys <- c(keys, "Frichot2015")
     stats <- c(stats, "sNMF")
     details <- c(details, "sparse Non-Negative Matrix Factorization (sNMF)")
   }
@@ -3642,6 +3672,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   
   .yell_citation(keys, stats, details, update_bib)
 
+  
+  if(exists("K_plot")){
+    return(list(plot = p, data = qlist, plot_data = pdat, K_plot = K_plot))
+  }
+  else{
+    return(list(plot = p, data = qlist, plot_data = pdat))
+  }
 }
 
 
@@ -3965,6 +4002,10 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = 
 #'  to break up plots. Must match facets for which Fst data has been previously
 #'  calculated via \code{\link{calc_pairwise_fst}}. 
 #'  See \code{\link{Facets_in_snpR}} for more details.
+#'@param facet.order character, default NULL. Optional order in which the
+#'  levels of the provided facet should appear on the plot, bottom to top/left
+#'  to right. If multiple facets are plotted, this must be a named list, named
+#'  by facet, otherwise a character vector. See examples.
 #'@param viridis.option character, default "inferno". Viridis color scale option
 #'  to use. Other color scales may be substituted by appending the
 #'  scale_color_continuous and scale_fill_continuous ggplot functions to the
@@ -3984,7 +4025,7 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = 
 #'@export
 #'@examples
 #'# Calculate pairwise fst
-#'x <- calc_pairwise_fst(stickSNPs, "pop")
+#'x <- calc_pairwise_fst(stickSNPs, c("pop", "fam"))
 #'
 #'# plot
 #'plot_pairwise_fst_heatmap(x, "pop")
@@ -4000,11 +4041,17 @@ plot_structure_map <- function(assignments, k, facet, pop_coordinates, layers = 
 #'# put labels in lower triangle
 #'plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2, lab_lower = TRUE) 
 #'
-plot_pairwise_fst_heatmap <- function(x, facets = NULL, 
+#'# provide facet orders
+#'plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+#'                          list(pop = c("PAL", "ASP", "UPD", 
+#'                                       "CLF", "SMR", "OPL"),
+#'                              fam = c("A", "B", "C", "D")),
+#'                          print_fst = TRUE, lab_lower = TRUE)
+plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
                                       viridis.option = "inferno", 
                                       print_fst = TRUE, mark_sig = FALSE,
                                       lab_lower = FALSE){
-  subfacet <- sig <- weighted_mean_fst_p <- p1 <- p2 <- weighted_mean_fst <- NULL
+  subfacet <- sig <- weighted_mean_fst_p <- p1 <- p2 <- weighted_mean_fst <- . <- NULL
   
   #=============sanity checks============
   if(!is.snpRdata(x)){
@@ -4023,12 +4070,35 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   }
   
   #============function=============
-  make_one_plot <- function(mean_fst){
+  make_one_plot <- function(mean_fst, facet.order = NULL){
+    . <- NULL
     mean_fst <- as.data.table(mean_fst)
     mean_fst[,c("p1", "p2") := tstrsplit(subfacet, "~")]
-    levs <- unique(c(mean_fst$p1, mean_fst$p2))
-    mean_fst$p1 <- factor(mean_fst$p1, levs)
-    mean_fst$p2 <- factor(mean_fst$p2, levs)
+    
+    if(!is.null(facet.order)){
+      levs <- facet.order
+      if(!all(sort(unique(c(mean_fst$p1, mean_fst$p2))) == sort(facet.order))){
+        stop(paste0("Subfacets in provided facet.order do not exactly match all of those in the provided data for facet: ", 
+                    facets[i], ".\n")) # abuses lexical context, but easy.
+      }
+      
+      i1 <- match(mean_fst$p1, levs)
+      i2 <- match(mean_fst$p2, levs)
+      flip <- which(i1 > i2)
+      if(length(flip) > 0){
+        mean_fst[flip, c("p1", "p2") := .(p2, p1)]
+      }
+      
+      mean_fst$p1 <- factor(mean_fst$p1, levs)
+      mean_fst$p2 <- factor(mean_fst$p2, levs)
+    }
+    else{
+      levs <- unique(c(mean_fst$p1, mean_fst$p2))
+      mean_fst$p1 <- factor(mean_fst$p1, levs)
+      mean_fst$p2 <- factor(mean_fst$p2, levs)
+    }
+    
+
     if(!isFALSE(mark_sig)){
       if(!any(colnames(mean_fst) == "weighted_mean_fst_p")){
         mark_sig <- FALSE
@@ -4047,6 +4117,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
     if(print_fst){
       if(mark_sig){
         if(lab_lower){
+          p <- p +
+            ggplot2::scale_x_discrete(drop = FALSE) +
+            ggplot2::scale_y_discrete(drop = FALSE)
           p <- p + ggplot2::geom_label(ggplot2::aes(label = paste0(round(weighted_mean_fst, 4), sig), x = p2, y = p1), fill = "white", alpha = .5)
         }
         else{
@@ -4055,6 +4128,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
       }
       else{
         if(lab_lower){
+          p <- p +
+            ggplot2::scale_x_discrete(drop = FALSE) +
+            ggplot2::scale_y_discrete(drop = FALSE)
           p <- p + ggplot2::geom_label(ggplot2::aes(label = round(weighted_mean_fst, 4), x = p2, y = p1), fill = "white", alpha = .5)
         }
         else{
@@ -4064,6 +4140,9 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
     }
     else if(mark_sig){
       if(lab_lower){
+        p <- p +
+          ggplot2::scale_x_discrete(drop = FALSE) +
+          ggplot2::scale_y_discrete(drop = FALSE)
         p <- p + ggplot2::geom_label(data = mean_fst[which(mean_fst$sig == "*"),], 
                                      ggplot2::aes(label = sig, x = p2, y = p1), fill = "white", alpha = .5)
       }
@@ -4079,8 +4158,20 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL,
   #============make plots===========
   plots <- vector("list", length(facets))
   names(plots) <- facets
+  if(!is.list(facet.order)){
+    if(length(facets) > 1){
+      stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list, see documentation.\n")
+    }
+    facet.order <- list(facet.order); 
+    names(facet.order) <- facets
+  }
+  else if(length(facet.order) != length(facets)){
+    stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list with no extra elements, see documentation.\n")
+  }
+  
+  
   for(i in 1:length(facets)){
-    plots[[i]] <- make_one_plot(get.snpR.stats(x, facets[i], "fst")$weighted.means)
+    plots[[i]] <- make_one_plot(get.snpR.stats(x, facets[i], "fst")$weighted.means, facet.order[[facets[i]]])
   }
   if(length(plots) == 1){plots <- plots[[1]]}
   
@@ -4210,8 +4301,8 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================plot pca=================
   if("pca" %in% plots){
-    .make_it_quiet(pca <- plot_clusters(x, facets = facet))
-    pca <- pca$plots$pca
+    .make_it_quiet(pca <- plot_clusters(x, facets = facet, simplify_output = TRUE))
+    pca <- pca$pca
     
     out$pca <- pca
   }

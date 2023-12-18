@@ -7,6 +7,7 @@
 plot_pairwise_fst_heatmap(
   x,
   facets = NULL,
+  facet.order = NULL,
   viridis.option = "inferno",
   print_fst = TRUE,
   mark_sig = FALSE,
@@ -20,6 +21,11 @@ plot_pairwise_fst_heatmap(
 to break up plots. Must match facets for which Fst data has been previously
 calculated via \code{\link{calc_pairwise_fst}}. 
 See \code{\link{Facets_in_snpR}} for more details.}
+
+\item{facet.order}{character, default NULL. Optional order in which the
+levels of the provided facet should appear on the plot, bottom to top/left
+to right. If multiple facets are plotted, this must be a named list, named
+by facet, otherwise a character vector. See examples.}
 
 \item{viridis.option}{character, default "inferno". Viridis color scale option
 to use. Other color scales may be substituted by appending the
@@ -47,7 +53,7 @@ Fst values and marks those with significant p-values.
 }
 \examples{
 # Calculate pairwise fst
-x <- calc_pairwise_fst(stickSNPs, "pop")
+x <- calc_pairwise_fst(stickSNPs, c("pop", "fam"))
 
 # plot
 plot_pairwise_fst_heatmap(x, "pop")
@@ -63,6 +69,12 @@ plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2)
 # put labels in lower triangle
 plot_pairwise_fst_heatmap(x, "pop", mark_sig = .2, lab_lower = TRUE) 
 
+# provide facet orders
+plot_pairwise_fst_heatmap(x, c("pop", "fam"), 
+                         list(pop = c("PAL", "ASP", "UPD", 
+                                      "CLF", "SMR", "OPL"),
+                             fam = c("A", "B", "C", "D")),
+                         print_fst = TRUE, lab_lower = TRUE)
 }
 \author{
 William Hemstrom
