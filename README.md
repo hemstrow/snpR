@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.8.0001-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.9-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -15,7 +15,9 @@ snpR is an R package for analyzing call Single Nucleotide Polymorphism
 (SNP) genotypes containing most basic stats including pairwise LD,
 gaussian sliding window analysis tools, plotting options, clustering
 analysis, colony interface, Ne estimation, formatting, filtering, and
-more!
+more! It is built primarily to be user-friendly and handle many levels
+of SNP and sample metadata without the need for complicated file or
+object management. Please see the example below!
 
 ## Installation
 
@@ -104,7 +106,10 @@ A CRAN version should be available soon.
   - `calc_prop_poly()`: The proportion of polymorphic loci.
   - `calc_maf()`: Minor allele frequencies, calculated automatically
     when any facet operations are performed.
-  - `calc_private()`: Private alleles across facet levels.
+  - `calc_private()`: Rarefaction-corrected detection of private alleles
+    across facet levels.
+  - `calc_seg_sites()`: Rarefaction-corrected estiamtes of the number of
+    segregating sites per facet level.
   - `calc_genetic_distances()`: Genetic distances between individuals.
   - `calc_fis()`: $F_{IS}$ (inbreeding coefficients).
   - `calc_pairwise_fst()`: Pairwise $F_{ST}$ between facet levels.
