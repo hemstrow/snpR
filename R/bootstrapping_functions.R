@@ -436,14 +436,14 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
         snk <- snk[,col.seq, with = FALSE]
       }
       stats <- stats[,keep.cols, with = FALSE]
-      stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols)
+      stats <- data.table::dcast(stats, .snp.id~facet + subfacet, value.var = stat.cols, sep = "....")
       
       # subset according to the snps we are using
       stats <- stats[nrands, -".snp.id"]
       
       # fix column names if needed.
       if(sum(statistics %in% single.types) == 1){
-        colnames(stats) <- paste0(statistics[which(statistics %in% single.types)], "_", colnames(stats))
+        colnames(stats) <- paste0(statistics[which(statistics %in% single.types)], "....", colnames(stats))
       }
     }
     if("pairwise" %in% stats.type){
@@ -466,14 +466,14 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
         pnk <- pnk[,col.seq, with = FALSE]
       }
       pairwise.stats <- pairwise.stats[,keep.cols, with = FALSE]
-      pairwise.stats <- data.table::dcast(pairwise.stats, .snp.id~facet + comparison, value.var = stat.cols)
+      pairwise.stats <- data.table::dcast(pairwise.stats, .snp.id~facet + comparison, value.var = stat.cols, sep = "....")
       
       # subset according to the snps we are using
       pairwise.stats <- pairwise.stats[nrands, -".snp.id"]
       
       # fix column names if needed.
       if(sum(statistics %in% pairwise.types) == 1){
-        colnames(pairwise.stats) <- paste0(statistics[which(statistics %in% pairwise.types)], "_", colnames(pairwise.stats))
+        colnames(pairwise.stats) <- paste0(statistics[which(statistics %in% pairwise.types)], "....", colnames(pairwise.stats))
       }
     }
     
@@ -504,7 +504,7 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
     suppressWarnings(boot.set <- data.table::melt(boot.set))
     
     # get metadata
-    facet <- unlist(strsplit(as.character(boot.set$variable), "_"))
+    facet <- unlist(strsplit(as.character(boot.set$variable), "\\.\\.\\.\\."))
     stats <- facet[seq(1, length(facet), by = 3)]
     subfacet <- facet[seq(3, length(facet), by = 3)]
     facet <- facet[seq(2, length(facet), by = 3)]

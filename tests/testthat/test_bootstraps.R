@@ -38,7 +38,7 @@ test_that("bootstrapping",{
   
   
   
-  
+  # in par
   bd <- do_bootstraps(d,
                       facets = c("pop.chr","pop","pop.fam"),
                       boots = 100,
@@ -50,7 +50,7 @@ test_that("bootstrapping",{
   eval_test(bdr)
   
   
-  
+  # single
   bd <- do_bootstraps(d,
                       facets = "chr.pop", 
                       statistics = c("pi", "ho"),
@@ -61,7 +61,7 @@ test_that("bootstrapping",{
   bdr <- get.snpR.stats(bd, "pop.chr", stats = "pi", bootstraps = TRUE)
   eval_test(bdr, fst = FALSE)
   
-  
+  # in par
   bd <- do_bootstraps(d,
                       facets = "chr.pop", 
                       statistics = c("pi", "ho"),
@@ -79,5 +79,16 @@ test_that("bootstrapping",{
               %in% colnames(bdr$single.window)))
   
   
+  # specific bug checking
+  ## "_" in facet level
+  test <- stickSNPs
+  sample.meta(test)$test <- paste0("A_", sample.meta(test)$fam)
+  test <- calc_pairwise_fst(test, "test")
+  test <- calc_pi(test, "test")
+  test <- calc_smoothed_averages(test, c("test", "test.chr"), sigma = 100)
+  test <- do_bootstraps(test, c("test", "test.chr"), 100, 100, statistics = c("pi", "fst"))
+  bdr <- get.snpR.stats(test, c("test", "test.chr"), c("pi", "fst"), bootstraps = TRUE)
+  expect_true(all(c("A_A", "A_B", "A_C", "A_D") %in% bdr$bootstraps$subfacet)) # just basic tests to make sure the names come out OK
+  expect_true(all(c("A_A~A_B", "A_A~A_C", "A_A~A_C", "A_A~A_D") %in% bdr$bootstraps$subfacet))
 })
   
