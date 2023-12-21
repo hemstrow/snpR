@@ -112,13 +112,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
   single.types <- c("pi", "ho", "pa", "pHWE", "fis", "he")
   all.types <- c(pairwise.types, single.types)
   o.stats <- statistics
-  if(statistics == "all"){
+  if("all" %in% statistics){
     statistics <- all.types[which(all.types %in% c(colnames(x@stats), colnames(x@pairwise.stats)))]
   }
-  else if(statistics == "single"){
+  else if("single" %in% statistics){
     statistics <- single.types
   }
-  else if(statistics == "pairwise"){
+  else if("pairwise" %in% statistics){
     statisitcs <- pairwise.types
   }
 
@@ -743,7 +743,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   msg <- character()
   
   # check statistics
-  if(statistics != "all"){
+  if("all" %in% statistics){
     miss.stats <- which(!statistics %in% unique(x@window.bootstraps$stat))
     if(length(miss.stats) > 0){
       msg <- c(msg,
@@ -802,6 +802,11 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       matches <- x@pairwise.window.stats[matches,  scol, with = FALSE]
     }
     
+    if(nrow(meta) == 0){
+      return(cbind(meta, stat = character(), p = numeric()))
+    } # this may occur if there were no stats in this level in the original data
+    
+    
     ## get the proportion of the bootstrapped distribution less than or equal to the observed point.
     xp <- edist(matches[[1]])
     if(alt == "two-sided"){
@@ -815,7 +820,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
       #get the proportion of data greater than observed data points
       xp <- 1 - xp
     }
-    
+
     # bind and return
     out <- cbind(meta, stat = statistic, p = xp)
     return(out)
@@ -885,7 +890,6 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
     ntasks <- nrow(u.rows)
     # progress <- function(n) cat(sprintf("\tPart %d out of", n), ntasks, "is complete.\n")
     # opts <- list(progress=progress)
-    
     out <- foreach::foreach(q = 1:ntasks, .inorder = FALSE,
                             .export = "data.table") %dopar% {
                               get.one.pvalue(x, facet = u.rows$facet[q],
@@ -895,7 +899,9 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
                                              nk = u.rows$nk[q],
                                              step = u.rows$step[q],
                                              sigma = u.rows$sigma[q],
-                                             alt = alt)
+                                             alt = alt, 
+                                             gaussian = u.rows$gaussian[q], 
+                                             triple_sigma = u.rows$triple_sigma[q])
                             }
     
     #release cores

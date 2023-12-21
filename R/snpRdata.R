@@ -786,7 +786,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     need.this.part <- names(needed.parts)[grep(unique.needed.parts[i], needed.parts)]
     col_patterns <-  unlist(purrr::map(.internal.data$statistic_index[need.this.part], "col_pattern"))
     if(unique.needed.parts[i] == "bootstraps"){
-      col_patterns <- c("nk", "step", "value")
+      col_patterns <- c("nk", "step", "stat", "value")
     }
     if(!is.na(col_patterns[1])){
       suppressWarnings(res <- .get.snpR.stats(x, facets, type = unique.needed.parts[i],
@@ -794,6 +794,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     }
     else{
       suppressWarnings(res <- .get.snpR.stats(x, facets, type = unique.needed.parts[i]))
+    }
+    
+    if(unique.needed.parts[i] == "bootstraps"){
+      res <- res[res$stat %in% unlist(purrr::map(.internal.data$statistic_index[need.this.part], "col_pattern")),]
     }
     
     if(!is.null(res)){

@@ -1,3 +1,11 @@
+# snpR 1.2.9.1 hotfix 1
+
+## Bug Fixes:
+* Fixed a few bugs with `do_boostraps()` and bootstrap fetching with `get.snpR.stats()`, mostly stemming from the changes to window behavior in 1.2.9. Added tests to catch.
+
+## Known Bugs
+* `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
+
 # snpR 1.2.9
 
 ## Features
