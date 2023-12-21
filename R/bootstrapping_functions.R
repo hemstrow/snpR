@@ -743,7 +743,7 @@ calc_p_from_bootstraps <- function(x, facets = "all", statistics = "all", alt = 
   msg <- character()
   
   # check statistics
-  if("all" %in% statistics){
+  if(!"all" %in% statistics){
     miss.stats <- which(!statistics %in% unique(x@window.bootstraps$stat))
     if(length(miss.stats) > 0){
       msg <- c(msg,
