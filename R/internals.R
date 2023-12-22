@@ -3681,6 +3681,24 @@ is.snpRdata <- function(x){
 
 # function to figure out window values
 .window_LD_averages <- function(prox, facets, window_gaussian, window_triple_sigma, window_step, window_sigma, x){
+
+  # stop if empty
+  if(nrow(prox) == 0){
+    win_res <- as.data.table(matrix("", 0, 11))
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "sigma",
+            "step", "nk.status", "gaussian", "n_snps", "triple_sigma")
+    colnames(win_res) <- cn
+    win_res$position <- numeric()
+    win_res$sigma <- numeric()
+    win_res$step <- numeric()
+    win_res$nk.status <- logical()
+    win_res$gaussian <- logical()
+    win_res$n_snps <- numeric()
+    win_res$triple_sigma <- logical()
+    
+    return(win_res)
+  }
+  
   sample.facet <- sample.subfacet <- s1_snp_subfacet <- s2_snp_subfacet <- sigma <- step <- nk.status <- gaussian <- triple_sigma <- NULL
   
   facet.types <- .check.snpR.facet.request(x, facets, "none", TRUE)[[2]]
@@ -3754,7 +3772,7 @@ is.snpRdata <- function(x){
   win_res[,nk.status := FALSE]
   win_res[,gaussian := window_gaussian]
   win_res[,triple_sigma := window_triple_sigma]
-  
+
   col_ord <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "sigma",
                "step", "nk.status", "gaussian", "n_snps", "triple_sigma",
                stats)

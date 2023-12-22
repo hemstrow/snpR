@@ -1,3 +1,8 @@
+# snpR 1.2.9.9000
+
+## Bug Fixes:
+* Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were unpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
+
 # snpR 1.2.9.1 hotfix 1
 
 ## Bug Fixes:

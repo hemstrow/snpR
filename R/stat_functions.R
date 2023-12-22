@@ -1917,6 +1917,21 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     if(window_triple_sigma){
       window_sigma <- window_sigma*3
     }
+    
+    if(window_sigma + window_sigma*3*as.numeric(window_triple_sigma) <= 1000){
+      warning("Current window size is less than a thousand bp--this is very small and may produce unexpected results. Remember that sigma is supplied in kilobases!")
+    }
+    else if(window_sigma + window_sigma*3*as.numeric(window_triple_sigma) < 2){
+      stop("Current window size is less than two bp. Remember that sigma is supplied in kilobases!")
+    }
+    
+    
+    if(window_step <= 1000){
+      warning("Current window step is less than a thousand bp--this is very small and may produce unexpected results. Remember that step size is supplied in kilobases!")
+    }
+    else if(window_step < 2){
+      stop("Current window size is less than two bp. Remember that sigma is supplied in kilobases!")
+    }
   }
   
   #========================sub-functions=============
@@ -3280,8 +3295,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     
     #now need to start the parallel job:
-    cl <- parallel::makePSOCKcluster(par)
-    doParallel::registerDoParallel(cl)
+    clust <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(clust)
     
     out <- foreach::foreach(q = 1:par, .export = c(".do_CLD"), .packages = c("data.table", "snpR"), .errorhandling = "pass") %dopar% {
       options(scipen = 999) # since it will mess up the names otherwise
@@ -3291,16 +3306,20 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         samps <- tcomps$samps
         tsnps <- tcomps$snps[[unlist(cls[[q]][i,3])]][[unlist(cls[[q]][i,4])]][[as.character(unlist(cls[[q]][i,5]))]]
         
-        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,],
-                            sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+        if(length(tsnps) > 0 & length(samps) > 0){
+          cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,],
+                              sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+        }
+        
+        
       }
       cld <- data.table::rbindlist(cld)
       cld
     }
     
     #release cores
-    parallel::stopCluster(cl)
-    
+    parallel::stopCluster(clust)
+
     out <- data.table::rbindlist(out)
     if(.prox_only){return(out)}
     out <- .window_LD_averages(out, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
