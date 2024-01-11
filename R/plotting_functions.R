@@ -3231,8 +3231,8 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       #=========prep===========
       # write plink files
       old.snp.meta <- snp.meta(x)
-      snp.meta(x)$chr <- 0
-      format_snps(x, "plink", outfile = "plink_files")
+      snp.meta(x)$chr <- "0"
+      format_snps(x, "plink", outfile = "plink_files", plink_recode_numeric = TRUE)
       cv_storage <- expand.grid(k, 1:reps)
       colnames(cv_storage) <- c("K", "rep")
       cv_storage <- dplyr::arrange(cv_storage, K, rep)

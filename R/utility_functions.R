@@ -1321,7 +1321,7 @@ filter_snps <- function(x, maf = FALSE,
   #funciton to filter by individuals.
   min_loci_filt <- function(){
     if(verbose){cat("Filtering out individuals sequenced in few kept loci...\n")}
-    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    mcounts <- matrixStats::colSums2(genotypes(x) != mDat)
     rejects <- which(mcounts/nrow(x) < min_loci)
     if(length(rejects) > 0){
       if(length(rejects) == ncol(x)){
