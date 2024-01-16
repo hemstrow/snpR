@@ -110,6 +110,8 @@ A CRAN version should be available soon.
     across facet levels.
   - `calc_seg_sites()`: Rarefaction-corrected estiamtes of the number of
     segregating sites per facet level.
+  - `calc_allelic_richness():`: Rarefaction-corrected estiamtes of
+    allele counts per locus per facet level.
   - `calc_genetic_distances()`: Genetic distances between individuals.
   - `calc_fis()`: $F_{IS}$ (inbreeding coefficients).
   - `calc_pairwise_fst()`: Pairwise $F_{ST}$ between facet levels.
