@@ -29,7 +29,7 @@ setMethod("show", "snpRdata", function(object) {
       .console_hline(), "\n",
       "Average minor allele frequency:", mean(mafs), "\n",
       "Minimum minor allele frequency:", min(mafs), "\n",
-      "Percent missing data:", mean(1 - (rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),, drop = F])/nrow(object@sample.meta))), "\n",
+      "Percent missing data:", mean(1 - (Matrix::rowSums(object@geno.tables$gs[which(object@facet.meta$facet == ".base"),, drop = F])/nrow(object@sample.meta))), "\n",
       .console_hline(), "\n",
       "Possible sample metadata facets:\n", paste0(colnames(object@sample.meta), collapse = "\t"), "\n\n",
       "Possible SNP metadata facets:\n", paste0(colnames(object@snp.meta), collapse = "\t"), "\n\n",

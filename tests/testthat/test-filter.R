@@ -176,7 +176,7 @@ test_that("mac",{
   
   td <- filter_snps(.internal.data$test_snps, mac = 3, verbose = FALSE)
   
-  bad.snps <- which(matrixStats::rowSums2(.internal.data$test_snps@geno.tables$as) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$as) <= 3)
+  bad.snps <- which(Matrix::rowSums(.internal.data$test_snps@geno.tables$as) - .rowMax_sparse(.internal.data$test_snps@geno.tables$as) <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
 })
 
@@ -190,8 +190,8 @@ test_that("mgc",{
   td <- filter_snps(.internal.data$test_snps, mgc = 3, verbose = FALSE)
   
   hs <- colnames(.internal.data$test_snps@geno.tables$gs) %in% c("AC", "AG", "CT", "GT")
-  hs_c <- rowSums(.internal.data$test_snps@geno.tables$gs[, which(hs)])
-  mg <- rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
+  hs_c <- Matrix::rowSums(.internal.data$test_snps@geno.tables$gs[, which(hs)])
+  mg <- Matrix::rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - .rowMax_sparse(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
   bad.snps <- which(hs_c + mg <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
   

@@ -24,14 +24,15 @@ Imports:
     methods,
     ggplot2,
     parallel,
-    plyr,
     purrr,
     rbibutils,
     reshape2,
     rlang,
+    slam,
     stats
 Depends:
     data.table,
+    Matrix,
     foreach,
     R (>= 3.6.0)
 Suggests:

@@ -978,11 +978,11 @@ filter_snps <- function(x, maf = FALSE,
     
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
-      bimat <- ifelse(amat, TRUE, FALSE)
+      bimat <- as(amat, "lMatrix")
       
       if(bi_al){
         if(verbose){cat("Filtering non-biallelic loci...\n")}
-        bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
+        bi <- ifelse(Matrix::rowSums(bimat) > 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
         vio.snps[which(bi)] <- T
         x <- .update_filters(x, "bi-allelic", NA, NA)
@@ -990,7 +990,7 @@ filter_snps <- function(x, maf = FALSE,
       
       if(non_poly){
         if(verbose){cat("Filtering non_polymorphic loci...\n")}
-        np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
+        np <- ifelse(Matrix::rowSums(bimat) < 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(np), " bad loci\n"))}
         vio.snps[which(np)] <- T
         x <- .update_filters(x, "non-polymorphic", NA, NA)
@@ -1017,14 +1017,14 @@ filter_snps <- function(x, maf = FALSE,
         # check to see if we need to calculate mafs:
         if(any(colnames(x@stats) == "maf")){ # check that mafs have been calculated, the all facet must exist
           if(any(is.na(x@stats$maf[x@stats$facet == ".base"]))){ # check that mafs have been calculated for the all facet
-            mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+            mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
           }
           else{
             mafs <- x@stats$maf[x@stats$facet == ".base"]
           }
         }
         else{
-          mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+          mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
         }
         
         
@@ -1067,7 +1067,7 @@ filter_snps <- function(x, maf = FALSE,
         
         # add in the overall maf, since differential fixation would otherwise be removed.
         if(any(is.na(x@stats$maf[x@stats$facet == ".base"]))){ # check that mafs have been calculated for the all facet
-          a.mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+          a.mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
         }
         else{
           a.mafs <- x@stats$maf[x@stats$facet == ".base"]
@@ -1095,8 +1095,8 @@ filter_snps <- function(x, maf = FALSE,
         # in this case, this is the count of *individuals with the minor allele*
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-        het_c <- matrixStats::rowSums2(gmat[,hs,drop = FALSE])
-        min_g_c <- matrixStats::rowSums2(gmat[,-hs,drop = FALSE]) - matrixStats::rowMaxs(gmat[,-hs,drop = FALSE])
+        het_c <- Matrix::rowSums(gmat[,hs,drop = FALSE])
+        min_g_c <- Matrix::rowSums(gmat[,-hs,drop = FALSE]) - .rowMax_sparse(gmat[,-hs,drop = FALSE])
         
         tgac <- het_c + min_g_c
         
@@ -1111,7 +1111,7 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         
         # singletons exist wherever the total allele count - the maf count is 1.
-        mac.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat) <= mac)
+        mac.vio <- which(Matrix::rowSums(amat) - .rowMax_sparse(amat) <= mac)
         
         if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
         
@@ -1126,7 +1126,7 @@ filter_snps <- function(x, maf = FALSE,
       
       # get heterozygote frequency
       hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-      het_f <- rowSums(gmat[,hs])/rowSums(gmat)
+      het_f <- Matrix::rowSums(gmat[,hs])/Matrix::rowSums(gmat)
       
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
@@ -1276,12 +1276,12 @@ filter_snps <- function(x, maf = FALSE,
         # add on genotyping counts
         if(nrow(LD) > 0){
           base_lev_rows <- which(x@facet.meta$facet == ".base" & x@facet.meta$subfacet == ".base")
-          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = Matrix::rowSums(x@geno.tables$gs[base_lev_rows,]))),
                       by.x = "s1_.snp.id",
                       by.y = ".snp.id",
                       all.x = TRUE)
           
-          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = Matrix::rowSums(x@geno.tables$gs[base_lev_rows,]))),
                       by.x = "s2_.snp.id",
                       by.y = ".snp.id",
                       all.x = TRUE)
@@ -2184,11 +2184,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       # get the column from as matching the target allele.
       maj.col.match <- match(maj, colnames(x))
-      out$ni1 <- t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
+      out$ni1 <- Matrix::t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
       
       # ni1 is the rowsums minus this
-      out$ni2 <- rowSums(x) - out$ni1
-      out$n_total <- rowSums(x)
+      out$ni2 <- Matrix::rowSums(x) - out$ni1
+      out$n_total <- Matrix::rowSums(x)
       out$n_alleles <- rowSums(ifelse(out[,3:4] != 0, 1, 0))
       out[is.na(out)] <- 0
       

@@ -86,3 +86,4 @@ test_that("plink",{
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
 })
+

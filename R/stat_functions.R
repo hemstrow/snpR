@@ -179,8 +179,8 @@ NULL
 #'@describeIn calc_single_stats \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
-    bins <- choose(x$as, 2)
-    tot <- choose(rowSums(x$as), 2)
+    bins <- choose(as.matrix(x$as), 2)
+    tot <- choose(Matrix::rowSums(x$as), 2)
     return(1 - (rowSums(bins))/tot)
   }
   if(!is.snpRdata(x)){
@@ -1478,7 +1478,7 @@ calc_fis <- function(x, facets = NULL,
   
   # run for the real data
   mcols <- c("facet", "subfacet", "facet.type", colnames(x@snp.meta), "ho")
-  real <- one_run(x, cbind(data.table::as.data.table(x@geno.tables$as), .fix..call(x@stats[,..mcols])), ofacets)
+  real <- one_run(x, cbind(data.table::as.data.table(as.matrix(x@geno.tables$as)), .fix..call(x@stats[,..mcols])), ofacets)
   colnames(real[[2]])[which(colnames(real[[2]]) == "V1")] <- "weighted_mean_fis"
   
   # do bootstraps if requested
@@ -3405,20 +3405,20 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     
     # get observed genotype counts
     het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
-    o2pq <- rowSums(gs[,het.col, drop = F])
-    opp <- matrixStats::rowMaxs(gs[,-het.col, drop = F])
-    oqq <- rowSums(gs) - o2pq - opp
+    o2pq <- Matrix::rowSums(gs[,het.col, drop = F])
+    opp <- .rowMax_sparse(gs[,-het.col, drop = F])
+    oqq <- Matrix::rowSums(gs) - o2pq - opp
     
     # if we are using a chisq test, easy and quick
     if(method == "chisq"){
       # get allele frequencies
-      fp <- (opp*2 + o2pq)/(rowSums(gs)*2)
+      fp <- (opp*2 + o2pq)/(Matrix::rowSums(gs)*2)
       fq <- 1 - fp
       
       # get expected genotype counts
-      epp <- fp^2 * rowSums(gs)
-      eqq <- fq^2 * rowSums(gs)
-      e2pq <- 2*fp*fq * rowSums(gs)
+      epp <- fp^2 * Matrix::rowSums(gs)
+      eqq <- fq^2 * Matrix::rowSums(gs)
+      e2pq <- 2*fp*fq * Matrix::rowSums(gs)
       
       # calculate chi-squared
       calc.chi <- function(o,e){
@@ -4269,9 +4269,9 @@ calc_he <- function(x, facets = NULL){
   else{
     he_func_nb <- function(as, maf = NULL){
       as <- as$as
-      as <- as/rowSums(as)
+      as <- as/Matrix::rowSums(as)
       as <- as^2
-      he <- 1 - rowSums(as)
+      he <- 1 - Matrix::rowSums(as)
       return(he)
     }
     
@@ -4842,7 +4842,7 @@ calc_prop_poly <- function(x, facets = NULL){
     sample.levs.to.run <- unlist(sample.levs[which(psl == sample.levs.to.run)])
     matches <- which(x@facet.meta$facet %in% sample.levs.to.run)
     col.matches <- which(colnames(x@facet.meta) %in% c("facet", "subfacet", .split.facet(usl[[i]])[[1]]))
-    output[[i]] <- func(cbind(x@facet.meta[matches, col.matches], x@geno.tables$as[matches,]))
+    output[[i]] <- func(cbind(x@facet.meta[matches, col.matches], as.matrix(x@geno.tables$as[matches,])))
   }
   
   output <- dplyr::bind_rows(output)
@@ -5568,7 +5568,7 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
                     substr(colnames(x@geno.tables$gs), (x@snp.form/2) + 1, x@snp.form))
     
     gs <- x@geno.tables$gs[matches,]
-    gs <- data.table::as.data.table(gs)
+    gs <- data.table::as.data.table(as.matrix(gs))
     gs$.sum <- rowSums(gs) # sums for each row
     gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
     if(g == 0){
@@ -5585,8 +5585,8 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     }
     
 
-    top <- rowSums(choose(x@geno.tables$gs[matches, homs], gs$.g))
-    bottom <- choose(rowSums(x@geno.tables$gs[matches,]), gs$.g)
+    top <- rowSums(choose(as.matrix(x@geno.tables$gs[matches, homs]), gs$.g))
+    bottom <- choose(rowSums(as.matrix(x@geno.tables$gs[matches,])), gs$.g)
     gs$prob_seg <- 1 - (top/bottom)
     
     # # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
