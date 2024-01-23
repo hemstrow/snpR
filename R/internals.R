@@ -32,6 +32,7 @@ is.snpRdata <- function(x){
   
   #===========================smart rbind fill function========================
   .smart.rbind.fill.matrix <- function(x, y, nrf = 1){
+
     if(!is(x, "sparseMatrix")){
       x <- Matrix::Matrix(x, sparse = TRUE)
     }
@@ -3802,27 +3803,6 @@ is.snpRdata <- function(x){
   return(win_res)
 }
 
-.rbind_list_fill_sparse <- function(l, fill_val = 0){
-  cn <- unique(unlist(lapply(l, colnames)))
-  out <- Matrix::Matrix(0, 0, length(cn), dimnames = list(NULL, cn))
-  for(i in 1:length(l)){
-    mcn <- which(!cn %in% colnames(l[[i]]))
-    if(length(mcn) > 0){
-      fill <- Matrix::Matrix(fill_val, 
-                             nrow = nrow(l[[i]]), 
-                             ncol = length(mcn),
-                             dimnames = list(rownames(l[[i]]),
-                                             cn[mcn]))
-      l[[i]] <- cbind(l[[i]], fill)[,cn]
-    }
-    out <- rbind(out, l[[i]])
-  }
-  return(out)
-}
-
-.rowMax_sparse <- function(x) slam::rollup(x, 2, FUN = max)[,1]
-.rowMin_sparse <- function(x) slam::rollup(x, 2, FUN = min)[,1]
-
 
 .rbind_list_fill_sparse <- function(l, fill_val = 0){
   cn <- unique(unlist(lapply(l, colnames)))
@@ -3838,7 +3818,6 @@ is.snpRdata <- function(x){
       l[[i]] <- cbind(l[[i]], fill)[,cn]
     }
     
-    if(ncol(out) != ncol(l[[i]])){browser()}
     out <- rbind(out, l[[i]])
   }
   return(out)

@@ -822,7 +822,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
                                        .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets])
       
-      n_tots$nk <- rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
+      n_tots$nk <- Matrix::rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
       n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
       
@@ -1086,7 +1086,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       }
       else{
         if(is.null(rac)){
-          rac <- cbind(x@facet.meta, x@geno.tables$as, x@geno.tables$gs)
+          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), as.matrix(x@geno.tables$gs))
         }
         real_out <- func(rac[which(rac$facet == facet),], method, facet, 
                          ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
@@ -4617,7 +4617,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
   }
   
   bind_meta <- function(x, select){
-    return(cbind(x@facet.meta[select,], x@geno.tables$as[select,]))
+    return(cbind(x@facet.meta[select,], as.matrix(x@geno.tables$as[select,])))
   }
   
   #============prepare input data=======

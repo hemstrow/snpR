@@ -21,7 +21,7 @@ test_that("pi",{
   pi <- get.snpR.stats(tdm, c(".base", "pop"), "pi")$single
 
   # test
-  expect_equal(pi$pi, 1 - rowSums(apply(tdm@geno.tables$as, MARGIN = 2, function(x) choose(x, 2)))/choose(rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
+  expect_equal(pi$pi, 1 - rowSums(apply(as.matrix(tdm@geno.tables$as), MARGIN = 2, function(x) choose(x, 2)))/choose(Matrix::rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
 })
 
 test_that("he",{
@@ -31,9 +31,9 @@ test_that("he",{
   
   # test
   as <- tdm@geno.tables$as
-  as <- as/rowSums(as)
+  as <- as/Matrix::rowSums(as)
   as <- as^2
-  che <- 1 - rowSums(as) # 1 minus hom freqs
+  che <- 1 - Matrix::rowSums(as) # 1 minus hom freqs
   expect_equal(he$he, che) # check against 2pq from another source
   
   # non-bi-allelic
@@ -53,8 +53,8 @@ test_that("ho", {
   expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "ho"))))
   ho <- get.snpR.stats(tdm, c("pop", ".base"), "ho")$single
   
-  rs <- rowSums(tdm@geno.tables$gs)
-  hets <- rowSums(tdm@geno.tables$gs[,which(substr(colnames(tdm@geno.tables$g), 1, 1) != substr(colnames(tdm@geno.tables$g), 2, 2))]) # hand calced
+  rs <- Matrix::rowSums(tdm@geno.tables$gs)
+  hets <- Matrix::rowSums(tdm@geno.tables$gs[,which(substr(colnames(tdm@geno.tables$g), 1, 1) != substr(colnames(tdm@geno.tables$g), 2, 2))]) # hand calced
   expect_equal(ho$ho, hets/rs)
 })
 
