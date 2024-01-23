@@ -20,6 +20,7 @@ LazyData: true
 Imports:
     doParallel,
     dplyr,
+    Matrix,
     matrixStats,
     methods,
     ggplot2,
@@ -32,8 +33,8 @@ Imports:
     stats
 Depends:
     data.table,
-    Matrix,
     foreach,
+    Matrix,
     R (>= 3.6.0)
 Suggests:
     ade4,

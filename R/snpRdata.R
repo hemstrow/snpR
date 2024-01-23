@@ -1,5 +1,6 @@
 #'@import data.table 
 #'@importFrom foreach %dopar%
+#'@import Matrix
 NULL
 
 
