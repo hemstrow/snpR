@@ -1079,7 +1079,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     else{
       if(bi_allelic){
         if(is.null(rac)){
-          rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
+          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), ho = x@stats$ho)
         }
         real_out <- func(rac[which(rac$facet == facet),], method, ofacet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
         real_wm <- one_wm(real_out, other_facets)

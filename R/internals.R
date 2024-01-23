@@ -515,7 +515,7 @@ is.snpRdata <- function(x){
       }
       x <- .add.facets.snpR.data(x, pheno.facets)
       if(req == "cast.gs"){
-        gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
+        gs <- data.table::as.data.table(cbind(x@facet.meta, as.matrix(x@geno.tables$gs)))
       }
       else{
         gs <- format_snps(x, "ac", pheno.facets)
