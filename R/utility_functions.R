@@ -978,7 +978,7 @@ filter_snps <- function(x, maf = FALSE,
     
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
-      bimat <- as(amat, "lMatrix")
+      bimat <- methods::as(amat, "lMatrix")
       
       if(bi_al){
         if(verbose){cat("Filtering non-biallelic loci...\n")}

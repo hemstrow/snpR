@@ -33,11 +33,11 @@ is.snpRdata <- function(x){
   #===========================smart rbind fill function========================
   .smart.rbind.fill.matrix <- function(x, y, nrf = 1){
 
-    if(!is(x, "sparseMatrix")){
+    if(!methods::is(x, "sparseMatrix")){
       x <- Matrix::Matrix(x, sparse = TRUE)
     }
     
-    if(!is(y, "sparseMatrix")){
+    if(!methods::is(y, "sparseMatrix")){
       y <- Matrix::Matrix(y, sparse = TRUE)
     }
     
@@ -46,7 +46,7 @@ is.snpRdata <- function(x){
     }
     
     if(nrow(y) == 0 & nrow(x) == 0){
-      return(Matrix::matrix(0, nrow = 0, ncol = 0))
+      return(Matrix::Matrix(0, nrow = 0, ncol = 0))
     }
     
     if(nrow(y) == 0){
@@ -774,7 +774,7 @@ is.snpRdata <- function(x){
       
       ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
-        if(is(stats_to_use, "sparseMatrix")){stats_to_use <- as.matrix(stats_to_use)}
+        if(methods::is(stats_to_use, "sparseMatrix")){stats_to_use <- as.matrix(stats_to_use)}
         
         if(par == FALSE & verbose){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
         
@@ -1512,6 +1512,7 @@ is.snpRdata <- function(x){
   ..all_idents <- ..rm_cols <- NULL
   
   .tab_func <- function(x, snp_form, mDat){
+    ..mDat <- NULL
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
     
     gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
@@ -2684,7 +2685,7 @@ is.snpRdata <- function(x){
     # special cases
     match.freq <- which(fmax != lmax) # maf = 0.5
     unseq <- which(Matrix::rowSums(gs$as) == 0) # unsequenced
-    np <- which(Matrix::rowSums(as(gs$as, "lMatrix")) == 1) # non-polymorphic
+    np <- which(Matrix::rowSums(methods::as(gs$as, "lMatrix")) == 1) # non-polymorphic
     
     # declair major and minor
     major <- fmax
