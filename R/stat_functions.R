@@ -3703,6 +3703,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     msg <- c(msg, "NeEstimator executable not found at provided path.\n")
   }
   else{
+    if(grepl(NeEstimator_path, " ")){stop("' ' (Space character) found in NeEstimator path. These are not accessable via 'system', please move or rename the NeEstimator executable.\n")}
     suppressWarnings(test <- try(system(paste0(NeEstimator_path, " -check"), intern = TRUE), silent = TRUE))
     if(methods::is(test, "try-error")){
       msg <- c(msg, "NeEstimator executable not found at provided path.\n")

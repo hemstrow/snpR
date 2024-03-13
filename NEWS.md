@@ -1,3 +1,6 @@
+# snpR 1.2.9.2 hotfix 2
+* Added an informative error message when attempting to run `calc_ne()` with a space in the `NeEstimator_path` variable.
+
 # snpR 1.2.9.1 hotfix 1
 
 ## Bug Fixes:
