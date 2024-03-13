@@ -186,7 +186,7 @@ calc_pi <- function(x, facets = NULL){
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
-  
+
 
   # add any missing facets
   ofacets <- facets
@@ -209,6 +209,7 @@ calc_pi <- function(x, facets = NULL){
 #'@export
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
+  browser()
   maj_count <- NULL
   
   

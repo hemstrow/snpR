@@ -121,7 +121,6 @@ is.snpRdata <- function(x){
     }
     x@facet.type <- c(x@facet.type, "sample")
     
-    
     # get unique options for this facet
     sample.meta <- x@sample.meta[colnames(x@sample.meta) %in% facets]
     sample.meta <- sample.meta[,sort(colnames(sample.meta))]
@@ -153,55 +152,40 @@ is.snpRdata <- function(x){
         gs <- lapply(gs, function(x){x[is.na(x)] <- 0;x})
       }
       
+      new_key <- (x@.facet.id.key$.facet.id[nrow(x@.facet.id.key)] + 1)
+      x@.facet.id.key <- rbind(x@.facet.id.key,
+                               data.table(facet = facets,
+                                          subfacet = sample.opts[i,],
+                                          facet.type = "sample",
+                                          .facet.id = new_key))
+      
       x@facet.meta <- rbind(x@facet.meta,
-                            cbind(data.frame(facet = rep(paste0(facets, collapse = "."), nrow(t.x)),
-                                             subfacet = rep(paste0(sample.opts[i,], collapse = "."), nrow(t.x)),
-                                             facet.type = rep("sample", nrow(t.x)), stringsAsFactors = F),
-                                  x@snp.meta))
+                            data.table(.facet.id = new_key,
+                                       .snp.id = snp.meta(x)$.snp.id))
     }
     
     
     #=========================sort, pack, and return==========
-    # sort
-    x@facet.meta <- dplyr::mutate_if(.tbl = x@facet.meta, is.factor, as.character)
-    x@facet.meta$.reorder <- 1:nrow(x@facet.meta)
-    x@facet.meta <- dplyr::arrange(x@facet.meta, .snp.id, facet, subfacet)
-    gs$gs <- gs$gs[x@facet.meta$.reorder,, drop = F]
-    gs$as <- gs$as[x@facet.meta$.reorder,, drop = F]
-    gs$wm <- gs$wm[x@facet.meta$.reorder,, drop = F]
-    x@facet.meta <- x@facet.meta[,-ncol(x@facet.meta)]
-    
     # output
     x@geno.tables <- gs
   }
-  # add and sort ac formated data.
-  # if(.is.bi_allelic(x)){
-  #   .make_it_quiet(nac <- format_snps(x, output = "ac", facets = added.facets))
-  #   nac <- data.table::as.data.table(nac)
-  #   nac <- rbind(oac, nac[,c("facet", "subfacet", ".snp.id", "n_total","n_alleles", "ni1", "ni2")])
-  #   nac <- dplyr::mutate_if(.tbl = nac, is.factor, as.character)
-  #   nac <- dplyr::arrange(nac, .snp.id, facet, subfacet)
-  #   nac <- as.data.frame(nac)
-  #   x@ac <- nac[,-c(1:3)]
-  # }
-  
 
   # add in dummy rows to stats
-  sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
-  if(ncol(x@stats) - ncol(sm) > 0){
-    sm <- cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm)))
-  }
-  colnames(sm) <- colnames(x@stats)
-  os <- data.table::as.data.table(x@stats)
-  if(ncol(os) - ncol(sm) > 0){
-    os <- rbind(os, cbind(sm, matrix(NA, nrow(sm), ncol(os) - ncol(sm))))
-  }
-  else{
-    os <- rbind(os, sm)
-  }
-  
-  os <- dplyr::mutate_if(.tbl = os, is.factor, as.character)
-  x@stats <- as.data.table(dplyr::arrange(os, .snp.id, facet, subfacet))
+  # sm <- data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% added.facets, c("facet", "subfacet", "facet.type", colnames(x@snp.meta))])
+  # if(ncol(x@stats) - ncol(sm) > 0){
+  #   sm <- cbind(sm, matrix(NA, nrow(sm), ncol(x@stats) - ncol(sm)))
+  # }
+  # colnames(sm) <- colnames(x@stats)
+  # os <- data.table::as.data.table(x@stats)
+  # if(ncol(os) - ncol(sm) > 0){
+  #   os <- rbind(os, cbind(sm, matrix(NA, nrow(sm), ncol(os) - ncol(sm))))
+  # }
+  # else{
+  #   os <- rbind(os, sm)
+  # }
+  # 
+  # os <- dplyr::mutate_if(.tbl = os, is.factor, as.character)
+  # x@stats <- as.data.table(dplyr::arrange(os, .snp.id, facet, subfacet))
   
   
   return(x)
@@ -441,7 +425,6 @@ is.snpRdata <- function(x){
 #
 # @author William Hemstrom
 .apply.snpR.facets <- function(x, facets = NULL, req, fun, case = "ps", par = FALSE, ..., stats.type = "all", response = NULL, maf = FALSE, interpolate = NULL, verbose = FALSE){
-
   if(!is.null(facets)){
     if(facets[1] == "all"){
       facets <- x@facets
@@ -454,15 +437,17 @@ is.snpRdata <- function(x){
   
   if(case == "ps"){
     facets <- .check.snpR.facet.request(x, facets)
+    facet.ids <- .fetch.facet.ids(x, facets)
+    facet.ids <- unlist(facet.ids)
     if(req == "gs"){
       # subset
-      gs <- lapply(x@geno.tables, function(y) y[which(x@facet.meta$facet %in% facets),,drop = FALSE])
+      gs <- lapply(x@geno.tables, function(y) y[which(x@facet.meta$.facet.id %in% facet.ids),,drop = FALSE])
       
       # run the function indicated
       out <- data.table::as.data.table(fun(gs, ...))
       
       # bind metadata
-      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$.facet.id %in% facet.ids,]), out)
       #out <- cbind(x@facet.meta[x@facet.meta$facet %in% facets,], out)
       
       # return
@@ -471,27 +456,27 @@ is.snpRdata <- function(x){
     else if(req == "meta.gs"){
       # gs with metadata on facets attached.
       # subset
-      gs <- lapply(x@geno.tables, function(y) y[x@facet.meta$facet %in% facets,,drop=F])
-      gs <- lapply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet %in% facets, c("facet", "subfacet", ".snp.id")], as.matrix(y)))
+      gs <- lapply(x@geno.tables, function(y) y[which(x@facet.meta$.facet.id %in% facet.ids),,drop=F])
+      gs <- lapply(gs, function(y) cbind(x@facet.meta[which(x@facet.meta$.facet.id %in% facet.ids), c("facet", "subfacet", ".snp.id")], as.matrix(y)))
       
       # run the function indicated
       out <- data.table::as.data.table(fun(gs, ...))
       
       # bind metadata
-      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[which(x@facet.meta$.facet.id %in% facet.ids),]), out)
       
       # return
       return(out)
     }
     else if(req == "ac"){
       # subset
-      ac <- x@ac[x@facet.meta$facet %in% facets,]
+      ac <- x@ac[which(x@facet.meta$.facet.id %in% facet.ids),]
       
       # run the function indicated
       out <- data.table::as.data.table(fun(ac, ...))
       
       # bind metadata
-      out <- cbind(data.table::as.data.table(x@facet.meta[x@facet.meta$facet %in% facets,]), out)
+      out <- cbind(data.table::as.data.table(x@facet.meta[which(x@facet.meta$.facet.id %in% facet.ids),]), out)
       
       # return
       return(out)
@@ -1008,6 +993,7 @@ is.snpRdata <- function(x){
 # @param type character, default "stats". The type of statistic to merge, see
 #   list in description.
 .merge.snpR.stats <- function(x, stats, type = "stats"){
+  browser
   .snp.id <- facet <- subfacet <- comparison <- NULL
   
   # note: not my code, pulled from:
@@ -1034,8 +1020,8 @@ is.snpRdata <- function(x){
   
   if(type == "stats"){
     # merge and return
-    meta.cols <- c(colnames(stats)[1:(which(colnames(stats) == ".snp.id"))], colnames(x@snp.meta))
-    starter.meta <- c("facet", "subfacet", "facet.type")
+    meta.cols <- c(".facet.id", ".snp.id")
+    starter.meta <- meta.cols
     n.s <- .smart.merge(stats, x@stats, meta.cols, starter.meta)
     x@stats <- n.s
   }
@@ -1254,11 +1240,11 @@ is.snpRdata <- function(x){
   
   # sort by .snp.id if that's a thing here.
   if(any(colnames(m.s) == ".snp.id")){
-    if("subfacet" %in% colnames(m.s)){
-      m.s <- data.table::setorder(m.s, .snp.id, facet, subfacet)
+    if(".facet.id" %in% colnames(m.s)){
+      m.s <- data.table::setorder(m.s, .snp.id, .facet.id)
     }
     else{
-      m.s <- data.table::setorder(m.s, .snp.id, facet, comparison)
+      m.s <- data.table::setorder(m.s, .snp.id, comparison)
     }
   }
   
@@ -1489,6 +1475,17 @@ is.snpRdata <- function(x){
     return(unlist(facets))
     
   }
+}
+
+.fetch.facet.ids <- function(x, facets){
+  facets <- .check.snpR.facet.request(x, facets)
+  matches <- lapply(facets, function(y) x@.facet.id.key$.facet.id[which(x@.facet.id.key$facet == y)])
+  names(matches) <- facets
+  return(matches)
+}
+
+.extract.metadata.from.facet.id <- function(x, facet_ids = NULL, facet = NULL){
+  return(x@.facet.id.key[match(facet_ids, x@.facet.id.key$.facet.id)])
 }
 
 # Tabulate allele and genotype counts at each locus.
@@ -2248,6 +2245,8 @@ is.snpRdata <- function(x){
 #  @return A snpR data object with weighted statistics merged in.
 .calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- weights_col <- NULL
+  
+  browser()
 
 
   #===========sanity checks===============

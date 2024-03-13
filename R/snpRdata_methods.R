@@ -21,7 +21,7 @@ setMethod("show", "snpRdata", function(object) {
   }
   
   
-  mafs <- object@stats[which(object@stats$facet == ".base"),]$maf
+  mafs <- object@stats[which(object@stats$.facet.id == ".base"),]$maf
   
   bi_allelic <- .is.bi_allelic(object)
   
