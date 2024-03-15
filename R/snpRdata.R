@@ -921,7 +921,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(!is.null(col_pattern)){
       keep.cols <- colnames(y)[keep.cols]
       
-      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", ".snp.id", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
                                                     colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
@@ -953,13 +953,18 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     }
     
     # attach metadata
-    out <- merge(x@.facet.id.key[,-which(colnames(x@.facet.id.key) == "facet.type")],  .fix..call(y[keep.rows, ..keep.cols]))
-    out <- merge(x@snp.meta, out, by = ".snp.id")
-    out$.facet.id <- NULL
-    ord <- c("facet", "subfacet", colnames(snp.meta(x)))
-    ord <- c(ord, colnames(out))
-    ord <- ord[-which(duplicated(ord))]
-    out <- out[,ord]
+    if(".facet.id" %in% colnames(y)){
+      out <- merge(x@.facet.id.key[,-which(colnames(x@.facet.id.key) == "facet.type")],  .fix..call(y[keep.rows, ..keep.cols]), by = ".facet.id")
+      out <- merge(x@snp.meta, out, by = ".snp.id")
+      out$.facet.id <- NULL
+      ord <- c("facet", "subfacet", colnames(snp.meta(x)))
+      ord <- c(ord, colnames(out))
+      ord <- ord[-which(duplicated(ord))]
+      out <- out[,ord]
+    }
+    else{
+      out <- y[keep.rows, ..keep.cols]
+    }
     
     return(as.data.frame(out, stringsAsFactors = FALSE))
   }

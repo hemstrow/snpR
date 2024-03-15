@@ -209,7 +209,6 @@ calc_pi <- function(x, facets = NULL){
 #'@export
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
-  browser()
   maj_count <- NULL
   
   
@@ -718,16 +717,18 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
-    
+    browser()
+
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
+      colnames(x)[which(colnames(x) == ".facet.id")] <- "subfacet"
       data.table::setkey(x, subfacet, .snp.id)
       pops <- sort(unique(x$subfacet))
       npops <- length(pops)
       pnk.length <- (npops*(npops-1))/2 * (nrow(x)/npops)
     }
     else{
-      pops <- sort(unique(x@facet.meta[which(x@facet.meta$facet == facets), "subfacet"]))
+      pops <- sort(unique(.fetch.facet.ids(x, facets)[[1]]))
       npops <- length(pops)
       pnk.length <- (npops*(npops-1))/2 * (nrow(x))
     }
@@ -764,7 +765,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       ##get pop data
       
       # population names
-      pnames <- sort(unique(x@facet.meta$subfacet[x@facet.meta$facet == facets]))
+      pnames <- dplyr::arrange(.get.task.list(x, facets), subfacet)
       
       
       #get the indices containing locus headers
@@ -790,7 +791,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
         
         #put them in a matrix to get their comparison ID.
         tmat <- matrix(tvals, nl + 1, i - 1, TRUE) #fill these values into a matrix
-        colnames(tmat) <- paste0(pnames[1:(i-1)], "~", pnames[i]) #name the comparison in each column
+        colnames(tmat) <- paste0(unlist(pnames[1:(i-1),5]), "~", pnames[i,5]) #name the comparison in each column
         fmat[,prog:(prog + ncol(tmat) - 1)] <- tmat #save to the final output
         colnames(fmat)[prog:(prog + ncol(tmat) - 1)] <- colnames(tmat) #save the column names
         prog <- prog + as.integer(ncol(tmat)) #increment column progress.
@@ -820,14 +821,13 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       colnames(out$loci) <- c("comparison", "fst")
       
       # get nk values:
-      n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
-                                       .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets])
+      n_tots <- as.data.table(x@facet.meta[x@facet.meta$.facet.id %in% pnames$.facet.id,])
       
-      n_tots$nk <- Matrix::rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
-      n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
+      n_tots$nk <- Matrix::rowSums(x@geno.tables$as[x@facet.meta$.facet.id %in% pnames$.facet.id,])
+      n_tots <- data.table::dcast(n_tots, .snp.id ~ .facet.id, value.var = "nk")
       n_tots <- n_tots[,-1]
       
-      
+      browser()
       prog <- 1L
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
@@ -843,7 +843,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       
       out$loci$n_total <- pnk$ntotal
       if(length(out$overall) == 1){
-        names(out$overall) <- paste0(pnames[1], "~", pnames[2])
+        names(out$overall) <- paste0(pnames$.facet.id[1], "~", pnames$.facet.id[2])
       }
       
       # clean and return, we're done.
@@ -1044,9 +1044,10 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     colnames(out) <- c("comparison", "fst", "a", "b", "c")
     # meta.cols <- (1:ncol(x))[-c(ac_cols, ncol(x))]
     out$nk <- pnk$ntotal
-    meta.cols <- 2:6
-    out <- cbind(out[,"comparison"], .fix..call(x[x$subfacet == pops[1],..meta_colnames]), .fix..call(out[,..meta.cols]))
-    
+    out$.snp.id <- rep(x$.snp.id[which(x$subfacet == pops[1])], length(unique(out$comparison)))
+    col.ord <- c("comparison", ".snp.id", "fst", "a", "b", "c", "nk")
+    out <- .fix..call(out[,..col.ord])
+
     # return
     return(out)
   }
@@ -1057,7 +1058,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     
     out <- x[,list(stats::weighted.mean(a, w = nk, na.rm = T)/
                stats::weighted.mean(a + b + c, w = nk, na.rm = T), 
-               mean(a)/mean(a + b + c)), 
+               mean(a, na.rm = T)/mean(a + b + c, na.rm = T)), 
              by = groups] # ratio of averages
     
     # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
@@ -1068,36 +1069,56 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   }
   
   
-  one_run <- function(x, method, facet, ofacet, g.filename, rac = NULL){
+  one_run <- function(x, method, facet, ofacet, g.filename, rac = NULL, mean_only = NULL){
     other_facets <- .split.facet(ofacet)[[1]]
     other_facets <- other_facets[which(!other_facets %in% .split.facet(facet)[[1]])]
     
     if(method == "genepop"){
+      browser()
       real_out <- func(x, method, facets = ofacet, g.filename = g.filename)
       real_wm <- real_out[[2]]
       real_out <- real_out[[1]]
     }
     else{
-      if(bi_allelic){
-        if(is.null(rac)){
-          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), ho = x@stats$ho)
+      match.facets <- unlist(.fetch.facet.ids(x, facet))
+      
+      if(is.null(mean_only)){
+        
+        if(bi_allelic){
+          if(is.null(rac)){
+            rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), ho = x@stats$ho)
+          }
+          real_out <- func(rac[which(rac$.facet.id %in% match.facets),], method, ofacet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
         }
-        real_out <- func(rac[which(rac$facet == facet),], method, ofacet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
+        else{
+          if(is.null(rac)){
+            rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), as.matrix(x@geno.tables$gs))
+          }
+          real_out <- func(rac[which(rac$.facet.id %in% match.facets),], method, facet, 
+                           ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
+                           meta_colnames = colnames(snp.meta(x)),
+                           gc_cols = which(colnames(rac) %in% colnames(x@geno.tables$gs)))
+        }
+        
+        if(length(other_facets) > 0){
+          real_out <- merge(real_out, snp.meta(x)[, c(other_facets, ".snp.id")], ".snp.id")
+        }
+        
         real_wm <- one_wm(real_out, other_facets)
+        real_out <- .fix..call(real_out[,-..other_facets])
+        
+        return(list(real_out = real_out, real_wm = real_wm))
       }
       else{
-        if(is.null(rac)){
-          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), as.matrix(x@geno.tables$gs))
+        
+        if(length(other_facets) > 0){
+          mean_only <- merge(mean_only, snp.meta(x)[, c(other_facets, ".snp.id")], ".snp.id")
         }
-        real_out <- func(rac[which(rac$facet == facet),], method, facet, 
-                         ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
-                         meta_colnames = colnames(snp.meta(x)),
-                         gc_cols = which(colnames(rac) %in% colnames(x@geno.tables$gs)))
-        real_wm <- one_wm(real_out, other_facets)
+        
+        real_wm <- one_wm(mean_only, other_facets)
+        return(list(real_out = NULL, real_wm = real_wm))
       }
     }
-    
-    return(list(real_out = real_out, real_wm = real_wm))
   }
   
   #============================run with real data===============
@@ -1111,20 +1132,40 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     }
   }
   
-  
+  completed.samp.facets <- character(0)
+
+  # loop through facets, ensuring that if we aren't using genepop that we only calculate per-snp values once (just skip to means if sample facet has already been done!)
+  # note--don't worry about this for bootstraps where we are doing fresh boots
   for(i in 1:length(facets)){
+    browser()
     if(method == "genepop"){
       .make_it_quiet(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt")))
-    }
-    
-    real[[i]] <- one_run(x,
-                         method =  method, 
-                         facet = facets[i],
-                         ofacet = ofacets[i],
-                         g.filename = paste0(facets[i], "_genepop_input.txt"))
-    
-    if(method == "genepop"){
+      real[[i]] <- one_run(x,
+                           method =  method, 
+                           facet = facets[i],
+                           ofacet = ofacets[i],
+                           g.filename = paste0(facets[i], "_genepop_input.txt"))
       real[[i]]$real_wm <- data.frame(comparison = names(real[[i]]$real_wm), weighted_mean_fst = real[[i]]$real_wm)
+    }
+    else{
+      
+      t.samp.facets <- .check.snpR.facet.request(x, ofacets[i])
+      if(t.samp.facets %in% completed.samp.facets){
+        real[[i]] <- one_run(x,
+                             method =  method, 
+                             facet = facets[i],
+                             ofacet = ofacets[i],
+                             g.filename = paste0(facets[i], "_genepop_input.txt"),
+                             mean_only = real[[which(names(real) == t.samp.facets)[1]]]$real_out)
+      }
+      else{
+        real[[i]] <- one_run(x,
+                             method =  method, 
+                             facet = facets[i],
+                             ofacet = ofacets[i],
+                             g.filename = paste0(facets[i], "_genepop_input.txt"))
+        completed.samp.facets <- c(completed.samp.facets, t.samp.facets)
+      }
     }
   }
   
@@ -1151,6 +1192,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
           if(method == "wc"){
             gp.filenames <- NULL
             wc.inputs <- .boot_as(x, 1, facets[f], ret_gs = !bi_allelic)
+            wc.inputs[[1]]$.facet.id <- .fetch.facet.ids(x, facets[f], list(wc.inputs[[1]]$subfacet))[[1]]
           }
           
           boots[[i]] <- one_run(x, method = method, facet = facets[f], ofacet = ofacets[f], gp.filenames[i], wc.inputs[[1]])$real_wm
@@ -1224,7 +1266,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   
   #==================merge and return============================
   cat("Collating results...")
-  
+
   # merge the means
   snp.facet <- unlist(lapply(ofacets, function(y) .check.snpR.facet.request(x, y, "sample")))
   real_wm <- purrr::map(real, 2)
@@ -1241,11 +1283,23 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   }
   real_wm <- data.table::rbindlist(real_wm, idcol = "facet", fill = TRUE)
   colnames(real_wm)[which(colnames(real_wm) == "comparison")] <- "subfacet"
+  
+  ## disambiguate subfacet levels
+  sub_levs <- strsplit(as.character(real_wm$subfacet), "~")
+  sub_levs <- t(as.data.frame(sub_levs))
+  sub_levs <- as.data.table(matrix(as.numeric(sub_levs), nrow(sub_levs)))
+  key <- sub_levs
+  for(i in 1:ncol(sub_levs)){
+    key[,i] <- x@.facet.id.key$subfacet[match(sub_levs[[i]], x@.facet.id.key$.facet.id)]
+  }
+  real_wm$subfacet <- .paste.by.facet(key, colnames(key), "~")
+  
+  ## finish merging
   x <- .merge.snpR.stats(x, real_wm, "weighted.means")
   
   
   # merge the per-snp
-  real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet")
+  real_out <- data.table::rbindlist(purrr::map(real, "real_out"), idcol = "facet", use.names = TRUE)
   ## zfst and fst/1-fst
   if(zfst){
     real_out[, zfst := (fst - mean(fst, na.rm = TRUE))/stats::sd(fst, na.rm = TRUE), by = .(comparison, facet)]
