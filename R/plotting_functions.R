@@ -4081,34 +4081,42 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
         stop(paste0("Subfacets in provided facet.order do not exactly match all of those in the provided data for facet: ", 
                     facets[i], ".\n")) # abuses lexical context, but easy.
       }
-      
-      i1 <- match(mean_fst$p1, levs)
-      i2 <- match(mean_fst$p2, levs)
-      flip <- which(i1 > i2)
-      if(length(flip) > 0){
-        mean_fst[flip, c("p1", "p2") := .(p2, p1)]
-      }
-      
-      mean_fst$p1 <- factor(mean_fst$p1, levs)
-      mean_fst$p2 <- factor(mean_fst$p2, levs)
     }
     else{
       levs <- unique(c(mean_fst$p1, mean_fst$p2))
-      mean_fst$p1 <- factor(mean_fst$p1, levs)
-      mean_fst$p2 <- factor(mean_fst$p2, levs)
+    }
+      
+    # fix any wierd sorting issues
+    i1 <- match(mean_fst$p1, levs)
+    i2 <- match(mean_fst$p2, levs)
+    flip <- which(i1 > i2)
+    if(length(flip) > 0){
+      mean_fst[flip, c("p1", "p2") := .(p2, p1)]
     }
     
+    mean_fst$p1 <- factor(mean_fst$p1, levs)
+    mean_fst$p2 <- factor(mean_fst$p2, levs)
+    
 
+    # mark sigs if requested
     if(!isFALSE(mark_sig)){
       if(!any(colnames(mean_fst) == "weighted_mean_fst_p")){
         mark_sig <- FALSE
         warning("Bootstraped significance values not calculated for facet:", mean_fst$facet[1])
       }
       else{
-        mean_fst[,sig := ifelse(weighted_mean_fst_p <= mark_sig, "*", "")]
+        if(all(is.na(mean_fst$weighted_mean_fst_p))){
+          mark_sig <- FALSE
+          warning("Bootstraped significance values not calculated or all NA for facet:", mean_fst$facet[1])
+        }
+        else{
+          mean_fst[,sig := as.character(ifelse(weighted_mean_fst_p <= mark_sig, "*", ""))]
+          mean_fst[is.na(weighted_mean_fst_p), sig := ""]
+        }
       }
     }
     
+    # plot
     p <- ggplot2::ggplot(mean_fst, ggplot2::aes(x = p1, y = p2, fill = weighted_mean_fst)) +
       ggplot2::geom_tile() + ggplot2::scale_fill_viridis_c(option = viridis.option) +
       ggplot2::theme_bw() + ggplot2::theme(axis.title = ggplot2::element_blank()) +
@@ -4158,14 +4166,14 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
   #============make plots===========
   plots <- vector("list", length(facets))
   names(plots) <- facets
-  if(!is.list(facet.order)){
+  if(!is.list(facet.order) & !is.null(facet.order)){
     if(length(facets) > 1){
       stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list, see documentation.\n")
     }
     facet.order <- list(facet.order); 
     names(facet.order) <- facets
   }
-  else if(length(facet.order) != length(facets)){
+  else if((length(facet.order) != length(facets)) & !is.null(facet.order)){
     stop("If more than one facet is requested and a facet.order is provided, an order for each facet must be included using a named list with no extra elements, see documentation.\n")
   }
   

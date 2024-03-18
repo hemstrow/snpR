@@ -1054,9 +1054,9 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   one_wm <- function(x, other_facets){
     groups <- c("comparison", other_facets)
     
-    out <- x[,list(stats::weighted.mean(a, w = nk, na.rm = T)/
-               stats::weighted.mean(a + b + c, w = nk, na.rm = T), 
-               mean(a)/mean(a + b + c)), 
+    out <- x[,list(stats::weighted.mean(a, w = nk, na.rm = TRUE)/
+               stats::weighted.mean(a + b + c, w = nk, na.rm = TRUE), 
+               mean(a, na.rm = TRUE)/mean(a + b + c, na.rm = TRUE)), 
              by = groups] # ratio of averages
     
     # out <- x[,weighted.mean(a/(a + b + c), w = nk, na.rm = T), 
