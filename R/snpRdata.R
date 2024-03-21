@@ -49,9 +49,9 @@ NULL
   }
 
   # check that the facet meta and snp meta column names match
-  # if(!identical(colnames(object@snp.meta), colnames(object@facet.meta)[-c(1:3)])){
-  #   errors <- c(errors, "Column names in the snp.meta and stored metadata for facets do not match. This is likely due to later change of the snp metadata which added or changed column names but didn't change facet.meta column names. Please re-initialize the snpRdata object using the metadata you require. This error should typically not appear.\n")
-  # }
+  if(!identical(colnames(object@snp.meta), colnames(object@facet.meta)[-c(1:3)])){
+    errors <- c(errors, "Column names in the snp.meta and stored metadata for facets do not match. This is likely due to later change of the snp metadata which added or changed column names but didn't change facet.meta column names. Please re-initialize the snpRdata object using the metadata you require. This error should typically not appear.\n")
+  }
 
   warns <- character()
   # check for bad entries in character columns (periods are fine in numeric!)
@@ -184,7 +184,6 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        geno.tables = "list",
                                        facets = "character",
                                        facet.type = "character",
-                                       .facet.id.key = "data.frame",
                                        stats = "data.frame",
                                        window.stats = "data.frame",
                                        pairwise.stats = "data.frame",
@@ -581,22 +580,25 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
 
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
-                    facet.meta = data.frame(.facet.id = 1,
-                                            .snp.id = snp.meta$.snp.id),
+                    facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
+                                                  subfacet = rep(".base", nrow(gs$gs)),
+                                                  facet.type = rep(".base", nrow(gs$gs)),
+                                                  stringsAsFactors = FALSE),
+                                       snp.meta),
                     geno.tables = gs,
                     mDat = mDat,
                     ploidy = 2,
                     bi_allelic = TRUE,
                     data.type = "genotypic",
-                    stats = data.table::data.table(),
+                    stats = cbind(data.table::data.table(facet = rep(".base", nrow(gs$gs)),
+                                                         subfacet = rep(".base", nrow(gs$gs)),
+                                                         facet.type = rep(".base", nrow(gs$gs)),
+                                                         stringsAsFactors = FALSE),
+                                  snp.meta),
                     snp.form = nchar(genotypes[1,1]), row.names = rownames(genotypes),
                     sn = list(sn = NULL, type = NULL),
                     facets = ".base",
                     facet.type = ".base",
-                    .facet.id.key = data.frame(facet = ".base",
-                                               subfacet = ".base",
-                                               facet.type = ".base",
-                                               .facet.id = 1),
                     calced_stats = list(),
                     allele_frequency_matrices = list(),
                     genetic_distances = list(),
@@ -619,7 +621,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   # add basic maf
-  x <- calc_maf(x)
+  .make_it_quiet(x <- calc_maf(x))
   
   # add ac
   # .make_it_quiet(x@ac <- format_snps(x, "ac")[,c("n_total", "n_alleles", "ni1", "ni2")])
@@ -851,9 +853,8 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       return(NULL)
     }
     if(type == "standard"){
-      matching_facet_ids <- unlist(.fetch.facet.ids(x, facets))
-      keep.rows <- which(y$.facet.id %in% matching_facet_ids)
-      keep.cols <- 1:ncol(y)
+      keep.rows <- which(y$facet %in% facets)
+      keep.cols <- which(!colnames(y) %in% c("facet.type"))
     }
     else if(type == "window"){
       facets <- .check.snpR.facet.request(x, facets, "none", T)
@@ -921,7 +922,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(!is.null(col_pattern)){
       keep.cols <- colnames(y)[keep.cols]
       
-      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", ".snp.id", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
+      good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
                                                     colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
@@ -948,25 +949,10 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       return(NULL)
     }
     
-    if(all(colnames(y)[keep.cols] %in% c(".facet.id", ".snp.id", "comparison"))){
+    if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison"))){
       return(NULL)
     }
-    
-    # attach metadata
-    if(".facet.id" %in% colnames(y)){
-      out <- merge(x@.facet.id.key[,-which(colnames(x@.facet.id.key) == "facet.type")],  .fix..call(y[keep.rows, ..keep.cols]), by = ".facet.id")
-      out <- merge(x@snp.meta, out, by = ".snp.id")
-      out$.facet.id <- NULL
-      ord <- c("facet", "subfacet", colnames(snp.meta(x)))
-      ord <- c(ord, colnames(out))
-      ord <- ord[-which(duplicated(ord))]
-      out <- out[,ord]
-    }
-    else{
-      out <- y[keep.rows, ..keep.cols]
-    }
-    
-    return(as.data.frame(out, stringsAsFactors = FALSE))
+    return(as.data.frame(.fix..call(y[keep.rows, ..keep.cols]), stringsAsFactors = FALSE))
   }
   
   extract.LD <- function(y, facets){
