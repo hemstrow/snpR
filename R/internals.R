@@ -1478,35 +1478,25 @@ is.snpRdata <- function(x){
 }
 
 # subfacets can be a named list of subfacets needed per level
-.fetch.facet.ids <- function(x, facets = NULL, subfacets = NULL, .facet.ids = NULL){
+.fetch.facet.ids <- function(x, facets, subfacets = NULL){
+  facets <- .check.snpR.facet.request(x, facets)
   
-  # forward lookup -- from facets to ids
-  if(!is.null(facets)){
-    facets <- .check.snpR.facet.request(x, facets)
-    
-    # with selected subfacets
-    if(!is.null(subfacets)){
-      matches <- vector("list", length(facets))
-      for(i in 1:length(subfacets)){
-        matches[[i]] <- x@.facet.id.key[which(x@.facet.id.key$facet == facets[i]),]
-        matches[[i]] <- matches[[i]]$.facet.id[match(subfacets[[i]], matches[[i]]$subfacet)]
-      }
+  # with selected subfacets
+  if(!is.null(subfacets)){
+    matches <- vector("list", length(facets))
+    for(i in 1:length(subfacets)){
+      matches[[i]] <- x@.facet.id.key[which(x@.facet.id.key$facet == facets[i]),]
+      matches[[i]] <- matches[[i]]$.facet.id[match(subfacets[[i]], matches[[i]]$subfacet)]
     }
-    
-    # everything
-    else{
-      matches <- lapply(facets, function(y) x@.facet.id.key$.facet.id[which(x@.facet.id.key$facet == y)])
-    }
-    
-    names(matches) <- facets
-    return(matches)
   }
   
-  # reverse lookup -- from ids to facets
-  if(!is.null(.facet.ids)){
-    return(x@.facet.id.key[match(.facet.ids, x@.facet.id.key$.facet.id), 1:2])
+  # everything
+  else{
+    matches <- lapply(facets, function(y) x@.facet.id.key$.facet.id[which(x@.facet.id.key$facet == y)])
   }
   
+  names(matches) <- facets
+  return(matches)
 }
 
 .extract.metadata.from.facet.id <- function(x, facet_ids = NULL, facet = NULL){
