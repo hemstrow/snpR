@@ -5540,11 +5540,14 @@ calc_allelic_richness <- function(x, facets = NULL, g = 0){
   ar <- .apply.snpR.facets(x, fun = .richness_parts, facets, req = "meta.gs", private = FALSE, alleles = colnames(x@geno.tables$as), g = g)
   
   # update
-  keep.cols <- c("facet", "subfacet", "facet.type", colnames(snp.meta(x)), "g", "richness")
+  keep.cols <- c(".facet.id", ".snp.id", "g", "richness")
+  browser()
   x <- .merge.snpR.stats(x, .fix..call(ar[,..keep.cols]))
   
   ## weighted means, weighting by g this time
-  wm <- ar[, weighted.mean(richness, g, na.rm = TRUE), by = .(facet, subfacet)]
+  wm <- ar[, weighted.mean(richness, g, na.rm = TRUE), by = .facet.id]
+  wm <- cbind(wm, .fetch.facet.ids(x, .facet.ids = wm$.facet.id))
+  wm$.facet.id <- NULL
   colnames(wm)[ncol(wm)] <- "weighted_mean_richness"
   wm$snp.facet <- wm$snp.subfacet <- ".base"
   x <- .merge.snpR.stats(x, wm, "weighted.means")

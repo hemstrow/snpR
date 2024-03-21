@@ -457,7 +457,7 @@ is.snpRdata <- function(x){
       # gs with metadata on facets attached.
       # subset
       gs <- lapply(x@geno.tables, function(y) y[which(x@facet.meta$.facet.id %in% facet.ids),,drop=F])
-      gs <- lapply(gs, function(y) cbind(x@facet.meta[which(x@facet.meta$.facet.id %in% facet.ids), c("facet", "subfacet", ".snp.id")], as.matrix(y)))
+      gs <- lapply(gs, function(y) cbind(x@facet.meta[which(x@facet.meta$.facet.id %in% facet.ids), c(".facet.id", ".snp.id")], as.matrix(y)))
       
       # run the function indicated
       out <- data.table::as.data.table(fun(gs, ...))
@@ -3269,7 +3269,7 @@ is.snpRdata <- function(x){
 
 # g: number to rarefact to
 .richness_parts <- function(gs, private = TRUE, alleles, g = 0){
-  facet <- subfacet <- ..al_cols <- ..p_al_cols <- .snp.id <- .sum <- .g <- . <- .snp.id <- prob_seg <- NULL
+  .facet.id <- ..al_cols <- ..p_al_cols <- .snp.id <- .sum <- .g <- . <- .snp.id <- prob_seg <- NULL
   # equations from https://doi.org/10.1023/B:COGE.0000041021.91777.1a
   # Nij is the table
   # Nj is the rowsums
@@ -3283,10 +3283,10 @@ is.snpRdata <- function(x){
   as[,.sum := rowSums(.SD), .SDcols = al_cols] # sums for each row
   
   if(g == 0){
-    as[,.g := min(.sum), by = .(facet, .snp.id)] # min across all levels
+    as[,.g := min(.sum), by = .(.facet.id, .snp.id)] # min across all levels
   }
   else if(g < 0){
-    as[,.g := min(.sum) + g, by = .(facet, .snp.id)] # min across all levels - g
+    as[,.g := min(.sum) + g, by = .(.facet.id, .snp.id)] # min across all levels - g
   }
   else if(g > 0){
     as[,.g := g] # fixed g
