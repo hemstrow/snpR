@@ -714,10 +714,13 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     stop("Global fst is currently not supported for global fst.\n")
   }
   
+  if(method == "genepop" & any(.check.snpR.facet.request(x, ofacets, "sample") != ".base")){
+    stop("FST means per snp facet are not currently supported for genepop.\n Please use the 'wc' method or drop snp facets.\n")
+  }
+  
   
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
-    browser()
 
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
@@ -827,7 +830,6 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       n_tots <- data.table::dcast(n_tots, .snp.id ~ .facet.id, value.var = "nk")
       n_tots <- n_tots[,-1]
       
-      browser()
       prog <- 1L
       for(i in 1:(ncol(n_tots) - 1)){
         for(j in (i+1):ncol(n_tots)){
@@ -1074,10 +1076,10 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     other_facets <- other_facets[which(!other_facets %in% .split.facet(facet)[[1]])]
     
     if(method == "genepop"){
-      browser()
       real_out <- func(x, method, facets = ofacet, g.filename = g.filename)
       real_wm <- real_out[[2]]
       real_out <- real_out[[1]]
+      return(list(real_out = real_out, real_wm = real_wm))
     }
     else{
       match.facets <- unlist(.fetch.facet.ids(x, facet))
@@ -1137,7 +1139,6 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   # loop through facets, ensuring that if we aren't using genepop that we only calculate per-snp values once (just skip to means if sample facet has already been done!)
   # note--don't worry about this for bootstraps where we are doing fresh boots
   for(i in 1:length(facets)){
-    browser()
     if(method == "genepop"){
       .make_it_quiet(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt")))
       real[[i]] <- one_run(x,

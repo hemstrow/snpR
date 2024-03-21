@@ -852,7 +852,14 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     }
     if(type == "standard"){
       matching_facet_ids <- unlist(.fetch.facet.ids(x, facets))
-      keep.rows <- which(y$.facet.id %in% matching_facet_ids)
+      if(any(colnames(y) == "comparison")){
+        comps <- tstrsplit(y$comparison, "~")
+        keep.rows <- which(comps[[1]] %in% matching_facet_ids &
+                             comps[[2]] %in% matching_facet_ids)
+      }
+      else{
+        keep.rows <- which(y$.facet.id %in% matching_facet_ids)
+      }
       keep.cols <- 1:ncol(y)
     }
     else if(type == "window"){
@@ -961,6 +968,24 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       ord <- c(ord, colnames(out))
       ord <- ord[-which(duplicated(ord))]
       out <- out[,ord]
+    }
+    else if("comparison" %in% colnames(y)){
+      out <- y[keep.rows, ..keep.cols]
+      out <- out[,c(".p1", ".p2") := tstrsplit(comparison, "~")]
+      p1 <- .fetch.facet.ids(x, .facet.ids = out$.p1)
+      p2 <- .fetch.facet.ids(x, .facet.ids = out$.p2)
+      out[,comparison := paste0(.fetch.facet.ids(x, .facet.ids = .p1)[,2], 
+                                "~", 
+                                .fetch.facet.ids(x, .facet.ids = .p2)[,2])]
+      out$.p1 <- NULL
+      out$.p2 <- NULL
+      
+      out <- merge(x@snp.meta, out, by = ".snp.id")
+      ord <- c("facet", "comparison", colnames(snp.meta(x)))
+      ord <- c(ord, colnames(out))
+      ord <- ord[-which(duplicated(ord))]
+      out <- out[,ord]
+      
     }
     else{
       out <- y[keep.rows, ..keep.cols]
