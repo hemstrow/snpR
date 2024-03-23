@@ -2863,7 +2863,7 @@ is.snpRdata <- function(x){
     tac <- vector("list", nrow(opts))
     glob_tab <- .tabulate_genotypes(shuff, x@mDat)
     glob <- .maf_func(glob_tab, m.al = substr(x@mDat, 1, floor(nchar(x@mDat)/2)))
-    glob$ho <- .ho_func(glob_tab)
+    glob$ho <- .ho_func(glob_tab, x@snp.form)
 
     # if bootstrapping the base level, done
     if(facet == ".base"){
@@ -2878,7 +2878,7 @@ is.snpRdata <- function(x){
         tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
         ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
         tac[[j]] <- .maf_func(ttab, x@mDat, as.data.frame(glob[,c("major", "minor")]))
-        tac[[j]]$ho <- .ho_func(ttab)
+        tac[[j]]$ho <- .ho_func(ttab, x@snp.form)
         tac[[j]] <- maf.to.ac(tac[[j]])
         tac[[j]]$.snp.id <- x@snp.meta$.snp.id
         tac[[j]]$subfacet <- opts[j,2]
