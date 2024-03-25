@@ -122,6 +122,7 @@ A CRAN version should be available soon.
     + `calc_sfs()`: Generate a 1 or 2d site frequency spectra.
         - `make_sfs()`: Wrapper function that uses an external `dadi` formatted file to generate an sfs.
     + `calc_directionality()`: Peter and Slatkin's directionality index.
+    + `calc_origin_of_expansion()`: Estimate the origin point of a range expansion based directionality.
 * Other:
     + `calc_isolation_by_distance()`: Run an IBD mantel test.
     + `calc_tree()`: Generate a tree based on individual or facet-level relatedness.

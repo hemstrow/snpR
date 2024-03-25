@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.9-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.9.1-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -128,6 +128,8 @@ A CRAN version should be available soon.
     - `make_sfs()`: Wrapper function that uses an external `dadi`
       formatted file to generate an sfs.
   - `calc_directionality()`: Peter and Slatkin’s directionality index.
+  - `calc_origin_of_expansion()`: Estimate the origin point of a range
+    expansion based directionality.
 - Other:
   - `calc_isolation_by_distance()`: Run an IBD mantel test.
   - `calc_tree()`: Generate a tree based on individual or facet-level
