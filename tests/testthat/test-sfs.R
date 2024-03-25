@@ -74,14 +74,14 @@ test_that("origin-of-expansion",{
   projection <- floor(projection*.8)
   
   # basic test with a few boots
-  out <- calc_origin_of_expansion(dat, "pop", boots = 4, projection = projection, boot_par = 4,)
+  out <- calc_origin_of_expansion(dat, "pop", boots = 2, projection = projection, boot_par = 4,)
   expect_true(all(names(out) == c("opt", "pairwise_directionality")))
   expect_true(all(names(out$opt) == c("v", "x", "y")))
   expect_true(all(colnames(out$pairwise_directionality) == c("Directionality", "Variance", "xi", "yi", "xj", "yj", "comparison")))
   expect_true(all(out$pairwise_directionality$comparison == c("ASP~CLF", "ASP~PAL", "CLF~PAL")))
   
   # test that serial works as well
-  out_s <- calc_origin_of_expansion(dat, "pop", boots = 2, projection = projection)
+  out_s <- calc_origin_of_expansion(dat, "pop", projection = projection)
   expect_true(all(names(out_s) == c("opt", "pairwise_directionality")))
   expect_true(all(names(out_s$opt) == c("v", "x", "y")))
   expect_true(all(colnames(out_s$pairwise_directionality) == c("Directionality", "Variance", "xi", "yi", "xj", "yj", "comparison")))
