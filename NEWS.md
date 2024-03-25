@@ -1,10 +1,11 @@
 # snpR 1.2.10
 
 ## Features
-* Major memory usage improvements for `snpRdata` objects by shifting internal genotype/allele count tables to `sparseMatrix` objects from the `Matrix` package. The slot these were stored in was typically one of the larger slots (occasionally bigger than the original genotypes if many facets were tabulated) and should now be reduced substantially in size. Dependencies shifted to reflect this. Should be fully backwards compatible with old objects. More work can be done here to ensure downstream functions don't need to coerce away from a `sparseMatrix` unless necissary.
+* Major memory usage improvements for `snpRdata` objects by shifting internal genotype/allele count tables to `sparseMatrix` objects from the `Matrix` package. The slot these were stored in was typically one of the larger slots (occasionally bigger than the original genotypes if many facets were tabulated) and should now be reduced substantially in size. Dependencies shifted to reflect this. Should be fully backwards compatible with old objects. More work can be done here to ensure downstream functions don't need to coerce away from a `sparseMatrix` unless necessary.
+* Added `calc_origin_of_expansion()` to estimate the origin of a range expansion based on directionality indices according to [Peter and Slatkin (2013)](https://doi.org/10.1111/evo.12202).
 
 ## Bug Fixes:
-* Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were unpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
+* Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were nonpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
 * Fixed an issue with `plot_structure()` using ADMIXTURE with plink file format writing.
 
 # snpR 1.2.9.1 hotfix 1

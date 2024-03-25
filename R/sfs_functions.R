@@ -589,8 +589,14 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
 #'   from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 #'
-#' @return A numeric value giving the directionality with a "direction"
-#'   attribute designating the direction between the two populations.
+#' @return A named list containing: \itemize{\item{opt: } A vector with the
+#'   spatial/genetic distance linking coefficient 'v' as well as the 'x' and 'y'
+#'   coordinates of the estimated origin of the range expansion.
+#'   \item{'pairwise_directionality':} A data.frame containing the pairwise
+#'   directionality estimates, coordinates, and the directionality variance for
+#'   each pair of populations.}
+#'   
+#' @author William Hemstrom
 #'   
 #' @examples
 #' \dontrun{
@@ -626,7 +632,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
                                      boot_par = FALSE,
                                      verbose = FALSE,
                                      update_bib = FALSE){
-  
+
   #============sanity checks============
   .check.installed("geosphere")
   
@@ -645,9 +651,12 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   }
   
   fl <- summarize_facets(x, facet)[[facet]]
+  if(length(fl) < 3){
+    stop("At least three populations/facet levels must be present in provided facet to calculate origin-of-expansion.\n")
+  }
   missing_proj <- names(fl)[which(!names(fl) %in% names(projection))]
   if(length(missing_proj) > 0){
-    stop("Some facet levels are missing in the projection vector. Missing levels:\n\t", paste0(missin_proj, sep = ", "), "\n")
+    stop("Some facet levels are missing in the projection vector. Missing levels:\n\t", paste0(missing_proj, collapse = ", "), "\n")
   }
   
   large_proj <- which(projection > 2*fl[match(names(projection), names(fl))])
@@ -662,9 +671,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
     om$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
     .suppress_specific_warning(snp.meta(x) <- om, "duplicated")
     
-    if(fold == FALSE){
-      warning("Without ancestral and derived character states, unfolded spectra will be misleading.\n")
-    }
+    warning("Without ancestral and derived character states, results will be misleading.\n")
   }
   else{
     if(!all(sapply(c(x@snp.meta$ref, x@snp.meta$anc), nchar) == 3)){
@@ -766,7 +773,8 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
                          xi = numeric(nrow(tasks)),
                          yi = numeric(nrow(tasks)),
                          xj = numeric(nrow(tasks)),
-                         yj = numeric(nrow(tasks)))
+                         yj = numeric(nrow(tasks)),
+                         comparison = character(nrow(tasks)))
   
   if(!isFALSE(boot_par)){
     cl <- parallel::makePSOCKcluster(boot_par)
@@ -835,6 +843,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
     dir_list$yi[i] <- xy$y[match(tasks[i,1], xy$pop)]
     dir_list$xj[i] <- xy$x[match(tasks[i,2], xy$pop)]
     dir_list$yj[i] <- xy$y[match(tasks[i,2], xy$pop)]
+    dir_list$comparison[i] <- paste0(tasks[i,1], "~", tasks[i,2])
   }
   
   if(!isFALSE(boot_par)){
@@ -860,6 +869,8 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   
   .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
   .yell_citation("Peter2013", "Origin of Expansion", "Origin of Expansion", update_bib)
+  
+  colnames(dir_list)[1:2] <- c("Directionality", "Variance")
   
   return(list(opt = opt$par, pairwise_directionality = dir_list))
 }
