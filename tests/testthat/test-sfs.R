@@ -55,9 +55,9 @@ test_that("origin-of-expansion",{
   # setup
   # set ref and anc--ideally use an outgroup for this
   dat <- calc_maf(stickSNPs)
-  snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") 
-  snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
-  dat <- dat[pop = c("ASP", "PAL", "CLF")]
+  snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A")
+  expect_warning(snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A"))
+  expect_warning(dat <- dat[pop = c("ASP", "PAL", "CLF")])
   
   # setup x and y coords
   long_lat <- data.frame(CLF = c(44.267718, -121.255805),
@@ -66,11 +66,11 @@ test_that("origin-of-expansion",{
   long_lat <- t(long_lat)
   long_lat <- long_lat[match(sample.meta(dat)$pop, rownames(long_lat)),]
   colnames(long_lat) <- c("y", "x")
-  sample.meta(dat) <- cbind(sample.meta(dat), long_lat)
+  expect_warning(sample.meta(dat) <- cbind(sample.meta(dat), long_lat))
   
   
 
-  projection <- summarize_facets(x, facet)[[facet]]
+  projection <- summarize_facets(dat, "pop")[["pop"]]
   projection <- floor(projection*.8)
   
   # basic test with a few boots
