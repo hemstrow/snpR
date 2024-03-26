@@ -141,7 +141,8 @@ A CRAN version should be available soon.
 
 - `calc_smoothed_averages()`: Core function to do sliding window
   analysis using a gaussian smoothing kernal.
-- `calc_tajimas_d()`: Tajima’s D across sliding windows.
+- `calc_tajimas_d()`: Tajima’s D across sliding windows or globally.
+  Also calculates Watterson’s and Tajima’s theta.
 - Bootstrapping:
   - `do_bootstraps()`: Core function to generate bootstrapped
     significance values for smoothed windows (elevation or reduction vs
