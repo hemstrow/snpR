@@ -103,9 +103,6 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
     if(any(check_facet[[2]] != "sample")){
       msg <- c(msg, "For now, only sample level facets are allowed.\n")
     }
-    if(length(.split.facet(facet)[[1]]) > 1){
-      msg <- c(msg, "For now, only facets referring to only one column of metadata are allowed.\n")
-    }
   }
   
   if(!is.null(pops)){
@@ -618,10 +615,7 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
 #' colnames(long_lat) <- c("y", "x")
 #' sample.meta(dat) <- cbind(sample.meta(dat), long_lat)
 #' 
-#' facet <- "pop"
-#' boots <- 5
-#' x <- dat
-#' projection <- summarize_facets(x, facet)[[facet]]
+#' projection <- summarize_facets(dat, facet)[[facet]]
 #' projection <- floor(projection*.8)
 #' 
 #' # run the calculation
@@ -641,6 +635,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   }
   
   # check facet and proj
+  ofacet <- facet
   facet <- .check.snpR.facet.request(x, facet)
   if(length(facet) > 1){
     stop("calc_origin_of_expansion currently allows for only one facet at a time.\n")
@@ -648,6 +643,18 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   
   if(facet == ".base"){
     stop("A sample facet must be provided.\n")
+  }
+
+  # resort complex if needed
+  if(facet != ofacet){
+    sf1 <- unlist(.split.facet(ofacet))
+    sf2 <- unlist(.split.facet(facet))
+    
+    resort <- match(sf1, sf2)
+    
+    new.names <- .split.facet(names(projection))
+    new.names <- unlist(lapply(new.names, function(y) paste(y[resort], collapse = ".")))
+    names(projection) <- new.names
   }
   
   fl <- summarize_facets(x, facet)[[facet]]
@@ -758,13 +765,15 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   # set up tasks and get positions
   tasks <- .get.task.list(x, facet)
   tasks <- t(utils::combn(tasks[,2], 2))
-  long_lat <- as.data.table(sample.meta(x)[,c(facet, "x", "y")])
+  split_facet <- unlist(.split.facet(facet))
+  long_lat <- as.data.table(sample.meta(x)[,c(split_facet, "x", "y")])
   geomean_func <- function(x, y){
     m <- as.matrix(cbind(x, y))
     return(as.data.frame(matrix(geosphere::geomean(m), nrow = 1)))
   }
-  xy <- long_lat[, geomean_func(x, y), by = facet]
-  colnames(xy) <- c(facet, "x", "y")
+  
+  xy <- long_lat[, geomean_func(x, y), by = split_facet]
+  colnames(xy) <- c(split_facet, "x", "y")
   
   
   #==============directionality for each pair of populations=================
@@ -839,10 +848,10 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
     # fill in
     dir_list$dirs[i] <- real_dir
     dir_list$dir_vars[i] <- var(unlist(dirs))
-    dir_list$xi[i] <- xy$x[match(tasks[i,1], xy$pop)]
-    dir_list$yi[i] <- xy$y[match(tasks[i,1], xy$pop)]
-    dir_list$xj[i] <- xy$x[match(tasks[i,2], xy$pop)]
-    dir_list$yj[i] <- xy$y[match(tasks[i,2], xy$pop)]
+    dir_list$xi[i] <- xy$x[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
+    dir_list$yi[i] <- xy$y[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
+    dir_list$xj[i] <- xy$x[match(tasks[i,2], .paste.by.facet(xy, split_facet))]
+    dir_list$yj[i] <- xy$y[match(tasks[i,2], .paste.by.facet(xy, split_facet))]
     dir_list$comparison[i] <- paste0(tasks[i,1], "~", tasks[i,2])
   }
   
