@@ -5589,23 +5589,20 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     bottom <- choose(rowSums(as.matrix(x@geno.tables$gs[matches,])), gs$.g)
     gs$prob_seg <- 1 - (top/bottom)
     
-    # # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
-    # prob_top <- .suppress_specific_warning(rowSums(factorial(x@geno.tables$gs[matches, homs])/
-    #                       factorial(x@geno.tables$gs[matches, homs] - gs$.g), na.rm = TRUE), "NaNs produced")
-    # prob_bottom <- (factorial(gs$.sum)/factorial(gs$.sum - gs$.g))
-    # 
-    # # probability of getting anything else (some of each hom or any hets)
-    # gs$prob_seg <- 1 - (prob_top/prob_bottom)
-    #   
     gs$prob_seg[gs$.g < 1] <- NA
     if(exists("nans")){
       if(length(nans) > 0){
         gs$prob_seg[nans] <- NA
       }
     }
+    
+    gs[,prob_seg_var := prob_seg*(1-prob_seg)]
 
     totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
+    var_totals <- gs[,sum(prob_seg_var, na.rm = TRUE), by = .(facet, subfacet)]
     colnames(totals)[3] <- "seg_sites"
+    totals <- merge(totals, var_totals, by = c("facet", "subfacet"))
+    colnames(totals)[4] <- "seg_sites_var"
     totals$snp.facet <- ".base"
     totals$snp.subfacet <- ".base"
     
@@ -5625,10 +5622,14 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     totals$prop_poly <- NULL
   }
   
-  
-  
   #===========update===============
   x <- .merge.snpR.stats(x, totals, "weighted.means")
+  
+  if(rarefaction){
+    colnames(gs)[which(colnames(gs) == ".g")] <- "g_prob_seg"
+    keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "g_prob_seg", "prob_seg", "prob_seg_var")
+    x <- .merge.snpR.stats(x, .fix..call(gs[,..keep_cols]))
+  }
   
   # return
   x <- .update_calced_stats(x, facets, "seg_sites", "snp")
