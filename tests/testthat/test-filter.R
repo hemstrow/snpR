@@ -178,6 +178,12 @@ test_that("mac",{
   
   bad.snps <- which(Matrix::rowSums(.internal.data$test_snps@geno.tables$as) - .rowMax_sparse(.internal.data$test_snps@geno.tables$as) <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
+  
+  # with no non-poly removal
+  test <- genotypes(stickSNPs)
+  test <- rbind(test, rep("AA", ncol(test)))
+  test <- import.snpR.data(test, sample.meta = sample.meta(stickSNPs))
+  expect_true(nrow(filter_snps(test, non_poly = FALSE, mac = 1, verbose = FALSE)) == 101)
 })
 
 
@@ -201,6 +207,12 @@ test_that("mgc",{
   d <- import.snpR.data(d[,-c(1:2)], snp.meta = d[,1:2], mDat = -9)
   d <- filter_snps(d, mgc = 2, verbose = FALSE)
   expect_equal(nrow(d), 6)
+  
+  # with no non-poly removal
+  test <- genotypes(stickSNPs)
+  test <- rbind(test, rep("AA", ncol(test)))
+  test <- import.snpR.data(test, sample.meta = sample.meta(stickSNPs))
+  expect_true(nrow(filter_snps(test, non_poly = FALSE, mgc = 1, verbose = FALSE)) == 101)
 })
 
 #==========LD=============================

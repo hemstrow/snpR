@@ -1100,7 +1100,13 @@ filter_snps <- function(x, maf = FALSE,
         
         tgac <- het_c + min_g_c
         
-        mgc.vio <- which(tgac <= mgc)
+        if(non_poly){
+          mgc.vio <- which(tgac <= mgc)
+        }
+        else{
+          mgc.vio <- which(tgac <= mgc & tgac != 0)
+        }
+        
         if(verbose){cat(paste0("\t", length(mgc.vio), " bad loci\n"))}
         
         vio.snps[mgc.vio] <- T
@@ -1111,7 +1117,13 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         
         # singletons exist wherever the total allele count - the maf count is 1.
-        mac.vio <- which(Matrix::rowSums(amat) - .rowMax_sparse(amat) <= mac)
+        if(non_poly){
+          mac.vio <- which(Matrix::rowSums(amat) - .rowMax_sparse(amat) <= mac)
+        }
+        else{
+          counts <- Matrix::rowSums(amat) - .rowMax_sparse(amat)
+          mac.vio <- which(counts <= mac & counts != 0)
+        }
         
         if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
         

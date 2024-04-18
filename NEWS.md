@@ -1,9 +1,13 @@
 # snpR 1.2.10
 
 ## Features
+### Major:
 * Major memory usage improvements for `snpRdata` objects by shifting internal genotype/allele count tables to `sparseMatrix` objects from the `Matrix` package. The slot these were stored in was typically one of the larger slots (occasionally bigger than the original genotypes if many facets were tabulated) and should now be reduced substantially in size. Dependencies shifted to reflect this. Should be fully backwards compatible with old objects. More work can be done here to ensure downstream functions don't need to coerce away from a `sparseMatrix` unless necessary.
 * Added `calc_origin_of_expansion()` to estimate the origin of a range expansion based on directionality indices according to [Peter and Slatkin (2013)](https://doi.org/10.1111/evo.12202).
 * Added variance estimates per locus and per subfacet to `calc_seg_sites()`, returned with `get.snpR.stats()`.
+
+### Minor:
+* Adjusted the behavior of `filter_snps()` `mgc` and `mac` options to not remove non-polymorphic loci if `non_poly` is `FALSE`. The `maf` filter option will still remove these loci, although that could be changed in the future given requests to do so.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
