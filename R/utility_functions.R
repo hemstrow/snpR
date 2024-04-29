@@ -1635,6 +1635,8 @@ filter_snps <- function(x, maf = FALSE,
 #'  will be renamed to numbers. This may be useful in some cases. If this is
 #'  FALSE, chromosome names will be checked for leading numbers and replaced
 #'  with a corresponding letter (0 becomes A, 1 becomes B, and so on).
+#'@param sn_remove_empty Logical, default TRUE. If TRUE, loci will be removed
+#'  upon conversion to sn format if they are called in no individuals.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
 
@@ -1736,6 +1738,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
                         phenotype = "phenotype", plink_recode_numeric = FALSE, 
+                        sn_remove_empty = TRUE,
                         verbose = FALSE){
   
   POS <- NULL
@@ -1910,6 +1913,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   else if(output == "sn"){
     cat("Converting to single character numeric format.\n")
+    
+    if(!isFALSE(interpolate) & sn_remove_empty){
+      stop("If interpolating 'sn' formatted data, 'sn_remove_empty' must be 'TRUE'.\n")
+    }
+    
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
       facets <- facets[-c(snp.facets, both.facets)]
@@ -2777,7 +2785,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         bad.loci <- ifelse(is.na(rdata), 0, 1)
         bad.loci <- which(rowSums(bad.loci) == 0)
         
-        if(length(bad.loci) > 0){
+        if(length(bad.loci) > 0 & sn_remove_empty){
           rdata <- rdata[-bad.loci,]
           meta <- meta[-bad.loci,]
           warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")

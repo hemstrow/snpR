@@ -8,6 +8,7 @@
 
 ### Minor:
 * Adjusted the behavior of `filter_snps()` `mgc` and `mac` options to not remove non-polymorphic loci if `non_poly` is `FALSE`. The `maf` filter option will still remove these loci, although that could be changed in the future given requests to do so.
+* Added 'sn_remove_empty' option to `format_snps()`, which if `FALSE` retains completely missing loci during formatting.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.

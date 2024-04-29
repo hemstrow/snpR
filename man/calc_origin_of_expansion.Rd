@@ -98,10 +98,7 @@ long_lat <- long_lat[match(sample.meta(dat)$pop, rownames(long_lat)),]
 colnames(long_lat) <- c("y", "x")
 sample.meta(dat) <- cbind(sample.meta(dat), long_lat)
 
-facet <- "pop"
-boots <- 5
-x <- dat
-projection <- summarize_facets(x, facet)[[facet]]
+projection <- summarize_facets(dat, facet)[[facet]]
 projection <- floor(projection*.8)
 
 # run the calculation

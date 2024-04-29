@@ -24,6 +24,7 @@ format_snps(
   position = "position",
   phenotype = "phenotype",
   plink_recode_numeric = FALSE,
+  sn_remove_empty = TRUE,
   verbose = FALSE
 )
 }
@@ -103,6 +104,9 @@ containing phenotype information, for plink! output.}
 will be renamed to numbers. This may be useful in some cases. If this is
 FALSE, chromosome names will be checked for leading numbers and replaced
 with a corresponding letter (0 becomes A, 1 becomes B, and so on).}
+
+\item{sn_remove_empty}{Logical, default TRUE. If TRUE, loci will be removed
+upon conversion to sn format if they are called in no individuals.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}

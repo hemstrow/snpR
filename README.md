@@ -116,6 +116,8 @@ A CRAN version should be available soon.
   - `calc_global_fst()`: Global $F_{ST}$ across facet levels.
   - `calc_pairwise_ld()`: Pairwise LD between SNPs.
   - `calc_abba_baba()`: ABBA/BABA tests.
+  - `calc_tajimas_d()`: Tajima’s D globally (or across windows). Also
+    calculates Watterson’s and Tajima’s $\theta$.
 - Association:
   - `calc_association()`: Association testing against a phenotype.
   - `run_random_forest()`: Run a random forest prediction/association
@@ -129,7 +131,7 @@ A CRAN version should be available soon.
       formatted file to generate an sfs.
   - `calc_directionality()`: Peter and Slatkin’s directionality index.
   - `calc_origin_of_expansion()`: Estimate the origin point of a range
-    expansion based directionality.
+    expansion based on directionality.
 - Other:
   - `calc_isolation_by_distance()`: Run an IBD mantel test.
   - `calc_tree()`: Generate a tree based on individual or facet-level
@@ -141,8 +143,8 @@ A CRAN version should be available soon.
 
 - `calc_smoothed_averages()`: Core function to do sliding window
   analysis using a gaussian smoothing kernal.
-- `calc_tajimas_d()`: Tajima’s D across sliding windows or globally.
-  Also calculates Watterson’s and Tajima’s theta.
+- `calc_tajimas_d()`: Tajima’s D across sliding windows (or globally).
+  Also calculates Watterson’s and Tajima’s $\theta$.
 - Bootstrapping:
   - `do_bootstraps()`: Core function to generate bootstrapped
     significance values for smoothed windows (elevation or reduction vs
