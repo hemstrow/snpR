@@ -1914,7 +1914,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   else if(output == "sn"){
     cat("Converting to single character numeric format.\n")
     
-    if(!isFALSE(interpolate) & sn_remove_empty){
+    if(!isFALSE(interpolate) & !sn_remove_empty){
       stop("If interpolating 'sn' formatted data, 'sn_remove_empty' must be 'TRUE'.\n")
     }
     
