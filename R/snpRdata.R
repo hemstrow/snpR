@@ -238,7 +238,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
 #'  \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
 #'  (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
-#'  \item{.genepop: } genepop file format, with genotypes stored as either 4 or
+#'  \item{.genepop or .gen: } genepop file format, with genotypes stored as either 4 or
 #'  6 numeric characters. Works only with bi-allelic data. Genotypes will be
 #'  converted (internally) to NN: the first allele (numerically) will be coded
 #'  as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes
@@ -447,7 +447,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       else if(grepl("\\.ms$", genotypes)){
         return(format_snps(genotypes, input_format = "ms", snp.meta = snp.meta, sample.meta = sample.meta, chr.length = chr.length))
       }
-      else if(grepl("\\.genepop$", genotypes)){
+      else if(grepl("\\.genepop$", genotypes) | grepl("\\.gen$", genotypes)){
         return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
       }
       else if(grepl("\\.fstat$", genotypes)){
