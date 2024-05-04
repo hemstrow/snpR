@@ -170,8 +170,19 @@ test_that("dapc",{
                                     dapc_clustering_nclust = 5, 
                                     dapc_npca = 20, 
                                     dapc_ndisc = 4, simplify_output = TRUE))
-  
   expect_true(ggplot2::is.ggplot(p$dapc))
+  
+  # case with one discriminant
+  .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
+                                    dapc_clustering_max_n_clust = NULL, 
+                                    dapc_clustering_npca = 20, 
+                                    dapc_clustering_nclust = 2, 
+                                    dapc_npca = 20, 
+                                    dapc_ndisc = 1, simplify_output = TRUE))
+  expect_true(ggplot2::is.ggplot(p$dapc))
+  mapping <- capture_output(p$dapc$mapping, print = TRUE)
+  expect_true(grepl("`x` -> `\\.cluster`", mapping)) # check that it xluster is mapped to x
+  
 })
 
 #==================plot_manhattan==========

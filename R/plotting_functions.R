@@ -886,8 +886,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 
   for(i in 1:length(plot_dats)){
     
+    one_d_tpd <- FALSE
+    
     if(names(plot_dats)[i] == "dapc"){
-      
+
       
       # from ade4, two internals I need here to get ellipses, the second with edits to return values instead of plotting them
       fac2disj <- function(fac, drop = FALSE) {
@@ -999,29 +1001,39 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
       .LD1 <- .LD2 <- .GRP_LD1 <- .GRP_LD2 <- NULL
       
-      out <- ggplot2::ggplot(tpd, ggplot2::aes(.LD1, .LD2)) + ggplot2::theme_bw()
-      
-      if(is.numeric(ellipse_size)){
-        disj <- fac2disj(as.factor(tpd$.cluster))
-        ellipses <- vector("list", length(k$size))
-        for(j in 1:length(ellipses)){
-          ellipses[[j]] <- scatterutil.ellipse(tpd$.LD1, tpd$.LD2, disj[,j], ellipse_size)
-          ellipses[[j]] <- data.frame(x = ellipses[[j]]$x, y = ellipses[[j]]$y)
-          ellipses[[j]]$cluster <- j
-        }
-        ellipses <- data.table::rbindlist(ellipses)
-        
-        out <- out + 
-          ggplot2::geom_polygon(data = ellipses, mapping = ggplot2::aes(x, y, group = as.factor(cluster)), fill = NA, color = "black")
-      }
-      
-      if(seg_lines){
-        tpd[,c(".GRP_LD1", ".GRP_LD2") := as.data.frame(plot_dats[[i]]$grp.coord)[as.numeric(as.character(.cluster)),1:2]]
+      # if only one LD retained, plot will be very different--make that now.
+      if(!".LD2" %in% colnames(tpd)){
+        out <- ggplot2::ggplot(tpd, ggplot2::aes(y = .LD1, x = .cluster)) +
+          ggplot2::theme_bw()
         tpd <- as.data.frame(tpd)
-        out <- out + 
-          ggplot2::geom_segment(ggplot2::aes(xend = .GRP_LD1, yend = .GRP_LD2))
+        
+        one_d_tpd <- TRUE
       }
-      
+      else{
+        out <- ggplot2::ggplot(tpd, ggplot2::aes(.LD1, .LD2)) + ggplot2::theme_bw()
+        
+        if(is.numeric(ellipse_size)){
+          disj <- fac2disj(as.factor(tpd$.cluster))
+          ellipses <- vector("list", length(k$size))
+          for(j in 1:length(ellipses)){
+            ellipses[[j]] <- scatterutil.ellipse(tpd$.LD1, tpd$.LD2, disj[,j], ellipse_size)
+            if(is.null(ellipses[[j]])){next}
+            ellipses[[j]] <- data.frame(x = ellipses[[j]]$x, y = ellipses[[j]]$y)
+            ellipses[[j]]$cluster <- j
+          }
+          ellipses <- data.table::rbindlist(ellipses)
+          
+          out <- out + 
+            ggplot2::geom_polygon(data = ellipses, mapping = ggplot2::aes(x, y, group = as.factor(cluster)), fill = NA, color = "black")
+        }
+        
+        if(seg_lines){
+          tpd[,c(".GRP_LD1", ".GRP_LD2") := as.data.frame(plot_dats[[i]]$grp.coord)[as.numeric(as.character(.cluster)),1:2]]
+          tpd <- as.data.frame(tpd)
+          out <- out + 
+            ggplot2::geom_segment(ggplot2::aes(xend = .GRP_LD1, yend = .GRP_LD2))
+        }
+      }
     }
     
     else{
@@ -1034,7 +1046,6 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
     }
     
-
     if(facets[1] == ".base"){
       out <- out + ggplot2::geom_point()
     }
@@ -1048,7 +1059,14 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
       # add geoms to plot
       if(length(facets) == 1){
-        out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+        if(one_d_tpd){
+          out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1), 
+                                            height = 0)#add the factor
+        }
+        else{
+          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+          
+        }
       }
       else{
         # if two plotting variables, prepare the second and add it as well.
@@ -1090,11 +1108,26 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
         }
         
         if(lv2 <= 6){
-          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
-            ggplot2::scale_shape_discrete(name = facets[2])
+          if(one_d_tpd){
+            out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25,
+                                              height = 0) +
+              ggplot2::scale_shape_discrete(name = facets[2])
+          }
+          else{
+            out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
+              ggplot2::scale_shape_discrete(name = facets[2])
+          }
+         
         }
         else{
-          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+          if(one_d_tpd){
+            out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25,
+                                              height = 0)
+          }
+          else{
+            out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+          }
+          
           v2_has_color <- TRUE
         }
       }
@@ -1158,7 +1191,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
     }
     else{
-      out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
+      if(one_d_tpd){
+        out <- out + ggplot2::xlab("Cluster") + ggplot2::ylab("Dim 2")
+      }
+      else{
+        out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
+      }
     }
     plots[[i]] <- out
   }

@@ -17,6 +17,7 @@
 ## Bug Fixes:
 * Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were nonpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
 * Fixed an issue with `plot_structure()` using ADMIXTURE with plink file format writing.
+* Fixed an uninformative error with the `dapc` option to `plot_clusters()` when only one discriminant was retained (now plots a width-jittered categorical scatter plot by cluster).
 
 # snpR 1.2.9.1 hotfix 1
 
