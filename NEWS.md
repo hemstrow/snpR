@@ -18,6 +18,10 @@
 * Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were nonpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
 * Fixed an issue with `plot_structure()` using ADMIXTURE with plink file format writing.
 * Fixed an uninformative error with the `dapc` option to `plot_clusters()` when only one discriminant was retained (now plots a width-jittered categorical scatter plot by cluster).
+* Added a check for duplicated statistics to `do_bootstraps()`. This is a hack--duplicated rows shouldn't exist and need to be fixed still.
+
+## Known Issues:
+* Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
 
 # snpR 1.2.9.1 hotfix 1
 

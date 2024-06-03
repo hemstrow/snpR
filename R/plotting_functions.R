@@ -993,10 +993,6 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       tpd$.cluster <- plot_dats[[i]]$grp
       tpd <- data.table::as.data.table(tpd)
       
-      # xs <- pd[ , cbind(density(LD1)[1:2]), by = cluster]
-      # colnames(xs)[2:3] <- c("x", "y")
-      # densities <- tapply(pd$LD1, pd$cluster, density)
-      
       tpd <- as.data.table(cbind(meta, tpd))
       
       .LD1 <- .LD2 <- .GRP_LD1 <- .GRP_LD2 <- NULL

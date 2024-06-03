@@ -159,6 +159,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
     
     # check pairwise
     if("pairwise" %in% stats.type){
+      # check for duplicated rows in statistics--I'm not sure what generates these yet but they cause problems at this point so check them and remove them.
+      dups <- which(duplicated(x@pairwise.stats))
+      if(length(dups) > 0){
+        x@pairwise.stats <- x@pairwise.stats[-dups,]
+      }
+      
+      
       has.samp.part.pw <- which(x@pairwise.window.stats$facet == paste0(samp.part, collapse = "."))
       has.snp.part.pw <- which(x@pairwise.window.stats$snp.facet == paste0(snp.part, collapse = "."))
       has.step.matches.pw <- which(x@pairwise.window.stats$step == step)
@@ -171,6 +178,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
       
     }
     if("single" %in% stats.type){
+      # check for duplicated rows in statistics--I'm not sure what generates these yet but they cause problems at this point so check them and remove them.
+      dups <- which(duplicated(x@stats))
+      if(length(dups) > 0){
+        x@stats <- x@stats[-dups,]
+      }
+      
+      
       has.samp.part.s <- which(x@window.stats$facet == paste0(samp.part, collapse = "."))
       has.snp.part.s <- which(x@window.stats$snp.facet == paste0(snp.part, collapse = "."))
       has.step.matches.s <- which(x@window.stats$step == step)
