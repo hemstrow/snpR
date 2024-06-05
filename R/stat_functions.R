@@ -544,8 +544,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 #'statistic, at least a single sample level facet must be provided.
 #'
-#'Method Options: \itemize{ \item{"wc": }{Weir and Cockerham 1984.}
-#'item{"Genepop": }{As used in genepop, Rousset
+#'Method Options: \itemize{ \item {"wc": }{Weir and Cockerham 1984.}
+#'\item{"Genepop": }{As used in genepop, Rousset
 #'2008.}}
 #'
 #'@param x snpRdata. Input SNP data.
@@ -5546,7 +5546,7 @@ calc_allelic_richness <- function(x, facets = NULL, g = 0){
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
 calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
-  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- NULL
+  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- prob_seg_var <- ..keep_cols <- NULL
   
   #===========sanity checks============
   if(!is.snpRdata(x)){

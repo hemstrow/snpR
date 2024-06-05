@@ -106,8 +106,8 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
-Method Options: \itemize{ \item{"wc": }{Weir and Cockerham 1984.}
-item{"Genepop": }{As used in genepop, Rousset
+Method Options: \itemize{ \item {"wc": }{Weir and Cockerham 1984.}
+\item{"Genepop": }{As used in genepop, Rousset
 2008.}}
 }
 \section{Functions}{

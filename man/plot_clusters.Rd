@@ -166,8 +166,8 @@ that PCA loadings will only be returned if this is true.}
 \code{\link[umap]{umap}}.}
 }
 \value{
-@return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
- DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+A list containing: \itemize{ \item{data: } {Raw PCA, tSNE, umap, and/or
+ DAPC plot data.} \item{plots: } {ggplot PCA, tSNE, umap, and/or DAPC plots.}}
  Each of these two lists may contain one to four objects, one for each PCA,
  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
  respectively. If a PCA was run, the loadings will also be returned in the 

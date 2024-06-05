@@ -17,7 +17,6 @@ format_snps(
   input_mDat = NULL,
   sample.meta = NULL,
   snp.meta = NULL,
-  chr.length = NULL,
   ncp = 2,
   ncp.max = 5,
   chr = "chr",

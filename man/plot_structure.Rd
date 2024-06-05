@@ -52,7 +52,7 @@ plot_structure(
   alpha_prop_sd = 0.025,
   start_at_pop_info = FALSE,
   metro_update_freq = 10,
-  seed = sample(100000, 1),
+  seed = sample(1e+05, 1),
   strip_col_names = NULL,
   cleanup = TRUE,
   ...
@@ -320,7 +320,7 @@ cite the references noted in those functions. For snapclust, the "ward"
 method is used to initialize clusters if one rep is requested, otherwise the
 clusters are started randomly each rep. Other methods can be used by
 providing pop.ini as an additional argument as long as only one rep is
-requested. Note that at this moment, the snapclust method /emph{is not
+requested. Note that at this moment, the snapclust method \emph{is not
 recommended for use} by the adegenet package maintainers.
 
 Multiple different runs can be conducted using the 'reps' argument, and the

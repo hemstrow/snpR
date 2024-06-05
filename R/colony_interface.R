@@ -30,12 +30,12 @@
 #' @param outfile character, default "colony_input". Output file name. A file
 #'   path may be provided (e.g. "colony/colony_run_1.txt").
 #' @param method character, default "FPLS". Pedigree reconstruction method. For
-#'   more details see the Colony User Guide. Options: \itemize{\item{"FPLS":
-#'   }{Pure pairwise likelihood method, combines the full likelihood and
+#'   more details see the Colony User Guide. Options: \itemize{\item{"FPLS": }
+#'   {Pure pairwise likelihood method, combines the full likelihood and
 #'   pairwise likelihood methods. A good compromise between speed and
-#'   accuracy.}{\item{"FL":}{Full Likelihood. More accurate than PLS but more
+#'   accuracy.}\item{"FL": }{Full Likelihood. More accurate than PLS but more
 #'   computationally intensive and slow to run, especially with large complex
-#'   datasets.}}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
+#'   datasets.}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
 #'   computationally intensive than FL.}}
 #' @param run_length numeric in c(0,1,2,3), default 2. Length of run:
 #'   short/medium/long/very long.

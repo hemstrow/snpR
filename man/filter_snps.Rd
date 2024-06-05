@@ -30,7 +30,7 @@ filter_snps(
   LD_prune_facet = NULL,
   LD_prune_par = FALSE,
   LD_prune_use_ME = FALSE,
-  LD_prune_ME_sigma = 0.0001,
+  LD_prune_ME_sigma = 1e-04,
   verbose = TRUE
 )
 }
@@ -64,11 +64,11 @@ correction} will be removed. See \code{\link[stats]{p.adjust}} for
 information on method options.}
 
 \item{hwe_excess_side}{character, default "both". Options:
-\itemize{\item{heterozygote:} only loci with a heterozygote excess are 
-removed.
-\item{homozygote:} only loci with a homozygote excess are removed.
-\item{both:} loci with either a heterozygote or homozygote excess 
-are removed.}.}
+\itemize{\item{heterozygote: }{only loci with a heterozygote excess are 
+removed.}
+\item{homozygote: }{only loci with a homozygote excess are removed.}
+\item{both: }{loci with either a heterozygote or homozygote excess 
+are removed.}}}
 
 \item{singletons}{logical, default FALSE. Depricated, use \code{mac = 1} to
 remove singletons. If TRUE, removes singletons (loci where there is only a
@@ -96,10 +96,10 @@ remove only truly bad loci or individuals.}
 \item{re_run}{character or FALSE, default "partial". When individuals are
 removed via min_ind, it is possible that some SNPs that initially passed
 filtering steps will now violate some filters. SNP filters can be re-run
-automatically via several methods: \itemize{ \item{partial: } Re-filters for
+automatically via several methods: \itemize{ \item{partial: } {Re-filters for
 non-polymorphic loci (non_poly) only, if that filter was requested
-initially. \item{full: } Re-runs the full filtering scheme (save for
-min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+initially.} \item{full: } {Re-runs the full filtering scheme (save for
+min_loci).}} Note: if \code{inds_first = TRUE}, all re-run options other than 
 FALSE will re-run the individual filter for missing data again after loci 
 filtering.}
 
@@ -134,7 +134,7 @@ prunning is conducted.}
 
 \item{LD_prune_method}{character, default "CLD". The method to use for LD
 calculations and prunning. The options are:
-\itemize{\item{CLD}\item{Dprime}\item{rsq}}. See
+\itemize{\item{CLD}\item{Dprime}\item{rsq}} See
 \code{\link{calc_pairwise_ld}} for details.}
 
 \item{LD_prune_facet}{character, default NULL. Defines a facet over which the

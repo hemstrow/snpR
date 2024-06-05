@@ -626,6 +626,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
                                      boot_par = FALSE,
                                      verbose = FALSE,
                                      update_bib = FALSE){
+  y <- NULL
 
   #============sanity checks============
   .check.installed("geosphere")
@@ -827,17 +828,17 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
       }
       
       ntasks <- length(pboot)
-      dirs <- foreach(q = 1:ntasks,
-                      .packages = c("snpR", "data.table"),
-                      .export = c(".make_it_quiet"),
-                      .combine = c,.inorder = TRUE) %dopar% {
-                        .make_it_quiet(dirs <- lapply(dadi[pboot[[q]]], function(y) make_SFS(y,
-                                                                                             pops = tasks[i,],
-                                                                                             projection = projection[match(tasks[i,], names(projection))],
-                                                                                             fold = FALSE)))
-                        .make_it_quiet(res <- lapply(dirs, function(y) calc_directionality(y)))
-                        res
-                      }
+      dirs <- foreach::foreach(q = 1:ntasks,
+                               .packages = c("snpR", "data.table"),
+                               .export = c(".make_it_quiet"),
+                               .combine = c,.inorder = TRUE) %dopar% {
+                                 .make_it_quiet(dirs <- lapply(dadi[pboot[[q]]], function(y) make_SFS(y,
+                                                                                                      pops = tasks[i,],
+                                                                                                      projection = projection[match(tasks[i,], names(projection))],
+                                                                                                      fold = FALSE)))
+                                 .make_it_quiet(res <- lapply(dirs, function(y) calc_directionality(y)))
+                                 res
+                               }
     }
     
     
@@ -847,7 +848,7 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
     
     # fill in
     dir_list$dirs[i] <- real_dir
-    dir_list$dir_vars[i] <- var(unlist(dirs))
+    dir_list$dir_vars[i] <- stats::var(unlist(dirs))
     dir_list$xi[i] <- xy$x[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
     dir_list$yi[i] <- xy$y[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
     dir_list$xj[i] <- xy$x[match(tasks[i,2], .paste.by.facet(xy, split_facet))]
@@ -865,14 +866,14 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   start_xy <- geosphere::geomean(dir_list[,c("xi", "yi")])
   
   
-  opt <- optim(par = c(v = start_v, x = as.numeric(start_xy[1,1]), y = as.numeric(start_xy[1,2])), 
-        fn = function(y){
-          opt_eq(v = y[1], x = y[2], y = y[3], 
-                 dirs = dir_list$dirs, var_dirs = dir_list$dir_vars, 
-                 xi = dir_list$xi, yi = dir_list$yi, 
-                 xj = dir_list$xj, yj = dir_list$yj)
-        }, 
-        control = list(fnscale = -1))
+  opt <- stats::optim(par = c(v = start_v, x = as.numeric(start_xy[1,1]), y = as.numeric(start_xy[1,2])), 
+                      fn = function(y){
+                        opt_eq(v = y[1], x = y[2], y = y[3], 
+                               dirs = dir_list$dirs, var_dirs = dir_list$dir_vars, 
+                               xi = dir_list$xi, yi = dir_list$yi, 
+                               xj = dir_list$xj, yj = dir_list$yj)
+                      }, 
+                      control = list(fnscale = -1))
   
   if(verbose){cat("Complete.\n")}
   

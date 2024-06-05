@@ -620,11 +620,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  HWE p-value.
 #'@param hwe_excess_side character, default "both". Options:
-#'  \itemize{\item{heterozygote:} only loci with a heterozygote excess are 
-#'  removed.
-#'  \item{homozygote:} only loci with a homozygote excess are removed.
-#'  \item{both:} loci with either a heterozygote or homozygote excess 
-#'  are removed.}.
+#'  \itemize{\item{heterozygote: }{only loci with a heterozygote excess are 
+#'  removed.}
+#'  \item{homozygote: }{only loci with a homozygote excess are removed.}
+#'  \item{both: }{loci with either a heterozygote or homozygote excess 
+#'  are removed.}}
 #'@param fwe_method character, default "none". Option to use for Family-Wise
 #'  Error rate correction for HWE filtering. If requested, only SNPs with
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
@@ -651,10 +651,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
-#'  automatically via several methods: \itemize{ \item{partial: } Re-filters for
+#'  automatically via several methods: \itemize{ \item{partial: } {Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
-#'  initially. \item{full: } Re-runs the full filtering scheme (save for
-#'  min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+#'  initially.} \item{full: } {Re-runs the full filtering scheme (save for
+#'  min_loci).}} Note: if \code{inds_first = TRUE}, all re-run options other than 
 #'  FALSE will re-run the individual filter for missing data again after loci 
 #'  filtering.
 #'@param maf_facets character or NULL, default NULL. Defines a sample facet over
@@ -688,7 +688,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'  conducted in parallel using \code{LD_prune_par} threads.
 #'@param LD_prune_method character, default "CLD". The method to use for LD
 #'  calculations and prunning. The options are:
-#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}}. See
+#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}} See
 #'  \code{\link{calc_pairwise_ld}} for details.
 #'@param LD_prune_use_ME logical, default FALSE. If TRUE, uses
 #'  Minimization-Expectation to do LD calculations for all
@@ -1730,7 +1730,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
-                        sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
+                        sample.meta = NULL, snp.meta = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
                         phenotype = "phenotype", plink_recode_numeric = FALSE, 
                         sn_remove_empty = TRUE,

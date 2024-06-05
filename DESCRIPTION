@@ -34,7 +34,6 @@ Imports:
 Depends:
     data.table,
     foreach,
-    Matrix,
     R (>= 3.6.0)
 Suggests:
     ade4,

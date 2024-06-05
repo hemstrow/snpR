@@ -550,8 +550,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
-#'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+#'@return A list containing: \itemize{ \item{data: } {Raw PCA, tSNE, umap, and/or
+#'  DAPC plot data.} \item{plots: } {ggplot PCA, tSNE, umap, and/or DAPC plots.}}
 #'  Each of these two lists may contain one to four objects, one for each PCA,
 #'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
 #'  respectively. If a PCA was run, the loadings will also be returned in the 
@@ -2224,7 +2224,7 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' method is used to initialize clusters if one rep is requested, otherwise the
 #' clusters are started randomly each rep. Other methods can be used by
 #' providing pop.ini as an additional argument as long as only one rep is
-#' requested. Note that at this moment, the snapclust method /emph{is not
+#' requested. Note that at this moment, the snapclust method \emph{is not
 #' recommended for use} by the adegenet package maintainers.
 #'
 #' Multiple different runs can be conducted using the 'reps' argument, and the
