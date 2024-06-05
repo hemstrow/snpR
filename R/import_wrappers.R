@@ -125,7 +125,7 @@ read_ms <- function(file, sample.meta = NULL, chr.length, fix_overlaps = TRUE){
   if(!is.numeric(chr.length)){
     stop("chr.length must be a numeric vector of either length 1 or equal to the number of chromosomes.\n")
   }
-  return(import.snpR.data(file, sample.meta, chr.length = chr.length, fix_overlaps = fix_overlaps))
+  return(import.snpR.data(file, sample.meta = sample.meta, chr.length = chr.length, fix_overlaps = fix_overlaps))
 }
 
 #' @export
