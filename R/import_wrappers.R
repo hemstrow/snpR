@@ -97,6 +97,8 @@
 #'  for each individual.
 #'@param marker_names logical, default FALSE. If TRUE, assumes that a
 #'  header row of marker is present.
+#'@param fix_overlaps Logical, default TRUE. If TRUE, overlapping positions will
+#'  be checked and fixed during 'ms' file import.
 #'  
 #'@author William Hemstrom
 #'@author Brent Gruber (genlight conversion re-distributed here) 
@@ -116,11 +118,14 @@ read_vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .ms files.
-read_ms <- function(file, snp.meta = NULL, sample.meta = NULL, chr.length){
+read_ms <- function(file, sample.meta = NULL, chr.length, fix_overlaps = TRUE){
   if(!grepl("\\.ms$", file)){
     stop("File extension is not .ms. Please check that the correct file has been entered and rename if needed.\n")
   }
-  return(import.snpR.data(file, snp.meta, sample.meta, chr.length = chr.length))
+  if(!is.numeric(chr.length)){
+    stop("chr.length must be a numeric vector of either length 1 or equal to the number of chromosomes.\n")
+  }
+  return(import.snpR.data(file, sample.meta, chr.length = chr.length, fix_overlaps = fix_overlaps))
 }
 
 #' @export

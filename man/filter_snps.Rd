@@ -30,7 +30,7 @@ filter_snps(
   LD_prune_facet = NULL,
   LD_prune_par = FALSE,
   LD_prune_use_ME = FALSE,
-  LD_prune_ME_sigma = 1e-04,
+  LD_prune_ME_sigma = 0.0001,
   verbose = TRUE
 )
 }

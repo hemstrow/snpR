@@ -1,9 +1,12 @@
 test_that("correct genepop", {
   local_edition(3)
-  skip_on_cran();
+  skip_if_not_installed("genepop");
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
-  expect_snapshot_value(tdfst, style = "serialize") # note, run off of genepop, not internally calced. Thus checked, but should not change.
+  
+  expect_equal(tdfst$pairwise$fst, 
+               c(0.0341, 0, -0.1229, 0, -0.0937, -0.026, 0.1667, 0.1071, -0.0577, -0.087, 0.0165))
+  expect_equal(tdfst$weighted.means$weighted_mean_fst, -0.0034)
 })
 
 test_that("correct wc", {

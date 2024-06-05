@@ -92,7 +92,7 @@ test_that("random forest",{
   expect_equal(length(rf$models), 1)
   expect_equal(unique(rfstats$single$subfacet), c(".base"))
   expect_equal(unique(rfstats$single$facet), c(".base"))
-  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
+  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", ".snp.id", "phenotype_RF_importance"))
   
   # check importance
   suppressWarnings(rf2 <- run_random_forest(asdat, response = "cat_phenotype")) # will sometimes throw an inaccurate p-values warning from ranger
@@ -111,7 +111,7 @@ test_that("random forest",{
   expect_equal(unique(rfstats$single$subfacet), c("ASP", "PAL"))
   expect_equal(unique(rfstats$single$facet), c("pop"))
   expect_true("phenotype_RF_importance" %in% colnames(rfstats$single))
-  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", "phenotype_RF_importance"))
+  expect_equal(colnames(rfstats$single), c("facet", "subfacet", "chr", "position", ".snp.id", "phenotype_RF_importance"))
 
   
   
@@ -143,7 +143,7 @@ test_that("genomic prediction",{
   expect_equal(length(gp$models), 1)
   expect_equal(unique(gpstats$single$subfacet), c(".base"))
   expect_equal(unique(gpstats$single$facet), c(".base"))
-  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", "phenotype_gp_effect"))
+  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", ".snp.id", "phenotype_gp_effect"))
 
   # with facets
   gp <- run_genomic_prediction(asdat[pop = c("ASP", "PAL")], facets = "pop", response = "phenotype", iterations = 200, burn_in = 100, thin = 10)
@@ -155,7 +155,7 @@ test_that("genomic prediction",{
   expect_equal(dim(gp$models$pop_PAL$predictions), c(sum(sample.meta(asdat)$pop == "PAL"), 2))
   expect_equal(unique(gpstats$single$subfacet), c("ASP", "PAL"))
   expect_equal(unique(gpstats$single$facet), c("pop"))
-  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", "phenotype_gp_effect"))
+  expect_equal(colnames(gpstats$single), c("facet", "subfacet", "chr", "position", ".snp.id", "phenotype_gp_effect"))
   str <- .paste.by.facet(gpstats$single, c("chr", "position"))
   expect_equal(as.numeric(table(str)), rep(2, nrow(asdat))) # each snp has calcs for each pop
   

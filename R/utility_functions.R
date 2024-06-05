@@ -1573,8 +1573,7 @@ filter_snps <- function(x, maf = FALSE,
 #'cell, but only a single nucleotide noted if homozygote and two nucleotides
 #'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-#'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
-#'from the simulation program ms.}}
+#'(heterozygous), or 2 (homozyogus allele 2).}}
 #'
 #'
 #'
@@ -1614,10 +1613,6 @@ filter_snps <- function(x, maf = FALSE,
 #'@param snp.meta data.frame, default NULL. If x is not a snpRdata object,
 #'  optionally specifies a data.frame containing meta data for each SNP. See
 #'  details for more information.
-#'@param chr.length numeric, default NULL. Chromosome lengths, for ms input
-#'  files. Note that a single value assumes that each chromosome is of equal
-#'  length whereas a vector of values gives the length for each chromosome in
-#'  order.
 #'@param ncp numeric or NULL, default 2. Number of components to consider for
 #'  iPCA sn format interpolations of missing data. If null, the optimum number
 #'  will be estimated, with the maximum specified by ncp.max. This can be very
@@ -1982,39 +1977,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   #======================put data into snpRdata object if not in that format to start with================
   if(!is.null(input_format)){
     cat("Converting data to snpRdata, NN format.\n")
-    
-    if(input_format == "ms"){
-      if(!is.null(snp.meta) | !is.null(input_meta_columns)){
-        input_meta_columns <- NULL
-        snp.meta <- NULL
-        warning("For ms inputs, provided snp.meta will be ignored and will be pulled from
-              input ms instead.\n")
-      }
-      if(is.null(sample.meta)){
-        stop("For ms input, please provide sample metadata.\n")
-      }
-      if(!is.numeric(chr.length)){
-        stop("For ms input, please provide either a single or a vector of chromosome lengths.\n")
-      }
-      if(!is.character(x)){
-        stop("For ms input, please provide a file path to the 'x' argument.\n")
-      }
-      else if(length(x) != 1){
-        stop("For ms input, please provide a file path to the 'x' argument.\n")
-      }
-      else if(!file.exists(x)){
-        stop("File provided to 'x' not found.\n")
-      }
-      
-      cat("Parsing ms file...")
-      x <- .process_ms(x, chr.length)
-      snp.meta <- x$meta
-      x <- x$x
-      x <- .convert_2_to_1_column(x)
-      cat(" done.\n")
-      
-      input_format <- "sn"
-    }
     
     if(!is.null(input_meta_columns)){
       headers <- x[,c(1:input_meta_columns)]

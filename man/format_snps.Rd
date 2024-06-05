@@ -77,11 +77,6 @@ details for more information.}
 optionally specifies a data.frame containing meta data for each SNP. See
 details for more information.}
 
-\item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input
-files. Note that a single value assumes that each chromosome is of equal
-length whereas a vector of values gives the length for each chromosome in
-order.}
-
 \item{ncp}{numeric or NULL, default 2. Number of components to consider for
 iPCA sn format interpolations of missing data. If null, the optimum number
 will be estimated, with the maximum specified by ncp.max. This can be very
@@ -211,8 +206,7 @@ default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 cell, but only a single nucleotide noted if homozygote and two nucleotides
 seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
-from the simulation program ms.}}
+(heterozygous), or 2 (homozyogus allele 2).}}
 }
 \examples{
 \dontrun{

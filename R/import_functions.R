@@ -188,8 +188,61 @@
 #   the same length. If a vector of the same length as number of chr, assumes
 #   those are the chr lengths in order of apperance in ms file.
 # @author William Hemstrom
-.process_ms <- function(x, chr.length){
-  infile <- x #infile
+.process_ms <- function(x, chr.length, sample.meta, fix_overlaps = TRUE){
+  #========function to fix overlapping positions==========
+  offset_overlapping_positions <- function(meta){
+    meta[,2] <- round(meta[,2])
+    meta$ord <- 1:nrow(meta)
+    
+    # function that checks for duplicates, returns dups, sorted meta, and pos_id
+    dup_check <- function(meta){
+      pos_id <- paste0(meta[,1], "_", meta[,2])
+      meta <- meta[order(pos_id),]
+      pos_id <- sort(pos_id)
+      dups <- duplicated(pos_id) | rev(duplicated(rev(pos_id)))
+      return(list(dups = dups, meta = meta, pos_id = pos_id))
+    }
+    
+    # function that takes a dup check result and adjusts any duplicate sites
+    adjust_pos <- function(dc){
+      # unpack dc
+      meta <- dc$meta
+      dups <- dc$dups
+      pos_id <- dc$pos_id
+      
+      # get a dup count table
+      tab <- table(pos_id[dups])
+      
+      # make a new vector of positions for each duplicate site and overwrite
+      ## prepare vectors
+      cent <- ceiling(tab/2)
+      current_pos <- meta[match(names(tab), pos_id), 2]
+      lower <- current_pos - (cent - 1)
+      upper <- ifelse(tab %% 2 == 0, current_pos + cent, current_pos + cent - 1)
+      vec <- apply(matrix(c(lower, upper), ncol = 2), 1, function(x){x[1]:x[2]})
+      
+      ## overwrite and return
+      meta[dups,2] <- as.numeric(unlist(vec))
+      
+      return(meta)
+    }
+    
+    # run adjustment and re-dup check until there are no duplicated sites
+    dc <- dup_check(meta)
+    tracker <- 1
+    while(any(dc$dups)){
+      if(tracker > 50){stop("More than 50 attempted fixes for overlapping loci. Did you provide long enough chr.lengths for the number of loci?\n")}
+      meta <- adjust_pos(dc) # adjust
+      dc <- dup_check(meta) # dup check
+    }
+    
+    meta <- meta[order(meta$ord),]
+    meta$ord <- NULL
+    
+    return(meta)
+  }
+  
+  #========process========================================
   lines <- readLines(x)
   lines <- lines[-which(lines == "")] #remove empty entries
   lines <- lines[-c(1,2)] #remove header info
@@ -214,7 +267,7 @@
   # check lengths input
   if(length(chr.length) != 1){
     if(length(chr.length) != length(chrls)){
-      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
+      stop("Provided vector of chromosome lengths is not equal either 1 or to the number of chromosomes in ms file.\n")
     }
   }
   
@@ -239,10 +292,25 @@
     meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
   }
   
-  colnames(meta) <- c("group", "position")
+  colnames(meta) <- c("chr", "position")
   colnames(x) <- paste0("gc_", 1:ncol(x))
   
-  return(list(x = x, meta = meta))
+  if(fix_overlaps){
+    meta <- offset_overlapping_positions(meta)
+  }
+  
+  #========convert to snpR===========
+  x <- .convert_2_to_1_column(x)
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = 1:ncol(x))
+  }
+  x <- import.snpR.data(as.data.frame(x), 
+                        snp.meta = meta, 
+                        sample.meta = sample.meta, 
+                        chr.length = chr.length)
+  
+  
+  return(x)
 }
 
 # Convert a vcf file/vcfR object into a snpRdata object
