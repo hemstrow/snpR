@@ -519,7 +519,7 @@ test_that("diagnostic plots",{
                  dp$pca$labels$y,
                  dp$missingness$labels$y,
                  dp$heho$labels$y),
-               c("density", "log10(N)", "density", "PC2 (16.26%)", "Proportion of loci with missing data", "Oberved Heterozygosity"))
+               c("density", "log10(N)", "density", "PC2 (16.26%)", "Proportion of loci with missing data", "Observed Heterozygosity"))
   expect_false("colour" %in% names(dp$pca$labels))
   expect_false("colour" %in% names(dp$missingness$labels))
   
