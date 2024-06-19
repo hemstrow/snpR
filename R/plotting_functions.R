@@ -4391,10 +4391,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
     
     heho <- get.snpR.stats(x, facet, c("he", "ho"))$single
     
-    heho <- ggplot2::ggplot(heho, ggplot2::aes(x = ho, y = he)) + 
+    heho <- ggplot2::ggplot(heho, ggplot2::aes(x = he, y = ho)) + 
       ggplot2::geom_hex(ggplot2::aes(fill = ggplot2::after_stat(log(count)))) +
-      ggplot2::theme_bw() + ggplot2::xlab("Observed Heterozygosity") +
-      ggplot2::ylab("Expected Heterozygosity") +
+      ggplot2::theme_bw() + ggplot2::ylab("Observed Heterozygosity") +
+      ggplot2::xlab("Expected Heterozygosity") +
       ggplot2::geom_abline(slope = 1, intercept = 0) +
       ggplot2::facet_wrap(~subfacet) +
       ggplot2::scale_fill_viridis_c()

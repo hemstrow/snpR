@@ -10,7 +10,8 @@
 * Adjusted the behavior of `filter_snps()` `mgc` and `mac` options to not remove non-polymorphic loci if `non_poly` is `FALSE`. The `maf` filter option will still remove these loci, although that could be changed in the future given requests to do so.
 * Added 'sn_remove_empty' option to `format_snps()`, which if `FALSE` retains completely missing loci during formatting.
 * '.gen' is now also recognized as a genepop file extension for import.
-* Added the 'fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided. 
+* Added the 'fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
+* Flipped the axes for the $H_[e]$/$H_[o]$ plots from `plot_diagnostic()`. While the previous arrangement ($H_[o]$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_[o]$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.

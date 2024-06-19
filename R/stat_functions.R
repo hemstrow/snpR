@@ -2452,7 +2452,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       B1f <- A1B1f + A2B1f
       B2f <- 1 - B1f
       D <- A1B1f - A1f*B1f
-      D2 <- A2B1f - A2f*B1f
+      # D2 <- A2B1f - A2f*B1f
       # note that many sources give an inaccurate Dprime calculation--this should be correct.
       Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
                        ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
