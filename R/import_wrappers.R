@@ -139,7 +139,7 @@ read_delimited_snps <- function(file, snp.meta = NULL, sample.meta = NULL, mDat 
 #' @describeIn snpR_import_wrappers Import genepop formatted data. 
 read_genepop <- function(file, snp.meta = NULL, sample.meta = NULL, mDat = "0000"){
   if(!grepl("\\.genepop$", file) & !grepl("\\.gen$", file)){
-    stop("File extension is not .genepop. Please check that the correct file has been entered and rename if needed.\n")
+    stop("File extension is not .genepop or .gen. Please check that the correct file has been entered and rename if needed.\n")
   }
   return(import.snpR.data(file, snp.meta, sample.meta, mDat))
 }

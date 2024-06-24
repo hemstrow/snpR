@@ -12,6 +12,7 @@
 * '.gen' is now also recognized as a genepop file extension for import.
 * Added the 'fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
 * Flipped the axes for the $H_[e]$/$H_[o]$ plots from `plot_diagnostic()`. While the previous arrangement ($H_[o]$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_[o]$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
+* Adjusted the error message returned when `read_genepop` is handed files without a `.genepop` or `.gen` extension to reference that either of those formats are OK.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
