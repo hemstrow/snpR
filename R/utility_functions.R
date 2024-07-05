@@ -3403,7 +3403,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE){
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){
-  
+
   ..ord <- NULL
   
   #==================prep and sanity check==================

@@ -160,7 +160,7 @@ is.snpRdata <- function(x){
                                   x@snp.meta))
     }
     
-    
+
     #=========================sort, pack, and return==========
     # sort
     x@facet.meta <- dplyr::mutate_if(.tbl = x@facet.meta, is.factor, as.character)
@@ -1538,6 +1538,15 @@ is.snpRdata <- function(x){
       }
       
       gmat <- .fix..call(gmat[,-..rm_cols])
+    }
+    
+    # make sure column names are properly sorted by allele
+    opts <- colnames(gmat)
+    opts1 <- substr(opts, 1, snp_form/2)
+    opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
+    flips <- !opts1 <= opts2 # this'll do an alphabetic check since these are characters--wierd but works
+    if(any(flips)){
+      colnames(gmat)[which(flips)] <- paste0(opts2[flips], opts1[flips])
     }
     
     # remove missing
@@ -3809,6 +3818,8 @@ is.snpRdata <- function(x){
   cn <- unique(unlist(lapply(l, colnames)))
   out <- Matrix::Matrix(0, 0, length(cn), dimnames = list(NULL, cn))
   for(i in 1:length(l)){
+    
+    # fix any missing columns
     mcn <- which(!cn %in% colnames(l[[i]]))
     if(length(mcn) > 0){
       fill <- Matrix::Matrix(fill_val, 
@@ -3819,7 +3830,9 @@ is.snpRdata <- function(x){
       l[[i]] <- cbind(l[[i]], fill)[,cn]
     }
     
-    out <- rbind(out, l[[i]])
+    # make sure colunms are sorted identically
+    ncord <- colnames(out)
+    out <- rbind(out, l[[i]][,ncord])
   }
   return(out)
 }

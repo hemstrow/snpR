@@ -12,6 +12,35 @@ test_that("maf",{
   expect_equal(maf$minor, c("G", "G")) # note, the 2nd to last A will be N if it fails to account for the overall minor, since that facet has none of the minor alleles.
   expect_equal(maf$maj.count, c(8, 6))
   expect_equal(maf$min.count, c(2, 4))
+  
+  # test with facets that MAF/MIN is correctly ID'd when flipped
+  check <- genotypes(tdm)
+  check <- rep(c("AA", "TT"), length.out = ncol(tdm))
+  check[2] <- "AT"
+  check <- rbind(genotypes(tdm), check)
+  check <- import.snpR.data(check, rbind(snp.meta(tdm), data.frame(chr = "test", position = 10, .snp.id = 13)),
+                            sample.meta(tdm))
+  check <- calc_maf(check, "pop")
+  check <- get.snpR.stats(check, "pop", "maf")
+  check <- check$single[which(check$single$.snp.id == 13),]
+  expect_true(all(check$major == "A"))
+  expect_true(all(check$minor == "T"))
+  expect_true(all(check$maj.count == c(10, 1)))
+  expect_true(all(check$min.count == c(0, 9)))
+  
+  # test with facets that MAF/MIN is correctly ID'd when flipped, but with fully fixed
+  check <- genotypes(tdm)
+  check <- rep(c("AA", "TT"), length.out = ncol(tdm))
+  check <- rbind(genotypes(tdm), check)
+  check <- import.snpR.data(check, rbind(snp.meta(tdm), data.frame(chr = "test", position = 10, .snp.id = 13)),
+                            sample.meta(tdm))
+  check <- calc_maf(check, "pop")
+  check <- get.snpR.stats(check, "pop", "maf")
+  check <- check$single[which(check$single$.snp.id == 13),]
+  expect_true(all(check$major == "T"))
+  expect_true(all(check$minor == "A"))
+  expect_true(all(check$maj.count == c(0, 10)))
+  expect_true(all(check$min.count == c(10, 0)))
 })
 
 
