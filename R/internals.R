@@ -3827,7 +3827,7 @@ is.snpRdata <- function(x){
                              ncol = length(mcn),
                              dimnames = list(rownames(l[[i]]),
                                              cn[mcn]))
-      l[[i]] <- cbind(l[[i]], fill)[,cn]
+      l[[i]] <- cbind(l[[i]], fill)[,cn, drop = FALSE]
     }
     
     # make sure colunms are sorted identically
