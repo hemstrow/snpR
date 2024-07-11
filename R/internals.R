@@ -1618,7 +1618,7 @@ is.snpRdata <- function(x){
     }
     
     
-    
+    stop("Reached checkpoint: end of .tabulate_genotypes\n")
     return(list(gs = tmat, as = amat, wm = gmat))
   }
 
@@ -2723,6 +2723,7 @@ is.snpRdata <- function(x){
     # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
     maj.count <- round(Matrix::rowSums(gs$as)*(1-maf))
     min.count <- round(Matrix::rowSums(gs$as)*(maf))
+    stop("Reached Checkpoint: end of MAF calculation.\n")
   }
   
   # for non-base facets, use the given major and minor to calculate maf
