@@ -58,9 +58,9 @@ snp_meta <- NN[,1:2]
 gen_data <- NN[,3:ncol(NN)]
 
 # import, remember to remove metadata from the genotypes!
-# my.dat <- import.snpR.data(genotypes = gen_data, 
-#                            snp.meta = snp_meta, 
-#                            sample.meta = sample_meta)
+my.dat <- import.snpR.data(genotypes = gen_data, 
+                           snp.meta = snp_meta, 
+                           sample.meta = sample_meta)
 
 ```
 Note: 
@@ -78,7 +78,6 @@ Note:
 ```{r}
 my.dat2 <- read_delimited_snps(NNfile, sample.meta = sample_meta, header_cols = 2)
 identical(my.dat, my.dat2)
-my.dat <- my.dat2
 ```
 
 
