@@ -1530,7 +1530,8 @@ is.snpRdata <- function(x){
       for(i in 1:length(reps)){
         this_opt <- reps[i]
         if(opts[this_opt] %in% done){next}
-        match <- which(rev_opts == opts[this_opt])
+        match <- try(which(rev_opts == opts[this_opt]), silent = TRUE)
+        if(is(match, "try-error")){stop("Error at match.\n")}
         all_idents <- c(this_opt, match)
         gmat[[this_opt]] <- .fix..call(rowSums(gmat[,..all_idents]))
         done <- c(done, unique(opts[all_idents]))
@@ -1544,7 +1545,8 @@ is.snpRdata <- function(x){
     opts <- colnames(gmat)
     opts1 <- substr(opts, 1, snp_form/2)
     opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
-    flips <- !opts1 <= opts2 # this'll do an alphabetic check since these are characters--wierd but works
+    flips <- try(!opts1 <= opts2, silent = TRUE) # this'll do an alphabetic check since these are characters--weird but works
+    if(is(flips, "try-error")){stop("Error at flips.\n")}
     if(any(flips)){
       colnames(gmat)[which(flips)] <- paste0(opts2[flips], opts1[flips])
     }
