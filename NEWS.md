@@ -22,16 +22,18 @@
 * Fixed an issue with `plot_structure()` using ADMIXTURE with plink file format writing.
 * Fixed an uninformative error with the `dapc` option to `plot_clusters()` when only one discriminant was retained (now plots a width-jittered categorical scatter plot by cluster).
 * Added a check for duplicated statistics to `do_bootstraps()`. This is a hack--duplicated rows shouldn't exist and need to be fixed still.
+* Fixed a bug that could occur when formatting data to "sn" format when some loci have no major allele (are unsequenced in any individuals).
 
 ## Known Issues:
 * Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
+* `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
 
 # snpR 1.2.9.1 hotfix 1
 
 ## Bug Fixes:
 * Fixed a few bugs with `do_boostraps()` and bootstrap fetching with `get.snpR.stats()`, mostly stemming from the changes to window behavior in 1.2.9. These involved either "_" in subfacet names or a few other oddities. "...." now used as a internal seperator, which, since "." is restricted anyway, should be OK. Added tests to catch.
 
-## Known Bugs
+## Known Issues:
 * `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
 
 # snpR 1.2.9

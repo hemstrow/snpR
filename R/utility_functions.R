@@ -2166,7 +2166,18 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       # get the column from as matching the target allele.
       maj.col.match <- match(maj, colnames(x))
-      out$ni1 <- Matrix::t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
+      
+      # for data with no major--should only be un-sequenced SNPs
+      missing <- which(is.na(maj.col.match))
+      if(length(missing) > 0){
+        temp_x <- x[-missing,]
+        maj.col.match <- match(maj[-missing], colnames(temp_x))
+        out$ni1[-missing] <- Matrix::t(temp_x)[maj.col.match + seq(0, length(temp_x) - ncol(temp_x), by = ncol(temp_x))]
+        out$ni1[missing] <- 0
+      }
+      else{
+        out$ni1 <- Matrix::t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
+      }
       
       # ni1 is the rowsums minus this
       out$ni2 <- Matrix::rowSums(x) - out$ni1
