@@ -1618,7 +1618,6 @@ is.snpRdata <- function(x){
     }
     
     
-    stop("Reached checkpoint: end of .tabulate_genotypes\n")
     return(list(gs = tmat, as = amat, wm = gmat))
   }
 
@@ -2698,7 +2697,7 @@ is.snpRdata <- function(x){
     unseq <- which(Matrix::rowSums(gs$as) == 0) # unsequenced
     np <- which(Matrix::rowSums(methods::as(gs$as, "lMatrix")) == 1) # non-polymorphic
     
-    # declair major and minor
+    # declare major and minor
     major <- fmax
     minor <- fmin
     ## maf = 0.05
