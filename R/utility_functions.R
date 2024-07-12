@@ -744,6 +744,8 @@ filter_snps <- function(x, maf = FALSE,
                         LD_prune_ME_sigma = 0.0001,
                         verbose = TRUE){
 
+  stop("Reached Checkpoint: starting filtering.\n")
+  
   #==============do sanity checks====================
   if(singletons){
     warning("The singletons argument is depriceated. Please use mac = 1 instead!")
@@ -967,6 +969,8 @@ filter_snps <- function(x, maf = FALSE,
   
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
+    stop("Reached Checkpoint: beginning filt_by_loci().\n")
+    
     # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
     
     #==========================run filters: bi_allelic/non_poly========================
@@ -983,15 +987,10 @@ filter_snps <- function(x, maf = FALSE,
       
       if(bi_al){
         if(verbose){cat("Filtering non-biallelic loci...\n")}
-        stop("Reached Checkpoint: non-bi-allelic filtering 1.\n")
-        
+
         bi <- ifelse(Matrix::rowSums(bimat) > 2, T, F) # if false, should keep the allele
         
-        stop("Reached Checkpoint: non-bi-allelic filtering 2.\n")
-        
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
-        
-        stop("Reached Checkpoint: non-bi-allelic filtering 3.\n")
         
         vio.snps[which(bi)] <- T
         x <- .update_filters(x, "bi-allelic", NA, NA)
