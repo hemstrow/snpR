@@ -744,7 +744,7 @@ filter_snps <- function(x, maf = FALSE,
                         LD_prune_ME_sigma = 0.0001,
                         verbose = TRUE){
 
-  stop("Reached Checkpoint: starting filtering.\n")
+  # stop("Reached Checkpoint: starting filtering.\n")
   
   #==============do sanity checks====================
   if(singletons){
