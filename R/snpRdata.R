@@ -585,7 +585,6 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   rownames(snp.meta) <- 1:nrow(snp.meta)
 
   gs <- .tabulate_genotypes(genotypes, mDat = mDat, verbose = verbose)
-  stop("Reached Checkpoint: Finished tabulating genotypes.\n")
 
   x <- methods::new("snpRdata", .Data = genotypes, sample.meta = sample.meta, snp.meta = snp.meta,
                     facet.meta = cbind(data.frame(facet = rep(".base", nrow(gs$gs)),
