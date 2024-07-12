@@ -979,6 +979,7 @@ filter_snps <- function(x, maf = FALSE,
     # stop("Reached Checkpoint: amat load.\n")
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
     # stop("Reached Checkpoint: gmat load.\n")
+    stop(paste0("wmat info:", class(x@geno.tables$wm), "\n", paste0(head(x@geno.tables$wm), collapse = ","), "\nDim", paste0(dim(x@geno.tables$wm), collapse = ","), "\n"))
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
     stop("Reached Checkpoint: wmat load.\n")
     
