@@ -617,8 +617,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   x@calced_stats$.base <- character()
 
   starting_snps <- nrow(x)
-  stop("Reached Checkpoint: Starting pre-check filters.\n")
-  
+
   if(!.skip_filters){
     # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
     if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
