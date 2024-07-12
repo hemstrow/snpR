@@ -978,12 +978,21 @@ filter_snps <- function(x, maf = FALSE,
     
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
+      stop("Reached Checkpoint: Starting non-bi-allelic filtering.\n")
       bimat <- methods::as(amat, "lMatrix")
       
       if(bi_al){
         if(verbose){cat("Filtering non-biallelic loci...\n")}
+        stop("Reached Checkpoint: non-bi-allelic filtering 1.\n")
+        
         bi <- ifelse(Matrix::rowSums(bimat) > 2, T, F) # if false, should keep the allele
+        
+        stop("Reached Checkpoint: non-bi-allelic filtering 2.\n")
+        
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
+        
+        stop("Reached Checkpoint: non-bi-allelic filtering 3.\n")
+        
         vio.snps[which(bi)] <- T
         x <- .update_filters(x, "bi-allelic", NA, NA)
       }
