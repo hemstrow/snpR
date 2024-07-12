@@ -976,7 +976,7 @@ filter_snps <- function(x, maf = FALSE,
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
-    stop("Reached Checkpoint: amat load.\n")
+    # stop("Reached Checkpoint: amat load.\n")
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
     stop("Reached Checkpoint: gmat load.\n")
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
