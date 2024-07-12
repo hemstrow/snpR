@@ -978,7 +978,7 @@ filter_snps <- function(x, maf = FALSE,
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
     # stop("Reached Checkpoint: amat load.\n")
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
-    stop("Reached Checkpoint: gmat load.\n")
+    # stop("Reached Checkpoint: gmat load.\n")
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
     stop("Reached Checkpoint: wmat load.\n")
     
