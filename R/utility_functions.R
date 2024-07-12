@@ -975,9 +975,9 @@ filter_snps <- function(x, maf = FALSE,
     
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
-    amat <- x@geno.tables$as[which(x@facet.meta$facet == ".base"),,drop = FALSE]
-    gmat <- x@geno.tables$gs[which(x@facet.meta$facet == ".base"),,drop = FALSE]
-    wmat <- x@geno.tables$wm[which(x@facet.meta$facet == ".base"),,drop = FALSE]
+    amat <- x@geno.tables$as[which(x@facet.meta$facet == ".base"),]
+    gmat <- x@geno.tables$gs[which(x@facet.meta$facet == ".base"),]
+    wmat <- x@geno.tables$wm[which(x@facet.meta$facet == ".base"),]
     
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
