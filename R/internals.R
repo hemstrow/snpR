@@ -2682,8 +2682,7 @@ is.snpRdata <- function(x){
   
   # for the base facet, determine the major and minor then calculate maf
   if(is.null(ref)){
-    stop("Reached Checkpoint: start of MAF calculation.\n")
-    
+
     # major alleles via max.col
     fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
     lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
@@ -2699,8 +2698,7 @@ is.snpRdata <- function(x){
     unseq <- which(Matrix::rowSums(gs$as) == 0) # unsequenced
     np <- which(Matrix::rowSums(methods::as(gs$as, "lMatrix")) == 1) # non-polymorphic
     
-    stop("Reached Checkpoint: major/minor determination.\n")
-    
+
     # declare major and minor
     major <- fmax
     minor <- fmin
@@ -2719,8 +2717,7 @@ is.snpRdata <- function(x){
     }
     
     # grab the actual maf
-    stop("Reached Checkpoint: calculating maf.\n")
-    
+
     maf <- 1 - .rowMax_sparse(gs$as)/Matrix::rowSums(gs$as)
     maf[is.nan(maf)] <- 0
     
@@ -2728,7 +2725,6 @@ is.snpRdata <- function(x){
     # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
     maj.count <- round(Matrix::rowSums(gs$as)*(1-maf))
     min.count <- round(Matrix::rowSums(gs$as)*(maf))
-    stop("Reached Checkpoint: end of MAF calculation.\n")
   }
   
   # for non-base facets, use the given major and minor to calculate maf
