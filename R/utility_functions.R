@@ -969,16 +969,16 @@ filter_snps <- function(x, maf = FALSE,
   
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
-    stop("Reached Checkpoint: beginning filt_by_loci().\n")
+    # stop("Reached Checkpoint: beginning filt_by_loci().\n")
     
     # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
     
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
     
-    amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
-    gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
-    wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
+    amat <- x@geno.tables$as[which(x@facet.meta$facet == ".base"),,drop = FALSE]
+    gmat <- x@geno.tables$gs[which(x@facet.meta$facet == ".base"),,drop = FALSE]
+    wmat <- x@geno.tables$wm[which(x@facet.meta$facet == ".base"),,drop = FALSE]
     
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
