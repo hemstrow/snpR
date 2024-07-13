@@ -31,6 +31,38 @@ test_that("Geno table creation", {
   
   # relevant test for some other data types, to implement fully later
   expect_true(all(Matrix::rowSums(tdat@geno.tables$gs)*2 == Matrix::rowSums(tdat@geno.tables$as)))
+  
+  # cases where genotypes are flipped
+  test <- genotypes(.internal.data$test_snps)
+  test <- as.matrix(test)
+  test_a1 <- substr(test, 1, 1)
+  test_a2 <- substr(test, 2, 2)
+  test[,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- 
+    paste0(test_a2[,sample.meta(.internal.data$test_snps)$pop == "ASP"], test_a1[,sample.meta(.internal.data$test_snps)$pop == "ASP"])
+  
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- .add.facets.snpR.data(testd, "pop")
+  test2d <- .add.facets.snpR.data(.internal.data$test_snps, "pop")
+  expect_identical(test2d@geno.tables, testd@geno.tables)
+  
+  # cases where alleles appear in different orders in specific facet levels
+  test[,c(1,5)] <- test[,c(5, 1)]
+  test[1,1] <- "GG"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- .add.facets.snpR.data(testd, "pop")
+  test2 <- genotypes(.internal.data$test_snps)
+  test2[1,5] <- "GG"
+  test2d <- import.snpR.data(test2, 
+                             snp.meta(.internal.data$test_snps),
+                             sample.meta(.internal.data$test_snps))
+  test2d <- .add.facets.snpR.data(test2d, "pop")
+  
+  
+  expect_identical(test2d@geno.tables, testd@geno.tables)
 })
 
 
