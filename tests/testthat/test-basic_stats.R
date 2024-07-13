@@ -41,6 +41,35 @@ test_that("maf",{
   expect_true(all(check$minor == "A"))
   expect_true(all(check$maj.count == c(0, 10)))
   expect_true(all(check$min.count == c(10, 0)))
+  
+  # cases where one locus is completely unsequenced at one pop
+  test <- genotypes(.internal.data$test_snps)
+  test[1,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- calc_maf(testd, "pop")
+  res <- get.snpR.stats(testd, "pop", "maf")$single
+  expect_true(is.na(res[1,]$maf))
+  expect_true(res[1,]$major == "A")
+  expect_true(res[1,]$minor == "G")
+  expect_true(res[1,]$maj.count == 0)
+  expect_true(res[1,]$min.count == 0)
+  
+  # cases where one locus is completely unsequenced at all pops
+  test <- genotypes(.internal.data$test_snps)
+  test[1,] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- calc_maf(testd, "pop")
+  res <- get.snpR.stats(testd, "pop", "maf")$single
+  expect_true(all(is.na(res[1:2,]$maf)))
+  expect_true(all(res[1:2,]$major == "N"))
+  expect_true(all(res[1:2,]$minor == "N"))
+  expect_true(all(is.na(res[1,]$maj.count)))
+  expect_true(all(is.na(res[1,]$min.count)))
+  
 })
 
 
