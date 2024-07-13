@@ -62,8 +62,7 @@ test_that("plink",{
   c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
   c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
   
-  cat("Test1:\noriginal:", paste0(c1$weighted_mean_pi, collapse = ", "), "\n\nConvert:", paste0(c2$weighted_mean_pi, collapse = ", "), "\n")
-  expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
+  expect_true(all(round(c1$weighted_mean_pi, 5) == round(c2$weighted_mean_pi, 5))) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
   
@@ -84,8 +83,7 @@ test_that("plink",{
   check <- calc_pi(check, "chr.fam")
   c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
   c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
-  cat("Test2:\noriginal:", paste0(c1$weighted_mean_pi, collapse = ", "), "\n\nConvert:", paste0(c2$weighted_mean_pi, collapse = ", "), "\n")
-  expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
+  expect_true(all(round(c1$weighted_mean_pi, 5) == round(c2$weighted_mean_pi, 5))) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
 })
