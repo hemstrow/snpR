@@ -744,8 +744,7 @@ filter_snps <- function(x, maf = FALSE,
                         LD_prune_ME_sigma = 0.0001,
                         verbose = TRUE){
 
-  # stop("Reached Checkpoint: starting filtering.\n")
-  
+
   #==============do sanity checks====================
   if(singletons){
     warning("The singletons argument is depriceated. Please use mac = 1 instead!")
@@ -969,23 +968,17 @@ filter_snps <- function(x, maf = FALSE,
   
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
-    # stop("Reached Checkpoint: beginning filt_by_loci().\n")
-    
+
     # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
     
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
-    # stop("Reached Checkpoint: amat load.\n")
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
-    # stop("Reached Checkpoint: gmat load.\n")
-    stop(paste0("wmat info:", class(x@geno.tables$wm), "\n", paste0(head(x@geno.tables$wm), collapse = ","), "\nDim", paste0(dim(x@geno.tables$wm), collapse = ","), "\n"))
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
-    stop("Reached Checkpoint: wmat load.\n")
-    
+
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
-      stop("Reached Checkpoint: Starting non-bi-allelic filtering.\n")
       bimat <- methods::as(amat, "lMatrix")
       
       if(bi_al){

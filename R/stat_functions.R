@@ -209,7 +209,6 @@ calc_pi <- function(x, facets = NULL){
 #'@export
 #'@describeIn calc_single_stats minor allele frequency
 calc_maf <- function(x, facets = NULL){
-  stop("Reached Checkpoint: Entering calc_maf().\n")
   maj_count <- NULL
   
   

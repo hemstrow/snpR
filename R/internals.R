@@ -3836,7 +3836,7 @@ is.snpRdata <- function(x){
     
     # make sure colunms are sorted identically
     ncord <- colnames(out)
-    out <- rbind(out, l[[i]][,ncord])
+    out <- rbind(out, l[[i]][,ncord, drop = FALSE])
   }
   return(out)
 }
