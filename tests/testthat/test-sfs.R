@@ -10,6 +10,8 @@ test_that("sfs",{
   
   # 2D
   .make_it_quiet(sfs2 <- calc_sfs(stickSNPs, facet = "pop", pops =  c("ASP", "UPD"), projection = c(10, 10)))
+  cat("Test3:\nsfs2:", paste0(sfs2, collapse = ", "), "\n\nnsnps:", nsnps(stickSNPs), "\n")
+  
   expect_true(sum(sfs2, na.rm = T) <= nsnps(stickSNPs))
   expect_equal(attr(sfs2, "pop"), c("ASP", "UPD"))
   expect_true(attr(sfs2, "folded"))
