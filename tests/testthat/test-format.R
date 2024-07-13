@@ -88,3 +88,23 @@ test_that("plink",{
   file.remove(cleanups)
 })
 
+test_that("sn",{
+  # cases where one locus is completely unsequenced at one pop
+  test <- genotypes(.internal.data$test_snps)
+  test[1,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  res <- format_snps(testd, "ac", "pop")
+  expect_true(all(res[1,c("n_total", "n_alleles", "ni1", "ni2")] == 0))
+  
+  
+  # cases where one locus is completely unsequenced at all pops
+  test <- genotypes(.internal.data$test_snps)
+  test[1,] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  res <- format_snps(testd, "ac", "pop")
+  expect_true(all(res[1:2,c("n_total", "n_alleles", "ni1", "ni2")] == 0))
+})
