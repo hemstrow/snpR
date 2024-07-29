@@ -273,9 +273,9 @@ Requires a defined facet.}
 Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 updates are used. If 0, updates are never used.}
 
-\item{seed}{integer, default sample(100000, 1). Used if method = "structure".
-Starting seed for analysis runs. Each additional run (k value or rep) will
-use a successive seed.}
+\item{seed}{integer, default sample(100000, 1). Used if method = "structure"
+or "admixture". Starting seed for analysis runs. Each additional run (k
+value or rep) will use a successive seed.}
 
 \item{strip_col_names}{string, default NULL. An optional regular expression
 indicating a way to process the column names prior to plotting. Parts of

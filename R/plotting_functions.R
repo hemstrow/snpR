@@ -2425,9 +2425,9 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param metro_update_freq numeric, default 10. Used if method = "structure".
 #'   Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 #'   updates are used. If 0, updates are never used.
-#' @param seed integer, default sample(100000, 1). Used if method = "structure".
-#'   Starting seed for analysis runs. Each additional run (k value or rep) will
-#'   use a successive seed.
+#' @param seed integer, default sample(100000, 1). Used if method = "structure"
+#'   or "admixture". Starting seed for analysis runs. Each additional run (k
+#'   value or rep) will use a successive seed.
 #' @param strip_col_names string, default NULL. An optional regular expression
 #'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
@@ -3273,13 +3273,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       cv_storage$cv_error <- NA
       for(i in k){
         for(j in 1:reps){
-          cmd <- paste0(admixture_path, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
+          cmd <- paste0(admixture_path, " -s ", seed, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
           system(cmd)
           file.rename(paste0("plink_files.", i, ".P"), paste0("plink_files.", i, "_", j, ".P"))
           file.rename(paste0("plink_files.", i, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
           cv_err <- readLines(paste0("plink_files_log", i, "_", j, ".out"))
           cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
             as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
+          seed <- seed + 1
         }
       }
       qlist <- parse_qfiles(".Q")

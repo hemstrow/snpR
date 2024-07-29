@@ -11,9 +11,10 @@
 * Added 'sn_remove_empty' option to `format_snps()`, which if `FALSE` retains completely missing loci during formatting.
 * '.gen' is now also recognized as a genepop file extension for import.
 * Added the 'fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
-* Flipped the axes for the $H_{e}$/$H_{o}$ plots from `plot_diagnostic()`. While the previous arrangement ($H_{o}$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_{o}$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
+* Flipped the axes for the $\frac{H_{e}}{H_{o}}$ plots from `plot_diagnostic()`. While the previous arrangement ($H_{o}$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_{o}$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
 * Adjusted the error message returned when `read_genepop` is handed files without a `.genepop` or `.gen` extension to reference that either of those formats are OK.
 * The `dapc` option to `plot_clusters()` when only one discriminant was retained now plots a width-jittered categorical scatter plot by cluster.
+* Added support for the `seed` argument for `plot_structure()` when using "admixture". Useful given that admixture apparently uses the seed "42" by default unless provided instead of a random seed.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
