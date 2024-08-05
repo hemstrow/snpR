@@ -67,7 +67,7 @@ gaussian_weight <- function(p, c, s) {
 #'  "pairwise"). See details.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param triple_sigma Logical, default TRUE. If TRUE, sigma will be tripled to
+#'@param triple_sigma Logical, default FALSE If TRUE, sigma will be tripled to
 #'  create windows of 6*sigma total.
 #'@param gaussian Logical, default TRUE. If TRUE, windows will be gaussian
 #'  smoothed. If not, windows will be raw averages.
@@ -95,12 +95,16 @@ gaussian_weight <- function(p, c, s) {
 #'}
 calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk = TRUE, 
                                    stats.type = c("single", "pairwise"), 
-                                   par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
+                                   par = FALSE, triple_sigma = FALSE, gaussian = TRUE,
                                    verbose = FALSE) {
   .snp.id <- chr <- position <- start <- end <- ..col_ord <- snp.facet <-  NULL
   #==============sanity checks============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
+  }
+  
+  if(isFALSE(triple_sigma)){
+    warning("Please note: The default behaviour for triple_sigma has been changed to FALSE as of version 1.2.10.")
   }
   
   msg <- character(0)

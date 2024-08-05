@@ -12,7 +12,7 @@ calc_smoothed_averages(
   nk = TRUE,
   stats.type = c("single", "pairwise"),
   par = FALSE,
-  triple_sigma = TRUE,
+  triple_sigma = FALSE,
   gaussian = TRUE,
   verbose = FALSE
 )
@@ -41,7 +41,7 @@ statistic(s) to smooth, either "single",  "pairwise", or c("single",
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+\item{triple_sigma}{Logical, default FALSE If TRUE, sigma will be tripled to
 create windows of 6*sigma total.}
 
 \item{gaussian}{Logical, default TRUE. If TRUE, windows will be gaussian

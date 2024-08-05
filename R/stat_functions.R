@@ -288,7 +288,7 @@ calc_maf <- function(x, facets = NULL){
 #'  whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param triple_sigma logical, default TRUE. If TRUE, sigma will be tripled to
+#'@param triple_sigma logical, default FALSE If TRUE, sigma will be tripled to
 #'  create windows of 6*sigma total.
 #'@param global logical, default FALSE. If TRUE, all window parameters will
 #'  be ignored and the global Tajima's D across all sites will instead be 
@@ -323,7 +323,7 @@ calc_maf <- function(x, facets = NULL){
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
-                           triple_sigma = TRUE, global = FALSE,
+                           triple_sigma = FALSE, global = FALSE,
                            verbose = FALSE){
 
   #=================subfunction=========
@@ -444,6 +444,10 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
   #===============sanity checks==========================
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.")
+  }
+  
+  if(isFALSE(triple_sigma)){
+    warning("Please note: The default behaviour for triple_sigma has been changed to FALSE as of version 1.2.10.")
   }
   
   step <- eval(step) # forces this to eval before we change sigma.

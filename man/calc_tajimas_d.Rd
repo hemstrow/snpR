@@ -10,7 +10,7 @@ calc_tajimas_d(
   sigma = NULL,
   step = 2 * sigma,
   par = FALSE,
-  triple_sigma = TRUE,
+  triple_sigma = FALSE,
   global = FALSE,
   verbose = FALSE
 )
@@ -37,7 +37,7 @@ whole chromosome).}
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{triple_sigma}{logical, default TRUE. If TRUE, sigma will be tripled to
+\item{triple_sigma}{logical, default FALSE If TRUE, sigma will be tripled to
 create windows of 6*sigma total.}
 
 \item{global}{logical, default FALSE. If TRUE, all window parameters will
