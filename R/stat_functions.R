@@ -446,10 +446,6 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
     stop("x must be a snpRdata object.")
   }
   
-  if(isFALSE(triple_sigma)){
-    warning("Please note: The default behaviour for triple_sigma has been changed to FALSE as of version 1.2.10.")
-  }
-  
   step <- eval(step) # forces this to eval before we change sigma.
   
   if(!is.null(sigma) & !is.null(step)){

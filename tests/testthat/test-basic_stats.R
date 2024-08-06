@@ -284,7 +284,7 @@ test_that("tajimas_d",{
   expect_true(all(tsd$single.window$step == 800))
   
   # global
-  expect_warning(tsd <- calc_tajimas_d(.internal.data$test_snps, tf, step = 200, triple_sigma = FALSE, sigma = 400, global = TRUE), "default behaviour")
+  tsd <- calc_tajimas_d(.internal.data$test_snps, tf, step = 200, triple_sigma = FALSE, sigma = 400, global = TRUE)
   tsdc <- get.snpR.stats(tsd, tf, "tajimas_d")
   levs <- unique(tsdc$weighted.means[,1:4])
   levs_pasted <- .paste.by.facet(levs, colnames(levs), sep = ".")

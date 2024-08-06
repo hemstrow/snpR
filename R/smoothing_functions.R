@@ -103,10 +103,6 @@ calc_smoothed_averages <- function(x, facets = NULL, sigma, step = 2*sigma, nk =
     stop("x is not a snpRdata object.\n")
   }
   
-  if(isFALSE(triple_sigma)){
-    warning("Please note: The default behaviour for triple_sigma has been changed to FALSE as of version 1.2.10.")
-  }
-  
   msg <- character(0)
   if(any(!stats.type %in% c("single", "pairwise"))){
     msg <- c(msg, "Unaccepted stats.type, only 'single' or 'pairwise' accepted.\n")
