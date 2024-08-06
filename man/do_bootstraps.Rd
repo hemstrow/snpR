@@ -13,7 +13,7 @@ do_bootstraps(
   statistics = "all",
   nk = TRUE,
   par = FALSE,
-  triple_sigma = TRUE,
+  triple_sigma = FALSE,
   gaussian = TRUE,
   do.p = TRUE,
   p.alt = "two-sided"
@@ -43,7 +43,7 @@ averages by the number of observations at those SNPs.}
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
 
-\item{triple_sigma}{Logical, default TRUE. If TRUE, sigma will be tripled to
+\item{triple_sigma}{Logical, default FALSE. If TRUE, sigma will be tripled to
 create windows of 6*sigma total.}
 
 \item{gaussian}{Logical, default TRUE. If TRUE, windows will be gaussian

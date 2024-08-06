@@ -61,7 +61,7 @@
 #'  averages by the number of observations at those SNPs.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param triple_sigma Logical, default TRUE. If TRUE, sigma will be tripled to
+#'@param triple_sigma Logical, default FALSE. If TRUE, sigma will be tripled to
 #'  create windows of 6*sigma total.
 #'@param gaussian Logical, default TRUE. If TRUE, windows will be gaussian
 #'  smoothed. If not, windows will be raw averages.
@@ -95,7 +95,7 @@
 #' get.snpR.stats(dat, "chr", "single.window")
 #' 
 do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statistics = "all", 
-                          nk = TRUE, par = FALSE, triple_sigma = TRUE, gaussian = TRUE,
+                          nk = TRUE, par = FALSE, triple_sigma = FALSE, gaussian = TRUE,
                           do.p = TRUE, p.alt = "two-sided"){
   #note: it is possible to run all sample level facets at once, so something like c("pop.fam.chr", "pop.chr") can
   #      be run simultaneously, with no need to loop across facets.
