@@ -212,7 +212,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
   }
 
 
-  if(any(sapply(pops, function(y) length(grep(y, colnames(x)))) != 2)){
+  if(any(sapply(pops, function(y) sum(colnames(x) == y) != 2))){
     msg <- c(msg, "Each pop must match two column names in x.\n")
   }
   if(length(pops) > 2){
@@ -328,7 +328,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
     # write to output
     for(i in 1:length(pops)){
       x <- data.table::as.data.table(x)
-      dat.cols <- grep(pops[i], colnames(x))
+      dat.cols <- which(pops[i] == colnames(x))
       tdat <- x[,dat.cols, with = FALSE]
       tdat <- as.matrix(tdat)
       out[,1,i] <- rowSums(tdat) # total count
