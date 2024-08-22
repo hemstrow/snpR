@@ -27,6 +27,7 @@
 * Added a check for duplicated statistics to `do_bootstraps()`. This is a hack--duplicated rows shouldn't exist and need to be fixed still.
 * Fixed a bug that could occur when formatting data to "sn" format when some loci have no major allele (are unsequenced in any individuals).
 * Fixed a bug where partial column name pop matches could cause problems when using `calc_sfs()` or `make_sfs()`.
+* Fixed a bug where providing a `highlight` numeric vector to `plot_manhattan()` would error if there was missing data in `plot_var`.
 
 ## Known Issues:
 * Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.

@@ -1649,13 +1649,19 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stop("x must be a data.frame or snpRdata object.\n")
   }
   
+
   #================sanity checks==============
   msg <- character(0)
   
   if(nrow(stats) != 0){
     nas <- which(is.na(stats[,plot_var]))
     if(length(nas) != 0){
-      stats <- stats[-which(is.na(stats[,plot_var])),]
+      stats <- stats[-nas,]
+      if(is.numeric(highlight)){
+        fix_highlight <- 1:nrow(stats)
+        fix_highlight <- fix_highlight[-nas]
+        highlight <- which(fix_highlight %in% highlight)
+      }
     }
   }
   
