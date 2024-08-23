@@ -309,6 +309,29 @@ test_that("manhattan plots", {
   skip_on_cran(); # slower
   x <- calc_tajimas_d(x, facets = "pop.chr", sigma = 100, step = 50)
   expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr", simplify_output = TRUE)))
+  
+  # mean line
+  p <- plot_manhattan(x, "ho", facets = "pop", median_line = "red", simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomHline"))
+  x <- calc_ho(x)
+  p <- plot_manhattan(x, "ho" ,median_line = "red", simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomHline"))
+  
+  # color by val
+  x <- calc_he(x, "pop")
+  p <- plot_manhattan(x, "ho", facets = "pop", color_var = "he", 
+                      colors = ggplot2::scale_color_viridis_c(option = "A"),
+                      simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(ggplot2::as_label(p$plot$mapping$colour) == "colvar")
+  
+  # vlines
+  p <- plot_manhattan(x, "ho", facets = "pop", vlines = "red",
+                      simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomVline"))
 })
 
 #=================qq=====================

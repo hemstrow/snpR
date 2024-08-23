@@ -16,6 +16,7 @@
 * The `dapc` option to `plot_clusters()` when only one discriminant was retained now plots a width-jittered categorical scatter plot by cluster.
 * Added support for the `seed` argument for `plot_structure()` when using "admixture". Useful given that admixture apparently uses the seed "42" by default unless provided instead of a random seed.
 * Changed the default behavior of `calc_smoothed_averages()` and `calc_tajimas_d()` to not triple sigma values.
+* Added options to plot a median line, color by another variable, and plot vertical chromosome separator lines to `plot_manhattan()`.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.

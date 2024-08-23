@@ -12,6 +12,10 @@ plot_manhattan(
   chr = "chr",
   bp = "position",
   snp = NULL,
+  color_var = NULL,
+  vlines = FALSE,
+  vline_width = 0.25,
+  median_line = FALSE,
   chr.subfacet = NULL,
   sample.subfacet = NULL,
   significant = NULL,
@@ -64,6 +68,22 @@ bp of each SNP.}
 \item{snp}{character, default NULL. Column in either snp metadata or x (for
 snpRdata or data.frame objects, respectively) containing snpIDs to use for
 highlighting. Ignored if no highlighting is requested.}
+
+\item{color_var}{character, default NULL. If provided, a column by which
+to color each point. If used, chromosomes will not be colored, and the 
+\code{colors} argument instead provides a palette to use, with the viridis
+palette used by default.}
+
+\item{vlines}{character (color) or FALSE, default FALSE. If a color, vertical
+separator lines will be drawn between each chromosome. Widths controlled
+by \code{vline_width}.}
+
+\item{vline_width}{numeric, default 2. Width of chromosome separator lines.
+Ignored if \code{vlines} is FALSE.}
+
+\item{median_line}{character (color) or FALSE, default FALSE. If TRUE, a
+horizontal line will be plotted at the \code{plot_var} median in the color
+provided.}
 
 \item{chr.subfacet}{character, default NULL. Specific chromosomes to plot.
 See examples.}

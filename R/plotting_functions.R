@@ -1301,6 +1301,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param snp character, default NULL. Column in either snp metadata or x (for
 #'   snpRdata or data.frame objects, respectively) containing snpIDs to use for
 #'   highlighting. Ignored if no highlighting is requested.
+#' @param color_var character, default NULL. If provided, a column by which
+#'   to color each point. If used, chromosomes will not be colored, and the 
+#'   \code{colors} argument instead provides a palette to use, with the viridis
+#'   palette used by default.
+#' @param vlines character (color) or FALSE, default FALSE. If a color, vertical
+#'   separator lines will be drawn between each chromosome. Widths controlled
+#'   by \code{vline_width}.
+#' @param vline_width numeric, default 2. Width of chromosome separator lines.
+#'   Ignored if \code{vlines} is FALSE.
+#' @param median_line character (color) or FALSE, default FALSE. If TRUE, a
+#'   horizontal line will be plotted at the \code{plot_var} median in the color
+#'   provided.
 #' @param chr.subfacet character, default NULL. Specific chromosomes to plot.
 #'   See examples.
 #' @param sample.subfacet character, default NULL. Specific sample-specific
@@ -1462,6 +1474,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' }
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
+                           color_var = NULL,
+                           vlines = FALSE,
+                           vline_width = .25,
+                           median_line = FALSE,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
@@ -1604,7 +1620,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #====otherwise=====
   else if(is.data.frame(x)){
     if(data.table::is.data.table(x)){x <- as.data.frame(x)}
-    stats <- x[,which(colnames(x) %in% c(plot_var, bp, chr))]
+    cols <- c(plot_var, bp, chr)
+    if(!is.null(color_var)){cols <- c(cols, color_var)}
+    stats <- x[,which(colnames(x) %in% cols)]
     
     # deal with facets provided--may be column names or snpR style facets
     if(!is.null(facets)){
@@ -1670,14 +1688,29 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
   }
   
-  
-  
   if(!bp %in% colnames(stats)){
     msg <- c(msg, paste0("Position column: ", bp, " not found in data/snp.meta. Define with argument bp = \n"))
   }
   
   if(!chr %in% colnames(stats)){
     msg <- c(msg, paste0("Chromosome column: ", chr, " not found in data/snp.meta. Define with argument chr = \n"))
+  }
+  
+  if(!is.null(color_var)){
+    if(!color_var %in% colnames(stats)){
+      msg <- c(msg, paste0(color_var, " not found in data/snp.meta.\n"))
+    }
+    else{
+      if(is(colors, "gg") & is(colors, "Scaale")){
+        tmp <- try(ggplot2::ggplot() + colors, silent = TRUE)
+        if(is(tmp, "try-error")){
+          msg <- c(msg, "Can't add function `colors()` to ggplots.\n")
+        }
+      }
+      else if(length(unique(stats[,color_var])) %in% length(colors)){
+        msg <- c(msg, paste0("The provided colors must either be a `ggplot2` useable function or equal in length to the number of categories of ", plot_var , "\n"))
+      }
+    }
   }
   
   if(length(msg) > 0){
@@ -1769,6 +1802,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #=============clean up==================
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
+  if(!is.null(color_var)){
+    colnames(stats)[which(colnames(stats) == color_var)] <- "colvar"
+  }
   
   # lambda gc correction for pop structure, etc.
   if(lambda_gc_correction){
@@ -1859,20 +1895,47 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   #============produce the plot========
-  pvar <- NULL
-  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
-    ggplot2::geom_point() +
+  pvar <- colvar <- NULL
+  
+  if(is.null(color_var)){
+    p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
+      ggplot2::geom_point(show.legend = FALSE) +
+      ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers)))
+  }
+  else{
+    p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = colvar)) +
+      ggplot2::geom_point()
+    
+    if(identical(colors,c("black", "slategray3"))){
+      p <- p + viridis::scale_color_viridis(option = viridis.option, begin = viridis.hue[1], end = viridis.hue[2])
+    }
+    
+    else if(is(colors, "Scale") & is(colors, "gg")){
+      p <- p + colors
+    }
+    else{
+      p <- p + ggplot2::scale_color_manual(values = colors)
+    }
+  }
+  
+  p <- p +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.position = "none",
-                   axis.text.x = ggplot2::element_text(angle = 90, size = t.sizes[3], vjust = 0.5),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, size = t.sizes[3], vjust = 0.5),
                    panel.grid.major.x = ggplot2::element_blank(),
                    panel.grid.minor.x = ggplot2::element_blank(),
                    strip.background = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_text(size = t.sizes[3]),
                    strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
                    axis.title = ggplot2::element_text(size = t.sizes[2])) +
-    ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers))) +
-    ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
+    ggplot2::xlab(chr)
+  
+  if(!log.p){
+    p <- p + ggplot2::ylab(plot_var)
+  }
+  else{
+    p <- p + ggplot2::ylab(paste0("-log10(", plot_var, ")"))
+  }
+  
 
   #=============adjust the plot========
   if(length(unique(as.character(stats$subfacet))) > 1){
@@ -1913,6 +1976,14 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   else{
     p <- p + ggplot2::scale_x_continuous(label = names(cum.chr.centers), 
                                          breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  
+  if(!isFALSE(median_line)){
+
+    md <- as.data.table(stats)
+    if(!"subfacet" %in% colnames(stats)){stats$subfacet <- ".base"}
+    md <- md[,list(med = median(pvar)), by = subfacet]
+    p <- p + ggplot2::geom_hline(data = md, mapping = ggplot2::aes(yintercept = med), color = median_line)
   }
   
   # rug
@@ -2003,6 +2074,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         chr <- ochr
       }
     }
+  }
+  
+  if(!isFALSE(vlines)){
+
+    cum.start <- cum.chr.centers + tapply(stats[,bp], stats$chr, function(x) max(x)/2)
+    p <- p + ggplot2::geom_vline(xintercept = cum.start, color = vlines, size = vline_width)
   }
   
   if(!simplify_output){
