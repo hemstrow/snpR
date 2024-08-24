@@ -1373,12 +1373,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param rug_alpha numeric between 0 and 1, default 0.3. Alpha (transparency)
 #'   applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
 #'   or the \code{rug_style} is not \code{ribbon}.
-#' @param rug_thickness numeric or \code{grid}-style \code{unit}, default
-#'   \code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
-#'   height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
-#'   \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
-#'   Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
-#'   avoid over-plotting.
+#' @param rug_thickness numeric, default .03 for point style and 6 for ribbon
+#'   style. The height of the rug lines (if \code{rug_style = "point"}) or
+#'   ribbon (if \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not
+#'   provided.
 #' @param chr_order character, default NULL. If provided, an ordered vector of
 #'   chromosome/scaffold/etc names by which to sort output.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
@@ -1489,7 +1487,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_style = "point",
                            rug_label = NULL,
                            rug_alpha = 0.3,
-                           rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+                           rug_thickness = ifelse(rug_style == "point", 0.03, 6),
                            lambda_gc_correction = FALSE,
                            chr_order = NULL,
                            abbreviate_labels = FALSE,

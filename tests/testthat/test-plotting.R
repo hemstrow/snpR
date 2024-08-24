@@ -292,7 +292,7 @@ test_that("manhattan plots", {
   # ribbon style
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", simplify_output = TRUE)
-  expect_true(is(p4$layers[[2]]$geom, "GeomSegment"))
+  expect_true(methods::is(p4$layers[[2]]$geom, "GeomSegment"))
   
   # with rug labels
   ## point

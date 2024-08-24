@@ -33,7 +33,7 @@ plot_manhattan(
   rug_style = "point",
   rug_label = NULL,
   rug_alpha = 0.3,
-  rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+  rug_thickness = ifelse(rug_style == "point", 0.03, 6),
   lambda_gc_correction = FALSE,
   chr_order = NULL,
   abbreviate_labels = FALSE,
@@ -162,12 +162,10 @@ technique is suggested.}
 applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
 or the \code{rug_style} is not \code{ribbon}.}
 
-\item{rug_thickness}{numeric or \code{grid}-style \code{unit}, default
-\code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
-height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
-\code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
-Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
-avoid over-plotting.}
+\item{rug_thickness}{numeric, default .03 for point style and 6 for ribbon
+style. The height of the rug lines (if \code{rug_style = "point"}) or
+ribbon (if \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not
+provided.}
 
 \item{lambda_gc_correction}{Correct for inflated significance due to
 population and/or family structure using the \eqn{\gamma_{GC}} approach
