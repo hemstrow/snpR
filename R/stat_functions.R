@@ -1305,7 +1305,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #' Note that FIS is calculated by considering \emph{only data from individual
 #' sample levels}! This means that individual and sub-population variances are
 #' only considered within each sub-population. If snp facets are provided,
-#' weighted means will be provided for each snp facet level, although raw FIS
+#' weighted means will be provided for each snp facet level, although raw 
 #' values are calculated on a per-snp basis and thus ignore these levels.
 #'
 #' If the base facet (facets = NULL or facets = ".base") is requested, FIS will
@@ -1315,7 +1315,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #' Bootstrapping across loci can be done to assess FIS significance. This is 
 #' done by re-drawing loci randomly with replacement for each facet level,
 #' calculating the resulting FIS values, and doing one sample \emph{t}-test
-#' with the null hypothesis that FIS = 0 to calculate p-values.
+#' with the null hypothesis that FIS = 0 to calculate p-values and confidence
+#' intervals.
 #'
 #' @param x snpRdata. Input SNP data.
 #' @param facets character. Categorical metadata variables by which to break up
@@ -1332,6 +1333,10 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #'   \emph{t}-test, with the alternative hypothesis that FIS is greater than 0.
 #'   \item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
 #'   that FIS is less than 0.}
+#' @param boot_confidence numeric, default 0.95. The confidence level to use
+#'   for generating confidence levels for bootstraps. Note that a value of
+#'   0.95 will result in a call of \code{\link[stats]{qt}} with \code{q = .975}
+#'   and and so on.
 #' @param keep_components logical, default \code{FALSE}. If TRUE, the variance
 #'   components "b" and "c" will be held and accessible from the \code{$single}
 #'   element (named "var_comp_b" and "var_comp_c", respectively) using the usual
@@ -1357,6 +1362,7 @@ calc_fis <- function(x, facets = NULL,
                      boot = FALSE, 
                      boot_par = FALSE,
                      boot_alt = "two-sided",
+                     boot_confidence = .95,
                      keep_components = FALSE){
   
   ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
@@ -1567,9 +1573,15 @@ calc_fis <- function(x, facets = NULL,
     # get p-values using a one-sample t-test for each boot
     # boot_var <- rowSums((all_boots - rowMeans(all_boots))^2)/(boot - 1) # note, this is the typical formula estimating variance from a sample, like we are doing here.
     boot_vars <- matrixStats::rowVars(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)
-    boot_se <- sqrt(boot_vars)/sqrt(boot)
+    boot_n <- rowSums(!is.na(.fix..call(real[[2]][,..boot_cols])))
+    boot_se <- sqrt(boot_vars)/sqrt(boot_n)
     boot_t <- rowMeans(.fix..call(real[[2]][,..boot_cols]), na.rm = TRUE)/boot_se
-    df <- rowSums(!is.na(.fix..call(real[[2]][,..boot_cols]))) - 1
+    df <-  boot_n - 1
+    boot_confidence <- 1 - (1 - boot_confidence)/2 # convert from confidence level to the q for two-sided tcrit
+    boot_CI <- qt(.975,df)*(matrixStats::rowSds(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)/sqrt(boot))
+    boot_uCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) + boot_CI
+    boot_lCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) - boot_CI
+    
     
     pfis <- if(boot_alt == "two-sided"){
       2 * pt(abs(boot_t), df = df, lower.tail = FALSE) # same as running t.test on all rows
@@ -1596,9 +1608,13 @@ calc_fis <- function(x, facets = NULL,
     # update and fill NAs
     real[[2]] <- .fix..call(real[[2]][,-..boot_cols])
     real[[2]]$weighted_mean_fis_p <- pfis
+    real[[2]]$weighted_mean_fis_uCI <- boot_uCI
+    real[[2]]$weighted_mean_fis_lCI <- boot_lCI
     nas <- is.na(real[[2]]$weighted_mean_fis) 
     if(any(nas)){
-      real[[2]]$weighted_mean_fis_p[which(nas)] <- real[[2]]$weighted_mean_fis[which(nas)]
+      real[[2]]$weighted_mean_fis_p[which(nas)] <- NA
+      real[[2]]$weighted_mean_fis_uCI[which(nas)] <- NA
+      real[[2]]$weighted_mean_fis_lCI[which(nas)] <- NA
     }
   }
   
@@ -5206,268 +5222,268 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
   return(out)
 }
 
-# eqns from https://doi.org/10.1038/hdy.2017.52
-calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
-  weighted.mean <- NULL
-  # browser()
-  as <- x@geno.tables$as
-  gs <- x@geno.tables$gs
-  # as <- as/rowSums(as)
-  y <- as.matrix(genotypes(x))
-  
-  #===============main function=============
-  rfunc <- function(as, gs, y){
-    x1 <- substr(y, 1, 1)
-    x2 <- substr(y, 2, 2)
-    
-    
-    
-
-    #================prep and pre-define things==============
-    # estimated allele frequencies, results identical to eqn 2
-    xf <- as/rowSums(as)
-    
-    # transform into allele-matched p and q
-    x1f <- (1:ncol(xf))[match(x1, colnames(xf))]
-    x1f <- matrix(xf[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
-    x2f <- (1:ncol(xf))[match(x2, colnames(xf))]
-    x2f <- matrix(xf[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
-    
-    res <- expand.grid(1:ncol(x), 1:ncol(x))
-    res <- res[-which(res$Var1 <= res$Var2),]
-    res <- cbind(res[,2:1], as.data.frame(as.numeric(matrix(NA, nrow = nrow(res), ncol = length(methods)))))
-    colnames(res)[3:ncol(res)] <- methods
-    
-    # pre-looped vars--no reason to calculate these for each reference pair since they will stay the same. Do them once instead.
-    if("LLM" %in% methods){
-      asNA <- as
-      asNA[as == 0] <- NA
-      
-      # eqns 25 and 15
-      tm2 <- xf*((asNA - 1)/(rowSums(asNA, na.rm = TRUE) - 1))
-      tm3 <- tm2*((asNA - 2)/(rowSums(asNA, na.rm = TRUE) - 2))
-      S0LLM <- (2 * rowSums(tm2, na.rm = TRUE)) - rowSums(tm3, na.rm = TRUE)
-    }
-    
-    if(any(c("LL", "W") %in% methods)){
-      # eqns 15 and 16
-      S0LL <- (2 * rowSums(xf^2)) - rowSums(xf^3)
-    }
-    
-    if("R" %in% methods){
-      nal <- rowSums(as != 0)
-      Rleft <- 2*(nal - 1)
-    }
-    
-    if("LR" %in% methods){
-      # eqn 5a from LR, equivalent to eqn 10 from W above after averaging.
-      # splitting them for weighting.
-      RLF <- function(SAB, SBC, SBD, SAC, SAD, pa, pb){
-        top <- (pa*(SBC + SBD)) + (pb*(SAC + SAD)) - 4*pa*pb
-        bottom <- (1 + SAB)*(pa + pb) - 4*(pa*pb)
-        return(top/bottom)
-      }
-      
-      # weight each part by inverse of sampling variance assuming no relatedness, Lynch and Ritland eqn 7a
-      wRL <- function(SAB, pa, pb) (((1 + SAB)*(pa + pb)) - 4*pa*pb)/(2*pa*pb)
-    }
-    
-    #==============loop through each pair of individuals and save results============
-    for(i in unique(res[,1])){
-      for(j in unique(res[,2])[which(unique(res[,2]) > i)]){
-        
-        # note which loci we can't use (missing in either sample)
-        missing <- which(x1[,i] == "N" | x1[,j] == "N")
-        
-        
-        #===============define indicators, used by most==========
-        
-        if(any(c("QG", "LL", "W", "LMM", "LR") %in% methods)){
-          # indicator lambda variables
-          kAC <- as.numeric(x1[,i] == x1[,j])
-          kAD <- as.numeric(x1[,i] == x2[,j])
-          kBC <- as.numeric(x2[,i] == x1[,j])
-          kBD <- as.numeric(x2[,i] == x2[,j])
-          kAB <- as.numeric(x1[,i] == x2[,i])
-          kCD <- as.numeric(x1[,j] == x2[,j])
-          
-          # missing trackers
-          kAC[missing] <- NA
-          kAD[missing] <- NA
-          kBC[missing] <- NA
-          kBD[missing] <- NA
-          kAB[missing] <- NA
-          kCD[missing] <- NA
-        }
-        
-        #===========Queller and Goodnight========
-        if("QG" %in% methods){
-          # equation 3
-          left_num <-  kAC + kAD + kBC + kBD - (
-            2*(x1f[i,] + x2f[i,]))
-          left_dom <- 2 * (1 + kAB - x1f[,i] - x2f[,i])
-          # left <- left_num/left_dom
-          
-          
-          right_num <-  kAC + kAD + kBC + kBD - (
-            2*(x1f[j,] + x2f[j,]))
-          right_dom <- 2 * (1 + kCD - x1f[,j] - x2f[,j])
-          # right <- right_num/right_dom
-          
-          # rQG <- (right + left)/2
-          
-          # set to zero estimator parts where undefined
-          lud <- which(left_dom == 0)
-          left_num[lud] <- 0
-          left_dom[lud] <- 0
-          
-          rud <- which(right_dom == 0)
-          right_num[rud] <- 0
-          right_dom[rud] <- 0
-          
-          # remove missings
-          right_num[missing] <- NA
-          right_dom[missing] <- NA
-          left_num[missing] <- NA
-          left_dom[missing] <- NA
-          
-          # sum the components across loci first before solving
-          left_numt <- sum(left_num, na.rm = TRUE)
-          left_domt <- sum(left_dom, na.rm = TRUE)
-          right_numt <- sum(right_num, na.rm = TRUE)
-          right_domt <- sum(right_dom, na.rm = TRUE)
-          tot <- (left_numt/left_domt) + (right_numt/right_domt)
-          tot <- tot*.5
-          
-          res[which(res[,1] == i & res[,2] == j),]$QG <- tot
-        }
-        #===================Lynch and Li, Wang, unbiased LL=======
-        if("LL" %in% methods | "W" %in% methods | "LLM" %in% methods){
-          # eqn 13
-          num <- kAC + kAD + kBC + kBD
-          left_dom <- 2*(1 + kAB)
-          right_dom <- 2*(1 + kCD)
-          Sxy <- .5*((num/left_dom) + (num/right_dom))
-          
-          # do LL if bi-allelic, since it is identical to W in that case
-          if(.is.bi_allelic(x)){
-            if(!"LL" %in% methods){
-              methods <- c(methods, "LL")
-            }
-          }
-          
-          if("LL" %in% methods){
-            
-            #SOLL defined above prior to loop
-            top <- Sxy - S0LL
-            bottom <- 1 - S0LL
-            
-            # eqn 14
-            res[which(res[,1] == i & res[,2] == j),]$LL <- sum(top[-missing])/sum(bottom[-missing])
-          }
-          if("LLM" %in% methods){
-            
-            #SOLLM defined above
-            top <- Sxy - S0LLM
-            bottom <- 1 - S0LLM
-            
-            # eqn 14
-            res[which(res[,1] == i & res[,2] == j),]$LLM <- sum(top[-missing])/sum(bottom[-missing])
-            
-          }
-          if("W" %in% methods){
-            if(.is.bi_allelic(x)){
-              res[which(res[,1] == i & res[,2] == j),]$W <- res[which(res[,1] == i & res[,2] == j),]$LL
-            }
-            else{
-              warning("Wang's estimator is not yet implemented for non-biallelic loci. Please let us know on the GitHub issues page if you would like this implemented (see start-up message).\n")
-            }
-          }
-          
-          
-          
-        }
-        #===========Ritland========
-        if("R" %in% methods){
-          # each column is an allele the A/B/C/D are being compared to
-          comp.mat <- matrix(colnames(as), nrow = length(x1[,i]), ncol = ncol(as), byrow = TRUE)
-          kAi <- x1[,i] == comp.mat
-          kBi <- x2[,i] == comp.mat
-          kCi <- x1[,j] == comp.mat
-          kDi <- x2[,j] == comp.mat
-          
-          # equation 7
-          top <- (kAi + kBi)*(kCi + kDi)
-          inside <- top/xf
-          inside <- rowSums(inside, na.rm = TRUE) - 1
-          # nal and Rleft defined above
-          rR <- Rleft*inside
-          
-          # multilocus (eqn under 7)
-          res[which(res[,1] == i & res[,2] == j),]$R <- sum(rR[-missing] * (nal[-missing] - 1))/sum(nal[-missing] - 1)
-        }
-        #===========Lynch and Ritland========
-        if("LR" %in% methods){
-          # eqn 10
-          # left_top <- (x1f[,i]*(kBC + kBD)) + (x2f[,i]*(kAC + kAD)) - 4*x1f[,i]*x2f[,i]
-          # left_bottom <- 2*(1 + kAB)*(x1f[,i] + x2f[,i]) - 8*(x1f[,i]*x2f[,i])
-          # 
-          # 
-          # right_top <- (x1f[,j]*(kAD + kBD)) + (x2f[,j]*(kAC + kBC)) - 4*x1f[,j]*x2f[,j]
-          # right_bottom <- 2*(1 + kCD)*(x1f[,j] + x2f[,j]) - 8*(x1f[,j]*x2f[,j])
-          # 
-          # left <- (left_top/left_bottom)
-          # right <- (right_top/right_bottom)
-          
-          # RLF defined above
-          
-          
-          left <- RLF(kAB, kBC, kBD, kAC, kAD, x1f[,i], x2f[,i])
-          # A -> C, B -> D, C -> A, D -> B
-          right <- RLF(kCD, kAD, kBD, kAC, kBC, x1f[,j], x2f[,j])
-          
-          
-          # -- wRL defined above
-          
-          wl <- wRL(kAB, x1f[,i], x2f[,i])
-          wr <- wRL(kCD, x1f[,j], x2f[,j])
-          
-          rxy <- weighted.mean(left[-missing], wl[-missing])
-          ryx <- weighted.mean(right[-missing], wr[-missing])
-          
-          res[which(res[,1] == i & res[,2] == j),]$LR <- mean(c(rxy, ryx))
-        }
-        #===========Loiselle/Heuertz========
-        if("LS" %in% methods){
-          
-          # from Heuertz et al, top of page 2486. Note that this is a bit different from eqn 22, particularly in how this is done multilocus, since that is a simplification that assumes no missing data. N is allowed to vary per SNP here (as it should).
-          rLS <- 0
-          for(k in 1:ncol(as)){
-            X <- (as.numeric(x1[,i] == colnames(as)[k]) + 
-                    as.numeric(x2[,i] == colnames(as)[k]))/2
-            X <- X[-missing]
-            Y <- (as.numeric(x1[,j] == colnames(as)[k]) + 
-                    as.numeric(x2[,j] == colnames(as)[k]))/2
-            Y <- Y[-missing]
-            
-            Fij <- (X - xf[,k][-missing])*(Y - xf[,k][-missing]) + (1/((rowSums(as))[-missing] - 1)) # note, took out the 2n on the bottom because we already have allele counts not individual counts
-            wFij <- xf[,k][-missing]*(1-xf[,k][-missing])
-            
-            allele_is_missing <- which(as[,k] == 0)
-            rLS <- rLS + weighted.mean(Fij[-allele_is_missing], wFij[-allele_is_missing])
-          }
-          res[which(res[,1] == i & res[,2] == j),]$LS <- rLS
-        }
-      }
-    }
-    
-    
-    
-    return(res)
-  }
-  
-  
-}
+# # eqns from https://doi.org/10.1038/hdy.2017.52
+# calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
+#   weighted.mean <- NULL
+#   # browser()
+#   as <- x@geno.tables$as
+#   gs <- x@geno.tables$gs
+#   # as <- as/rowSums(as)
+#   y <- as.matrix(genotypes(x))
+#   
+#   #===============main function=============
+#   rfunc <- function(as, gs, y){
+#     x1 <- substr(y, 1, 1)
+#     x2 <- substr(y, 2, 2)
+#     
+#     
+#     
+# 
+#     #================prep and pre-define things==============
+#     # estimated allele frequencies, results identical to eqn 2
+#     xf <- as/rowSums(as)
+#     
+#     # transform into allele-matched p and q
+#     x1f <- (1:ncol(xf))[match(x1, colnames(xf))]
+#     x1f <- matrix(xf[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
+#     x2f <- (1:ncol(xf))[match(x2, colnames(xf))]
+#     x2f <- matrix(xf[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
+#     
+#     res <- expand.grid(1:ncol(x), 1:ncol(x))
+#     res <- res[-which(res$Var1 <= res$Var2),]
+#     res <- cbind(res[,2:1], as.data.frame(as.numeric(matrix(NA, nrow = nrow(res), ncol = length(methods)))))
+#     colnames(res)[3:ncol(res)] <- methods
+#     
+#     # pre-looped vars--no reason to calculate these for each reference pair since they will stay the same. Do them once instead.
+#     if("LLM" %in% methods){
+#       asNA <- as
+#       asNA[as == 0] <- NA
+#       
+#       # eqns 25 and 15
+#       tm2 <- xf*((asNA - 1)/(rowSums(asNA, na.rm = TRUE) - 1))
+#       tm3 <- tm2*((asNA - 2)/(rowSums(asNA, na.rm = TRUE) - 2))
+#       S0LLM <- (2 * rowSums(tm2, na.rm = TRUE)) - rowSums(tm3, na.rm = TRUE)
+#     }
+#     
+#     if(any(c("LL", "W") %in% methods)){
+#       # eqns 15 and 16
+#       S0LL <- (2 * rowSums(xf^2)) - rowSums(xf^3)
+#     }
+#     
+#     if("R" %in% methods){
+#       nal <- rowSums(as != 0)
+#       Rleft <- 2*(nal - 1)
+#     }
+#     
+#     if("LR" %in% methods){
+#       # eqn 5a from LR, equivalent to eqn 10 from W above after averaging.
+#       # splitting them for weighting.
+#       RLF <- function(SAB, SBC, SBD, SAC, SAD, pa, pb){
+#         top <- (pa*(SBC + SBD)) + (pb*(SAC + SAD)) - 4*pa*pb
+#         bottom <- (1 + SAB)*(pa + pb) - 4*(pa*pb)
+#         return(top/bottom)
+#       }
+#       
+#       # weight each part by inverse of sampling variance assuming no relatedness, Lynch and Ritland eqn 7a
+#       wRL <- function(SAB, pa, pb) (((1 + SAB)*(pa + pb)) - 4*pa*pb)/(2*pa*pb)
+#     }
+#     
+#     #==============loop through each pair of individuals and save results============
+#     for(i in unique(res[,1])){
+#       for(j in unique(res[,2])[which(unique(res[,2]) > i)]){
+#         
+#         # note which loci we can't use (missing in either sample)
+#         missing <- which(x1[,i] == "N" | x1[,j] == "N")
+#         
+#         
+#         #===============define indicators, used by most==========
+#         
+#         if(any(c("QG", "LL", "W", "LMM", "LR") %in% methods)){
+#           # indicator lambda variables
+#           kAC <- as.numeric(x1[,i] == x1[,j])
+#           kAD <- as.numeric(x1[,i] == x2[,j])
+#           kBC <- as.numeric(x2[,i] == x1[,j])
+#           kBD <- as.numeric(x2[,i] == x2[,j])
+#           kAB <- as.numeric(x1[,i] == x2[,i])
+#           kCD <- as.numeric(x1[,j] == x2[,j])
+#           
+#           # missing trackers
+#           kAC[missing] <- NA
+#           kAD[missing] <- NA
+#           kBC[missing] <- NA
+#           kBD[missing] <- NA
+#           kAB[missing] <- NA
+#           kCD[missing] <- NA
+#         }
+#         
+#         #===========Queller and Goodnight========
+#         if("QG" %in% methods){
+#           # equation 3
+#           left_num <-  kAC + kAD + kBC + kBD - (
+#             2*(x1f[i,] + x2f[i,]))
+#           left_dom <- 2 * (1 + kAB - x1f[,i] - x2f[,i])
+#           # left <- left_num/left_dom
+#           
+#           
+#           right_num <-  kAC + kAD + kBC + kBD - (
+#             2*(x1f[j,] + x2f[j,]))
+#           right_dom <- 2 * (1 + kCD - x1f[,j] - x2f[,j])
+#           # right <- right_num/right_dom
+#           
+#           # rQG <- (right + left)/2
+#           
+#           # set to zero estimator parts where undefined
+#           lud <- which(left_dom == 0)
+#           left_num[lud] <- 0
+#           left_dom[lud] <- 0
+#           
+#           rud <- which(right_dom == 0)
+#           right_num[rud] <- 0
+#           right_dom[rud] <- 0
+#           
+#           # remove missings
+#           right_num[missing] <- NA
+#           right_dom[missing] <- NA
+#           left_num[missing] <- NA
+#           left_dom[missing] <- NA
+#           
+#           # sum the components across loci first before solving
+#           left_numt <- sum(left_num, na.rm = TRUE)
+#           left_domt <- sum(left_dom, na.rm = TRUE)
+#           right_numt <- sum(right_num, na.rm = TRUE)
+#           right_domt <- sum(right_dom, na.rm = TRUE)
+#           tot <- (left_numt/left_domt) + (right_numt/right_domt)
+#           tot <- tot*.5
+#           
+#           res[which(res[,1] == i & res[,2] == j),]$QG <- tot
+#         }
+#         #===================Lynch and Li, Wang, unbiased LL=======
+#         if("LL" %in% methods | "W" %in% methods | "LLM" %in% methods){
+#           # eqn 13
+#           num <- kAC + kAD + kBC + kBD
+#           left_dom <- 2*(1 + kAB)
+#           right_dom <- 2*(1 + kCD)
+#           Sxy <- .5*((num/left_dom) + (num/right_dom))
+#           
+#           # do LL if bi-allelic, since it is identical to W in that case
+#           if(.is.bi_allelic(x)){
+#             if(!"LL" %in% methods){
+#               methods <- c(methods, "LL")
+#             }
+#           }
+#           
+#           if("LL" %in% methods){
+#             
+#             #SOLL defined above prior to loop
+#             top <- Sxy - S0LL
+#             bottom <- 1 - S0LL
+#             
+#             # eqn 14
+#             res[which(res[,1] == i & res[,2] == j),]$LL <- sum(top[-missing])/sum(bottom[-missing])
+#           }
+#           if("LLM" %in% methods){
+#             
+#             #SOLLM defined above
+#             top <- Sxy - S0LLM
+#             bottom <- 1 - S0LLM
+#             
+#             # eqn 14
+#             res[which(res[,1] == i & res[,2] == j),]$LLM <- sum(top[-missing])/sum(bottom[-missing])
+#             
+#           }
+#           if("W" %in% methods){
+#             if(.is.bi_allelic(x)){
+#               res[which(res[,1] == i & res[,2] == j),]$W <- res[which(res[,1] == i & res[,2] == j),]$LL
+#             }
+#             else{
+#               warning("Wang's estimator is not yet implemented for non-biallelic loci. Please let us know on the GitHub issues page if you would like this implemented (see start-up message).\n")
+#             }
+#           }
+#           
+#           
+#           
+#         }
+#         #===========Ritland========
+#         if("R" %in% methods){
+#           # each column is an allele the A/B/C/D are being compared to
+#           comp.mat <- matrix(colnames(as), nrow = length(x1[,i]), ncol = ncol(as), byrow = TRUE)
+#           kAi <- x1[,i] == comp.mat
+#           kBi <- x2[,i] == comp.mat
+#           kCi <- x1[,j] == comp.mat
+#           kDi <- x2[,j] == comp.mat
+#           
+#           # equation 7
+#           top <- (kAi + kBi)*(kCi + kDi)
+#           inside <- top/xf
+#           inside <- rowSums(inside, na.rm = TRUE) - 1
+#           # nal and Rleft defined above
+#           rR <- Rleft*inside
+#           
+#           # multilocus (eqn under 7)
+#           res[which(res[,1] == i & res[,2] == j),]$R <- sum(rR[-missing] * (nal[-missing] - 1))/sum(nal[-missing] - 1)
+#         }
+#         #===========Lynch and Ritland========
+#         if("LR" %in% methods){
+#           # eqn 10
+#           # left_top <- (x1f[,i]*(kBC + kBD)) + (x2f[,i]*(kAC + kAD)) - 4*x1f[,i]*x2f[,i]
+#           # left_bottom <- 2*(1 + kAB)*(x1f[,i] + x2f[,i]) - 8*(x1f[,i]*x2f[,i])
+#           # 
+#           # 
+#           # right_top <- (x1f[,j]*(kAD + kBD)) + (x2f[,j]*(kAC + kBC)) - 4*x1f[,j]*x2f[,j]
+#           # right_bottom <- 2*(1 + kCD)*(x1f[,j] + x2f[,j]) - 8*(x1f[,j]*x2f[,j])
+#           # 
+#           # left <- (left_top/left_bottom)
+#           # right <- (right_top/right_bottom)
+#           
+#           # RLF defined above
+#           
+#           
+#           left <- RLF(kAB, kBC, kBD, kAC, kAD, x1f[,i], x2f[,i])
+#           # A -> C, B -> D, C -> A, D -> B
+#           right <- RLF(kCD, kAD, kBD, kAC, kBC, x1f[,j], x2f[,j])
+#           
+#           
+#           # -- wRL defined above
+#           
+#           wl <- wRL(kAB, x1f[,i], x2f[,i])
+#           wr <- wRL(kCD, x1f[,j], x2f[,j])
+#           
+#           rxy <- weighted.mean(left[-missing], wl[-missing])
+#           ryx <- weighted.mean(right[-missing], wr[-missing])
+#           
+#           res[which(res[,1] == i & res[,2] == j),]$LR <- mean(c(rxy, ryx))
+#         }
+#         #===========Loiselle/Heuertz========
+#         if("LS" %in% methods){
+#           
+#           # from Heuertz et al, top of page 2486. Note that this is a bit different from eqn 22, particularly in how this is done multilocus, since that is a simplification that assumes no missing data. N is allowed to vary per SNP here (as it should).
+#           rLS <- 0
+#           for(k in 1:ncol(as)){
+#             X <- (as.numeric(x1[,i] == colnames(as)[k]) + 
+#                     as.numeric(x2[,i] == colnames(as)[k]))/2
+#             X <- X[-missing]
+#             Y <- (as.numeric(x1[,j] == colnames(as)[k]) + 
+#                     as.numeric(x2[,j] == colnames(as)[k]))/2
+#             Y <- Y[-missing]
+#             
+#             Fij <- (X - xf[,k][-missing])*(Y - xf[,k][-missing]) + (1/((rowSums(as))[-missing] - 1)) # note, took out the 2n on the bottom because we already have allele counts not individual counts
+#             wFij <- xf[,k][-missing]*(1-xf[,k][-missing])
+#             
+#             allele_is_missing <- which(as[,k] == 0)
+#             rLS <- rLS + weighted.mean(Fij[-allele_is_missing], wFij[-allele_is_missing])
+#           }
+#           res[which(res[,1] == i & res[,2] == j),]$LS <- rLS
+#         }
+#       }
+#     }
+#     
+#     
+#     
+#     return(res)
+#   }
+#   
+#   
+# }
 
 #'@export
 #'@describeIn calc_single_stats allelic richness (standardized number of alleles per locus via rarefaction)

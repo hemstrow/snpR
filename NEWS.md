@@ -17,6 +17,7 @@
 * Added support for the `seed` argument for `plot_structure()` when using "admixture". Useful given that admixture apparently uses the seed "42" by default unless provided instead of a random seed.
 * Changed the default behavior of `calc_smoothed_averages()` and `calc_tajimas_d()` to not triple sigma values.
 * Added options to plot a median line, color by another variable, and plot vertical chromosome separator lines to `plot_manhattan()`.
+* Added confidence intervals to the values returned/calculated by `calc_fis()` if doing bootstraps. Like the p-values, these are derived using a t-test on the distribution of bootstrapped $F_{IS}$ values.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
