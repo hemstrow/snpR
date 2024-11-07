@@ -860,7 +860,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     plot_dats$umap <- cbind(meta, as.data.frame(umap_r$layout))
   }
   if("dapc" %in% plot_type){
-    gi <- format_snps(x, "adegenet", "pop")
+    gi <- format_snps(x, "adegenet", facets)
     if(!is.null(dapc_clustering_max_n_clust)){
       k <- adegenet::find.clusters.genind(x = gi, max.n.clust = dapc_clustering_max_n_clust)
     }
