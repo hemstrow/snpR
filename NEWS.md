@@ -30,6 +30,7 @@
 * Fixed a bug that could occur when formatting data to "sn" format when some loci have no major allele (are unsequenced in any individuals).
 * Fixed a bug where partial column name pop matches could cause problems when using `calc_sfs()` or `make_sfs()`.
 * Fixed a bug where providing a `highlight` numeric vector to `plot_manhattan()` would error if there was missing data in `plot_var`.
+* Fixed a bug where the running a dapc with `plot_clusters()` would fail with facets other than "pop".
 
 ## Known Issues:
 * Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
