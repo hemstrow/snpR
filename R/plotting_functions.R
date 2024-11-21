@@ -1493,7 +1493,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            abbreviate_labels = FALSE,
                            simplify_output = FALSE){
 
-  cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
+  cum.bp <- cum.start <- cum.end <- y <- start <- end <- med <- NULL
 
   #=============sanity checks==============================
   msg <- character()
@@ -1699,9 +1699,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       msg <- c(msg, paste0(color_var, " not found in data/snp.meta.\n"))
     }
     else{
-      if(is(colors, "gg") & is(colors, "Scaale")){
+      if(methods::is(colors, "gg") & is(colors, "Scaale")){
         tmp <- try(ggplot2::ggplot() + colors, silent = TRUE)
-        if(is(tmp, "try-error")){
+        if(methods::is(tmp, "try-error")){
           msg <- c(msg, "Can't add function `colors()` to ggplots.\n")
         }
       }
@@ -1908,7 +1908,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       p <- p + viridis::scale_color_viridis(option = viridis.option, begin = viridis.hue[1], end = viridis.hue[2])
     }
     
-    else if(is(colors, "Scale") & is(colors, "gg")){
+    else if(methods::is(colors, "Scale") & methods::is(colors, "gg")){
       p <- p + colors
     }
     else{
@@ -1980,7 +1980,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
     md <- as.data.table(stats)
     if(!"subfacet" %in% colnames(stats)){stats$subfacet <- ".base"}
-    md <- md[,list(med = median(pvar)), by = subfacet]
+    md <- md[,list(med = stats::median(pvar)), by = subfacet]
     p <- p + ggplot2::geom_hline(data = md, mapping = ggplot2::aes(yintercept = med), color = median_line)
   }
   
@@ -2077,7 +2077,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   if(!isFALSE(vlines)){
 
     cum.start <- cum.chr.centers + tapply(stats[,bp], stats$chr, function(x) max(x)/2)
-    p <- p + ggplot2::geom_vline(xintercept = cum.start, color = vlines, size = vline_width)
+    p <- p + ggplot2::geom_vline(xintercept = cum.start, color = vlines, linewidth = vline_width)
   }
   
   if(!simplify_output){

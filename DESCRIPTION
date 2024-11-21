@@ -85,7 +85,6 @@ Collate:
     'pophelper_redistribution.R'
     'sequoia_interface.R'
     'sfs_functions.R'
-    'simulate_growth.R'
     'smoothing_functions.R'
     'snpRdata.R'
     'snpRdata_methods.R'

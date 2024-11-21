@@ -46,7 +46,7 @@
 #'   variance (the fitness optimum can slide as a function of the amount of
 #'   initial genetic variance in the population). See
 #'   \code{\link{optimum_slide_functions}}.
-#' @param rec_dis function, default \code{function(n) rpois(n, lambda = 1)}.
+#' @param rec_dist function, default \code{function(n) rpois(n, lambda = 1)}.
 #'   Function for determining how many recombination events occur per-generation,
 #'   per-chromosome, per-cross. Requires the argument \code{n}, the number of
 #'   chromosomes for which recombinations are needed.
@@ -75,8 +75,15 @@
 #' @param do_sexes logical, default TRUE. If TRUE, individuals are assigned
 #'   randomly to one of two sexes when mating. The population will go extinct if
 #'   all individuals are of a single sex in a generation.
-#' @param pop_facet character, default NULL. If a snpRdata object is provided to
-#'   \code{genotypes}, a sample facet may be provided noting populations.
+#' @param mutation_effect_function function, default NULL. A function that 
+#'   generates mutation effects given \code{n} mutations. If populations have
+#'   different mutation effect generation, a list of a function for each can be
+#'   provided instead.
+#' @param pop_facet currently unused.
+#' @param var_theta numeric, default 0. The variance in the optimum phenotype 
+#'   each generation.
+#' @param plot_during_progress logical, default TRUE.
+#'
 #' @export
 simulate_populations <- 
   function(genotypes,
@@ -98,7 +105,6 @@ simulate_populations <-
            rec_dist = function(n) rpois(n, lambda = 1),
            var_theta = 0,
            plot_during_progress = FALSE,
-           facet = "group",
            do_sexes = TRUE,
            effects = NULL,
            thin = FALSE,
@@ -109,10 +115,19 @@ simulate_populations <-
            sampling_point = "migrants",
            stop_if_no_variance = FALSE,
            track_ped = FALSE,
-           K_thin_post_surv = NULL){
+           K_thin_post_surv = NULL,
+           pop_facet = NULL){
     message("simulate_populations is still in development: please report any bugs!\n")
+    
+    if(plot_during_progress){
+      .check.installed("ggh4x")
+      .check.installed("scales")
+    }
+    if(inbreeding != 0){
+      .check.installed("ggroups")
+    }
 
-    #============subfuctions============
+    #============sub-fuctions============
     # function completed each loop (done this way to allow for ease of multiple populations)
     one_gen <- function(genotypes, phenotypes,
                         BVs,
@@ -131,6 +146,7 @@ simulate_populations <-
                         inbreeding,
                         pass_surv_genos = FALSE,
                         ped = NULL){
+      
       
       #=========survival====
       if(length(unique(phenotypes)) == 1 & phenotypes[1] != 1 & stop_if_no_variance){stop("No genetic variance left.\n")}
@@ -1233,6 +1249,8 @@ simulate_populations <-
 #' @param max.survival numeric. Maximum possible survival probability.
 #' @param omega numeric. Strength of stabilizing selection. Smaller numbers mean
 #'   stronger selection.
+#' @param ... args passed internally. Self-made slide functions should have this
+#'   arg to allow for unused args to be passed without error.
 #' 
 #' @name survival_distributions
 #' @aliases normal_survival BL_survival
@@ -1294,6 +1312,8 @@ BL_survival <- function(phenotypes, opt_pheno, omega, ...){
 #'   portion of this variance.
 #' @param slide numeric. Proportion of the initial variance by which the optimum
 #'   phenotype will slide.
+#' @param ... args passed internally. Self-made slide functions should have this
+#'   arg to allow for unused args to be passed without error.
 #'
 #' @name optimum_slide_functions
 #' @aliases optimum_scaled_slide optimum_fixed_slide
@@ -1337,6 +1357,8 @@ optimum_fixed_slide <- function(opt, slide = 0.3, ...){
 #' @param K numeric, carrying capacity.
 #' @param r numeric, logistic growth rate.
 #' @param B numeric, the number of offspring each individual has
+#' @param ... args passed internally. Self-made slide functions should have this
+#'   arg to allow for unused args to be passed without error.
 #'
 #' @name population_growth_functions
 #' @aliases logistic_growth BL_growth

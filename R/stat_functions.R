@@ -1578,7 +1578,7 @@ calc_fis <- function(x, facets = NULL,
     boot_t <- rowMeans(.fix..call(real[[2]][,..boot_cols]), na.rm = TRUE)/boot_se
     df <-  boot_n - 1
     boot_confidence <- 1 - (1 - boot_confidence)/2 # convert from confidence level to the q for two-sided tcrit
-    boot_CI <- qt(.975,df)*(matrixStats::rowSds(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)/sqrt(boot))
+    boot_CI <- stats::qt(.975,df)*(matrixStats::rowSds(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)/sqrt(boot))
     boot_uCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) + boot_CI
     boot_lCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) - boot_CI
     
@@ -3273,6 +3273,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                       window_triple_sigma = TRUE, 
                       verbose = FALSE,
                       .prox_only = FALSE){
+  
+  .snp.id <- proximity <- s1_position <- s2_position <- centers <- win <- weight <- . <- CLD <- ..cn <- NULL
 
   # get the comparisons
   facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
@@ -3324,7 +3326,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     else{
       cld[,weight := 1]
     }
-    out <- cld[,.(CLD = weighted.mean(CLD,weight)), by = win]
+    out <- cld[,.(CLD = stats::weighted.mean(CLD,weight)), by = win]
     cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
     out <- cbind(.fix..call(cl[out$win,..cn]),
                  sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,

@@ -1531,7 +1531,7 @@ is.snpRdata <- function(x){
         this_opt <- reps[i]
         if(opts[this_opt] %in% done){next}
         match <- try(which(rev_opts == opts[this_opt]), silent = TRUE)
-        if(is(match, "try-error")){stop("Error at match.\n")}
+        if(methods::is(match, "try-error")){stop("Error at match.\n")}
         all_idents <- c(this_opt, match)
         gmat[[this_opt]] <- .fix..call(rowSums(gmat[,..all_idents]))
         done <- c(done, unique(opts[all_idents]))
@@ -3355,7 +3355,7 @@ is.snpRdata <- function(x){
 
 
 .do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
-  proximity <- s1_position <- s2_position <- NULL
+  proximity <- s1_position <- s2_position <- S <- NULL
   
   melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet, skip_bind = FALSE){
     # CLD <- as.data.table(CLD)
