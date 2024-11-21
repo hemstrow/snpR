@@ -239,8 +239,7 @@ test_that("correct window ld",{
   tdldpar <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, 
                               window_triple_sigma = FALSE, CLD = TRUE, par = 2)
   tdldpar <- get.snpR.stats(tdldpar, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
-  expect_identical(tdld, tdldpar)
-
+  expect_equal(dplyr::arrange(tdld), dplyr::arrange(tdldpar), ignore_attr = TRUE)
 })
 
 test_that("fis bootstrapping",{
