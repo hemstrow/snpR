@@ -2978,7 +2978,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     # add to snpRdata object and return
     if(is.numeric(window_sigma)){
-      
       cl <- out[[2]]
       out <- out[[1]]
       
@@ -3295,18 +3294,51 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       tsnps <- tcomps$snps[[unlist(cl[i,3])]][[unlist(cl[i,4])]][[as.character(unlist(cl[i,5]))]]
       
       if(length(tsnps) > 0){
-        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,], 
+        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,".snp.id",drop=FALSE], 
                             sample.facet = unlist(cl[i,1]), sample.subfacet = unlist(cl[i,2]))$prox
         
+        cld[[i]]$win <- i
+        cld[[i]]$n_snps <- length(tsnps)
       }
     }
     
     cld <- data.table::rbindlist(cld)
+    
+    # faster to bind metadata after, done here.
+    bp1 <- as.data.table(snp.meta(x))[match(cld$s1_.snp.id, .snp.id),]
+    bp2 <- as.data.table(snp.meta(x))[match(cld$s2_.snp.id, .snp.id),]
+    colnames(bp1) <- paste0("s1_", colnames(bp1))
+    colnames(bp2) <- paste0("s2_", colnames(bp2))
+    cld$s1_.snp.id <- cld$s2_.snp.id <- NULL
+    cld <- cbind(bp1, cld, bp2)
+    cld[,proximity := abs(s1_position - s2_position)]
+
+    
+    # finish
     if(.prox_only){return(cld)}
-    out <- .window_LD_averages(cld, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+    cld[,centers := cl$center[win]]
+    if(window_gaussian){
+      cld[,weight := gaussian_weight(s1_position, centers, window_sigma) +
+            gaussian_weight(s2_position, centers, window_sigma)]
+    }
+    else{
+      cld[,weight := 1]
+    }
+    out <- cld[,.(CLD = weighted.mean(CLD,weight)), by = win]
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
+    out <- cbind(.fix..call(cl[out$win,..cn]),
+                 sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,
+                 step = window_step/1000,
+                 nk.status = FALSE,
+                 gaussian = window_gaussian,
+                 cld[match(out$win, win), "n_snps"],
+                 triple_sigma = window_triple_sigma,
+                 out)
+    data.table::setnames(out, "center", "position")
   }
   
   else{
+    cl$win <- 1:nrow(cl)
     cls <- split(cl, sort(rep(1:par, length.out = nrow(cl))))
     
     
@@ -3323,8 +3355,10 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         tsnps <- tcomps$snps[[unlist(cls[[q]][i,3])]][[unlist(cls[[q]][i,4])]][[as.character(unlist(cls[[q]][i,5]))]]
         
         if(length(tsnps) > 0 & length(samps) > 0){
-          cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,],
+          cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,".snp.id",drop=FALSE],
                               sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+          cld[[i]]$win <- cls[[q]]$win[i]
+          cld[[i]]$n_snps <- length(tsnps)
         }
         
         
@@ -3332,13 +3366,44 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       cld <- data.table::rbindlist(cld)
       cld
     }
-    
+
     #release cores
     parallel::stopCluster(clust)
-
-    out <- data.table::rbindlist(out)
-    if(.prox_only){return(out)}
-    out <- .window_LD_averages(out, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+    
+    cld <- data.table::rbindlist(out)
+    
+    
+    # faster to bind metadata after, done here.
+    bp1 <- as.data.table(snp.meta(x))[match(cld$s1_.snp.id, .snp.id),]
+    bp2 <- as.data.table(snp.meta(x))[match(cld$s2_.snp.id, .snp.id),]
+    colnames(bp1) <- paste0("s1_", colnames(bp1))
+    colnames(bp2) <- paste0("s2_", colnames(bp2))
+    cld$s1_.snp.id <- cld$s2_.snp.id <- NULL
+    cld <- cbind(bp1, cld, bp2)
+    cld[,proximity := abs(s1_position - s2_position)]
+    
+    
+    # finish
+    if(.prox_only){return(cld)}
+    cld[,centers := cl$center[win]]
+    if(window_gaussian){
+      cld[,weight := gaussian_weight(s1_position, centers, window_sigma) +
+            gaussian_weight(s2_position, centers, window_sigma)]
+    }
+    else{
+      cld[,weight := 1]
+    }
+    out <- cld[,.(CLD = weighted.mean(CLD,weight)), by = win]
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
+    out <- cbind(.fix..call(cl[out$win,..cn]),
+                 sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,
+                 step = window_step/1000,
+                 nk.status = FALSE,
+                 gaussian = window_gaussian,
+                 cld[match(out$win, win), "n_snps"],
+                 triple_sigma = window_triple_sigma,
+                 out)
+    data.table::setnames(out, "center", "position")
   }
   
   return(out)

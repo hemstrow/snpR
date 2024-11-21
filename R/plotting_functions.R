@@ -1894,7 +1894,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
 
   #============produce the plot========
   pvar <- colvar <- NULL
-  
+
   if(is.null(color_var)){
     p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
       ggplot2::geom_point(show.legend = FALSE) +

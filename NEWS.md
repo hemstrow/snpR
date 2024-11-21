@@ -5,12 +5,13 @@
 * Major memory usage improvements for `snpRdata` objects by shifting internal genotype/allele count tables to `sparseMatrix` objects from the `Matrix` package. The slot these were stored in was typically one of the larger slots (occasionally bigger than the original genotypes if many facets were tabulated) and should now be reduced substantially in size. Dependencies shifted to reflect this. Should be fully backwards compatible with old objects. More work can be done here to ensure downstream functions don't need to coerce away from a `sparseMatrix` unless necessary.
 * Added `calc_origin_of_expansion()` to estimate the origin of a range expansion based on directionality indices according to [Peter and Slatkin (2013)](https://doi.org/10.1111/evo.12202).
 * Added variance estimates per locus and per subfacet to `calc_seg_sites()`, returned with `get.snpR.stats()`.
+* Added basic forward simulation support with `simulate_populations()` and support functions. This function is still in-development and may have bugs.
 
 ### Minor:
 * Adjusted the behavior of `filter_snps()` `mgc` and `mac` options to not remove non-polymorphic loci if `non_poly` is `FALSE`. The `maf` filter option will still remove these loci, although that could be changed in the future given requests to do so.
 * Added 'sn_remove_empty' option to `format_snps()`, which if `FALSE` retains completely missing loci during formatting.
 * '.gen' is now also recognized as a genepop file extension for import.
-* Added the 'fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
+* Added the `fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
 * Flipped the axes for the $\frac{H_{e}}{H_{o}}$ plots from `plot_diagnostic()`. While the previous arrangement ($H_{o}$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_{o}$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
 * Adjusted the error message returned when `read_genepop` is handed files without a `.genepop` or `.gen` extension to reference that either of those formats are OK.
 * The `dapc` option to `plot_clusters()` when only one discriminant was retained now plots a width-jittered categorical scatter plot by cluster.
@@ -18,6 +19,7 @@
 * Changed the default behavior of `calc_smoothed_averages()` and `calc_tajimas_d()` to not triple sigma values.
 * Added options to plot a median line, color by another variable, and plot vertical chromosome separator lines to `plot_manhattan()`.
 * Added confidence intervals to the values returned/calculated by `calc_fis()` if doing bootstraps. Like the p-values, these are derived using a t-test on the distribution of bootstrapped $F_{IS}$ values.
+* Minor speed-ups to `calc_pairwise_ld()` with CLD windows.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
@@ -31,10 +33,13 @@
 * Fixed a bug where partial column name pop matches could cause problems when using `calc_sfs()` or `make_sfs()`.
 * Fixed a bug where providing a `highlight` numeric vector to `plot_manhattan()` would error if there was missing data in `plot_var`.
 * Fixed a bug where the running a dapc with `plot_clusters()` would fail with facets other than "pop".
+* Fixed a bug in `calc_pairwise_ld()` where window'd CLD wouldn't properly compare the correct SNPs if .snp.ids were not the same as row numbers. 
+* Fixed a bug in `get.snpR.stats()` where returning an allele frequency matrix alongside other statistics would fail.
 
 ## Known Issues:
 * Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
-* `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
+* `calc_pairwise_ld()` with windows and methods other than CLD will return the number of pairwise comparisons instead of the number of unique SNPs. This is a pain to fix and minor, so left for now.
+* `tabulate_allele_frequency_matrix()` needs tests.
 
 # snpR 1.2.9.1 hotfix 1
 

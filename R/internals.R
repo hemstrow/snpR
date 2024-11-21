@@ -3357,23 +3357,44 @@ is.snpRdata <- function(x){
 .do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
   proximity <- s1_position <- s2_position <- NULL
   
-  melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
+  melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet, skip_bind = FALSE){
+    # CLD <- as.data.table(CLD)
+    # CLD[,.snp.id := snp.meta$.snp.id]
+    # prox <- melt.data.table(CLD, id.vars = ".snp.id")
+    # colnames(prox) <- c(".snp.id1", ".snp.id2", "CLD")
+    # 
+    # if(!skip_bind){
+    #   prox <- cbind(as.data.table(snp.meta[match(prox$.snp.id2, snp.meta$.snp.id),]), prox, as.data.table(snp.meta[match(prox$.snp.id1, snp.meta$.snp.id),]))
+    #   prox$.snp.id1 <- prox$.snp.id2 <- NULL
+    #   colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
+    #   prox[,proximity := abs(s1_position - s2_position)]
+    #   prox[,sample.facet := sample.facet]
+    #   prox[,sample.subfacet := sample.subfacet]
+    #   setcolorder(prox, c(1:ncol(snp.meta),
+    #                       (ncol(snp.meta) + 2):(ncol(prox) - 3),
+    #                       ncol(prox) - 2,
+    #                       ncol(snp.meta) + 1,
+    #                       (ncol(prox) - 1):ncol(prox)))
+    # }
+    
     prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
     prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
     prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
     bad.col <- which(colnames(prox) == "variable")
     prox <- prox[,-bad.col, with = FALSE]
     colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-    prox <- prox[-which(is.na(prox$CLD)),]
+    # prox <- prox[-which(is.na(prox$CLD)),]
     prox <- as.data.table(prox)
-    prox[,proximity := abs(s1_position - s2_position)]
-    prox[,sample.facet := sample.facet]
-    prox[,sample.subfacet := sample.subfacet]
-    setcolorder(prox, c(1:ncol(snp.meta),
-                        (ncol(snp.meta) + 2):(ncol(prox) - 3),
-                        ncol(prox) - 2,
-                        ncol(snp.meta) + 1,
-                        (ncol(prox) - 1):ncol(prox)))
+    if(!skip_bind){
+      prox[,proximity := abs(s1_position - s2_position)]
+      prox[,sample.facet := sample.facet]
+      prox[,sample.subfacet := sample.subfacet]
+      setcolorder(prox, c(1:ncol(snp.meta),
+                          (ncol(snp.meta) + 2):(ncol(prox) - 3),
+                          ncol(prox) - 2,
+                          ncol(snp.meta) + 1,
+                          (ncol(prox) - 1):ncol(prox)))
+    }
     return(prox)
   }
   
@@ -3391,11 +3412,13 @@ is.snpRdata <- function(x){
   
   # add metadata and melt
   prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
-  prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
+  prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet, skip_bind = TRUE)
   colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
   
   # merge
-  prox <- merge.data.table(prox, prox_S)
+  prox[,S := prox_S$S] # should always be in the same order since the same stuff is getting melted and cbound.
+  # prox <- merge.data.table(prox, prox_S) shouldn't need the expensive merge--same order always.
+  prox <- prox[-which(is.na(CLD)),]
   
   # add column/row names
   colnames(CLD) <- snp.meta$position
@@ -3672,6 +3695,9 @@ is.snpRdata <- function(x){
   options(scipen = 999)
   for(i in 1:length(tasks)){
     comps[[i]] <- .average_windows(snp.meta(x), window_sigma, window_step, chr = tasks[i], triple_sig = FALSE, stats = NULL, gaussian = FALSE, nk = FALSE)
+    # convert .snp.ids to rows
+    comps[[i]] <- rapply(comps[[i]], function(z) match(z, snp.meta(x)$.snp.id), how = "list")
+    
     ncomps <- vector("list", nrow(x))
     # back-process into which comparisons to do for each snp
     ucomps <- unlist(comps[[i]], recursive = F)

@@ -225,9 +225,22 @@ test_that("correct window ld",{
   expect_true(any(tdld$facet == "pop" & tdld$snp.facet == "chr"))
   expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD") %in% colnames(tdld)))
   
+  # correct facet-level comps
+  prox <- calc_pairwise_ld(stickSNPs, c("pop.chr","chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, .prox_only = TRUE)
+  expect_true(all(prox$s1_chr == prox$s2_chr))
+  prox <- calc_pairwise_ld(stickSNPs, c("pop.chr","chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, .prox_only = TRUE, CLD = FALSE)
+  expect_true(all(prox$s1_chr == prox$s2_chr))
+  
   tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, CLD = TRUE)
   tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
   expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD", "rsq", "Dprime", "pval") %in% colnames(tdld)))
+  
+  # par the same as serial
+  tdldpar <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, 
+                              window_triple_sigma = FALSE, CLD = TRUE, par = 2)
+  tdldpar <- get.snpR.stats(tdldpar, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  expect_identical(tdld, tdldpar)
+
 })
 
 test_that("fis bootstrapping",{
