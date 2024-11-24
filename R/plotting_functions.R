@@ -3718,7 +3718,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     fmt <- sapply(pops, function(x) sum(sample_meta[,ofacet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)
-    fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
+    fm <- ceiling(c(0, fmc[-length(fmc)]) + fmt/2)
     breaks <- levels(pdat$ID)[fm]
 
     seps <- c(0, fmc) + 0.5
