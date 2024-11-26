@@ -1122,7 +1122,7 @@ vcf2pl <- function(file, outfile, init_admix = FALSE, k = NULL){
   
 
   if(init_admix){
-    # code adapted from https://bitbucket.org/buerklelab/mixedploidy-entropy/src/master/auxfiles/inputdataformat.R
+    # code adapted from https://bitbucket.org/buerklelab/mixedploidy-entropy/src/master/auxfiles/inputdataformat.R with permission from authors
     get_mean_gl <- function(x){
       a <- sum(10^(-0.1*x))
       return(sum((10^(-0.1*x))*(0:2))/a)
@@ -1167,14 +1167,17 @@ vcf2pl <- function(file, outfile, init_admix = FALSE, k = NULL){
     ofk <- tools::file_path_sans_ext(outfile)
     ofk <- paste0(ofk, "_qk")
     for(i in k){
-      init.admix <- matrix(0, nrow=nind, ncol=i)
+      init.admix <- matrix(0, nrow=ncol(meangls), ncol=i)
       init.admix[miss.inds,] <- rep(1/i, i)
       
       kn <- stats::kmeans(pcout$x[,1:5], i, iter.max = 10, nstart = 10, algorithm = "Hartigan-Wong")
       ldakn <- MASS::lda(x = pcout$x[,1:5], grouping = kn$cluster, CV = TRUE)
       init.admix <- ldakn$posterior
-      data.table::fwrite(data.table::as.data.table(round(init.admix, 5)), file = paste0(ofk, k[i], ".q"), row.names = FALSE, col.names = FALSE, sep = " ")
+      data.table::fwrite(data.table::as.data.table(round(init.admix, 5)), file = paste0(ofk, i, ".q"), row.names = FALSE, col.names = FALSE, sep = " ")
     }
+    
+    .yell_citation("Shastry2021", "admixture starting proportions", "admixture starting proportions using code adapted from Entropy, with permission from authors.")
+    
   }
   
   write(paste0(ncol(x@gt) - 1, " ", nrow(x)), outfile)
