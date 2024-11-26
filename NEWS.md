@@ -19,9 +19,11 @@
 * Added options to plot a median line, color by another variable, and plot vertical chromosome separator lines to `plot_manhattan()`.
 * Added confidence intervals to the values returned/calculated by `calc_fis()` if doing bootstraps. Like the p-values, these are derived using a t-test on the distribution of bootstrapped $F_{IS}$ values.
 * Minor speed-ups to `calc_pairwise_ld()` with CLD windows.
+* Added `vcf2beagle()` and `vcf2PL()` utility functions to convert vcf files to a few common non-GT-tag file formats.
 
 ## Documentation:
 * Added a note to the readme that `calc_tajimas_d()` also generates thetas.
+* Improved the README a bit.
 
 ## Bug Fixes:
 * Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were nonpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
