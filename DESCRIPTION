@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-Genome Analysis Tools for Use with Single Nucleotide Polymorphism Data
-Version: 1.2.10.9000
+Version: 1.2.11
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
