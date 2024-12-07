@@ -3666,6 +3666,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   #===========final fixes to plot data=========
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
   pdat <- pdat[which(pdat$K %in% k),] # double check that we didn't import extra K values, which is possible with externally run data.
+  if(nrow(pdat) == 0){
+    stop("No data for the requested k provided. Did you request the correct k?\n")
+  }
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)

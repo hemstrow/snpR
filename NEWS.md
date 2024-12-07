@@ -37,6 +37,7 @@
 * Fixed a bug in `calc_pairwise_ld()` where window'd CLD wouldn't properly compare the correct SNPs if .snp.ids were not the same as row numbers. 
 * Fixed a bug in `get.snpR.stats()` where returning an allele frequency matrix alongside other statistics would fail.
 * Fixed a bug where `plot_structure()` would fail if the first facet level being plotted only had a single sample.
+* Added an informative error message if attempting to plot only k = 1 from provided q files with `plot_structure()`.
 
 ## Known Issues:
 * Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
