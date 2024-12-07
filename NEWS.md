@@ -44,6 +44,16 @@
 * `calc_pairwise_ld()` with windows and methods other than CLD will return the number of pairwise comparisons instead of the number of unique SNPs. This is a pain to fix and minor, so left for now.
 * `tabulate_allele_frequency_matrix()` needs tests.
 
+# snpR 1.2.9.2 hotfix 3
+* Fixed bugs in `plot_pairwise_fst_heatmap()` when runing multiple facets without facet orders or when significance had been calcualted for some but not all facets.
+* Fixed a bug where `plot_pairwise_fst_heatmap()` where plotting was not always strictly on the upper diagonal.
+* Fixed NAs `mean_fst`'s when some SNPs returned NA.
+
+
+# snpR 1.2.9.2 hotfix 2
+* Added an informative error message when attempting to run `calc_ne()` with a space in the `NeEstimator_path` variable.
+
+
 # snpR 1.2.9.1 hotfix 1
 
 ## Bug Fixes:
