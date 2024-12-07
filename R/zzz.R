@@ -10,4 +10,5 @@
     packageStartupMessage("Check out the NEWS page on github for update notes (https://github.com/hemstrow/snpR/blob/master/NEWS.md)\n", .console_hline(), "\n")
     
   }
+  packageStartupMessage("If you use snpR in your work, please cite both it AND the methods it uses! You can always run the citations() function on a snpRdata object to see references for the methods used!\n")
 }

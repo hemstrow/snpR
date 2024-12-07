@@ -1,15 +1,15 @@
 tdat <- stickRAW[1:4, 1:6]
 tdat <- import.snpR.data(tdat[,-c(1:2)], tdat[,1:2], data.frame(pop = rep("ASP", 4)))
 
-correct_geno_tables <- list(gs = as.matrix(data.frame(AA = as.integer(c(0, 0, 1, 0)),
-                                                      CT =  as.integer(c(0, 1, 0, 0)),
-                                                      GG =  as.integer(c(4, 0, 1, 3)),
-                                                      TT =  as.integer(c(0, 3, 0, 0)))),
-                            as = as.matrix(data.frame(A = as.integer(c(0, 0, 2, 0)),
-                                                      C =  as.integer(c(0, 1, 0, 0)),
-                                                      T =  as.integer(c(0, 7, 0, 0)),
-                                                      G =  as.integer(c(8, 0, 2, 6)))),
-                            wm = as.matrix(data.frame(NN =  as.integer(c(0, 0, 2, 1))))
+correct_geno_tables <- list(gs = Matrix::Matrix(as.matrix(data.frame(AA = as.integer(c(0, 0, 1, 0)),
+                                                                     CT =  as.integer(c(0, 1, 0, 0)),
+                                                                     GG =  as.integer(c(4, 0, 1, 3)),
+                                                                     TT =  as.integer(c(0, 3, 0, 0))))),
+                            as = Matrix::Matrix(as.matrix(data.frame(A = as.integer(c(0, 0, 2, 0)),
+                                                                     C =  as.integer(c(0, 1, 0, 0)),
+                                                                     T =  as.integer(c(0, 7, 0, 0)),
+                                                                     G =  as.integer(c(8, 0, 2, 6))))),
+                            wm = Matrix::Matrix(as.matrix(data.frame(NN =  as.integer(c(0, 0, 2, 1)))), sparse = TRUE)
 )
 
 test_that("Overall snpRdata object", {
@@ -21,16 +21,48 @@ test_that("Geno table creation", {
   # vals and classes
   expect_equal(tdat@geno.tables, correct_geno_tables)
   expect_is(tdat@geno.tables, "list")
-  expect_is(tdat@geno.tables$gs, "matrix")
-  expect_is(tdat@geno.tables$as, "matrix")
-  expect_is(tdat@geno.tables$wm, "matrix")
+  expect_is(tdat@geno.tables$gs, "sparseMatrix")
+  expect_is(tdat@geno.tables$as, "sparseMatrix")
+  expect_is(tdat@geno.tables$wm, "sparseMatrix")
   
   # missing data check
   expect_true(tdat@mDat %in% colnames(tdat@geno.tables$wm))
   expect_true(!tdat@mDat %in% colnames(tdat@geno.tables$gs))
   
   # relevant test for some other data types, to implement fully later
-  expect_true(all(rowSums(tdat@geno.tables$gs)*2 == rowSums(tdat@geno.tables$as)))
+  expect_true(all(Matrix::rowSums(tdat@geno.tables$gs)*2 == Matrix::rowSums(tdat@geno.tables$as)))
+  
+  # cases where genotypes are flipped
+  test <- genotypes(.internal.data$test_snps)
+  test <- as.matrix(test)
+  test_a1 <- substr(test, 1, 1)
+  test_a2 <- substr(test, 2, 2)
+  test[,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- 
+    paste0(test_a2[,sample.meta(.internal.data$test_snps)$pop == "ASP"], test_a1[,sample.meta(.internal.data$test_snps)$pop == "ASP"])
+  
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- .add.facets.snpR.data(testd, "pop")
+  test2d <- .add.facets.snpR.data(.internal.data$test_snps, "pop")
+  expect_identical(test2d@geno.tables, testd@geno.tables)
+  
+  # cases where alleles appear in different orders in specific facet levels
+  test[,c(1,5)] <- test[,c(5, 1)]
+  test[1,1] <- "GG"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- .add.facets.snpR.data(testd, "pop")
+  test2 <- genotypes(.internal.data$test_snps)
+  test2[1,5] <- "GG"
+  test2d <- import.snpR.data(test2, 
+                             snp.meta(.internal.data$test_snps),
+                             sample.meta(.internal.data$test_snps))
+  test2d <- .add.facets.snpR.data(test2d, "pop")
+  
+  
+  expect_identical(test2d@geno.tables, testd@geno.tables)
 })
 
 

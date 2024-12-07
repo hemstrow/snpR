@@ -3,34 +3,35 @@
 single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", 
                               "fis", "allelic_richness", "seg_sites"),
                      col_pattern = list("ho", 
-                                "pi",
-                                "he",
-                                c("maf", "major", "minor", "maj.count", "min.count"),
-                                c("pa", "^g$"),
-                                c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
-                                c("pHWE"),
-                                c("RF_importance", "RF_importance_pvals"),
-                                c("gp_effect"),
-                                c("fis", "var_comp_b", "var_comp_c", "nk"),
-                                c("richness", "^g$"),
-                                c("seg_sites", "^g$")))
+                                        "pi",
+                                        "he",
+                                        c("maf", "major", "minor", "maj.count", "min.count"),
+                                        c("pa", "^g$"),
+                                        c("chi_", "p_armitage_", "log_odds_ratio_", "se_", "associated_allele_", "gmmat_"),
+                                        c("pHWE"),
+                                        c("RF_importance", "RF_importance_pvals"),
+                                        c("gp_effect"),
+                                        c("fis", "var_comp_b", "var_comp_c", "nk"),
+                                        c("richness", "^g$"),
+                                        c("seg_sites", "^g$", "prob_seg_var", "prob_seg")))
 window.stats <- list(stat = "tajimas_d",
-                  col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
+                     col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
-                    col_pattern = list(c("fst","var_comp_a", "var_comp_b", "var_comp_c", "zfst", "fst_id", "nk"),
-                                       c("D_abba_baba", "abba", "baba", "nk")))
+                       col_pattern = list(c("fst","var_comp_a", "var_comp_b", "var_comp_c", "zfst", "fst_id", "nk"),
+                                          c("D_abba_baba", "abba", "baba", "nk")))
 sample.stats <- list(stat = c("het_hom_ratio", "hs"),
-                  col_pattern = list("Het/Hom",
-                                     "hs"))
+                     col_pattern = list("Het/Hom",
+                                        "hs"))
 pop.stats <- list(stat = "ne",
-               col_pattern = list(c("LDNe_", "Neb_", "He_", "Ne", "CI")))
-other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", "prop_poly"),
+                  col_pattern = list(c("LDNe_", "Neb_", "He_", "Ne", "CI")))
+other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", "prop_poly", "allele_frequency_matrix"),
                     types = list(c("LD", "single.window"),
                                  c("genetic_distances"),
                                  c("ibd"),
                                  c("geo_dist"),
-                                 c("weighted.means")),
-                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly"))
+                                 c("weighted.means"),
+                                 c("allele_frequency_matrix")),
+                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly", NA))
 
 
 #=============build lists for each stat====================

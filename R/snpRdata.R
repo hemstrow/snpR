@@ -1,5 +1,6 @@
 #'@import data.table 
 #'@importFrom foreach %dopar%
+#'@import Matrix
 NULL
 
 
@@ -237,7 +238,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
 #'  \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
 #'  (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
-#'  \item{.genepop: } genepop file format, with genotypes stored as either 4 or
+#'  \item{.genepop or .gen: } genepop file format, with genotypes stored as either 4 or
 #'  6 numeric characters. Works only with bi-allelic data. Genotypes will be
 #'  converted (internally) to NN: the first allele (numerically) will be coded
 #'  as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes
@@ -346,6 +347,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  for each individual. For structure input files only.
 #'@param marker_names logical, default FALSE. If TRUE, assumes that a
 #'  header row of marker is present. For structure input files only.
+#'@param fix_overlaps Logical, default TRUE. If TRUE, overlapping positions will
+#'  be checked and fixed during 'ms' file import.
 #'@param verbose Logical, default FALSE. If TRUE, will print a few status
 #'  updates and checks.
 #'@param .pass_filters Internal, probably not for user use. Used to pass 
@@ -401,7 +404,8 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, verbose = FALSE,
+                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, fix_overlaps = TRUE,
+                             verbose = FALSE,
                              .pass_filters = FALSE, .skip_filters = FALSE){
   position <- .snp.id <- .sample.id <- NULL
 
@@ -444,9 +448,13 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
         return(.process_vcf(genotypes, snp.meta, sample.meta))
       }
       else if(grepl("\\.ms$", genotypes)){
-        return(format_snps(genotypes, input_format = "ms", snp.meta = snp.meta, sample.meta = sample.meta, chr.length = chr.length))
+        if(!is.null(snp.meta)){
+          snp.meta <- NULL
+          warning("Any provided snp.meta will be discarded during ms import.\n")
+        }
+        return(.process_ms(genotypes, chr.length, sample.meta, fix_overlaps))
       }
-      else if(grepl("\\.genepop$", genotypes)){
+      else if(grepl("\\.genepop$", genotypes) | grepl("\\.gen$", genotypes)){
         return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
       }
       else if(grepl("\\.fstat$", genotypes)){
@@ -609,6 +617,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   x@calced_stats$.base <- character()
 
   starting_snps <- nrow(x)
+
   if(!.skip_filters){
     # run essential filters (np, bi-al), since otherwise many of the downstream applications, including ac formatting, will be screwy.
     if(verbose){cat("Input data will be filtered to remove non bi-allelic data.\n")}
@@ -922,7 +931,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       keep.cols <- colnames(y)[keep.cols]
       
       good.cols <- keep.cols[which(keep.cols %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison", "pop", "sigma", "step", "nk.status", "gaussian", "triple_sigma", "n_snps",
-                                                    colnames(x@facet.meta)[-which(colnames(x@facet.meta) == ".snp.id")], colnames(sample.meta(x))))]
+                                                    colnames(x@facet.meta), colnames(sample.meta(x))))]
       grep.cols <- numeric(0)
       for(i in 1:length(col_pattern)){
         grep.cols <- c(grep.cols, grep(col_pattern[i], colnames(y)))
@@ -948,7 +957,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       return(NULL)
     }
     
-    if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", "comparison"))){
+    if(all(colnames(y)[keep.cols] %in% c("facet", "subfacet", "snp.facet", "snp.subfacet", ".snp.id", "comparison"))){
       return(NULL)
     }
     return(as.data.frame(.fix..call(y[keep.rows, ..keep.cols]), stringsAsFactors = FALSE))

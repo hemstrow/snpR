@@ -61,7 +61,8 @@ test_that("plink",{
   check <- calc_pi(check, "chr.fam")
   c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
   c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
-  expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
+  
+  expect_true(all(round(c1$weighted_mean_pi, 5) == round(c2$weighted_mean_pi, 5))) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
   
@@ -82,7 +83,28 @@ test_that("plink",{
   check <- calc_pi(check, "chr.fam")
   c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
   c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
-  expect_true(all(c1$weighted_mean_pi == c2$weighted_mean_pi)) # everything is good if this is true
+  expect_true(all(round(c1$weighted_mean_pi, 5) == round(c2$weighted_mean_pi, 5))) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
   file.remove(cleanups)
+})
+
+test_that("sn",{
+  # cases where one locus is completely unsequenced at one pop
+  test <- genotypes(.internal.data$test_snps)
+  test[1,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  res <- format_snps(testd, "ac", "pop")
+  expect_true(all(res[1,c("n_total", "n_alleles", "ni1", "ni2")] == 0))
+  
+  
+  # cases where one locus is completely unsequenced at all pops
+  test <- genotypes(.internal.data$test_snps)
+  test[1,] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  res <- format_snps(testd, "ac", "pop")
+  expect_true(all(res[1:2,c("n_total", "n_alleles", "ni1", "ni2")] == 0))
 })

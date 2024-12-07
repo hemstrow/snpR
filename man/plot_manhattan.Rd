@@ -12,6 +12,10 @@ plot_manhattan(
   chr = "chr",
   bp = "position",
   snp = NULL,
+  color_var = NULL,
+  vlines = FALSE,
+  vline_width = 0.25,
+  median_line = FALSE,
   chr.subfacet = NULL,
   sample.subfacet = NULL,
   significant = NULL,
@@ -29,7 +33,7 @@ plot_manhattan(
   rug_style = "point",
   rug_label = NULL,
   rug_alpha = 0.3,
-  rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+  rug_thickness = ifelse(rug_style == "point", 0.03, 6),
   lambda_gc_correction = FALSE,
   chr_order = NULL,
   abbreviate_labels = FALSE,
@@ -64,6 +68,22 @@ bp of each SNP.}
 \item{snp}{character, default NULL. Column in either snp metadata or x (for
 snpRdata or data.frame objects, respectively) containing snpIDs to use for
 highlighting. Ignored if no highlighting is requested.}
+
+\item{color_var}{character, default NULL. If provided, a column by which
+to color each point. If used, chromosomes will not be colored, and the 
+\code{colors} argument instead provides a palette to use, with the viridis
+palette used by default.}
+
+\item{vlines}{character (color) or FALSE, default FALSE. If a color, vertical
+separator lines will be drawn between each chromosome. Widths controlled
+by \code{vline_width}.}
+
+\item{vline_width}{numeric, default 2. Width of chromosome separator lines.
+Ignored if \code{vlines} is FALSE.}
+
+\item{median_line}{character (color) or FALSE, default FALSE. If TRUE, a
+horizontal line will be plotted at the \code{plot_var} median in the color
+provided.}
 
 \item{chr.subfacet}{character, default NULL. Specific chromosomes to plot.
 See examples.}
@@ -142,12 +162,10 @@ technique is suggested.}
 applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
 or the \code{rug_style} is not \code{ribbon}.}
 
-\item{rug_thickness}{numeric or \code{grid}-style \code{unit}, default
-\code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
-height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
-\code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
-Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
-avoid over-plotting.}
+\item{rug_thickness}{numeric, default .03 for point style and 6 for ribbon
+style. The height of the rug lines (if \code{rug_style = "point"}) or
+ribbon (if \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not
+provided.}
 
 \item{lambda_gc_correction}{Correct for inflated significance due to
 population and/or family structure using the \eqn{\gamma_{GC}} approach

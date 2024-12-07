@@ -14,6 +14,7 @@ import.snpR.data(
   header_cols = 0,
   rows_per_individual = 2,
   marker_names = FALSE,
+  fix_overlaps = TRUE,
   verbose = FALSE,
   .pass_filters = FALSE,
   .skip_filters = FALSE
@@ -53,6 +54,9 @@ for each individual. For structure input files only.}
 
 \item{marker_names}{logical, default FALSE. If TRUE, assumes that a
 header row of marker is present. For structure input files only.}
+
+\item{fix_overlaps}{Logical, default TRUE. If TRUE, overlapping positions will
+be checked and fixed during 'ms' file import.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status
 updates and checks.}
@@ -98,7 +102,7 @@ file extension (as appropriate).
  two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
  \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
  (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
- \item{.genepop: } genepop file format, with genotypes stored as either 4 or
+ \item{.genepop or .gen: } genepop file format, with genotypes stored as either 4 or
  6 numeric characters. Works only with bi-allelic data. Genotypes will be
  converted (internally) to NN: the first allele (numerically) will be coded
  as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes

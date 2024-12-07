@@ -179,8 +179,8 @@ NULL
 #'@describeIn calc_single_stats \eqn{\pi} (nucleotide diversity/average number of pairwise differences)
 calc_pi <- function(x, facets = NULL){
   func <- function(x){
-    bins <- choose(x$as, 2)
-    tot <- choose(rowSums(x$as), 2)
+    bins <- choose(as.matrix(x$as), 2)
+    tot <- choose(Matrix::rowSums(x$as), 2)
     return(1 - (rowSums(bins))/tot)
   }
   if(!is.snpRdata(x)){
@@ -288,7 +288,7 @@ calc_maf <- function(x, facets = NULL){
 #'  whole chromosome).
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
-#'@param triple_sigma logical, default TRUE. If TRUE, sigma will be tripled to
+#'@param triple_sigma logical, default FALSE If TRUE, sigma will be tripled to
 #'  create windows of 6*sigma total.
 #'@param global logical, default FALSE. If TRUE, all window parameters will
 #'  be ignored and the global Tajima's D across all sites will instead be 
@@ -323,7 +323,7 @@ calc_maf <- function(x, facets = NULL){
 #'@references Tajima, F. (1989). \emph{Genetics}
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
-                           triple_sigma = TRUE, global = FALSE,
+                           triple_sigma = FALSE, global = FALSE,
                            verbose = FALSE){
 
   #=================subfunction=========
@@ -544,8 +544,8 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 #'statistic, at least a single sample level facet must be provided.
 #'
-#'Method Options: \itemize{ \item{"wc": }{Weir and Cockerham 1984.}
-#'item{"Genepop": }{As used in genepop, Rousset
+#'Method Options: \itemize{ \item {"wc": }{Weir and Cockerham 1984.}
+#'\item{"Genepop": }{As used in genepop, Rousset
 #'2008.}}
 #'
 #'@param x snpRdata. Input SNP data.
@@ -822,7 +822,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       n_tots <- data.table::data.table(pop = x@facet.meta$subfacet[x@facet.meta$facet == facets],
                                        .snp.id = x@facet.meta$.snp.id[x@facet.meta$facet == facets])
       
-      n_tots$nk <- rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
+      n_tots$nk <- Matrix::rowSums(x@geno.tables$as[which(x@facet.meta$facet == facets),])
       n_tots <- data.table::dcast(n_tots, .snp.id ~ pop, value.var = "nk")
       n_tots <- n_tots[,-1]
       
@@ -1079,14 +1079,14 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     else{
       if(bi_allelic){
         if(is.null(rac)){
-          rac <- cbind(x@facet.meta, x@geno.tables$as, ho = x@stats$ho)
+          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), ho = x@stats$ho)
         }
         real_out <- func(rac[which(rac$facet == facet),], method, ofacet, ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), meta_colnames = colnames(snp.meta(x)))
         real_wm <- one_wm(real_out, other_facets)
       }
       else{
         if(is.null(rac)){
-          rac <- cbind(x@facet.meta, x@geno.tables$as, x@geno.tables$gs)
+          rac <- cbind(x@facet.meta, as.matrix(x@geno.tables$as), as.matrix(x@geno.tables$gs))
         }
         real_out <- func(rac[which(rac$facet == facet),], method, facet, 
                          ac_cols = which(colnames(rac) %in% colnames(x@geno.tables$as)), 
@@ -1305,7 +1305,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #' Note that FIS is calculated by considering \emph{only data from individual
 #' sample levels}! This means that individual and sub-population variances are
 #' only considered within each sub-population. If snp facets are provided,
-#' weighted means will be provided for each snp facet level, although raw FIS
+#' weighted means will be provided for each snp facet level, although raw 
 #' values are calculated on a per-snp basis and thus ignore these levels.
 #'
 #' If the base facet (facets = NULL or facets = ".base") is requested, FIS will
@@ -1315,7 +1315,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #' Bootstrapping across loci can be done to assess FIS significance. This is 
 #' done by re-drawing loci randomly with replacement for each facet level,
 #' calculating the resulting FIS values, and doing one sample \emph{t}-test
-#' with the null hypothesis that FIS = 0 to calculate p-values.
+#' with the null hypothesis that FIS = 0 to calculate p-values and confidence
+#' intervals.
 #'
 #' @param x snpRdata. Input SNP data.
 #' @param facets character. Categorical metadata variables by which to break up
@@ -1332,6 +1333,10 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #'   \emph{t}-test, with the alternative hypothesis that FIS is greater than 0.
 #'   \item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
 #'   that FIS is less than 0.}
+#' @param boot_confidence numeric, default 0.95. The confidence level to use
+#'   for generating confidence levels for bootstraps. Note that a value of
+#'   0.95 will result in a call of \code{\link[stats]{qt}} with \code{q = .975}
+#'   and and so on.
 #' @param keep_components logical, default \code{FALSE}. If TRUE, the variance
 #'   components "b" and "c" will be held and accessible from the \code{$single}
 #'   element (named "var_comp_b" and "var_comp_c", respectively) using the usual
@@ -1357,6 +1362,7 @@ calc_fis <- function(x, facets = NULL,
                      boot = FALSE, 
                      boot_par = FALSE,
                      boot_alt = "two-sided",
+                     boot_confidence = .95,
                      keep_components = FALSE){
   
   ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
@@ -1478,7 +1484,7 @@ calc_fis <- function(x, facets = NULL,
   
   # run for the real data
   mcols <- c("facet", "subfacet", "facet.type", colnames(x@snp.meta), "ho")
-  real <- one_run(x, cbind(data.table::as.data.table(x@geno.tables$as), .fix..call(x@stats[,..mcols])), ofacets)
+  real <- one_run(x, cbind(data.table::as.data.table(as.matrix(x@geno.tables$as)), .fix..call(x@stats[,..mcols])), ofacets)
   colnames(real[[2]])[which(colnames(real[[2]]) == "V1")] <- "weighted_mean_fis"
   
   # do bootstraps if requested
@@ -1567,9 +1573,15 @@ calc_fis <- function(x, facets = NULL,
     # get p-values using a one-sample t-test for each boot
     # boot_var <- rowSums((all_boots - rowMeans(all_boots))^2)/(boot - 1) # note, this is the typical formula estimating variance from a sample, like we are doing here.
     boot_vars <- matrixStats::rowVars(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)
-    boot_se <- sqrt(boot_vars)/sqrt(boot)
+    boot_n <- rowSums(!is.na(.fix..call(real[[2]][,..boot_cols])))
+    boot_se <- sqrt(boot_vars)/sqrt(boot_n)
     boot_t <- rowMeans(.fix..call(real[[2]][,..boot_cols]), na.rm = TRUE)/boot_se
-    df <- rowSums(!is.na(.fix..call(real[[2]][,..boot_cols]))) - 1
+    df <-  boot_n - 1
+    boot_confidence <- 1 - (1 - boot_confidence)/2 # convert from confidence level to the q for two-sided tcrit
+    boot_CI <- stats::qt(.975,df)*(matrixStats::rowSds(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE)/sqrt(boot))
+    boot_uCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) + boot_CI
+    boot_lCI <- rowMeans(as.matrix(.fix..call(real[[2]][,..boot_cols])), na.rm = TRUE) - boot_CI
+    
     
     pfis <- if(boot_alt == "two-sided"){
       2 * pt(abs(boot_t), df = df, lower.tail = FALSE) # same as running t.test on all rows
@@ -1596,9 +1608,13 @@ calc_fis <- function(x, facets = NULL,
     # update and fill NAs
     real[[2]] <- .fix..call(real[[2]][,-..boot_cols])
     real[[2]]$weighted_mean_fis_p <- pfis
+    real[[2]]$weighted_mean_fis_uCI <- boot_uCI
+    real[[2]]$weighted_mean_fis_lCI <- boot_lCI
     nas <- is.na(real[[2]]$weighted_mean_fis) 
     if(any(nas)){
-      real[[2]]$weighted_mean_fis_p[which(nas)] <- real[[2]]$weighted_mean_fis[which(nas)]
+      real[[2]]$weighted_mean_fis_p[which(nas)] <- NA
+      real[[2]]$weighted_mean_fis_uCI[which(nas)] <- NA
+      real[[2]]$weighted_mean_fis_lCI[which(nas)] <- NA
     }
   }
   
@@ -1916,6 +1932,21 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(window_triple_sigma){
       window_sigma <- window_sigma*3
+    }
+    
+    if(window_sigma + window_sigma*3*as.numeric(window_triple_sigma) <= 1000){
+      warning("Current window size is less than a thousand bp--this is very small and may produce unexpected results. Remember that sigma is supplied in kilobases!")
+    }
+    else if(window_sigma + window_sigma*3*as.numeric(window_triple_sigma) < 2){
+      stop("Current window size is less than two bp. Remember that sigma is supplied in kilobases!")
+    }
+    
+    
+    if(window_step <= 1000){
+      warning("Current window step is less than a thousand bp--this is very small and may produce unexpected results. Remember that step size is supplied in kilobases!")
+    }
+    else if(window_step < 2){
+      stop("Current window size is less than two bp. Remember that sigma is supplied in kilobases!")
     }
   }
   
@@ -2437,7 +2468,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       B1f <- A1B1f + A2B1f
       B2f <- 1 - B1f
       D <- A1B1f - A1f*B1f
-      D2 <- A2B1f - A2f*B1f
+      # D2 <- A2B1f - A2f*B1f
       # note that many sources give an inaccurate Dprime calculation--this should be correct.
       Dprime <- ifelse(D > 0, D/matrixStats::rowMins(cbind(A1f*B2f, A2f*B1f)),
                        ifelse(D < 0, D/matrixStats::rowMaxs(cbind(-A1f*B1f, -A2f*B2f)),
@@ -2947,7 +2978,6 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
 
     # add to snpRdata object and return
     if(is.numeric(window_sigma)){
-      
       cl <- out[[2]]
       out <- out[[1]]
       
@@ -3243,6 +3273,8 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                       window_triple_sigma = TRUE, 
                       verbose = FALSE,
                       .prox_only = FALSE){
+  
+  .snp.id <- proximity <- s1_position <- s2_position <- centers <- win <- weight <- . <- CLD <- ..cn <- NULL
 
   # get the comparisons
   facets <- .check.snpR.facet.request(x, facets, "none", TRUE)
@@ -3264,24 +3296,57 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       tsnps <- tcomps$snps[[unlist(cl[i,3])]][[unlist(cl[i,4])]][[as.character(unlist(cl[i,5]))]]
       
       if(length(tsnps) > 0){
-        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,], 
+        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,".snp.id",drop=FALSE], 
                             sample.facet = unlist(cl[i,1]), sample.subfacet = unlist(cl[i,2]))$prox
         
+        cld[[i]]$win <- i
+        cld[[i]]$n_snps <- length(tsnps)
       }
     }
     
     cld <- data.table::rbindlist(cld)
+    
+    # faster to bind metadata after, done here.
+    bp1 <- as.data.table(snp.meta(x))[match(cld$s1_.snp.id, .snp.id),]
+    bp2 <- as.data.table(snp.meta(x))[match(cld$s2_.snp.id, .snp.id),]
+    colnames(bp1) <- paste0("s1_", colnames(bp1))
+    colnames(bp2) <- paste0("s2_", colnames(bp2))
+    cld$s1_.snp.id <- cld$s2_.snp.id <- NULL
+    cld <- cbind(bp1, cld, bp2)
+    cld[,proximity := abs(s1_position - s2_position)]
+
+    
+    # finish
     if(.prox_only){return(cld)}
-    out <- .window_LD_averages(cld, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+    cld[,centers := cl$center[win]]
+    if(window_gaussian){
+      cld[,weight := gaussian_weight(s1_position, centers, window_sigma) +
+            gaussian_weight(s2_position, centers, window_sigma)]
+    }
+    else{
+      cld[,weight := 1]
+    }
+    out <- cld[,.(CLD = stats::weighted.mean(CLD,weight)), by = win]
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
+    out <- cbind(.fix..call(cl[out$win,..cn]),
+                 sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,
+                 step = window_step/1000,
+                 nk.status = FALSE,
+                 gaussian = window_gaussian,
+                 cld[match(out$win, win), "n_snps"],
+                 triple_sigma = window_triple_sigma,
+                 out)
+    data.table::setnames(out, "center", "position")
   }
   
   else{
+    cl$win <- 1:nrow(cl)
     cls <- split(cl, sort(rep(1:par, length.out = nrow(cl))))
     
     
     #now need to start the parallel job:
-    cl <- parallel::makePSOCKcluster(par)
-    doParallel::registerDoParallel(cl)
+    clust <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(clust)
     
     out <- foreach::foreach(q = 1:par, .export = c(".do_CLD"), .packages = c("data.table", "snpR"), .errorhandling = "pass") %dopar% {
       options(scipen = 999) # since it will mess up the names otherwise
@@ -3291,19 +3356,56 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
         samps <- tcomps$samps
         tsnps <- tcomps$snps[[unlist(cls[[q]][i,3])]][[unlist(cls[[q]][i,4])]][[as.character(unlist(cls[[q]][i,5]))]]
         
-        cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,],
-                            sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+        if(length(tsnps) > 0 & length(samps) > 0){
+          cld[[i]] <- .do_CLD(sn[tsnps, samps], snp.meta(x)[tsnps,".snp.id",drop=FALSE],
+                              sample.facet = unlist(cls[[q]][i,1]), sample.subfacet = unlist(cls[[q]][i,2]))$prox
+          cld[[i]]$win <- cls[[q]]$win[i]
+          cld[[i]]$n_snps <- length(tsnps)
+        }
+        
+        
       }
       cld <- data.table::rbindlist(cld)
       cld
     }
-    
+
     #release cores
-    parallel::stopCluster(cl)
+    parallel::stopCluster(clust)
     
-    out <- data.table::rbindlist(out)
-    if(.prox_only){return(out)}
-    out <- .window_LD_averages(out, facets, window_gaussian = window_gaussian, window_triple_sigma = window_triple_sigma, window_step = window_step, window_sigma = window_sigma, x = x)
+    cld <- data.table::rbindlist(out)
+    
+    
+    # faster to bind metadata after, done here.
+    bp1 <- as.data.table(snp.meta(x))[match(cld$s1_.snp.id, .snp.id),]
+    bp2 <- as.data.table(snp.meta(x))[match(cld$s2_.snp.id, .snp.id),]
+    colnames(bp1) <- paste0("s1_", colnames(bp1))
+    colnames(bp2) <- paste0("s2_", colnames(bp2))
+    cld$s1_.snp.id <- cld$s2_.snp.id <- NULL
+    cld <- cbind(bp1, cld, bp2)
+    cld[,proximity := abs(s1_position - s2_position)]
+    
+    
+    # finish
+    if(.prox_only){return(cld)}
+    cld[,centers := cl$center[win]]
+    if(window_gaussian){
+      cld[,weight := gaussian_weight(s1_position, centers, window_sigma) +
+            gaussian_weight(s2_position, centers, window_sigma)]
+    }
+    else{
+      cld[,weight := 1]
+    }
+    out <- cld[,.(CLD = weighted.mean(CLD,weight)), by = win]
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
+    out <- cbind(.fix..call(cl[out$win,..cn]),
+                 sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,
+                 step = window_step/1000,
+                 nk.status = FALSE,
+                 gaussian = window_gaussian,
+                 cld[match(out$win, win), "n_snps"],
+                 triple_sigma = window_triple_sigma,
+                 out)
+    data.table::setnames(out, "center", "position")
   }
   
   return(out)
@@ -3386,20 +3488,20 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     
     # get observed genotype counts
     het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
-    o2pq <- rowSums(gs[,het.col, drop = F])
-    opp <- matrixStats::rowMaxs(gs[,-het.col, drop = F])
-    oqq <- rowSums(gs) - o2pq - opp
+    o2pq <- Matrix::rowSums(gs[,het.col, drop = F])
+    opp <- .rowMax_sparse(gs[,-het.col, drop = F])
+    oqq <- Matrix::rowSums(gs) - o2pq - opp
     
     # if we are using a chisq test, easy and quick
     if(method == "chisq"){
       # get allele frequencies
-      fp <- (opp*2 + o2pq)/(rowSums(gs)*2)
+      fp <- (opp*2 + o2pq)/(Matrix::rowSums(gs)*2)
       fq <- 1 - fp
       
       # get expected genotype counts
-      epp <- fp^2 * rowSums(gs)
-      eqq <- fq^2 * rowSums(gs)
-      e2pq <- 2*fp*fq * rowSums(gs)
+      epp <- fp^2 * Matrix::rowSums(gs)
+      eqq <- fq^2 * Matrix::rowSums(gs)
+      e2pq <- 2*fp*fq * Matrix::rowSums(gs)
       
       # calculate chi-squared
       calc.chi <- function(o,e){
@@ -4251,9 +4353,9 @@ calc_he <- function(x, facets = NULL){
   else{
     he_func_nb <- function(as, maf = NULL){
       as <- as$as
-      as <- as/rowSums(as)
+      as <- as/Matrix::rowSums(as)
       as <- as^2
-      he <- 1 - rowSums(as)
+      he <- 1 - Matrix::rowSums(as)
       return(he)
     }
     
@@ -4599,7 +4701,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
   }
   
   bind_meta <- function(x, select){
-    return(cbind(x@facet.meta[select,], x@geno.tables$as[select,]))
+    return(cbind(x@facet.meta[select,], as.matrix(x@geno.tables$as[select,])))
   }
   
   #============prepare input data=======
@@ -4824,7 +4926,7 @@ calc_prop_poly <- function(x, facets = NULL){
     sample.levs.to.run <- unlist(sample.levs[which(psl == sample.levs.to.run)])
     matches <- which(x@facet.meta$facet %in% sample.levs.to.run)
     col.matches <- which(colnames(x@facet.meta) %in% c("facet", "subfacet", .split.facet(usl[[i]])[[1]]))
-    output[[i]] <- func(cbind(x@facet.meta[matches, col.matches], x@geno.tables$as[matches,]))
+    output[[i]] <- func(cbind(x@facet.meta[matches, col.matches], as.matrix(x@geno.tables$as[matches,])))
   }
   
   output <- dplyr::bind_rows(output)
@@ -5188,268 +5290,268 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
   return(out)
 }
 
-# eqns from https://doi.org/10.1038/hdy.2017.52
-calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
-  weighted.mean <- NULL
-  # browser()
-  as <- x@geno.tables$as
-  gs <- x@geno.tables$gs
-  # as <- as/rowSums(as)
-  y <- as.matrix(genotypes(x))
-  
-  #===============main function=============
-  rfunc <- function(as, gs, y){
-    x1 <- substr(y, 1, 1)
-    x2 <- substr(y, 2, 2)
-    
-    
-    
-
-    #================prep and pre-define things==============
-    # estimated allele frequencies, results identical to eqn 2
-    xf <- as/rowSums(as)
-    
-    # transform into allele-matched p and q
-    x1f <- (1:ncol(xf))[match(x1, colnames(xf))]
-    x1f <- matrix(xf[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
-    x2f <- (1:ncol(xf))[match(x2, colnames(xf))]
-    x2f <- matrix(xf[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
-    
-    res <- expand.grid(1:ncol(x), 1:ncol(x))
-    res <- res[-which(res$Var1 <= res$Var2),]
-    res <- cbind(res[,2:1], as.data.frame(as.numeric(matrix(NA, nrow = nrow(res), ncol = length(methods)))))
-    colnames(res)[3:ncol(res)] <- methods
-    
-    # pre-looped vars--no reason to calculate these for each reference pair since they will stay the same. Do them once instead.
-    if("LLM" %in% methods){
-      asNA <- as
-      asNA[as == 0] <- NA
-      
-      # eqns 25 and 15
-      tm2 <- xf*((asNA - 1)/(rowSums(asNA, na.rm = TRUE) - 1))
-      tm3 <- tm2*((asNA - 2)/(rowSums(asNA, na.rm = TRUE) - 2))
-      S0LLM <- (2 * rowSums(tm2, na.rm = TRUE)) - rowSums(tm3, na.rm = TRUE)
-    }
-    
-    if(any(c("LL", "W") %in% methods)){
-      # eqns 15 and 16
-      S0LL <- (2 * rowSums(xf^2)) - rowSums(xf^3)
-    }
-    
-    if("R" %in% methods){
-      nal <- rowSums(as != 0)
-      Rleft <- 2*(nal - 1)
-    }
-    
-    if("LR" %in% methods){
-      # eqn 5a from LR, equivalent to eqn 10 from W above after averaging.
-      # splitting them for weighting.
-      RLF <- function(SAB, SBC, SBD, SAC, SAD, pa, pb){
-        top <- (pa*(SBC + SBD)) + (pb*(SAC + SAD)) - 4*pa*pb
-        bottom <- (1 + SAB)*(pa + pb) - 4*(pa*pb)
-        return(top/bottom)
-      }
-      
-      # weight each part by inverse of sampling variance assuming no relatedness, Lynch and Ritland eqn 7a
-      wRL <- function(SAB, pa, pb) (((1 + SAB)*(pa + pb)) - 4*pa*pb)/(2*pa*pb)
-    }
-    
-    #==============loop through each pair of individuals and save results============
-    for(i in unique(res[,1])){
-      for(j in unique(res[,2])[which(unique(res[,2]) > i)]){
-        
-        # note which loci we can't use (missing in either sample)
-        missing <- which(x1[,i] == "N" | x1[,j] == "N")
-        
-        
-        #===============define indicators, used by most==========
-        
-        if(any(c("QG", "LL", "W", "LMM", "LR") %in% methods)){
-          # indicator lambda variables
-          kAC <- as.numeric(x1[,i] == x1[,j])
-          kAD <- as.numeric(x1[,i] == x2[,j])
-          kBC <- as.numeric(x2[,i] == x1[,j])
-          kBD <- as.numeric(x2[,i] == x2[,j])
-          kAB <- as.numeric(x1[,i] == x2[,i])
-          kCD <- as.numeric(x1[,j] == x2[,j])
-          
-          # missing trackers
-          kAC[missing] <- NA
-          kAD[missing] <- NA
-          kBC[missing] <- NA
-          kBD[missing] <- NA
-          kAB[missing] <- NA
-          kCD[missing] <- NA
-        }
-        
-        #===========Queller and Goodnight========
-        if("QG" %in% methods){
-          # equation 3
-          left_num <-  kAC + kAD + kBC + kBD - (
-            2*(x1f[i,] + x2f[i,]))
-          left_dom <- 2 * (1 + kAB - x1f[,i] - x2f[,i])
-          # left <- left_num/left_dom
-          
-          
-          right_num <-  kAC + kAD + kBC + kBD - (
-            2*(x1f[j,] + x2f[j,]))
-          right_dom <- 2 * (1 + kCD - x1f[,j] - x2f[,j])
-          # right <- right_num/right_dom
-          
-          # rQG <- (right + left)/2
-          
-          # set to zero estimator parts where undefined
-          lud <- which(left_dom == 0)
-          left_num[lud] <- 0
-          left_dom[lud] <- 0
-          
-          rud <- which(right_dom == 0)
-          right_num[rud] <- 0
-          right_dom[rud] <- 0
-          
-          # remove missings
-          right_num[missing] <- NA
-          right_dom[missing] <- NA
-          left_num[missing] <- NA
-          left_dom[missing] <- NA
-          
-          # sum the components across loci first before solving
-          left_numt <- sum(left_num, na.rm = TRUE)
-          left_domt <- sum(left_dom, na.rm = TRUE)
-          right_numt <- sum(right_num, na.rm = TRUE)
-          right_domt <- sum(right_dom, na.rm = TRUE)
-          tot <- (left_numt/left_domt) + (right_numt/right_domt)
-          tot <- tot*.5
-          
-          res[which(res[,1] == i & res[,2] == j),]$QG <- tot
-        }
-        #===================Lynch and Li, Wang, unbiased LL=======
-        if("LL" %in% methods | "W" %in% methods | "LLM" %in% methods){
-          # eqn 13
-          num <- kAC + kAD + kBC + kBD
-          left_dom <- 2*(1 + kAB)
-          right_dom <- 2*(1 + kCD)
-          Sxy <- .5*((num/left_dom) + (num/right_dom))
-          
-          # do LL if bi-allelic, since it is identical to W in that case
-          if(.is.bi_allelic(x)){
-            if(!"LL" %in% methods){
-              methods <- c(methods, "LL")
-            }
-          }
-          
-          if("LL" %in% methods){
-            
-            #SOLL defined above prior to loop
-            top <- Sxy - S0LL
-            bottom <- 1 - S0LL
-            
-            # eqn 14
-            res[which(res[,1] == i & res[,2] == j),]$LL <- sum(top[-missing])/sum(bottom[-missing])
-          }
-          if("LLM" %in% methods){
-            
-            #SOLLM defined above
-            top <- Sxy - S0LLM
-            bottom <- 1 - S0LLM
-            
-            # eqn 14
-            res[which(res[,1] == i & res[,2] == j),]$LLM <- sum(top[-missing])/sum(bottom[-missing])
-            
-          }
-          if("W" %in% methods){
-            if(.is.bi_allelic(x)){
-              res[which(res[,1] == i & res[,2] == j),]$W <- res[which(res[,1] == i & res[,2] == j),]$LL
-            }
-            else{
-              warning("Wang's estimator is not yet implemented for non-biallelic loci. Please let us know on the GitHub issues page if you would like this implemented (see start-up message).\n")
-            }
-          }
-          
-          
-          
-        }
-        #===========Ritland========
-        if("R" %in% methods){
-          # each column is an allele the A/B/C/D are being compared to
-          comp.mat <- matrix(colnames(as), nrow = length(x1[,i]), ncol = ncol(as), byrow = TRUE)
-          kAi <- x1[,i] == comp.mat
-          kBi <- x2[,i] == comp.mat
-          kCi <- x1[,j] == comp.mat
-          kDi <- x2[,j] == comp.mat
-          
-          # equation 7
-          top <- (kAi + kBi)*(kCi + kDi)
-          inside <- top/xf
-          inside <- rowSums(inside, na.rm = TRUE) - 1
-          # nal and Rleft defined above
-          rR <- Rleft*inside
-          
-          # multilocus (eqn under 7)
-          res[which(res[,1] == i & res[,2] == j),]$R <- sum(rR[-missing] * (nal[-missing] - 1))/sum(nal[-missing] - 1)
-        }
-        #===========Lynch and Ritland========
-        if("LR" %in% methods){
-          # eqn 10
-          # left_top <- (x1f[,i]*(kBC + kBD)) + (x2f[,i]*(kAC + kAD)) - 4*x1f[,i]*x2f[,i]
-          # left_bottom <- 2*(1 + kAB)*(x1f[,i] + x2f[,i]) - 8*(x1f[,i]*x2f[,i])
-          # 
-          # 
-          # right_top <- (x1f[,j]*(kAD + kBD)) + (x2f[,j]*(kAC + kBC)) - 4*x1f[,j]*x2f[,j]
-          # right_bottom <- 2*(1 + kCD)*(x1f[,j] + x2f[,j]) - 8*(x1f[,j]*x2f[,j])
-          # 
-          # left <- (left_top/left_bottom)
-          # right <- (right_top/right_bottom)
-          
-          # RLF defined above
-          
-          
-          left <- RLF(kAB, kBC, kBD, kAC, kAD, x1f[,i], x2f[,i])
-          # A -> C, B -> D, C -> A, D -> B
-          right <- RLF(kCD, kAD, kBD, kAC, kBC, x1f[,j], x2f[,j])
-          
-          
-          # -- wRL defined above
-          
-          wl <- wRL(kAB, x1f[,i], x2f[,i])
-          wr <- wRL(kCD, x1f[,j], x2f[,j])
-          
-          rxy <- weighted.mean(left[-missing], wl[-missing])
-          ryx <- weighted.mean(right[-missing], wr[-missing])
-          
-          res[which(res[,1] == i & res[,2] == j),]$LR <- mean(c(rxy, ryx))
-        }
-        #===========Loiselle/Heuertz========
-        if("LS" %in% methods){
-          
-          # from Heuertz et al, top of page 2486. Note that this is a bit different from eqn 22, particularly in how this is done multilocus, since that is a simplification that assumes no missing data. N is allowed to vary per SNP here (as it should).
-          rLS <- 0
-          for(k in 1:ncol(as)){
-            X <- (as.numeric(x1[,i] == colnames(as)[k]) + 
-                    as.numeric(x2[,i] == colnames(as)[k]))/2
-            X <- X[-missing]
-            Y <- (as.numeric(x1[,j] == colnames(as)[k]) + 
-                    as.numeric(x2[,j] == colnames(as)[k]))/2
-            Y <- Y[-missing]
-            
-            Fij <- (X - xf[,k][-missing])*(Y - xf[,k][-missing]) + (1/((rowSums(as))[-missing] - 1)) # note, took out the 2n on the bottom because we already have allele counts not individual counts
-            wFij <- xf[,k][-missing]*(1-xf[,k][-missing])
-            
-            allele_is_missing <- which(as[,k] == 0)
-            rLS <- rLS + weighted.mean(Fij[-allele_is_missing], wFij[-allele_is_missing])
-          }
-          res[which(res[,1] == i & res[,2] == j),]$LS <- rLS
-        }
-      }
-    }
-    
-    
-    
-    return(res)
-  }
-  
-  
-}
+# # eqns from https://doi.org/10.1038/hdy.2017.52
+# calc_relatedness <- function(x, facets = NULL, methods = "LLM"){
+#   weighted.mean <- NULL
+#   # browser()
+#   as <- x@geno.tables$as
+#   gs <- x@geno.tables$gs
+#   # as <- as/rowSums(as)
+#   y <- as.matrix(genotypes(x))
+#   
+#   #===============main function=============
+#   rfunc <- function(as, gs, y){
+#     x1 <- substr(y, 1, 1)
+#     x2 <- substr(y, 2, 2)
+#     
+#     
+#     
+# 
+#     #================prep and pre-define things==============
+#     # estimated allele frequencies, results identical to eqn 2
+#     xf <- as/rowSums(as)
+#     
+#     # transform into allele-matched p and q
+#     x1f <- (1:ncol(xf))[match(x1, colnames(xf))]
+#     x1f <- matrix(xf[((x1f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x1))
+#     x2f <- (1:ncol(xf))[match(x2, colnames(xf))]
+#     x2f <- matrix(xf[((x2f-1)*nrow(x)) + (1:nrow(x))], nrow(x), ncol(x2))
+#     
+#     res <- expand.grid(1:ncol(x), 1:ncol(x))
+#     res <- res[-which(res$Var1 <= res$Var2),]
+#     res <- cbind(res[,2:1], as.data.frame(as.numeric(matrix(NA, nrow = nrow(res), ncol = length(methods)))))
+#     colnames(res)[3:ncol(res)] <- methods
+#     
+#     # pre-looped vars--no reason to calculate these for each reference pair since they will stay the same. Do them once instead.
+#     if("LLM" %in% methods){
+#       asNA <- as
+#       asNA[as == 0] <- NA
+#       
+#       # eqns 25 and 15
+#       tm2 <- xf*((asNA - 1)/(rowSums(asNA, na.rm = TRUE) - 1))
+#       tm3 <- tm2*((asNA - 2)/(rowSums(asNA, na.rm = TRUE) - 2))
+#       S0LLM <- (2 * rowSums(tm2, na.rm = TRUE)) - rowSums(tm3, na.rm = TRUE)
+#     }
+#     
+#     if(any(c("LL", "W") %in% methods)){
+#       # eqns 15 and 16
+#       S0LL <- (2 * rowSums(xf^2)) - rowSums(xf^3)
+#     }
+#     
+#     if("R" %in% methods){
+#       nal <- rowSums(as != 0)
+#       Rleft <- 2*(nal - 1)
+#     }
+#     
+#     if("LR" %in% methods){
+#       # eqn 5a from LR, equivalent to eqn 10 from W above after averaging.
+#       # splitting them for weighting.
+#       RLF <- function(SAB, SBC, SBD, SAC, SAD, pa, pb){
+#         top <- (pa*(SBC + SBD)) + (pb*(SAC + SAD)) - 4*pa*pb
+#         bottom <- (1 + SAB)*(pa + pb) - 4*(pa*pb)
+#         return(top/bottom)
+#       }
+#       
+#       # weight each part by inverse of sampling variance assuming no relatedness, Lynch and Ritland eqn 7a
+#       wRL <- function(SAB, pa, pb) (((1 + SAB)*(pa + pb)) - 4*pa*pb)/(2*pa*pb)
+#     }
+#     
+#     #==============loop through each pair of individuals and save results============
+#     for(i in unique(res[,1])){
+#       for(j in unique(res[,2])[which(unique(res[,2]) > i)]){
+#         
+#         # note which loci we can't use (missing in either sample)
+#         missing <- which(x1[,i] == "N" | x1[,j] == "N")
+#         
+#         
+#         #===============define indicators, used by most==========
+#         
+#         if(any(c("QG", "LL", "W", "LMM", "LR") %in% methods)){
+#           # indicator lambda variables
+#           kAC <- as.numeric(x1[,i] == x1[,j])
+#           kAD <- as.numeric(x1[,i] == x2[,j])
+#           kBC <- as.numeric(x2[,i] == x1[,j])
+#           kBD <- as.numeric(x2[,i] == x2[,j])
+#           kAB <- as.numeric(x1[,i] == x2[,i])
+#           kCD <- as.numeric(x1[,j] == x2[,j])
+#           
+#           # missing trackers
+#           kAC[missing] <- NA
+#           kAD[missing] <- NA
+#           kBC[missing] <- NA
+#           kBD[missing] <- NA
+#           kAB[missing] <- NA
+#           kCD[missing] <- NA
+#         }
+#         
+#         #===========Queller and Goodnight========
+#         if("QG" %in% methods){
+#           # equation 3
+#           left_num <-  kAC + kAD + kBC + kBD - (
+#             2*(x1f[i,] + x2f[i,]))
+#           left_dom <- 2 * (1 + kAB - x1f[,i] - x2f[,i])
+#           # left <- left_num/left_dom
+#           
+#           
+#           right_num <-  kAC + kAD + kBC + kBD - (
+#             2*(x1f[j,] + x2f[j,]))
+#           right_dom <- 2 * (1 + kCD - x1f[,j] - x2f[,j])
+#           # right <- right_num/right_dom
+#           
+#           # rQG <- (right + left)/2
+#           
+#           # set to zero estimator parts where undefined
+#           lud <- which(left_dom == 0)
+#           left_num[lud] <- 0
+#           left_dom[lud] <- 0
+#           
+#           rud <- which(right_dom == 0)
+#           right_num[rud] <- 0
+#           right_dom[rud] <- 0
+#           
+#           # remove missings
+#           right_num[missing] <- NA
+#           right_dom[missing] <- NA
+#           left_num[missing] <- NA
+#           left_dom[missing] <- NA
+#           
+#           # sum the components across loci first before solving
+#           left_numt <- sum(left_num, na.rm = TRUE)
+#           left_domt <- sum(left_dom, na.rm = TRUE)
+#           right_numt <- sum(right_num, na.rm = TRUE)
+#           right_domt <- sum(right_dom, na.rm = TRUE)
+#           tot <- (left_numt/left_domt) + (right_numt/right_domt)
+#           tot <- tot*.5
+#           
+#           res[which(res[,1] == i & res[,2] == j),]$QG <- tot
+#         }
+#         #===================Lynch and Li, Wang, unbiased LL=======
+#         if("LL" %in% methods | "W" %in% methods | "LLM" %in% methods){
+#           # eqn 13
+#           num <- kAC + kAD + kBC + kBD
+#           left_dom <- 2*(1 + kAB)
+#           right_dom <- 2*(1 + kCD)
+#           Sxy <- .5*((num/left_dom) + (num/right_dom))
+#           
+#           # do LL if bi-allelic, since it is identical to W in that case
+#           if(.is.bi_allelic(x)){
+#             if(!"LL" %in% methods){
+#               methods <- c(methods, "LL")
+#             }
+#           }
+#           
+#           if("LL" %in% methods){
+#             
+#             #SOLL defined above prior to loop
+#             top <- Sxy - S0LL
+#             bottom <- 1 - S0LL
+#             
+#             # eqn 14
+#             res[which(res[,1] == i & res[,2] == j),]$LL <- sum(top[-missing])/sum(bottom[-missing])
+#           }
+#           if("LLM" %in% methods){
+#             
+#             #SOLLM defined above
+#             top <- Sxy - S0LLM
+#             bottom <- 1 - S0LLM
+#             
+#             # eqn 14
+#             res[which(res[,1] == i & res[,2] == j),]$LLM <- sum(top[-missing])/sum(bottom[-missing])
+#             
+#           }
+#           if("W" %in% methods){
+#             if(.is.bi_allelic(x)){
+#               res[which(res[,1] == i & res[,2] == j),]$W <- res[which(res[,1] == i & res[,2] == j),]$LL
+#             }
+#             else{
+#               warning("Wang's estimator is not yet implemented for non-biallelic loci. Please let us know on the GitHub issues page if you would like this implemented (see start-up message).\n")
+#             }
+#           }
+#           
+#           
+#           
+#         }
+#         #===========Ritland========
+#         if("R" %in% methods){
+#           # each column is an allele the A/B/C/D are being compared to
+#           comp.mat <- matrix(colnames(as), nrow = length(x1[,i]), ncol = ncol(as), byrow = TRUE)
+#           kAi <- x1[,i] == comp.mat
+#           kBi <- x2[,i] == comp.mat
+#           kCi <- x1[,j] == comp.mat
+#           kDi <- x2[,j] == comp.mat
+#           
+#           # equation 7
+#           top <- (kAi + kBi)*(kCi + kDi)
+#           inside <- top/xf
+#           inside <- rowSums(inside, na.rm = TRUE) - 1
+#           # nal and Rleft defined above
+#           rR <- Rleft*inside
+#           
+#           # multilocus (eqn under 7)
+#           res[which(res[,1] == i & res[,2] == j),]$R <- sum(rR[-missing] * (nal[-missing] - 1))/sum(nal[-missing] - 1)
+#         }
+#         #===========Lynch and Ritland========
+#         if("LR" %in% methods){
+#           # eqn 10
+#           # left_top <- (x1f[,i]*(kBC + kBD)) + (x2f[,i]*(kAC + kAD)) - 4*x1f[,i]*x2f[,i]
+#           # left_bottom <- 2*(1 + kAB)*(x1f[,i] + x2f[,i]) - 8*(x1f[,i]*x2f[,i])
+#           # 
+#           # 
+#           # right_top <- (x1f[,j]*(kAD + kBD)) + (x2f[,j]*(kAC + kBC)) - 4*x1f[,j]*x2f[,j]
+#           # right_bottom <- 2*(1 + kCD)*(x1f[,j] + x2f[,j]) - 8*(x1f[,j]*x2f[,j])
+#           # 
+#           # left <- (left_top/left_bottom)
+#           # right <- (right_top/right_bottom)
+#           
+#           # RLF defined above
+#           
+#           
+#           left <- RLF(kAB, kBC, kBD, kAC, kAD, x1f[,i], x2f[,i])
+#           # A -> C, B -> D, C -> A, D -> B
+#           right <- RLF(kCD, kAD, kBD, kAC, kBC, x1f[,j], x2f[,j])
+#           
+#           
+#           # -- wRL defined above
+#           
+#           wl <- wRL(kAB, x1f[,i], x2f[,i])
+#           wr <- wRL(kCD, x1f[,j], x2f[,j])
+#           
+#           rxy <- weighted.mean(left[-missing], wl[-missing])
+#           ryx <- weighted.mean(right[-missing], wr[-missing])
+#           
+#           res[which(res[,1] == i & res[,2] == j),]$LR <- mean(c(rxy, ryx))
+#         }
+#         #===========Loiselle/Heuertz========
+#         if("LS" %in% methods){
+#           
+#           # from Heuertz et al, top of page 2486. Note that this is a bit different from eqn 22, particularly in how this is done multilocus, since that is a simplification that assumes no missing data. N is allowed to vary per SNP here (as it should).
+#           rLS <- 0
+#           for(k in 1:ncol(as)){
+#             X <- (as.numeric(x1[,i] == colnames(as)[k]) + 
+#                     as.numeric(x2[,i] == colnames(as)[k]))/2
+#             X <- X[-missing]
+#             Y <- (as.numeric(x1[,j] == colnames(as)[k]) + 
+#                     as.numeric(x2[,j] == colnames(as)[k]))/2
+#             Y <- Y[-missing]
+#             
+#             Fij <- (X - xf[,k][-missing])*(Y - xf[,k][-missing]) + (1/((rowSums(as))[-missing] - 1)) # note, took out the 2n on the bottom because we already have allele counts not individual counts
+#             wFij <- xf[,k][-missing]*(1-xf[,k][-missing])
+#             
+#             allele_is_missing <- which(as[,k] == 0)
+#             rLS <- rLS + weighted.mean(Fij[-allele_is_missing], wFij[-allele_is_missing])
+#           }
+#           res[which(res[,1] == i & res[,2] == j),]$LS <- rLS
+#         }
+#       }
+#     }
+#     
+#     
+#     
+#     return(res)
+#   }
+#   
+#   
+# }
 
 #'@export
 #'@describeIn calc_single_stats allelic richness (standardized number of alleles per locus via rarefaction)
@@ -5528,7 +5630,7 @@ calc_allelic_richness <- function(x, facets = NULL, g = 0){
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
 calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
-  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- NULL
+  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- prob_seg_var <- ..keep_cols <- NULL
   
   #===========sanity checks============
   if(!is.snpRdata(x)){
@@ -5550,7 +5652,7 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
                     substr(colnames(x@geno.tables$gs), (x@snp.form/2) + 1, x@snp.form))
     
     gs <- x@geno.tables$gs[matches,]
-    gs <- data.table::as.data.table(gs)
+    gs <- data.table::as.data.table(as.matrix(gs))
     gs$.sum <- rowSums(gs) # sums for each row
     gs <- cbind(as.data.table(x@facet.meta[matches,]), gs)
     if(g == 0){
@@ -5567,27 +5669,24 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     }
     
 
-    top <- rowSums(choose(x@geno.tables$gs[matches, homs], gs$.g))
-    bottom <- choose(rowSums(x@geno.tables$gs[matches,]), gs$.g)
+    top <- rowSums(choose(as.matrix(x@geno.tables$gs[matches, homs]), gs$.g))
+    bottom <- choose(rowSums(as.matrix(x@geno.tables$gs[matches,])), gs$.g)
     gs$prob_seg <- 1 - (top/bottom)
     
-    # # eqn: for each homozygote, get the prob of drawing only these with replacement in g draws then sum across homs
-    # prob_top <- .suppress_specific_warning(rowSums(factorial(x@geno.tables$gs[matches, homs])/
-    #                       factorial(x@geno.tables$gs[matches, homs] - gs$.g), na.rm = TRUE), "NaNs produced")
-    # prob_bottom <- (factorial(gs$.sum)/factorial(gs$.sum - gs$.g))
-    # 
-    # # probability of getting anything else (some of each hom or any hets)
-    # gs$prob_seg <- 1 - (prob_top/prob_bottom)
-    #   
     gs$prob_seg[gs$.g < 1] <- NA
     if(exists("nans")){
       if(length(nans) > 0){
         gs$prob_seg[nans] <- NA
       }
     }
+    
+    gs[,prob_seg_var := prob_seg*(1-prob_seg)]
 
     totals <- gs[,sum(prob_seg, na.rm = TRUE), by = .(facet, subfacet)]
+    var_totals <- gs[,sum(prob_seg_var, na.rm = TRUE), by = .(facet, subfacet)]
     colnames(totals)[3] <- "seg_sites"
+    totals <- merge(totals, var_totals, by = c("facet", "subfacet"))
+    colnames(totals)[4] <- "seg_sites_var"
     totals$snp.facet <- ".base"
     totals$snp.subfacet <- ".base"
     
@@ -5607,10 +5706,14 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     totals$prop_poly <- NULL
   }
   
-  
-  
   #===========update===============
   x <- .merge.snpR.stats(x, totals, "weighted.means")
+  
+  if(rarefaction){
+    colnames(gs)[which(colnames(gs) == ".g")] <- "g_prob_seg"
+    keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "g_prob_seg", "prob_seg", "prob_seg_var")
+    x <- .merge.snpR.stats(x, .fix..call(gs[,..keep_cols]))
+  }
   
   # return
   x <- .update_calced_stats(x, facets, "seg_sites", "snp")

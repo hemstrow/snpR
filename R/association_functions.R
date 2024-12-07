@@ -948,7 +948,7 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
     stop("x must be a snpRdata object.\n")
   }
   
-  x <- filter_snps(x, non_poly = TRUE)
+  x <- filter_snps(x, non_poly = TRUE, verbose = FALSE)
   
   .check.installed("ranger")
   #==========run============

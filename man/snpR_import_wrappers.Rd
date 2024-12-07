@@ -16,7 +16,7 @@
 \usage{
 read_vcf(file, snp.meta = NULL, sample.meta = NULL)
 
-read_ms(file, snp.meta = NULL, sample.meta = NULL, chr.length)
+read_ms(file, sample.meta = NULL, chr.length, fix_overlaps = TRUE)
 
 read_delimited_snps(
   file,
@@ -65,6 +65,9 @@ named columns.}
 \item{chr.length}{numeric, Specifies chromosome lengths. Note that a single
 value assumes that each chromosome is of equal length whereas a vector of
 values gives the length for each chromosome in order.}
+
+\item{fix_overlaps}{Logical, default TRUE. If TRUE, overlapping positions will
+be checked and fixed during 'ms' file import.}
 
 \item{mDat}{character, defaults "0000", "NN", or "-9" depending on method. 
 Note, if the default is set but the

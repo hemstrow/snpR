@@ -12,6 +12,64 @@ test_that("maf",{
   expect_equal(maf$minor, c("G", "G")) # note, the 2nd to last A will be N if it fails to account for the overall minor, since that facet has none of the minor alleles.
   expect_equal(maf$maj.count, c(8, 6))
   expect_equal(maf$min.count, c(2, 4))
+  
+  # test with facets that MAF/MIN is correctly ID'd when flipped
+  check <- genotypes(tdm)
+  check <- rep(c("AA", "TT"), length.out = ncol(tdm))
+  check[2] <- "AT"
+  check <- rbind(genotypes(tdm), check)
+  check <- import.snpR.data(check, rbind(snp.meta(tdm), data.frame(chr = "test", position = 10, .snp.id = 13)),
+                            sample.meta(tdm))
+  check <- calc_maf(check, "pop")
+  check <- get.snpR.stats(check, "pop", "maf")
+  check <- check$single[which(check$single$.snp.id == 13),]
+  expect_true(all(check$major == "A"))
+  expect_true(all(check$minor == "T"))
+  expect_true(all(check$maj.count == c(10, 1)))
+  expect_true(all(check$min.count == c(0, 9)))
+  
+  # test with facets that MAF/MIN is correctly ID'd when flipped, but with fully fixed
+  check <- genotypes(tdm)
+  check <- rep(c("AA", "TT"), length.out = ncol(tdm))
+  check <- rbind(genotypes(tdm), check)
+  check <- import.snpR.data(check, rbind(snp.meta(tdm), data.frame(chr = "test", position = 10, .snp.id = 13)),
+                            sample.meta(tdm))
+  check <- calc_maf(check, "pop")
+  check <- get.snpR.stats(check, "pop", "maf")
+  check <- check$single[which(check$single$.snp.id == 13),]
+  expect_true(all(check$major == "T"))
+  expect_true(all(check$minor == "A"))
+  expect_true(all(check$maj.count == c(0, 10)))
+  expect_true(all(check$min.count == c(10, 0)))
+  
+  # cases where one locus is completely unsequenced at one pop
+  test <- genotypes(.internal.data$test_snps)
+  test[1,sample.meta(.internal.data$test_snps)$pop == "ASP"] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- calc_maf(testd, "pop")
+  res <- get.snpR.stats(testd, "pop", "maf")$single
+  expect_true(is.na(res[1,]$maf))
+  expect_true(res[1,]$major == "A")
+  expect_true(res[1,]$minor == "G")
+  expect_true(res[1,]$maj.count == 0)
+  expect_true(res[1,]$min.count == 0)
+  
+  # cases where one locus is completely unsequenced at all pops
+  test <- genotypes(.internal.data$test_snps)
+  test[1,] <- "NN"
+  testd <- import.snpR.data(test, 
+                            snp.meta(.internal.data$test_snps),
+                            sample.meta(.internal.data$test_snps))
+  testd <- calc_maf(testd, "pop")
+  res <- get.snpR.stats(testd, "pop", "maf")$single
+  expect_true(all(is.na(res[1:2,]$maf)))
+  expect_true(all(res[1:2,]$major == "N"))
+  expect_true(all(res[1:2,]$minor == "N"))
+  expect_true(all(is.na(res[1,]$maj.count)))
+  expect_true(all(is.na(res[1,]$min.count)))
+  
 })
 
 
@@ -21,7 +79,7 @@ test_that("pi",{
   pi <- get.snpR.stats(tdm, c(".base", "pop"), "pi")$single
 
   # test
-  expect_equal(pi$pi, 1 - rowSums(apply(tdm@geno.tables$as, MARGIN = 2, function(x) choose(x, 2)))/choose(rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
+  expect_equal(pi$pi, 1 - rowSums(apply(as.matrix(tdm@geno.tables$as), MARGIN = 2, function(x) choose(x, 2)))/choose(Matrix::rowSums(tdm@geno.tables$as), 2)) # equ from hohenlohe
 })
 
 test_that("he",{
@@ -31,9 +89,9 @@ test_that("he",{
   
   # test
   as <- tdm@geno.tables$as
-  as <- as/rowSums(as)
+  as <- as/Matrix::rowSums(as)
   as <- as^2
-  che <- 1 - rowSums(as) # 1 minus hom freqs
+  che <- 1 - Matrix::rowSums(as) # 1 minus hom freqs
   expect_equal(he$he, che) # check against 2pq from another source
   
   # non-bi-allelic
@@ -53,8 +111,8 @@ test_that("ho", {
   expect_true(all(unlist(.check_calced_stats(tdm, c(".base", "pop"), "ho"))))
   ho <- get.snpR.stats(tdm, c("pop", ".base"), "ho")$single
   
-  rs <- rowSums(tdm@geno.tables$gs)
-  hets <- rowSums(tdm@geno.tables$gs[,which(substr(colnames(tdm@geno.tables$g), 1, 1) != substr(colnames(tdm@geno.tables$g), 2, 2))]) # hand calced
+  rs <- Matrix::rowSums(tdm@geno.tables$gs)
+  hets <- Matrix::rowSums(tdm@geno.tables$gs[,which(substr(colnames(tdm@geno.tables$g), 1, 1) != substr(colnames(tdm@geno.tables$g), 2, 2))]) # hand calced
   expect_equal(ho$ho, hets/rs)
 })
 
@@ -257,6 +315,10 @@ test_that("seg_sites", {
   s <- get.snpR.stats(x, "pop", "seg_sites")
   expect_equal(round(s$weighted.means$seg_sites, 3), 
                c(88.946, 88.321))
+  
+  ## other returns
+  expect_true(all(c("g_prob_seg", "prob_seg", "prob_seg_var") %in% colnames(s$single)))
+  expect_true("seg_sites_var" %in% colnames(s$weighted.means))
   
   # no rarefaction
   x <- calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE, g = -1)

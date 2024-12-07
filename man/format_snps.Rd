@@ -17,13 +17,13 @@ format_snps(
   input_mDat = NULL,
   sample.meta = NULL,
   snp.meta = NULL,
-  chr.length = NULL,
   ncp = 2,
   ncp.max = 5,
   chr = "chr",
   position = "position",
   phenotype = "phenotype",
   plink_recode_numeric = FALSE,
+  sn_remove_empty = TRUE,
   verbose = FALSE
 )
 }
@@ -76,11 +76,6 @@ details for more information.}
 optionally specifies a data.frame containing meta data for each SNP. See
 details for more information.}
 
-\item{chr.length}{numeric, default NULL. Chromosome lengths, for ms input
-files. Note that a single value assumes that each chromosome is of equal
-length whereas a vector of values gives the length for each chromosome in
-order.}
-
 \item{ncp}{numeric or NULL, default 2. Number of components to consider for
 iPCA sn format interpolations of missing data. If null, the optimum number
 will be estimated, with the maximum specified by ncp.max. This can be very
@@ -103,6 +98,9 @@ containing phenotype information, for plink! output.}
 will be renamed to numbers. This may be useful in some cases. If this is
 FALSE, chromosome names will be checked for leading numbers and replaced
 with a corresponding letter (0 becomes A, 1 becomes B, and so on).}
+
+\item{sn_remove_empty}{Logical, default TRUE. If TRUE, loci will be removed
+upon conversion to sn format if they are called in no individuals.}
 
 \item{verbose}{Logical, default FALSE. If TRUE, some progress updates will be
 reported.}
@@ -207,8 +205,7 @@ default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
 cell, but only a single nucleotide noted if homozygote and two nucleotides
 seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
-from the simulation program ms.}}
+(heterozygous), or 2 (homozyogus allele 2).}}
 }
 \examples{
 \dontrun{

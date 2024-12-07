@@ -10,6 +10,7 @@ calc_fis(
   boot = FALSE,
   boot_par = FALSE,
   boot_alt = "two-sided",
+  boot_confidence = 0.95,
   keep_components = FALSE
 )
 }
@@ -34,6 +35,11 @@ hypothesis that FIS is not equal to 0. \item{greater: } A one-sided
 \item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
 that FIS is less than 0.}}
 
+\item{boot_confidence}{numeric, default 0.95. The confidence level to use
+for generating confidence levels for bootstraps. Note that a value of
+0.95 will result in a call of \code{\link[stats]{qt}} with \code{q = .975}
+and and so on.}
+
 \item{keep_components}{logical, default \code{FALSE}. If TRUE, the variance
 components "b" and "c" will be held and accessible from the \code{$single}
 element (named "var_comp_b" and "var_comp_c", respectively) using the usual
@@ -55,7 +61,7 @@ according to Weir and Cockerham (1984).
 Note that FIS is calculated by considering \emph{only data from individual
 sample levels}! This means that individual and sub-population variances are
 only considered within each sub-population. If snp facets are provided,
-weighted means will be provided for each snp facet level, although raw FIS
+weighted means will be provided for each snp facet level, although raw 
 values are calculated on a per-snp basis and thus ignore these levels.
 
 If the base facet (facets = NULL or facets = ".base") is requested, FIS will
@@ -65,7 +71,8 @@ to overall FIT).
 Bootstrapping across loci can be done to assess FIS significance. This is 
 done by re-drawing loci randomly with replacement for each facet level,
 calculating the resulting FIS values, and doing one sample \emph{t}-test
-with the null hypothesis that FIS = 0 to calculate p-values.
+with the null hypothesis that FIS = 0 to calculate p-values and confidence
+intervals.
 }
 \examples{
 x <- calc_fis(stickSNPs, c("pop", "pop.chr"))

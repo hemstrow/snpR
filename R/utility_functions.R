@@ -620,11 +620,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  HWE p-value.
 #'@param hwe_excess_side character, default "both". Options:
-#'  \itemize{\item{heterozygote:} only loci with a heterozygote excess are 
-#'  removed.
-#'  \item{homozygote:} only loci with a homozygote excess are removed.
-#'  \item{both:} loci with either a heterozygote or homozygote excess 
-#'  are removed.}.
+#'  \itemize{\item{heterozygote: }{only loci with a heterozygote excess are 
+#'  removed.}
+#'  \item{homozygote: }{only loci with a homozygote excess are removed.}
+#'  \item{both: }{loci with either a heterozygote or homozygote excess 
+#'  are removed.}}
 #'@param fwe_method character, default "none". Option to use for Family-Wise
 #'  Error rate correction for HWE filtering. If requested, only SNPs with
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
@@ -651,10 +651,10 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
-#'  automatically via several methods: \itemize{ \item{partial: } Re-filters for
+#'  automatically via several methods: \itemize{ \item{partial: } {Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
-#'  initially. \item{full: } Re-runs the full filtering scheme (save for
-#'  min_loci).} Note: if \code{inds_first = TRUE}, all re-run options other than 
+#'  initially.} \item{full: } {Re-runs the full filtering scheme (save for
+#'  min_loci).}} Note: if \code{inds_first = TRUE}, all re-run options other than 
 #'  FALSE will re-run the individual filter for missing data again after loci 
 #'  filtering.
 #'@param maf_facets character or NULL, default NULL. Defines a sample facet over
@@ -688,7 +688,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'  conducted in parallel using \code{LD_prune_par} threads.
 #'@param LD_prune_method character, default "CLD". The method to use for LD
 #'  calculations and prunning. The options are:
-#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}}. See
+#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}} See
 #'  \code{\link{calc_pairwise_ld}} for details.
 #'@param LD_prune_use_ME logical, default FALSE. If TRUE, uses
 #'  Minimization-Expectation to do LD calculations for all
@@ -743,6 +743,7 @@ filter_snps <- function(x, maf = FALSE,
                         LD_prune_use_ME = FALSE,
                         LD_prune_ME_sigma = 0.0001,
                         verbose = TRUE){
+
 
   #==============do sanity checks====================
   if(singletons){
@@ -967,30 +968,33 @@ filter_snps <- function(x, maf = FALSE,
   
   #function to filter by loci, to be called before and after min ind filtering (if that is requested.)
   filt_by_loci <- function(){
+
     # Store filter status in vio.snps. Those that are violating a filter will be marked TRUE, remove these.
     
     #==========================run filters: bi_allelic/non_poly========================
     vio.snps <- logical(nrow(x)) #vector to track status
-    
     amat <- x@geno.tables$as[x@facet.meta$facet == ".base",,drop = FALSE]
     gmat <- x@geno.tables$gs[x@facet.meta$facet == ".base",,drop = FALSE]
     wmat <- x@geno.tables$wm[x@facet.meta$facet == ".base",,drop = FALSE]
-    
+
     # non-biallelic and non-polymorphic loci
     if(bi_al | non_poly){
-      bimat <- ifelse(amat, TRUE, FALSE)
+      bimat <- methods::as(amat, "lMatrix")
       
       if(bi_al){
         if(verbose){cat("Filtering non-biallelic loci...\n")}
-        bi <- ifelse(rowSums(bimat) > 2, T, F) # if false, should keep the allele
+
+        bi <- ifelse(Matrix::rowSums(bimat) > 2, T, F) # if false, should keep the allele
+        
         if(verbose){cat(paste0("\t", sum(bi), " bad loci\n"))}
+        
         vio.snps[which(bi)] <- T
         x <- .update_filters(x, "bi-allelic", NA, NA)
       }
       
       if(non_poly){
         if(verbose){cat("Filtering non_polymorphic loci...\n")}
-        np <- ifelse(rowSums(bimat) < 2, T, F) # if false, should keep the allele
+        np <- ifelse(Matrix::rowSums(bimat) < 2, T, F) # if false, should keep the allele
         if(verbose){cat(paste0("\t", sum(np), " bad loci\n"))}
         vio.snps[which(np)] <- T
         x <- .update_filters(x, "non-polymorphic", NA, NA)
@@ -1017,14 +1021,14 @@ filter_snps <- function(x, maf = FALSE,
         # check to see if we need to calculate mafs:
         if(any(colnames(x@stats) == "maf")){ # check that mafs have been calculated, the all facet must exist
           if(any(is.na(x@stats$maf[x@stats$facet == ".base"]))){ # check that mafs have been calculated for the all facet
-            mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+            mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
           }
           else{
             mafs <- x@stats$maf[x@stats$facet == ".base"]
           }
         }
         else{
-          mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+          mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
         }
         
         
@@ -1067,7 +1071,7 @@ filter_snps <- function(x, maf = FALSE,
         
         # add in the overall maf, since differential fixation would otherwise be removed.
         if(any(is.na(x@stats$maf[x@stats$facet == ".base"]))){ # check that mafs have been calculated for the all facet
-          a.mafs <- 1 - matrixStats::rowMaxs(amat)/rowSums(amat)
+          a.mafs <- 1 - .rowMax_sparse(amat)/Matrix::rowSums(amat)
         }
         else{
           a.mafs <- x@stats$maf[x@stats$facet == ".base"]
@@ -1095,12 +1099,18 @@ filter_snps <- function(x, maf = FALSE,
         # in this case, this is the count of *individuals with the minor allele*
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-        het_c <- matrixStats::rowSums2(gmat[,hs,drop = FALSE])
-        min_g_c <- matrixStats::rowSums2(gmat[,-hs,drop = FALSE]) - matrixStats::rowMaxs(gmat[,-hs,drop = FALSE])
+        het_c <- Matrix::rowSums(gmat[,hs,drop = FALSE])
+        min_g_c <- Matrix::rowSums(gmat[,-hs,drop = FALSE]) - .rowMax_sparse(gmat[,-hs,drop = FALSE])
         
         tgac <- het_c + min_g_c
         
-        mgc.vio <- which(tgac <= mgc)
+        if(non_poly){
+          mgc.vio <- which(tgac <= mgc)
+        }
+        else{
+          mgc.vio <- which(tgac <= mgc & tgac != 0)
+        }
+        
         if(verbose){cat(paste0("\t", length(mgc.vio), " bad loci\n"))}
         
         vio.snps[mgc.vio] <- T
@@ -1111,7 +1121,13 @@ filter_snps <- function(x, maf = FALSE,
         if(verbose){cat("Filtering low minor genotype counts.\n")}
         
         # singletons exist wherever the total allele count - the maf count is 1.
-        mac.vio <- which(matrixStats::rowSums2(amat) - matrixStats::rowMaxs(amat) <= mac)
+        if(non_poly){
+          mac.vio <- which(Matrix::rowSums(amat) - .rowMax_sparse(amat) <= mac)
+        }
+        else{
+          counts <- Matrix::rowSums(amat) - .rowMax_sparse(amat)
+          mac.vio <- which(counts <= mac & counts != 0)
+        }
         
         if(verbose){cat(paste0("\t", length(mac.vio), " bad loci\n"))}
         
@@ -1126,7 +1142,7 @@ filter_snps <- function(x, maf = FALSE,
       
       # get heterozygote frequency
       hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-      het_f <- rowSums(gmat[,hs])/rowSums(gmat)
+      het_f <- Matrix::rowSums(gmat[,hs])/Matrix::rowSums(gmat)
       
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
@@ -1276,12 +1292,12 @@ filter_snps <- function(x, maf = FALSE,
         # add on genotyping counts
         if(nrow(LD) > 0){
           base_lev_rows <- which(x@facet.meta$facet == ".base" & x@facet.meta$subfacet == ".base")
-          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = Matrix::rowSums(x@geno.tables$gs[base_lev_rows,]))),
                       by.x = "s1_.snp.id",
                       by.y = ".snp.id",
                       all.x = TRUE)
           
-          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = matrixStats::rowSums2(x@geno.tables$gs[base_lev_rows,]))),
+          LD <- merge(LD, as.data.table(cbind(.snp.id = x@facet.meta[base_lev_rows, ".snp.id"], .count = Matrix::rowSums(x@geno.tables$gs[base_lev_rows,]))),
                       by.x = "s2_.snp.id",
                       by.y = ".snp.id",
                       all.x = TRUE)
@@ -1321,7 +1337,7 @@ filter_snps <- function(x, maf = FALSE,
   #funciton to filter by individuals.
   min_loci_filt <- function(){
     if(verbose){cat("Filtering out individuals sequenced in few kept loci...\n")}
-    mcounts <- matrixStats::colSums2(ifelse(x != mDat, 1, 0))
+    mcounts <- matrixStats::colSums2(genotypes(x) != mDat)
     rejects <- which(mcounts/nrow(x) < min_loci)
     if(length(rejects) > 0){
       if(length(rejects) == ncol(x)){
@@ -1561,8 +1577,7 @@ filter_snps <- function(x, maf = FALSE,
 #'cell, but only a single nucleotide noted if homozygote and two nucleotides
 #'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-#'(heterozygous), or 2 (homozyogus allele 2).} \item{ms: }{.ms file, as output
-#'from the simulation program ms.}}
+#'(heterozygous), or 2 (homozyogus allele 2).}}
 #'
 #'
 #'
@@ -1602,10 +1617,6 @@ filter_snps <- function(x, maf = FALSE,
 #'@param snp.meta data.frame, default NULL. If x is not a snpRdata object,
 #'  optionally specifies a data.frame containing meta data for each SNP. See
 #'  details for more information.
-#'@param chr.length numeric, default NULL. Chromosome lengths, for ms input
-#'  files. Note that a single value assumes that each chromosome is of equal
-#'  length whereas a vector of values gives the length for each chromosome in
-#'  order.
 #'@param ncp numeric or NULL, default 2. Number of components to consider for
 #'  iPCA sn format interpolations of missing data. If null, the optimum number
 #'  will be estimated, with the maximum specified by ncp.max. This can be very
@@ -1623,6 +1634,8 @@ filter_snps <- function(x, maf = FALSE,
 #'  will be renamed to numbers. This may be useful in some cases. If this is
 #'  FALSE, chromosome names will be checked for leading numbers and replaced
 #'  with a corresponding letter (0 becomes A, 1 becomes B, and so on).
+#'@param sn_remove_empty Logical, default TRUE. If TRUE, loci will be removed
+#'  upon conversion to sn format if they are called in no individuals.
 #'@param verbose Logical, default FALSE. If TRUE, some progress updates will be
 #'  reported.
 
@@ -1721,9 +1734,10 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         interpolate = "bernoulli", outfile = FALSE,
                         ped = NULL, input_format = NULL,
                         input_meta_columns = NULL, input_mDat = NULL,
-                        sample.meta = NULL, snp.meta = NULL, chr.length = NULL,
+                        sample.meta = NULL, snp.meta = NULL,
                         ncp = 2, ncp.max = 5, chr = "chr", position = "position",
                         phenotype = "phenotype", plink_recode_numeric = FALSE, 
+                        sn_remove_empty = TRUE,
                         verbose = FALSE){
   
   POS <- NULL
@@ -1898,6 +1912,11 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   }
   else if(output == "sn"){
     cat("Converting to single character numeric format.\n")
+    
+    if(!isFALSE(interpolate) & !sn_remove_empty){
+      stop("If interpolating 'sn' formatted data, 'sn_remove_empty' must be 'TRUE'.\n")
+    }
+    
     if(length(c(both.facets, snp.facets)) != 0){
       warning("Removing invalid facet types (snp or snp and sample specific).\n")
       facets <- facets[-c(snp.facets, both.facets)]
@@ -1962,39 +1981,6 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   #======================put data into snpRdata object if not in that format to start with================
   if(!is.null(input_format)){
     cat("Converting data to snpRdata, NN format.\n")
-    
-    if(input_format == "ms"){
-      if(!is.null(snp.meta) | !is.null(input_meta_columns)){
-        input_meta_columns <- NULL
-        snp.meta <- NULL
-        warning("For ms inputs, provided snp.meta will be ignored and will be pulled from
-              input ms instead.\n")
-      }
-      if(is.null(sample.meta)){
-        stop("For ms input, please provide sample metadata.\n")
-      }
-      if(!is.numeric(chr.length)){
-        stop("For ms input, please provide either a single or a vector of chromosome lengths.\n")
-      }
-      if(!is.character(x)){
-        stop("For ms input, please provide a file path to the 'x' argument.\n")
-      }
-      else if(length(x) != 1){
-        stop("For ms input, please provide a file path to the 'x' argument.\n")
-      }
-      else if(!file.exists(x)){
-        stop("File provided to 'x' not found.\n")
-      }
-      
-      cat("Parsing ms file...")
-      x <- .process_ms(x, chr.length)
-      snp.meta <- x$meta
-      x <- x$x
-      x <- .convert_2_to_1_column(x)
-      cat(" done.\n")
-      
-      input_format <- "sn"
-    }
     
     if(!is.null(input_meta_columns)){
       headers <- x[,c(1:input_meta_columns)]
@@ -2184,11 +2170,22 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       # get the column from as matching the target allele.
       maj.col.match <- match(maj, colnames(x))
-      out$ni1 <- t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
+      
+      # for data with no major--should only be un-sequenced SNPs
+      missing <- which(is.na(maj.col.match))
+      if(length(missing) > 0){
+        temp_x <- x[-missing,]
+        maj.col.match <- match(maj[-missing], colnames(temp_x))
+        out$ni1[-missing] <- Matrix::t(temp_x)[maj.col.match + seq(0, length(temp_x) - ncol(temp_x), by = ncol(temp_x))]
+        out$ni1[missing] <- 0
+      }
+      else{
+        out$ni1 <- Matrix::t(x)[maj.col.match + seq(0, length(x) - ncol(x), by = ncol(x))]
+      }
       
       # ni1 is the rowsums minus this
-      out$ni2 <- rowSums(x) - out$ni1
-      out$n_total <- rowSums(x)
+      out$ni2 <- Matrix::rowSums(x) - out$ni1
+      out$n_total <- Matrix::rowSums(x)
       out$n_alleles <- rowSums(ifelse(out[,3:4] != 0, 1, 0))
       out[is.na(out)] <- 0
       
@@ -2765,7 +2762,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
         bad.loci <- ifelse(is.na(rdata), 0, 1)
         bad.loci <- which(rowSums(bad.loci) == 0)
         
-        if(length(bad.loci) > 0){
+        if(length(bad.loci) > 0 & sn_remove_empty){
           rdata <- rdata[-bad.loci,]
           meta <- meta[-bad.loci,]
           warning("Some loci had no called genotypes and were removed: ", paste0(bad.loci, collapse = ", "), "\n")
@@ -3421,7 +3418,7 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE){
 #' @author William Hemstrom
 #' @export
 tabulate_allele_frequency_matrix <- function(x, facets = NULL){
-  
+
   ..ord <- NULL
   
   #==================prep and sanity check==================

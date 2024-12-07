@@ -170,8 +170,19 @@ test_that("dapc",{
                                     dapc_clustering_nclust = 5, 
                                     dapc_npca = 20, 
                                     dapc_ndisc = 4, simplify_output = TRUE))
-  
   expect_true(ggplot2::is.ggplot(p$dapc))
+  
+  # case with one discriminant
+  .make_it_quiet(p <- plot_clusters(stickSNPs, "pop", "dapc", 
+                                    dapc_clustering_max_n_clust = NULL, 
+                                    dapc_clustering_npca = 20, 
+                                    dapc_clustering_nclust = 2, 
+                                    dapc_npca = 20, 
+                                    dapc_ndisc = 1, simplify_output = TRUE))
+  expect_true(ggplot2::is.ggplot(p$dapc))
+  mapping <- capture_output(p$dapc$mapping, print = TRUE)
+  expect_true(grepl("`x` -> `\\.cluster`", mapping)) # check that it xluster is mapped to x
+  
 })
 
 #==================plot_manhattan==========
@@ -281,7 +292,7 @@ test_that("manhattan plots", {
   # ribbon style
   p4 <- plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                        log.p = TRUE, rug_data = rug_data, rug_style = "ribbon", simplify_output = TRUE)
-  expect_true(is(p4$layers[[2]]$geom, "GeomSegment"))
+  expect_true(methods::is(p4$layers[[2]]$geom, "GeomSegment"))
   
   # with rug labels
   ## point
@@ -298,6 +309,29 @@ test_that("manhattan plots", {
   skip_on_cran(); # slower
   x <- calc_tajimas_d(x, facets = "pop.chr", sigma = 100, step = 50)
   expect_true(ggplot2::is.ggplot(plot_manhattan(x, "D", TRUE, "pop.chr", simplify_output = TRUE)))
+  
+  # mean line
+  p <- plot_manhattan(x, "ho", facets = "pop", median_line = "red", simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomHline"))
+  x <- calc_ho(x)
+  p <- plot_manhattan(x, "ho" ,median_line = "red", simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomHline"))
+  
+  # color by val
+  x <- calc_he(x, "pop")
+  p <- plot_manhattan(x, "ho", facets = "pop", color_var = "he", 
+                      colors = ggplot2::scale_color_viridis_c(option = "A"),
+                      simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(ggplot2::as_label(p$plot$mapping$colour) == "colvar")
+  
+  # vlines
+  p <- plot_manhattan(x, "ho", facets = "pop", vlines = "red",
+                      simplify_output = TRUE)
+  p <- ggplot2::ggplot_build(p)
+  expect_true(methods::is(p$plot$layers[[2]]$geom, "GeomVline"))
 })
 
 #=================qq=====================
@@ -501,14 +535,14 @@ test_that("diagnostic plots",{
                  dp$pca$labels$x,
                  dp$missingness$labels$x,
                  dp$heho$labels$x),
-               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (36.64%)", "Individual", "Observed Heterozygosity"))
+               c("fis", "Minor Allele Count", "Minor Allele Frequency", "PC1 (36.64%)", "Individual", "Expected Heterozygosity"))
   expect_equal(c(dp$fis$labels$y,
                  dp$sfs$labels$y,
                  dp$maf$labels$y,
                  dp$pca$labels$y,
                  dp$missingness$labels$y,
                  dp$heho$labels$y),
-               c("density", "log10(N)", "density", "PC2 (16.26%)", "Proportion of loci with missing data", "Expected Heterozygosity"))
+               c("density", "log10(N)", "density", "PC2 (16.26%)", "Proportion of loci with missing data", "Observed Heterozygosity"))
   expect_false("colour" %in% names(dp$pca$labels))
   expect_false("colour" %in% names(dp$missingness$labels))
   

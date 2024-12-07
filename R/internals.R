@@ -30,26 +30,35 @@ is.snpRdata <- function(x){
   facets <- .check.snpR.facet.request(x, facets)
   if(is.null(facets[1])){return(x)}
   
-  #===========================smart rbind fil function========================
+  #===========================smart rbind fill function========================
   .smart.rbind.fill.matrix <- function(x, y, nrf = 1){
+
+    if(!methods::is(x, "sparseMatrix")){
+      x <- Matrix::Matrix(x, sparse = TRUE)
+    }
+    
+    if(!methods::is(y, "sparseMatrix")){
+      y <- Matrix::Matrix(y, sparse = TRUE)
+    }
+    
     if(nrow(y) != 0 & nrow(x) != 0){
-      return(plyr::rbind.fill.matrix(x, y))
+      return(.rbind_list_fill_sparse(list(x, y)))
     }
     
     if(nrow(y) == 0 & nrow(x) == 0){
-      return(matrix(NA, nrow = 0, ncol = 0))
+      return(Matrix::Matrix(0, nrow = 0, ncol = 0))
     }
     
     if(nrow(y) == 0){
-      fill <- matrix(0, nrf, ncol(x))
+      fill <- Matrix::Matrix(0, nrf, ncol(x))
       colnames(fill) <- colnames(x)
-      return(plyr::rbind.fill.matrix(x, fill))
+      return(.rbind_list_fill_sparse(list(x, fill)))
     }
     
     if(nrow(x) == 0){
-      fill <- matrix(0, nrf, ncol(y))
+      fill <- Matrix::Matrix(0, nrf, ncol(y))
       colnames(fill) <- colnames(y)
-      return(plyr::rbind.fill.matrix(fill, y))
+      return(.rbind_list_fill_sparse(list(fill, y)))
     }
   }
   
@@ -151,7 +160,7 @@ is.snpRdata <- function(x){
                                   x@snp.meta))
     }
     
-    
+
     #=========================sort, pack, and return==========
     # sort
     x@facet.meta <- dplyr::mutate_if(.tbl = x@facet.meta, is.factor, as.character)
@@ -447,7 +456,7 @@ is.snpRdata <- function(x){
     facets <- .check.snpR.facet.request(x, facets)
     if(req == "gs"){
       # subset
-      gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
+      gs <- lapply(x@geno.tables, function(y) y[which(x@facet.meta$facet %in% facets),,drop = FALSE])
       
       # run the function indicated
       out <- data.table::as.data.table(fun(gs, ...))
@@ -462,8 +471,8 @@ is.snpRdata <- function(x){
     else if(req == "meta.gs"){
       # gs with metadata on facets attached.
       # subset
-      gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet %in% facets))
-      gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet %in% facets, c("facet", "subfacet", ".snp.id")], y))
+      gs <- lapply(x@geno.tables, function(y) y[x@facet.meta$facet %in% facets,,drop=F])
+      gs <- lapply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet %in% facets, c("facet", "subfacet", ".snp.id")], as.matrix(y)))
       
       # run the function indicated
       out <- data.table::as.data.table(fun(gs, ...))
@@ -507,7 +516,7 @@ is.snpRdata <- function(x){
       }
       x <- .add.facets.snpR.data(x, pheno.facets)
       if(req == "cast.gs"){
-        gs <- data.table::as.data.table(cbind(x@facet.meta, x@geno.tables$gs))
+        gs <- data.table::as.data.table(cbind(x@facet.meta, as.matrix(x@geno.tables$gs)))
       }
       else{
         gs <- format_snps(x, "ac", pheno.facets)
@@ -691,8 +700,8 @@ is.snpRdata <- function(x){
       # loop through each facet
       for(i in 1:length(facets)){
         # subset
-        gs <- plyr::llply(x@geno.tables, function(y) subset(y, x@facet.meta$facet == facets[i]))
-        gs <- plyr::llply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet == facets[i], c("facet", "subfacet", ".snp.id")], y))
+        gs <- lapply(x@geno.tables, function(y) y[x@facet.meta$facet == facets[i],,drop = FALSE])
+        gs <- lapply(gs, function(y) cbind(x@facet.meta[x@facet.meta$facet == facets[i], c("facet", "subfacet", ".snp.id")], as.matrix(y)))
         
         # run the function indicated
         this.out <- data.table::as.data.table(fun(gs, ...))
@@ -765,6 +774,8 @@ is.snpRdata <- function(x){
       
       ## a function to run 'func' on one iteration/row of the task.list. q is the iteration. Par is needed only for progress printing.
       run.one.loop <- function(stats_to_use, meta, task.list, q, par){
+        if(methods::is(stats_to_use, "sparseMatrix")){stats_to_use <- as.matrix(stats_to_use)}
+        
         if(par == FALSE & verbose){cat("Sample Subfacet:\t", as.character(task.list[q,2]), "\tSNP Subfacet:\t", as.character(task.list[q,4]), "\n")}
         
         # get comps and run
@@ -825,7 +836,7 @@ is.snpRdata <- function(x){
           }
           cols.to.use <- start.col:ncol(x@stats)
           ## add nk and remove any non-numeric columns
-          nk <- matrixStats::rowSums2(x@geno.tables$as)
+          nk <- Matrix::rowSums(x@geno.tables$as)
           if(data.table::is.data.table(x@stats)){
             stats_to_use <- cbind(nk = nk, x@stats[,cols.to.use, with = FALSE])
           }
@@ -1501,6 +1512,7 @@ is.snpRdata <- function(x){
   ..all_idents <- ..rm_cols <- NULL
   
   .tab_func <- function(x, snp_form, mDat){
+    ..mDat <- NULL
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
     
     gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
@@ -1518,7 +1530,8 @@ is.snpRdata <- function(x){
       for(i in 1:length(reps)){
         this_opt <- reps[i]
         if(opts[this_opt] %in% done){next}
-        match <- which(rev_opts == opts[this_opt])
+        match <- try(which(rev_opts == opts[this_opt]), silent = TRUE)
+        if(methods::is(match, "try-error")){stop("Error at match.\n")}
         all_idents <- c(this_opt, match)
         gmat[[this_opt]] <- .fix..call(rowSums(gmat[,..all_idents]))
         done <- c(done, unique(opts[all_idents]))
@@ -1526,6 +1539,16 @@ is.snpRdata <- function(x){
       }
       
       gmat <- .fix..call(gmat[,-..rm_cols])
+    }
+    
+    # make sure column names are properly sorted by allele
+    opts <- colnames(gmat)
+    opts1 <- substr(opts, 1, snp_form/2)
+    opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
+    flips <- try(!opts1 <= opts2, silent = TRUE) # this'll do an alphabetic check since these are characters--weird but works
+    if(is(flips, "try-error")){stop("Error at flips.\n")}
+    if(any(flips)){
+      colnames(gmat)[which(flips)] <- paste0(opts2[flips], opts1[flips])
     }
     
     # remove missing
@@ -1537,7 +1560,16 @@ is.snpRdata <- function(x){
       tmat <- gmat
     }
     if(nrow(tmat) == 0){
-      return(list(gs = data.table(), as = data.table(), wm = gmat))
+      if(any(colnames(gmat) == mDat)){
+        wm <- Matrix::Matrix(as.matrix(.fix..call(gmat[,..mDat])), sparse = TRUE)
+      }
+      else{
+        wm <- Matrix::Matrix(0, nrow(gmat), 1, dimnames = list(NULL, mDat), sparse = TRUE)
+      }
+      
+      return(list(gs = Matrix::Matrix(0, nrow = 0, ncol = 0, sparse = TRUE), 
+                  as = Matrix::Matrix(0, nrow = 0, ncol = 0, sparse = TRUE), 
+                  wm = wm))
     }
     
     #get matrix of allele counts
@@ -1548,7 +1580,7 @@ is.snpRdata <- function(x){
     as <- unique(unlist(strsplit(paste0(colnames(tmat)), split_pattern, perl = TRUE)))
     amat <- data.table::as.data.table(matrix(0, nrow(gmat), length(as)))
     colnames(amat) <- as
-    
+
     #fill in
     for(i in 1:length(as)){
       b <- grep(paste0(as[i], "$"), colnames(tmat))
@@ -1573,6 +1605,19 @@ is.snpRdata <- function(x){
         }
       }
     }
+    # convert to sparse matrices
+    tmat <- Matrix::Matrix(as.matrix(tmat), sparse = TRUE)
+    amat <- Matrix::Matrix(as.matrix(amat), sparse = TRUE)
+    
+    if(any(colnames(gmat) == mDat)){
+      gmat <- .fix..call(gmat[,..mDat])
+      gmat <- Matrix::Matrix(as.matrix(gmat), sparse = TRUE)
+    }
+    else{
+      gmat <- Matrix::Matrix(0, nrow(gmat), 1, dimnames = list(NULL, mDat), sparse = TRUE)
+    }
+    
+    
     return(list(gs = tmat, as = amat, wm = gmat))
   }
 
@@ -1606,29 +1651,16 @@ is.snpRdata <- function(x){
 
     titer <- i*max_snps+ 1
   }
-  
+
   gs <- purrr::map(geno.tables, "gs")
   as <- purrr::map(geno.tables, "as")
   wm <- purrr::map(geno.tables, "wm")
   
-  gs <- as.matrix(data.table::rbindlist(gs, fill = TRUE))
-  as <- as.matrix(data.table::rbindlist(as, fill = TRUE))
-  wm <- as.matrix(data.table::rbindlist(wm, fill = TRUE))
-  if(any(colnames(wm) == mDat)){
-    wm <- wm[,mDat,drop=FALSE]
-  }
-  else{
-    wm <- matrix(0, nrow = nrow(gs), 1)
-    colnames(wm) <- mDat
-  }
-  
-  
-  gs[is.na(gs)] <- 0
-  as[is.na(as)] <- 0
-  wm[is.na(wm)] <- 0
+  gs <- .rbind_list_fill_sparse(gs)
+  as <- .rbind_list_fill_sparse(as)
+  wm <- .rbind_list_fill_sparse(wm)
   
   return(list(gs = gs, as = as, wm = wm))
-  
 }
 
 
@@ -2650,6 +2682,7 @@ is.snpRdata <- function(x){
   
   # for the base facet, determine the major and minor then calculate maf
   if(is.null(ref)){
+
     # major alleles via max.col
     fmax <- colnames(gs$as)[max.col(gs$as, ties.method = "last")]
     lmax <- colnames(gs$as)[max.col(gs$as, ties.method = "first")]
@@ -2662,10 +2695,11 @@ is.snpRdata <- function(x){
     
     # special cases
     match.freq <- which(fmax != lmax) # maf = 0.5
-    unseq <- which(matrixStats::rowSums2(gs$as) == 0) # unsequenced
-    np <- which(matrixStats::rowSums2(matrix(as.logical(gs$as), nrow(gs$as))) == 1) # non-polymorphic
+    unseq <- which(Matrix::rowSums(gs$as) == 0) # unsequenced
+    np <- which(Matrix::rowSums(methods::as(gs$as, "lMatrix")) == 1) # non-polymorphic
     
-    # declair major and minor
+
+    # declare major and minor
     major <- fmax
     minor <- fmin
     ## maf = 0.05
@@ -2683,19 +2717,20 @@ is.snpRdata <- function(x){
     }
     
     # grab the actual maf
-    maf <- 1 - matrixStats::rowMaxs(gs$as)/matrixStats::rowSums2(gs$as)
+
+    maf <- 1 - .rowMax_sparse(gs$as)/Matrix::rowSums(gs$as)
     maf[is.nan(maf)] <- 0
     
     # get the major and minor counts
     # round because repeating decimals will yeild things like 1.00000000001 instead of 1. Otherwise this approach is quick and easy, as long as things are bi-allelic (non-polymorphic and equal min maj frequencies are fine.)
-    maj.count <- round(rowSums(gs$as)*(1-maf))
-    min.count <- round(rowSums(gs$as)*(maf))
+    maj.count <- round(Matrix::rowSums(gs$as)*(1-maf))
+    min.count <- round(Matrix::rowSums(gs$as)*(maf))
   }
   
   # for non-base facets, use the given major and minor to calculate maf
   else{
     # use a data.table function to get the major allele counts
-    adt <- as.data.table(gs$as)
+    adt <- as.data.table(as.matrix(gs$as))
     rep.factor <- nrow(gs$as)/nrow(ref)
     major <- rep(ref$major, each = rep.factor) # rep for each facet level, since that's how they are sorted
     adt$major <-  major
@@ -2728,7 +2763,7 @@ is.snpRdata <- function(x){
   # calculate ho
   ## if only one heterozygote...
   if(length(hets) == 1){
-    ho <- gs$gs[,hets]/rowSums(gs$gs)
+    ho <- gs$gs[,hets]/Matrix::rowSums(gs$gs)
   }
   ## if no heterozygotes
   else if(length(hets) == 0){
@@ -2736,7 +2771,7 @@ is.snpRdata <- function(x){
   }
   ## normally
   else{
-    ho <- rowSums(gs$gs[,hets])/rowSums(gs$gs)
+    ho <- Matrix::rowSums(gs$gs[,hets])/Matrix::rowSums(gs$gs)
   }
 }
 
@@ -2841,7 +2876,7 @@ is.snpRdata <- function(x){
     tac <- vector("list", nrow(opts))
     glob_tab <- .tabulate_genotypes(shuff, x@mDat)
     glob <- .maf_func(glob_tab, m.al = substr(x@mDat, 1, floor(nchar(x@mDat)/2)))
-    glob$ho <- .ho_func(glob_tab)
+    glob$ho <- .ho_func(glob_tab, x@snp.form)
 
     # if bootstrapping the base level, done
     if(facet == ".base"){
@@ -2856,7 +2891,7 @@ is.snpRdata <- function(x){
         tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
         ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
         tac[[j]] <- .maf_func(ttab, x@mDat, as.data.frame(glob[,c("major", "minor")]))
-        tac[[j]]$ho <- .ho_func(ttab)
+        tac[[j]]$ho <- .ho_func(ttab, x@snp.form)
         tac[[j]] <- maf.to.ac(tac[[j]])
         tac[[j]]$.snp.id <- x@snp.meta$.snp.id
         tac[[j]]$subfacet <- opts[j,2]
@@ -2900,7 +2935,7 @@ is.snpRdata <- function(x){
     for(j in 1:nrow(opts)){
       tm <- .fetch.sample.meta.matching.task.list(x, opts[j,])
       ttab <- .tabulate_genotypes(.fix..call(shuff[,..tm]), x@mDat)
-      tas[[j]] <- data.table::as.data.table(ttab$as)
+      tas[[j]] <- data.table::as.data.table(as.matrix(ttab$as))
       
       # fix missing columns (no genotypes with this allele in this subfacet)
       missing <- which(!colnames(x@geno.tables$as) %in% colnames(tas[[j]]))
@@ -2914,7 +2949,7 @@ is.snpRdata <- function(x){
       tas[[j]] <- .fix..call(tas[[j]][,..ord])
       
       if(ret_gs){
-        gst <- as.data.table(ttab$gs)
+        gst <- as.data.table(as.matrix(ttab$gs))
 
         # fix missing columns (no genotypes with this allele in this subfacet)
         missing <- which(!colnames(x@geno.tables$gs) %in% colnames(gst))
@@ -3291,7 +3326,7 @@ is.snpRdata <- function(x){
   Qijg <- choose(Nj - as, g)/choose(Nj, g) # eqn 2a
   Pijg <- 1 - Qijg # eqn 2b
   
-  alpha_g <- matrixStats::rowSums2(Pijg)
+  alpha_g <- rowSums(Pijg)
   if(private){ # eqn 4
     meta <- cbind(meta, data.table::as.data.table(Qijg))
     meta[, paste0(al_cols, "_p") := lapply(.SD, prod), .SDcols = c(al_cols), by = .(facet, .snp.id)] # product across all populations
@@ -3320,25 +3355,46 @@ is.snpRdata <- function(x){
 
 
 .do_CLD <- function(genos, snp.meta, sample.facet, sample.subfacet){
-  proximity <- s1_position <- s2_position <- NULL
+  proximity <- s1_position <- s2_position <- S <- NULL
   
-  melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet){
+  melt_cld <- function(CLD, snp.meta, sample.facet, sample.subfacet, skip_bind = FALSE){
+    # CLD <- as.data.table(CLD)
+    # CLD[,.snp.id := snp.meta$.snp.id]
+    # prox <- melt.data.table(CLD, id.vars = ".snp.id")
+    # colnames(prox) <- c(".snp.id1", ".snp.id2", "CLD")
+    # 
+    # if(!skip_bind){
+    #   prox <- cbind(as.data.table(snp.meta[match(prox$.snp.id2, snp.meta$.snp.id),]), prox, as.data.table(snp.meta[match(prox$.snp.id1, snp.meta$.snp.id),]))
+    #   prox$.snp.id1 <- prox$.snp.id2 <- NULL
+    #   colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
+    #   prox[,proximity := abs(s1_position - s2_position)]
+    #   prox[,sample.facet := sample.facet]
+    #   prox[,sample.subfacet := sample.subfacet]
+    #   setcolorder(prox, c(1:ncol(snp.meta),
+    #                       (ncol(snp.meta) + 2):(ncol(prox) - 3),
+    #                       ncol(prox) - 2,
+    #                       ncol(snp.meta) + 1,
+    #                       (ncol(prox) - 1):ncol(prox)))
+    # }
+    
     prox <- cbind(as.data.table(snp.meta), as.data.table(CLD))
     prox <- reshape2::melt(prox, id.vars = colnames(snp.meta))
     prox <- cbind(prox, as.data.table(snp.meta[rep(1:nrow(snp.meta), each = nrow(snp.meta)),]))
     bad.col <- which(colnames(prox) == "variable")
     prox <- prox[,-bad.col, with = FALSE]
     colnames(prox) <- c(paste0("s1_", colnames(snp.meta)), "CLD", paste0("s2_", colnames(snp.meta)))
-    prox <- prox[-which(is.na(prox$CLD)),]
+    # prox <- prox[-which(is.na(prox$CLD)),]
     prox <- as.data.table(prox)
-    prox[,proximity := abs(s1_position - s2_position)]
-    prox[,sample.facet := sample.facet]
-    prox[,sample.subfacet := sample.subfacet]
-    setcolorder(prox, c(1:ncol(snp.meta),
-                        (ncol(snp.meta) + 2):(ncol(prox) - 3),
-                        ncol(prox) - 2,
-                        ncol(snp.meta) + 1,
-                        (ncol(prox) - 1):ncol(prox)))
+    if(!skip_bind){
+      prox[,proximity := abs(s1_position - s2_position)]
+      prox[,sample.facet := sample.facet]
+      prox[,sample.subfacet := sample.subfacet]
+      setcolorder(prox, c(1:ncol(snp.meta),
+                          (ncol(snp.meta) + 2):(ncol(prox) - 3),
+                          ncol(prox) - 2,
+                          ncol(snp.meta) + 1,
+                          (ncol(prox) - 1):ncol(prox)))
+    }
     return(prox)
   }
   
@@ -3356,11 +3412,13 @@ is.snpRdata <- function(x){
   
   # add metadata and melt
   prox <- melt_cld(CLD, snp.meta, sample.facet, sample.subfacet)
-  prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet)
+  prox_S <- melt_cld(complete.cases.matrix, snp.meta, sample.facet, sample.subfacet, skip_bind = TRUE)
   colnames(prox_S)[which(colnames(prox_S) == "CLD")] <- "S"
   
   # merge
-  prox <- merge.data.table(prox, prox_S)
+  prox[,S := prox_S$S] # should always be in the same order since the same stuff is getting melted and cbound.
+  # prox <- merge.data.table(prox, prox_S) shouldn't need the expensive merge--same order always.
+  prox <- prox[-which(is.na(CLD)),]
   
   # add column/row names
   colnames(CLD) <- snp.meta$position
@@ -3637,6 +3695,9 @@ is.snpRdata <- function(x){
   options(scipen = 999)
   for(i in 1:length(tasks)){
     comps[[i]] <- .average_windows(snp.meta(x), window_sigma, window_step, chr = tasks[i], triple_sig = FALSE, stats = NULL, gaussian = FALSE, nk = FALSE)
+    # convert .snp.ids to rows
+    comps[[i]] <- rapply(comps[[i]], function(z) match(z, snp.meta(x)$.snp.id), how = "list")
+    
     ncomps <- vector("list", nrow(x))
     # back-process into which comparisons to do for each snp
     ucomps <- unlist(comps[[i]], recursive = F)
@@ -3681,6 +3742,24 @@ is.snpRdata <- function(x){
 
 # function to figure out window values
 .window_LD_averages <- function(prox, facets, window_gaussian, window_triple_sigma, window_step, window_sigma, x){
+
+  # stop if empty
+  if(nrow(prox) == 0){
+    win_res <- as.data.table(matrix("", 0, 11))
+    cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "sigma",
+            "step", "nk.status", "gaussian", "n_snps", "triple_sigma")
+    colnames(win_res) <- cn
+    win_res$position <- numeric()
+    win_res$sigma <- numeric()
+    win_res$step <- numeric()
+    win_res$nk.status <- logical()
+    win_res$gaussian <- logical()
+    win_res$n_snps <- numeric()
+    win_res$triple_sigma <- logical()
+    
+    return(win_res)
+  }
+  
   sample.facet <- sample.subfacet <- s1_snp_subfacet <- s2_snp_subfacet <- sigma <- step <- nk.status <- gaussian <- triple_sigma <- NULL
   
   facet.types <- .check.snpR.facet.request(x, facets, "none", TRUE)[[2]]
@@ -3754,7 +3833,7 @@ is.snpRdata <- function(x){
   win_res[,nk.status := FALSE]
   win_res[,gaussian := window_gaussian]
   win_res[,triple_sigma := window_triple_sigma]
-  
+
   col_ord <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "position", "sigma",
                "step", "nk.status", "gaussian", "n_snps", "triple_sigma",
                stats)
@@ -3763,3 +3842,30 @@ is.snpRdata <- function(x){
   
   return(win_res)
 }
+
+
+.rbind_list_fill_sparse <- function(l, fill_val = 0){
+  cn <- unique(unlist(lapply(l, colnames)))
+  out <- Matrix::Matrix(0, 0, length(cn), dimnames = list(NULL, cn))
+  for(i in 1:length(l)){
+    
+    # fix any missing columns
+    mcn <- which(!cn %in% colnames(l[[i]]))
+    if(length(mcn) > 0){
+      fill <- Matrix::Matrix(fill_val, 
+                             nrow = nrow(l[[i]]), 
+                             ncol = length(mcn),
+                             dimnames = list(rownames(l[[i]]),
+                                             cn[mcn]))
+      l[[i]] <- cbind(l[[i]], fill)[,cn, drop = FALSE]
+    }
+    
+    # make sure colunms are sorted identically
+    ncord <- colnames(out)
+    out <- rbind(out, l[[i]][,ncord, drop = FALSE])
+  }
+  return(out)
+}
+
+.rowMax_sparse <- function(x) slam::rollup(x, 2, FUN = max)[,1]
+.rowMin_sparse <- function(x) slam::rollup(x, 2, FUN = min)[,1]

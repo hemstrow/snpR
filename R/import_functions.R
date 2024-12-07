@@ -188,8 +188,61 @@
 #   the same length. If a vector of the same length as number of chr, assumes
 #   those are the chr lengths in order of apperance in ms file.
 # @author William Hemstrom
-.process_ms <- function(x, chr.length){
-  infile <- x #infile
+.process_ms <- function(x, chr.length, sample.meta, fix_overlaps = TRUE){
+  #========function to fix overlapping positions==========
+  offset_overlapping_positions <- function(meta){
+    meta[,2] <- round(meta[,2])
+    meta$ord <- 1:nrow(meta)
+    
+    # function that checks for duplicates, returns dups, sorted meta, and pos_id
+    dup_check <- function(meta){
+      pos_id <- paste0(meta[,1], "_", meta[,2])
+      meta <- meta[order(pos_id),]
+      pos_id <- sort(pos_id)
+      dups <- duplicated(pos_id) | rev(duplicated(rev(pos_id)))
+      return(list(dups = dups, meta = meta, pos_id = pos_id))
+    }
+    
+    # function that takes a dup check result and adjusts any duplicate sites
+    adjust_pos <- function(dc){
+      # unpack dc
+      meta <- dc$meta
+      dups <- dc$dups
+      pos_id <- dc$pos_id
+      
+      # get a dup count table
+      tab <- table(pos_id[dups])
+      
+      # make a new vector of positions for each duplicate site and overwrite
+      ## prepare vectors
+      cent <- ceiling(tab/2)
+      current_pos <- meta[match(names(tab), pos_id), 2]
+      lower <- current_pos - (cent - 1)
+      upper <- ifelse(tab %% 2 == 0, current_pos + cent, current_pos + cent - 1)
+      vec <- apply(matrix(c(lower, upper), ncol = 2), 1, function(x){x[1]:x[2]})
+      
+      ## overwrite and return
+      meta[dups,2] <- as.numeric(unlist(vec))
+      
+      return(meta)
+    }
+    
+    # run adjustment and re-dup check until there are no duplicated sites
+    dc <- dup_check(meta)
+    tracker <- 1
+    while(any(dc$dups)){
+      if(tracker > 50){stop("More than 50 attempted fixes for overlapping loci. Did you provide long enough chr.lengths for the number of loci?\n")}
+      meta <- adjust_pos(dc) # adjust
+      dc <- dup_check(meta) # dup check
+    }
+    
+    meta <- meta[order(meta$ord),]
+    meta$ord <- NULL
+    
+    return(meta)
+  }
+  
+  #========process========================================
   lines <- readLines(x)
   lines <- lines[-which(lines == "")] #remove empty entries
   lines <- lines[-c(1,2)] #remove header info
@@ -214,7 +267,7 @@
   # check lengths input
   if(length(chr.length) != 1){
     if(length(chr.length) != length(chrls)){
-      stop("Provided vector of chromosome lengths is not equal to the number of chromosomes in ms file.\n")
+      stop("Provided vector of chromosome lengths is not equal either 1 or to the number of chromosomes in ms file.\n")
     }
   }
   
@@ -239,10 +292,25 @@
     meta[,2] <- meta[,2] * chr.length[as.numeric(substr(meta[,1], 4, 4))] # multiply by the correct chr length.
   }
   
-  colnames(meta) <- c("group", "position")
+  colnames(meta) <- c("chr", "position")
   colnames(x) <- paste0("gc_", 1:ncol(x))
   
-  return(list(x = x, meta = meta))
+  if(fix_overlaps){
+    meta <- offset_overlapping_positions(meta)
+  }
+  
+  #========convert to snpR===========
+  x <- .convert_2_to_1_column(x)
+  if(is.null(sample.meta)){
+    sample.meta <- data.frame(sampID = 1:ncol(x))
+  }
+  x <- import.snpR.data(as.data.frame(x), 
+                        snp.meta = meta, 
+                        sample.meta = sample.meta, 
+                        chr.length = chr.length)
+  
+  
+  return(x)
 }
 
 # Convert a vcf file/vcfR object into a snpRdata object
@@ -968,4 +1036,151 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   
   #========return=========
   return(x)
+}
+
+.vcf_tag_extract <- function(x, tag){
+  like <- vcfR::extract.gt(x, tag)
+  like <- strsplit(unlist(like), ",")
+  like <- unlist(like)
+  like <- list(matrix(like[seq(1, length(like), by = 3)], nrow(x)),
+               matrix(like[seq(2, length(like), by = 3)], nrow(x)),
+               matrix(like[seq(3, length(like), by = 3)], nrow(x)))
+  
+  like <- as.data.table(do.call(cbind, like)[,order(sequence(sapply(like, ncol)))])
+  
+  header <- as.data.table(x@fix[,c("CHROM", "POS", "REF", "ALT")])
+  header[,ID := paste0(CHROM, "_", POS)]
+  like <- cbind(header[,.(ID, REF, ALT)], like)
+  
+  return(like)
+}
+
+#' Utilities for direct vcf file conversion
+#' 
+#' Format vcf files as alternative formats without going through a 
+#' \code{\link{snpRdata}} intermediate. Used for working with likelihoods,
+#' probabilities, or other non-GT format fields.
+#'
+#' These functions are provided as a utility and do not work in the general
+#' \code{snpR} ecosystem. The different outputs may require specific FORMAT
+#' tags: \itemize{\item{vcf2beagle: }{\code{GP} tag}\item{vcf2PL: }
+#' {\code{PL} tag}} If thes eare lacking, \code{snpR} may provide 
+#' recommendations by which they can be added if possible.
+#' 
+#' @param file character, path to "vcf" file.
+#' @param outfile character, output filename.
+#' @param init_admix logical, default FALSE. If TRUE, will write initial
+#'   admix estimates for the program \code{entropy} to a set of files for
+#'   each \code{k}.
+#' @param k integer vector, default NULL. Numbers of ancestry clusters 
+#'   (*k* values)for which to estimate intial admixture proportions for the 
+#'   program \code{entropy}. Ignored if \code{init_admix} is FALSE.
+#' 
+#' @aliases vcf2beagle vcf2pl
+#' @name vcf_format_utils
+NULL
+
+#' @export
+#' @describeIn vcf_format_utils Format as a "beagle" likelihood file.
+vcf2beagle <- function(file, outfile){
+  .check.installed("vcfR")
+  x <- vcfR::read.vcfR(file)
+  
+  if(!"GP" %in% unlist(strsplit(x@gt[1,1], ":"))){
+    if("PL" %in% unlist(strsplit(x@gt[1,1], ":"))){
+      stop("No GP format tag located in vcf. The PL tag can be used to add a GP tag with bcftools using:\nbcftools +tag2tag infile.vcf -- --PL-to-GP > outfile.vcf")
+    }
+    stop("No GP format tag located in vcf.\n")
+  }
+  
+  like <- .vcf_tag_extract(x, "GP")
+  icn <- paste0("Ind", (0:(ncol(x@gt) - 2)))
+  icn <- rep(icn, each = 3)
+  colnames(like) <- c("marker", "allele1", "allele2", icn)
+  
+  data.table::fwrite(like, outfile, sep = "\t", col.names = TRUE, row.names = FALSE)
+}
+
+#' @export
+#' @describeIn vcf_format_utils Format as a "mgpl" phred-scaled likelihood file.
+vcf2pl <- function(file, outfile, init_admix = FALSE, k = NULL){
+  .check.installed("vcfR")
+  x <- vcfR::read.vcfR(file)
+  
+  if(init_admix){
+    .check.installed("MASS")
+  }
+  
+  if(!"PL" %in% unlist(strsplit(x@gt[1,1], ":"))){
+    if(any(c("GP", "GL") %in% unlist(strsplit(x@gt[1,1], ":")))){
+      stop("No PL format tag located in vcf. The GP or GL tags can be used to add a PL tag with bcftools using:\nbcftools +tag2tag infile.vcf -- --GP-to-PL > outfile.vcf\nor\nbcftools +tag2tag infile.vcf -- --GL-to-PL > outfile.vcf\nrespectively.")
+    }
+    stop("No GP format tag located in vcf.\n")
+  }
+  
+  PL <- .vcf_tag_extract(x, "PL")
+  
+
+  if(init_admix){
+    # code adapted from https://bitbucket.org/buerklelab/mixedploidy-entropy/src/master/auxfiles/inputdataformat.R with permission from authors
+    get_mean_gl <- function(x){
+      a <- sum(10^(-0.1*x))
+      return(sum((10^(-0.1*x))*(0:2))/a)
+    }
+    
+    PL <- cbind(PL[,1:3], PL[,lapply(.SD, as.numeric), .SDcols = 4:ncol(PL)])
+    
+    meangls <- matrix(0, nrow(PL), (ncol(PL)-3)/3)
+    
+    tracker <- 4
+    for(i in 1:((ncol(PL) - 3)/3)){
+      meangls[,i] <- apply(as.matrix(PL[,tracker:(tracker + 2)]), 1,  get_mean_gl)
+      tracker <- tracker + 3
+    }
+    
+
+    do.pca <- function(gmat){
+      gmn <- apply(gmat, 1, mean, na.rm=T)
+      gmnmat <- matrix(gmn, nrow = nrow(gmat), ncol = ncol(gmat))
+      gprime <- gmat - gmnmat ## remove mean
+      
+      gcovarmat <- matrix(NA, nrow=ncol(gmat), ncol = ncol(gmat))
+      for(i in 1:ncol(gmat)){
+        for(j in i:ncol(gmat)){
+          if (i == j){
+            gcovarmat[i,j] <- stats::cov(gprime[,i], gprime[,j], use="pairwise.complete.obs")
+          }
+          else{
+            gcovarmat[i,j] <- stats::cov(gprime[,i], gprime[,j], use="pairwise.complete.obs")
+            gcovarmat[j,i] <- gcovarmat[i,j]
+          }
+        }
+      }
+      missing.inds <- unique(which(is.na(gcovarmat), arr.ind=T)[,2])
+      return(list(stats::prcomp(x = na.omit(gcovarmat), center = TRUE, scale = FALSE), missing.inds))
+    }
+    
+    return.val <- do.pca(meangls)
+    pcout <- return.val[1][[1]]
+    miss.inds <- return.val[2][[1]]
+
+    ofk <- tools::file_path_sans_ext(outfile)
+    ofk <- paste0(ofk, "_qk")
+    for(i in k){
+      init.admix <- matrix(0, nrow=ncol(meangls), ncol=i)
+      init.admix[miss.inds,] <- rep(1/i, i)
+      
+      kn <- stats::kmeans(pcout$x[,1:5], i, iter.max = 10, nstart = 10, algorithm = "Hartigan-Wong")
+      ldakn <- MASS::lda(x = pcout$x[,1:5], grouping = kn$cluster, CV = TRUE)
+      init.admix <- ldakn$posterior
+      data.table::fwrite(data.table::as.data.table(round(init.admix, 5)), file = paste0(ofk, i, ".q"), row.names = FALSE, col.names = FALSE, sep = " ")
+    }
+    
+    .yell_citation("Shastry2021", "admixture starting proportions", "admixture starting proportions using code adapted from Entropy, with permission from authors.")
+    
+  }
+  
+  write(paste0(ncol(x@gt) - 1, " ", nrow(x)), outfile)
+  write(paste0(colnames(x@gt)[-1], collapse = "\t"), outfile, append = TRUE)
+  data.table::fwrite(PL, outfile, sep = "\t", append = TRUE, col.names = FALSE, row.names = FALSE)
 }

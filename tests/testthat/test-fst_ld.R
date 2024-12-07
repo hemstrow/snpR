@@ -1,9 +1,12 @@
 test_that("correct genepop", {
   local_edition(3)
-  skip_on_cran();
+  skip_if_not_installed("genepop");
   tdfst <- calc_pairwise_fst(.internal.data$test_snps, "pop", "genepop")
   tdfst <- get.snpR.stats(tdfst, "pop", "fst")
-  expect_snapshot_value(tdfst, style = "serialize") # note, run off of genepop, not internally calced. Thus checked, but should not change.
+  
+  expect_equal(tdfst$pairwise$fst, 
+               c(0.0341, 0, -0.1229, 0, -0.0937, -0.026, 0.1667, 0.1071, -0.0577, -0.087, 0.0165))
+  expect_equal(tdfst$weighted.means$weighted_mean_fst, -0.0034)
 })
 
 test_that("correct wc", {
@@ -222,10 +225,21 @@ test_that("correct window ld",{
   expect_true(any(tdld$facet == "pop" & tdld$snp.facet == "chr"))
   expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD") %in% colnames(tdld)))
   
-  skip_on_cran();
+  # correct facet-level comps
+  prox <- calc_pairwise_ld(stickSNPs, c("pop.chr","chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, .prox_only = TRUE)
+  expect_true(all(prox$s1_chr == prox$s2_chr))
+  prox <- calc_pairwise_ld(stickSNPs, c("pop.chr","chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, .prox_only = TRUE, CLD = FALSE)
+  expect_true(all(prox$s1_chr == prox$s2_chr))
+  
   tdld <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, window_triple_sigma = FALSE, CLD = TRUE)
   tdld <- get.snpR.stats(tdld, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
   expect_true(all(c("sigma", "step", "gaussian", "n_snps", "triple_sigma", "CLD", "rsq", "Dprime", "pval") %in% colnames(tdld)))
+  
+  # par the same as serial
+  tdldpar <- calc_pairwise_ld(stickSNPs, c("pop", "pop.chr", ".base", "chr"), window_gaussian = FALSE, window_sigma = 1600, 
+                              window_triple_sigma = FALSE, CLD = TRUE, par = 2)
+  tdldpar <- get.snpR.stats(tdldpar, c("pop", "pop.chr", ".base", "chr"), stats = "ld")$single.window
+  expect_equal(dplyr::arrange(tdld), dplyr::arrange(tdldpar), ignore_attr = TRUE)
 })
 
 test_that("fis bootstrapping",{
@@ -234,16 +248,13 @@ test_that("fis bootstrapping",{
   
   # basic
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true("weighted_mean_fis_uCI" %in% colnames(bs1_res$weighted.means))
+  expect_true("weighted_mean_fis_lCI" %in% colnames(bs1_res$weighted.means))
   skip_if_not("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
   
   
+  
   expect_true(is.numeric(unlist(bs1_res$weighted.means$weighted_mean_fis_p)))
-
-  # parallel
-  skip_on_cran();
-  bs1_par <- calc_fis(.internal.data$test_snps, "pop", boot = 10, boot_par = 2)
-  bs1_res <- get.snpR.stats(bs1_par, "pop", "fis")
-  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
 
   # complex facets
   bs1_par <- calc_fis(.internal.data$test_snps, c("pop", "fam", "pop.chr", "chr"), boot = 10)
@@ -266,6 +277,12 @@ test_that("fis bootstrapping",{
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
   expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.subfacet == ".base"))
+  
+  # parallel
+  skip_on_cran();
+  bs1_par <- calc_fis(.internal.data$test_snps, "pop", boot = 10, boot_par = 2)
+  bs1_res <- get.snpR.stats(bs1_par, "pop", "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
 })
 
 test_that("global fst",{

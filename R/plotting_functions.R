@@ -550,8 +550,8 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return @return A list containing: \itemize{ \item{data: } Raw PCA, tSNE, umap, and/or
-#'  DAPC plot data. \item{plots: } ggplot PCA, tSNE, umap, and/or DAPC plots.}
+#'@return A list containing: \itemize{ \item{data: } {Raw PCA, tSNE, umap, and/or
+#'  DAPC plot data.} \item{plots: } {ggplot PCA, tSNE, umap, and/or DAPC plots.}}
 #'  Each of these two lists may contain one to four objects, one for each PCA,
 #'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
 #'  respectively. If a PCA was run, the loadings will also be returned in the 
@@ -860,7 +860,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
     plot_dats$umap <- cbind(meta, as.data.frame(umap_r$layout))
   }
   if("dapc" %in% plot_type){
-    gi <- format_snps(x, "adegenet", "pop")
+    gi <- format_snps(x, "adegenet", facets)
     if(!is.null(dapc_clustering_max_n_clust)){
       k <- adegenet::find.clusters.genind(x = gi, max.n.clust = dapc_clustering_max_n_clust)
     }
@@ -886,8 +886,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 
   for(i in 1:length(plot_dats)){
     
+    one_d_tpd <- FALSE
+    
     if(names(plot_dats)[i] == "dapc"){
-      
+
       
       # from ade4, two internals I need here to get ellipses, the second with edits to return values instead of plotting them
       fac2disj <- function(fac, drop = FALSE) {
@@ -991,37 +993,43 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       tpd$.cluster <- plot_dats[[i]]$grp
       tpd <- data.table::as.data.table(tpd)
       
-      # xs <- pd[ , cbind(density(LD1)[1:2]), by = cluster]
-      # colnames(xs)[2:3] <- c("x", "y")
-      # densities <- tapply(pd$LD1, pd$cluster, density)
-      
       tpd <- as.data.table(cbind(meta, tpd))
       
       .LD1 <- .LD2 <- .GRP_LD1 <- .GRP_LD2 <- NULL
       
-      out <- ggplot2::ggplot(tpd, ggplot2::aes(.LD1, .LD2)) + ggplot2::theme_bw()
-      
-      if(is.numeric(ellipse_size)){
-        disj <- fac2disj(as.factor(tpd$.cluster))
-        ellipses <- vector("list", length(k$size))
-        for(j in 1:length(ellipses)){
-          ellipses[[j]] <- scatterutil.ellipse(tpd$.LD1, tpd$.LD2, disj[,j], ellipse_size)
-          ellipses[[j]] <- data.frame(x = ellipses[[j]]$x, y = ellipses[[j]]$y)
-          ellipses[[j]]$cluster <- j
-        }
-        ellipses <- data.table::rbindlist(ellipses)
-        
-        out <- out + 
-          ggplot2::geom_polygon(data = ellipses, mapping = ggplot2::aes(x, y, group = as.factor(cluster)), fill = NA, color = "black")
-      }
-      
-      if(seg_lines){
-        tpd[,c(".GRP_LD1", ".GRP_LD2") := as.data.frame(plot_dats[[i]]$grp.coord)[as.numeric(as.character(.cluster)),1:2]]
+      # if only one LD retained, plot will be very different--make that now.
+      if(!".LD2" %in% colnames(tpd)){
+        out <- ggplot2::ggplot(tpd, ggplot2::aes(y = .LD1, x = .cluster)) +
+          ggplot2::theme_bw()
         tpd <- as.data.frame(tpd)
-        out <- out + 
-          ggplot2::geom_segment(ggplot2::aes(xend = .GRP_LD1, yend = .GRP_LD2))
+        
+        one_d_tpd <- TRUE
       }
-      
+      else{
+        out <- ggplot2::ggplot(tpd, ggplot2::aes(.LD1, .LD2)) + ggplot2::theme_bw()
+        
+        if(is.numeric(ellipse_size)){
+          disj <- fac2disj(as.factor(tpd$.cluster))
+          ellipses <- vector("list", length(k$size))
+          for(j in 1:length(ellipses)){
+            ellipses[[j]] <- scatterutil.ellipse(tpd$.LD1, tpd$.LD2, disj[,j], ellipse_size)
+            if(is.null(ellipses[[j]])){next}
+            ellipses[[j]] <- data.frame(x = ellipses[[j]]$x, y = ellipses[[j]]$y)
+            ellipses[[j]]$cluster <- j
+          }
+          ellipses <- data.table::rbindlist(ellipses)
+          
+          out <- out + 
+            ggplot2::geom_polygon(data = ellipses, mapping = ggplot2::aes(x, y, group = as.factor(cluster)), fill = NA, color = "black")
+        }
+        
+        if(seg_lines){
+          tpd[,c(".GRP_LD1", ".GRP_LD2") := as.data.frame(plot_dats[[i]]$grp.coord)[as.numeric(as.character(.cluster)),1:2]]
+          tpd <- as.data.frame(tpd)
+          out <- out + 
+            ggplot2::geom_segment(ggplot2::aes(xend = .GRP_LD1, yend = .GRP_LD2))
+        }
+      }
     }
     
     else{
@@ -1034,7 +1042,6 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
     }
     
-
     if(facets[1] == ".base"){
       out <- out + ggplot2::geom_point()
     }
@@ -1048,7 +1055,14 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       
       # add geoms to plot
       if(length(facets) == 1){
-        out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+        if(one_d_tpd){
+          out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1), 
+                                            height = 0)#add the factor
+        }
+        else{
+          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1))#add the factor
+          
+        }
       }
       else{
         # if two plotting variables, prepare the second and add it as well.
@@ -1090,11 +1104,26 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
         }
         
         if(lv2 <= 6){
-          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
-            ggplot2::scale_shape_discrete(name = facets[2])
+          if(one_d_tpd){
+            out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25,
+                                              height = 0) +
+              ggplot2::scale_shape_discrete(name = facets[2])
+          }
+          else{
+            out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, shape = v2), size = 2.5, stroke = 1.25) +
+              ggplot2::scale_shape_discrete(name = facets[2])
+          }
+         
         }
         else{
-          out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+          if(one_d_tpd){
+            out <- out + ggplot2::geom_jitter(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25,
+                                              height = 0)
+          }
+          else{
+            out <- out + ggplot2::geom_point(ggplot2::aes(color = v1, fill = v2), pch = 21, size = 2.5, stroke = 1.25)
+          }
+          
           v2_has_color <- TRUE
         }
       }
@@ -1158,7 +1187,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
       out <- out + ggplot2::xlab(paste0("PC1 (", loadings[1], "%)")) + ggplot2::ylab(paste0("PC2 (", loadings[2], "%)"))
     }
     else{
-      out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
+      if(one_d_tpd){
+        out <- out + ggplot2::xlab("Cluster") + ggplot2::ylab("Dim 2")
+      }
+      else{
+        out <- out + ggplot2::xlab("Dim 1") + ggplot2::ylab("Dim 2")
+      }
     }
     plots[[i]] <- out
   }
@@ -1267,6 +1301,18 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param snp character, default NULL. Column in either snp metadata or x (for
 #'   snpRdata or data.frame objects, respectively) containing snpIDs to use for
 #'   highlighting. Ignored if no highlighting is requested.
+#' @param color_var character, default NULL. If provided, a column by which
+#'   to color each point. If used, chromosomes will not be colored, and the 
+#'   \code{colors} argument instead provides a palette to use, with the viridis
+#'   palette used by default.
+#' @param vlines character (color) or FALSE, default FALSE. If a color, vertical
+#'   separator lines will be drawn between each chromosome. Widths controlled
+#'   by \code{vline_width}.
+#' @param vline_width numeric, default 2. Width of chromosome separator lines.
+#'   Ignored if \code{vlines} is FALSE.
+#' @param median_line character (color) or FALSE, default FALSE. If TRUE, a
+#'   horizontal line will be plotted at the \code{plot_var} median in the color
+#'   provided.
 #' @param chr.subfacet character, default NULL. Specific chromosomes to plot.
 #'   See examples.
 #' @param sample.subfacet character, default NULL. Specific sample-specific
@@ -1327,12 +1373,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param rug_alpha numeric between 0 and 1, default 0.3. Alpha (transparency)
 #'   applied to a ribbon-style rug. Ignored if \code{rug_data} is not provided
 #'   or the \code{rug_style} is not \code{ribbon}.
-#' @param rug_thickness numeric or \code{grid}-style \code{unit}, default
-#'   \code{ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc")}. The
-#'   height of the rug lines (if \code{rug_style = "point"}) or ribbon (if
-#'   \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not provided.
-#'   Use of the \code{\link[ggplot2]{unit}} style of size choice recommended to
-#'   avoid over-plotting.
+#' @param rug_thickness numeric, default .03 for point style and 6 for ribbon
+#'   style. The height of the rug lines (if \code{rug_style = "point"}) or
+#'   ribbon (if \code{rug_style = "ribbon"}). Ignored if \code{rug_data} is not
+#'   provided.
 #' @param chr_order character, default NULL. If provided, an ordered vector of
 #'   chromosome/scaffold/etc names by which to sort output.
 #' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
@@ -1428,6 +1472,10 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' }
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
+                           color_var = NULL,
+                           vlines = FALSE,
+                           vline_width = .25,
+                           median_line = FALSE,
                            chr.subfacet = NULL, sample.subfacet = NULL,
                            significant = NULL, suggestive = NULL,
                            highlight = "significant",
@@ -1439,13 +1487,13 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            rug_style = "point",
                            rug_label = NULL,
                            rug_alpha = 0.3,
-                           rug_thickness = ggplot2::unit(ifelse(rug_style == "point", 0.03, 6), "npc"),
+                           rug_thickness = ifelse(rug_style == "point", 0.03, 6),
                            lambda_gc_correction = FALSE,
                            chr_order = NULL,
                            abbreviate_labels = FALSE,
                            simplify_output = FALSE){
 
-  cum.bp <- cum.start <- cum.end <- y <- start <- end <-  NULL
+  cum.bp <- cum.start <- cum.end <- y <- start <- end <- med <- NULL
 
   #=============sanity checks==============================
   msg <- character()
@@ -1570,7 +1618,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #====otherwise=====
   else if(is.data.frame(x)){
     if(data.table::is.data.table(x)){x <- as.data.frame(x)}
-    stats <- x[,which(colnames(x) %in% c(plot_var, bp, chr))]
+    cols <- c(plot_var, bp, chr)
+    if(!is.null(color_var)){cols <- c(cols, color_var)}
+    stats <- x[,which(colnames(x) %in% cols)]
     
     # deal with facets provided--may be column names or snpR style facets
     if(!is.null(facets)){
@@ -1615,13 +1665,19 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stop("x must be a data.frame or snpRdata object.\n")
   }
   
+
   #================sanity checks==============
   msg <- character(0)
   
   if(nrow(stats) != 0){
     nas <- which(is.na(stats[,plot_var]))
     if(length(nas) != 0){
-      stats <- stats[-which(is.na(stats[,plot_var])),]
+      stats <- stats[-nas,]
+      if(is.numeric(highlight)){
+        fix_highlight <- 1:nrow(stats)
+        fix_highlight <- fix_highlight[-nas]
+        highlight <- which(fix_highlight %in% highlight)
+      }
     }
   }
   
@@ -1630,14 +1686,29 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
     stop("No matching statistics. Did you remember to smooth by your chromosome/scaffold/etc?\n")
   }
   
-  
-  
   if(!bp %in% colnames(stats)){
     msg <- c(msg, paste0("Position column: ", bp, " not found in data/snp.meta. Define with argument bp = \n"))
   }
   
   if(!chr %in% colnames(stats)){
     msg <- c(msg, paste0("Chromosome column: ", chr, " not found in data/snp.meta. Define with argument chr = \n"))
+  }
+  
+  if(!is.null(color_var)){
+    if(!color_var %in% colnames(stats)){
+      msg <- c(msg, paste0(color_var, " not found in data/snp.meta.\n"))
+    }
+    else{
+      if(methods::is(colors, "gg") & is(colors, "Scaale")){
+        tmp <- try(ggplot2::ggplot() + colors, silent = TRUE)
+        if(methods::is(tmp, "try-error")){
+          msg <- c(msg, "Can't add function `colors()` to ggplots.\n")
+        }
+      }
+      else if(length(unique(stats[,color_var])) %in% length(colors)){
+        msg <- c(msg, paste0("The provided colors must either be a `ggplot2` useable function or equal in length to the number of categories of ", plot_var , "\n"))
+      }
+    }
   }
   
   if(length(msg) > 0){
@@ -1729,6 +1800,9 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   #=============clean up==================
   colnames(stats)[which(colnames(stats) == plot_var)] <- "pvar"
   colnames(stats)[which(colnames(stats) == chr)] <- "chr"
+  if(!is.null(color_var)){
+    colnames(stats)[which(colnames(stats) == color_var)] <- "colvar"
+  }
   
   # lambda gc correction for pop structure, etc.
   if(lambda_gc_correction){
@@ -1819,20 +1893,47 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   }
 
   #============produce the plot========
-  pvar <- NULL
-  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
-    ggplot2::geom_point() +
+  pvar <- colvar <- NULL
+
+  if(is.null(color_var)){
+    p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = as.factor(chr))) +
+      ggplot2::geom_point(show.legend = FALSE) +
+      ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers)))
+  }
+  else{
+    p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = pvar, color = colvar)) +
+      ggplot2::geom_point()
+    
+    if(identical(colors,c("black", "slategray3"))){
+      p <- p + viridis::scale_color_viridis(option = viridis.option, begin = viridis.hue[1], end = viridis.hue[2])
+    }
+    
+    else if(methods::is(colors, "Scale") & methods::is(colors, "gg")){
+      p <- p + colors
+    }
+    else{
+      p <- p + ggplot2::scale_color_manual(values = colors)
+    }
+  }
+  
+  p <- p +
     ggplot2::theme_bw() +
-    ggplot2::theme(legend.position = "none",
-                   axis.text.x = ggplot2::element_text(angle = 90, size = t.sizes[3], vjust = 0.5),
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, size = t.sizes[3], vjust = 0.5),
                    panel.grid.major.x = ggplot2::element_blank(),
                    panel.grid.minor.x = ggplot2::element_blank(),
                    strip.background = ggplot2::element_blank(),
                    axis.text.y = ggplot2::element_text(size = t.sizes[3]),
                    strip.text = ggplot2::element_text(hjust = 0.01, size = t.sizes[1]),
                    axis.title = ggplot2::element_text(size = t.sizes[2])) +
-    ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers))) +
-    ggplot2::xlab(chr) + ggplot2::ylab(plot_var)
+    ggplot2::xlab(chr)
+  
+  if(!log.p){
+    p <- p + ggplot2::ylab(plot_var)
+  }
+  else{
+    p <- p + ggplot2::ylab(paste0("-log10(", plot_var, ")"))
+  }
+  
 
   #=============adjust the plot========
   if(length(unique(as.character(stats$subfacet))) > 1){
@@ -1873,6 +1974,14 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
   else{
     p <- p + ggplot2::scale_x_continuous(label = names(cum.chr.centers), 
                                          breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  
+  if(!isFALSE(median_line)){
+
+    md <- as.data.table(stats)
+    if(!"subfacet" %in% colnames(stats)){stats$subfacet <- ".base"}
+    md <- md[,list(med = stats::median(pvar)), by = subfacet]
+    p <- p + ggplot2::geom_hline(data = md, mapping = ggplot2::aes(yintercept = med), color = median_line)
   }
   
   # rug
@@ -1963,6 +2072,12 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
         chr <- ochr
       }
     }
+  }
+  
+  if(!isFALSE(vlines)){
+
+    cum.start <- cum.chr.centers + tapply(stats[,bp], stats$chr, function(x) max(x)/2)
+    p <- p + ggplot2::geom_vline(xintercept = cum.start, color = vlines, linewidth = vline_width)
   }
   
   if(!simplify_output){
@@ -2190,7 +2305,7 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' method is used to initialize clusters if one rep is requested, otherwise the
 #' clusters are started randomly each rep. Other methods can be used by
 #' providing pop.ini as an additional argument as long as only one rep is
-#' requested. Note that at this moment, the snapclust method /emph{is not
+#' requested. Note that at this moment, the snapclust method \emph{is not
 #' recommended for use} by the adegenet package maintainers.
 #'
 #' Multiple different runs can be conducted using the 'reps' argument, and the
@@ -2391,9 +2506,9 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param metro_update_freq numeric, default 10. Used if method = "structure".
 #'   Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 #'   updates are used. If 0, updates are never used.
-#' @param seed integer, default sample(100000, 1). Used if method = "structure".
-#'   Starting seed for analysis runs. Each additional run (k value or rep) will
-#'   use a successive seed.
+#' @param seed integer, default sample(100000, 1). Used if method = "structure"
+#'   or "admixture". Starting seed for analysis runs. Each additional run (k
+#'   value or rep) will use a successive seed.
 #' @param strip_col_names string, default NULL. An optional regular expression
 #'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
@@ -3231,21 +3346,22 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       #=========prep===========
       # write plink files
       old.snp.meta <- snp.meta(x)
-      snp.meta(x)$chr <- 0
-      format_snps(x, "plink", outfile = "plink_files")
+      snp.meta(x)$chr <- "0"
+      format_snps(x, "plink", outfile = "plink_files", plink_recode_numeric = TRUE)
       cv_storage <- expand.grid(k, 1:reps)
       colnames(cv_storage) <- c("K", "rep")
       cv_storage <- dplyr::arrange(cv_storage, K, rep)
       cv_storage$cv_error <- NA
       for(i in k){
         for(j in 1:reps){
-          cmd <- paste0(admixture_path, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
+          cmd <- paste0(admixture_path, " -s ", seed, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
           system(cmd)
           file.rename(paste0("plink_files.", i, ".P"), paste0("plink_files.", i, "_", j, ".P"))
           file.rename(paste0("plink_files.", i, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
           cv_err <- readLines(paste0("plink_files_log", i, "_", j, ".out"))
           cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
             as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
+          seed <- seed + 1
         }
       }
       qlist <- parse_qfiles(".Q")
@@ -3550,6 +3666,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   #===========final fixes to plot data=========
   pdat$ID <- factor(pdat$ID, levels = pdat$ID[ind_ord])
   pdat <- pdat[which(pdat$K %in% k),] # double check that we didn't import extra K values, which is possible with externally run data.
+  if(nrow(pdat) == 0){
+    stop("No data for the requested k provided. Did you request the correct k?\n")
+  }
   pdat$K <- as.factor(pdat$K)
   levels(pdat$K) <- paste0("K = ", levels(pdat$K))
   pdat$Cluster <- as.factor(pdat$Cluster)
@@ -3602,7 +3721,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     fmt <- sapply(pops, function(x) sum(sample_meta[,ofacet] == x, na.rm = T))
     names(fmt) <- pops
     fmc <- cumsum(fmt)
-    fm <- floor(c(0, fmc[-length(fmc)]) + fmt/2)
+    fm <- ceiling(c(0, fmc[-length(fmc)]) + fmt/2)
     breaks <- levels(pdat$ID)[fm]
 
     seps <- c(0, fmc) + 0.5
@@ -4365,10 +4484,10 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
     
     heho <- get.snpR.stats(x, facet, c("he", "ho"))$single
     
-    heho <- ggplot2::ggplot(heho, ggplot2::aes(x = ho, y = he)) + 
+    heho <- ggplot2::ggplot(heho, ggplot2::aes(x = he, y = ho)) + 
       ggplot2::geom_hex(ggplot2::aes(fill = ggplot2::after_stat(log(count)))) +
-      ggplot2::theme_bw() + ggplot2::xlab("Observed Heterozygosity") +
-      ggplot2::ylab("Expected Heterozygosity") +
+      ggplot2::theme_bw() + ggplot2::ylab("Observed Heterozygosity") +
+      ggplot2::xlab("Expected Heterozygosity") +
       ggplot2::geom_abline(slope = 1, intercept = 0) +
       ggplot2::facet_wrap(~subfacet) +
       ggplot2::scale_fill_viridis_c()

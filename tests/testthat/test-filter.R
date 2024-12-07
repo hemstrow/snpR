@@ -176,8 +176,14 @@ test_that("mac",{
   
   td <- filter_snps(.internal.data$test_snps, mac = 3, verbose = FALSE)
   
-  bad.snps <- which(matrixStats::rowSums2(.internal.data$test_snps@geno.tables$as) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$as) <= 3)
+  bad.snps <- which(Matrix::rowSums(.internal.data$test_snps@geno.tables$as) - .rowMax_sparse(.internal.data$test_snps@geno.tables$as) <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
+  
+  # with no non-poly removal
+  test <- genotypes(stickSNPs)
+  test <- rbind(test, rep("AA", ncol(test)))
+  test <- import.snpR.data(test, sample.meta = sample.meta(stickSNPs))
+  expect_true(nrow(filter_snps(test, non_poly = FALSE, mac = 1, verbose = FALSE)) == 101)
 })
 
 
@@ -190,8 +196,8 @@ test_that("mgc",{
   td <- filter_snps(.internal.data$test_snps, mgc = 3, verbose = FALSE)
   
   hs <- colnames(.internal.data$test_snps@geno.tables$gs) %in% c("AC", "AG", "CT", "GT")
-  hs_c <- rowSums(.internal.data$test_snps@geno.tables$gs[, which(hs)])
-  mg <- rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - matrixStats::rowMaxs(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
+  hs_c <- Matrix::rowSums(.internal.data$test_snps@geno.tables$gs[, which(hs)])
+  mg <- Matrix::rowSums(.internal.data$test_snps@geno.tables$gs[,-which(hs)]) - .rowMax_sparse(.internal.data$test_snps@geno.tables$gs[,-which(hs)])
   bad.snps <- which(hs_c + mg <= 3)
   expect_equivalent(snp.meta(td), snp.meta(.internal.data$test_snps)[-bad.snps,])
   
@@ -201,6 +207,12 @@ test_that("mgc",{
   d <- import.snpR.data(d[,-c(1:2)], snp.meta = d[,1:2], mDat = -9)
   d <- filter_snps(d, mgc = 2, verbose = FALSE)
   expect_equal(nrow(d), 6)
+  
+  # with no non-poly removal
+  test <- genotypes(stickSNPs)
+  test <- rbind(test, rep("AA", ncol(test)))
+  test <- import.snpR.data(test, sample.meta = sample.meta(stickSNPs))
+  expect_true(nrow(filter_snps(test, non_poly = FALSE, mgc = 1, verbose = FALSE)) == 101)
 })
 
 #==========LD=============================

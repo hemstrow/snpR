@@ -103,9 +103,6 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
     if(any(check_facet[[2]] != "sample")){
       msg <- c(msg, "For now, only sample level facets are allowed.\n")
     }
-    if(length(.split.facet(facet)[[1]]) > 1){
-      msg <- c(msg, "For now, only facets referring to only one column of metadata are allowed.\n")
-    }
   }
   
   if(!is.null(pops)){
@@ -215,7 +212,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
   }
 
 
-  if(any(sapply(pops, function(y) length(grep(y, colnames(x)))) != 2)){
+  if(any(sapply(pops, function(y) sum(colnames(x) == y) != 2))){
     msg <- c(msg, "Each pop must match two column names in x.\n")
   }
   if(length(pops) > 2){
@@ -331,7 +328,7 @@ make_SFS <- function(x, pops, projection, fold = FALSE, update_bib = FALSE){
     # write to output
     for(i in 1:length(pops)){
       x <- data.table::as.data.table(x)
-      dat.cols <- grep(pops[i], colnames(x))
+      dat.cols <- which(pops[i] == colnames(x))
       tdat <- x[,dat.cols, with = FALSE]
       tdat <- as.matrix(tdat)
       out[,1,i] <- rowSums(tdat) # total count
@@ -533,6 +530,359 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
   .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
 
   return(directionality)
+}
+
+
+#' Estimate the origin point of a population expansion using directionality.
+#'
+#' Calculates the origin of expansion from directionality indices from pairwise
+#' population comparisons according to Peter and Slatkin (2013).
+#'
+#' Essentially, the directionality index measures the difference in derived
+#' allele frequency between two populations to determine the directionality of
+#' population spread between the two. Since the "destination" population is
+#' sourced from but experienced more genetic drift than the "source" population,
+#' it should have relatively more high-frequency derived alleles \emph{after the
+#' removal of fixed ancestral alleles}. See Peter and Slatkin (2013) for
+#' details.
+#' 
+#' This metric, calculated between multiple populations, can be used to estimate
+#' the origin point of a population expansion using a Time Difference Of Arrival
+#' approach by scaling allelic differences to geometric space. See Peter and 
+#' Slatkin (2013) for details. Distances are calculated using the 
+#' \code{\link[geosphere]{distGeo}} function assuming a WGS84 ellipsoid, and so
+#' provided coordinates must be in that format. The sampling location for each
+#' subfacet is derived using the \code{\link[geosphere]{geomean}} of each.
+#' 
+#' The TODA method requires an optimization procedure to estimate the point-of-
+#' origin. This is done using the \code{\link[stats]{optim}} function with
+#' the default parameters for maximization.
+#'
+#' @param x snpRdata object. A snpRdata from which to
+#'   calculate SFS, directionality indices, and an expansion point-of-origin.
+#'   SNP metadata columns named "ref" and "anc" containing the identity of the
+#'   derived and ancestral alleles, respectively, must be present, as must
+#'   columns named 'x' and 'y' containing WGS84 elipsoid scaled sampling
+#'   locations for each sample in the sample metadata.
+#' @param facet character, default NULL. The sample metadata facet by which
+#'   to group populations and calculate the expansion origin. Only one facet
+#'   currently allowed, although it can be complex (e.g. 'fam.pop').
+#' @param boots numeric, default 1000. The number of bootstraps used to determine
+#'   the variance of the directionality index for each pairwise comparison.
+#' @param projection numeric, default NULL. The number of \emph{gene copies}
+#'   to project to for each facet level. Should be a named numeric vector containing
+#'   an entry for each facet level.
+#' @param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
+#'  be processed in parallel using the supplied number of cores.
+#' @param verbose Logical, default FALSE. If TRUE, some progress updates will be
+#'  reported.
+#' @param update_bib character or FALSE, default FALSE. If a file path to an
+#'   existing .bib library or to a valid path for a new one, will update or
+#'   create a .bib file including any new citations for methods used. Useful
+#'   given that this function does not return a snpRdata object, so a
+#'   \code{\link{citations}} cannot be used to fetch references.
+#'
+#' @export
+#' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
+#'   from genetic data. \emph{Evolution}, 67(11), 3274-3289.
+#'
+#' @return A named list containing: \itemize{\item{opt: } A vector with the
+#'   spatial/genetic distance linking coefficient 'v' as well as the 'x' and 'y'
+#'   coordinates of the estimated origin of the range expansion.
+#'   \item{'pairwise_directionality':} A data.frame containing the pairwise
+#'   directionality estimates, coordinates, and the directionality variance for
+#'   each pair of populations.}
+#'   
+#' @author William Hemstrom
+#'   
+#' @examples
+#' \dontrun{
+#' # Bootstrapping is slow, so not run.
+#' # set ref and anc--ideally use an outgroup for this
+#' dat <- calc_maf(stickSNPs)
+#' snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") 
+#' snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
+#' 
+#' # setup x and y coords
+#' long_lat <- data.frame(SMR = c(44.365931, -121.140420), 
+#'                        CLF = c(44.267718, -121.255805), 
+#'                        OPL = c(44.485958, -121.298360), 
+#'                        ASP = c(43.891693, -121.448360), 
+#'                        UPD = c(43.891755, -121.451600), 
+#'                        PAL = c(43.714114, -121.272797))
+#' long_lat <- t(long_lat)
+#' long_lat <- long_lat[match(sample.meta(dat)$pop, rownames(long_lat)),]
+#' colnames(long_lat) <- c("y", "x")
+#' sample.meta(dat) <- cbind(sample.meta(dat), long_lat)
+#' 
+#' projection <- summarize_facets(dat, facet)[[facet]]
+#' projection <- floor(projection*.8)
+#' 
+#' # run the calculation
+#' calc_origin_of_expansion(dat, "pop", boots = 100, projection = projection, 
+#'                          boot_par = 6, verbose = TRUE)
+#' }
+calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
+                                     boot_par = FALSE,
+                                     verbose = FALSE,
+                                     update_bib = FALSE){
+  y <- NULL
+
+  #============sanity checks============
+  .check.installed("geosphere")
+  
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.n")
+  }
+  
+  # check facet and proj
+  ofacet <- facet
+  facet <- .check.snpR.facet.request(x, facet)
+  if(length(facet) > 1){
+    stop("calc_origin_of_expansion currently allows for only one facet at a time.\n")
+  }
+  
+  if(facet == ".base"){
+    stop("A sample facet must be provided.\n")
+  }
+
+  # resort complex if needed
+  if(facet != ofacet){
+    sf1 <- unlist(.split.facet(ofacet))
+    sf2 <- unlist(.split.facet(facet))
+    
+    resort <- match(sf1, sf2)
+    
+    new.names <- .split.facet(names(projection))
+    new.names <- unlist(lapply(new.names, function(y) paste(y[resort], collapse = ".")))
+    names(projection) <- new.names
+  }
+  
+  fl <- summarize_facets(x, facet)[[facet]]
+  if(length(fl) < 3){
+    stop("At least three populations/facet levels must be present in provided facet to calculate origin-of-expansion.\n")
+  }
+  missing_proj <- names(fl)[which(!names(fl) %in% names(projection))]
+  if(length(missing_proj) > 0){
+    stop("Some facet levels are missing in the projection vector. Missing levels:\n\t", paste0(missing_proj, collapse = ", "), "\n")
+  }
+  
+  large_proj <- which(projection > 2*fl[match(names(projection), names(fl))])
+  if(length(large_proj) > 0){
+    stop("All projections must be smaller than or equal to 2N, where N is the sample size for the respective facet level.\nBad projections:\n\t",
+         paste0(names(projection)[large_proj], collapse = ", "), "\n")
+  }
+  
+  if(any(!c("ref", "anc") %in% colnames(x@snp.meta))){
+    om <- snp.meta(x)
+    om$ref <- paste0("A", .get.snpR.stats(x)$minor, "A")
+    om$anc <- paste0("A", .get.snpR.stats(x)$major, "A")
+    .suppress_specific_warning(snp.meta(x) <- om, "duplicated")
+    
+    warning("Without ancestral and derived character states, results will be misleading.\n")
+  }
+  else{
+    if(!all(sapply(c(x@snp.meta$ref, x@snp.meta$anc), nchar) == 3)){
+      stop("All ref and anc entries must be exactly three characters long. See documentation for details.\n")
+    }
+  }
+  
+  if(any(!c("x", "y") %in% colnames(sample.meta(x)))){
+    stop("'x' and 'y' columns containing coordinates must be present in sample metadata. These are assumed conform to a WGS84 elipsoid.\n")
+  }
+  
+  
+  #============functions================
+  come_to_dadi <- function(ac, ref, anc, major, minor){
+    ni1 <- reshape2::dcast(ac, facet + .snp.id ~ subfacet, value.var = c("ni1"))
+    ni2 <- reshape2::dcast(ac, facet + .snp.id ~ subfacet, value.var = c("ni2"))
+
+    rdata <- cbind(ref = ref, # since everything is sorted by .snp.id, this will match.
+                   anc = anc,
+                   Allele1 = major,
+                   ni1[order(ni1$.snp.id), 3:ncol(ni1), drop = FALSE],
+                   Allele2 = minor,
+                   ni2[order(ni2$.snp.id), 3:ncol(ni2), drop = FALSE])
+    rdata <- as.data.frame(rdata)
+    colnames(rdata)[c(3,3 + length(3:ncol(ni1)) + 1)] <- c("Allele1", "Allele2")
+
+    return(rdata)
+  }
+  
+  # boot_sfs <- function(sfs, boots, pop){
+  #   nsnps <- sum(sfs, na.rm = TRUE)
+  #   boot_draws <- rmultinom(nsnps*boots, 1, sfs)
+  #   
+  #   boot_draws <- array(boot_draws, c(length(sfs), nsnps, boots))
+  #   boot_draws <- apply(boot_draws, 3, 
+  #                       function(y) matrix(rowSums(y), nrow(sfs), ncol(sfs)), 
+  #                       simplify = FALSE)
+  #   boot_draws <- lapply(boot_draws, function(y){
+  #     attr(y, "pop") <- pop
+  #     return(y)
+  #   })
+  #   
+  #   return(boot_draws)
+  # }
+  
+  # Equation 4 from Peter and Slatkin
+  opt_eq <- function(v, x, y, dirs, var_dirs, xi, yi, xj, yj){
+    # cat("=================\nx = ", x, "\ny = ", y, "\nv = ", v, "\n")
+    
+    internal <- (geosphere::distGeo(cbind(xi, yi), c(x, y)) -
+                   geosphere::distGeo(cbind(xj, yj), c(x, y)))
+    # internal <- sqrt(((xi - x)^2) + (yi - y)^2) -
+    #   sqrt(((xj - x)^2) + (yj - y)^2)
+    internal <- (1/v) * internal
+    internal <- internal - dirs
+    internal <- (1/var_dirs) * internal
+    
+    res <- sum(internal)
+    return(res)
+  }
+  
+  #============setup====================
+  if(verbose){
+    cat("Beginning setup...\n")
+  }
+  facet <- .check.snpR.facet.request(x, facet)
+  
+  x <- .add.facets.snpR.data(x, facet)
+  x <- calc_maf(x, facet)
+  
+  # generate bootstraps
+  ## maybe do this by drawing n snps randomly from the SFS using the value in each cell as a scaled binom prob?
+  ## this is fast but produces very different results...
+  
+  ## this is the most robust, but ends up being very slow. The alternative works well but is much quicker
+  dadi <- .boot_ac(x, boots, facet)
+  dadi <- lapply(dadi, function(y) come_to_dadi(y,
+                                               snp.meta(x)$ref,
+                                               snp.meta(x)$anc,
+                                               x@stats[which(x@stats$facet == ".base" & x@stats$subfacet == ".base"), "major"],
+                                               x@stats[which(x@stats$facet == ".base" & x@stats$subfacet == ".base"), "minor"]))
+
+  
+  # set up tasks and get positions
+  tasks <- .get.task.list(x, facet)
+  tasks <- t(utils::combn(tasks[,2], 2))
+  split_facet <- unlist(.split.facet(facet))
+  long_lat <- as.data.table(sample.meta(x)[,c(split_facet, "x", "y")])
+  geomean_func <- function(x, y){
+    m <- as.matrix(cbind(x, y))
+    return(as.data.frame(matrix(geosphere::geomean(m), nrow = 1)))
+  }
+  
+  xy <- long_lat[, geomean_func(x, y), by = split_facet]
+  colnames(xy) <- c(split_facet, "x", "y")
+  
+  
+  #==============directionality for each pair of populations=================
+  dir_list <- data.table(dirs = numeric(nrow(tasks)),
+                         dir_vars = numeric(nrow(tasks)),
+                         xi = numeric(nrow(tasks)),
+                         yi = numeric(nrow(tasks)),
+                         xj = numeric(nrow(tasks)),
+                         yj = numeric(nrow(tasks)),
+                         comparison = character(nrow(tasks)))
+  
+  if(!isFALSE(boot_par)){
+    cl <- parallel::makePSOCKcluster(boot_par)
+    doParallel::registerDoParallel(cl)
+  }
+  
+  
+  if(verbose){cat("Complete.\nBeginning pairwise directionality bootstrapping and calculation...\nTotal Pairs:", nrow(tasks), "\n")}
+  for(i in 1:nrow(tasks)){
+    if(verbose){cat(paste0("Working on pair: ", paste0(tasks[i,], collapse = "~"), " (task ", i, ")\n"))}
+    
+    ## this is faster but doesn't produce the same outputs...
+    # .make_it_quiet(sfs <- calc_sfs(x, facet, 
+    #                                pops = tasks[i,], 
+    #                                projection = projection[match(tasks[i,], names(projection))],
+    #                                fold = FALSE))
+    # sfs_boots <- boot_sfs(sfs, boots, pop = attr(sfs, "pop"))
+    # 
+    # .make_it_quiet(dirs <- lapply(sfs_boots, function(y) calc_directionality(y)))
+    
+   
+    
+    # get the directionality for each bootstrap
+    if(isFALSE(boot_par)){
+      # this is for the slower way with booting earlier
+      .make_it_quiet(dirs <- lapply(dadi, function(y) make_SFS(y,
+                                                               pops = tasks[i,],
+                                                               projection = projection[match(tasks[i,], names(projection))],
+                                                               fold = FALSE)))
+      
+      .make_it_quiet(dirs <- lapply(dirs, function(y) calc_directionality(y)))
+    }
+    else{
+
+      if(boot_par < boots){
+        pboot <- split(1:boots, rep(1:boot_par, length.out = boots, each = ceiling(boots/boot_par)))
+      }
+      else{
+        boot_par <- boots
+        pboot <- split(1:boots, 1:boot_par, drop = F)
+      }
+      
+      ntasks <- length(pboot)
+      dirs <- foreach::foreach(q = 1:ntasks,
+                               .packages = c("snpR", "data.table"),
+                               .export = c(".make_it_quiet"),
+                               .combine = c,.inorder = TRUE) %dopar% {
+                                 .make_it_quiet(dirs <- lapply(dadi[pboot[[q]]], function(y) make_SFS(y,
+                                                                                                      pops = tasks[i,],
+                                                                                                      projection = projection[match(tasks[i,], names(projection))],
+                                                                                                      fold = FALSE)))
+                                 .make_it_quiet(res <- lapply(dirs, function(y) calc_directionality(y)))
+                                 res
+                               }
+    }
+    
+    
+    # get the real directionality
+    .make_it_quiet(real_dir <- calc_directionality(x, facet = facet, pops = tasks[i,], projection = projection[match(tasks[i,], names(projection))]))
+    
+    
+    # fill in
+    dir_list$dirs[i] <- real_dir
+    dir_list$dir_vars[i] <- stats::var(unlist(dirs))
+    dir_list$xi[i] <- xy$x[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
+    dir_list$yi[i] <- xy$y[match(tasks[i,1], .paste.by.facet(xy, split_facet))]
+    dir_list$xj[i] <- xy$x[match(tasks[i,2], .paste.by.facet(xy, split_facet))]
+    dir_list$yj[i] <- xy$y[match(tasks[i,2], .paste.by.facet(xy, split_facet))]
+    dir_list$comparison[i] <- paste0(tasks[i,1], "~", tasks[i,2])
+  }
+  
+  if(!isFALSE(boot_par)){
+    parallel::stopCluster(cl)
+  }
+  
+  #=============optimize and return===================
+  if(verbose){cat("Complete.\nBeginning optimization.\n")}
+  start_v <- 1
+  start_xy <- geosphere::geomean(dir_list[,c("xi", "yi")])
+  
+  
+  opt <- stats::optim(par = c(v = start_v, x = as.numeric(start_xy[1,1]), y = as.numeric(start_xy[1,2])), 
+                      fn = function(y){
+                        opt_eq(v = y[1], x = y[2], y = y[3], 
+                               dirs = dir_list$dirs, var_dirs = dir_list$dir_vars, 
+                               xi = dir_list$xi, yi = dir_list$yi, 
+                               xj = dir_list$xj, yj = dir_list$yj)
+                      }, 
+                      control = list(fnscale = -1))
+  
+  if(verbose){cat("Complete.\n")}
+  
+  .yell_citation("Peter2013", "Direcitonality", "Directionality index (psi)", update_bib)
+  .yell_citation("Peter2013", "Origin of Expansion", "Origin of Expansion", update_bib)
+  
+  colnames(dir_list)[1:2] <- c("Directionality", "Variance")
+  
+  return(list(opt = opt$par, pairwise_directionality = dir_list))
 }
 
 

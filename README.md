@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.9-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.10.9000-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -75,6 +75,10 @@ A CRAN version should be available soon.
 - `check_duplicates()`: Check data for potentially duplicated samples.
 - `gap_snps()`: Select a SNP every *n* bases (simple physical LD
   filtering).
+- `vcf2beagle()` and `vcf2PL()`: Utilities to convert vcf files to
+  either beagle or pl/mgpl files. The latter can also optionally prepare
+  inputs for the program
+  [entropy](https://bitbucket.org/buerklelab/mixedploidy-entropy/src/master/).
 
 ### Object Access and Manipulation:
 
@@ -118,6 +122,8 @@ A CRAN version should be available soon.
   - `calc_global_fst()`: Global $F_{ST}$ across facet levels.
   - `calc_pairwise_ld()`: Pairwise LD between SNPs.
   - `calc_abba_baba()`: ABBA/BABA tests.
+  - `calc_tajimas_d()`: Tajima’s D globally (or across windows). Also
+    calculates Watterson’s and Tajima’s $\theta$.
 - Association:
   - `calc_association()`: Association testing against a phenotype.
   - `run_random_forest()`: Run a random forest prediction/association
@@ -130,6 +136,8 @@ A CRAN version should be available soon.
     - `make_sfs()`: Wrapper function that uses an external `dadi`
       formatted file to generate an sfs.
   - `calc_directionality()`: Peter and Slatkin’s directionality index.
+  - `calc_origin_of_expansion()`: Estimate the origin point of a range
+    expansion based on directionality.
 - Other:
   - `calc_isolation_by_distance()`: Run an IBD mantel test.
   - `calc_tree()`: Generate a tree based on individual or facet-level
@@ -141,7 +149,8 @@ A CRAN version should be available soon.
 
 - `calc_smoothed_averages()`: Core function to do sliding window
   analysis using a gaussian smoothing kernal.
-- `calc_tajimas_d()`: Tajima’s D across sliding windows.
+- `calc_tajimas_d()`: Tajima’s D across sliding windows (or globally).
+  Also calculates Watterson’s and Tajima’s $\theta$.
 - Bootstrapping:
   - `do_bootstraps()`: Core function to generate bootstrapped
     significance values for smoothed windows (elevation or reduction vs
@@ -185,6 +194,8 @@ automatically split up analysis by facet. For example, calculating
 observed heterozygosity for each population or family, or for each
 population/family combination is easy!
 
+### Statistic calculation with facets
+
 ``` r
 library(snpR)
 ## basic example code
@@ -207,6 +218,30 @@ statistics are prefixed `calc_`, functions that do plots are prefixed
 `plot_`, and functions that run external tools (like COLONY), are named
 `run_`. Typing `snpR::calc` into the console on Rstudio will bring up a
 helpful list of all of the statistical functions!
+
+### Basic plotting
+
+`snpR` provides a suite of plotting tools, all of which are named
+`plot_...()`. For example, a PCA can be plotted using `plot_clusters()`:
+
+``` r
+plot_clusters(x, "pop", plot_type = "pca")
+```
+
+### Citation tools
+
+`snpR` automatically tracks citations for all of the methods used on a
+`snpRdata` object and can provide them or write a `.bib` file on request
+using the `citations()` function:
+
+``` r
+citations(x,
+          outbib = FALSE, # if TRUE, writes a .bib file for all methods
+          return_bib = FALSE # if TRUE, returns a list of .bib entries
+          )
+```
+
+## Vignette
 
 For a full introduction, check the snpR_introduction vignette.
 

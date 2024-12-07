@@ -1,7 +1,7 @@
 test_that("basic",{
   # smooth
   check <- calc_ho(stickSNPs, "pop")
-  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250, step = 250)
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250, step = 250, triple_sigma = TRUE)
   check <- get.snpR.stats(check, "chr.pop", "maf")$single.window
   
   # tests
@@ -16,7 +16,7 @@ test_that("basic",{
 test_that("pairwise",{
   # smooth
   check <- calc_pairwise_fst(stickSNPs, "pop")
-  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "pairwise", sigma = 250, step = 250)
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "pairwise", sigma = 250, step = 250, triple_sigma = TRUE)
   check <- get.snpR.stats(check, "chr.pop", "fst")$pairwise.window
   
   # tests
@@ -32,7 +32,7 @@ test_that("no_chr",{
   # smooth
   check <- calc_pairwise_fst(stickSNPs, "pop")
   check <- calc_pi(check, "pop")
-  check <- calc_smoothed_averages(check, facets = "pop", sigma = 250, step = 250)
+  check <- calc_smoothed_averages(check, facets = "pop", sigma = 250, step = 250, triple_sigma = TRUE)
   checkp <- get.snpR.stats(check, "pop", "fst")$pairwise.window
   checks <- get.snpR.stats(check, "pop", "pi")$single.window
   
@@ -44,7 +44,7 @@ test_that("no_chr",{
 
 test_that("default bug",{
   check <- calc_ho(stickSNPs, "pop")
-  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250)
+  check <- calc_smoothed_averages(check, facets = c("chr.pop"), stats.type = "single", sigma = 250, triple_sigma = TRUE)
   check <- get.snpR.stats(check, "chr.pop", "maf")$single.window
   expect_true(all(check$step == 500))
 })
@@ -52,8 +52,8 @@ test_that("default bug",{
 test_that("stats.type reassignment",{
   # single
   check <- calc_ho(stickSNPs)
-  expect_error(check <- calc_smoothed_averages(check,  stats.type = "pairwise", sigma = 250),
+  expect_error(check <- calc_smoothed_averages(check,  stats.type = "pairwise", sigma = 250, triple_sigma = TRUE),
                "No pairwise stats calculated")
-  check <- calc_smoothed_averages(check, sigma = 250)
+  check <- calc_smoothed_averages(check, sigma = 250, triple_sigma = TRUE)
   expect_true("single.window" %in% names(get.snpR.stats(check, stats = "ho")))
 })

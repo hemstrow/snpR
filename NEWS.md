@@ -1,3 +1,49 @@
+# snpR 1.2.10
+
+## Features
+### Major:
+* Major memory usage improvements for `snpRdata` objects by shifting internal genotype/allele count tables to `sparseMatrix` objects from the `Matrix` package. The slot these were stored in was typically one of the larger slots (occasionally bigger than the original genotypes if many facets were tabulated) and should now be reduced substantially in size. Dependencies shifted to reflect this. Should be fully backwards compatible with old objects. More work can be done here to ensure downstream functions don't need to coerce away from a `sparseMatrix` unless necessary.
+* Added `calc_origin_of_expansion()` to estimate the origin of a range expansion based on directionality indices according to [Peter and Slatkin (2013)](https://doi.org/10.1111/evo.12202).
+* Added variance estimates per locus and per subfacet to `calc_seg_sites()`, returned with `get.snpR.stats()`.
+
+### Minor:
+* Adjusted the behavior of `filter_snps()` `mgc` and `mac` options to not remove non-polymorphic loci if `non_poly` is `FALSE`. The `maf` filter option will still remove these loci, although that could be changed in the future given requests to do so.
+* Added 'sn_remove_empty' option to `format_snps()`, which if `FALSE` retains completely missing loci during formatting.
+* '.gen' is now also recognized as a genepop file extension for import.
+* Added the `fix_overlaps` function to `read_ms()` and other ms file reading to allow for positional offsetting in the case of identical positions. Also simplified the underlying code for `read_ms()` and allowed for it to run with no sample metadata provided.
+* Flipped the axes for the $\frac{H_{e}}{H_{o}}$ plots from `plot_diagnostic()`. While the previous arrangement ($H_{o}$ on the x-axis) followed the typical "dependant variable on y" philosophy, $H_{o}$ on y allows for easier interpretation (above the line means a heterozygote excess, below is a deficit).
+* Adjusted the error message returned when `read_genepop` is handed files without a `.genepop` or `.gen` extension to reference that either of those formats are OK.
+* The `dapc` option to `plot_clusters()` when only one discriminant was retained now plots a width-jittered categorical scatter plot by cluster.
+* Added support for the `seed` argument for `plot_structure()` when using "admixture". Useful given that admixture apparently uses the seed "42" by default unless provided instead of a random seed.
+* Changed the default behavior of `calc_smoothed_averages()` and `calc_tajimas_d()` to not triple sigma values.
+* Added options to plot a median line, color by another variable, and plot vertical chromosome separator lines to `plot_manhattan()`.
+* Added confidence intervals to the values returned/calculated by `calc_fis()` if doing bootstraps. Like the p-values, these are derived using a t-test on the distribution of bootstrapped $F_{IS}$ values.
+* Minor speed-ups to `calc_pairwise_ld()` with CLD windows.
+* Added `vcf2beagle()` and `vcf2PL()` utility functions to convert vcf files to a few common non-GT-tag file formats.
+
+## Documentation:
+* Added a note to the readme that `calc_tajimas_d()` also generates thetas.
+* Improved the README a bit.
+
+## Bug Fixes:
+* Fixed an unexpected error that would occur when computing windowed LD scores when windows contained only SNPs that were nonpolymorphic in a given facet level. This error did not occur when there were no SNPs on the window, which would work without issue.
+* Fixed an issue with `plot_structure()` using ADMIXTURE with plink file format writing.
+* Fixed an uninformative error with the `dapc` option to `plot_clusters()` when only one discriminant was retained (now plots a width-jittered categorical scatter plot by cluster).
+* Added a check for duplicated statistics to `do_bootstraps()`. This is a hack--duplicated rows shouldn't exist and need to be fixed still.
+* Fixed a bug that could occur when formatting data to "sn" format when some loci have no major allele (are unsequenced in any individuals).
+* Fixed a bug where partial column name pop matches could cause problems when using `calc_sfs()` or `make_sfs()`.
+* Fixed a bug where providing a `highlight` numeric vector to `plot_manhattan()` would error if there was missing data in `plot_var`.
+* Fixed a bug where the running a dapc with `plot_clusters()` would fail with facets other than "pop".
+* Fixed a bug in `calc_pairwise_ld()` where window'd CLD wouldn't properly compare the correct SNPs if .snp.ids were not the same as row numbers. 
+* Fixed a bug in `get.snpR.stats()` where returning an allele frequency matrix alongside other statistics would fail.
+* Fixed a bug where `plot_structure()` would fail if the first facet level being plotted only had a single sample.
+* Added an informative error message if attempting to plot only k = 1 from provided q files with `plot_structure()`.
+
+## Known Issues:
+* Duplicated rows in pairwise statistics can sometimes be created (pairwise $F_[ST]$). Needs to be reproduced and fixed. Once fixed, the duplication check in `do_bootstraps()` can be removed for efficiency.
+* `calc_pairwise_ld()` with windows and methods other than CLD will return the number of pairwise comparisons instead of the number of unique SNPs. This is a pain to fix and minor, so left for now.
+* `tabulate_allele_frequency_matrix()` needs tests.
+
 # snpR 1.2.9.2 hotfix 3
 * Fixed bugs in `plot_pairwise_fst_heatmap()` when runing multiple facets without facet orders or when significance had been calcualted for some but not all facets.
 * Fixed a bug where `plot_pairwise_fst_heatmap()` where plotting was not always strictly on the upper diagonal.
@@ -7,12 +53,13 @@
 # snpR 1.2.9.2 hotfix 2
 * Added an informative error message when attempting to run `calc_ne()` with a space in the `NeEstimator_path` variable.
 
+
 # snpR 1.2.9.1 hotfix 1
 
 ## Bug Fixes:
 * Fixed a few bugs with `do_boostraps()` and bootstrap fetching with `get.snpR.stats()`, mostly stemming from the changes to window behavior in 1.2.9. These involved either "_" in subfacet names or a few other oddities. "...." now used as a internal seperator, which, since "." is restricted anyway, should be OK. Added tests to catch.
 
-## Known Bugs
+## Known Issues:
 * `get.snpR.stats()` has issues returning an allele frequency matrix alongside other statistics. It returns *just* an allele frequency matrix perfectly fine.
 
 # snpR 1.2.9
