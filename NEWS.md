@@ -1,3 +1,9 @@
+# snpR 1.2.12
+
+## Bug Fixes
+* Fixed an error when writing plink.bim files where the major and minor were reversed.
+
+
 # snpR 1.2.10
 
 ## Features
