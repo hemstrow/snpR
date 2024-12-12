@@ -2656,14 +2656,14 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     
     # save .fam
     fam <- ped
-    
+
     # change missing data value and add a space between alleles.
-    x.np <- as.vector(t(x))
+    x.np <- as.vector(t(genotypes(x)[n.ord,]))
     x.np[x.np == x@mDat] <- "00"
     x.np <- gsub("(.)(.)", "\\1 \\2", x.np)
     
     # rebind
-    ped <- cbind(ped, matrix(x.np, nrow(ped), nrow(x)), stringsAsFactors = F)
+    ped <- cbind(ped, matrix(x.np, nrow(ped), length(n.ord)), stringsAsFactors = F)
     
     #===============make an extended map file=================
     a.names <- get.snpR.stats(x, stats = "maf")$single[,c("major", "minor")]

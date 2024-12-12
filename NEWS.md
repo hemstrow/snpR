@@ -1,6 +1,6 @@
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
-* Fixed an error when writing plink.bim files where the major and minor were reversed.
+* Fixed an error when writing plink.bim files where the major and minor were reversed and where ped files may not have had the correct genotype order.
 
 # snpR 1.2.11
 
