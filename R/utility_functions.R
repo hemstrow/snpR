@@ -2658,12 +2658,12 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     fam <- ped
     
     # change missing data value and add a space between alleles.
-    x.np <- as.vector(t(x))
+    x.np <- as.vector(t(genotypes(x)[n.ord,]))
     x.np[x.np == x@mDat] <- "00"
     x.np <- gsub("(.)(.)", "\\1 \\2", x.np)
     
     # rebind
-    ped <- cbind(ped, matrix(x.np, nrow(ped), nrow(x)), stringsAsFactors = F)
+    ped <- cbind(ped, matrix(x.np, nrow(ped), length(n.ord)), stringsAsFactors = F)
     
     #===============make an extended map file=================
     a.names <- get.snpR.stats(x, stats = "maf")$single[,c("major", "minor")]
@@ -2806,20 +2806,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       #for lifehistory data input needs id, sex, year born
       if(!all(c("Sex", "BirthYear", "ID", "BYmin", "BYmax", "Yearlast") %in% colnames(x@sample.meta))){
-          warning("Required columns Sex, ID, Yearlast, BirthYear, BYmax, and BYmin not found in sample metadata.\n")
-        }
-        
-        ID <- x@sample.meta$ID
-        sex <- fix.sex.sequoia(x)
-        
-        #ACTUALLY MAKE THE TABLE
-        lhtable <- data.frame(ID=ID,
-                              Sex = as.numeric(sex),
-                              BirthYear = sample.meta(x)$BirthYear,
-                              BY.min = sample.meta(x)$BYmin,
-                              BY.max = sample.meta(x)$BYmax,
-                              Year.last = sample.meta(x)$Yearlast,
-                              stringsAsFactors = F)
+        warning("Required columns Sex, ID, Yearlast, BirthYear, BYmax, and BYmin not found in sample metadata.\n")
+      }
+      
+      ID <- x@sample.meta$ID
+      sex <- fix.sex.sequoia(x)
+      
+      #ACTUALLY MAKE THE TABLE
+      lhtable <- data.frame(ID=ID,
+                            Sex = as.numeric(sex),
+                            BirthYear = sample.meta(x)$BirthYear,
+                            BY.min = sample.meta(x)$BYmin,
+                            BY.max = sample.meta(x)$BYmax,
+                            Year.last = sample.meta(x)$Yearlast,
+                            stringsAsFactors = F)
       
       rownames(rdata) <- ID
       rdata = list(dat=rdata, lh=lhtable)
@@ -2978,7 +2978,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata[rdata == 2] <- "1/1"
     rdata[is.na(rdata)] <- "./."
     rdata <- as.data.frame(rdata)
-
+    
     rdata <- list(meta = vcf_meta, genotypes = rdata, data_meta = data_meta)
   }
   
