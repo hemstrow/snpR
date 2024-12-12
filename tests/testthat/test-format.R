@@ -52,6 +52,32 @@ test_that("plink",{
   expect_warning(check <- read_plink("plink_test"), " metadata columns contain unacceptable special")
   expect_true(all(dplyr::arrange(stickSNPs@stats, chr, position)$major == dplyr::arrange(check@stats, chr, position)$major))
   
+  # ped, fam, bim
+  ## ped
+  ped <- data.table::fread("plink_test.ped")
+  A <- as.matrix(ped[,7:ncol(ped)])
+  A1 <- substr(A, 1, 1)
+  A2 <- substr(A, 3, 3)
+  A <- paste0(A1, A2)
+  A <- matrix(A, nsamps(stickSNPs), nsnps(stickSNPs))
+  A <- t(A)
+  A[A == "00"] <- "NN"
+  G <- cbind(snp.meta(stickSNPs), genotypes(stickSNPs))
+  G <- dplyr::arrange(G, chr, position)
+  G <- G[,-c(1:ncol(snp.meta(stickSNPs)))]
+  expect_true(all(A == as.matrix(G)))
+  
+  ## fam
+  fam <- data.table::fread("plink_test.fam")
+  expect_true(all(fam$V2 == colnames(stickSNPs)))
+  
+  ## bim
+  bim <- data.table::fread("plink_test.bim")
+  minors <- stickSNPs@stats
+  minors <- dplyr::arrange(minors, chr, position)
+  expect_true(all(bim$V5 == minors$minor))
+  expect_true(all(bim$V6 == minors$major))
+  
   # with odd names
   dat <- stickSNPs
   matches <- dat@snp.meta$chr %in% paste0("group", c("IV", "XV", "VII"))
