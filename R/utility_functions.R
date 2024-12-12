@@ -2673,8 +2673,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         rs = x@snp.meta$.snp.id,
                         cM = x@snp.meta[,which(colnames(x@snp.meta) %in% c("cM", "cm", "morgans"))][,1],
                         bp = x@snp.meta$position,
-                        a1 = a.names[,1],
-                        a2 = a.names[,2])
+                        a1 = a.names[,2],
+                        a2 = a.names[,1])
     }
     # without morgans
     else{
@@ -2682,8 +2682,8 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         rs = x@snp.meta$.snp.id,
                         cM = 0,
                         bp = x@snp.meta$position,
-                        a1 = a.names[,1],
-                        a2 = a.names[,2])
+                        a1 = a.names[,2],
+                        a2 = a.names[,1])
     }
     
     

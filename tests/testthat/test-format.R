@@ -47,8 +47,13 @@ test_that("genalex",{
 test_that("plink",{
   skip_if_not_installed("genio")
   
-  dat <- stickSNPs
+  # genotypes
+  format_snps(stickSNPs, "plink", outfile = "plink_test")
+  expect_warning(check <- read_plink("plink_test"), " metadata columns contain unacceptable special")
+  expect_true(all(dplyr::arrange(stickSNPs@stats, chr, position)$major == dplyr::arrange(check@stats, chr, position)$major))
   
+  # with odd names
+  dat <- stickSNPs
   matches <- dat@snp.meta$chr %in% paste0("group", c("IV", "XV", "VII"))
   snp.meta(dat)$chr[matches] <- paste0(c(50, 50, 30), dat@snp.meta$chr[matches])
   
@@ -57,10 +62,13 @@ test_that("plink",{
   
   expect_warning(check <- read_plink("plink_test"), " metadata columns contain unacceptable special")
   
+  
+  
   dat <- calc_pi(dat, "chr.fam")
   check <- calc_pi(check, "chr.fam")
   c1 <- get.snpR.stats(dat, "chr.fam", "pi")$weighted.means
   c2 <- get.snpR.stats(check, "chr.fam", "pi")$weighted.means
+  
   
   expect_true(all(round(c1$weighted_mean_pi, 5) == round(c2$weighted_mean_pi, 5))) # everything is good if this is true
   cleanups <- list.files(pattern = "plink_test")
