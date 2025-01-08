@@ -419,12 +419,26 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       stop("Cannot locate sample.meta file.\n")
     }
   }
+  else if(!is.null(sample.meta)){
+    sample.meta <- try(as.data.frame(sample.meta), silent = TRUE)
+    if(methods::is(sample.meta, "try-error")){
+      stop(paste0("Could not convert sample.meta to data.frame. Error: \n", sample.meta))
+    }
+  }
+  
+  
   if(is.character(snp.meta)){
     if(file.exists(snp.meta)){
       snp.meta <- as.data.frame(data.table::fread(snp.meta))
     }
     else{
       stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  else if(!is.null(snp.meta)){
+    snp.meta <- try(as.data.frame(snp.meta), silent = TRUE)
+    if(methods::is(snp.meta, "try-error")){
+      stop(paste0("Could not convert snp.meta to data.frame. Error: \n", snp.meta))
     }
   }
   

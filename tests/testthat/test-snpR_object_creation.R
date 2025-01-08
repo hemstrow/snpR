@@ -134,6 +134,11 @@ test_that("facet error reporting",{
   # dupliates
   expect_warning(import.snpR.data(genotypes(stickSNPs), sample.meta = meta, snp.meta = snpm), "ome levels are duplicated.+Level: ASP\tin facets: pop, dup_test, dup_test2")
   
+  
+  # tibbles
+  spn <- dplyr::as_tibble(sample.meta(stickSNPs))
+  d <- import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), spn)
+  expect_true(!methods::is(d@sample.meta, "tbl"))
 })
 
 

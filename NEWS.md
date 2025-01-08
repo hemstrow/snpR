@@ -1,10 +1,17 @@
 # snpR 1.2.12
 
-## Bug Fixes
+## Features
+### Minor:
+* `read_vcf()` now supports indels and multiple-character alleles. Indels will be coded as 'I' and 'D' for the longer and shorter variant, equal length multiple-character alleles as 'R' and 'L' for the ref and alt allele, respectively. All other code natively supports alleles other than 'A', 'C', 'G', and 'T' by defualt with no needed changes.
+
+## Bug fixes
+* Fixed an error that could arise when using facets when supplying a `tibble` object as sample/snp metadata during `snpRdata` object creation.
+
+# snpR 1.2.11 Hotfix 1
+## Bug fixes
 * Fixed an error when writing plink.bim files where the major and minor were reversed and where ped files may not have had the correct genotype order.
 
-
-# snpR 1.2.10
+# snpR 1.2.11
 
 ## Features
 ### Major:

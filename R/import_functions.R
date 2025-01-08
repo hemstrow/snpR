@@ -360,9 +360,52 @@
   bad.ref <- !ref %in% ok.alleles
   bad.alt <- !alt %in% ok.alleles
   bad.either <- which(bad.ref | bad.alt)
-  if(length(bad.either) > 1){
-    warn <- c(warn, paste0(length(bad.either), " loci removed due to improper alleles (not ., A, C, T, or G).\n"))
-    good.loci[bad.either] <- F
+  if(length(bad.either) > 0){
+    # coerce indels if that's what they are
+    ref_OK <- grepl('^[A|C|G|T]+$', ref[bad.either])
+    alt_OK <- grepl('^[A|C|G|T]+$', alt[bad.either])
+    
+    rem <- !ref_OK | !alt_OK
+    
+    if(any(rem)){
+      warn <- c(warn, paste0(sum(rem), " loci removed due to improper alleles (not ., A, C, T, G, or a sequence of the latter four).\n"))
+      good.loci[bad.either[which(rem)]] <- F
+    }
+    
+    if(any(!rem)){
+      
+      # generate replacement alleles for the OK loci (usually indels)
+      len_ref <- nchar(ref[bad.either])
+      len_alt <- nchar(alt[bad.either])
+      
+      if(any(rem)){
+        replacement_alleles <- data.table(snp = bad.either[-which(rem)],
+                                          nref = "",
+                                          nalt = "")
+        len_ref <- len_ref[-which(rem)]
+        len_alt <- len_alt[-which(rem)]
+      }
+      else{
+        replacement_alleles <- data.table(snp = bad.either,
+                                          nref = "",
+                                          nalt = "")
+      }
+      
+      replacement_alleles[len_ref > len_alt, nref := "I"]
+      replacement_alleles[len_ref > len_alt, nalt := "D"]
+      replacement_alleles[len_ref < len_alt, nref := "D"]
+      replacement_alleles[len_ref < len_alt, nalt := "I"]
+      replacement_alleles[len_ref == len_alt, nref := "R"]
+      replacement_alleles[len_ref == len_alt, nalt := "L"]
+      
+      vcf@fix[replacement_alleles$snp,"REF"] <- replacement_alleles$nref
+      vcf@fix[replacement_alleles$snp,"ALT"] <- replacement_alleles$nalt
+      
+      
+      rm(len_ref, len_alt, replacement_alleles)
+    }
+    
+    
   }
   rm(ref, alt, ok.alleles, bad.ref, bad.alt, bad.either)
   
