@@ -549,6 +549,20 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     sample.meta <- data.frame(sampID = paste0("samp", 1:ncol(genotypes)))
   }
   
+  # check mdat and genotype format
+  gtl <- unique(as.numeric(nchar(as.matrix(genotypes))))
+  if(length(gtl) > 1){
+    stop("All genotypes must be equal in length, including missing data.\n")
+  }
+  if(nchar(mDat) != gtl){
+    stop("mDat must be equal in length (number of characters) to the genotype format, as in 'NN' or '00' with 'AC' genotypes.\n")
+  }
+  md1 <- substr(mDat, 0, nchar(mDat)/2)
+  md2 <- substr(mDat, (nchar(mDat)/2) + 1, nchar(mDat))
+  if(md1 != md2){
+    stop("mDat must be symmetrical, as in 'NN' or '0000', NOT '01' or 'NGT' or 'NX'.\n")
+  }
+  
   # prepare things for addition to data
   if(any(is.na(genotypes))){
     stop("NA found in input genotypes. Often, this is in the last row or column.\n")

@@ -141,3 +141,19 @@ test_that("indels",{
   expect_equal(length(unique(pairwise$fst)), 1)
   file.remove("test.vcf")
 })
+
+test_that("bad mDat", {
+  
+  # inconsistant genotype format
+  test <- genotypes(stickSNPs)
+  test[6,9] <- "AACC"
+  expect_error(import.snpR.data(test, snp.meta(stickSNPs), sample.meta(stickSNPs)), "All genotypes must be equal in length, including missing data.")
+
+  # short mDat
+  expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "N"),
+               "equal in length .+ to the genotype format")
+  
+  # mDat with different "alleles"
+  expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "NX"),
+               "mDat must be symmetrical, as in 'NN' or '0000', NOT '01' or 'NGT' or 'NX'")
+})

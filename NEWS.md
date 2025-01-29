@@ -6,6 +6,7 @@
 
 ## Bug fixes
 * Fixed an error that could arise when using facets when supplying a `tibble` object as sample/snp metadata during `snpRdata` object creation.
+* Added some sanity checks to `import.snpR.data()` to make sure that imported data all has a consistant genotype format and a working mDat.
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
