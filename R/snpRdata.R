@@ -411,7 +411,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 
   #======special cases========
   # sample and snp metadata
-  if(is.character(sample.meta)){
+  if(is.character(sample.meta) & length(sample.meta) == 1){
     if(file.exists(sample.meta)){
       sample.meta <- as.data.frame(data.table::fread(sample.meta))
     }
@@ -427,7 +427,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   
-  if(is.character(snp.meta)){
+  if(is.character(snp.meta) & length(snp.meta) == 1){
     if(file.exists(snp.meta)){
       snp.meta <- as.data.frame(data.table::fread(snp.meta))
     }
@@ -549,8 +549,8 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     sample.meta <- data.frame(sampID = paste0("samp", 1:ncol(genotypes)))
   }
   
-  # check mdat and genotype format
-  gtl <- unique(as.numeric(nchar(as.matrix(genotypes))))
+  # check mdat and genotype format -- only do the first sample to save on processing speed
+  gtl <- unique(as.numeric(nchar(as.matrix(genotypes)[,1])))
   if(length(gtl) > 1){
     stop("All genotypes must be equal in length, including missing data.\n")
   }

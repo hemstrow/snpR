@@ -142,18 +142,32 @@ test_that("indels",{
   file.remove("test.vcf")
 })
 
-test_that("bad mDat", {
+test_that("sanity checks", {
   
-  # inconsistant genotype format
+  # bad mDat, genotype format
+  ## inconsistant genotype format
   test <- genotypes(stickSNPs)
-  test[6,9] <- "AACC"
+  test[6,1] <- "AACC"
   expect_error(import.snpR.data(test, snp.meta(stickSNPs), sample.meta(stickSNPs)), "All genotypes must be equal in length, including missing data.")
 
-  # short mDat
+  ## short mDat
   expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "N"),
                "equal in length .+ to the genotype format")
   
-  # mDat with different "alleles"
+  ## mDat with different "alleles"
   expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "NX"),
                "mDat must be symmetrical, as in 'NN' or '0000', NOT '01' or 'NGT' or 'NX'")
+  
+  # odd snp/sample.meta
+  expect_error(import.snpR.data(genotypes(stickSNPs), c("HI", "BYE"), sample.meta(stickSNPs)),
+               "Number of rows in snp.meta")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), c("HI"), sample.meta(stickSNPs)),
+               "Cannot locate snp.meta file")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), sample.meta = c("HI", "BYE")),
+               "Number of rows in sample.meta")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), sample.meta = c("HI")),
+               "Cannot locate sample.meta file")
 })

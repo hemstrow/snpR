@@ -7,6 +7,7 @@
 ## Bug fixes
 * Fixed an error that could arise when using facets when supplying a `tibble` object as sample/snp metadata during `snpRdata` object creation.
 * Added some sanity checks to `import.snpR.data()` to make sure that imported data all has a consistant genotype format and a working mDat.
+* Changed sanity checks in `import.snpR.data()` when handed a character vector for metadata (won't check for a file unless length one, otherwise coerce to data.frame and check lengths as usual.)
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
