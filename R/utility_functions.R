@@ -3400,20 +3400,29 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE){
 
 
 
-#' Fetch the allele frequencies for all SNPs for each level of each requested
+#' Allele frequencies for all SNPs for each level of each requested
 #' facet.
 #'
 #' Fetch allele frequencies for all SNPs for each level of all the requested
 #' facets. Major and minor allele frequencies will be interleaved, with the major
-#' allele first for each locus. Note that this particular function is not
-#' overwrite-safe.
+#' allele first for each locus. 
 #'
 #' @param x snpRdata object
 #' @param facets character, default NULL. The facets for which to calculate
 #'   allele frequencies. See \code{\link{Facets_in_snpR}} for details.
 #'
 #' @return A named, nested list containing allele frequency matrices for each
-#'   facet level for all requested facets.
+#'   facet level for all requested facets, merged into the provided snpRdata
+#'   object.
+#'
+#' @examples
+#' # base level
+#' d <- tabulate_allele_frequency_matrix(stickSNPs)
+#' get.snpR.stats(d, stats = "allele_frequency_matrix")
+#' 
+#' # facet
+#' d <- tabulate_allele_frequency_matrix(stickSNPs, "pop")
+#' get.snpR.stats(d, "pop", stats = "allele_frequency_matrix")
 #'
 #' @author William Hemstrom
 #' @export

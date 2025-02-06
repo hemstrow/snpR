@@ -4,6 +4,9 @@
 ### Minor:
 * `read_vcf()` now supports indels and multiple-character alleles. Indels will be coded as 'I' and 'D' for the longer and shorter variant, equal length multiple-character alleles as 'R' and 'L' for the ref and alt allele, respectively. All other code natively supports alleles other than 'A', 'C', 'G', and 'T' by defualt with no needed changes.
 
+## Documentation
+* Updated docs for `tabulate_allele_frequency_matrix()` with an example removed the line saying that it isn't overwite safe (it is).
+
 ## Bug fixes
 * Fixed an error that could arise when using facets when supplying a `tibble` object as sample/snp metadata during `snpRdata` object creation.
 * Added some sanity checks to `import.snpR.data()` to make sure that imported data all has a consistant genotype format and a working mDat.
