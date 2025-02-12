@@ -1035,16 +1035,22 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     
     empties <- numeric(0)
     for(i in 1:length(cats)){
+      tfst <- data.table::copy(fst[facet == cats[i],])
+      levs <- unique(c(tfst$p1, tfst$p2))
+      levs <- sort(levs)
+      tfst[,p1 := factor(p1, levs)]
+      tfst[,p2 := factor(p2, levs)]
+      
       if(sum(fst$facet == cats[i]) == 0){
         empties <- c(empties, i)
         next
       }
       else if("weighted_mean_fst_p" %in% colnames(fst)){
-        res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
-                         p = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst_p"))
+        res[[i]] <- list(fst = data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst"),
+                         p = data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst_p"))
       }
       else{
-        res[[i]] <- data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst")
+        res[[i]] <- data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst")
       }
     }
     

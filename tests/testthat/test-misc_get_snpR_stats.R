@@ -8,6 +8,41 @@ test_that("fst_matrix return with facet containing no fst calcs", {
   expect_equal(unique(res$single$facet), c("fam.pop", "pop"))
 })
 
+test_that("fst_matrix always in upper triangle",{
+  # add a dataset that was known to bork a bit
+  d <- genotypes(stickSNPs)
+  ptab <- data.frame(new = c("San_Luis_Mesa", "Rafael_Swell", "Seep_Ridge", "Soap_Creek", "SOS_CP292", "SOS_CP298"),
+                     old = unique(sample.meta(stickSNPs)$pop))
+  nmet <- sample.meta(stickSNPs)
+  nmet$pop <- ptab$new[match(nmet$pop, ptab$old)]
+  d <- import.snpR.data(d, snp.meta(stickSNPs), nmet)
+  
+  d <- calc_pairwise_fst(d, c("pop", "fam", "pop.fam"), boot = 5)
+  
+  # check that data is in the correct triangle of the matrix
+  res <- get.snpR.stats(d, c("pop", "fam", "pop.fam"), "fst")
+  upper_only_OK <- function(res, try_up = TRUE){
+    c1 <- all(is.na(res[lower.tri(res)]))
+    if(try_up){
+      c2 <- all(!is.na(res[upper.tri(res)]))
+      return(c(c1, c2))
+    }
+    return(c1)
+  }
+  
+  ## fst
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$pop$fst[,-1]))))
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$fam$fst[,-1]))))
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$fam.pop$fst[,-1]), 
+                                try_up = FALSE))) # upper should correctly have a few NAs
+  
+  ## p-values
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$pop$p[,-1]))))
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$fam$p[,-1]))))
+  expect_true(all(upper_only_OK(as.matrix(res$fst.matrix$fam.pop$p[,-1]), 
+                                try_up = FALSE))) # upper should correctly have a few NAs
+})
+
 test_that("empty return warning", {
   expect_warning(get.snpR.stats(stickSNPs, "pop", "fst"), "statistics located for requested stats/facets")
 })

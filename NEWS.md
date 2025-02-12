@@ -2,7 +2,7 @@
 
 ## Features
 ### Minor:
-* `read_vcf()` now supports indels and multiple-character alleles. Indels will be coded as 'I' and 'D' for the longer and shorter variant, equal length multiple-character alleles as 'R' and 'L' for the ref and alt allele, respectively. All other code natively supports alleles other than 'A', 'C', 'G', and 'T' by defualt with no needed changes.
+* `read_vcf()` now supports indels and multiple-character alleles. Indels will be coded as 'I' and 'D' for the longer and shorter variant, equal length multiple-character alleles as 'R' and 'L' for the ref and alt allele, respectively. All other code natively supports alleles other than 'A', 'C', 'G', and 'T' by default with no needed changes.
 
 ## Documentation
 * Updated docs for `tabulate_allele_frequency_matrix()` with an example removed the line saying that it isn't overwite safe (it is).
@@ -12,6 +12,7 @@
 * Added some sanity checks to `import.snpR.data()` to make sure that imported data all has a consistant genotype format and a working mDat.
 * Changed sanity checks in `import.snpR.data()` when handed a character vector for metadata (won't check for a file unless length one, otherwise coerce to data.frame and check lengths as usual.)
 * Fixed a bug in `calc_seg_sites()` without the rarefaction option where missing data would be incorrectly counted as unsegregating.
+* Fixed a bug in `get.snpR.stats()` returning an $F_{ST}$ matrix where some specific subfacet names would cause data to appear in the lower triangle instead of the upper.
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
