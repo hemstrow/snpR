@@ -5695,15 +5695,20 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
   }
   
   else{
-    needed.facets <- .check_calced_stats(x, facets, "prop_poly")
-    needed.facets <- facets[which(!unlist(needed.facets))]
-    if(length(needed.facets) > 0){
-      x <- calc_prop_poly(x, facets)
-    }
+    matches <- which(x@facet.meta$facet %in% facets)
+    as <- x@geno.tables$as[matches,]
+    as <- as.matrix(as != 0)
+    alleles <- rowSums(as)
+    as <- data.table::as.data.table(x@facet.meta[matches,])
+    as[,alleles := alleles]
+    as[,poly := ifelse(alleles == 0, NA,
+                       ifelse(alleles != 1, TRUE, FALSE))]
     
-    totals <- get.snpR.stats(x, facets, "prop_poly")$weighted.means
-    totals$seg_sites <- totals$prop_poly*nsnps(x)
-    totals$prop_poly <- NULL
+    totals <- as[,sum(poly, na.rm = TRUE), by = .(facet, subfacet)]
+    colnames(totals)[3] <- "seg_sites"
+    totals$seg_sites_var <- NA
+    totals$snp.facet <- ".base"
+    totals$snp.subfacet <- ".base" 
   }
   
   #===========update===============
@@ -5713,6 +5718,12 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     colnames(gs)[which(colnames(gs) == ".g")] <- "g_prob_seg"
     keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "g_prob_seg", "prob_seg", "prob_seg_var")
     x <- .merge.snpR.stats(x, .fix..call(gs[,..keep_cols]))
+  }
+  else{
+    as$poly <- as.numeric(as$poly)
+    colnames(as)[which(colnames(as) == "poly")] <- "prob_seg"
+    keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "prob_seg")
+    x <- .merge.snpR.stats(x, .fix..call(as[,..keep_cols]))
   }
   
   # return

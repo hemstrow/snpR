@@ -11,11 +11,11 @@
 * Fixed an error that could arise when using facets when supplying a `tibble` object as sample/snp metadata during `snpRdata` object creation.
 * Added some sanity checks to `import.snpR.data()` to make sure that imported data all has a consistant genotype format and a working mDat.
 * Changed sanity checks in `import.snpR.data()` when handed a character vector for metadata (won't check for a file unless length one, otherwise coerce to data.frame and check lengths as usual.)
+* Fixed a bug in `calc_seg_sites()` without the rarefaction option where missing data would be incorrectly counted as unsegregating.
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
 * Fixed an error when writing plink.bim files where the major and minor were reversed and where ped files may not have had the correct genotype order.
-
 # snpR 1.2.11
 
 ## Features

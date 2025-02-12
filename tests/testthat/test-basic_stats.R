@@ -339,5 +339,15 @@ test_that("seg_sites", {
   s <- get.snpR.stats(x, stats =  "seg_sites")
   expect_equal(s$weighted.means$seg_sites, 
                98)
+  
+  # no rarefaction, with a locus with complete missing data
+  d <- genotypes(stickSNPs)
+  d[nrow(d), sample.meta(stickSNPs)$pop == "ASP"] <- "NN" # add a completely missing locus for ASP
+  d <- import.snpR.data(d, sample.meta = sample.meta(stickSNPs))
+  d <- calc_seg_sites(d[pop = c("ASP", "OPL")], "pop", FALSE)
+  s <- get.snpR.stats(d, "pop", "seg_sites")
+  s2 <- get.snpR.stats(calc_seg_sites(stickSNPs[pop = c("ASP", "OPL")], "pop", FALSE), "pop", "seg_sites")
+  expect_equal(c(s$weighted.means$seg_sites[1], s2$weighted.means$seg_sites[1]), 
+               c(89, 90))
 })
 
