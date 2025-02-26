@@ -13,6 +13,7 @@
 * Changed sanity checks in `import.snpR.data()` when handed a character vector for metadata (won't check for a file unless length one, otherwise coerce to data.frame and check lengths as usual.)
 * Fixed a bug in `calc_seg_sites()` without the rarefaction option where missing data would be incorrectly counted as unsegregating.
 * Fixed a bug in `get.snpR.stats()` returning an $F_{ST}$ matrix where some specific subfacet names would cause data to appear in the lower triangle instead of the upper.
+* Fixed a bug in `read_vcf()` where partial missing data at a locus (e.g. "./A") would be interpreted as a "." allele, not missing data. The whole genotype is now treated as missing in such cases.
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
