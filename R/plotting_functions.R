@@ -3856,7 +3856,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   else if(method == "fastmixture"){
     keys <- c(keys, "santanderFasterModelbasedEstimation2024")
     stats <- c(stats, "fastmixture")
-    details <- c(details, "snapclust assignment clustering")
+    details <- c(details, "fastmixture assignment clustering")
   }
   if("evanno" %in% names(cv_storage)){
     keys <- c(keys, "Evanno2005")
