@@ -23,6 +23,8 @@ plot_structure(
   clumpp.opt = "greedy",
   structure_path = "/usr/bin/structure",
   admixture_path = "/usr/bin/admixture",
+  fastmixture_path = "fastmixture",
+  fastmixture_threads = 1,
   admixture_cv = 5,
   ID = NULL,
   viridis.option = "viridis",
@@ -83,6 +85,8 @@ Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
 Maximum-likelihood genetic clustering. See
 \code{\link[adegenet]{snapclust.choose.k}}. \item{admixture: } The
 ADMIXTURE program. Requires a local admixture executable, and thus cannot
+run on a Windows platform. \item{fastmixture: } The fastmixture program, a 
+faster variant of ADMIXTURE. Requires fastmixture to be installed, and thus cannot
 run on a Windows platform. \item{ structure: } The STRUCTURE program.
 Requires a local STRUCTURE executable. many additional options are
 available for STRUCTURE via other arguments.}}
@@ -142,6 +146,13 @@ STRUCTURE executable, required if method = "structure".}
 
 \item{admixture_path}{character, default "/usr/bin/admixture". Path to the
 admixture executable, required if method = "admixture".}
+
+\item{fastmixture_path}{character, default "fastmixture". Path to the 
+fastmixture executable. If fastmixture is accessible from the system path,
+this can simply be "fastmixture".}
+
+\item{fastmixture_threads}{numeric, default 1. Fastmixture is multi-threaded;
+controls the number of threads available to fastmixture.}
 
 \item{admixture_cv}{numeric, default 5. Fold to use for cross-validation for
 admixture, used to determine the optimum k.}
@@ -273,9 +284,9 @@ Requires a defined facet.}
 Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 updates are used. If 0, updates are never used.}
 
-\item{seed}{integer, default sample(100000, 1). Used if method = "structure"
-or "admixture". Starting seed for analysis runs. Each additional run (k
-value or rep) will use a successive seed.}
+\item{seed}{integer, default sample(100000, 1). Used if method = "structure",
+"admixture", or "fastmixture". Starting seed for analysis runs. 
+Each additional run (k value or rep) will use a successive seed.}
 
 \item{strip_col_names}{string, default NULL. An optional regular expression
 indicating a way to process the column names prior to plotting. Parts of
