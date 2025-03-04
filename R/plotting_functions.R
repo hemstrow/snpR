@@ -3264,6 +3264,37 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     return(list(qlist = qlist, meta = nmeta))
   }
+  
+  # Function to do evanno method
+  evanno <- function(cv_storage, kmax, reps){
+    cv_storage <- as.data.table(cv_storage)
+    evanno <- cv_storage[, mean(est_ln_prob), by = K]
+    colnames(evanno)[2] <- "mean_est_ln_prob"
+    if(kmax >= 3 & reps > 1){
+      evanno$lnpK <- NA
+      evanno$lnppK <- NA
+      evanno$deltaK <- NA
+      evanno$sd_est_ln_prob <- cv_storage[, sqrt(stats::var(est_ln_prob)), by = K][[2]]
+      evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
+      evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
+      # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
+      #                                             2*evanno$mean_est_ln_prob[-c(1, nrow(evanno))] +
+      #                                             evanno$mean_est_ln_prob[-nrow(evanno)][-(nrow(evanno) - 1)])/
+      #                                           evanno$sd_est_ln_prob[-c(1, nrow(evanno))])
+      evanno$deltaK[-c(1, nrow(evanno))] <- abs(evanno$lnppK)[-c(1, nrow(evanno))]/evanno$sd_est_ln_prob[-c(1, nrow(evanno))] # no reason to resolve for ln''(K)
+      
+      infs <- which(is.infinite(evanno$deltaK))
+      if(length(infs) > 0){
+        evanno$deltaK[infs] <- NA
+        warning(paste0("For some values of K (", paste0((k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
+      }
+      
+      return(evanno)
+    }
+    else{
+      return(NULL)
+    }
+  }
 
   #===========run the assignment/clustering method===============
   # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
@@ -3410,12 +3441,22 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
             cv_err <- readLines(paste0("plink_files.", i, "_", j, ".log"))
             cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
               as.numeric(gsub("Final log-likelihood: ", "", cv_err[grep("Final log-likelihood", cv_err)]))
+            
+            colnames(cv_storage)[3] <- "est_ln_prob"
           }
           seed <- seed + 1
         }
       }
       qlist <- parse_qfiles(".Q")
-      K_plot <- cv_storage
+      
+      # prep summary data for K plot/evanno
+      if(method == "fastmixture" & kmax >= 3 & reps > 1){
+        K_plot <- list(raw = cv_storage, 
+                       evanno = evanno(cv_storage, kmax, reps))
+      }
+      else{
+        K_plot <- cv_storage
+      }
     }
     else if(method == "structure"){
       if(!identical(k, min(k):kmax) & length(k) != 1){
@@ -3552,35 +3593,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       
       
       # prep summary data for K plot/evanno
-      cv_storage <- as.data.table(cv_storage)
-      evanno <-cv_storage[, mean(est_ln_prob), by = K]
-      colnames(evanno)[2] <- "mean_est_ln_prob"
       if(kmax >= 3 & reps > 1){
-        evanno$lnpK <- NA
-        evanno$lnppK <- NA
-        evanno$deltaK <- NA
-        evanno$sd_est_ln_prob <- cv_storage[, sqrt(stats::var(est_ln_prob)), by = K][[2]]
-        evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
-        evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
-        # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
-        #                                             2*evanno$mean_est_ln_prob[-c(1, nrow(evanno))] +
-        #                                             evanno$mean_est_ln_prob[-nrow(evanno)][-(nrow(evanno) - 1)])/
-        #                                           evanno$sd_est_ln_prob[-c(1, nrow(evanno))])
-        evanno$deltaK[-c(1, nrow(evanno))] <- abs(evanno$lnppK)[-c(1, nrow(evanno))]/evanno$sd_est_ln_prob[-c(1, nrow(evanno))] # no reason to resolve for ln''(K)
-        
-        infs <- which(is.infinite(evanno$deltaK))
-        if(length(infs) > 0){
-          evanno$deltaK[infs] <- NA
-          warning(paste0("For some values of K (", paste0((k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
-        }
-        
-        K_plot <- list(raw = cv_storage, evanno = evanno)
+        K_plot <- list(raw = cv_storage, 
+                       evanno = evanno(cv_storage, kmax, reps))
       }
       else{
         K_plot <- list(raw = cv_storage)
       }
-      
-      
       
       # read in qlist
       qlist <- parse_qfiles(paste0(tag, "_f"))
@@ -3838,6 +3857,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     keys <- c(keys, "santanderFasterModelbasedEstimation2024")
     stats <- c(stats, "fastmixture")
     details <- c(details, "snapclust assignment clustering")
+  }
+  if("evanno" %in% names(cv_storage)){
+    keys <- c(keys, "Evanno2005")
+    stats <- c(stats, "Evanno method")
+    details <- c(details, "Evanno method for choosing optimal K value")
   }
   keys <- c(keys, "Francis2017")
   stats <- c(stats, "pophelper")
