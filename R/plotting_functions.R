@@ -2407,9 +2407,13 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   STRUCTURE executable, required if method = "structure".
 #' @param admixture_path character, default "/usr/bin/admixture". Path to the
 #'   admixture executable, required if method = "admixture".
-#' @param fastmixture_path character, default "fastmixture". Path to the 
-#'   fastmixture executable. If fastmixture is accessible from the system path,
-#'   this can simply be "fastmixture".
+#' @param fastmixture_path character, default "conda -n fastmixture
+#'   fastmixture". Path/call to the fastmixture executable. If fastmixture is
+#'   accessible from the system path, this can simply be "fastmixture". Note
+#'   that if fastmixture is installed via conda/mamba, something like the
+#'   default "conda run -n fastmixture fastmixture" will work as long as
+#'   conda/mamba is in R's PATH. This is the default since fastmixture
+#'   recommends install via conda.
 #' @param fastmixture_threads numeric, default 1. Fastmixture is multi-threaded;
 #'   controls the number of threads available to fastmixture.
 #' @param admixture_cv numeric, default 5. Fold to use for cross-validation for
@@ -2564,7 +2568,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture",
-                           fastmixture_path = "fastmixture", fastmixture_threads = 1,
+                           fastmixture_path = "conda -n fastmixture fastmixture", fastmixture_threads = 1,
                            admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
                            no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
@@ -2735,7 +2739,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # checks for snpRdata objects only
   if(isFALSE(provided_qlist)){
     x <- .add.facets.snpR.data(x, facet)
-    good.methods <- c("snapclust", "snmf", "admixture", "structure")
+    good.methods <- c("snapclust", "snmf", "admixture", "structure", "fastmixture")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
     }
@@ -2752,6 +2756,22 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       if(Sys.info()[1] == "Windows"){
         msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment or pick another assignment approach.\n")
+      }
+    }
+    if(method == "fastmixture"){
+      if(1 %in% k){
+        k <- k[-which(k == 1)]
+        warning("k cannot equal one for fastmixture. k = 1 excluded.\n")
+        if(length(k) == 0){
+          msg <- c(msg, "No k values provided after k = 1 removed.\n")
+        }
+      }
+      if(Sys.info()[1] == "Windows"){
+        msg <- c(msg, "Unfortunately, fastmixture is not available for a Windows environment. Please use a unix based environment or pick another assignment approach.\n")
+      }
+      fastmixture_works <- try(system(fastmixture_path, intern = TRUE), silent = TRUE)
+      if(methods::is(fastmixture_works, "try-error")){
+        msg <- c(msg, "No file found at provided admixture path. Error returned when trying as follows.\n", as.character(fastmixture_works))
       }
     }
     if(method == "structure"){
@@ -2835,30 +2855,6 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
 
   if(is.null(facet[1])){qsort <- F}
-  
-  # methods
-  good_methods <- c("structure", "admixture", "fastmixture", "snapclust", "snmf")
-  if(!method %in% good_methods){
-    msg <- c(msg, paste0("Unrecognized method. Accepted methods:", 
-                         paste0(good_methods, collapse = ", "),
-                         ".\n"))
-  }
-  
-  if(method %in% c("admixture", "fastmixture")){
-    if(Sys.info()$sysname == "Windows"){
-      msg <- c(msg, "admixture and fastmixture are not supported on Windows.\n")
-    }
-  }
-  
-  if(method == "fastmixture"){
-    if(1 %in% k){
-      k <- k[-which(k == 1)]
-      warning("k cannot equal one for fastmixture. k = 1 excluded.\n")
-      if(length(k) == 0){
-        msg <- c(msg, "No k values provided after k = 1 removed.\n")
-      }
-    }
-  }
 
   if(length(msg) != 0){
     stop(msg)
@@ -3428,29 +3424,28 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
               as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
           }
           else if(method == "fastmixture"){
-            browser()
-            cmd <- paste0(fastmixture_path, "--bfile plink_files",
+            cmd <- paste0(fastmixture_path, " --bfile plink_files",
                           " --K ", i,
                           " --threads ", fastmixture_threads,
                           " --seed ",  seed,
                           " --out ", paste0("plink_files.", i, "_", j))
             system(cmd)
-            file.rename(paste0("plink_files.", i, "_", j, ".K", i, "s", seed, ".P"), paste0("plink_files.", i, "_", j, ".P"))
-            file.rename(paste0("plink_files.", i, "_", j, ".K", i, "s", seed, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
-            file.rename(paste0("plink_files.", i, "_", j, ".K", i, "s", seed, ".log"), paste0("plink_files.", i, "_", j, ".log"))
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".P"), paste0("plink_files.", i, "_", j, ".P"))
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".log"), paste0("plink_files.", i, "_", j, ".log"))
             cv_err <- readLines(paste0("plink_files.", i, "_", j, ".log"))
             cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
               as.numeric(gsub("Final log-likelihood: ", "", cv_err[grep("Final log-likelihood", cv_err)]))
             
-            colnames(cv_storage)[3] <- "est_ln_prob"
           }
           seed <- seed + 1
         }
       }
-      qlist <- parse_qfiles(".Q")
+      qlist <- parse_qfiles(".Q$")
       
       # prep summary data for K plot/evanno
       if(method == "fastmixture" & kmax >= 3 & reps > 1){
+        colnames(cv_storage)[3] <- "est_ln_prob"
         K_plot <- list(raw = cv_storage, 
                        evanno = evanno(cv_storage, kmax, reps))
       }

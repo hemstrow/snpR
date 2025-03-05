@@ -1,6 +1,9 @@
 # snpR 1.2.12
 
 ## Features
+### Major:
+* Added support for [fastmixture](https://peercommunityjournal.org/articles/10.24072/pcjournal.503/) to `plot_structure()`. "fastmixture" is a nice, alternative to "ADMIXTURE" with comparable results. Like the latter, it's not available on Windows.
+
 ### Minor:
 * `read_vcf()` now supports indels and multiple-character alleles. Indels will be coded as 'I' and 'D' for the longer and shorter variant, equal length multiple-character alleles as 'R' and 'L' for the ref and alt allele, respectively. All other code natively supports alleles other than 'A', 'C', 'G', and 'T' by default with no needed changes.
 
