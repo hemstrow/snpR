@@ -2407,7 +2407,7 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   STRUCTURE executable, required if method = "structure".
 #' @param admixture_path character, default "/usr/bin/admixture". Path to the
 #'   admixture executable, required if method = "admixture".
-#' @param fastmixture_path character, default "conda -n fastmixture
+#' @param fastmixture_path character, default "conda run -n fastmixture
 #'   fastmixture". Path/call to the fastmixture executable. If fastmixture is
 #'   accessible from the system path, this can simply be "fastmixture". Note
 #'   that if fastmixture is installed via conda/mamba, something like the
@@ -2568,7 +2568,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
                            clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture",
-                           fastmixture_path = "conda -n fastmixture fastmixture", fastmixture_threads = 1,
+                           fastmixture_path = "conda run -n fastmixture fastmixture", fastmixture_threads = 1,
                            admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
                            no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,

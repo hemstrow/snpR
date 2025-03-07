@@ -23,7 +23,7 @@ plot_structure(
   clumpp.opt = "greedy",
   structure_path = "/usr/bin/structure",
   admixture_path = "/usr/bin/admixture",
-  fastmixture_path = "conda -n fastmixture fastmixture",
+  fastmixture_path = "conda run -n fastmixture fastmixture",
   fastmixture_threads = 1,
   admixture_cv = 5,
   ID = NULL,
@@ -147,7 +147,7 @@ STRUCTURE executable, required if method = "structure".}
 \item{admixture_path}{character, default "/usr/bin/admixture". Path to the
 admixture executable, required if method = "admixture".}
 
-\item{fastmixture_path}{character, default "conda -n fastmixture
+\item{fastmixture_path}{character, default "conda run -n fastmixture
 fastmixture". Path/call to the fastmixture executable. If fastmixture is
 accessible from the system path, this can simply be "fastmixture". Note
 that if fastmixture is installed via conda/mamba, something like the
