@@ -3853,10 +3853,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     stats <- c(stats, "fastmixture")
     details <- c(details, "fastmixture assignment clustering")
   }
-  if("evanno" %in% names(cv_storage)){
-    keys <- c(keys, "Evanno2005")
-    stats <- c(stats, "Evanno method")
-    details <- c(details, "Evanno method for choosing optimal K value")
+  if(exists("cv_storage")){
+    if("evanno" %in% names(cv_storage)){
+      keys <- c(keys, "Evanno2005")
+      stats <- c(stats, "Evanno method")
+      details <- c(details, "Evanno method for choosing optimal K value")
+    }
   }
   keys <- c(keys, "Francis2017")
   stats <- c(stats, "pophelper")
