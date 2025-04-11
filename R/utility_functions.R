@@ -2656,7 +2656,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     
     # save .fam
     fam <- ped
-    
+
     # change missing data value and add a space between alleles.
     x.np <- as.vector(t(genotypes(x)[n.ord,]))
     x.np[x.np == x@mDat] <- "00"

@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.10.9000-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.11-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -112,9 +112,9 @@ A CRAN version should be available soon.
     when any facet operations are performed.
   - `calc_private()`: Rarefaction-corrected detection of private alleles
     across facet levels.
-  - `calc_seg_sites()`: Rarefaction-corrected estiamtes of the number of
+  - `calc_seg_sites()`: Rarefaction-corrected estimates of the number of
     segregating sites per facet level.
-  - `calc_allelic_richness():`: Rarefaction-corrected estiamtes of
+  - `calc_allelic_richness():`: Rarefaction-corrected estimates of
     allele counts per locus per facet level.
   - `calc_genetic_distances()`: Genetic distances between individuals.
   - `calc_fis()`: $F_{IS}$ (inbreeding coefficients).
