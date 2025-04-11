@@ -17,6 +17,7 @@
 * Fixed a bug in `calc_seg_sites()` without the rarefaction option where missing data would be incorrectly counted as unsegregating.
 * Fixed a bug in `get.snpR.stats()` returning an $F_{ST}$ matrix where some specific subfacet names would cause data to appear in the lower triangle instead of the upper.
 * Fixed a bug in `read_vcf()` where partial missing data at a locus (e.g. "./A") would be interpreted as a "." allele, not missing data. The whole genotype is now treated as missing in such cases.
+* Fixed a bug caused by some versions of `data.table` where converting from an empty `data.frame` instantiated as part of an initial slot of an S4 object to a `data.table` with `as.data.table()` would cause an infinite recursion.
 
 # snpR 1.2.11 Hotfix 1
 ## Bug fixes
