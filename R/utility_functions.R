@@ -2806,20 +2806,20 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       
       #for lifehistory data input needs id, sex, year born
       if(!all(c("Sex", "BirthYear", "ID", "BYmin", "BYmax", "Yearlast") %in% colnames(x@sample.meta))){
-          warning("Required columns Sex, ID, Yearlast, BirthYear, BYmax, and BYmin not found in sample metadata.\n")
-        }
-        
-        ID <- x@sample.meta$ID
-        sex <- fix.sex.sequoia(x)
-        
-        #ACTUALLY MAKE THE TABLE
-        lhtable <- data.frame(ID=ID,
-                              Sex = as.numeric(sex),
-                              BirthYear = sample.meta(x)$BirthYear,
-                              BY.min = sample.meta(x)$BYmin,
-                              BY.max = sample.meta(x)$BYmax,
-                              Year.last = sample.meta(x)$Yearlast,
-                              stringsAsFactors = F)
+        warning("Required columns Sex, ID, Yearlast, BirthYear, BYmax, and BYmin not found in sample metadata.\n")
+      }
+      
+      ID <- x@sample.meta$ID
+      sex <- fix.sex.sequoia(x)
+      
+      #ACTUALLY MAKE THE TABLE
+      lhtable <- data.frame(ID=ID,
+                            Sex = as.numeric(sex),
+                            BirthYear = sample.meta(x)$BirthYear,
+                            BY.min = sample.meta(x)$BYmin,
+                            BY.max = sample.meta(x)$BYmax,
+                            Year.last = sample.meta(x)$Yearlast,
+                            stringsAsFactors = F)
       
       rownames(rdata) <- ID
       rdata = list(dat=rdata, lh=lhtable)
@@ -2978,7 +2978,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     rdata[rdata == 2] <- "1/1"
     rdata[is.na(rdata)] <- "./."
     rdata <- as.data.frame(rdata)
-
+    
     rdata <- list(meta = vcf_meta, genotypes = rdata, data_meta = data_meta)
   }
   
@@ -3400,20 +3400,29 @@ check_duplicates <- function(x, y = 1:ncol(x), id.col = NULL, verbose = FALSE){
 
 
 
-#' Fetch the allele frequencies for all SNPs for each level of each requested
+#' Allele frequencies for all SNPs for each level of each requested
 #' facet.
 #'
 #' Fetch allele frequencies for all SNPs for each level of all the requested
 #' facets. Major and minor allele frequencies will be interleaved, with the major
-#' allele first for each locus. Note that this particular function is not
-#' overwrite-safe.
+#' allele first for each locus. 
 #'
 #' @param x snpRdata object
 #' @param facets character, default NULL. The facets for which to calculate
 #'   allele frequencies. See \code{\link{Facets_in_snpR}} for details.
 #'
 #' @return A named, nested list containing allele frequency matrices for each
-#'   facet level for all requested facets.
+#'   facet level for all requested facets, merged into the provided snpRdata
+#'   object.
+#'
+#' @examples
+#' # base level
+#' d <- tabulate_allele_frequency_matrix(stickSNPs)
+#' get.snpR.stats(d, stats = "allele_frequency_matrix")
+#' 
+#' # facet
+#' d <- tabulate_allele_frequency_matrix(stickSNPs, "pop")
+#' get.snpR.stats(d, "pop", stats = "allele_frequency_matrix")
 #'
 #' @author William Hemstrom
 #' @export

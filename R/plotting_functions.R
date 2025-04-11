@@ -2359,6 +2359,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   Maximum-likelihood genetic clustering. See
 #'   \code{\link[adegenet]{snapclust.choose.k}}. \item{admixture: } The
 #'   ADMIXTURE program. Requires a local admixture executable, and thus cannot
+#'   run on a Windows platform. \item{fastmixture: } The fastmixture program, a 
+#'   faster variant of ADMIXTURE. Requires fastmixture to be installed, and thus cannot
 #'   run on a Windows platform. \item{ structure: } The STRUCTURE program.
 #'   Requires a local STRUCTURE executable. many additional options are
 #'   available for STRUCTURE via other arguments.}
@@ -2405,6 +2407,15 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   STRUCTURE executable, required if method = "structure".
 #' @param admixture_path character, default "/usr/bin/admixture". Path to the
 #'   admixture executable, required if method = "admixture".
+#' @param fastmixture_path character, default "conda run -n fastmixture
+#'   fastmixture". Path/call to the fastmixture executable. If fastmixture is
+#'   accessible from the system path, this can simply be "fastmixture". Note
+#'   that if fastmixture is installed via conda/mamba, something like the
+#'   default "conda run -n fastmixture fastmixture" will work as long as
+#'   conda/mamba is in R's PATH. This is the default since fastmixture
+#'   recommends install via conda.
+#' @param fastmixture_threads numeric, default 1. Fastmixture is multi-threaded;
+#'   controls the number of threads available to fastmixture.
 #' @param admixture_cv numeric, default 5. Fold to use for cross-validation for
 #'   admixture, used to determine the optimum k.
 #' @param ID character or NULL, default NULL. Designates a column in the sample
@@ -2506,9 +2517,9 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param metro_update_freq numeric, default 10. Used if method = "structure".
 #'   Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 #'   updates are used. If 0, updates are never used.
-#' @param seed integer, default sample(100000, 1). Used if method = "structure"
-#'   or "admixture". Starting seed for analysis runs. Each additional run (k
-#'   value or rep) will use a successive seed.
+#' @param seed integer, default sample(100000, 1). Used if method = "structure",
+#'  "admixture", or "fastmixture". Starting seed for analysis runs. 
+#'  Each additional run (k value or rep) will use a successive seed.
 #' @param strip_col_names string, default NULL. An optional regular expression
 #'   indicating a way to process the column names prior to plotting. Parts of
 #'   names matching the strings provided will be cut. Useful for when the facet
@@ -2556,7 +2567,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = "snmf", reps = 1, update_bib = FALSE,
                            iterations = 1000, burnin = 100,
                            I = NULL, alpha = 5, qsort = "last", qsort_K = "last", clumpp = TRUE, clumpp_path = "/usr/bin/CLUMPP.exe",
-                           clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture", 
+                           clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture",
+                           fastmixture_path = "conda run -n fastmixture fastmixture", fastmixture_threads = 1,
                            admixture_cv = 5, ID = NULL, viridis.option = "viridis",
                            alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
                            no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
@@ -2727,7 +2739,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # checks for snpRdata objects only
   if(isFALSE(provided_qlist)){
     x <- .add.facets.snpR.data(x, facet)
-    good.methods <- c("snapclust", "snmf", "admixture", "structure")
+    good.methods <- c("snapclust", "snmf", "admixture", "structure", "fastmixture")
     if(!method %in% good.methods){
       msg <- c(msg, paste0("Unaccepted clustering method. Accepted options: ", paste0(good.methods, collapse = ", "), "\n"))
     }
@@ -2744,6 +2756,22 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       if(Sys.info()[1] == "Windows"){
         msg <- c(msg, "Unfortunately, ADMIXTURE is not available for a Windows environment. Please use a unix based environment or pick another assignment approach.\n")
+      }
+    }
+    if(method == "fastmixture"){
+      if(1 %in% k){
+        k <- k[-which(k == 1)]
+        warning("k cannot equal one for fastmixture. k = 1 excluded.\n")
+        if(length(k) == 0){
+          msg <- c(msg, "No k values provided after k = 1 removed.\n")
+        }
+      }
+      if(Sys.info()[1] == "Windows"){
+        msg <- c(msg, "Unfortunately, fastmixture is not available for a Windows environment. Please use a unix based environment or pick another assignment approach.\n")
+      }
+      fastmixture_works <- try(system(fastmixture_path, intern = TRUE), silent = TRUE)
+      if(methods::is(fastmixture_works, "try-error")){
+        msg <- c(msg, "No file found at provided admixture path. Error returned when trying as follows.\n", as.character(fastmixture_works))
       }
     }
     if(method == "structure"){
@@ -3232,6 +3260,37 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
     return(list(qlist = qlist, meta = nmeta))
   }
+  
+  # Function to do evanno method
+  evanno <- function(cv_storage, kmax, reps){
+    cv_storage <- as.data.table(cv_storage)
+    evanno <- cv_storage[, mean(est_ln_prob), by = K]
+    colnames(evanno)[2] <- "mean_est_ln_prob"
+    if(kmax >= 3 & reps > 1){
+      evanno$lnpK <- NA
+      evanno$lnppK <- NA
+      evanno$deltaK <- NA
+      evanno$sd_est_ln_prob <- cv_storage[, sqrt(stats::var(est_ln_prob)), by = K][[2]]
+      evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
+      evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
+      # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
+      #                                             2*evanno$mean_est_ln_prob[-c(1, nrow(evanno))] +
+      #                                             evanno$mean_est_ln_prob[-nrow(evanno)][-(nrow(evanno) - 1)])/
+      #                                           evanno$sd_est_ln_prob[-c(1, nrow(evanno))])
+      evanno$deltaK[-c(1, nrow(evanno))] <- abs(evanno$lnppK)[-c(1, nrow(evanno))]/evanno$sd_est_ln_prob[-c(1, nrow(evanno))] # no reason to resolve for ln''(K)
+      
+      infs <- which(is.infinite(evanno$deltaK))
+      if(length(infs) > 0){
+        evanno$deltaK[infs] <- NA
+        warning(paste0("For some values of K (", paste0((k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
+      }
+      
+      return(evanno)
+    }
+    else{
+      return(NULL)
+    }
+  }
 
   #===========run the assignment/clustering method===============
   # each method should return a list of q tables, unprocessed, and possibly work on a K_plot. The list should be nested, k then r.
@@ -3342,7 +3401,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         prog <- prog + 1
       }
     }
-    else if(method == "admixture"){
+    else if(method %in% c("admixture", "fastmixture")){
       #=========prep===========
       # write plink files
       old.snp.meta <- snp.meta(x)
@@ -3354,18 +3413,45 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       cv_storage$cv_error <- NA
       for(i in k){
         for(j in 1:reps){
-          cmd <- paste0(admixture_path, " -s ", seed, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
-          system(cmd)
-          file.rename(paste0("plink_files.", i, ".P"), paste0("plink_files.", i, "_", j, ".P"))
-          file.rename(paste0("plink_files.", i, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
-          cv_err <- readLines(paste0("plink_files_log", i, "_", j, ".out"))
-          cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
-            as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
+          
+          if(method == "admixture"){
+            cmd <- paste0(admixture_path, " -s ", seed, " --cv=", admixture_cv, " plink_files.bed ", i, " | tee plink_files_log", i, "_", j, ".out")
+            system(cmd)
+            file.rename(paste0("plink_files.", i, ".P"), paste0("plink_files.", i, "_", j, ".P"))
+            file.rename(paste0("plink_files.", i, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
+            cv_err <- readLines(paste0("plink_files_log", i, "_", j, ".out"))
+            cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
+              as.numeric(gsub("^CV.+: ", "", cv_err[grep("CV error ", cv_err)]))
+          }
+          else if(method == "fastmixture"){
+            cmd <- paste0(fastmixture_path, " --bfile plink_files",
+                          " --K ", i,
+                          " --threads ", fastmixture_threads,
+                          " --seed ",  seed,
+                          " --out ", paste0("plink_files.", i, "_", j))
+            system(cmd)
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".P"), paste0("plink_files.", i, "_", j, ".P"))
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".Q"), paste0("plink_files.", i, "_", j, ".Q"))
+            file.rename(paste0("plink_files.", i, "_", j, ".K", i, ".s", seed, ".log"), paste0("plink_files.", i, "_", j, ".log"))
+            cv_err <- readLines(paste0("plink_files.", i, "_", j, ".log"))
+            cv_storage[which(cv_storage$K == i & cv_storage$rep == j), 3] <- 
+              as.numeric(gsub("Final log-likelihood: ", "", cv_err[grep("Final log-likelihood", cv_err)]))
+            
+          }
           seed <- seed + 1
         }
       }
-      qlist <- parse_qfiles(".Q")
-      K_plot <- cv_storage
+      qlist <- parse_qfiles(".Q$")
+      
+      # prep summary data for K plot/evanno
+      if(method == "fastmixture" & kmax >= 3 & reps > 1){
+        colnames(cv_storage)[3] <- "est_ln_prob"
+        K_plot <- list(raw = cv_storage, 
+                       evanno = evanno(cv_storage, kmax, reps))
+      }
+      else{
+        K_plot <- cv_storage
+      }
     }
     else if(method == "structure"){
       if(!identical(k, min(k):kmax) & length(k) != 1){
@@ -3502,35 +3588,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       
       
       # prep summary data for K plot/evanno
-      cv_storage <- as.data.table(cv_storage)
-      evanno <-cv_storage[, mean(est_ln_prob), by = K]
-      colnames(evanno)[2] <- "mean_est_ln_prob"
       if(kmax >= 3 & reps > 1){
-        evanno$lnpK <- NA
-        evanno$lnppK <- NA
-        evanno$deltaK <- NA
-        evanno$sd_est_ln_prob <- cv_storage[, sqrt(stats::var(est_ln_prob)), by = K][[2]]
-        evanno$lnpK[-1] <- evanno$mean_est_ln_prob[-1] - evanno$mean_est_ln_prob[-nrow(evanno)]
-        evanno$lnppK[-nrow(evanno)] <- abs(evanno$lnpK[-nrow(evanno)] - evanno$lnpK[-1])
-        # evanno$deltaK[-c(1, nrow(evanno))] <- abs((evanno$mean_est_ln_prob[-1][-1] - 
-        #                                             2*evanno$mean_est_ln_prob[-c(1, nrow(evanno))] +
-        #                                             evanno$mean_est_ln_prob[-nrow(evanno)][-(nrow(evanno) - 1)])/
-        #                                           evanno$sd_est_ln_prob[-c(1, nrow(evanno))])
-        evanno$deltaK[-c(1, nrow(evanno))] <- abs(evanno$lnppK)[-c(1, nrow(evanno))]/evanno$sd_est_ln_prob[-c(1, nrow(evanno))] # no reason to resolve for ln''(K)
-        
-        infs <- which(is.infinite(evanno$deltaK))
-        if(length(infs) > 0){
-          evanno$deltaK[infs] <- NA
-          warning(paste0("For some values of K (", paste0((k)[infs], collapse = ", "), "), all reps had the same estimated ln(likelihood). Since calculating deltaK involves dividing by the standard deviation of the ln(likelihood) estimates across reps, this will return 'Inf', and have thus been assigned a deltaK of NA."))
-        }
-        
-        K_plot <- list(raw = cv_storage, evanno = evanno)
+        K_plot <- list(raw = cv_storage, 
+                       evanno = evanno(cv_storage, kmax, reps))
       }
       else{
         K_plot <- list(raw = cv_storage)
       }
-      
-      
       
       # read in qlist
       qlist <- parse_qfiles(paste0(tag, "_f"))
@@ -3783,6 +3847,18 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     keys <- c(keys, "Beugin2018")
     stats <- c(stats, "snapclust")
     details <- c(details, "snapclust assignment clustering")
+  }
+  else if(method == "fastmixture"){
+    keys <- c(keys, "santanderFasterModelbasedEstimation2024")
+    stats <- c(stats, "fastmixture")
+    details <- c(details, "fastmixture assignment clustering")
+  }
+  if(exists("cv_storage")){
+    if("evanno" %in% names(cv_storage)){
+      keys <- c(keys, "Evanno2005")
+      stats <- c(stats, "Evanno method")
+      details <- c(details, "Evanno method for choosing optimal K value")
+    }
   }
   keys <- c(keys, "Francis2017")
   stats <- c(stats, "pophelper")

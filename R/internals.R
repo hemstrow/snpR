@@ -1162,10 +1162,18 @@ is.snpRdata <- function(x){
   
   
   .snp.id <- facet <- subfacet <- comparison <- ..new.ord <- NULL
-  
-  
-  n.s <- data.table::as.data.table(n.s)
-  o.s <- data.table::as.data.table(o.s)
+  if(!is.data.table(n.s)){
+    if(all(dim(n.s) == 0)){
+      n.s <- data.frame(n.s)
+    }
+    n.s <- data.table::as.data.table(n.s)
+  }
+  if(!is.data.table(o.s)){
+    if(all(dim(o.s) == 0)){
+      o.s <- data.frame(o.s)
+    }
+    o.s <- data.table::as.data.table(o.s)
+  }
   
   if(all(colnames(n.s) %in% colnames(o.s))){
     if(isTRUE(all.equal(n.s, o.s, ignore.col.order = T, ignore.row.order = T, check.attributes = F))){

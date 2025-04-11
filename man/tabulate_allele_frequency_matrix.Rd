@@ -2,7 +2,7 @@
 % Please edit documentation in R/utility_functions.R
 \name{tabulate_allele_frequency_matrix}
 \alias{tabulate_allele_frequency_matrix}
-\title{Fetch the allele frequencies for all SNPs for each level of each requested
+\title{Allele frequencies for all SNPs for each level of each requested
 facet.}
 \usage{
 tabulate_allele_frequency_matrix(x, facets = NULL)
@@ -15,13 +15,23 @@ allele frequencies. See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
 A named, nested list containing allele frequency matrices for each
-  facet level for all requested facets.
+  facet level for all requested facets, merged into the provided snpRdata
+  object.
 }
 \description{
 Fetch allele frequencies for all SNPs for each level of all the requested
 facets. Major and minor allele frequencies will be interleaved, with the major
-allele first for each locus. Note that this particular function is not
-overwrite-safe.
+allele first for each locus.
+}
+\examples{
+# base level
+d <- tabulate_allele_frequency_matrix(stickSNPs)
+get.snpR.stats(d, stats = "allele_frequency_matrix")
+
+# facet
+d <- tabulate_allele_frequency_matrix(stickSNPs, "pop")
+get.snpR.stats(d, "pop", stats = "allele_frequency_matrix")
+
 }
 \author{
 William Hemstrom

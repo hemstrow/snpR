@@ -411,7 +411,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 
   #======special cases========
   # sample and snp metadata
-  if(is.character(sample.meta)){
+  if(is.character(sample.meta) & length(sample.meta) == 1){
     if(file.exists(sample.meta)){
       sample.meta <- as.data.frame(data.table::fread(sample.meta))
     }
@@ -419,12 +419,26 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
       stop("Cannot locate sample.meta file.\n")
     }
   }
-  if(is.character(snp.meta)){
+  else if(!is.null(sample.meta)){
+    sample.meta <- try(as.data.frame(sample.meta), silent = TRUE)
+    if(methods::is(sample.meta, "try-error")){
+      stop(paste0("Could not convert sample.meta to data.frame. Error: \n", sample.meta))
+    }
+  }
+  
+  
+  if(is.character(snp.meta) & length(snp.meta) == 1){
     if(file.exists(snp.meta)){
       snp.meta <- as.data.frame(data.table::fread(snp.meta))
     }
     else{
       stop("Cannot locate snp.meta file.\n")
+    }
+  }
+  else if(!is.null(snp.meta)){
+    snp.meta <- try(as.data.frame(snp.meta), silent = TRUE)
+    if(methods::is(snp.meta, "try-error")){
+      stop(paste0("Could not convert snp.meta to data.frame. Error: \n", snp.meta))
     }
   }
   
@@ -533,6 +547,20 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   if(is.null(sample.meta)){
     sample.meta <- data.frame(sampID = paste0("samp", 1:ncol(genotypes)))
+  }
+  
+  # check mdat and genotype format -- only do the first sample to save on processing speed
+  gtl <- unique(as.numeric(nchar(as.matrix(genotypes)[,1])))
+  if(length(gtl) > 1){
+    stop("All genotypes must be equal in length, including missing data.\n")
+  }
+  if(nchar(mDat) != gtl){
+    stop("mDat must be equal in length (number of characters) to the genotype format, as in 'NN' or '00' with 'AC' genotypes.\n")
+  }
+  md1 <- substr(mDat, 0, nchar(mDat)/2)
+  md2 <- substr(mDat, (nchar(mDat)/2) + 1, nchar(mDat))
+  if(md1 != md2){
+    stop("mDat must be symmetrical, as in 'NN' or '0000', NOT '01' or 'NGT' or 'NX'.\n")
   }
   
   # prepare things for addition to data
@@ -1007,16 +1035,22 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     
     empties <- numeric(0)
     for(i in 1:length(cats)){
+      tfst <- data.table::copy(fst[facet == cats[i],])
+      levs <- unique(c(tfst$p1, tfst$p2))
+      levs <- sort(levs)
+      tfst[,p1 := factor(p1, levs)]
+      tfst[,p2 := factor(p2, levs)]
+      
       if(sum(fst$facet == cats[i]) == 0){
         empties <- c(empties, i)
         next
       }
       else if("weighted_mean_fst_p" %in% colnames(fst)){
-        res[[i]] <- list(fst = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst"),
-                         p = data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst_p"))
+        res[[i]] <- list(fst = data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst"),
+                         p = data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst_p"))
       }
       else{
-        res[[i]] <- data.table::dcast(fst[facet == cats[i],], p1~p2, value.var = "weighted_mean_fst")
+        res[[i]] <- data.table::dcast(tfst, p1~p2, value.var = "weighted_mean_fst")
       }
     }
     

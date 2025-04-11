@@ -715,8 +715,11 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   }
   
   
+  
+  
   #============================subfunctions=========================
   func <- function(x, method, facets = NULL, g.filename = NULL, ac_cols = NULL, meta_colnames = NULL, gc_cols = NULL){
+    
     
     if(method != "genepop"){
       x <- data.table::as.data.table(x)
@@ -856,8 +859,12 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     #===============others=====================
     data.table::setkey(x, subfacet, .snp.id) # sort the data
     
+    
+    
     ##==============do global Fst if that is what is requested===============
     if(global){
+      
+      
       nt <- data.table::dcast(x[,rowSums(.SD), .SDcols = ac_cols, by = .(subfacet, .snp.id)], .snp.id ~ subfacet, value.var = "V1")
       psm <- x[,.SD/rowSums(.SD), .SDcols = ac_cols, by = .(subfacet, .snp.id)]
       hom <- psm
@@ -888,6 +895,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
                                     c = 0)
       
       for(k in 1:length(ac_cols)){
+        
+        
         psf_m <- dcast(psm, .snp.id ~ subfacet, value.var = colnames(psm)[k + 2])
         
         # need to determine per-allele hom
@@ -964,6 +973,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
         if(method == "wc"){
           
           
+          
+          
           nt1 <- .fix..call(rowSums(idat[,..ac_cols]))
           nt2 <- .fix..call(rowSums(jdat[,..ac_cols]))
           ps1_f <- .fix..call(idat[,..ac_cols]/nt1)
@@ -1006,6 +1017,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
               tjho[absent] <- 0
             }
             
+            
+            
             parts[[k]] <-.per_all_f_stat_components(intot, jntot, ps1_f[[k]], ps2_f[[k]], r, nbar, nc, tiho, tjho)
           }
           a <- matrix(unlist(purrr::map(parts, "a")), ncol = length(parts))
@@ -1031,6 +1044,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
         prog <- prog + as.integer(nrow(idat))
         
         
+        
         c.col <- c.col + 1L #agument c.col
       }
     }
@@ -1052,6 +1066,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   
   
   one_wm <- function(x, other_facets){
+    
+    
     groups <- c("comparison", other_facets)
     
     out <- x[,list(stats::weighted.mean(a, w = nk, na.rm = TRUE)/
@@ -1070,6 +1086,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   one_run <- function(x, method, facet, ofacet, g.filename, rac = NULL){
     other_facets <- .split.facet(ofacet)[[1]]
     other_facets <- other_facets[which(!other_facets %in% .split.facet(facet)[[1]])]
+    
+    
     
     if(method == "genepop"){
       real_out <- func(x, method, facets = ofacet, g.filename = g.filename)
@@ -1116,6 +1134,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       .make_it_quiet(format_snps(x, "genepop", facets[i], outfile = paste0(facets[i], "_genepop_input.txt")))
     }
     
+    
     real[[i]] <- one_run(x,
                          method =  method, 
                          facet = facets[i],
@@ -1138,6 +1157,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
         gp.filenames <- .boot_genepop(paste0(facets[f], "_genepop_input.txt"), boot)
         wc.inputs <- NULL
       }
+      
       
       
       cat("Done.\nCalculating Fst...\n")
@@ -1170,6 +1190,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
         
         cl <- parallel::makePSOCKcluster(boot_par)
         doParallel::registerDoParallel(cl)
+        
         
         
         
@@ -1215,6 +1236,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
       
       
       
+      
       # calculate p-values vs real
       real[[f]]$real_wm$weighted_mean_fst_p <- (rowSums(as.matrix(boots) >= real[[f]]$real_wm$weighted_mean_fst) + 1)/(boot + 1)
     }
@@ -1231,6 +1253,8 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
     real_wm[[i]]$snp.facet <- snp.facet[i]
     if(snp.facet[i] == ".base"){
       real_wm[[i]]$snp.subfacet <- ".base"
+      
+      
     }
     else{
       real_wm[[i]]$snp.subfacet <- .paste.by.facet(real_wm[[i]], facets = snp.facet[i])
@@ -1266,6 +1290,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   }
   x <- .merge.snpR.stats(x, real_out, type = "pairwise")
   
+  
   # cleanup
   if(cleanup){
     if(exists("gp.filenames")){
@@ -1288,6 +1313,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   else if(method == "genepop"){
     x <- .update_citations(x, "Rousset2008", "fst", "Pairwise FST calculation")
   }
+  
   
   if(zfst){
     x <- .update_citations(x, "axelssonGenomicSignatureDog2013", "zfst", "Z-score standardized FST.")
@@ -4623,7 +4649,7 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
   
   #============sub-functions==============
   jack_fun <- function(as, p1, p2, p3){
-    
+
     # get derived allele counts by looping through each option
     der <- numeric(nrow(as))
     nucs <- c("A", "C", "G", "T")[which(c("A", "C", "G","T") %in% colnames(as))]
@@ -5695,15 +5721,20 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
   }
   
   else{
-    needed.facets <- .check_calced_stats(x, facets, "prop_poly")
-    needed.facets <- facets[which(!unlist(needed.facets))]
-    if(length(needed.facets) > 0){
-      x <- calc_prop_poly(x, facets)
-    }
+    matches <- which(x@facet.meta$facet %in% facets)
+    as <- x@geno.tables$as[matches,]
+    as <- as.matrix(as != 0)
+    alleles <- rowSums(as)
+    as <- data.table::as.data.table(x@facet.meta[matches,])
+    as[,alleles := alleles]
+    as[,poly := ifelse(alleles == 0, NA,
+                       ifelse(alleles != 1, TRUE, FALSE))]
     
-    totals <- get.snpR.stats(x, facets, "prop_poly")$weighted.means
-    totals$seg_sites <- totals$prop_poly*nsnps(x)
-    totals$prop_poly <- NULL
+    totals <- as[,sum(poly, na.rm = TRUE), by = .(facet, subfacet)]
+    colnames(totals)[3] <- "seg_sites"
+    totals$seg_sites_var <- NA
+    totals$snp.facet <- ".base"
+    totals$snp.subfacet <- ".base" 
   }
   
   #===========update===============
@@ -5714,9 +5745,16 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "g_prob_seg", "prob_seg", "prob_seg_var")
     x <- .merge.snpR.stats(x, .fix..call(gs[,..keep_cols]))
   }
+  else{
+    as$poly <- as.numeric(as$poly)
+    colnames(as)[which(colnames(as) == "poly")] <- "prob_seg"
+    keep_cols <- c("facet", "subfacet", colnames(snp.meta(x)), "prob_seg")
+    x <- .merge.snpR.stats(x, .fix..call(as[,..keep_cols]))
+  }
   
   # return
   x <- .update_calced_stats(x, facets, "seg_sites", "snp")
   
   return(x)
 }
+

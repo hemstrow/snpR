@@ -119,3 +119,55 @@ test_that("genlight and genind",{
   t3m <- get.snpR.stats(t3, stats = "ho")$weighted.means
   expect_identical(testm, t3m)
 })
+
+test_that("indels",{
+  format_snps(stickSNPs, "vcf", outfile = "test.vcf")
+  write("groupXXI\t9067879\tINDEL1\tT\tTAAGGACA\t.\tPASS\tNS=130;AC=17\tGT\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/0\t0/1\t0/1\t0/0\t./.\t./.\t0/1\t./.\t0/1\t./.\t./.\t./.\t0/0\t./.\t./.\t0/1\t./.\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t./.\t./.\t0/0\t0/0\t0/0\t0/0\t0/0\t0/0\t0/1\t0/0\t./.\t./.\t0/0\t0/1\t./.\t./.\t0/0\t0/0\t./.\t0/0\t./.\t0/0\t0/1\t0/0\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t0/0\t./.\t./.\t0/0\t./.\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t./.\t0/1\t./.\t0/0\t0/1\t0/0\t./.\t0/0\t./.\ngroupXXI\t9067879\tBADL1\tTASDSA\tT\t.\tPASS\tNS=130;AC=17\tGT\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/0\t0/1\t0/1\t0/0\t./.\t./.\t0/1\t./.\t0/1\t./.\t./.\t./.\t0/0\t./.\t./.\t0/1\t./.\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t./.\t./.\t0/0\t0/0\t0/0\t0/0\t0/0\t0/0\t0/1\t0/0\t./.\t./.\t0/0\t0/1\t./.\t./.\t0/0\t0/0\t./.\t0/0\t./.\t0/0\t0/1\t0/0\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t0/0\t./.\t./.\t0/0\t./.\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t./.\t0/1\t./.\t0/0\t0/1\t0/0\t./.\t0/0\t./.\ngroupXXI\t9067879\tINDEL2\tTAGCA\tT\t.\tPASS\tNS=130;AC=17\tGT\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/0\t0/1\t0/1\t0/0\t./.\t./.\t0/1\t./.\t0/1\t./.\t./.\t./.\t0/0\t./.\t./.\t0/1\t./.\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t./.\t./.\t0/0\t0/0\t0/0\t0/0\t0/0\t0/0\t0/1\t0/0\t./.\t./.\t0/0\t0/1\t./.\t./.\t0/0\t0/0\t./.\t0/0\t./.\t0/0\t0/1\t0/0\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t0/0\t./.\t./.\t0/0\t./.\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t./.\t0/1\t./.\t0/0\t0/1\t0/0\t./.\t0/0\t./.\ngroupXXI\t9067879\tLONGAL\tTAGCA\tTGGCC\t.\tPASS\tNS=130;AC=17\tGT\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/0\t0/1\t0/1\t0/0\t./.\t./.\t0/1\t./.\t0/1\t./.\t./.\t./.\t0/0\t./.\t./.\t0/1\t./.\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t./.\t0/1\t0/0\t0/0\t./.\t./.\t0/0\t0/0\t0/0\t0/0\t0/0\t0/0\t0/1\t0/0\t./.\t./.\t0/0\t0/1\t./.\t./.\t0/0\t0/0\t./.\t0/0\t./.\t0/0\t0/1\t0/0\t./.\t./.\t0/1\t0/0\t0/0\t0/0\t./.\t0/0\t0/0\t./.\t./.\t0/0\t./.\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t0/1\t0/0\t0/0\t0/0\t0/1\t0/0\t0/0\t0/0\t./.\t./.\t0/1\t./.\t0/0\t0/1\t0/0\t./.\t0/0\t./.", 
+        "test.vcf", 
+        append = TRUE)
+  expect_warning(d2 <- read_vcf("test.vcf", sample.meta = sample.meta(stickSNPs)))
+  expect_true(all(colnames(d2@geno.tables$gs) %in% c('AA','AC','AG','AT','CC','CG','CT','DD','DI','GG','GT','II','LR','RR','TT')))
+  expect_true(all(colnames(d2@geno.tables$as) %in% c('A', 'G', 'C', 'T', 'I', 'D', 'L', 'R')))
+  
+  d2 <- calc_pi(d2, "pop")
+  d2 <- calc_ho(d2, "pop")
+  d2 <- calc_pairwise_fst(d2, "pop")
+  expect_false("BADL1" %in% snp.meta(d2)$ID)
+  res <- get.snpR.stats(d2, "pop", c("pi", "ho", "fst"))
+  single <- res$single[res$single$ID %in% c("SNP_39", "INDEL1", "INDEL2","LONGAL") & res$single$subfacet == "ASP",]
+  expect_equal(length(unique(single$pi)), 1)
+  expect_equal(length(unique(single$ho)), 1)
+  pairwise <- res$pairwise[res$pairwise$ID %in% c("SNP_39", "INDEL1", "INDEL2","LONGAL") & res$pairwise$comparison == "ASP~CLF",]
+  expect_equal(length(unique(pairwise$fst)), 1)
+  file.remove("test.vcf")
+})
+
+test_that("sanity checks", {
+  
+  # bad mDat, genotype format
+  ## inconsistant genotype format
+  test <- genotypes(stickSNPs)
+  test[6,1] <- "AACC"
+  expect_error(import.snpR.data(test, snp.meta(stickSNPs), sample.meta(stickSNPs)), "All genotypes must be equal in length, including missing data.")
+
+  ## short mDat
+  expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "N"),
+               "equal in length .+ to the genotype format")
+  
+  ## mDat with different "alleles"
+  expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "NX"),
+               "mDat must be symmetrical, as in 'NN' or '0000', NOT '01' or 'NGT' or 'NX'")
+  
+  # odd snp/sample.meta
+  expect_error(import.snpR.data(genotypes(stickSNPs), c("HI", "BYE"), sample.meta(stickSNPs)),
+               "Number of rows in snp.meta")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), c("HI"), sample.meta(stickSNPs)),
+               "Cannot locate snp.meta file")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), sample.meta = c("HI", "BYE")),
+               "Number of rows in sample.meta")
+  
+  expect_error(import.snpR.data(genotypes(stickSNPs), sample.meta = c("HI")),
+               "Cannot locate sample.meta file")
+})
