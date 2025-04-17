@@ -1,3 +1,9 @@
+# snpR 1.3.0
+
+## Features:
+### Major:
+* Added `calc_roh` to calculate Runs of Homozygosity and $F_{ROH}$. Produces results very similar to those from "PLINK".
+
 # snpR 1.2.12
 
 ## Features

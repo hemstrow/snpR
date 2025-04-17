@@ -1060,7 +1060,7 @@ is.snpRdata <- function(x){
     x@pairwise.window.stats <- n.s
   }
   else if(type == "sample.stats"){
-    meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
+    meta.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
     meta.cols <- unique(meta.cols)
     starter.meta <- meta.cols
     n.s <- .smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
@@ -1133,6 +1133,17 @@ is.snpRdata <- function(x){
     meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
     starter.meta <- meta.names
     x@weighted.means <- .smart.merge(stats, x@weighted.means, meta.names, starter.meta)
+  }
+  else if(type == "roh"){
+    meta.names <- c("snp.facet", "snp.subfacet", colnames(x@sample.meta))
+    starter.meta <- meta.names
+    
+    if(length(x@other$roh) == 0){
+      x@other$roh <- stats
+    }
+    else{
+      x@other$roh <- .smart.merge(x@other$roh, stats, meta.names, starter.meta)
+    }
   }
   
   return(x)
@@ -2267,7 +2278,6 @@ is.snpRdata <- function(x){
 .calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- weights_col <- NULL
 
-
   #===========sanity checks===============
   msg <- character(0)
   if(!is.snpRdata(x)){
@@ -2460,6 +2470,7 @@ is.snpRdata <- function(x){
       }
       # get the per sample missingness
       if(facets[[2]][i] == "sample"){
+        browser()
         # per sample, weights are easy
         weights <- nrow(x) - matrixStats::colSums2(genotypes(x) == x@mDat)
         keep.rows <- which(stats$snp.facet == ".base")

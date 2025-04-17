@@ -771,7 +771,11 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
                tsd = "tajimas_d",
                d = "tajimas_d",
                ar = "allelic_richness",
-               richness = "allelic_richness")
+               richness = "allelic_richness",
+               ROH = "roh",
+               fROH = "roh",
+               FROH = "roh",
+               Froh = "roh")
   
   need_unaliased <- which(stats %in% names(aliases))
   
@@ -870,7 +874,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means", "fst.matrix")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means", "fst.matrix", "roh")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -1062,6 +1066,15 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     return(res)
   }
   
+  extract.roh <- function(x, facets = NULL){
+    nfacets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
+    if(any(sort(nfacets) != sort(.check.snpR.facet.request(x, facets, "none")))){
+      warning(paste0("ROH is only calculated for snp facets; requested facets simplified to: ", paste0(nfacets, collapse = ",")))
+    }
+    res <- x@other$roh[which(x@other$roh$snp.facet %in% facets),]
+    return(res)
+  }
+  
   #========prep=============
   if(!is.null(facets)){
     if(facets[1] == "all"){
@@ -1125,6 +1138,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   else if(type == "fst.matrix"){
     return(extract.fst.matrix(x, facets))
+  }
+  else if(type == "roh"){
+    return(extract.roh(x,facets))
   }
   
 }

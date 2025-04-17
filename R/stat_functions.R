@@ -5758,3 +5758,605 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
   return(x)
 }
 
+#' Runs of Homozygosity and fROH.
+#'
+#' Identifies Runs of Homozygosity and calculates ROH-based genomic inbreeding
+#' (FROH) using (approximately) "PLINK"'s methodology.
+#'
+#' ROHs are detected in a two-pass approach. First, the genome is scanned in
+#' sliding windows across the genome (windows slid SNP-by-SNP). A window is
+#' considered a candidate ROH if it contains less than \code{max_hets}
+#' heterozygotes. Windows with more than \code{max_missing} missing genotype
+#' calls in an individual are discarded. Windows are defined in length by
+#' numbers of SNPs (\code{window_snps}), with some SNPs ommited at the start and
+#' end of chromosomes if the number of SNPs in the chromosome is not evenly
+#' divisible by window size. SNPs within individuals are given a probability of
+#' being in an ROH given by number of windows they were included in which were
+#' passed the maximum heterozygote count check divided by the number of SNPs per
+#' window, which for most SNPs is the same as the number of windows they were
+#' included in. SNPs at the very beginning of a chr will not be in as many
+#' windows and will thus be slightly less likely to be detected as in an ROH.
+#'
+#' Second, the genome is then slid across SNP-by-SNP to identify ROHs. SNPs
+#' which pass the \code{roh_threshold} are considered as in ROHs, and chains of
+#' SNPs in ROH are considered as ROHs. Final ROHs are filtered by base-pair
+#' length, number of SNPs, and SNP density, optionally split if gaps between
+#' SNPs are too large, and then optionally extended to cover any additional
+#' homozygous loci which were initially omitted that are not too far away.
+#'
+#' In-all, this approach is generally very similar to that used by PLINK and is
+#' based on the description of PLINK's "--homozyg" function. There may be some
+#' minor differences in window starting and ending locations due to variation in
+#' computation order and extension process, and a few other details, but the
+#' results should usually be very comparable.
+#'
+#' FROH is calculated by dividing the length of individual genomes in ROHs by
+#' the total sequenced genome size.
+#'
+#' See PLINK's --homozyg documentation for more details.
+#'
+#' @param x snpRdata object
+#' @param facets facets over which to calculate ROHs. See
+#'   \code{\link{Facets_in_snpR}} for details. Only one snp facet allowed,
+#'   sample facets are ignored except for calculating mean fROH.
+#' @param window_snps numeric, default 50. Number of SNPs included in each
+#'   sliding window used to identify possible ROH candidate SNPs. Windows slide
+#'   by one SNP across chromosomes.
+#' @param min_snps numeric, default 100. Minimum number of SNPs needed to call a
+#'   final ROH.
+#' @param min_length numeric, default 1000. Number of \emph{kb} an ROH must span
+#'   to be called a final ROH.
+#' @param max_hets numeric, default 1. Maximum number of heterozygotes a a
+#'   scanning window can contain to be mark containing SNPs as candidates for an
+#'   ROH.
+#' @param max_missing numeric, default 1. Maximum number of mising genotypes a a
+#'   scanning window can contain to be mark containing SNPs as candidates for an
+#'   ROH.
+#' @param gap numeric or FALSE, default 1000. If not FALSE, final ROHs will be
+#'   split wherever a gap of more than this many base pairs between SNPs is
+#'   detected.
+#' @param min_density numeric, default 50. An ROH must contain at least one SNP
+#'   every \code{min_density} \emph{kb} on average in order to be kept.
+#' @param roh_threshold numeric, default 0.05. The percentage of scanning
+#'   windows for which a SNP must pass ROH thresholds in order to be considered
+#'   part of a final ROH. This number is low by default in order to correctly
+#'   detect the boundaries of ROHs.
+#' @param extend logical, default TRUE. If TRUE, final ROHs will be extended to
+#'   include any adjacent homozygous loci which were previously not considered
+#'   part of the ROH. Extension stops when either a missing genotype or
+#'   heterozygous loci is detected, or where the distance between loci is longer
+#'   than \code{gap} (if \code{gap} is not FALSE).
+#' @param final_roh_max_het numeric, default Inf. The number of allowable
+#'   heterozygotes in the final ROHs. ROHs with more than this number of hets
+#'   after final filtering and extension will be removed.
+#' @param window_start_method character, default "powerful". Controls how the
+#'   initial sliding window start and end positions are determined. Options
+#'   \itemize{\item{conservative:} {Windows start and end such
+#'   that the fist and last SNPs of each chromosome have evenly fewer windows
+#'   which cover them than the rest of the genome, but each window has exactly
+#'   \code{window_snps} SNPs. This generally produces results more similar to
+#'   PLINK's "--homozyg" function.}
+#'   \item{powerfull:}{Windows start and end such that
+#'   the start and end of  chromosomes have the same number of windows covering
+#'   them as the rest of the genome, but those windows will have fewer SNPs
+#'   within them. This will often contain more windows which get close to the
+#'   chromosomal edges that might otherwise be dropped, even if they also extend
+#'   well into the genome.}}
+#' @param genome_length numeric, default NULL. The length of the genome, for use
+#'   in calculating FROH. If NULL, this is calculated by summing the distance
+#'   between the first and last sequenced SNPs of each chromosome/scaffold/etc.
+#' @param par numeric or FALSE, default FALSE. If numeric, the number of cores
+#'   to use for parallel processing. Parallel processing is done across
+#'   chromosomes/ scaffolds/etc, as provided to \code{facets}.
+#' @param verbose 1, 2, or FALSE, default 1. If FALSE, no messages are displayed
+#'   during run. If 1, chromosomes/scaffolds/etc run beginnings are reported; if
+#'   2, progress withing chromosomes/scaffolds/etc are also reported.
+#'
+#'
+#' @return A snpRdata object with ROH and FROH info merged in, fetchable with
+#'   \code{\link{get.snpR.stats}}
+#'
+#' @author William Hemstrom
+#' @export
+#'
+#' @references 
+#' 
+#' Purcell, S., Neale, B., Todd-Brown, K., Thomas, L., Ferreira, M.
+#' A. R., Bender, D., Maller, J., Sklar, P., de Bakker, P. I. W., Daly, M. J., &
+#' Sham, P. C. (2007). PLINK: A Tool Set for Whole-Genome Association and
+#' Population-Based Linkage Analyses. The American Journal of Human Genetics,
+#' 81(3), 559–575. https://doi.org/10.1086/519795
+#' 
+#' Kardos, M., Luikart, G., & Allendorf, F. W. (2015). Measuring individual
+#' inbreeding in the age of genomics: Marker-based measures are better than
+#' pedigrees. Heredity, 115(1), 63–72. https://doi.org/10.1038/hdy.2015.17
+
+#'
+#' @examples
+#' \dontrun{
+#' # not run--the example dataset (stickSNPs) has no ROHs. This is an
+#' # example which could be run with a different dataset, "d".
+#' d <- calc_roh(d, "chr") # run with defaults
+#' res <- get.snpR.stats(d, "chr", "roh")
+#' }
+#'
+#' 
+calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_length = 1000, max_hets = 1,
+                     max_missing = 5, gap = 1000, min_density = 50, roh_threshold = 0.05, extend = TRUE,
+                     final_roh_max_het = Inf,
+                     window_start_method = "conservative",
+                     genome_length = NULL, par = FALSE, verbose = 1){
+  
+  #=========sanity checks===========
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  ofacets <- .check.snpR.facet.request(x, facets, remove.type = "none")
+  sample_facets <- .check.snpR.facet.request(x, facets, "snp")
+  facets <- unique(.check.snpR.facet.request(x, facets, remove.type = "sample"))
+  if(length(facets) > 1){
+    stop("Only one snp-level facet permitted at a time for ROH calculation--it is very unlikely that two different snp-facets make biological sense as 'chromosomes' over which to loop.\n")
+  }
+  
+  #=========core function============
+  # run per chr, all individuals at once. sn should have no leading metadata
+  roh_func <- function(sn, meta, window_snps, min_snps = 1000, min_length = 1000, max_hets = 1,
+                       max_missing = 5, gap = 1000, min_density = 50, roh_threshold = 0.05, extend = FALSE, verbose){
+    
+    #==============loop through each genomic window and determine if individuals/SNPs pass roh criteria to be candidates for roh======
+    if(verbose){cat("Looping across windows to calculate pROH.\n")}
+
+    # prepare reporting
+    sn <- as.data.table(sn)
+    nh <- Matrix::Matrix(0, nrow(sn), ncol(sn)) # snps by individuals, will t to individuals by snp soon
+    
+    
+    # define starting and ending point of loop through SNPs
+    if(window_start_method == "conservative"){
+      start <- 1
+      end <- nrow(sn) - (window_snps + 1)
+    }
+    else if(window_start_method == "powerfull"){
+      start <- 1 - (window_snps - 1)
+      end <- nrow(sn)
+    }
+    
+    
+    nh <- t(nh)
+    win_count <- nh
+
+    if(verbose){len <- length(start:end)}
+    if(verbose){pb <- utils::txtProgressBar(min = 0, max = len, initial = 0, style = 3)}
+    # loop through each window, checking if it passes roh checks and adding to count
+    rep <- 1
+    if(verbose){thresh <- len*0.01}
+    for(i in start:end){
+      if(verbose){
+        if(rep >= thresh){
+          utils::setTxtProgressBar(pb,rep)
+          thresh <- thresh + len*0.01
+        }
+      }
+      range <- max(i, 1):min((i + window_snps - 1), nrow(sn))
+      nhet <- colSums(sn[range,] == 1, na.rm = TRUE)
+      nmiss <- colSums(is.na(sn[range,]))
+      nh[,range] <- nh[,range] + as.numeric(nhet <= max_hets & nmiss <= max_missing) # do windows pass checks for roh?
+      # if(threshold_denominator == "non-missing"){
+      #   win_count[,range] <- win_count[,range] + as.numeric(nmiss <= max_missing) # is this window part of the denominator?
+      # }
+      # else{
+        win_count[,range] <- win_count[,range] + 1
+      # }
+      rep <- rep + 1
+    }
+
+    if(verbose){close(pb)}
+    
+    #==================loop through SNPs and define ROHs across individuals============
+    if(verbose){cat("Defining ROHs.\n")}
+    
+    # define proh
+    # proh <- nh/win_count
+    proh <- nh/window_snps
+    roh_cand <- proh >= roh_threshold
+    
+    # define ROH
+    roh <- vector("list")
+    rolling <- data.table(start = rep(-1, ncol(sn)), nsnps = 0, nhet = 0)
+
+    if(verbose){len <- nrow(sn)}
+    if(verbose){pb <- utils::txtProgressBar(min = 0, max = len, initial = 0, style = 3)}
+    
+    
+    # loop through each window, checking if it passes roh checks and adding to count
+    if(verbose){thresh <- len*0.01}
+    for(i in 1:nrow(sn)){
+      if(verbose){
+        if(i >= thresh){
+          utils::setTxtProgressBar(pb,i)
+          thresh <- thresh + len*0.01
+        }
+      }
+      
+      
+      currently_in <- rolling$start != -1
+      if(any(!currently_in)){
+
+        
+        # modify roh start
+        rolling[which(!currently_in),
+                start := ifelse(is.na(roh_cand[which(!currently_in),i]), -1, # if NA, not moving to ROH
+                                ifelse(roh_cand[which(!currently_in),i], i, # if TRUE, set new start to ROH
+                                       -1))] # otherwise stay out of ROH
+        # modify roh snp count
+        rolling[which(!currently_in),
+                nsnps := ifelse(is.na(roh_cand[which(!currently_in),i]), 0, # if NA, not moving to ROH
+                                ifelse(roh_cand[which(!currently_in),i], 1, # if TRUE, set new start to ROH
+                                       0))] # otherwise stay out of ROH
+      }
+      
+      if(any(currently_in)){
+        
+        # check that we don't need to end any windows due to a gap
+        ending_now <- numeric()
+        if(!isFALSE(gap)){
+          dist <- meta$position[i] - meta$position[i - 1]
+          if(dist > gap*1000){
+            ending_now <- which(currently_in)
+          }
+        }
+        
+        # need to add report spit-out for any that finish here
+        ending_now <- unique(c(ending_now, which(currently_in & !roh_cand[,i])))
+        if(length(ending_now) > 0){
+          
+          roh[[length(roh) + 1]] <- 
+            data.table(IND = ending_now, 
+                       start = rolling$start[ending_now],
+                       end = i,
+                       len = 0,
+                       nsnps = rolling$nsnps[ending_now],
+                       nhom = 0,
+                       nhet = 0)
+          
+          
+          rolling[ending_now,start := -1]
+          rolling[ending_now,nsnps := 0]
+          currently_in[ending_now] <- FALSE
+        }
+        
+        if(any(currently_in)){ # recheck after ending windows if needed.
+          # modify roh snp count
+          rolling[which(currently_in),
+                  nsnps := ifelse(is.na(roh_cand[which(currently_in),i]), nsnps, # if NA, not a new snp added
+                                  ifelse(roh_cand[which(currently_in),i], nsnps + 1, # if TRUE, add one more SNP
+                                         0))] # otherwise reset
+        }
+        
+        
+      }
+    }
+    
+    if(verbose){close(pb)}
+
+    
+    
+    # add on last roh and summarize
+    ## add on last roh (roh that haven't ended)
+    ending_now <- which(rolling$start != -1)
+    if(length(ending_now) > 0){
+      roh[[length(roh) + 1]] <- 
+        data.table(IND = ending_now, 
+                   start = rolling[ending_now,start],
+                   end = end,
+                   len = 0,
+                   nsnps = rolling[ending_now, nsnps],
+                   nhom = 0,
+                   nhet = 0)
+    }
+    
+    ## collapse
+    roh <- data.table::rbindlist(roh)
+
+    
+    #=============filter, extend, and annotate rohs========================
+    if(verbose){cat("Extending and tabulating.\n")}
+    
+    if(nrow(roh) == 0){
+      return(roh)
+    }
+    
+    # filter ROH
+    roh <- roh[nsnps >= min_snps,]
+    ## add length info
+    roh[,start_position := meta$position[roh$start]]
+    roh[,end_position := meta$position[roh$end]]
+    roh[,len := end_position - start_position]
+    roh <- roh[len >= min_length*1000,]
+    roh[,snp_density_kb := nsnps/(len/1000)] # snps per kb
+    roh <- roh[snp_density_kb*min_density >= 1,] # at least one snp per supplied length on average
+    
+    # extend if requested and count het/homs
+    for(i in 1:nrow(roh)){
+      
+      if(extend){
+        extended <- FALSE
+        
+        #=========look left===========
+        left <- sn[1:(roh$start[i] - 1),][[roh$IND[i]]]
+        left <- left != 1
+        left[is.na(left)] <- FALSE # set NAs to FALSE--can't extend past these.
+        
+        ## starting point
+        ext_start <- which(!left)
+        if(length(ext_start) == 0){ext_start <- 1} ## if start is position 1, set as such
+        else{
+          ext_start <- (max(ext_start) + 1)
+        }
+        ## ending point
+        ext_end <- which(left)
+        if(length(ext_end) != 0){ # if nothing is TRUE, no need to extend since there are no homs before...
+          ext_end <- max(which(left))
+          extension <- ext_start:ext_end # one after final het through final hom
+          if(max(extension) == length(left) & length(extension) == which.max(extension)){ # if our last block ends right before the window
+            if(!isFALSE(gap)){
+              
+              dists <- meta$position[c(extension, roh$start[i])]
+              dists <- dists[-1] - dists[-length(dists)]
+              if(any(dists > gap*1000)){
+                last_bad_dist <- max(which(dists > gap*1000))
+                if(last_bad_dist != length(extension)){ # only do any extension if the first gap is OK
+                  extended <- TRUE
+                  extension <- extension[(last_bad_dist + 1): length(extension)]
+                  roh[i,end := end + max(extension)] 
+                }
+              }
+              else{
+                extended <- TRUE
+                roh[i,start := min(extension)] 
+              }
+            }
+            else{
+              extended <- TRUE
+              roh[i,start := min(extension)] 
+            }
+            
+            
+            
+            
+          }
+        }
+        
+        
+        
+        #=========look right=========
+        right <- sn[(roh$end[i] + 1):nrow(sn),][[roh$IND[i]]]
+        right <- right != 1
+        right[is.na(right)] <- FALSE # set NAs to FALSE--can't extend past these.
+        ## ending point
+        ext_end <-which(!right)
+        if(length(ext_end) == 0){
+          ext_end <- length(right) # extend right to the end if no FALSE
+        }
+        else{
+          ext_end <- (min(ext_end) - 1) 
+        }
+        ##starting point
+        ext_start <- which(right)
+        if(length(ext_start) != 0){ # if nothing is HOM no reason to extend...
+          ext_start <- min(ext_start)
+          
+          extension <- ext_start:ext_end # one after final het through final hom
+          if(min(extension) == 1 & length(extension) == which.max(extension)){ # if our last block ends right before the window
+            # check gap
+            if(!isFALSE(gap)){
+              dists <- meta$position[c(roh$end[i], extension + roh$end[i])]
+              dists <- dists[-1] - dists[-length(dists)]
+              if(any(dists > gap*1000)){
+                first_bad_dist <- min(which(dists > gap*1000))
+                if(first_bad_dist != 1){ # only do any extension if the first gap is OK
+                  extended <- TRUE
+                  extension <- extension[1:(first_bad_dist - 1)]
+                  roh[i,end := end + max(extension)] 
+                }
+              }
+              else{
+                extended <- TRUE
+                roh[i,end := end + max(extension)] 
+              }
+            }
+            else{
+              # extend
+              extended <- TRUE
+              roh[i,end := end + max(extension)]
+            }
+            
+            
+          }
+        }
+        
+        #=======correct=======
+        if(extended){
+          roh[i,start_position := meta$position[roh$start[i]]]
+          roh[i,end_position := meta$position[roh$end[i]]]
+          roh[i,len := end_position - start_position]
+        }
+      }
+      
+      
+      #======count het/hom======
+      tg <- sn[roh$start[i]:roh$end[i],][[roh$IND[i]]]
+      tg <- na.omit(tg)
+      roh[i,nhom := sum(tg != 1)]
+      roh[i,nhet := sum(tg == 1)]
+    }
+    
+    
+    #========return=======
+    # remove any bad ROH via max het allowed
+    roh <- roh[!(nhet > final_roh_max_het),]
+    return(roh)
+  }
+  
+  
+  #=========prep and run==========
+  sn <- format_snps(x, "sn", interpolate = FALSE, sn_remove_empty = FALSE)
+  sn_meta <- sn[,c(1:(ncol(snp.meta(x)) - 1))]
+  sn <- sn[,-c(1:(ncol(snp.meta(x)) - 1))]
+  
+  tasks <- .get.task.list(x, facets)
+  
+  if(nrow(tasks) == 1){
+    par <- FALSE
+  }
+  
+  if(isFALSE(par)){
+    res <- vector("list", nrow(tasks))
+    for(i in 1:nrow(tasks)){
+      tsnps <- .fetch.snp.meta.matching.task.list(x, tasks[i,])
+      if(length(tsnps) >= min_snps){
+        if(verbose >= 1){cat(.console_hline(), "\n")}
+        if(verbose >= 1){cat("Working on:", tasks[i,3], "\t", tasks[i,4], "\n")}
+        res[[i]] <- roh_func(sn[tsnps,],
+                             meta = sn_meta[tsnps,],
+                             window_snps = window_snps, 
+                             min_snps = min_snps,
+                             min_length = min_length, 
+                             max_hets = max_hets,
+                             max_missing = max_missing, 
+                             gap = gap, 
+                             min_density = min_density, 
+                             roh_threshold = roh_threshold, 
+                             extend = extend,
+                             verbose = verbose >= 2)
+        
+        res[[i]]$snp.facet <- tasks[i,3]
+        res[[i]]$snp.subfacet <- tasks[i,4]
+      }
+    }
+  }
+  
+  else{
+    cl <- parallel::makePSOCKcluster(boot_par)
+    doParallel::registerDoParallel(cl)
+    
+    res <- foreach::foreach(q = 1:nrow(tasks),
+                            .packages = c("snpR", "data.table")) %dopar% {
+                              
+                              tsnps <- .fetch.snp.meta.matching.task.list(x, tasks[q,])
+                              if(length(tsnps) >= min_snps){
+                                res <- roh_func(sn[tsnps,],
+                                                meta = sn_meta[tsnps,],
+                                                window_snps = window_snps, 
+                                                min_snps = min_snps,
+                                                min_length = min_length, 
+                                                max_hets = max_hets,
+                                                max_missing = max_missing, 
+                                                gap = gap, 
+                                                min_density = min_density, 
+                                                roh_threshold = roh_threshold, 
+                                                extend = extend,
+                                                verbose = FALSE)
+                                
+                                res$snp.facet <- tasks[q,3]
+                                res$snp.subfacet <- tasks[q,4]
+                              }
+                              else{
+                                res <- NULL
+                              }
+                              
+                              
+                              res
+                            }
+    
+    parallel::stopCluster(cl)
+  }
+  
+  
+  #=============condense and calculate fROH===========
+  res <- data.table::rbindlist(res)
+  if(ncol(res) == 2){
+    stop("No ROHs discovered with given parameters.\n")
+  }
+
+  # figure out genome length
+  uinds <- sort(unique(res$IND))
+  if(is.null(genome_length)){
+    chr_lengths <- as.data.table(snp.meta(x))
+    if(facets != ".base"){
+      chr_lengths <- chr_lengths[,list(length = max(position) - min(position)), by = facets]
+    }
+    else{
+      chr_lengths <-  chr_lengths[,list(length = max(position) - min(position))]
+    }
+    genome_length <- sum(chr_lengths$length)
+  }
+  
+  fROH <- data.table(IND = 1:nsamps(x), fROH = 0)
+  for(i in uinds){
+    sum_len_in_roh <- sum(res$len[res$IND == i])
+    fROH[i, fROH := sum_len_in_roh/genome_length]
+  }
+  
+  
+  # merge everything in
+  fROH <- cbind(sample.meta(x), fROH)
+  fROH$IND <- NULL
+  fROH$facet <- ".base"
+  fROH$subfacet <- ".base"
+  fROH$snp.facet <- facets
+  fROH$snp.subfacet <- ".OVERALL"
+  x <- .merge.snpR.stats(x, fROH, type = "sample.stats")
+  
+  # means; these are a bit wierd to don't do them with calc_weighted
+  means <- vector("list", length(ofacets))
+  fROH <- as.data.table(fROH)
+  for(i in 1:length(means)){
+    samp.part <- .check.snpR.facet.request(x, ofacets[i])
+    snp.part <- .check.snpR.facet.request(x, ofacets[i], "sample")
+    
+    if(samp.part != ".base"){
+      samp.part <- .split.facet(samp.part)[[1]]
+      
+      tfroh <- copy(fROH)
+      tfroh$subfacet <- .paste.by.facet(tfroh, samp.part)
+      samp.part <- paste0(samp.part, collapse = ".")
+      
+      means[[i]] <- tfroh[snp.facet == snp.part, list(facet = samp.part, 
+                                                     snp.facet = snp.part,
+                                                     snp.subfacet = ".OVERALL",
+                                                     mean_fROH = mean(fROH)), 
+                          by = subfacet]
+      
+      means[[i]] <- means[[i]][,c("facet", "subfacet", "snp.facet", "snp.subfacet", "mean_fROH")]
+    }
+    else{
+      means[[i]] <- fROH[snp.facet == snp.part, list(facet = ".base",
+                                                     subfacet = ".base", 
+                                                     snp.facet = snp.part,
+                                                     snp.subfacet = ".OVERALL",
+                                                     mean_fROH = mean(fROH))]
+    }
+  }
+  means <- data.table::rbindlist(means)
+  x <- .merge.snpR.stats(x, means, "weighted.means")
+  
+  
+  x <- .update_calced_stats(x, ofacets, "fROH")
+
+  if(ncol(res) > 0){
+    res <- dplyr::arrange(res, IND, snp.facet, snp.subfacet, start, end, len)
+    res <- cbind(sample.meta(x)[res$IND,], res)
+    res$IND <- NULL
+    x <- .merge.snpR.stats(x, res, type = "roh")
+  }
+ 
+  
+  # citation update
+  x <- .update_citations(x, "kardosMeasuringIndividualInbreeding2015", "fROH", "Runs of Homozygosity inbreeding estimation")
+  x <- .update_citations(x, "PURCELL2007559", "fROH", "Runs of Homozygosity detection method (implemented in snpR)")
+  
+  return(x)
+}
+
