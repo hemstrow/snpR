@@ -6243,7 +6243,9 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   }
   
   else{
-    cl <- parallel::makePSOCKcluster(boot_par)
+    par <- max(par, nrow(tasks))
+    par <- min(par, parallel::detectCores())
+    cl <- parallel::makePSOCKcluster(par)
     doParallel::registerDoParallel(cl)
     
     res <- foreach::foreach(q = 1:nrow(tasks),

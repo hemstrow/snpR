@@ -1071,7 +1071,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
     if(any(sort(nfacets) != sort(.check.snpR.facet.request(x, facets, "none")))){
       warning(paste0("ROH is only calculated for snp facets; requested facets simplified to: ", paste0(nfacets, collapse = ",")))
     }
-    res <- x@other$roh[which(x@other$roh$snp.facet %in% facets),]
+    res <- x@other$roh[which(x@other$roh$snp.facet %in% nfacets),]
     return(res)
   }
   
