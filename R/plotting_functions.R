@@ -3583,7 +3583,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       
-      options(scipen = osp)
+      options(scipen = unlist(osp))
       
       
       

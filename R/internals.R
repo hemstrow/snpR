@@ -3752,8 +3752,8 @@ is.snpRdata <- function(x){
   if(!transpose_windows){return(list(comps, cl = center_list))}
   comps <- do.call(mapply, c(FUN = c, comps, SIMPLIFY = FALSE))
   comps <- lapply(comps, unique)
-  
-  options(scipen = osp)
+
+  options(scipen = unlist(osp))
   return(list(comps, cl = center_list))
 }
 

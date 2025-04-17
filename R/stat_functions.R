@@ -1950,6 +1950,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     }
   }
   
+  if(CLD != "only"){
+    .check.installed("bigmemory")
+    .check.installed("bigtabulate")
+  }
+  
   if(is.numeric(window_sigma)){
     if(is.numeric(window_step)){
       window_step <- window_step*1000
