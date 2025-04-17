@@ -2470,7 +2470,6 @@ is.snpRdata <- function(x){
       }
       # get the per sample missingness
       if(facets[[2]][i] == "sample"){
-        browser()
         # per sample, weights are easy
         weights <- nrow(x) - matrixStats::colSums2(genotypes(x) == x@mDat)
         keep.rows <- which(stats$snp.facet == ".base")
