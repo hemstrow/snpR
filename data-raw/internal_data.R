@@ -15,7 +15,7 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                         c("richness", "^g$"),
                                         c("seg_sites", "^g$", "prob_seg_var", "prob_seg")))
 window.stats <- list(stat = "tajimas_d",
-                     col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
+                     col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps", "e1", "e2")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
                        col_pattern = list(c("fst","var_comp_a", "var_comp_b", "var_comp_c", "zfst", "fst_id", "nk"),
                                           c("D_abba_baba", "abba", "baba", "nk")))

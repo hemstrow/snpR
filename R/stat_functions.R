@@ -295,6 +295,11 @@ calc_maf <- function(x, facets = NULL){
 #'  calculated. In this instance, \code{global_x} values will be merged into
 #'  the \code{weighted.means} slot instead of weighted mean values and no values
 #'  will be merged into the \code{window.stats} slot.
+#'@param tsd_components logical, default FALSE. If TRUE, e1 and e2 components
+#'  for calculating the denominator of Tajima's D will be returned, allowing
+#'  for Tajima's D to be calculated post-hoc if split by chromosomes, etc, 
+#'  according to the equation 
+#'  "(ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))".
 #'@param verbose logical, default FALSE. If TRUE progress will be printed to the
 #'  console.
 #'
@@ -324,6 +329,7 @@ calc_maf <- function(x, facets = NULL){
 #'@author William Hemstrom
 calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par = FALSE,
                            triple_sigma = FALSE, global = FALSE,
+                           tsd_components = FALSE,
                            verbose = FALSE){
 
   #=================subfunction=========
@@ -368,6 +374,11 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
       e2 <- c2/(a1^2 + a2)
       D <- (ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))
       
+      if(tsd_components){
+        return(list(ts.theta = ts.theta, ws.theta = ws.theta, D = D, n_seg = n_seg,
+                    e1 = e1, e2 = e2))
+      }
+      
       return(list(ts.theta = ts.theta, ws.theta = ws.theta, D = D, n_seg = n_seg))
     }
 
@@ -381,6 +392,10 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
       out[1,"num_seg"] <- tr[[4]]
       out[1,"D"] <-tr[[3]]
       out[1, "n_snps"] <- nrow(as)
+      if(tsd_components){
+        out[1,"e1"] <- tr$e1
+        out[1,"e2"] <- tr$e2
+      }
       return(out)
     }
     
@@ -429,6 +444,10 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
       out[i, "n_snps"] <- nrow(wsnps)
       out[i, "start"] <- start
       out[i, "end"] <- end
+      if(tsd_components){
+        out[i,"e1"] <- tr$e1
+        out[i,"e2"] <- tr$e2
+      }
       c <- c + step*1000
       i <- i + 1
     }
@@ -503,7 +522,7 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
     out$sigma <- NULL
     out$step <- NULL
     out$n_snps <- NULL
-    colnames(out)[5:8] <- paste0("global_", colnames(out)[5:8])
+    colnames(out)[5:ncol(out)] <- paste0("global_", colnames(out)[5:ncol(out)])
     x <- .merge.snpR.stats(x, out, type = "weighted.means")
     x <- .update_calced_stats(x, ".base", "global_tajimas_d")
   }
@@ -6312,10 +6331,10 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   if(any(!empties)){
     res <- res[empties]
   }
-  else{
+  
+  if(length(res) == 0){
     stop("No ROHs discovered with given parameters.\n")
   }
-  
   
   res <- data.table::rbindlist(res)
   if(ncol(res) == 2){

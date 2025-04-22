@@ -12,6 +12,7 @@ calc_tajimas_d(
   par = FALSE,
   triple_sigma = FALSE,
   global = FALSE,
+  tsd_components = FALSE,
   verbose = FALSE
 )
 }
@@ -45,6 +46,12 @@ be ignored and the global Tajima's D across all sites will instead be
 calculated. In this instance, \code{global_x} values will be merged into
 the \code{weighted.means} slot instead of weighted mean values and no values
 will be merged into the \code{window.stats} slot.}
+
+\item{tsd_components}{logical, default FALSE. If TRUE, e1 and e2 components
+for calculating the denominator of Tajima's D will be returned, allowing
+for Tajima's D to be calculated post-hoc if split by chromosomes, etc, 
+according to the equation 
+"(ts.theta - ws.theta)/sqrt((e1*n_seg) + e2*n_seg*(n_seg - 1))".}
 
 \item{verbose}{logical, default FALSE. If TRUE progress will be printed to the
 console.}
