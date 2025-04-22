@@ -6083,8 +6083,11 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
     roh <- roh[snp_density_kb*min_density >= 1,] # at least one snp per supplied length on average
     
     # extend if requested and count het/homs
+    if(nrow(roh) == 0){
+      return(roh)
+    }
     for(i in 1:nrow(roh)){
-      
+
       if(extend){
         extended <- FALSE
         
@@ -6223,21 +6226,28 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
       if(length(tsnps) >= min_snps){
         if(verbose >= 1){cat(.console_hline(), "\n")}
         if(verbose >= 1){cat("Working on:", tasks[i,3], "\t", tasks[i,4], "\n")}
-        res[[i]] <- roh_func(sn[tsnps,],
-                             meta = sn_meta[tsnps,],
-                             window_snps = window_snps, 
-                             min_snps = min_snps,
-                             min_length = min_length, 
-                             max_hets = max_hets,
-                             max_missing = max_missing, 
-                             gap = gap, 
-                             min_density = min_density, 
-                             roh_threshold = roh_threshold, 
-                             extend = extend,
-                             verbose = verbose >= 2)
-        
-        res[[i]]$snp.facet <- tasks[i,3]
-        res[[i]]$snp.subfacet <- tasks[i,4]
+        if(length(tsnps) >= min_snps){
+          res[[i]] <- roh_func(sn[tsnps,],
+                               meta = sn_meta[tsnps,],
+                               window_snps = window_snps, 
+                               min_snps = min_snps,
+                               min_length = min_length, 
+                               max_hets = max_hets,
+                               max_missing = max_missing, 
+                               gap = gap, 
+                               min_density = min_density, 
+                               roh_threshold = roh_threshold, 
+                               extend = extend,
+                               verbose = verbose >= 2)
+          
+          if(nrow(res[[i]]) > 0){
+            res[[i]]$snp.facet <- tasks[i,3]
+            res[[i]]$snp.subfacet <- tasks[i,4]
+          }
+        }
+        else{
+          next
+        }
       }
     }
   }
@@ -6266,8 +6276,10 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
                                                 extend = extend,
                                                 verbose = FALSE)
                                 
-                                res$snp.facet <- tasks[q,3]
-                                res$snp.subfacet <- tasks[q,4]
+                                if(nrow(res) > 0){
+                                  res$snp.facet <- tasks[q,3]
+                                  res$snp.subfacet <- tasks[q,4]
+                                }
                               }
                               else{
                                 res <- NULL
@@ -6282,6 +6294,29 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   
   
   #=============condense and calculate fROH===========
+  empties <- lapply(res, function(x){
+    if(is.null(x)){
+      return(FALSE)
+    }
+    if(nrow(x) == 0){
+      return(FALSE)
+    }
+    if(ncol(x) == 2){
+      FALSE
+    }
+    return(TRUE)
+  })
+  
+  empties <- unlist(empties)
+  
+  if(any(!empties)){
+    res <- res[empties]
+  }
+  else{
+    stop("No ROHs discovered with given parameters.\n")
+  }
+  
+  
   res <- data.table::rbindlist(res)
   if(ncol(res) == 2){
     stop("No ROHs discovered with given parameters.\n")
