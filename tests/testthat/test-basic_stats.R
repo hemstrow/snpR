@@ -355,5 +355,5 @@ test_that("roh",{
   # with basic example data--only produces an error
   expect_error(calc_roh(stickSNPs, verbose = FALSE), "No ROHs discovered")
   
-  # need more tests eventually.
+  # using the git saved data
 })

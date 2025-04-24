@@ -6090,7 +6090,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
     if(nrow(roh) == 0){
       return(roh)
     }
-    
+
     # filter ROH
     roh <- roh[nsnps >= min_snps,]
     ## add length info
@@ -6136,17 +6136,20 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
                 if(last_bad_dist != length(extension)){ # only do any extension if the first gap is OK
                   extended <- TRUE
                   extension <- extension[(last_bad_dist + 1): length(extension)]
-                  roh[i,end := end + max(extension)] 
+                  roh[i,start := min(extension)]
+                  roh[i,nsnps := nsnps + length(extension)]
                 }
               }
               else{
                 extended <- TRUE
-                roh[i,start := min(extension)] 
+                roh[i,start := min(extension)]
+                roh[i,nsnps := nsnps + length(extension)]
               }
             }
             else{
               extended <- TRUE
-              roh[i,start := min(extension)] 
+              roh[i,start := min(extension)]
+              roh[i,nsnps := nsnps + length(extension)]
             }
             
             
@@ -6185,18 +6188,21 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
                 if(first_bad_dist != 1){ # only do any extension if the first gap is OK
                   extended <- TRUE
                   extension <- extension[1:(first_bad_dist - 1)]
-                  roh[i,end := end + max(extension)] 
+                  roh[i,end := end + max(extension)]
+                  roh[i,nsnps := nsnps + length(extension)]
                 }
               }
               else{
                 extended <- TRUE
-                roh[i,end := end + max(extension)] 
+                roh[i,end := end + max(extension)]
+                roh[i,nsnps := nsnps + length(extension)]
               }
             }
             else{
               # extend
               extended <- TRUE
               roh[i,end := end + max(extension)]
+              roh[i,nsnps := nsnps + length(extension)]
             }
             
             
@@ -6208,6 +6214,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
           roh[i,start_position := meta$position[roh$start[i]]]
           roh[i,end_position := meta$position[roh$end[i]]]
           roh[i,len := end_position - start_position]
+          roh[i,snp_density_kb := roh$nsnps[i]/(roh$len[i]/1000)]
         }
       }
       
