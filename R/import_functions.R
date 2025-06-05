@@ -1065,11 +1065,6 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
                     sn = list(sn = NULL, type = NULL),
                     facets = ".base",
                     facet.type = ".base",
-                    calced_stats = list(),
-                    allele_frequency_matrices = list(),
-                    genetic_distances = list(),
-                    weighted.means = data.frame(),
-                    other = list(),
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()

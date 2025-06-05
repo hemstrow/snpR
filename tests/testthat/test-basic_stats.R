@@ -359,11 +359,13 @@ test_that("roh",{
   ## download
   source_file <-  paste0(tempfile(), ".vcf")
   utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR/refs/heads/dev/R_dev/roh_test.vcf", 
-                       destfile = source_file)
-  d <- read_vcf(source_file)
+                       destfile = source_file, quiet = TRUE)
+  expect_warning(.make_it_quiet(d <- read_vcf(source_file)), "Some levels are duplicated")
   file.remove(source_file)
-  sample.meta(d) <- cbind(pop = sample(LETTERS[1:4], ncol(d), replace = TRUE),
-                          sample.meta(d))
+  expect_warning(
+    sample.meta(d) <- cbind(pop = sample(LETTERS[1:4], ncol(d), replace = TRUE),
+                            sample.meta(d)), 
+    "Some levels are duplicated")
   
   # run tests
   expect_error(d <- calc_roh(d, c("CHROM", "CHROM.pop", "pop")), "Only one snp-level")

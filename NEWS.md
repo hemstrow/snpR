@@ -4,12 +4,10 @@
 ### Major:
 * Added `calc_roh` to calculate Runs of Homozygosity and $F_{ROH}$. Produces results very similar to those from "PLINK".
 
-### Minor:
-* Ad
-
 ## Bug fixes:
 * Fixed a bug where on the very newest versions of R setting `scipen` in `options` like `options(scipen = osp)` based on a previous call to `osp <- options(scipen)` would cause an error.
 * Fixed a bug where doing LD calculations in serial without `CLD = only` would skip checking if `bigmemmory` was installed, potentially causing an error.
+* Attempted to further fix the `data.table` recursion bug from `snpR` 1.2.12, the fix for which apparently didn't work for everyone.
 
 # snpR 1.2.12
 
