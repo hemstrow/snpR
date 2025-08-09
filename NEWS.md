@@ -3,6 +3,7 @@
 ## Features:
 ### Major:
 * Added `calc_roh` to calculate Runs of Homozygosity and $F_{ROH}$. Produces results very similar to those from "PLINK".
+* Added `plot_roh` to plot the results of `calc_roh`.
 
 ## Bug fixes:
 * Fixed a bug where on the very newest versions of R setting `scipen` in `options` like `options(scipen = osp)` based on a previous call to `osp <- options(scipen)` would cause an error.
@@ -11,7 +12,7 @@
 
 # snpR 1.2.12
 
-## Features
+## Featuresy
 ### Major:
 * Added support for [fastmixture](https://peercommunityjournal.org/articles/10.24072/pcjournal.503/) to `plot_structure()`. "fastmixture" is a nice, alternative to "ADMIXTURE" with comparable results. Like the latter, it's not available on Windows.
 

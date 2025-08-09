@@ -522,6 +522,8 @@ test_that("sfs plot",{
   
 })
 
+
+
 #=======diagnostic=======
 test_that("diagnostic plots",{
   set.seed(1234122)
@@ -562,3 +564,74 @@ test_that("diagnostic plots",{
   expect_no_error(plot_diagnostic(.internal.data$test_snps, facet = "pop", plots = "maf"))
 })
 
+
+#====roh========
+test_that("plot_roh",{
+  source_file <-  paste0(tempfile(), ".vcf")
+  utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR/refs/heads/dev/R_dev/roh_test.vcf", 
+                       destfile = source_file, quiet = TRUE)
+  expect_warning(.make_it_quiet(d <- read_vcf(source_file)), "Some levels are duplicated")
+  file.remove(source_file)
+  expect_warning(
+    sample.meta(d) <- cbind(pop = sample(LETTERS[1:4], ncol(d), replace = TRUE),
+                            sample.meta(d)), 
+    "Some levels are duplicated")
+  
+  # generate ROH data
+  d1 <- calc_roh(d, c("CHROM.pop", "CHROM"), verbose = FALSE)
+  
+  res <- get.snpR.stats(d1, facets = c("CHROM", "CHROM.pop"), "roh")
+  
+  # tests--generic errors
+  expect_error(plot_roh(d1, facet = c("pop", "sampID")), "Only one")
+  expect_error(plot_roh(d1, facet = c("sampID")), "not calculated")
+  expect_error(plot_roh(d1, chr = "chr"), "not calculated")
+  
+  # with snpRobj
+  ## with a sampID column
+  p1 <- plot_roh(d1, chr = "CHROM")
+  expect_identical(ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$y$get_labels(),
+                   unique(sample.meta(d1)$sampID))
+  d2 <- d1
+  ## without
+  sample.meta(d2)$sampID <- NULL
+  p2 <- plot_roh(d2, chr = "CHROM")
+  expect_identical(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$y$get_labels(),
+                   unique(sample.meta(d1)$.sample.id))
+  ## with facet
+  p1 <- plot_roh(d1, facet = "pop", chr = "CHROM")
+  expect_identical(ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$y$get_labels(),
+                   sort(unique(sample.meta(d1)$pop)))
+  ## with facet, no sampID column
+  p2 <- plot_roh(d2, facet = "pop", chr = "CHROM")
+  expect_identical(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$y$get_labels(),
+                   sort(unique(sample.meta(d2)$pop)))
+  
+  
+  # with a data.frame
+  ## errors
+  rroh <- res$roh
+  expect_error(p1 <- plot_roh(rroh, chr = "CHROM"), "with column names")
+  
+  chr_lens <- tapply(snp.meta(d1)$position, snp.meta(d1)$CHROM, max)
+  rroh$chr_len <- chr_lens[match(rroh$snp.subfacet, names(chr_lens))] - 100000 # check end error
+  expect_error(p1 <- plot_roh(rroh, chr = "snp.subfacet"),"have end positions greater")
+  
+  ## with no facets
+  rroh$chr_len <- chr_lens[match(rroh$snp.subfacet, names(chr_lens))]
+  p1 <- plot_roh(rroh, chr = "snp.subfacet")
+  expect_identical(ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$y$get_labels(),
+                   unique(rroh$sampID))
+  ## with facet
+  p2 <- plot_roh(rroh, facet = "pop", chr = "snp.subfacet")
+  expect_identical(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$y$get_labels(),
+                   sort(unique(rroh$pop)))
+  
+  # othering chrs
+  p1 <- plot_roh(rroh, chr = "snp.subfacet", lab_as_other = c(unique(rroh$snp.subfacet)))
+  expect_identical(ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$x$get_labels(),
+                   "other")
+  p1 <- plot_roh(rroh, chr = "snp.subfacet", lab_as_other = c(unique(rroh$snp.subfacet)[2]))
+  expect_identical(ggplot2::ggplot_build(p1)$layout$panel_params[[1]]$x$get_labels(),
+                   c(unique(rroh$snp.subfacet)[1], "other"))
+})

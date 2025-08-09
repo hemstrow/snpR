@@ -4574,6 +4574,258 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   return(out)
 }
 
+#' Plot Runs of Homozygosity
+#' 
+#' Generate a plot displaying the locations of ROHs across the genome. Takes
+#' either a \code{\link{snpRdata}} object for which ROH information has been
+#' calculated or a \code{data.frame} with ROH info.
+#'
+#' @param x snpRdata object or an object coercible to a data.frame. If a
+#'   snpRdata object, needs to have had ROH info calculated with
+#'   \code{\link{calc_roh}}. If present in the sample metadata or in the
+#'   provided data.table, the column "sampID" will be taken as sample IDs for
+#'   plotting.
+#'   data.frames should have columns: \itemize{
+#'   \item{start_position: }{start positions for ROHs}
+#'   \item{end_position: }{end positions for ROHs}
+#'   \item{sampID: }{sample IDs}
+#'   \item{chr_len: }{total chromosome lengths for the chromosomes on which ROHs 
+#'     were detected.}
+#'   \item{chr: }{a column containing chromosome info 
+#'     \emph{named to match the \code{chr} argument!}}}
+#'   Note that for data.frame inputs, chromosomes or individuals with no ROHs
+#'   will not be plotted
+#' @param facet character. \emph{sample} facet by which to color individuals.
+#'   Note that only one facet is plotable at a time.
+#' @param chr character, default "chr". Column in either snp metadata or x (for
+#'   snpRdata or data.frame objects, respectively) which defines the
+#'   "chromosome" by which SNP positions will be concatenated along the x-axis.
+#' @param bp character, default "bp". Column in either snp metadata which
+#'   defines the position in bp of each SNP. Ignored for \code{data.table}
+#'   inputs.
+#' @param lab_as_other character vector, default NULL. Vector of 
+#'   chromosome/scaffold names which will be plotted grouped together, labelled
+#'   as "other". Useful for small scaffolds/etc.
+#'
+#' @return A \code{ggplot2} plot showing the positions of ROHs (white areas)
+#'   against colored chromosomal backdrops. Note that the data used to plot
+#'   this can be returned by calling \code{$data} on the resulting object.
+#' @author William Hemstrom
+#' @export
+plot_roh <- function(x, facet = NULL, chr = "chr", bp = "position", lab_as_other = NULL){
+  #=======sanity checks======
+  if(length(facet) > 1){
+    stop("Only one sample facet is plottable at a time.\n")
+  }
+  if(!is.snpRdata(x)){
+    if(!is.data.frame(x)){
+      stop("x must be a snpRdata object or a data.frame containing ROH information with column names: start_position, end_position, sampID, chr_len, and one matching the chr arg.\n")
+    }
+    else{
+      if(any(!c("start_position", "end_position", "sampID", "chr_len", chr) %in% colnames(x))){
+        stop("x must be a snpRdata object or a data.frame containing ROH information with column names: start_position, end_position, sampID, chr_len, and one matching the chr arg.\n")
+      }
+      if(!is.null(facet)){
+        if(!facet %in% colnames(x)){
+          stop("No column matching facet arg found in x.\n")
+        }
+      }
+      roh <- x
+      roh <- as.data.table(roh)
+      chr_max <- unique(cbind(roh[,chr_len], roh[,..chr]))
+      chr_min <- rep(0, nrow(chr_max))
+      names(chr_min) <- chr_max[[2]]
+      chr_max <- chr_max[[1]]
+      names(chr_max) <- names(chr_min)
+      colnames(roh)[which(colnames(roh) == chr)] <- "snp.subfacet"
+      chr <- "snp.subfacet"
+      chrs <- names(chr_max)
+      
+      bad_ends <- roh$end_position > chr_max[match(roh$snp.subfacet, names(chr_max))]
+      if(any(bad_ends)){
+        stop(paste0("Some ROHs have end positions greater than the listed lengths of the chromosomes. Problem ROHs: ",
+             paste0(which(bad_ends), collapse = ", ")))
+      }
+      
+    }
+  }
+  else{
+    tfacet <- ifelse(is.null(facet), chr, paste0(chr, ".", facet))
+    if(!.check_calced_stats(x, tfacet, "fROH")[[1]]){
+      stop("ROH not calculated for x with provided facet/chr.\n")
+    }
+    
+    roh <- get.snpR.stats(x, tfacet, "roh")$roh
+    chr_min <- tapply(snp.meta(x)[,bp], snp.meta(d)[,chr], min)
+    chr_max <- tapply(snp.meta(x)[,bp], snp.meta(d)[,chr], max)
+    ochr <- chr
+    chr <- "snp.subfacet"
+    roh <- as.data.table(roh)
+    chrs <- names(chr_max)
+    if(!"sampID" %in% colnames(roh)) colnames(roh)[which(colnames(roh) == ".sample.id")] <- "sampID"
 
+  }
+  
+  #=======prep===============
+  if(is.snpRdata(x)){
+    if("sampID" %in% colnames(sample.meta(x))){
+      inds <- unique(sample.meta(x)$sampID)
+      
+    }
+    else{
+      inds <- unique(sample.meta(x)$.sample.id)
+      roh$sampID <- roh$.sample.id
+    }
+  }
+  else{
+    inds <- unique(roh$sampID)
+  }
+  pd <- vector("list", length(inds))
+
+  if(!is.null(lab_as_other)){
+    chrs <- c(sort(chrs[-which(chrs %in% lab_as_other)]), chrs[which(chrs %in% lab_as_other)])
+  }
+  chr_min <- chr_min[match(names(chr_min), chrs)]
+  chr_max <- chr_max[match(names(chr_max), chrs)]
+  
+  
+  null_df <- data.table(chr = chrs, xmin = as.numeric(chr_min[chrs]), 
+                        xmax =as.numeric(chr_max[chrs]), roh = FALSE)
+  
+  for(i in 1:length(inds)){
+    iroh <- roh[which(roh$sampID == inds[i]),]
+    if(nrow(iroh) == 0){
+      pd[[i]] <- cbind(ind = inds[i], null_df)
+      next
+    }
+    
+    pd[[i]] <- data.table(chr = iroh$snp.subfacet, xmin = iroh$start_position,
+                          xmax = iroh$end_position, roh = TRUE)
+    
+    
+    # work point
+    iroh <- dplyr::arrange(iroh, snp.subfacet, start_position, end_position)
+    for(j in 1:length(chrs)){
+      tiroh <- iroh[which(snp.subfacet == chrs[j]),]
+      if(nrow(tiroh) == 0){
+        pd[[i]] <- rbind(pd[[i]], null_df[chr == chrs[j],])
+        next
+      }
+      
+      # these define start end ends for NON rohs.
+      ends <- c(tiroh$start_position - 1, chr_max[chrs[j]])
+      starts <- c(chr_min[chrs[j]], tiroh$end_position + 1)
+      
+      # fix cases where the first ROH starts right at the beginning of the chr or the last ends at the end of the chr
+      if(tiroh$start_position[1] == chr_min[chrs[j]]){
+        ends <- ends[-1]
+        starts <- starts[-1]
+      }
+      if(tiroh$end_position[nrow(tiroh)] == chr_max[chrs[j]]){
+        ends <- ends[-length(ends)]
+        starts <- starts[-length(starts)]
+      }
+      
+      # add these non-roh windows
+      if(length(ends) > 0){
+        pd[[i]] <- rbind(pd[[i]], data.table(chr = chrs[j], xmin = starts,
+                                             xmax = ends, roh = FALSE))
+      }
+    }
+    pd[[i]] <- cbind(ind = inds[i], pd[[i]])
+  }
+
+  pd <- rbindlist(pd)
+
+  
+  # convert to manhattan style positions
+  chr.centers <- (chr_max - chr_min)/2
+  chr.info <- cumsum(chr_max - chr_min)
+  cum.bp <- c(0, chr.info[-length(chr.info)])
+  names(cum.bp) <- names(chr.info)
+  cum.chr.centers <- cum.bp + chr.centers
+  pd$start <- cum.bp[match(pd[, chr], names(cum.bp))]
+  pd$cum_xmin <- pd$start + pd$xmin - chr_min[match(pd$chr, names(chr_min))]
+  pd$cum_xmax <- pd$start + pd$xmax - chr_min[match(pd$chr, names(chr_min))]
+  
+  # add facet info
+  if(!is.null(facet)){
+    if(!is.snpRdata(x)){
+      pd$subfacet <- roh[match(pd$ind, roh$sampID),][[facet]]
+    }
+    else{
+      if("sampID" %in% colnames(sample.meta(x))){
+        pd$subfacet <- sample.meta(x)[match(pd$ind, sample.meta(x)$sampID),][[facet]]
+      }
+      else{
+        pd$subfacet <- sample.meta(x)[match(pd$ind, sample.meta(x)$.sample.id),][[facet]]
+      }
+    }
+    # add y info corresponding to individual
+    pd[,yloc := as.integer(as.factor(paste0(as.integer(as.factor(subfacet)), 
+                                            "__",
+                                            as.integer(as.factor(ind)))))]
+  }
+  else{
+    levs <- unique(inds)
+    pd[,yloc := as.integer(factor(ind, levels = levs))]
+  }
+  
+
+  
+  # add alpha scaling for chrs to delineate
+  chr_alph <- rep(c(1, .75), length(chrs))
+  names(chr_alph) <- names(cum.chr.centers)
+  pd[,alph := chr_alph[match(chr, names(chr_alph))]]
+  
+  # adjust the labeling for scaffolds to other if requ
+  chr_labels <- cum.chr.centers
+  if(!is.null(lab_as_other)){
+    chr_labels <- c(chr_labels[-which(names(chr_labels) %in% lab_as_other)],
+                    other = 
+                      ((max(chr_labels[which(names(chr_labels) %in% lab_as_other)]) -
+                          min(chr_labels[which(names(chr_labels) %in% lab_as_other)]))/2) + 
+                      min(chr_labels[which(names(chr_labels) %in% lab_as_other)]))
+  }
+  
+  
+  # plot
+  if(!is.null(facet)){
+    ybreaks <- tapply(pd$yloc, pd$subfacet, mean)
+  }
+  else{
+    ybreaks <- unique(pd[,.(ind, yloc)])
+    ybreaks_labs <- ybreaks$ind
+    ybreaks <- ybreaks$yloc
+    pd[,subfacet := as.character(ind)]
+  }
+  p <- ggplot2::ggplot(pd, ggplot2::aes(xmin = cum_xmin, xmax = cum_xmax, ymin = yloc - 1, 
+                                        ymax = yloc - 1 + ifelse(roh, 0, 1),
+                                        fill = subfacet, alpha = alph,
+                                        chr = chr)) +
+    ggplot2::geom_rect() +
+    ggplot2::scale_alpha_continuous(range = c(.75, 1)) +
+    ggplot2::scale_x_continuous(expand = c(0,0),
+                                breaks = as.numeric(chr_labels),
+                                labels = names(chr_labels)) +
+    ggplot2::theme(axis.title = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust=1),
+                   panel.background = ggplot2::element_blank(),
+                   panel.grid = ggplot2::element_blank()) +
+    ggplot2::scale_fill_viridis_d()
+  
+  if(!is.null(facet)){
+    p <- p + ggplot2::guides(alpha = "none", fill = ggplot2::guide_legend(title = facet)) +
+      ggplot2::scale_y_continuous(expand = c(0,0), 
+                                  breaks = as.numeric(ybreaks), 
+                                  labels = names(ybreaks))
+  }
+  else{
+    p <- p + ggplot2::guides(alpha = "none", fill = "none") +
+      ggplot2::scale_y_continuous(expand = c(0,0), breaks = ybreaks, labels = ybreaks_labs)
+  }
+  
+  return(p)
+}
 
 
