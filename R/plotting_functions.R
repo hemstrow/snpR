@@ -4656,8 +4656,8 @@ plot_roh <- function(x, facet = NULL, chr = "chr", bp = "position", lab_as_other
     }
     
     roh <- get.snpR.stats(x, tfacet, "roh")$roh
-    chr_min <- tapply(snp.meta(x)[,bp], snp.meta(d)[,chr], min)
-    chr_max <- tapply(snp.meta(x)[,bp], snp.meta(d)[,chr], max)
+    chr_min <- tapply(snp.meta(x)[,bp], snp.meta(x)[,chr], min)
+    chr_max <- tapply(snp.meta(x)[,bp], snp.meta(x)[,chr], max)
     ochr <- chr
     chr <- "snp.subfacet"
     roh <- as.data.table(roh)
