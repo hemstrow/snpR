@@ -9,6 +9,7 @@
 * Fixed a bug where on the very newest versions of R setting `scipen` in `options` like `options(scipen = osp)` based on a previous call to `osp <- options(scipen)` would cause an error.
 * Fixed a bug where doing LD calculations in serial without `CLD = only` would skip checking if `bigmemmory` was installed, potentially causing an error.
 * Attempted to further fix the `data.table` recursion bug from `snpR` 1.2.12, the fix for which apparently didn't work for everyone.
+* Bug fix in `calc_ne` due to a flipped grep call.
 
 # snpR 1.2.12
 
