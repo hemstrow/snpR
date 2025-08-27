@@ -4674,7 +4674,9 @@ plot_roh <- function(x, facet = NULL, chr = "chr", bp = "position", lab_as_other
     }
     else{
       inds <- unique(sample.meta(x)$.sample.id)
-      roh$sampID <- roh$.sample.id
+      if(".sample.id" %in% colnames(roh) & !"sampID" %in% colnames(roh)){
+        roh$sampID <- roh$.sample.id
+      }
     }
   }
   else{
