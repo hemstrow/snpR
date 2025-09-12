@@ -42,9 +42,9 @@ given that this function does not return a snpRdata object, so a
 }
 \value{
 A matrix or vector containing the site frequency spectrum with a
-  "pops" attribute containing population IDs, such as c("POP1", "POP2"). For
-  a 2d SFS, the first pop is the matrix columns and the second is the matrix
-  rows.
+"pops" attribute containing population IDs, such as c("POP1", "POP2"). For
+a 2d SFS, the first pop is the matrix columns and the second is the matrix
+rows.
 }
 \description{
 Generates a 1 or 2 dimensional site frequency spectrum from a dadi input file
@@ -96,12 +96,12 @@ plot_sfs(dat, projection = 30)
 }
 \references{
 Gutenkunst et al (2009). Inferring the joint demographic history
-  of multiple populations from multidimensional SNP frequency data.
-  \emph{PLoS genetics}, 5(10), e1000695.
+of multiple populations from multidimensional SNP frequency data.
+\emph{PLoS genetics}, 5(10), e1000695.
 
 Marth et al (2004). The allele frequency spectrum in genome-wide
-  human variation data reveals signals of differential demographic history in
-  three large world populations. \emph{Genetics}, 166(1), 351-372.
+human variation data reveals signals of differential demographic history in
+three large world populations. \emph{Genetics}, 166(1), 351-372.
 }
 \author{
 William Hemstrom

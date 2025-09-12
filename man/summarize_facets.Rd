@@ -16,7 +16,7 @@ provided, the \emph{categories} for each facet will instead be listed.}
 }
 \value{
 A named list containing either the possible SNP and sample facets or
-  the categories for all of the requested facets.
+the categories for all of the requested facets.
 }
 \description{
 List either all of the possible SNP and sample facets (if called with no

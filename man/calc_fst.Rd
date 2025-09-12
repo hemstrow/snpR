@@ -37,8 +37,11 @@ calc_global_fst(
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{method}{character, default "wc". Defines the FST estimator to use.
-Options: \itemize{ \item{wc: } Weir and Cockerham (1984).
-\item{genepop: } Rousset (2008), uses the genepop package. }}
+Options:
+\itemize{
+\item wc: Weir and Cockerham (1984).
+\item genepop: Rousset (2008), uses the genepop package.
+}}
 
 \item{boot}{numeric or FALSE, default FALSE. The number of bootstraps to do.
 See details.}
@@ -76,8 +79,8 @@ reported.}
 }
 \value{
 A snpRdata object with pairwise FST as well as the number of total
- observations at each SNP in each comparison merged in to the pairwise.stats
- slot.
+observations at each SNP in each comparison merged in to the pairwise.stats
+slot.
 }
 \description{
 \code{calc_pairwise_fst} calculates pairwise FST for each SNP for each
@@ -106,9 +109,11 @@ The data can be broken up categorically by either SNP and/or sample metadata,
 as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 statistic, at least a single sample level facet must be provided.
 
-Method Options: \itemize{ \item {"wc": }{Weir and Cockerham 1984.}
-\item{"Genepop": }{As used in genepop, Rousset
-2008.}}
+Method Options:
+\itemize{
+\item "wc": Weir and Cockerham 1984.
+\item "Genepop": As used in genepop, Rousset 2008.
+}
 }
 \section{Functions}{
 \itemize{

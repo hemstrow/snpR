@@ -19,7 +19,7 @@ plot_pairwise_fst_heatmap(
 
 \item{facets}{character, default NULL. Categorical metadata variables by which
 to break up plots. Must match facets for which Fst data has been previously
-calculated via \code{\link{calc_pairwise_fst}}. 
+calculated via \code{\link{calc_pairwise_fst}}.
 See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{facet.order}{character, default NULL. Optional order in which the
@@ -37,10 +37,10 @@ plot.}
 
 \item{mark_sig}{numeric or FALSE, default FALSE. If numeric, Fst values with
 bootstrapped p-values below the given number will be marked with an '*'.
-Requires that bootstrapped p-values were calculated for the requested 
+Requires that bootstrapped p-values were calculated for the requested
 facets.}
 
-\item{lab_lower}{logical, default FALSE. If TRUE, labels will be placed in 
+\item{lab_lower}{logical, default FALSE. If TRUE, labels will be placed in
 the lower triangle instead of on top of the heatmap.}
 }
 \value{

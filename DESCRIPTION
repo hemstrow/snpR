@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-Genome Analysis Tools for Use with Single Nucleotide Polymorphism Data
-Version: 1.2.12
+Version: 1.2.13
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
@@ -20,6 +20,7 @@ LazyData: true
 Imports:
     doParallel,
     dplyr,
+    collapse,
     Matrix,
     matrixStats,
     methods,
@@ -71,7 +72,8 @@ Suggests:
     testthat,
     covr
 VignetteBuilder: knitr
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
 Collate: 
     'NeEstimator_interface.R'
     'association_functions.R'

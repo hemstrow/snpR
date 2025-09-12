@@ -1060,7 +1060,7 @@ is.snpRdata <- function(x){
     x@pairwise.window.stats <- n.s
   }
   else if(type == "sample.stats"){
-    meta.cols <- c("facet", "subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
+    meta.cols <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(stats)[1:(which(colnames(stats) == ".sample.id"))])
     meta.cols <- unique(meta.cols)
     starter.meta <- meta.cols
     n.s <- .smart.merge(stats, x@sample.stats, meta.cols, starter.meta)
@@ -1133,6 +1133,17 @@ is.snpRdata <- function(x){
     meta.names <- c("facet", "subfacet", "snp.facet", "snp.subfacet", colnames(x@facet.meta)[-c(1:3, ncol(x@facet.meta))])
     starter.meta <- meta.names
     x@weighted.means <- .smart.merge(stats, x@weighted.means, meta.names, starter.meta)
+  }
+  else if(type == "roh"){
+    meta.names <- c("snp.facet", "snp.subfacet", colnames(x@sample.meta))
+    starter.meta <- meta.names
+    
+    if(length(x@other$roh) == 0){
+      x@other$roh <- stats
+    }
+    else{
+      x@other$roh <- .smart.merge(x@other$roh, stats, meta.names, starter.meta)
+    }
   }
   
   return(x)
@@ -1520,11 +1531,16 @@ is.snpRdata <- function(x){
   ..all_idents <- ..rm_cols <- NULL
   
   .tab_func <- function(x, snp_form, mDat){
-    ..mDat <- NULL
+    ..mDat <- ..socol <- NULL
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
+    # x[,variable := as.integer(as.factor(variable))]
     
-    gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
+    gmat <- collapse::pivot(data.table::setDT(x), how = "w", ids = "variable", names = "value", values = "value", FUN = length) # cast
+    gmat[is.na(gmat)] <- 0
+    # gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
     gmat <- gmat[,-1]
+    socol <- sort(colnames(gmat))
+    gmat <- .fix..call(gmat[,..socol])
     
     # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
     opts <- colnames(gmat)
@@ -1554,7 +1570,7 @@ is.snpRdata <- function(x){
     opts1 <- substr(opts, 1, snp_form/2)
     opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
     flips <- try(!opts1 <= opts2, silent = TRUE) # this'll do an alphabetic check since these are characters--weird but works
-    if(is(flips, "try-error")){stop("Error at flips.\n")}
+    if(methods::is(flips, "try-error")){stop("Error at flips.\n")}
     if(any(flips)){
       colnames(gmat)[which(flips)] <- paste0(opts2[flips], opts1[flips])
     }
@@ -2266,7 +2282,6 @@ is.snpRdata <- function(x){
 #  @return A snpR data object with weighted statistics merged in.
 .calc_weighted_stats <- function(x, facets = NULL, type = "single", stats_to_get){
   ..drop_col <- ..new.ord <- snp.subfacet <- ..split.snp.part <- snp.facet <- subfacet <- facet <- ..good.cols <- weights_col <- NULL
-
 
   #===========sanity checks===============
   msg <- character(0)
@@ -3742,8 +3757,8 @@ is.snpRdata <- function(x){
   if(!transpose_windows){return(list(comps, cl = center_list))}
   comps <- do.call(mapply, c(FUN = c, comps, SIMPLIFY = FALSE))
   comps <- lapply(comps, unique)
-  
-  options(scipen = osp)
+
+  options(scipen = unlist(osp))
   return(list(comps, cl = center_list))
 }
 

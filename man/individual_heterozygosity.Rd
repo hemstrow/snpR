@@ -22,7 +22,7 @@ quite time consuming, and so is generally not recommended unless needed.}
 }
 \value{
 A snpRdata object with heterozygote/homozygote ratios merged into the
-  sample.stats slot.
+sample.stats slot.
 }
 \description{
 Calculates heterozygosity within individuals across all SNPs by either a
@@ -39,24 +39,24 @@ differences in genotyping success according to Coltman et al (1999).
 \section{Het}{
 Hom ratio:
 
-  Individual heterozygosity calculated as the number of heterozygous sites
-  divided by the number of homozygous sites.
+Individual heterozygosity calculated as the number of heterozygous sites
+divided by the number of homozygous sites.
 }
 
 \section{\ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}}{
 
 
-  Calculates \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, the mean
-  heterozygosity of an individual standardized for unequal genotyping across
-  individuals by dividing by the mean heterozygosity across all individuals
-  *for the loci sequenced in that individual* (Coltman et al 1999). As a
-  result, the global mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}
-  should be roughly equal to 1, and that in `snpR` specifically the
-  denominator is calculated across *all individuals in all facet levels* if
-  facets are specified instead of within populations. As a result, the
-  weighted mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}} in a specific
-  population can be substantially different from one if a population is much
-  less heterozygous.
+Calculates \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}, the mean
+heterozygosity of an individual standardized for unequal genotyping across
+individuals by dividing by the mean heterozygosity across all individuals
+\emph{for the loci sequenced in that individual} (Coltman et al 1999). As a
+result, the global mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}}
+should be roughly equal to 1, and that in \code{snpR} specifically the
+denominator is calculated across \emph{all individuals in all facet levels} if
+facets are specified instead of within populations. As a result, the
+weighted mean \ifelse{html}{\out{H<sub>S</sub>}}{\eqn{H_S}} in a specific
+population can be substantially different from one if a population is much
+less heterozygous.
 }
 
 \examples{

@@ -122,7 +122,8 @@ test_that("private", {
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "pa"))))
   pa <- get.snpR.stats(x, "pop", "private")
   
-  expect_equal(which(pa$single$pa_uncorrected == 1), c(37, 98, 108, 122, 138, 156, 166, 180, 188, 193)) # hand calced
+  expect_equal(pa$single[which(pa$single$pa_uncorrected == 1),]$.snp.id, c(19, 49, 54, 61, 69, 78, 83, 90, 94, 97)) # hand calced
+  expect_equal(pa$single[which(pa$single$pa_uncorrected == 1),]$subfacet, c("OPL", "OPL", "OPL", "OPL", "OPL", "OPL", "ASP", "ASP", "OPL", "OPL")) # hand calced
   expect_equal(pa$weighted.means$total_pa_uncorrected, c(2, 8)) # hand calced
   
   
@@ -351,3 +352,42 @@ test_that("seg_sites", {
                c(89, 90))
 })
 
+test_that("roh",{
+  # with basic example data--only produces an error
+  expect_error(calc_roh(stickSNPs, verbose = FALSE), "No ROHs discovered")
+  
+  # using the git saved data
+  ## download
+  source_file <-  paste0(tempfile(), ".vcf")
+  utils::download.file("https://raw.githubusercontent.com/hemstrow/snpR/refs/heads/dev/R_dev/roh_test.vcf", 
+                       destfile = source_file, quiet = TRUE)
+  expect_warning(.make_it_quiet(d <- read_vcf(source_file)), "Some levels are duplicated")
+  file.remove(source_file)
+  expect_warning(
+    sample.meta(d) <- cbind(pop = sample(LETTERS[1:4], ncol(d), replace = TRUE),
+                            sample.meta(d)), 
+    "Some levels are duplicated")
+  
+  # run tests
+  expect_error(d <- calc_roh(d, c("CHROM", "CHROM.pop", "pop")), "Only one snp-level")
+  d1 <- calc_roh(d, c("CHROM.pop", "CHROM"), verbose = FALSE)
+  
+  res <- get.snpR.stats(d1, facets = c("CHROM", "CHROM.pop"), "roh")
+  
+  # correct means
+  expect_true(all(res$weighted.means$snp.subfacet == ".OVERALL"))
+  expect_true(all(res$weighted.means$subfacet %in% c(".base", names(summarize_facets(d, "pop")$pop))))
+  expect_true(all(c(".base", names(summarize_facets(d, "pop")$pop)) %in% res$weighted.means$subfacet))
+  
+  # rohs are formatted OK and pass checks
+  res_roh <- res$roh
+  expect_false(any(is.na(res_roh$len)))
+  expect_true(all(res_roh$len >= 1000*1000))
+  expect_true(all(res_roh$nsnps >= 50))
+  expect_true(all(res_roh$snp_density_kb*50 >= 1))
+  
+  # correct froh
+  genome_len <- sum(tapply(snp.meta(d)$position, snp.meta(d)$CHROM, max) - tapply(snp.meta(d)$position, snp.meta(d)$CHROM, min))
+  expect_true(res$sample[res$sample$sampID == "V4",]$fROH ==
+                sum(res_roh[res_roh$sampID == "V4",]$len)/genome_len) # checking one is OK
+})

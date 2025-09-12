@@ -39,7 +39,7 @@ given that this function does not return a snpRdata object, so a
 }
 \value{
 A numeric value giving the directionality with a "direction"
-  attribute designating the direction between the two populations.
+attribute designating the direction between the two populations.
 }
 \description{
 Calculates the directionality index based on a 2d SFS according to Peter and
@@ -68,5 +68,5 @@ calc_directionality(sfs)
 }
 \references{
 Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
-  from genetic data. \emph{Evolution}, 67(11), 3274-3289.
+from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 }

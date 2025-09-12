@@ -25,18 +25,26 @@ base level facets are requested, distances will be between individuals.
 Otherwise, distances will be between the levels of the sample facets.}
 
 \item{distance_method}{character, default "Edwards". Name of the method to
-use. Options: \itemize{\item{Edwards} Angular distance as described in
-Edwards 1971.} See \code{\link{calc_genetic_distances}}.}
+use. Options:
+\itemize{
+\item Edwards: Angular distance as described in
+Edwards 1971.
+}
+
+See \code{\link{calc_genetic_distances}}.}
 
 \item{interpolate}{character, default "bernoulli". Missing data interpolation
 method, solely for individual/individual distances. Options detailed in
 documentation for \code{\link{format_snps}}.}
 
 \item{tree_method}{character, default nj. Method by which the tree is
-constructed from genetic distances. Options: \itemize{\item{nj}
-Neighbor-joining trees, via \code{\link[ape]{nj}}. \item{bionj} BIONJ
+constructed from genetic distances. Options:
+\itemize{
+\item nj: Neighbor-joining trees, via \code{\link[ape]{nj}}.
+\item bionj: BIONJ
 trees, according to Gascuel 1997, via \code{\link[ape]{bionj}}.
-\item{upgma} UPGMA trees, via \code{\link[stats]{hclust}}.}}
+\item upgma: UPGMA trees, via \code{\link[stats]{hclust}}.
+}}
 
 \item{root}{character or FALSE, default FALSE. A vector containing the
 requested roots for each facet. Roots are specified by a string matching
@@ -58,7 +66,7 @@ given that this function does not return a snpRdata object, so a
 }
 \value{
 A nested, named list containing plots, trees, and bootstraps for each
-  facet and facet level.
+facet and facet level.
 }
 \description{
 Generate dendritic trees in the style of a phylogenetic tree for
@@ -125,15 +133,15 @@ ggplot(tp$pop$.base, aes(x, y)) +
 }
 \references{
 Felsenstein, J. (1985). Confidence Limits on Phylogenies: An
-  Approach Using the Bootstrap. Evolution, 39(4), 783–791.
-  https://doi.org/10.2307/2408678
+Approach Using the Bootstrap. Evolution, 39(4), 783–791.
+https://doi.org/10.2307/2408678
 
-  Gascuel, O. (1997).BIONJ: an improved version of the NJ algorithm based on
-  a simple model of sequence data. Molecular Biology and Evolution, 14(7),
-  685–695. https://doi.org/10.1093/oxfordjournals.molbev.a025808
+Gascuel, O. (1997).BIONJ: an improved version of the NJ algorithm based on
+a simple model of sequence data. Molecular Biology and Evolution, 14(7),
+685–695. https://doi.org/10.1093/oxfordjournals.molbev.a025808
 
-  Paradis, E., Claude, J. and Strimmer, K. (2004). APE: analyses of
-  phylogenetics and evolution in R language. Bioinformatics, 20, 289–290.
+Paradis, E., Claude, J. and Strimmer, K. (2004). APE: analyses of
+phylogenetics and evolution in R language. Bioinformatics, 20, 289–290.
 }
 \author{
 William Hemstrom

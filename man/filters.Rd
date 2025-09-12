@@ -20,7 +20,7 @@ details on the the filters used.
 }
 \details{
 Printed outputs contain the filters used in the order they were applied
-alongside the filtering stringency and any facets applied over, if 
+alongside the filtering stringency and any facets applied over, if
 applicable. Note that some output formats from \code{format_snps}, like the
 \code{vcf} format, will notes on the filters used as well.
 }

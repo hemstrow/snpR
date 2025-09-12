@@ -100,13 +100,17 @@ run_colony(
 path may be provided (e.g. "colony/colony_run_1.txt").}
 
 \item{method}{character, default "FPLS". Pedigree reconstruction method. For
-more details see the Colony User Guide. Options: \itemize{\item{"FPLS": }
-{Pure pairwise likelihood method, combines the full likelihood and
+more details see the Colony User Guide. Options:
+\itemize{
+\item "FPLS": Pure pairwise likelihood method, combines the full likelihood and
 pairwise likelihood methods. A good compromise between speed and
-accuracy.}\item{"FL": }{Full Likelihood. More accurate than PLS but more
+accuracy.
+\item "FL": Full Likelihood. More accurate than PLS but more
 computationally intensive and slow to run, especially with large complex
-datasets.}\item{"PLS": }{Pairwise likelihood score. Less accurate but less
-computationally intensive than FL.}}}
+datasets.
+\item "PLS": Pairwise likelihood score. Less accurate but less
+computationally intensive than FL.
+}}
 
 \item{run_length}{numeric in c(0,1,2,3), default 2. Length of run:
 short/medium/long/very long.}
@@ -251,8 +255,8 @@ will be stored in a colony folder created in the current working directory.
 \details{
 Requires that the COLONY program is installed locally if running within snpR.
 Text files exported from write_colony_input command can also be imported to
-command line versions of COLONY (eg. on a compute cluster). Input and output 
-files will be stored in a colony folder created in the current working 
+command line versions of COLONY (eg. on a compute cluster). Input and output
+files will be stored in a colony folder created in the current working
 directory. The functions documented here can write input files, call them
 using COLONY, and parse some parts of the results given the original
 snpRdata object. Note that no facet support is currently available here due
@@ -330,8 +334,8 @@ off <- subset_snpR_data(x = stk, .samps = loff)
 }
 \references{
 Jones,O.R. and Wang,J. (2010) COLONY: a program for parentage and
-  sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10,
-  551–555.
+sibship inference from multilocus genotype data. Mol. Ecol. Resour., 10,
+551–555.
 }
 \author{
 William Hemstrom

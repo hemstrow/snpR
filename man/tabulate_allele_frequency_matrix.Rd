@@ -15,8 +15,8 @@ allele frequencies. See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
 A named, nested list containing allele frequency matrices for each
-  facet level for all requested facets, merged into the provided snpRdata
-  object.
+facet level for all requested facets, merged into the provided snpRdata
+object.
 }
 \description{
 Fetch allele frequencies for all SNPs for each level of all the requested

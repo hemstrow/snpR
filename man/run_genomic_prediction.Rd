@@ -42,9 +42,11 @@ data point.}
 description for the ETA argument in \code{\link[BGLR]{BGLR}}.}
 
 \item{interpolate}{character, default "bernoulli". Interpolation method for
-missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-minor allele. \item{af: } insertion of the average allele frequency
-\item{iPCA:} As a slower but more accurate alternative to "af"
+missing data. Options:
+\itemize{
+\item bernoulli: binomial draws for the minor allele.
+\item af: insertion of the average allele frequency
+\item iPCA: As a slower but more accurate alternative to "af"
 interpolation, "iPCA" may be selected. This an iterative PCA approach to
 interpolate based on SNP/SNP covariance via
 \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
@@ -52,7 +54,8 @@ number of components used for interpolation will be estimated using
 \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 slower than the other methods, especially for large datasets. Setting an
 ncp of 2-5 generally results in reasonable interpolations without the time
-constraint.}.}
+constraint.
+}}
 
 \item{ncp}{numeric or NULL, default NULL. Used only if \code{iPCA}
 interpolation is selected. Number of components to consider for iPCA sn
@@ -74,13 +77,17 @@ printed to the console.}
 \item{...}{additional arguments passed to \code{\link[BGLR]{BGLR}}}
 }
 \value{
-A list containing: two parts: \itemize{\item{x: } The provided
-  snpRdata object with effect sizes merged in. \item{models: } Other model
-  results, a list containing: \itemize{ \item{model: } The model output from
-  BGLR. See \code{\link[BGLR]{BGLR}}. \item{h2: } Estimated heritability of
-  the response variable.\item{predictions: } A data.frame containing the
-  provided phenotypes and the predicted Breeding Values (BVs) for those
-  phenotypes. }}
+A list containing: two parts:
+\itemize{
+\item x: The provided snpRdata object with effect sizes merged in.
+\item models: Other model results, a list containing:
+\itemize{
+\item model: The model output from  BGLR. See \code{\link[BGLR]{BGLR}}.
+\item h2: Estimated heritability of the response variable.
+\item predictions: A data.frame containing the provided phenotypes and the
+predicted Breeding Values (BVs) for those phenotypes.
+}
+}
 }
 \description{
 Run genomic prediction given a single response variable (usually a phenotype)

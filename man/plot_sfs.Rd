@@ -16,9 +16,9 @@ plot_sfs(
 )
 }
 \arguments{
-\item{x}{snpRdata object, matrix, or numeric vector. If a snpRdata object, 
-The SNP metadata should contain "ref" and "anc" data. 
-If it does not, the major allele will be assumed to be the ancestral. 
+\item{x}{snpRdata object, matrix, or numeric vector. If a snpRdata object,
+The SNP metadata should contain "ref" and "anc" data.
+If it does not, the major allele will be assumed to be the ancestral.
 Alternatively, either a 2d site frequency spectra stored in a
 matrix, with an additional "pops" attribute containing population IDs, such
 as c("POP1", "POP2"), where the first pop is the matrix columns and the
@@ -74,7 +74,7 @@ matrix rows, or a 1d site frequency spectra stored as a numeric vector with a
 similar pops attribute giving the population name. These objects can be
 produced from a dadi input file using \code{\link{make_SFS}}.
 
-Generates a 1 or 2 dimensional site frequency spectrum 
+Generates a 1 or 2 dimensional site frequency spectrum
 using the projection methods and folding methods of Marth et al (2004) and
 Gutenkunst et al (2009). This code is essentially an R re-implementation of
 the SFS construction methods implemented in the program \emph{dadi} (see

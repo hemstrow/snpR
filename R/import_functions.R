@@ -324,6 +324,7 @@
 #
 # @author William Hemstrom
 .process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
+  nref <- nalt <- NULL
   #========sanity checks, part 1=============
   .check.installed("vcfR")
   
@@ -1065,11 +1066,6 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
                     sn = list(sn = NULL, type = NULL),
                     facets = ".base",
                     facet.type = ".base",
-                    calced_stats = list(),
-                    allele_frequency_matrices = list(),
-                    genetic_distances = list(),
-                    weighted.means = data.frame(),
-                    other = list(),
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
@@ -1083,6 +1079,7 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
 }
 
 .vcf_tag_extract <- function(x, tag){
+  ID <- REF <- ALT <- CHROM <- POS <- . <- NULL
   like <- vcfR::extract.gt(x, tag)
   like <- strsplit(unlist(like), ",")
   like <- unlist(like)
@@ -1107,9 +1104,11 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
 #'
 #' These functions are provided as a utility and do not work in the general
 #' \code{snpR} ecosystem. The different outputs may require specific FORMAT
-#' tags: \itemize{\item{vcf2beagle: }{\code{GP} tag}\item{vcf2PL: }
-#' {\code{PL} tag}} If thes eare lacking, \code{snpR} may provide 
-#' recommendations by which they can be added if possible.
+#' tags: 
+#' * vcf2beagle: \code{GP} tag
+#' * vcf2PL: \code{PL} tag
+#' If these are lacking, \code{snpR} may provide recommendations by which they 
+#' can be added if possible.
 #' 
 #' @param file character, path to "vcf" file.
 #' @param outfile character, output filename.
@@ -1201,7 +1200,7 @@ vcf2pl <- function(file, outfile, init_admix = FALSE, k = NULL){
         }
       }
       missing.inds <- unique(which(is.na(gcovarmat), arr.ind=T)[,2])
-      return(list(stats::prcomp(x = na.omit(gcovarmat), center = TRUE, scale = FALSE), missing.inds))
+      return(list(stats::prcomp(x = stats::na.omit(gcovarmat), center = TRUE, scale = FALSE), missing.inds))
     }
     
     return.val <- do.pca(meangls)

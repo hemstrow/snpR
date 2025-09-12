@@ -68,9 +68,12 @@ is optimal, since the data is already returned in that object, but is not
 the default due to backwards consistency with old code.}
 }
 \value{
-A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
- ggplot object. \item{dat: } Data used to generate the ggplot object. } If
- \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
+A list containing:
+\itemize{
+\item plot:  A pairwise LD heatmap as a ggplot object.
+\item dat: Data used to generate the ggplot object.
+If \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
+}
 }
 \description{
 Prepares a ggplot2 heatmap from pairwise linkage disequilibrium data stored in

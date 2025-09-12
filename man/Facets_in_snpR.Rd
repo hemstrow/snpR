@@ -37,7 +37,6 @@ The base facet--that is, the entire data with no categorical divisions--can be
 specified with ".base" and is typically the facet defaulted to when facets =
 NULL.
 
-
 See examples.
 }
 \examples{

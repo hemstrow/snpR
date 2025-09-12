@@ -15,16 +15,16 @@ See \code{\link{Facets_in_snpR}} for details.}
 \item{rarefaction}{logical, default TRUE. Should the number of segregating
 sites be estimated via rarefaction? See details.}
 
-\item{g}{numeric, default 0. If doing rarefaction, controls the number of 
+\item{g}{numeric, default 0. If doing rarefaction, controls the number of
 \emph{genotypes} to rarefact to. If 0, this will rarefact to the smallest
-sample size per locus. If g < 0, this will rarefact to to the smallest 
+sample size per locus. If g < 0, this will rarefact to to the smallest
 sample size per locus minus the absolute value of g. If positive,  this
 will rarefact to g, and any loci where the smallest sample size is less
 than g will be dropped from the calculation.}
 }
 \value{
-A snpRdata object with seg_sites merged into the weighted.means 
-  slot.
+A snpRdata object with seg_sites merged into the weighted.means
+slot.
 }
 \description{
 Calculates the number segregating loci for each facet level with or without

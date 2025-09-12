@@ -41,7 +41,7 @@ use for parallel processing.}
 create windows of 6*sigma total.}
 
 \item{global}{logical, default FALSE. If TRUE, all window parameters will
-be ignored and the global Tajima's D across all sites will instead be 
+be ignored and the global Tajima's D across all sites will instead be
 calculated. In this instance, \code{global_x} values will be merged into
 the \code{weighted.means} slot instead of weighted mean values and no values
 will be merged into the \code{window.stats} slot.}
@@ -51,7 +51,7 @@ console.}
 }
 \value{
 snpRdata object, with Watterson's Theta, Tajima's Theta, and Tajima's
- D for each window merged in to the window.stats slot.
+D for each window merged in to the window.stats slot.
 }
 \description{
 \code{Tajimas_D} calculates Tajima's theta/pi, Watterson's theta, and Tajima's

@@ -75,10 +75,10 @@ returns \emph{ONLY} a proximity table of LD values, not a
 }
 \value{
 a snpRdata object with linkage results stored in the pairwise.LD slot.
- Specifically, this slot will contain a list containing any LD matrices in a
- nested list broken down facet then by facet levels and a data.frame
- containing all pairwise comparisons, their metadata, and calculated
- statistics in long format for easy plotting.
+Specifically, this slot will contain a list containing any LD matrices in a
+nested list broken down facet then by facet levels and a data.frame
+containing all pairwise comparisons, their metadata, and calculated
+statistics in long format for easy plotting.
 }
 \description{
 \code{calc_pairwise_ld} calculates LD between each pair of SNPs.
@@ -147,7 +147,7 @@ get.snpR.stats(x, "chr.pop", "LD")
 Dimitri Zaykin (2004). \emph{Genetic Epidemiology}
 
 Excoffier, L., and Slatkin, M. (1995). \emph{Molecular Biology and
- Evolution}
+Evolution}
 
 Lewontin (1964). \emph{Genetics}
 }

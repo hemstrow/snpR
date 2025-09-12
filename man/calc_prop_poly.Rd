@@ -14,8 +14,8 @@ combination of SNP/sample facets.
 See \code{\link{Facets_in_snpR}} for details.}
 }
 \value{
-A snpRdata object with prop_poly merged into the weighted.means 
-  slot.
+A snpRdata object with prop_poly merged into the weighted.means
+slot.
 }
 \description{
 Calculates the proportion of polymorphic (genotyped) loci for any combination

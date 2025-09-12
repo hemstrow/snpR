@@ -19,21 +19,25 @@ vcf2pl(file, outfile, init_admix = FALSE, k = NULL)
 admix estimates for the program \code{entropy} to a set of files for
 each \code{k}.}
 
-\item{k}{integer vector, default NULL. Numbers of ancestry clusters 
-(*k* values)for which to estimate intial admixture proportions for the 
+\item{k}{integer vector, default NULL. Numbers of ancestry clusters
+(\emph{k} values)for which to estimate intial admixture proportions for the
 program \code{entropy}. Ignored if \code{init_admix} is FALSE.}
 }
 \description{
-Format vcf files as alternative formats without going through a 
+Format vcf files as alternative formats without going through a
 \code{\link{snpRdata}} intermediate. Used for working with likelihoods,
 probabilities, or other non-GT format fields.
 }
 \details{
 These functions are provided as a utility and do not work in the general
 \code{snpR} ecosystem. The different outputs may require specific FORMAT
-tags: \itemize{\item{vcf2beagle: }{\code{GP} tag}\item{vcf2PL: }
-{\code{PL} tag}} If thes eare lacking, \code{snpR} may provide 
-recommendations by which they can be added if possible.
+tags:
+\itemize{
+\item vcf2beagle: \code{GP} tag
+\item vcf2PL: \code{PL} tag
+If these are lacking, \code{snpR} may provide recommendations by which they
+can be added if possible.
+}
 }
 \section{Functions}{
 \itemize{

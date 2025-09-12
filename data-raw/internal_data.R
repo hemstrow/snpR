@@ -15,7 +15,7 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                         c("richness", "^g$"),
                                         c("seg_sites", "^g$", "prob_seg_var", "prob_seg")))
 window.stats <- list(stat = "tajimas_d",
-                     col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps")))
+                     col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps", "e1", "e2")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
                        col_pattern = list(c("fst","var_comp_a", "var_comp_b", "var_comp_c", "zfst", "fst_id", "nk"),
                                           c("D_abba_baba", "abba", "baba", "nk")))
@@ -24,14 +24,16 @@ sample.stats <- list(stat = c("het_hom_ratio", "hs"),
                                         "hs"))
 pop.stats <- list(stat = "ne",
                   col_pattern = list(c("LDNe_", "Neb_", "He_", "Ne", "CI")))
-other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", "prop_poly", "allele_frequency_matrix"),
+other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", 
+                             "prop_poly", "allele_frequency_matrix", "roh"),
                     types = list(c("LD", "single.window"),
                                  c("genetic_distances"),
                                  c("ibd"),
                                  c("geo_dist"),
                                  c("weighted.means"),
-                                 c("allele_frequency_matrix")),
-                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly", NA))
+                                 c("allele_frequency_matrix"),
+                                 c("sample", "roh", "weighted.means")),
+                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly", NA, "ROH"))
 
 
 #=============build lists for each stat====================

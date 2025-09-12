@@ -38,9 +38,10 @@
 #' @param model character, default "BayesB". Prediction model to use, see
 #'   description for the ETA argument in \code{\link[BGLR]{BGLR}}.
 #' @param interpolate character, default "bernoulli". Interpolation method for
-#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency
-#'   \item{iPCA:} As a slower but more accurate alternative to "af"
+#'   missing data. Options: 
+#'   * bernoulli: binomial draws for the minor allele.
+#'   * af: insertion of the average allele frequency
+#'   * iPCA: As a slower but more accurate alternative to "af"
 #'   interpolation, "iPCA" may be selected. This an iterative PCA approach to
 #'   interpolate based on SNP/SNP covariance via
 #'   \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
@@ -48,7 +49,7 @@
 #'   \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'   slower than the other methods, especially for large datasets. Setting an
 #'   ncp of 2-5 generally results in reasonable interpolations without the time
-#'   constraint.}.
+#'   constraint.
 #' @param ncp numeric or NULL, default NULL. Used only if \code{iPCA}
 #'   interpolation is selected. Number of components to consider for iPCA sn
 #'   format interpolations of missing data. If null, the optimum number will be
@@ -68,13 +69,13 @@
 #' @author William Hemstrom
 #' @references Pérez, P., and de los Campos, G. (2014). \emph{Genetics}.
 #'
-#' @return A list containing: two parts: \itemize{\item{x: } The provided
-#'   snpRdata object with effect sizes merged in. \item{models: } Other model
-#'   results, a list containing: \itemize{ \item{model: } The model output from
-#'   BGLR. See \code{\link[BGLR]{BGLR}}. \item{h2: } Estimated heritability of
-#'   the response variable.\item{predictions: } A data.frame containing the
-#'   provided phenotypes and the predicted Breeding Values (BVs) for those
-#'   phenotypes. }}
+#' @return A list containing: two parts:
+#'   * x: The provided snpRdata object with effect sizes merged in.
+#'   * models: Other model results, a list containing:
+#'     + model: The model output from  BGLR. See \code{\link[BGLR]{BGLR}}.
+#'     + h2: Estimated heritability of the response variable.
+#'     + predictions: A data.frame containing the provided phenotypes and the 
+#'       predicted Breeding Values (BVs) for those phenotypes.
 #'
 #' @examples
 #' # run and plot a basic prediction
@@ -296,19 +297,21 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
 #' @param plot logical, default TRUE. If TRUE, will generate a ggplot of the
 #'   cross-validation results.
 #' @param interpolate character, default "bernoulli". Interpolation method for
-#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#'   missing data. Options: 
+#'   * bernoulli: binomial draws for the minor allele
+#'   * af: insertion of the average allele frequency
 #'
 #' @export
 #' @author William Hemstrom
 #' @references Pérez, P., and de los Campos, G. (2014). \emph{Genetics}.
-#' @return A list containing: \itemize{ \item{model: } The results from
-#'   \code{\link{run_genomic_prediction}}. \item{model.samples: } Indices of the
-#'   samples used to construct the model. \item{cross.samples: } Indices of the
-#'   samples used to cross-validate the model. \item{comparison: } A data.frame
-#'   containing the observed and predicted phenotypes/Breeding Values for the
-#'   cross-validation samples. \item{rsq: } The r^2 value for the observed and
-#'   predicted phenotypes/Breeding Values for the cross-validation samples. }
+#' @return A list containing:
+#'   * model: The results from \code{\link{run_genomic_prediction}}
+#'   * model.samples: Indices of the samples used to construct the model. 
+#'   * cross.samples: Indices of the samples used to cross-validate the model.
+#'   * comparison: A data.frame containing the observed and predicted 
+#'     phenotypes/Breeding Values for the cross-validation samples.
+#'   * rsq: The r^2 value for the observed and predicted phenotypes/Breeding 
+#'     Values for the cross-validation samples.
 #'
 #' @examples
 #' # run and plot a basic prediction
@@ -445,11 +448,13 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
 #'   variable of interest. Must match a column name in sample metadata. Response
 #'   must be categorical, with only two categories.
 #' @param method character, default "gmmat.score". Specifies association method.
-#'   Options: \itemize{ \item{gmmat.score: }  Population/family structure
-#'   corrected mlm approach, based on Chen et al (2016). \item{armitage: }
-#'   Armitage association test, based on Armitage (1955). \item{odds_ratio: }
-#'   Log odds ratio test. \item{chisq: } Chi-squared test. } See description for
-#'   more details.
+#'   Options: 
+#'   * gmmat.score: Population/family structure corrected mlm approach, based on
+#'     Chen et al (2016).
+#'   * armitage: Armitage association test, based on Armitage (1955). 
+#'   * odds_ratio: Log odds ratio test.
+#'   * chisq: Chi-squared test.
+#'   See description for more details.
 #' @param w numeric, default c(0, 1, 2). Weight variable for each genotype for
 #'   the Armitage association method. See description for details.
 #' @param formula character, default set to response ~ 1. Null formula for the
@@ -874,13 +879,16 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   of variables (SNPs) by which to split each node. See
 #'   \code{\link[ranger]{ranger}} for details.
 #' @param importance character, default "impurity_corrected". The method by
-#'   which SNP importance is determined. Options: \itemize{\item{impurity}
-#'   \item{impurity_corrected} \item{permutation}}. See
-#'   \code{\link[ranger]{ranger}} for details.
+#'   which SNP importance is determined. Options: 
+#'   * impurity
+#'   * impurity_corrected
+#'   * permutation. 
+#'   See \code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
-#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency
-#'   \item{iPCA:} As a slower but more accurate alternative to "af"
+#'   missing data. Options: 
+#'   * bernoulli: binomial draws for the minor allele.
+#'   * af: insertion of the average allele frequency
+#'   * iPCA: As a slower but more accurate alternative to "af"
 #'   interpolation, "iPCA" may be selected. This an iterative PCA approach to
 #'   interpolate based on SNP/SNP covariance via
 #'   \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
@@ -888,7 +896,7 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 #'   slower than the other methods, especially for large datasets. Setting an
 #'   ncp of 2-5 generally results in reasonable interpolations without the time
-#'   constraint.}.
+#'   constraint.
 #' @param ncp numeric or NULL, default NULL. Used only if \code{iPCA}
 #'   interpolation is selected. Number of components to consider for iPCA sn
 #'   format interpolations of missing data. If null, the optimum number will be
@@ -907,10 +915,11 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
 #'   only a single category is run (either a one-category facet or no facet).
 #' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
 #'
-#' @return A list containing: \itemize{\item{data: } A snpRdata object with RF
-#'   importance values merged in to the stats slot. \item{models: } A named list
-#'   containing both the models and data.frames containing the predictions vs
-#'   observed phenotypes.}
+#' @return A list containing: 
+#'   * data: A snpRdata object with RF importance values merged in to the stats 
+#'     slot. 
+#'   * models: A named list containing both the models and data.frames 
+#'     containing the predictions vs observed phenotypes.
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.

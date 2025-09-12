@@ -68,11 +68,13 @@
 #'@param do.p logical, default TRUE. Determines if p-values should be calculated
 #'  for sliding windows.
 #'@param p.alt character, default "two-sided". Specifies the alternative
-#'  hypothesis to be used. Options: \itemize{ \item "less": probability that a
-#'  bootstrapped value is as small or smaller than observed. \item "greater":
-#'  probability that a bootstrapped value is as large or larger than observed.
-#'  \item "two-sided": probability that a bootstrapped value is as or more
-#'  extreme than observed. }
+#'  hypothesis to be used. Options: 
+#'  * "less": probability that a bootstrapped value is as small or smaller than 
+#'    observed.
+#'  * "greater": probability that a bootstrapped value is as large or larger 
+#'    than observed.
+#'  * "two-sided": probability that a bootstrapped value is as or more
+#'    extreme than observed.
 #'@return A snpRdata object with bootstrapped windows merged in to the
 #'  window.bootstraps slot. If do.p is TRUE, it will also merge p values in for
 #'  bootstrapped statistics into the stats or window.stats sockets.
@@ -712,11 +714,13 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
 #'  calculate p-values for. By default calculates p-values for all possible
 #'  stats.
 #'@param alt character, default "two-sided". Specifies the alternative
-#'  hypothesis to be used. Options: \itemize{ \item "less": probability that a
-#'  bootstrapped value is as small or smaller than observed. \item "greater":
-#'  probability that a bootstrapped value is as large or larger than observed.
-#'  \item "two-sided": probability that a bootstrapped value is as or more
-#'  extreme than observed. }
+#'  hypothesis to be used. Options: 
+#'  * "less": probability that a bootstrapped value is as small or smaller than 
+#'    observed.
+#'  * "greater": probability that a bootstrapped value is as large or larger 
+#'    than observed.
+#'  * "two-sided": probability that a bootstrapped value is as or more
+#'    extreme than observed.
 #'@param par numeric or FALSE, default FALSE. If numeric, the number of cores to
 #'  use for parallel processing.
 #'@param fwe_method character, default c("bonferroni", "holm", "BH", "BY"). Type
@@ -724,10 +728,12 @@ do_bootstraps <- function(x, facets = NULL, boots, sigma, step = 2*sigma, statis
 #'  details and options, see \code{\link[stats]{p.adjust}}.
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
 #'  How should Family-Wise Error correction (multiple testing correction) be
-#'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
-#'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-#'  each subfacet is treated as a separate set of tests. \item{"overall":} All
-#'  tests are treated as a set.}
+#'  applied? 
+#'  * "by_facet": Each facet supplied (such as pop or pop.fam) is treated as a 
+#'    set of tests. 
+#'  * "by_subfacet": Each level of each subfacet is treated as a separate set of
+#'    tests. 
+#'  * "overall": All tests are treated as a set.
 #'
 #'
 #'@return snpRdata object, with p-values merged into the stats or pairwise.stats

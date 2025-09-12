@@ -184,23 +184,50 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
                                        geno.tables = "list",
                                        facets = "character",
                                        facet.type = "character",
-                                       stats = "data.frame",
-                                       window.stats = "data.frame",
-                                       pairwise.stats = "data.frame",
-                                       pairwise.window.stats = "data.frame",
-                                       sample.stats = "data.frame",
-                                       pop.stats = "data.frame",
+                                       stats = "data.table",
+                                       window.stats = "data.table",
+                                       pairwise.stats = "data.table",
+                                       pairwise.window.stats = "data.table",
+                                       sample.stats = "data.table",
+                                       pop.stats = "data.table",
                                        pairwise.LD = "list",
-                                       window.bootstraps = "data.frame",
+                                       window.bootstraps = "data.table",
                                        sn = "list",
                                        calced_stats = "list",
                                        filters = "data.frame",
                                        allele_frequency_matrices = "list",
                                        genetic_distances = "list",
-                                       weighted.means = "data.frame",
+                                       weighted.means = "data.table",
                                        other = "list",
                                        citations = "list"),
          contains = c(data = "data.frame"),
+         prototype = prototype(sample.meta = data.frame(NULL),
+                          snp.meta = data.frame(NULL),
+                          facet.meta = data.frame(NULL),
+                          mDat = character(0),
+                          ploidy = numeric(0),
+                          bi_allelic = logical(0),
+                          data.type = character(0),
+                          snp.form = numeric(0),
+                          geno.tables = vector("list"),
+                          facets = character(0),
+                          facet.type = character(0),
+                          stats = data.table::data.table(NULL),
+                          window.stats = data.table::data.table(NULL),
+                          pairwise.stats = data.table::data.table(NULL),
+                          pairwise.window.stats = data.table::data.table(NULL),
+                          sample.stats = data.table::data.table(NULL),
+                          pop.stats = data.table::data.table(NULL),
+                          pairwise.LD = vector("list"),
+                          window.bootstraps = data.table::data.table(NULL),
+                          sn = vector("list"),
+                          calced_stats = vector("list"),
+                          filters = data.frame(NULL),
+                          allele_frequency_matrices = vector("list"),
+                          genetic_distances = vector("list"),
+                          weighted.means = data.table::data.table(NULL),
+                          other = vector("list"),
+                          citations = vector("list")),
          validity = .check.snpRdata)
 
 
@@ -225,33 +252,40 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@section File import: Supports automatic import of several types of files.
 #'  Options:
-#'
-#'  \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported
+#'  * .vcf or .vcf.gz: Variant Call Format (vcf) files, supported
 #'  via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
 #'  taken from the fixed fields in the VCF and sample metadata from the sample
-#'  IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
-#'  Files in the ms format, as provided by many commonly used simulation tools.
-#'  \item{.txt, NN: } SNP genotypes stored as actual base calls (e.g. "AA",
-#'  "CT"). \item{.txt, 0000: }SNP genotypes stored as four numeric characters
-#'  (e.g. "0101", "0204"). \item{.txt, snp_tab: }SNP genotypes stored with
+#'  IDs. Note that this only imports SNPs with called genotypes!
+#'  * .ms: Files in the ms format, as provided by many commonly used simulation 
+#'  tools.
+#'  * .txt, NN: SNP genotypes stored as actual base calls (e.g. "AA",
+#'  "CT").
+#'  * .txt, 0000: SNP genotypes stored as four numeric characters
+#'  (e.g. "0101", "0204").
+#'  * .txt, snp_tab: SNP genotypes stored with
 #'  genotypes in each cell, but only a single nucleotide noted if homozygote and
 #'  two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
-#'  \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
+#'  * .txt, sn: SNP genotypes stored with genotypes in each cell as 0
 #'  (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
-#'  \item{.genepop or .gen: } genepop file format, with genotypes stored as either 4 or
-#'  6 numeric characters. Works only with bi-allelic data. Genotypes will be
+#'  * .genepop or .gen:  genepop file format, with genotypes stored as either 4 
+#'  or 6 numeric characters. Works only with bi-allelic data. Genotypes will be
 #'  converted (internally) to NN: the first allele (numerically) will be coded
-#'  as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes
+#'  as A, the second as C.
+#'  * .fstat: FSTAT file format, with genotypes
 #'  stored as either 4 or 6 numeric characters. Works only with bi-allelic data.
 #'  Genotypes will be converted (internally) to NN: the first allele
-#'  (numerically) will be coded as A, the second as C. \item{.bed/.fam/.bim: }
-#'  PLINK .bed, .fam, and .bim files, via \code{\link[genio]{read_plink}}. If
+#'  (numerically) will be coded as A, the second as C.
+#'  * .bed/.fam/.bim: PLINK .bed, .fam, and .bim files, via
+#'  \code{\link[genio]{read_plink}}.
+#'  
+#'  If
 #'  any of these file types is provided, snpR (via
 #'  \code{\link[genio]{read_plink}}) will look for the other file types
 #'  automatically. Sample metadata should be contained in the .fam file and SNP
 #'  metadata in the .bim file, so sample or snp meta data provided here will be
-#'  ignored. \item{.str: } STRUCTURE import files in either 1 or 2 rows per
-#'  individual as defined by the \code{rows_per_individual} argument.}
+#'  ignored. 
+#'  * .str: STRUCTURE import files in either 1 or 2 rows per
+#'  individual as defined by the \code{rows_per_individual} argument.
 #'
 #'  Additional arguments can be provided to import.snpR.data that will be passed
 #'  to \code{\link[data.table]{fread}} when reading in genotype data.
@@ -265,56 +299,68 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'  Supports automatic conversions from some other popular S4 object types.
 #'  Options:
-#'
-#'  \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
+#'  * genind: \code{\link[adegenet]{genind}} objects from
 #'  adegenet. Note, no need to import genepop objects, the equivalent statistics
 #'  are calculated automatically when functions called with facets. Sample and
 #'  SNP IDs as well as, when possible, pop IDs will be taken from the genind
 #'  object. This data will be added too but will not replace data provided to
 #'  the SNP or sample.meta arguments. Note that only \emph{SNP} data is
 #'  currently allowed, data with more than two alleles for loci will return an
-#'  error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
+#'  error. 
+#'  * genlight: \code{\link[adegenet]{genlight}} objects from
 #'  adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
 #'  will be taken from the genlight object if possible. This data will be added
 #'  too but will not replace data provided to the SNP or sample.meta arguments.
-#'  \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
+#'  * vcfR: \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
 #'  snp metadata is taken from the fixed fields in the VCF and sample metadata
 #'  from the sample IDs. Note that this only imports SNPs with called
-#'  genotypes!}
+#'  genotypes!
 #'
 #'@section Slots:
 #'
 #'  Genotypes, metadata, and results are stored in slots and directly accessable
 #'  with the 'at' symbol operator. Slots are as follows:
-#'
-#'  \itemize{ \item{sample.meta: } sample metadata (population, family,
-#'  phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
-#'  linkage group, position, etc.). \item{facet.meta: } internal metadata used
+#'  * sample.meta: sample metadata (population, family,
+#'  phenotype, etc.). 
+#'  * snp.meta: SNP metadata (SNP ID, chromosome,
+#'  linkage group, position, etc.).
+#'  * facet.meta: internal metadata used
 #'  to track facets that have been previously applied to the dataset.
-#'  \item{mDat: } missing data format. \item{snp.form: } number of characters
-#'  per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
+#'  * mDat:missing data format. 
+#'  * snp.form: number of characters
+#'  per SNP.
+#'  * genotables: a list containing tabulated genotypes (gs),
 #'  allele counts (as), and missing data (wm). facet.meta contains the
-#'  corresponding metadata. \item{facets: }
-#'  vector of the facets that have been added to the data. \item{facet.type: }
-#'  classes of the added facets (snp, sample, complex, or .base). \item{stats: }
-#'  data.frame containing all calculated non-pairwise single-snp statistics and
-#'  metadata. \item{window.stats: } data.frame/table containing all non-pairwise
-#'  statistics calculated for sliding windows. \item{pairwise.stats: }
-#'  data.frame/table containing all pairwise (fst) single-snp statistics.
-#'  \item{pairwise.window.stats: } data.frame/table containing all pairwise
-#'  statistics calculated for sliding windows. \item{sample.stats: }
-#'  data.frame/table containing statistics calculated for each individual
-#'  sample. \item{pairwise.LD: } nested list containing linkage disequilibrium
+#'  corresponding metadata. 
+#'  * facets: vector of the facets that have been added to the data.
+#'  * facet.type: classes of the added facets (snp, sample, complex, or .base). 
+#'  * stats:  data.frame containing all calculated non-pairwise single-snp 
+#'  statistics and metadata.
+#'  * window.stats: 
+#'  data.frame/table containing all non-pairwise
+#'  statistics calculated for sliding windows.
+#'  * pairwise.stats: data.frame/table containing all pairwise (fst) single-snp 
+#'  statistics.
+#'  * pairwise.window.stats: data.frame/table containing all pairwise
+#'  statistics calculated for sliding windows. 
+#'  * sample.stats:  data.frame/table containing statistics calculated for each 
+#'  individual sample. 
+#'  * pairwise.LD:nested list containing linkage disequilibrium
 #'  data (see \code{\link{calc_pairwise_ld}} for more information).
-#'  \item{window.bootstraps: } data.frame/table containing all calculated
-#'  bootstraps for sliding window statistics. \item{sn: } list containing "sn",
-#'  sn formatted data, and "type" type of interpolation. \item{calced_stats: }
+#'  * window.bootstraps: data.frame/table containing all calculated
+#'  bootstraps for sliding window statistics.
+#'  * sn: list containing "sn",
+#'  sn formatted data, and "type" type of interpolation.
+#'  * calced_stats:
 #'  Named list of named character vectors that tracks the calculated statistics
 #'  for each facet (see \code{\link{calc_genetic_distances}} for more
-#'  information). \item{genetic_distances: } nested list containing genetic
-#'  distance data. \item{names: } column names for genotypes. \item{row.names: }
-#'  row names for genotypes. \item{.Data: } list of vectors containing raw
-#'  genotype data. \item{.S3Class: } notes the inherited S3 object class. }
+#'  information). 
+#'  * genetic_distances: nested list containing genetic
+#'  distance data. 
+#'  * names: column names for genotypes.
+#'  * row.names: row names for genotypes.
+#'  * .Data: list of vectors containing raw genotype data. 
+#'  * .S3Class: notes the inherited S3 object class.
 #'  
 #'  Note that most of these slots are used primarily internally.
 #'
@@ -634,12 +680,6 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
                     sn = list(sn = NULL, type = NULL),
                     facets = ".base",
                     facet.type = ".base",
-                    calced_stats = list(),
-                    allele_frequency_matrices = list(),
-                    genetic_distances = list(),
-                    weighted.means = data.frame(),
-                    filters = data.table::data.table(),
-                    other = list(),
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
   
   x@calced_stats$.base <- character()
@@ -683,47 +723,54 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
 #' Different statistics are returned either by named statistic or by type.
 #'
 #' @section Types:
-#'
-#'   \itemize{ \item{single: } non-pairwise, non-window statistics (pi, ho, 
-#'   etc.)
-#'   \item{pairwise: } pairwise, non-window statistics (Fst).
-#'   \item{single.window: } non-pairwise, sliding window statistics.
-#'   \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }
-#'   linkage disequilibrium matrices and tables. \item{bootstraps: } bootstraps
-#'   of window statistics. \item{genetic_distance: } genetic distances
-#'   \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist:
-#'   } geographic distances. \item{ibd: } isolation by distance results.
-#'   \item{sample: } sample stats. \item{pop: } population summary statistics.
-#'   \item{weighted.means: } Weighted means of SNP statistics per facet level.}
+#' * single: non-pairwise, non-window statistics (pi, ho, 
+#' etc.)
+#' * pairwise: pairwise, non-window statistics (Fst).
+#' * single.window: non-pairwise, sliding window statistics.
+#' * pairwise.window: pairwise, sliding window statistics. 
+#' * LD: linkage disequilibrium matrices and tables. 
+#' * bootstraps: bootstraps
+#' of window statistics. 
+#' * genetic_distance: genetic distances
+#' * allele_frequency_matrix: allele frequency matrices. 
+#' * geo_dist: geographic distances. 
+#' * ibd: isolation by distance results.
+#' * sample: sample stats. 
+#' * pop: population summary statistics.
+#' * weighted.means: Weighted means of SNP statistics per facet level.
 #'
 #' @section Statistics: 
-#' 
-#' \itemize{ \item{ho: } Observed heterozygosity, via
-#'   \code{\link{calc_ho}}. \item{pi: } pi (expected number of pairwise
-#'   differences, via \code{\link{calc_pi}}). \item{maf: } minor allele
-#'   frequencies (and major/minor counts and identities), via
-#'   \code{\link{calc_maf}}. \item{private: } private allele identities, via
-#'   \code{\link{calc_private}}. \item{association: } results from phenotypic
-#'   association tests, via \code{\link{calc_association}}. \item{hwe: }
-#'   Hardy-Weinberg Equilibrium p-values, via \code{\link{calc_hwe}}.
-#'   \item{tajimas_d: } Tajima's D, Watterson's Theta, and Tajima's Theta, via
-#'   \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
-#'   \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }
-#'   Heterozygote/Homozygote ratios within individuals, via
-#'   \code{\link{calc_het_hom_ratio}}. \item{ne: } Effective population size
-#'   estimates, via \code{\link{calc_ne}}. \item{ld: } Pairwise linkage
-#'   disequilibrium, via \code{\link{calc_pairwise_ld}}.
-#'   \item{genetic_distances: } Genetic distances,
-#'   \code{\link{calc_genetic_distances}}. \item{isolation_by_distance: }
-#'   Genetic isolation by distance metrics, via
-#'   \code{\link{calc_isolation_by_distance}}. \item{geographic_distance: }
-#'   Geographic distances between samples--does not use genetic data. Calculated
-#'   during \code{\link{calc_isolation_by_distance}}, but fetchable
-#'   independently here.
-#'   \item{random_forest} Random forest snp-specific responses, see
-#'   \code{\link{run_random_forest}}.
-#'
-#'   }
+#' * ho: Observed heterozygosity, via \code{\link{calc_ho}}. 
+#' * pi: pi (expected number of pairwise
+#' differences, via \code{\link{calc_pi}}). 
+#' * maf: minor allele
+#' frequencies (and major/minor counts and identities), via
+#' \code{\link{calc_maf}}. 
+#' * private: private allele identities, via
+#' \code{\link{calc_private}}. 
+#' * association: results from phenotypic
+#' association tests, via \code{\link{calc_association}}. 
+#' * hwe: Hardy-Weinberg Equilibrium p-values, via \code{\link{calc_hwe}}.
+#' * tajimas_d: Tajima's D, Watterson's Theta, and Tajima's Theta, via
+#' \code{\link{calc_tajimas_d}}. 
+#' * fst: Pairwise Fst, via
+#' \code{\link{calc_pairwise_fst}}. 
+#' * het_hom_ratio: Heterozygote/Homozygote ratios within individuals, via
+#' \code{\link{calc_het_hom_ratio}}. 
+#' * ne: Effective population size
+#' estimates, via \code{\link{calc_ne}}. 
+#' * ld: Pairwise linkage
+#' disequilibrium, via \code{\link{calc_pairwise_ld}}.
+#' * genetic_distances: Genetic distances,
+#' \code{\link{calc_genetic_distances}}. 
+#' * isolation_by_distance: Genetic isolation by distance metrics, via
+#' \code{\link{calc_isolation_by_distance}}. 
+#' * geographic_distance: Geographic distances between samples--does not use 
+#' genetic data. Calculated
+#' during \code{\link{calc_isolation_by_distance}}, but fetchable
+#' independently here.
+#' * random_forest: Random forest snp-specific responses, see
+#' \code{\link{run_random_forest}}.
 #'
 #' @param x snpRdata object.
 #' @param facets character or NULL, default NULL. Facets for which to fetch
@@ -771,7 +818,11 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
                tsd = "tajimas_d",
                d = "tajimas_d",
                ar = "allelic_richness",
-               richness = "allelic_richness")
+               richness = "allelic_richness",
+               ROH = "roh",
+               fROH = "roh",
+               FROH = "roh",
+               Froh = "roh")
   
   need_unaliased <- which(stats %in% names(aliases))
   
@@ -870,7 +921,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   
   good.types <- c("single", "pairwise", "single.window", "pairwise.window", "LD", "bootstraps", "genetic_distance",
-                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means", "fst.matrix")
+                  "allele_frequency_matrix", "geo_dist", "ibd", "sample", "pop", "weighted.means", "fst.matrix", "roh")
   if(!type %in% good.types){
     stop("Unaccepted stats type. Options: ", paste0(good.types, collapse = ", "), ".\nSee documentation for details.\n")
   }
@@ -1014,6 +1065,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
   extract.fst.matrix <- function(x, facets = NULL){
+    p1 <- p2 <- NULL
     facets <- .check.snpR.facet.request(x, facets, "complex", return_base_when_empty = F, fill_with_base = F)
     if(length(facets) == 0){
       return(NULL)
@@ -1059,6 +1111,15 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
       res[[empties]] <- NULL
     }
     
+    return(res)
+  }
+  
+  extract.roh <- function(x, facets = NULL){
+    nfacets <- .check.snpR.facet.request(x, facets, remove.type = "sample")
+    if(any(sort(nfacets) != sort(.check.snpR.facet.request(x, facets, "none")))){
+      warning(paste0("ROH is only calculated for snp facets; requested facets simplified to: ", paste0(nfacets, collapse = ",")))
+    }
+    res <- x@other$roh[which(x@other$roh$snp.facet %in% nfacets),]
     return(res)
   }
   
@@ -1125,6 +1186,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   }
   else if(type == "fst.matrix"){
     return(extract.fst.matrix(x, facets))
+  }
+  else if(type == "roh"){
+    return(extract.roh(x,facets))
   }
   
 }

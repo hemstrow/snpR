@@ -107,7 +107,7 @@ reported.}
 }
 \value{
 A data.frame or snpRdata object with data in the correct format. May
- also write a file to the specified path.
+also write a file to the specified path.
 }
 \description{
 \code{format_snps} re-formats SNP data into a range of different possible
@@ -133,46 +133,59 @@ which is designated by the input_meta_columns argument, or in a data.frame
 given as via the snp.meta argument. Sample metadata may be provided in a
 data.frame via the sample.meta argument.
 
-Output format options: \itemize{ \item{ac: }{allele count format, allele
-counts tabulated for all samples or within populations.} \item{genepop:
-}{genepop format, genotypes stored as four numeric characters (e.g. "0101",
-"0204"), transposed, and formatted for genepop. Rownames are individual IDs in
-genepop format, colnames are SNP ids, matching the first metadata column in
-input.} \item{structure: }{STRUCTURE format, two lines per individual: allele
+Output format options:
+\itemize{
+\item ac: allele count format, allele
+counts tabulated for all samples or within populations.
+\item genepop: genepop format, genotypes stored as four numeric characters (e.g.
+"0101", "0204"), transposed, and formatted for genepop. Rownames are
+individual IDs in genepop format, colnames are SNP ids, matching the first
+metadata column in input.
+\item structure: STRUCTURE format, two lines per individual: allele
 calls stored as single character numeric (e.g. "1", "2"). Allele calls per
-individual stored on two subsequent lines.} \item{0000: }{numeric genotype tab
-format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
-\item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations,
+individual stored on two subsequent lines.
+\item 0000: numeric genotype tab
+format, genotypes stored as four numeric characters (e.g. "0101", "0204").
+\item hapmap: Migrate-n hapmap, allele counts tabulated within populations,
 in migrate-n hapmap format. Since this migrate-n implementation is iffy, this
-probably shouldn't be used much.} \item{NN: }{character genotype tab format,
-genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
+probably shouldn't be used much.
+\item NN: character genotype tab format,
+genotypes stored as actual base calls (e.g. "AA", "CT").
+\item pa: allele
 presence/absence format, presence or absence of each possible allele at each
 possible genotype noted. Interpolation possible, with missing data substituted
-with allele frequency in all samples or each population.} \item{rafm: }{RAFM
-format, two allele calls at each locus stored in subsequent columns, e.g.
-locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
+with allele frequency in all samples or each population.
+\item rafm: RAFM format, two allele calls at each locus stored in subsequent columns, e.g.
+locus1.1 locus1.2.
+\item faststructure: fastSTRUCTURE format, identical to
 STRUCTURE format save with the addition of filler columns proceeding data such
 that exactly 6 columns proceed data. These columns can be filled with metadata
-if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
+if desired.
+\item dadi: dadi format SNP data format, requires two columns
 named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
-the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
+the middle location is the A/C snp.
+\item plink: PLINK! binary input
 format, requires columns named "position" and one matching the name designated
 with the 'chr' argument, and may contain a column named "cM", "cm", or
 "morgans", containing linkage group/chr, snp ID, position in bp, and distance
-in cM in order to create .bim extended map file.} \item{sn: }{Single character
+in cM in order to create .bim extended map file.
+\item sn: Single character
 numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-'interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+'interpolate' argument.
+\item sequoia: sequoia format. Each genotype is
 converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
-BirthYear (or instead of BirthYear - BYmin and BYmax), optional column 
-Yearlast in sample metadata for running Sequoia. For more information see 
-sequoia documentation.} \item{fasta:} {fasta sequence format.} \item{vcf:}
-{Variant Call Format, a standard format for SNPs and other genomic variants. 
-Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a 
-healthy serving of additional metadata but very little sample metadata.} 
-\item{genalex: }{GenAlEx format. If an outfile is requested, the data will be 
-sorted according to any provided facets and written as an '.xlsx' object.} 
-\item{snpRdata: }{a snpRdata object.} }
+BirthYear (or instead of BirthYear - BYmin and BYmax), optional column
+Yearlast in sample metadata for running Sequoia. For more information see
+sequoia documentation.
+\item fasta: fasta sequence format.
+\item vcf: Variant Call Format, a standard format for SNPs and other genomic variants.
+Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a
+healthy serving of additional metadata but very little sample metadata.
+\item genalex: GenAlEx format. If an outfile is requested, the data will be
+sorted according to any provided facets and written as an '.xlsx' object.
+\item snpRdata: a snpRdata object.
+}
 
 Note that for the "sn" format, the data can be interpolated to fill missing
 data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -198,14 +211,21 @@ the "plink" option is selected and an outfile is designated, R will generate a
 ".sh" shell file with the same name given in the outfile argument. Running
 this file will create a plink.bed file.
 
-Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
-default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
-"CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
-"0101", "0204").} \item{snp_tab: }{SNP genotypes stored with genotypes in each
+Input formats:
+\itemize{
+\item NULL or snpRdata: snpRdata object, the
+default.
+\item NN: SNP genotypes stored as actual base calls (e.g. "AA",
+"CT").
+\item 0000: SNP genotypes stored as four numeric characters (e.g.
+"0101", "0204").
+\item snp_tab: SNP genotypes stored with genotypes in each
 cell, but only a single nucleotide noted if homozygote and two nucleotides
-seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
+seperated by a space if heterozygote (e.g. "T", "T G").
+\item sn: SNP
 genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-(heterozygous), or 2 (homozyogus allele 2).}}
+(heterozygous), or 2 (homozyogus allele 2).
+}
 }
 \examples{
 \dontrun{

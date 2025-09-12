@@ -61,10 +61,10 @@ be checked and fixed during 'ms' file import.}
 \item{verbose}{Logical, default FALSE. If TRUE, will print a few status
 updates and checks.}
 
-\item{.pass_filters}{Internal, probably not for user use. Used to pass 
+\item{.pass_filters}{Internal, probably not for user use. Used to pass
 filtering history when sub-setting when this function is called internally.}
 
-\item{.skip_filters}{Internal, probably not for user use. Used to skip 
+\item{.skip_filters}{Internal, probably not for user use. Used to skip
 re-filtering during sub-setting when this function is called internally.}
 }
 \description{
@@ -88,106 +88,133 @@ file extension (as appropriate).
 }
 \section{File import}{
  Supports automatic import of several types of files.
- Options:
+Options:
+\itemize{
+\item .vcf or .vcf.gz: Variant Call Format (vcf) files, supported
+via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+taken from the fixed fields in the VCF and sample metadata from the sample
+IDs. Note that this only imports SNPs with called genotypes!
+\item .ms: Files in the ms format, as provided by many commonly used simulation
+tools.
+\item .txt, NN: SNP genotypes stored as actual base calls (e.g. "AA",
+"CT").
+\item .txt, 0000: SNP genotypes stored as four numeric characters
+(e.g. "0101", "0204").
+\item .txt, snp_tab: SNP genotypes stored with
+genotypes in each cell, but only a single nucleotide noted if homozygote and
+two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
+\item .txt, sn: SNP genotypes stored with genotypes in each cell as 0
+(homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
+\item .genepop or .gen:  genepop file format, with genotypes stored as either 4
+or 6 numeric characters. Works only with bi-allelic data. Genotypes will be
+converted (internally) to NN: the first allele (numerically) will be coded
+as A, the second as C.
+\item .fstat: FSTAT file format, with genotypes
+stored as either 4 or 6 numeric characters. Works only with bi-allelic data.
+Genotypes will be converted (internally) to NN: the first allele
+(numerically) will be coded as A, the second as C.
+\item .bed/.fam/.bim: PLINK .bed, .fam, and .bim files, via
+\code{\link[genio]{read_plink}}.
+}
 
- \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported
- via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
- taken from the fixed fields in the VCF and sample metadata from the sample
- IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
- Files in the ms format, as provided by many commonly used simulation tools.
- \item{.txt, NN: } SNP genotypes stored as actual base calls (e.g. "AA",
- "CT"). \item{.txt, 0000: }SNP genotypes stored as four numeric characters
- (e.g. "0101", "0204"). \item{.txt, snp_tab: }SNP genotypes stored with
- genotypes in each cell, but only a single nucleotide noted if homozygote and
- two nucleotides separated by a space if heterozygote (e.g. "T", "T G").
- \item{.txt, sn: }SNP genotypes stored with genotypes in each cell as 0
- (homozygous allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
- \item{.genepop or .gen: } genepop file format, with genotypes stored as either 4 or
- 6 numeric characters. Works only with bi-allelic data. Genotypes will be
- converted (internally) to NN: the first allele (numerically) will be coded
- as A, the second as C. \item{.fstat: } FSTAT file format, with genotypes
- stored as either 4 or 6 numeric characters. Works only with bi-allelic data.
- Genotypes will be converted (internally) to NN: the first allele
- (numerically) will be coded as A, the second as C. \item{.bed/.fam/.bim: }
- PLINK .bed, .fam, and .bim files, via \code{\link[genio]{read_plink}}. If
- any of these file types is provided, snpR (via
- \code{\link[genio]{read_plink}}) will look for the other file types
- automatically. Sample metadata should be contained in the .fam file and SNP
- metadata in the .bim file, so sample or snp meta data provided here will be
- ignored. \item{.str: } STRUCTURE import files in either 1 or 2 rows per
- individual as defined by the \code{rows_per_individual} argument.}
+If
+any of these file types is provided, snpR (via
+\code{\link[genio]{read_plink}}) will look for the other file types
+automatically. Sample metadata should be contained in the .fam file and SNP
+metadata in the .bim file, so sample or snp meta data provided here will be
+ignored.
+\itemize{
+\item .str: STRUCTURE import files in either 1 or 2 rows per
+individual as defined by the \code{rows_per_individual} argument.
+}
 
- Additional arguments can be provided to import.snpR.data that will be passed
- to \code{\link[data.table]{fread}} when reading in genotype data.
+Additional arguments can be provided to import.snpR.data that will be passed
+to \code{\link[data.table]{fread}} when reading in genotype data.
 
- Sample and snp metadata can also be provided via file path, and will be read
- in using \code{\link[data.table]{fread}} \emph{with the default settings}.
- If these settings are not correct, please read in the metadata manually and
- provide to import.snpR.data.
+Sample and snp metadata can also be provided via file path, and will be read
+in using \code{\link[data.table]{fread}} \emph{with the default settings}.
+If these settings are not correct, please read in the metadata manually and
+provide to import.snpR.data.
 }
 
 \section{Conversions from other S4 objects}{
 
 
- Supports automatic conversions from some other popular S4 object types.
- Options:
-
- \itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
- adegenet. Note, no need to import genepop objects, the equivalent statistics
- are calculated automatically when functions called with facets. Sample and
- SNP IDs as well as, when possible, pop IDs will be taken from the genind
- object. This data will be added too but will not replace data provided to
- the SNP or sample.meta arguments. Note that only \emph{SNP} data is
- currently allowed, data with more than two alleles for loci will return an
- error. \item{genlight: } \code{\link[adegenet]{genlight}} objects from
- adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
- will be taken from the genlight object if possible. This data will be added
- too but will not replace data provided to the SNP or sample.meta arguments.
- \item{vcfR: } \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
- snp metadata is taken from the fixed fields in the VCF and sample metadata
- from the sample IDs. Note that this only imports SNPs with called
- genotypes!}
+Supports automatic conversions from some other popular S4 object types.
+Options:
+\itemize{
+\item genind: \code{\link[adegenet]{genind}} objects from
+adegenet. Note, no need to import genepop objects, the equivalent statistics
+are calculated automatically when functions called with facets. Sample and
+SNP IDs as well as, when possible, pop IDs will be taken from the genind
+object. This data will be added too but will not replace data provided to
+the SNP or sample.meta arguments. Note that only \emph{SNP} data is
+currently allowed, data with more than two alleles for loci will return an
+error.
+\item genlight: \code{\link[adegenet]{genlight}} objects from
+adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
+will be taken from the genlight object if possible. This data will be added
+too but will not replace data provided to the SNP or sample.meta arguments.
+\item vcfR: \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
+snp metadata is taken from the fixed fields in the VCF and sample metadata
+from the sample IDs. Note that this only imports SNPs with called
+genotypes!
+}
 }
 
 \section{Slots}{
 
 
- Genotypes, metadata, and results are stored in slots and directly accessable
- with the 'at' symbol operator. Slots are as follows:
+Genotypes, metadata, and results are stored in slots and directly accessable
+with the 'at' symbol operator. Slots are as follows:
+\itemize{
+\item sample.meta: sample metadata (population, family,
+phenotype, etc.).
+\item snp.meta: SNP metadata (SNP ID, chromosome,
+linkage group, position, etc.).
+\item facet.meta: internal metadata used
+to track facets that have been previously applied to the dataset.
+\item mDat:missing data format.
+\item snp.form: number of characters
+per SNP.
+\item genotables: a list containing tabulated genotypes (gs),
+allele counts (as), and missing data (wm). facet.meta contains the
+corresponding metadata.
+\item facets: vector of the facets that have been added to the data.
+\item facet.type: classes of the added facets (snp, sample, complex, or .base).
+\item stats:  data.frame containing all calculated non-pairwise single-snp
+statistics and metadata.
+\item window.stats:
+data.frame/table containing all non-pairwise
+statistics calculated for sliding windows.
+\item pairwise.stats: data.frame/table containing all pairwise (fst) single-snp
+statistics.
+\item pairwise.window.stats: data.frame/table containing all pairwise
+statistics calculated for sliding windows.
+\item sample.stats:  data.frame/table containing statistics calculated for each
+individual sample.
+\item pairwise.LD:nested list containing linkage disequilibrium
+data (see \code{\link{calc_pairwise_ld}} for more information).
+\item window.bootstraps: data.frame/table containing all calculated
+bootstraps for sliding window statistics.
+\item sn: list containing "sn",
+sn formatted data, and "type" type of interpolation.
+\item calced_stats:
+Named list of named character vectors that tracks the calculated statistics
+for each facet (see \code{\link{calc_genetic_distances}} for more
+information).
+\item genetic_distances: nested list containing genetic
+distance data.
+\item names: column names for genotypes.
+\item row.names: row names for genotypes.
+\item .Data: list of vectors containing raw genotype data.
+\item .S3Class: notes the inherited S3 object class.
+}
 
- \itemize{ \item{sample.meta: } sample metadata (population, family,
- phenotype, etc.). \item{snp.meta: } SNP metadata (SNP ID, chromosome,
- linkage group, position, etc.). \item{facet.meta: } internal metadata used
- to track facets that have been previously applied to the dataset.
- \item{mDat: } missing data format. \item{snp.form: } number of characters
- per SNP. \item{genotables: } a list containing tabulated genotypes (gs),
- allele counts (as), and missing data (wm). facet.meta contains the
- corresponding metadata. \item{facets: }
- vector of the facets that have been added to the data. \item{facet.type: }
- classes of the added facets (snp, sample, complex, or .base). \item{stats: }
- data.frame containing all calculated non-pairwise single-snp statistics and
- metadata. \item{window.stats: } data.frame/table containing all non-pairwise
- statistics calculated for sliding windows. \item{pairwise.stats: }
- data.frame/table containing all pairwise (fst) single-snp statistics.
- \item{pairwise.window.stats: } data.frame/table containing all pairwise
- statistics calculated for sliding windows. \item{sample.stats: }
- data.frame/table containing statistics calculated for each individual
- sample. \item{pairwise.LD: } nested list containing linkage disequilibrium
- data (see \code{\link{calc_pairwise_ld}} for more information).
- \item{window.bootstraps: } data.frame/table containing all calculated
- bootstraps for sliding window statistics. \item{sn: } list containing "sn",
- sn formatted data, and "type" type of interpolation. \item{calced_stats: }
- Named list of named character vectors that tracks the calculated statistics
- for each facet (see \code{\link{calc_genetic_distances}} for more
- information). \item{genetic_distances: } nested list containing genetic
- distance data. \item{names: } column names for genotypes. \item{row.names: }
- row names for genotypes. \item{.Data: } list of vectors containing raw
- genotype data. \item{.S3Class: } notes the inherited S3 object class. }
- 
- Note that most of these slots are used primarily internally.
+Note that most of these slots are used primarily internally.
 
- All calculated data can be accessed using the \code{\link{get.snpR.stats}}
- function. See documentation.
+All calculated data can be accessed using the \code{\link{get.snpR.stats}}
+function. See documentation.
 }
 
 \examples{

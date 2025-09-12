@@ -64,11 +64,13 @@ correction} will be removed. See \code{\link[stats]{p.adjust}} for
 information on method options.}
 
 \item{hwe_excess_side}{character, default "both". Options:
-\itemize{\item{heterozygote: }{only loci with a heterozygote excess are 
-removed.}
-\item{homozygote: }{only loci with a homozygote excess are removed.}
-\item{both: }{loci with either a heterozygote or homozygote excess 
-are removed.}}}
+\itemize{
+\item heterozygote: only loci with a heterozygote excess are
+removed.
+\item homozygote: only loci with a homozygote excess are removed.
+\item both: loci with either a heterozygote or homozygote excess
+are removed.
+}}
 
 \item{singletons}{logical, default FALSE. Depricated, use \code{mac = 1} to
 remove singletons. If TRUE, removes singletons (loci where there is only a
@@ -90,17 +92,23 @@ do a filter to remove very poorly sequenced individuals and loci
 jointly before applying other filters. This can be used to reduce biases
 caused by very bad loci/individuals prior to full filtering. This number
 should be lower than either the \code{min_ind} or \code{min_loci} parameters
-if those arguments are used and should generally be quite permissive to 
+if those arguments are used and should generally be quite permissive to
 remove only truly bad loci or individuals.}
 
 \item{re_run}{character or FALSE, default "partial". When individuals are
 removed via min_ind, it is possible that some SNPs that initially passed
 filtering steps will now violate some filters. SNP filters can be re-run
-automatically via several methods: \itemize{ \item{partial: } {Re-filters for
+automatically via several methods:
+\itemize{
+\item partial: Re-filters for
 non-polymorphic loci (non_poly) only, if that filter was requested
-initially.} \item{full: } {Re-runs the full filtering scheme (save for
-min_loci).}} Note: if \code{inds_first = TRUE}, all re-run options other than 
-FALSE will re-run the individual filter for missing data again after loci 
+initially.
+\item full: Re-runs the full filtering scheme (save for
+min_loci).
+}
+
+Note: if \code{inds_first = TRUE}, all re-run options other than
+FALSE will re-run the individual filter for missing data again after loci
 filtering.}
 
 \item{maf_facets}{character or NULL, default NULL. Defines a sample facet over
@@ -134,8 +142,13 @@ prunning is conducted.}
 
 \item{LD_prune_method}{character, default "CLD". The method to use for LD
 calculations and prunning. The options are:
-\itemize{\item{CLD}\item{Dprime}\item{rsq}} See
-\code{\link{calc_pairwise_ld}} for details.}
+\itemize{
+\item CLD
+\item Dprime
+\item rsq
+}
+
+See \code{\link{calc_pairwise_ld}} for details.}
 
 \item{LD_prune_facet}{character, default NULL. Defines a facet over which the
 minor allele frequency can be checked. Windows will be calculated within any
@@ -160,7 +173,7 @@ filtering notes will be printed to the console.}
 }
 \value{
 A data.frame in the same format as the input, with SNPs and
- individuals not passing the filters removed.
+individuals not passing the filters removed.
 }
 \description{
 \code{filter_snps} filters snpRdata objects to remove SNPs or individuals
@@ -169,22 +182,31 @@ function removes all calculated statistics, etc. from the snpRdata object,
 this should usually be the first step in an analysis. See details for filters.
 }
 \details{
-Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
+Possible filters:
+\itemize{
+\item maf, minor allele frequency: removes SNPs
 where the minor allele frequency is too low. Can look for mafs below
-#'provided either globally or search each population individually.}
-\item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed
-heterozygosity is too high.} \item{min_ind, minimum individuals: }{removes
-SNPs that were genotyped in too few individuals.} \item{min_loci, minimum
-loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
-non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
-SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
+provided either globally or search each population individually.
+\item hf_hets, high observed heterozygosity: removes SNPs where the observed
+heterozygosity is too high.
+\item min_ind, minimum individuals: removes
+SNPs that were genotyped in too few individuals.
+\item min_loci, minimum
+loci: removes individuals sequenced at too few loci.
+\item non_poly,
+non-polymorphic SNPs: removes SNPs that are not polymorphic (not true
+SNPs).
+\item bi_al, non-biallelic SNPs: removes SNPs that have more than
 two observed alleles. This is mostly an internal argument, since the various
 snpRdata import options use it automatically to prevent downstream errors in
-other snpR functions. } \item{remove_garbage: }{Quickly removes any loci or
+other snpR functions.
+\item remove_garbage: Quickly removes any loci or
 samples that are jointly poorly genotyped prior to other filtering. This can
 be useful if some individuals or loci are of poor enough quality that they
-will bias other filters.} \item{LD_prune_sigma: }{Sliding-window based Linkage
-Disequilibrium filtering to remove non-independant loci}.}
+will bias other filters.
+\item LD_prune_sigma: Sliding-window based Linkage
+Disequilibrium filtering to remove non-independant loci.
+}
 }
 \section{Filter order}{
 
@@ -216,7 +238,7 @@ will be re-filtered following locus removal if re-running is requested.
 \section{LD pruning}{
 
 
-LD pruning can be conducted using any of the methods described in 
+LD pruning can be conducted using any of the methods described in
 \code{\link{calc_pairwise_ld}} using the \code{LD_prune_} argument family.
 Loci are removed greedily: starting from the first locus pair with elevated
 LD, the more poorly sequenced loci is removed. If each locus is equally well

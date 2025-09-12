@@ -45,17 +45,23 @@ will be ignored.}
 cross-validation results.}
 
 \item{interpolate}{character, default "bernoulli". Interpolation method for
-missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-minor allele. \item{af: } insertion of the average allele frequency}.}
+missing data. Options:
+\itemize{
+\item bernoulli: binomial draws for the minor allele
+\item af: insertion of the average allele frequency
+}}
 }
 \value{
-A list containing: \itemize{ \item{model: } The results from
-  \code{\link{run_genomic_prediction}}. \item{model.samples: } Indices of the
-  samples used to construct the model. \item{cross.samples: } Indices of the
-  samples used to cross-validate the model. \item{comparison: } A data.frame
-  containing the observed and predicted phenotypes/Breeding Values for the
-  cross-validation samples. \item{rsq: } The r^2 value for the observed and
-  predicted phenotypes/Breeding Values for the cross-validation samples. }
+A list containing:
+\itemize{
+\item model: The results from \code{\link{run_genomic_prediction}}
+\item model.samples: Indices of the samples used to construct the model.
+\item cross.samples: Indices of the samples used to cross-validate the model.
+\item comparison: A data.frame containing the observed and predicted
+phenotypes/Breeding Values for the cross-validation samples.
+\item rsq: The r^2 value for the observed and predicted phenotypes/Breeding
+Values for the cross-validation samples.
+}
 }
 \description{
 Run genomic prediction given a single response variable (usually a phenotype)
@@ -85,12 +91,11 @@ examples.
 The portion of samples left out for cross-validation is defined by the
 cross_percentage argument. Specifically, the proportion given will be used to
 create the model, the remaining portion will be left out. For example, if
-cross_percentage = 0.9, 90% of the samples will be used to run the model and
-the remaining 10% will be used for cross-validation. Alternatively, if
+cross_percentage = 0.9, 90\% of the samples will be used to run the model and
+the remaining 10\% will be used for cross-validation. Alternatively, if
 cross_samples are provided, the specified samples (by column index) will be
 used used for cross validation instead. This may be useful for a systematic
 leave-one-out cross-validation.
-
 
 See documentation for \code{\link[BGLR]{BGLR}} for more details and for a
 full list of references.

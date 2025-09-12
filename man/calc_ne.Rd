@@ -42,32 +42,37 @@ bias Ne estimates, providing a value here is recommended.}
 NeEstimator executable.}
 
 \item{mating}{character, default "random". The mating system to use. Options:
-\itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogamous
-mating. }}
+\itemize{
+\item "random" Random mating.
+\item "monogamy" Monogamous mating.
+}}
 
 \item{pcrit}{numeric, default c(.05, .02, .01). Minimum minor allele
 frequencies for which to calculate Ne. Rare alleles can bias estimates, so
 a range of values should be checked.}
 
 \item{methods}{character, default "LD". LD estimation methods to use.
-Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-\item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.
-\item{"temporal"} Temporal-based. 
-Requires muliple time-points for a population}}
+Options:
+\itemize{
+\item "LD": Linkage Disequilibrium based estimation.
+\item "het": Heterozygote excess.
+\item "coan": Coancestry based.
+\item "temporal": Temporal-based. Requires multiple time-points for a population.
+}}
 
-\item{temporal_methods}{character, default 
-\code{c("Pollak", "Nei", "Jorde")}. Temporal methods to use. See 
+\item{temporal_methods}{character, default
+\code{c("Pollak", "Nei", "Jorde")}. Temporal methods to use. See
 \code{NeEstimator} documentation.}
 
-\item{temporal_details}{Three or four column \code{data.frame} or 
-\code{NULL}, default \code{NULL}. Details for the generation/population 
+\item{temporal_details}{Three or four column \code{data.frame} or
+\code{NULL}, default \code{NULL}. Details for the generation/population
 layout to use for the temporal method if requested. Columns one and two
-are levels of the provided facet given corresponding to the first and 
+are levels of the provided facet given corresponding to the first and
 second time point of the population, respectively. Column three is a number
 indicating the number of generations between samples. Column four is
 optionally the census population size at time one. Any values other than
-zero will use \code{NeEstimator}'s Plan II. Note that level components of 
-complex facets need to be provided in the same order as the facet 
+zero will use \code{NeEstimator}'s Plan II. Note that level components of
+complex facets need to be provided in the same order as the facet
 (for \code{"fam.pop"}, family "A" population "ASP" should be provided
 as \code{"A.ASP"}), as usual.}
 
@@ -93,7 +98,7 @@ directory will be removed following processing.}
 }
 \value{
 A named list containing estimated Ne values (named "ne") and the
-  original provided data, possibly with additional LD values (named "x").
+original provided data, possibly with additional LD values (named "x").
 }
 \description{
 Calculates effective population size for any given sample-level facets via
@@ -104,10 +109,14 @@ Since physical linkage can cause miss-estimation of Ne, an optional snp-level
 facet can be provided which designates chromosomes or linkage groups. Only
 pairwise LD values between SNPs on different facet levels will be used.
 
-Ne can be calculated via three different methods: \itemize{ \item{"LD"}
-Linkage Disequilibrium based estimation. \item{"Het"} Heterozygote excess.
-\item{"Coan"} Coancestry based.} For details, please see the documentation
-for NeEstimator v2.
+Ne can be calculated via three different methods:
+\itemize{
+\item "LD": Linkage Disequilibrium based estimation.
+\item "Het": Heterozygote excess.
+\item "Coan": Coancestry based.
+}
+
+For details, please see the documentation for NeEstimator v2.
 }
 \examples{
 \dontrun{
@@ -120,9 +129,9 @@ get.snpR.stats(ne, "pop", stat = "ne")}
 }
 \references{
 Do C, Waples RS, Peel D, Macbeth GM, Tillett BJ, Ovenden JR. 2014
-  NeEstimator v2: re-implementation of software for the estimation of
-  contemporary effective population size (Ne) from genetic data. Mol. Ecol.
-  Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
+NeEstimator v2: re-implementation of software for the estimation of
+contemporary effective population size (Ne) from genetic data. Mol. Ecol.
+Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 }
 \author{
 William Hemstrom

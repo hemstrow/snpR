@@ -69,14 +69,14 @@ bp of each SNP.}
 snpRdata or data.frame objects, respectively) containing snpIDs to use for
 highlighting. Ignored if no highlighting is requested.}
 
-\item{color_var}{character, default NULL. If provided, a column by which
-to color each point. If used, chromosomes will not be colored, and the 
+\item{color_var}{character, default NULL. If provided, a column by which to
+color each point. If used, chromosomes will not be colored, and the
 \code{colors} argument instead provides a palette to use, with the viridis
 palette used by default.}
 
 \item{vlines}{character (color) or FALSE, default FALSE. If a color, vertical
-separator lines will be drawn between each chromosome. Widths controlled
-by \code{vline_width}.}
+separator lines will be drawn between each chromosome. Widths controlled by
+\code{vline_width}.}
 
 \item{vline_width}{numeric, default 2. Width of chromosome separator lines.
 Ignored if \code{vlines} is FALSE.}
@@ -102,12 +102,14 @@ level will also be labeled.}
 
 \item{highlight}{character, numeric, or FALSE, default "significant".
 Controls SNP highlighting. If either "significant" or "suggestive", SNPs
-above those respective values will be highlighted. If a numeric vector, SNPs
-corresponding to vector entries will be highlighted. See details.}
+above those respective values will be highlighted. If a numeric vector,
+SNPs corresponding to vector entries will be highlighted. See details.}
 
 \item{highlight_style}{character, default "label". Highlighting options:
-\itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
-(word or hex) to color points by.}}}
+\itemize{
+\item label: labels with chr and position.
+\item color: Color (word or hex) to color points by.
+}}
 
 \item{sig_below}{logical, default FALSE. If TRUE, treats values lower than
 the significance threshold as significant.}
@@ -141,14 +143,17 @@ genes, for example.}
 
 \item{rug_style}{character, default "point". Options for the style of the
 rug, ignored if \code{rug_data} is not provided. Options:
-\itemize{\item{point: } standard rug plot with vertical dashes below the
+\itemize{
+\item point: standard rug plot with vertical dashes below the
 plot at the indicated locations. If start and end points are supplied in
-\code{rug_data}, the midpoint will be plotted. \item{ribbon: } Ribbons for
-each point drawn below the plot, from the \code{start} to \code{end}
-columns. If the plotted range of \code{x} is very large (as in whole-genome
-or reduced representation sequencing), these may not be visible. A warning
-will be provided if this may be the case. Sub-setting the input and rug
-data to a range of interest may help in this case.}}
+\code{rug_data}, the midpoint will be plotted.
+\item ribbon: Ribbons for each point drawn below the plot, from the
+\code{start} to \code{end} columns. If the plotted range of \code{x} is
+very large (as in whole-genome or reduced representation sequencing), these
+may not be visible. A warning will be provided if this may be the case.
+Sub-setting the input and rug data to a range of interest may help in this
+case.
+}}
 
 \item{rug_label}{character, default NULL. Names of additional labeling
 columns in \code{rug_data}, ignored if \code{rug_data} is not provided.
@@ -185,9 +190,14 @@ is optimal, since the data is already returned in that object, but is not
 the default due to backwards consistency with old code.}
 }
 \value{
-A list containing \itemize{\item{plot: } A ggplot manhattan plot.
-  \item{data: } Raw plot data.} If \code{simplify_output} is \code{FALSE}, 
-  only the ggplot object is returned.
+A list containing
+\itemize{
+\item plot:  A ggplot manhattan plot.
+\item data: Raw plot data.
+}
+
+If \code{simplify_output} is \code{FALSE}, only the ggplot object is
+returned.
 }
 \description{
 Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
@@ -282,20 +292,20 @@ plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 # ribbon style
 plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
-               
+
 # with plotly to mouse over information
 \dontrun{
 plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-                                log.p = TRUE, rug_data = rug_data, 
-                                rug_style = "ribbon", 
+                                log.p = TRUE, rug_data = rug_data,
+                                rug_style = "ribbon",
                                 rug_label = "gene")$plot)
 
 }
 }
 \references{
 Price, A., Zaitlen, N., Reich, D. et al. New approaches to
-  population stratification in genome-wide association studies. Nat Rev Genet
-  11, 459–463 (2010). https://doi.org/10.1038/nrg2813
+population stratification in genome-wide association studies. Nat Rev Genet
+11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 }
 \author{
 William Hemstrom

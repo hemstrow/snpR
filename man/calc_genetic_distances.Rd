@@ -20,8 +20,15 @@ base level facets are requested, distances will be between individuals.
 Otherwise, distances will be between the levels of the sample facets.}
 
 \item{method}{character, default "Edwards". Name of the method to use.
-Options: \itemize{\item{Edwards} Angular distance as described in Edwards
-1971.} See details.}
+Options:
+\itemize{
+\item Edwards: Angular distance as described in Edwards
+}
+\enumerate{
+\item 
+}
+
+See details.}
 
 \item{interpolate}{character, default "bernoulli". Missing data interpolation
 method, solely for individual/individual distances. Options detailed in
@@ -29,8 +36,8 @@ documentation for \code{\link{format_snps}}.}
 }
 \value{
 An overwrite-safe snpRdata object with genetic distance information
-  (a named, nested list containing distance measures named according to
-  facets and facet levels) added.
+(a named, nested list containing distance measures named according to
+facets and facet levels) added.
 }
 \description{
 Calculates the genetic distances between either individuals or the levels of
@@ -41,8 +48,10 @@ For details on methods, see details.
 If a sample facet is requested, distances are calculated via code adapted
 from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
 alongside the tree-building and distance methods. Available methods:
-\itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
-\item{Nei: } Nei's (1978) genetic distance measure.}
+\itemize{
+\item Edwards: Angular distance as described in Edwards 1971.
+\item Nei: Nei's (1978) genetic distance measure.
+}
 
 Otherwise, genetic distances are calculated via the \code{\link[stats]{dist}}
 function using genotypes formatted numerically (the "sn" option in
@@ -73,13 +82,13 @@ heatmap(as.matrix(dat))
 }
 \references{
 Edwards, A. W. F. (1971). Distances between populations on the
-  basis of gene frequencies. Biometrics, 873-881.
+basis of gene frequencies. Biometrics, 873-881.
 
 Nei, M. (1978). Estimation of average heterozygosity and genetic
-  distance from a small number of individuals. Genetics, 23, 341-369.
+distance from a small number of individuals. Genetics, 23, 341-369.
 
 Jombart, T. (2008). adegenet: a R package for the multivariate
-  analysis of genetic markers Bioinformatics 24: 1403-1405.
+analysis of genetic markers Bioinformatics 24: 1403-1405.
 }
 \author{
 William Hemstrom
