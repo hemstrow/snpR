@@ -16,15 +16,19 @@ indices or IDs in x for which duplicates will be checked.}
 metadata which contains sample IDs. If provided, y is assumed to contain
 sample IDs uniquely matching those in the the sample ID column.}
 
-\item{verbose}{logical, default FALSE. If TRUE, prints detailed progress 
+\item{verbose}{logical, default FALSE. If TRUE, prints detailed progress
 report.}
 }
 \value{
-A list containing: \itemize{ \item{best_matches: } Data.frame listing
-  the best match for each sample noted in y and the percentage of genotypes
-  identical between the two samples. \item{data: } A list containing the
-  match proportion between each sample y and every sample in x, named for the
-  samples y. }
+A list containing:
+\itemize{
+\item best_matches: Data.frame listing
+the best match for each sample noted in y and the percentage of genotypes
+identical between the two samples.
+\item data: A list containing the
+match proportion between each sample y and every sample in x, named for the
+samples y.
+}
 }
 \description{
 Searches through a snpR dataset and, for every designated sample, determines

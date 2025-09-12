@@ -1297,24 +1297,32 @@ run_g <- function(x, FUN, ..., y = NULL){
 #'   below which to change trim percentages. If NULL, the default, trims at the
 #'   given level untill 1 SNP remails. See details.
 #' @param importance character, default "impurity_corrected". The method by
-#'   which SNP importance is determined. Options: \itemize{\item{impurity}
-#'   \item{impurity_corrected} \item{permutation}}. See
-#'   \code{\link[ranger]{ranger}} for details.
+#'   which SNP importance is determined. Options:
+#'   * impurity
+#'   * impurity_corrected 
+#'   * permutation. 
+#'   
+#'   See\code{\link[ranger]{ranger}} for details.
 #' @param interpolate character, default "bernoulli". Interpolation method for
-#'   missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-#'   minor allele. \item{af: } insertion of the average allele frequency}.
+#'   missing data. Options: 
+#'   * bernoulli: binomial draws for the
+#'   minor allele. 
+#'   * af: insertion of the average allele frequency.
 #' @param par numeric, default FALSE. Number of parallel computing cores to use
 #'   for computing RFs across multiple facet levels or within a single facet if
 #'   only a single category is run (either a one-category facet or no facet).
 #' @param ... Additional arguments passed to \code{\link[ranger]{ranger}}.
 #'
-#' @return A list containing: \itemize{\item{error_delta: } A data.frame noting
+#' @return A list containing:
+#'   * error_delta: A data.frame noting
 #'   the number of SNPs and corresponding prediction_error in each model
-#'   iteration. \item{confusion_matrices: } An array containing confusion
+#'   iteration. 
+#'   * confusion_matrices: An array containing confusion
 #'   matrices for categorical responses. The third subscript denotes model
-#'   iteration ('[,,1]' would reference model 1.) \item{best_model: } The model
+#'   iteration ('\code{[,,1]}' would reference model 1.) 
+#'   * best_model: The model
 #'   with the lowest prediction error from the provided dataset, in the format
-#'   provided by \code{\link{run_random_forest}}}
+#'   provided by \code{\link{run_random_forest}}
 #'
 #' @references Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
 #'   Implementation of Random Forests for High Dimensional Data in C++ and R.

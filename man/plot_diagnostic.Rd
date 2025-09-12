@@ -31,24 +31,26 @@ should be present for polarization to be meaningful.}
 
 \item{plots}{character vector, default all possible plots except for SFS.
 Plot options:
-\itemize{\item{fis: } density of FIS scores for all loci within each facet
+\* fis: density of FIS scores for all loci within each facet
 level.
-\item{sfs: } Site Frequency Spectra for the entire dataset.
-\item{maf: } density of minor allele frequencies for all loci within each
+\itemize{
+\item sfs: Site Frequency Spectra for the entire dataset.
+\item maf:density of minor allele frequencies for all loci within each
 facet.
-\item{pca: } Principal Component Analysis results for the given facet.
-\item{missingness: } Proportion of missing alleles across each individual
+\item pca: Principal Component Analysis results for the given facet.
+\item missingness: Proportion of missing alleles across each individual
 withing each facet.
-\item{heho: } expected vs. observed heterozygosity for each locus within
+\item heho: expected vs. observed heterozygosity for each locus within
 each facet. Very high expected or observed heterozygosities for many loci
-can indicate genotyping issues.}}
+can indicate genotyping issues.
+}}
 }
 \value{
 A named list of diagnostic ggplot2 plots.
 }
 \description{
 Create a suite of basic diagnostic plots (FIS density, 1D SFS, maf density,
-PCA, % missing data per individual, and he vs ho per SNP)
+PCA, \% missing data per individual, and he vs ho per SNP)
 to describe the condition of the data in a snpRdata object.
 }
 \examples{

@@ -44,10 +44,12 @@
 #'@section hwe:
 #'
 #'  Calculates a p-value for the null hypothesis that a population is in HWE at
-#'  a given locus. Several methods available: \itemize{ \item{"exact"} Exact
+#'  a given locus. Several methods available:
+#'  * "exact": Exact
 #'  test according to Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005).
-#'  Slightly slower. \item{"chisq"} Chi-squared test. May produce poor results
-#'  when sample sizes for any observed or expected genotypes are small. }
+#'  Slightly slower. 
+#'  * "chisq": Chi-squared test. May produce poor results
+#'  when sample sizes for any observed or expected genotypes are small.
 #'
 #'  For the exact test, code derived from
 #'  \url{http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r}
@@ -65,19 +67,24 @@
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param method character, default "exact". Defines the method to use for
-#'  calculating p-values for HWE divergence. Options: \itemize{ \item{exact: }
-#'  Uses the exact test as described in Wigginton et al (2005). \item{chisq: }
-#'  Uses a chi-squared test. } See details
+#'  calculating p-values for HWE divergence. Options: 
+#'  * exact:  Uses the exact test as described in Wigginton et al (2005). 
+#'  * chisq:  Uses a chi-squared test. 
+#'  
+#'  See details
 #'@param fwe_method character, default "BY". Type of Family-Wise Error
 #'  correction (multiple testing correction) to use. For details and options,
 #'  see \code{\link[stats]{p.adjust}}. If no correction is desired, set this
 #'  argument to "none".
 #'@param fwe_case character, default c("by_facet", "by_subfacet", "overall").
 #'  How should Family-Wise Error correction (multiple testing correction) be
-#'  applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
-#'  pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-#'  each subfacet is treated as a separate set of tests. \item{"overall":} All
-#'  tests are treated as a set.}
+#'  applied? 
+#'  * "by_facet": Each facet supplied (such as pop or
+#'  pop.fam) is treated as a set of tests. 
+#'  * "by_subfacet": Each level of
+#'  each subfacet is treated as a separate set of tests. 
+#'  * "overall": All
+#'  tests are treated as a set.
 #'@param rarefaction logical, default TRUE. Should the number of segregating
 #'  sites be estimated via rarefaction? See details.
 #'@param g numeric, default 0. If doing rarefaction, controls the number of
@@ -544,16 +551,17 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
 #'as described in \code{\link{Facets_in_snpR}}. Since this is a pairwise
 #'statistic, at least a single sample level facet must be provided.
 #'
-#'Method Options: \itemize{ \item {"wc": }{Weir and Cockerham 1984.}
-#'\item{"Genepop": }{As used in genepop, Rousset
-#'2008.}}
+#'Method Options:
+#'* "wc": Weir and Cockerham 1984.
+#'* "Genepop": As used in genepop, Rousset 2008.
 #'
 #'@param x snpRdata. Input SNP data.
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param method character, default "wc". Defines the FST estimator to use.
-#'   Options: \itemize{ \item{wc: } Weir and Cockerham (1984).
-#'   \item{genepop: } Rousset (2008), uses the genepop package. }
+#'   Options:
+#'   * wc: Weir and Cockerham (1984).
+#'   * genepop: Rousset (2008), uses the genepop package.
 #'@param boot numeric or FALSE, default FALSE. The number of bootstraps to do.
 #'  See details.
 #'@param boot_par numeric or FALSE, default FALSE. If a number, bootstraps will
@@ -1353,12 +1361,14 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
 #'   bootstraps will be processed in parallel using the supplied number of
 #'   cores.
 #' @param boot_alt character, default "two-sided". The type of \emph{t}-test
-#'   to conduct on the bootstrapped FIS values. Options: \itemize{
-#'   \item{two-sided: } A two-sided \emph{t}-test, with the alternative 
-#'   hypothesis that FIS is not equal to 0. \item{greater: } A one-sided 
+#'   to conduct on the bootstrapped FIS values. Options: 
+#'   
+#'  * two-sided: A two-sided \emph{t}-test, with the alternative 
+#'   hypothesis that FIS is not equal to 0. 
+#'  * greater: A one-sided 
 #'   \emph{t}-test, with the alternative hypothesis that FIS is greater than 0.
-#'   \item{less: } A one-sided \emph{t}-test, with the alternative hypothesis 
-#'   that FIS is less than 0.}
+#'   * less: A one-sided \emph{t}-test, with the alternative hypothesis 
+#'   that FIS is less than 0.
 #' @param boot_confidence numeric, default 0.95. The confidence level to use
 #'   for generating confidence levels for bootstraps. Note that a value of
 #'   0.95 will result in a call of \code{\link[stats]{qt}} with \code{q = .975}
@@ -3621,9 +3631,14 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
 #'@param facets character. Categorical metadata variables by which to break up
 #'  analysis. See \code{\link{Facets_in_snpR}} for more details.
 #'@param fst.method character, default "WC". Defines the FST estimator to use.
-#'  Options: \itemize{ \item{WC: } Weir and Cockerham (1984). \item{Weir: } Weir
-#'  (1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
-#'  package. \item{Genepop: } Rousset (2008), uses the genepop package. }
+#'  Options: 
+#'  
+#'  * WC: Weir and Cockerham (1984). 
+#'  * Weir: Weir
+#'  (1990) 
+#'  * Hohenlohe: Hohenlohe et al (2010), identical to the STACKS
+#'  package. 
+#'  * Genepop: Rousset (2008), uses the genepop package.
 #'@param sigma numeric. Designates the width of windows in kilobases. Full
 #'  window size is 6*sigma.
 #'@param step numeric or NULL, default NULL. Designates the number of kilobases
@@ -3739,10 +3754,13 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' facet can be provided which designates chromosomes or linkage groups. Only
 #' pairwise LD values between SNPs on different facet levels will be used.
 #'
-#' Ne can be calculated via three different methods: \itemize{ \item{"LD"}
-#' Linkage Disequilibrium based estimation. \item{"Het"} Heterozygote excess.
-#' \item{"Coan"} Coancestry based.} For details, please see the documentation
-#' for NeEstimator v2.
+#' Ne can be calculated via three different methods:
+#'  * "LD": Linkage Disequilibrium based estimation. 
+#'  * "Het": Heterozygote excess.
+#' 
+#'  * "Coan": Coancestry based.
+#'  
+#'  For details, please see the documentation for NeEstimator v2.
 #'
 #' @param x snpRdata object. The data for which Ne will be calculated.
 #' @param facets character, default NULL. Categorical metadata variables by
@@ -3760,16 +3778,17 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @param NeEstimator_path character, default "/usr/bin/Ne2-1.exe". Path to the
 #'   NeEstimator executable.
 #' @param mating character, default "random". The mating system to use. Options:
-#'   \itemize{ \item{"random"} Random mating. \item{"monogamy"} Monogamous
-#'   mating. }
+#'  * "random" Random mating. 
+#'  * "monogamy" Monogamous mating.
 #' @param pcrit numeric, default c(.05, .02, .01). Minimum minor allele
 #'   frequencies for which to calculate Ne. Rare alleles can bias estimates, so
 #'   a range of values should be checked.
 #' @param methods character, default "LD". LD estimation methods to use.
-#'   Options: \itemize{ \item{"LD"} Linkage Disequilibrium based estimation.
-#'   \item{"het"} Heterozygote excess. \item{"coan"} Coancestry based.
-#'   \item{"temporal"} Temporal-based. 
-#'   Requires muliple time-points for a population}
+#'   Options: 
+#'  * "LD": Linkage Disequilibrium based estimation.
+#'  * "het": Heterozygote excess. 
+#'  * "coan": Coancestry based.
+#'  * "temporal": Temporal-based. Requires multiple time-points for a population.
 #' @param temporal_methods character, default 
 #'   \code{c("Pollak", "Nei", "Jorde")}. Temporal methods to use. See 
 #'   \code{NeEstimator} documentation.
@@ -3985,8 +4004,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #' If a sample facet is requested, distances are calculated via code adapted
 #' from code derived from \code{\link[adegenet]{adegenet}}. Please cite them
 #' alongside the tree-building and distance methods. Available methods:
-#' \itemize{\item{Edwards: } Angular distance as described in Edwards 1971.
-#' \item{Nei: } Nei's (1978) genetic distance measure.}
+#'  * Edwards: Angular distance as described in Edwards 1971.
+#'  * Nei: Nei's (1978) genetic distance measure.
 #'
 #' Otherwise, genetic distances are calculated via the \code{\link[stats]{dist}}
 #' function using genotypes formatted numerically (the "sn" option in
@@ -3999,8 +4018,11 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 #'   base level facets are requested, distances will be between individuals.
 #'   Otherwise, distances will be between the levels of the sample facets.
 #' @param method character, default "Edwards". Name of the method to use.
-#'   Options: \itemize{\item{Edwards} Angular distance as described in Edwards
-#'   1971.} See details.
+#'   Options:
+#'  * Edwards: Angular distance as described in Edwards
+#'   1971.
+#'   
+#'   See details.
 #' @param interpolate character, default "bernoulli". Missing data interpolation
 #'   method, solely for individual/individual distances. Options detailed in
 #'   documentation for \code{\link{format_snps}}.
@@ -5010,16 +5032,20 @@ calc_prop_poly <- function(x, facets = NULL){
 #'   base level facets are requested, distances will be between individuals.
 #'   Otherwise, distances will be between the levels of the sample facets.
 #' @param distance_method character, default "Edwards". Name of the method to
-#'   use. Options: \itemize{\item{Edwards} Angular distance as described in
-#'   Edwards 1971.} See \code{\link{calc_genetic_distances}}.
+#'   use. Options:
+#'  * Edwards: Angular distance as described in
+#'   Edwards 1971.
+#'   
+#'   See \code{\link{calc_genetic_distances}}.
 #' @param interpolate character, default "bernoulli". Missing data interpolation
 #'   method, solely for individual/individual distances. Options detailed in
 #'   documentation for \code{\link{format_snps}}.
 #' @param tree_method character, default nj. Method by which the tree is
-#'   constructed from genetic distances. Options: \itemize{\item{nj}
-#'   Neighbor-joining trees, via \code{\link[ape]{nj}}. \item{bionj} BIONJ
+#'   constructed from genetic distances. Options:
+#'  * nj: Neighbor-joining trees, via \code{\link[ape]{nj}}. 
+#'  * bionj: BIONJ
 #'   trees, according to Gascuel 1997, via \code{\link[ape]{bionj}}.
-#'   \item{upgma} UPGMA trees, via \code{\link[stats]{hclust}}.}
+#'  * upgma: UPGMA trees, via \code{\link[stats]{hclust}}.
 #' @param root character or FALSE, default FALSE. A vector containing the
 #'   requested roots for each facet. Roots are specified by a string matching
 #'   either the individual sample or sample facet level by which to root. If
@@ -5841,18 +5867,18 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
 #'   heterozygotes in the final ROHs. ROHs with more than this number of hets
 #'   after final filtering and extension will be removed.
 #' @param window_start_method character, default "powerful". Controls how the
-#'   initial sliding window start and end positions are determined. Options
-#'   \itemize{\item{conservative:} {Windows start and end such
+#'   initial sliding window start and end positions are determined. Options: 
+#'  * conservative: Windows start and end such
 #'   that the fist and last SNPs of each chromosome have evenly fewer windows
 #'   which cover them than the rest of the genome, but each window has exactly
 #'   \code{window_snps} SNPs. This generally produces results more similar to
-#'   PLINK's "--homozyg" function.}
-#'   \item{powerfull:}{Windows start and end such that
+#'   PLINK's "--homozyg" function.
+#'  * powerfull: Windows start and end such that
 #'   the start and end of  chromosomes have the same number of windows covering
 #'   them as the rest of the genome, but those windows will have fewer SNPs
 #'   within them. This will often contain more windows which get close to the
 #'   chromosomal edges that might otherwise be dropped, even if they also extend
-#'   well into the genome.}}
+#'   well into the genome.
 #' @param genome_length numeric, default NULL. The length of the genome, for use
 #'   in calculating FROH. If NULL, this is calculated by summing the distance
 #'   between the first and last sequenced SNPs of each chromosome/scaffold/etc.

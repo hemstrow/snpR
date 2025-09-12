@@ -46,12 +46,15 @@ given that this function does not return a snpRdata object, so a
 \code{\link{citations}} cannot be used to fetch references.}
 }
 \value{
-A named list containing: \itemize{\item{opt: } A vector with the
-  spatial/genetic distance linking coefficient 'v' as well as the 'x' and 'y'
-  coordinates of the estimated origin of the range expansion.
-  \item{'pairwise_directionality':} A data.frame containing the pairwise
-  directionality estimates, coordinates, and the directionality variance for
-  each pair of populations.}
+A named list containing:
+\itemize{
+\item opt: A vector with the spatial/genetic distance linking coefficient 'v' as
+well as the 'x' and 'y' coordinates of the estimated origin of the range
+expansion.
+\item 'pairwise_directionality': A data.frame containing the pairwise
+directionality estimates, coordinates, and the directionality variance for
+each pair of populations.
+}
 }
 \description{
 Calculates the origin of expansion from directionality indices from pairwise
@@ -68,8 +71,8 @@ details.
 
 This metric, calculated between multiple populations, can be used to estimate
 the origin point of a population expansion using a Time Difference Of Arrival
-approach by scaling allelic differences to geometric space. See Peter and 
-Slatkin (2013) for details. Distances are calculated using the 
+approach by scaling allelic differences to geometric space. See Peter and
+Slatkin (2013) for details. Distances are calculated using the
 \code{\link[geosphere]{distGeo}} function assuming a WGS84 ellipsoid, and so
 provided coordinates must be in that format. The sampling location for each
 subfacet is derived using the \code{\link[geosphere]{geomean}} of each.
@@ -108,7 +111,7 @@ calc_origin_of_expansion(dat, "pop", boots = 100, projection = projection,
 }
 \references{
 Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
-  from genetic data. \emph{Evolution}, 67(11), 3274-3289.
+from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 }
 \author{
 William Hemstrom

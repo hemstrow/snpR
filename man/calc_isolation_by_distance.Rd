@@ -29,14 +29,14 @@ distance method to use, see \code{\link{calc_genetic_distances}}.}
 
 \item{interpolate}{Character or FALSE, default "bernoulli". If transforming to
 "sn" format, notes the interpolation method to be used to fill missing data.
-Options are "bernoulli", "af", "iPCA", or FALSE. See 
+Options are "bernoulli", "af", "iPCA", or FALSE. See
 \code{\link{format_snps}} for details.}
 
 \item{...}{Additional arguments passed to \code{\link[ade4]{mantel.randtest}}}
 }
 \value{
 A snpRdata object with both geographic distance and IBD results
-  merged into existing data.
+merged into existing data.
 }
 \description{
 Calculates Isolation by Distance (IBD) for snpRdata objects by comparing the
@@ -72,7 +72,7 @@ plot(res$chr.pop$groupV$Edwards) # plot perms vs observed
 }
 \seealso{
 \code{\link[ade4]{mantel.randtest}},
-  \code{\link{calc_genetic_distances}}
+\code{\link{calc_genetic_distances}}
 }
 \author{
 William Hemstrom

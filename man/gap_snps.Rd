@@ -9,7 +9,7 @@ gap_snps(x, facet = NULL, n)
 \arguments{
 \item{x}{snpRdata object}
 
-\item{facet}{character, default NULL. SNP facet specifying chromosomes or 
+\item{facet}{character, default NULL. SNP facet specifying chromosomes or
 scaffolds. SNP positions will be independently considered depending on the
 facet level.}
 

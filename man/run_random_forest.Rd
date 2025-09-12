@@ -43,14 +43,20 @@ of variables (SNPs) by which to split each node. See
 \code{\link[ranger]{ranger}} for details.}
 
 \item{importance}{character, default "impurity_corrected". The method by
-which SNP importance is determined. Options: \itemize{\item{impurity}
-\item{impurity_corrected} \item{permutation}}. See
-\code{\link[ranger]{ranger}} for details.}
+which SNP importance is determined. Options:
+\itemize{
+\item impurity
+\item impurity_corrected
+\item permutation.
+See \code{\link[ranger]{ranger}} for details.
+}}
 
 \item{interpolate}{character, default "bernoulli". Interpolation method for
-missing data. Options: \itemize{\item{bernoulli: }binomial draws for the
-minor allele. \item{af: } insertion of the average allele frequency
-\item{iPCA:} As a slower but more accurate alternative to "af"
+missing data. Options:
+\itemize{
+\item bernoulli: binomial draws for the minor allele.
+\item af: insertion of the average allele frequency
+\item iPCA: As a slower but more accurate alternative to "af"
 interpolation, "iPCA" may be selected. This an iterative PCA approach to
 interpolate based on SNP/SNP covariance via
 \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
@@ -58,7 +64,8 @@ number of components used for interpolation will be estimated using
 \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
 slower than the other methods, especially for large datasets. Setting an
 ncp of 2-5 generally results in reasonable interpolations without the time
-constraint.}.}
+constraint.
+}}
 
 \item{ncp}{numeric or NULL, default NULL. Used only if \code{iPCA}
 interpolation is selected. Number of components to consider for iPCA sn
@@ -83,10 +90,13 @@ only a single category is run (either a one-category facet or no facet).}
 \item{...}{Additional arguments passed to \code{\link[ranger]{ranger}}.}
 }
 \value{
-A list containing: \itemize{\item{data: } A snpRdata object with RF
-  importance values merged in to the stats slot. \item{models: } A named list
-  containing both the models and data.frames containing the predictions vs
-  observed phenotypes.}
+A list containing:
+\itemize{
+\item data: A snpRdata object with RF importance values merged in to the stats
+slot.
+\item models: A named list containing both the models and data.frames
+containing the predictions vs observed phenotypes.
+}
 }
 \description{
 Creates forest machine learning models using snpRdata objects via interface
@@ -136,11 +146,11 @@ with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
 }
 \references{
 Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
-  Implementation of Random Forests for High Dimensional Data in C++ and R.
-  \emph{Journal of Statistical Software}.
+Implementation of Random Forests for High Dimensional Data in C++ and R.
+\emph{Journal of Statistical Software}.
 
 Goldstein et al. (2011). Random forests for genetic association
-  studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
+studies. \emph{Statistical Applications in Genetics and Molecular Biology}.
 }
 \seealso{
 \code{\link[ranger]{ranger}} \code{\link[ranger]{predict.ranger}}.

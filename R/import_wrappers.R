@@ -13,37 +13,40 @@
 #'
 #'@section File import: Supports automatic import of several types of files.
 #'  Options:
-#'
-#'  \itemize{\item{.vcf or .vcf.gz: } Variant Call Format (vcf) files, supported
-#'  via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
-#'  taken from the fixed fields in the VCF and sample metadata from the sample
-#'  IDs. Note that this only imports SNPs with called genotypes! \item{.ms: }
-#'  Files in the ms format, as provided by many commonly used simulation tools.
-#'  \item{NN: } SNP genotypes stored as actual base calls (e.g. "AA", "CT").
-#'  \item{0000: }SNP genotypes stored as four numeric characters (e.g. "0101",
-#'  "0204"). \item{snp_tab: }SNP genotypes stored with genotypes in each cell,
-#'  but only a single nucleotide noted if homozygote and two nucleotides
-#'  separated by a space if heterozygote (e.g. "T", "T G"). \item{sn: }SNP
-#'  genotypes stored with genotypes in each cell as 0 (homozygous allele 1), 1
-#'  (heterozygous), or 2 (homozyogus allele 2).\item{genepop: } genepop file
-#'  format, with genotypes stored as either 4 or 6 numeric characters. Works
-#'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
-#'  the first allele (numerically) will be coded as A, the second as C.
-#'  \item{FSTAT: } FSTAT file
-#'  format, with genotypes stored as either 4 or 6 numeric characters. Works
-#'  only with bi-allelic data. Genotypes will be converted (internally) to NN:
-#'  the first allele (numerically) will be coded as A, the second as C.
-#'  \item{plink: } plink .bed, .fam, and .bim files, via
-#'  \code{\link[genio]{read_plink}}. If any of these file types is provided,
-#'  snpR via \code{\link[genio]{read_plink}} will look for the other file types
-#'  automatically. Sample metadata should be contained in the .fam file and SNP
-#'  metadata in the .bim file, so sample or snp meta data can be provided here.
-#'  \item{structure: } STRUCTURE import file, with individuals in rows and loci
-#'  in columns. Can be coded either with one row per individual and two columns
-#'  per loci or two rows per individual and two columns per loci using the
-#'  rows_per_individual argument. Genotypes can be pretty much anything,
-#'  although missing genotypes must be coded as -9. Must have a .str extension 
-#'  and be consistantly whitespace delimited.}
+#'  *.vcf or .vcf.gz: Variant Call Format (vcf) files, supported
+#'    via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+#'    taken from the fixed fields in the VCF and sample metadata from the sample
+#'    IDs. Note that this only imports SNPs with called genotypes! 
+#'  * .ms: Files in the ms format, as provided by many commonly used simulation 
+#'    tools.
+#'  * NN: SNP genotypes stored as actual base calls (e.g. "AA", "CT").
+#'  * 0000: SNP genotypes stored as four numeric characters (e.g. "0101",
+#'    "0204").
+#'  * snp_tab: SNP genotypes stored with genotypes in each cell,
+#'    but only a single nucleotide noted if homozygote and two nucleotides
+#'    separated by a space if heterozygote (e.g. "T", "T G"). 
+#'  * sn: SNP genotypes stored with genotypes in each cell as 0 (homozygous 
+#'    allele 1), 1 (heterozygous), or 2 (homozyogus allele 2).
+#'  * genepop: genepop file format, with genotypes stored as either 4 or 6 
+#'    numeric characters. Works only with bi-allelic data. Genotypes will be 
+#'    converted (internally) to NN: the first allele (numerically) will be coded
+#'    as A, the second as C.
+#'  * FSTAT: FSTAT file format, with genotypes stored as either 4 or 6 numeric
+#'    characters. Works only with bi-allelic data. Genotypes will be converted
+#'    (internally) to NN: the first allele (numerically) will be coded as A, the
+#'    second as C.
+#'  * plink: plink .bed, .fam, and .bim files, via
+#'    \code{\link[genio]{read_plink}}. If any of these file types is provided,
+#'    snpR via \code{\link[genio]{read_plink}} will look for the other file
+#'    types automatically. Sample metadata should be contained in the .fam file
+#'    and SNP metadata in the .bim file, so sample or snp meta data can be
+#'    provided here.
+#'  * structure:  STRUCTURE import file, with individuals in rows and loci
+#'    in columns. Can be coded either with one row per individual and two
+#'    columns per loci or two rows per individual and two columns per loci using
+#'    the rows_per_individual argument. Genotypes can be pretty much anything,
+#'    although missing genotypes must be coded as -9. Must have a .str extension
+#'    and be consistantly whitespace delimited
 #'
 #'  Sample and snp metadata can also be provided via file path, and will be read
 #'  in using \code{\link[data.table]{fread}} \emph{with the default settings}
@@ -55,21 +58,22 @@
 #'
 #'Supports automatic conversions from some other popular S4 object types.
 #'Options:
-#'
-#'\itemize{ \item{genind: } \code{\link[adegenet]{genind}} objects from
-#'adegenet. Note, no need to import genepop objects, the equivalent statistics
-#'are calculated automatically when functions called with facets. Sample and SNP
-#'IDs as well as, when possible, pop IDs will be taken from the genind object.
-#'This data will be added too but will not replace data provided to the SNP or
-#'sample.meta arguments. Note that only \emph{SNP} data is currently allowed,
-#'data with more than two alleles for loci will return an error. \item{genlight:
-#'} \code{\link[adegenet]{genlight}} objects from adegenet. Sample and SNP IDs,
-#'SNP positions, SNP chromosomes, and pop IDs will be taken from the genlight
-#'object if possible. This data will be added too but will not replace data
-#'provided to the SNP or sample.meta arguments. \item{vcfR: }
-#'\code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp metadata is
-#'taken from the fixed fields in the VCF and sample metadata from the sample
-#'IDs. Note that this only imports SNPs with called genotypes!}
+#'  * genind: \code{\link[adegenet]{genind}} objects from
+#'    adegenet. Note, no need to import genepop objects, the equivalent
+#'    statistics are calculated automatically when functions called with facets.
+#'    Sample and SNP IDs as well as, when possible, pop IDs will be taken from
+#'    the genind object. This data will be added too but will not replace data
+#'    provided to the SNP or sample.meta arguments. Note that only \emph{SNP}
+#'    data is currently allowed, data with more than two alleles for loci will
+#'    return an error.
+#'  * genlight: \code{\link[adegenet]{genlight}} objects from adegenet. Sample 
+#'    and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken
+#'    from the genlight object if possible. This data will be added too but will
+#'    not replace data provided to the SNP or sample.meta arguments.
+#'  * vcfR: \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp 
+#'    metadata is taken from the fixed fields in the VCF and sample metadata
+#'    from the sample IDs. Note that this only imports SNPs with called
+#'    genotypes!
 #'
 #'@param file character, path to a file containing genotype data to import.
 #'@param genlight genlight object to convert, see

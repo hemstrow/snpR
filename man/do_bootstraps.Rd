@@ -53,16 +53,20 @@ smoothed. If not, windows will be raw averages.}
 for sliding windows.}
 
 \item{p.alt}{character, default "two-sided". Specifies the alternative
-hypothesis to be used. Options: \itemize{ \item "less": probability that a
-bootstrapped value is as small or smaller than observed. \item "greater":
-probability that a bootstrapped value is as large or larger than observed.
+hypothesis to be used. Options:
+\itemize{
+\item "less": probability that a bootstrapped value is as small or smaller than
+observed.
+\item "greater": probability that a bootstrapped value is as large or larger
+than observed.
 \item "two-sided": probability that a bootstrapped value is as or more
-extreme than observed. }}
+extreme than observed.
+}}
 }
 \value{
 A snpRdata object with bootstrapped windows merged in to the
- window.bootstraps slot. If do.p is TRUE, it will also merge p values in for
- bootstrapped statistics into the stats or window.stats sockets.
+window.bootstraps slot. If do.p is TRUE, it will also merge p values in for
+bootstrapped statistics into the stats or window.stats sockets.
 }
 \description{
 \code{do_bootstraps} creates a distribution of bootstrapped smoothed values
@@ -98,12 +102,11 @@ Possible centers for windows can either SNPs (if no step size is provided), or
 every step kilobases from the 0 position of each snp level facet category
 (chromosome, etc.).
 
-
-If do.p is TRUE, calculates p-values for smoothed values of a statistic based 
-upon the bootstrapped null distribution of that statistic using an empirical 
+If do.p is TRUE, calculates p-values for smoothed values of a statistic based
+upon the bootstrapped null distribution of that statistic using an empirical
 continuous distribution function. Note that in this case, the minimum possible
 p-value for a window depends upon the number of bootstraps calculated (if only
-a 1000 bootstraps were performed, the minimum possible p-value is about .001, 
+a 1000 bootstraps were performed, the minimum possible p-value is about .001,
 or one in a thousand.)
 
 Note that this function will return an error if equivalent windowed statistics

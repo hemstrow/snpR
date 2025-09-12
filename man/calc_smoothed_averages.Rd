@@ -52,7 +52,7 @@ printed to the console.}
 }
 \value{
 snpRdata object with smoothed averages for any requested statistics
- merged into the window.stats or pairwise.window.stats slots.
+merged into the window.stats or pairwise.window.stats slots.
 }
 \description{
 Calculates optionally gaussian smoothed average values for statistics and the

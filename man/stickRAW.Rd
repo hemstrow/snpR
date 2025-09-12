@@ -23,9 +23,12 @@ column. Missing data coded as "NN".
 Column names refer to the population of origin (first three characters) and
 the sample ID.
 
-The first three columns contain snp specific meta data: \itemize{ \item{snp: }
-SNP ID. \item{chr: } Linkage group, essentially chromosome. \item{position:
-} Position of the SNP along the linkage group, in base pairs. }
+The first three columns contain snp specific meta data:
+\itemize{
+\item snp: SNP ID.
+\item chr:  Linkage group, essentially chromosome.
+\item position: Position of the SNP along the linkage group, in base pairs.
+}
 }
 \references{
 Hemstrom et al (in prep)

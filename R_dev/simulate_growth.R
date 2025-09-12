@@ -1234,14 +1234,14 @@ simulate_populations <-
 #' \code{normal_survival} without parentheses to see an example.
 #'
 #' Options:
-#' \itemize{\item{normal_survival: }{Probabilities are given by
+#'  * normal_survival: Probabilities are given by
 #' \code{\link[stats]{pnorm}}. For values above the
 #' optimum phenotype, the surivial is given by 1 - the resulting value. If a
 #' maxium survival other than 0.5 is given, the surivivals are scaled such that
 #' individuals with the optimum phenotype will have the provided survival
-#' probability.}
-#' \item{BL_survival: } {Survival according to Burger and Lynch's (1995) 
-#' equation 1.}}
+#' probability.
+#'  * BL_survival: Survival according to Burger and Lynch's (1995) 
+#' equation 1.
 
 #' @param phenotypes numeric. Vector of phenotypes.
 #' @param opt_pheno numeric. Optimum phenotype.
@@ -1301,11 +1301,11 @@ BL_survival <- function(phenotypes, opt_pheno, omega, ...){
 #' \code{optimum_scaled_slide} without parentheses to see an example.
 #'
 #' Options:
-#' \itemize{\item{optimum_scaled_slide: }{Change the optimum phenotype 
+#'  * optimum_scaled_slide: Change the optimum phenotype 
 #' each generation by an amount that depends on the initial 
-#' ammount of phenotypic variation in the population}
-#' \item{optimum_fixed_slide: } {Change the optimum phenotype 
-#' by a fixed amount each generation}}.
+#' amount of phenotypic variation in the population
+#'  * optimum_fixed_slide: Change the optimum phenotype 
+#' by a fixed amount each generation.
 #'
 #' @param opt numeric. Initial optimum phenotype.
 #' @param iv numeric. Initial variance. The optimum will increase by some
@@ -1345,13 +1345,12 @@ optimum_fixed_slide <- function(opt, slide = 0.3, ...){
 #' \code{logistic_growth} without parentheses to see an example.
 #'
 #' Options:
-#' \itemize{\item{logistic_growth: }{Classical logistic growth model.}
-#' \item{BL_growth: } {Growth based on Burger and Lynch (1995). Assumes
+#' * logistic_growth: Classical logistic growth model.
+#' * BL_growth: Growth based on Burger and Lynch (1995). Assumes
 #' each individual has \code{B} offspring (so each pair has 2*B). 
 #' Density dependence must be supplied elsewhere, such as to the 
 #' \code{K_thin_post_surv} argument to 
-#' \code{\link{simulate_populations}}
-#' }}.
+#' \code{\link{simulate_populations}}.
 #'
 #' @param n numeric, starting population size.
 #' @param K numeric, carrying capacity.

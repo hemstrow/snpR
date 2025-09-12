@@ -586,12 +586,13 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
 #' @references Peter, B. M., & Slatkin, M. (2013). Detecting range expansions
 #'   from genetic data. \emph{Evolution}, 67(11), 3274-3289.
 #'
-#' @return A named list containing: \itemize{\item{opt: } A vector with the
-#'   spatial/genetic distance linking coefficient 'v' as well as the 'x' and 'y'
-#'   coordinates of the estimated origin of the range expansion.
-#'   \item{'pairwise_directionality':} A data.frame containing the pairwise
+#' @return A named list containing: 
+#' * opt: A vector with the spatial/genetic distance linking coefficient 'v' as 
+#'   well as the 'x' and 'y' coordinates of the estimated origin of the range
+#'   expansion.
+#' * 'pairwise_directionality': A data.frame containing the pairwise
 #'   directionality estimates, coordinates, and the directionality variance for
-#'   each pair of populations.}
+#'   each pair of populations.
 #'   
 #' @author William Hemstrom
 #'   

@@ -71,18 +71,20 @@ heterozygotes in the final ROHs. ROHs with more than this number of hets
 after final filtering and extension will be removed.}
 
 \item{window_start_method}{character, default "powerful". Controls how the
-initial sliding window start and end positions are determined. Options
-\itemize{\item{conservative:} {Windows start and end such
+initial sliding window start and end positions are determined. Options:
+\itemize{
+\item conservative: Windows start and end such
 that the fist and last SNPs of each chromosome have evenly fewer windows
 which cover them than the rest of the genome, but each window has exactly
 \code{window_snps} SNPs. This generally produces results more similar to
-PLINK's "--homozyg" function.}
-\item{powerfull:}{Windows start and end such that
+PLINK's "--homozyg" function.
+\item powerfull: Windows start and end such that
 the start and end of  chromosomes have the same number of windows covering
 them as the rest of the genome, but those windows will have fewer SNPs
 within them. This will often contain more windows which get close to the
 chromosomal edges that might otherwise be dropped, even if they also extend
-well into the genome.}}}
+well into the genome.
+}}
 
 \item{genome_length}{numeric, default NULL. The length of the genome, for use
 in calculating FROH. If NULL, this is calculated by summing the distance
@@ -98,7 +100,7 @@ during run. If 1, chromosomes/scaffolds/etc run beginnings are reported; if
 }
 \value{
 A snpRdata object with ROH and FROH info merged in, fetchable with
-  \code{\link{get.snpR.stats}}
+\code{\link{get.snpR.stats}}
 }
 \description{
 Identifies Runs of Homozygosity and calculates ROH-based genomic inbreeding

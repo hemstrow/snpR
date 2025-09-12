@@ -532,22 +532,29 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'this should usually be the first step in an analysis. See details for filters.
 #'
 #'
-#'Possible filters: \itemize{ \item{maf, minor allele frequency: }{removes SNPs
+#'Possible filters: 
+#'* maf, minor allele frequency: removes SNPs
 #'where the minor allele frequency is too low. Can look for mafs below
-#'#'provided either globally or search each population individually.}
-#'\item{hf_hets, high observed heterozygosity: }{removes SNPs where the observed
-#'heterozygosity is too high.} \item{min_ind, minimum individuals: }{removes
-#'SNPs that were genotyped in too few individuals.} \item{min_loci, minimum
-#'loci: }{removes individuals sequenced at too few loci.} \item{non_poly,
-#'non-polymorphic SNPs: }{removes SNPs that are not polymorphic (not true
-#'SNPs).} \item{bi_al, non-biallelic SNPs: }{removes SNPs that have more than
+#'provided either globally or search each population individually.
+#'* hf_hets, high observed heterozygosity: removes SNPs where the observed
+#'heterozygosity is too high. 
+#'* min_ind, minimum individuals: removes
+#'SNPs that were genotyped in too few individuals. 
+#'* min_loci, minimum
+#'loci: removes individuals sequenced at too few loci. 
+#'* non_poly,
+#'non-polymorphic SNPs: removes SNPs that are not polymorphic (not true
+#'SNPs). 
+#'* bi_al, non-biallelic SNPs: removes SNPs that have more than
 #'two observed alleles. This is mostly an internal argument, since the various
 #'snpRdata import options use it automatically to prevent downstream errors in
-#'other snpR functions. } \item{remove_garbage: }{Quickly removes any loci or
+#'other snpR functions.  
+#'* remove_garbage: Quickly removes any loci or
 #'samples that are jointly poorly genotyped prior to other filtering. This can
 #'be useful if some individuals or loci are of poor enough quality that they
-#'will bias other filters.} \item{LD_prune_sigma: }{Sliding-window based Linkage
-#'Disequilibrium filtering to remove non-independant loci}.}
+#'will bias other filters. 
+#'* LD_prune_sigma: Sliding-window based Linkage
+#'Disequilibrium filtering to remove non-independant loci.
 #'
 #'@section Filter order:
 #'
@@ -620,11 +627,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param hwe numeric between 0 and 1 or FALSE, default FALSE. Minimum acceptable
 #'  HWE p-value.
 #'@param hwe_excess_side character, default "both". Options:
-#'  \itemize{\item{heterozygote: }{only loci with a heterozygote excess are 
-#'  removed.}
-#'  \item{homozygote: }{only loci with a homozygote excess are removed.}
-#'  \item{both: }{loci with either a heterozygote or homozygote excess 
-#'  are removed.}}
+#'  * heterozygote: only loci with a heterozygote excess are 
+#'  removed.
+#'  * homozygote: only loci with a homozygote excess are removed.
+#'  * both: loci with either a heterozygote or homozygote excess 
+#'  are removed.
 #'@param fwe_method character, default "none". Option to use for Family-Wise
 #'  Error rate correction for HWE filtering. If requested, only SNPs with
 #'  p-values below the alpha provided to the \code{hwe} argument \emph{after FWE
@@ -651,10 +658,14 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'@param re_run character or FALSE, default "partial". When individuals are
 #'  removed via min_ind, it is possible that some SNPs that initially passed
 #'  filtering steps will now violate some filters. SNP filters can be re-run
-#'  automatically via several methods: \itemize{ \item{partial: } {Re-filters for
+#'  automatically via several methods:
+#'  * partial: Re-filters for
 #'  non-polymorphic loci (non_poly) only, if that filter was requested
-#'  initially.} \item{full: } {Re-runs the full filtering scheme (save for
-#'  min_loci).}} Note: if \code{inds_first = TRUE}, all re-run options other than 
+#'  initially.
+#'  * full: Re-runs the full filtering scheme (save for
+#'  min_loci).
+#'  
+#'  Note: if \code{inds_first = TRUE}, all re-run options other than 
 #'  FALSE will re-run the individual filter for missing data again after loci 
 #'  filtering.
 #'@param maf_facets character or NULL, default NULL. Defines a sample facet over
@@ -688,8 +699,11 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
 #'  conducted in parallel using \code{LD_prune_par} threads.
 #'@param LD_prune_method character, default "CLD". The method to use for LD
 #'  calculations and prunning. The options are:
-#'  \itemize{\item{CLD}\item{Dprime}\item{rsq}} See
-#'  \code{\link{calc_pairwise_ld}} for details.
+#'  * CLD
+#'  * Dprime
+#'  * rsq
+#'  
+#'   See \code{\link{calc_pairwise_ld}} for details.
 #'@param LD_prune_use_ME logical, default FALSE. If TRUE, uses
 #'  Minimization-Expectation to do LD calculations for all
 #'  \code{LD_prune_method} options other than "CLD". This can be very slow. See
@@ -1505,46 +1519,57 @@ filter_snps <- function(x, maf = FALSE,
 #'given as via the snp.meta argument. Sample metadata may be provided in a
 #'data.frame via the sample.meta argument.
 #'
-#'Output format options: \itemize{ \item{ac: }{allele count format, allele
-#'counts tabulated for all samples or within populations.} \item{genepop:
-#'}{genepop format, genotypes stored as four numeric characters (e.g. "0101",
-#'"0204"), transposed, and formatted for genepop. Rownames are individual IDs in
-#'genepop format, colnames are SNP ids, matching the first metadata column in
-#'input.} \item{structure: }{STRUCTURE format, two lines per individual: allele
+#'Output format options: 
+#'* ac: allele count format, allele
+#'counts tabulated for all samples or within populations.
+#'* genepop: genepop format, genotypes stored as four numeric characters (e.g. 
+#'"0101", "0204"), transposed, and formatted for genepop. Rownames are
+#'individual IDs in genepop format, colnames are SNP ids, matching the first
+#'metadata column in input.
+#'* structure: STRUCTURE format, two lines per individual: allele
 #'calls stored as single character numeric (e.g. "1", "2"). Allele calls per
-#'individual stored on two subsequent lines.} \item{0000: }{numeric genotype tab
-#'format, genotypes stored as four numeric characters (e.g. "0101", "0204").}
-#'\item{hapmap: }{Migrate-n hapmap, allele counts tabulated within populations,
+#'individual stored on two subsequent lines.
+#'* 0000: numeric genotype tab
+#'format, genotypes stored as four numeric characters (e.g. "0101", "0204").
+#'* hapmap: Migrate-n hapmap, allele counts tabulated within populations,
 #'in migrate-n hapmap format. Since this migrate-n implementation is iffy, this
-#'probably shouldn't be used much.} \item{NN: }{character genotype tab format,
-#'genotypes stored as actual base calls (e.g. "AA", "CT").} \item{pa: }{allele
+#'probably shouldn't be used much. 
+#'* NN: character genotype tab format,
+#'genotypes stored as actual base calls (e.g. "AA", "CT"). 
+#'* pa: allele
 #'presence/absence format, presence or absence of each possible allele at each
 #'possible genotype noted. Interpolation possible, with missing data substituted
-#'with allele frequency in all samples or each population.} \item{rafm: }{RAFM
-#'format, two allele calls at each locus stored in subsequent columns, e.g.
-#'locus1.1 locus1.2.} \item{faststructure: }{fastSTRUCTURE format, identical to
+#'with allele frequency in all samples or each population.
+#'* rafm: RAFM format, two allele calls at each locus stored in subsequent columns, e.g.
+#'locus1.1 locus1.2. 
+#'* faststructure: fastSTRUCTURE format, identical to
 #'STRUCTURE format save with the addition of filler columns proceeding data such
 #'that exactly 6 columns proceed data. These columns can be filled with metadata
-#'if desired.} \item{dadi: }{dadi format SNP data format, requires two columns
+#'if desired. 
+#'* dadi: dadi format SNP data format, requires two columns
 #'named "ref" and "anc" with the flanking bases around the SNP, e.g. "ACT" where
-#'the middle location is the A/C snp.} \item{plink: }{PLINK! binary input
+#'the middle location is the A/C snp.
+#'* plink: PLINK! binary input
 #'format, requires columns named "position" and one matching the name designated
 #'with the 'chr' argument, and may contain a column named "cM", "cm", or
 #'"morgans", containing linkage group/chr, snp ID, position in bp, and distance
-#'in cM in order to create .bim extended map file.} \item{sn: }{Single character
+#'in cM in order to create .bim extended map file.
+#'* sn: Single character
 #'numeric format. Each genotype will be listed as 0, 1, or 2, corresponding to
 #'0, 1, or 2 minor alleles. Can be interpolated to remove missing data with the
-#''interpolate' argument.} \item{sequoia: }{sequoia format. Each genotype is
+#''interpolate' argument. 
+#'* sequoia: sequoia format. Each genotype is
 #'converted to 0/1/2/ or -9 (for missing values). Requires columns ID, Sex,
 #'BirthYear (or instead of BirthYear - BYmin and BYmax), optional column 
 #'Yearlast in sample metadata for running Sequoia. For more information see 
-#'sequoia documentation.} \item{fasta:} {fasta sequence format.} \item{vcf:}
-#'{Variant Call Format, a standard format for SNPs and other genomic variants. 
+#'sequoia documentation. 
+#'* fasta: fasta sequence format. 
+#'* vcf: Variant Call Format, a standard format for SNPs and other genomic variants. 
 #'Genotypes are coded as 0/0, 0/1, 1/1, or ./. (for missing values), with a 
-#'healthy serving of additional metadata but very little sample metadata.} 
-#'\item{genalex: }{GenAlEx format. If an outfile is requested, the data will be 
-#'sorted according to any provided facets and written as an '.xlsx' object.} 
-#'\item{snpRdata: }{a snpRdata object.} }
+#'healthy serving of additional metadata but very little sample metadata. 
+#'* genalex: GenAlEx format. If an outfile is requested, the data will be 
+#'sorted according to any provided facets and written as an '.xlsx' object. 
+#'* snpRdata: a snpRdata object.
 #'
 #'Note that for the "sn" format, the data can be interpolated to fill missing
 #'data points, which is useful for PCA, genomic prediction, tSNE, and other
@@ -1570,14 +1595,19 @@ filter_snps <- function(x, maf = FALSE,
 #'".sh" shell file with the same name given in the outfile argument. Running
 #'this file will create a plink.bed file.
 #'
-#'Input formats: \itemize{ \item{NULL or snpRdata: }{snpRdata object, the
-#'default.} \item{NN: }{SNP genotypes stored as actual base calls (e.g. "AA",
-#'"CT").} \item{0000: }{SNP genotypes stored as four numeric characters (e.g.
-#'"0101", "0204").} \item{snp_tab: }{SNP genotypes stored with genotypes in each
+#'Input formats:
+#'* NULL or snpRdata: snpRdata object, the
+#'default. 
+#'* NN: SNP genotypes stored as actual base calls (e.g. "AA",
+#'"CT"). 
+#'* 0000: SNP genotypes stored as four numeric characters (e.g.
+#'"0101", "0204").
+#'* snp_tab: SNP genotypes stored with genotypes in each
 #'cell, but only a single nucleotide noted if homozygote and two nucleotides
-#'seperated by a space if heterozygote (e.g. "T", "T G").} \item{sn: }{SNP
+#'seperated by a space if heterozygote (e.g. "T", "T G"). 
+#'* sn: SNP
 #'genotypes stored with genotypes in each cell as 0 (homozyogous allele 1), 1
-#'(heterozygous), or 2 (homozyogus allele 2).}}
+#'(heterozygous), or 2 (homozyogus allele 2).
 #'
 #'
 #'
@@ -3253,11 +3283,13 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
 #' @param verbose logical, default FALSE. If TRUE, prints detailed progress 
 #'   report.
 #'
-#' @return A list containing: \itemize{ \item{best_matches: } Data.frame listing
+#' @return A list containing:
+#'    * best_matches: Data.frame listing
 #'   the best match for each sample noted in y and the percentage of genotypes
-#'   identical between the two samples. \item{data: } A list containing the
+#'   identical between the two samples. 
+#'    * data: A list containing the
 #'   match proportion between each sample y and every sample in x, named for the
-#'   samples y. }
+#'   samples y.
 #'
 #' @author William Hemstrom
 #' @export
@@ -3653,10 +3685,12 @@ gap_snps <- function(x, facet = NULL, n){
 #'
 #' @author William Hemstrom
 #' @returns  If return_bib is TRUE, a list containing four parts:
-#'   \itemize{\item{keys: } A vector of bibtex keys for each method.
-#'   \item{stats: } A vector of the stats used. \item{details: } A vector of
-#'   details for each method. \item{bib: } A \code{bibentry} for each citation,
-#'   see \code{\link[rbibutils]{readBib}}.}
+#'    * keys: A vector of bibtex keys for each method.
+#'    * stats: A vector of the stats used. 
+#'    * details: A vector of
+#'   details for each method. 
+#'    * bib: A \code{bibentry} for each citation,
+#'   see \code{\link[rbibutils]{readBib}}.
 #' 
 #' @export
 #' @examples 
@@ -3882,14 +3916,16 @@ summarize_facets <- function(x, facets = NULL){
 #' 
 #' First, samples that are genotyped at identical loci 
 #' in both data sets can be handled several ways, controlled by the
-#' \code{resolve_conflicts} argument: \itemize{\item{warning:} Return a harsh 
+#' \code{resolve_conflicts} argument:
+#'  * warning:Return a harsh 
 #' warning and a data frame with more information on genotypes at identical 
 #' samples/SNPs are different between \code{x} and \code{y}. 
-#' \item{error: } The default, return an error when conflicts are detected.
-#' \item{x} Use genotypes from \code{x} to resolve conflicts.
-#' \item{y} Use genotypes from \code{y} to resolve conflicts.
-#' \item{random} Randomly sample (non-missing) genotypes from \code{x}
-#' and \code{y} to resolve conflicts.}
+#'  * error: The default, return an error when conflicts are detected.
+#'  * x: Use genotypes from \code{x} to resolve conflicts.
+#'  * y: Use genotypes from \code{y} to resolve conflicts.
+#'  * random: Randomly sample (non-missing) genotypes from \code{x}
+#'  and \code{y} to resolve conflicts.
+#'  
 #' Note that called genotypes are always taken over un-called genotypes when
 #' there are merge conflicts, and missing data in one but not the other data set
 #' will not trigger an error or a warning if those options are selected.

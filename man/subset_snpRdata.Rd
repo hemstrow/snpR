@@ -64,7 +64,7 @@ specification as in \code{chr = "groupIX"}.}
 }
 \description{
 Subsets snpRdata objects by specific snps, samples, facets, subfacets, etc.
-Statistics will need to be recalculated after subsetting to avoid confusion. 
+Statistics will need to be recalculated after subsetting to avoid confusion.
 The bracket operators can be alternatively, following the same syntax.
 }
 \details{

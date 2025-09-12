@@ -34,7 +34,7 @@ across SNPs--function idetically to the \code{by}, \code{by.x}, and
 \code{by.y} arguments to \code{\link[base]{merge}}, see documentation there
 for details.}
 
-\item{all}{logical, default TRUE. If TRUE, all samples and SNPs will be 
+\item{all}{logical, default TRUE. If TRUE, all samples and SNPs will be
 maintained in the output \code{snpRdata} object, with missing data matching
 the missing data format of \code{x} added where genotypes are not in
 either \code{x} or \code{y}.}
@@ -60,34 +60,38 @@ the 'by' and 'all' options can be specified at the SNP and sample level.
 \details{
 While this function can be used essentially identically to how one might
 use base R's \code{\link[base]{merge}} function, there are a few differences
-to note. 
+to note.
 
-First, samples that are genotyped at identical loci 
+First, samples that are genotyped at identical loci
 in both data sets can be handled several ways, controlled by the
-\code{resolve_conflicts} argument: \itemize{\item{warning:} Return a harsh 
-warning and a data frame with more information on genotypes at identical 
-samples/SNPs are different between \code{x} and \code{y}. 
-\item{error: } The default, return an error when conflicts are detected.
-\item{x} Use genotypes from \code{x} to resolve conflicts.
-\item{y} Use genotypes from \code{y} to resolve conflicts.
-\item{random} Randomly sample (non-missing) genotypes from \code{x}
-and \code{y} to resolve conflicts.}
+\code{resolve_conflicts} argument:
+\itemize{
+\item warning:Return a harsh
+warning and a data frame with more information on genotypes at identical
+samples/SNPs are different between \code{x} and \code{y}.
+\item error: The default, return an error when conflicts are detected.
+\item x: Use genotypes from \code{x} to resolve conflicts.
+\item y: Use genotypes from \code{y} to resolve conflicts.
+\item random: Randomly sample (non-missing) genotypes from \code{x}
+and \code{y} to resolve conflicts.
+}
+
 Note that called genotypes are always taken over un-called genotypes when
 there are merge conflicts, and missing data in one but not the other data set
 will not trigger an error or a warning if those options are selected.
 
-Secondly, the \code{by} and \code{all} arugment families from 
+Secondly, the \code{by} and \code{all} arugment families from
 \code{\link[base]{merge}} are extended to refer to either samples or SNPs,
 such that all samples can be maintained but not all SNPs, for example.
 
 Lastly, all of the \code{all} family of arguments default to \code{TRUE}
 instead of \code{FALSE}, since purely overlapping genotypes/SNPs is unlikely
 to be desired. \code{FALSE} values provided to any specific \code{all}
-argument will sill override \code{all = TRUE}, as in 
+argument will sill override \code{all = TRUE}, as in
 \code{\link[base]{merge}}.
 
 At present, \code{\link{merge_snpRdata}} is not maximally efficient in that
-it will remove all tabulated statistics and re-tabulate all internal 
+it will remove all tabulated statistics and re-tabulate all internal
 summaries. Improvements are in development.
 }
 \examples{

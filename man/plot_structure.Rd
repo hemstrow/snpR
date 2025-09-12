@@ -80,16 +80,20 @@ which to run the clustering/assignment algorithm. Each provided k value
 will be run.}
 
 \item{method}{character, default "snmf". The clustering/assignment method to
-run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
-Maximum-likelihood genetic clustering. See
-\code{\link[adegenet]{snapclust.choose.k}}. \item{admixture: } The
-ADMIXTURE program. Requires a local admixture executable, and thus cannot
-run on a Windows platform. \item{fastmixture: } The fastmixture program, a 
-faster variant of ADMIXTURE. Requires fastmixture to be installed, and thus cannot
-run on a Windows platform. \item{ structure: } The STRUCTURE program.
-Requires a local STRUCTURE executable. many additional options are
-available for STRUCTURE via other arguments.}}
+run. Options:
+\itemize{
+\item snmf: sNMF (sparse Non-Negative Matrix
+Factorization). See \code{\link[LEA]{main_sNMF}}.
+\item snapclust: Maximum-likelihood genetic clustering. See
+\code{\link[adegenet]{snapclust.choose.k}}.
+\item admixture:  The ADMIXTURE program. Requires a local admixture executable,
+and thus cannot run on a Windows platform.
+\item fastmixture: The fastmixture program, a  faster variant of ADMIXTURE.
+Requires fastmixture to be installed, and thus cannot run on a Windows
+platform.
+\item structure: The STRUCTURE program. Requires a local STRUCTURE executable.
+Many additional options are available for STRUCTURE via other arguments.
+}}
 
 \item{reps}{numeric, default 1. The number of independent clustering
 repetitions to run.}
@@ -136,10 +140,14 @@ rep for plotting.}
 clumpp executable, required if clumpp = T.}
 
 \item{clumpp.opt}{character, default "greedy". Designates the CLUMPP method
-to use. Options: \itemize{ \item{fullsearch: } Search all possible
-configurations. Slow. \item{greedy: } The standard approach. Slow for large
-datasets at high k values. \item{large.k.greedy: } A fast but less accurate
-approach. } See CLUMPP documentation for details.}
+to use. Options:
+\itemize{
+\item fullsearch: Search all possible configurations. Slow.
+\item greedy: The standard approach. Slow for large datasets at high k values.
+\item large.k.greedy: A fast but less accurate approach for large k values.
+}
+
+See CLUMPP documentation for details.}
 
 \item{structure_path}{character, default "/usr/bin/structure". Path to the
 STRUCTURE executable, required if method = "structure".}
@@ -289,7 +297,7 @@ Changes the METROFREQ flag. Sets the rate at which Metropolis-Hastings
 updates are used. If 0, updates are never used.}
 
 \item{seed}{integer, default sample(100000, 1). Used if method = "structure",
-"admixture", or "fastmixture". Starting seed for analysis runs. 
+"admixture", or "fastmixture". Starting seed for analysis runs.
 Each additional run (k value or rep) will use a successive seed.}
 
 \item{strip_col_names}{string, default NULL. An optional regular expression
@@ -306,11 +314,15 @@ will be left in the working directory.}
 or \code{\link[adegenet]{snapclust.choose.k}}.}
 }
 \value{
-A list containing: \itemize{\item{plot: } A ggplot object.
-  \item{data: } A nested list of the raw Q matrices, organized by K and then
-  by run. \item{plot_data: } The raw data used in constructing the ggplot.
-  \item{K_plot: } A data.frame containing the value suggested for use in K
-  selection vs K value for the selected method.}
+A list containing:
+\itemize{
+\item plot: A ggplot object.
+\item data: A nested list of the raw Q matrices, organized by K and then
+by run.
+\item plot_data: The raw data used in constructing the ggplot.
+\item K_plot: A data.frame containing the value suggested for use in K
+selection vs K value for the selected method.
+}
 }
 \description{
 Creates ggplot-based stacked bar charts of assignment probabilities (Q) into
@@ -322,13 +334,20 @@ CLUMPP.
 }
 \details{
 Individual cluster assignment probabilities can be calculated using several
-different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.
-\item{admixture: } The ADMIXTURE program. Requires a local admixture
-executable, and thus cannot run on a Windows platform. \item{ structure: }
-The STRUCTURE program. Requires a local STRUCTURE executable. many additional
-options are available for STRUCTURE via other arguments.} These methods are
-not re-implemented in R, instead, this function calls the
+different methods:
+\itemize{
+\item snmf:  sNMF (sparse Non-Negative Matrix Factorization).
+\item snapclust: Maximum-likelihood genetic clustering.
+\item admixture: The ADMIXTURE program. Requires a local admixture
+executable, and thus cannot run on a Windows platform.
+\item structure: The STRUCTURE program. Requires a local STRUCTURE executable.
+Many additional options are available for STRUCTURE via other arguments.
+\item fastmixture: the fastmixture program, a  faster variant of ADMIXTURE.
+Requires fastmixture to be installed, and thus cannot run on a Windows
+platform.
+}
+
+These methods are not re-implemented in R, instead, this function calls the
 \code{\link[LEA]{main_sNMF}}, \code{\link[adegenet]{snapclust.choose.k}}, or
 a local executable for the ADMIXTURE or STRUCTURE program instead. Please
 cite the references noted in those functions. For snapclust, the "ward"
@@ -380,25 +399,25 @@ plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
 }
 \references{
 Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O.
-  (2014). Fast and Efficient Estimation of Individual Ancestry Coefficients.
-  \emph{Genetics}, 194(4): 973–983.
+(2014). Fast and Efficient Estimation of Individual Ancestry Coefficients.
+\emph{Genetics}, 194(4): 973–983.
 
 Frichot, Eric, and Olivier François (2015). LEA: an R package for
-  landscape and ecological association studies. \emph{Methods in Ecology and
-  Evolution}, 6(8): 925-929.
+landscape and ecological association studies. \emph{Methods in Ecology and
+Evolution}, 6(8): 925-929.
 
 Beugin, M. P., Gayet, T., Pontier, D., Devillard, S., & Jombart,
-  T. (2018). A fast likelihood solution to the genetic clustering problem.
-  \emph{Methods in ecology and evolution}, 9(4), 1006-1016.
+T. (2018). A fast likelihood solution to the genetic clustering problem.
+\emph{Methods in ecology and evolution}, 9(4), 1006-1016.
 
 Francis, R. M. (2017). pophelper: an R package and web app to
-  analyze and visualize population structure. \emph{Molecular ecology
-  resources}, 17(1), 27-32.
+analyze and visualize population structure. \emph{Molecular ecology
+resources}, 17(1), 27-32.
 
 Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster
-  matching and permutation program for dealing with label switching and
-  multimodality in analysis of population structure. \emph{Bioinformatics},
-  23(14), 1801-1806.
+matching and permutation program for dealing with label switching and
+multimodality in analysis of population structure. \emph{Bioinformatics},
+23(14), 1801-1806.
 }
 \author{
 William Hemstrom

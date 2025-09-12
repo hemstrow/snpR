@@ -35,49 +35,60 @@ Different statistics are returned either by named statistic or by type.
 }
 \section{Types}{
 
-
-  \itemize{ \item{single: } non-pairwise, non-window statistics (pi, ho, 
-  etc.)
-  \item{pairwise: } pairwise, non-window statistics (Fst).
-  \item{single.window: } non-pairwise, sliding window statistics.
-  \item{pairwise.window: } pairwise, sliding window statistics. \item{LD: }
-  linkage disequilibrium matrices and tables. \item{bootstraps: } bootstraps
-  of window statistics. \item{genetic_distance: } genetic distances
-  \item{allele_frequency_matrix: } allele frequency matrices. \item{geo_dist:
-  } geographic distances. \item{ibd: } isolation by distance results.
-  \item{sample: } sample stats. \item{pop: } population summary statistics.
-  \item{weighted.means: } Weighted means of SNP statistics per facet level.}
+\itemize{
+\item single: non-pairwise, non-window statistics (pi, ho,
+etc.)
+\item pairwise: pairwise, non-window statistics (Fst).
+\item single.window: non-pairwise, sliding window statistics.
+\item pairwise.window: pairwise, sliding window statistics.
+\item LD: linkage disequilibrium matrices and tables.
+\item bootstraps: bootstraps
+of window statistics.
+\item genetic_distance: genetic distances
+\item allele_frequency_matrix: allele frequency matrices.
+\item geo_dist: geographic distances.
+\item ibd: isolation by distance results.
+\item sample: sample stats.
+\item pop: population summary statistics.
+\item weighted.means: Weighted means of SNP statistics per facet level.
+}
 }
 
 \section{Statistics}{
- 
 
-\itemize{ \item{ho: } Observed heterozygosity, via
-  \code{\link{calc_ho}}. \item{pi: } pi (expected number of pairwise
-  differences, via \code{\link{calc_pi}}). \item{maf: } minor allele
-  frequencies (and major/minor counts and identities), via
-  \code{\link{calc_maf}}. \item{private: } private allele identities, via
-  \code{\link{calc_private}}. \item{association: } results from phenotypic
-  association tests, via \code{\link{calc_association}}. \item{hwe: }
-  Hardy-Weinberg Equilibrium p-values, via \code{\link{calc_hwe}}.
-  \item{tajimas_d: } Tajima's D, Watterson's Theta, and Tajima's Theta, via
-  \code{\link{calc_tajimas_d}}. \item{fst: } Pairwise Fst, via
-  \code{\link{calc_pairwise_fst}}. \item{het_hom_ratio: }
-  Heterozygote/Homozygote ratios within individuals, via
-  \code{\link{calc_het_hom_ratio}}. \item{ne: } Effective population size
-  estimates, via \code{\link{calc_ne}}. \item{ld: } Pairwise linkage
-  disequilibrium, via \code{\link{calc_pairwise_ld}}.
-  \item{genetic_distances: } Genetic distances,
-  \code{\link{calc_genetic_distances}}. \item{isolation_by_distance: }
-  Genetic isolation by distance metrics, via
-  \code{\link{calc_isolation_by_distance}}. \item{geographic_distance: }
-  Geographic distances between samples--does not use genetic data. Calculated
-  during \code{\link{calc_isolation_by_distance}}, but fetchable
-  independently here.
-  \item{random_forest} Random forest snp-specific responses, see
-  \code{\link{run_random_forest}}.
-
-  }
+\itemize{
+\item ho: Observed heterozygosity, via \code{\link{calc_ho}}.
+\item pi: pi (expected number of pairwise
+differences, via \code{\link{calc_pi}}).
+\item maf: minor allele
+frequencies (and major/minor counts and identities), via
+\code{\link{calc_maf}}.
+\item private: private allele identities, via
+\code{\link{calc_private}}.
+\item association: results from phenotypic
+association tests, via \code{\link{calc_association}}.
+\item hwe: Hardy-Weinberg Equilibrium p-values, via \code{\link{calc_hwe}}.
+\item tajimas_d: Tajima's D, Watterson's Theta, and Tajima's Theta, via
+\code{\link{calc_tajimas_d}}.
+\item fst: Pairwise Fst, via
+\code{\link{calc_pairwise_fst}}.
+\item het_hom_ratio: Heterozygote/Homozygote ratios within individuals, via
+\code{\link{calc_het_hom_ratio}}.
+\item ne: Effective population size
+estimates, via \code{\link{calc_ne}}.
+\item ld: Pairwise linkage
+disequilibrium, via \code{\link{calc_pairwise_ld}}.
+\item genetic_distances: Genetic distances,
+\code{\link{calc_genetic_distances}}.
+\item isolation_by_distance: Genetic isolation by distance metrics, via
+\code{\link{calc_isolation_by_distance}}.
+\item geographic_distance: Geographic distances between samples--does not use
+genetic data. Calculated
+during \code{\link{calc_isolation_by_distance}}, but fetchable
+independently here.
+\item random_forest: Random forest snp-specific responses, see
+\code{\link{run_random_forest}}.
+}
 }
 
 \examples{

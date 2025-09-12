@@ -53,9 +53,10 @@
 #'  is optimal, since the data is already returned in that object, but is not
 #'  the default due to backwards consistency with old code.
 #'
-#'@return A list containing: \itemize{ \item{plot: } A pairwise LD heatmap as a
-#'  ggplot object. \item{dat: } Data used to generate the ggplot object. } If
-#'  \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
+#'@return A list containing: 
+#'  * plot:  A pairwise LD heatmap as a ggplot object. 
+#'  * dat: Data used to generate the ggplot object. 
+#'  If \code{simplify_output} is \code{FALSE}, only the ggplot object is returned.
 #'
 #'@author William Hemstrom
 #'@author Nicholas Sard
@@ -455,15 +456,16 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  variables by which to color points. Up to two different sample-specific
 #'  facets may be provided. See \code{\link{Facets_in_snpR}} for more details.
 #'@param plot_type character, default "pca". c("pca", "tSNE", "umap", "dapc"). 
-#'Types of
-#'  plots to be produced. Options \itemize{\item{pca: } Principal Component
-#'  Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
-#'  Neighbor Embedding, which collapses dims (see argument) dimensions of
-#'  variance into two. \item{umap: } Uniform Manifold Approximation and
-#'  Projection, which collapses multiple dimensions of variance into two.
-#'  \item{dapc: } Discriminant analysis of principal components, 
-#'  clusters individuals into groups for plotting via PCA.} See
-#'  description for details.
+#'  Types of plots to be produced. Options: 
+#'  * pca: Principal Component Analysis, first two dimensions of variance. 
+#'  * tSNE: t-Stochastic Neighbor Embedding, which collapses dims (see argument) 
+#'    dimensions of variance into two.
+#'  * umap: Uniform Manifold Approximation and Projection, which collapses 
+#'    multiple dimensions of variance into two.
+#'  * dapc: Discriminant analysis of principal components, clusters individuals 
+#'    into groups for plotting via PCA.
+#'    
+#'  See description for details.
 #'@param check_duplicates logical, default FALSE. Checks for any duplicated
 #'  individuals, which will cause errors. Since these rarely exist and
 #'  drastically slow down function run-time, this defaults to FALSE.
@@ -476,17 +478,20 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'  avoids the need for interpolation, so interpolation is set to FALSE in this
 #'  case.
 #'@param interpolation_method character, default "bernoulli". Interpolation
-#'  method to use for missing data. Options: \itemize{\item{bernoulli:
-#'  }{Interpolated via binomial draw for each allele against minor allele
-#'  frequency.} \item{af: }{Interpolated by inserting the expected number of
-#'  minor alleles at missing data points given loci minor allele frequencies.}
-#'  \item{iPCA: }{This an iterative PCA approach to interpolate based on SNP/SNP
-#'  covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
-#'  defined, the number of components used for interpolation will be estimated
-#'  using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
-#'  slower than the other methods, especially for large datasets. Setting an ncp
-#'  of 2-5 generally results in reasonable interpolations without the time
-#'  constraint.}} Ignored if \code{smart_PCA} is TRUE.
+#'  method to use for missing data. Options: 
+#'   * bernoulli: binomial draws for the minor allele.
+#'   * af: insertion of the average allele frequency
+#'   * iPCA: As a slower but more accurate alternative to "af"
+#'     interpolation, "iPCA" may be selected. This an iterative PCA approach to
+#'     interpolate based on SNP/SNP covariance via
+#'     \code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
+#'     number of components used for interpolation will be estimated using
+#'     \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+#'     slower than the other methods, especially for large datasets. Setting an
+#'     ncp of 2-5 generally results in reasonable interpolations without the time
+#'     constraint.
+#'      
+#'   Ignored if \code{smart_PCA} is TRUE.
 #'@param dims numeric, default 2. Output dimensionality, default 2.
 #'@param initial_dims numeric, default 50. The number of dimensions retained in
 #'  the initial PCA step during tSNE.
@@ -550,8 +555,10 @@ plot_pairwise_ld_heatmap <- function(x, facets = NULL, snp.subfacet = NULL, samp
 #'@param ... Other arguments, passed to \code{\link[Rtsne]{Rtsne}} or
 #'  \code{\link[umap]{umap}}.
 #'
-#'@return A list containing: \itemize{ \item{data: } {Raw PCA, tSNE, umap, and/or
-#'  DAPC plot data.} \item{plots: } {ggplot PCA, tSNE, umap, and/or DAPC plots.}}
+#'@return A list containing: 
+#'  * data: Raw PCA, tSNE, umap, and/or DAPC plot data.
+#'  * plots: ggplot PCA, tSNE, umap, and/or DAPC plots.
+#'
 #'  Each of these two lists may contain one to four objects, one for each PCA,
 #'  tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
 #'  respectively. If a PCA was run, the loadings will also be returned in the 
@@ -1301,13 +1308,13 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @param snp character, default NULL. Column in either snp metadata or x (for
 #'   snpRdata or data.frame objects, respectively) containing snpIDs to use for
 #'   highlighting. Ignored if no highlighting is requested.
-#' @param color_var character, default NULL. If provided, a column by which
-#'   to color each point. If used, chromosomes will not be colored, and the 
+#' @param color_var character, default NULL. If provided, a column by which to
+#'   color each point. If used, chromosomes will not be colored, and the
 #'   \code{colors} argument instead provides a palette to use, with the viridis
 #'   palette used by default.
 #' @param vlines character (color) or FALSE, default FALSE. If a color, vertical
-#'   separator lines will be drawn between each chromosome. Widths controlled
-#'   by \code{vline_width}.
+#'   separator lines will be drawn between each chromosome. Widths controlled by
+#'   \code{vline_width}.
 #' @param vline_width numeric, default 2. Width of chromosome separator lines.
 #'   Ignored if \code{vlines} is FALSE.
 #' @param median_line character (color) or FALSE, default FALSE. If TRUE, a
@@ -1332,11 +1339,11 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   it's absolute value.
 #' @param highlight character, numeric, or FALSE, default "significant".
 #'   Controls SNP highlighting. If either "significant" or "suggestive", SNPs
-#'   above those respective values will be highlighted. If a numeric vector, SNPs
-#'   corresponding to vector entries will be highlighted. See details.
+#'   above those respective values will be highlighted. If a numeric vector,
+#'   SNPs corresponding to vector entries will be highlighted. See details.
 #' @param highlight_style character, default "label". Highlighting options:
-#'   \itemize{\item{label: }{labels with chr and position.}\item{color: }{Color
-#'   (word or hex) to color points by.}}
+#'   * label: labels with chr and position.
+#'   * color: Color (word or hex) to color points by.
 #' @param viridis.option character, default "plasma". Viridis color scale option
 #'   to use for significance lines and SNP labels. See
 #'   \code{\link[ggplot2]{scale_gradient}} for details.
@@ -1355,14 +1362,15 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   genes, for example.
 #' @param rug_style character, default "point". Options for the style of the
 #'   rug, ignored if \code{rug_data} is not provided. Options:
-#'   \itemize{\item{point: } standard rug plot with vertical dashes below the
+#'   * point: standard rug plot with vertical dashes below the
 #'   plot at the indicated locations. If start and end points are supplied in
-#'   \code{rug_data}, the midpoint will be plotted. \item{ribbon: } Ribbons for
-#'   each point drawn below the plot, from the \code{start} to \code{end}
-#'   columns. If the plotted range of \code{x} is very large (as in whole-genome
-#'   or reduced representation sequencing), these may not be visible. A warning
-#'   will be provided if this may be the case. Sub-setting the input and rug
-#'   data to a range of interest may help in this case.}
+#'   \code{rug_data}, the midpoint will be plotted.
+#'   * ribbon: Ribbons for each point drawn below the plot, from the
+#'   \code{start} to \code{end} columns. If the plotted range of \code{x} is
+#'   very large (as in whole-genome or reduced representation sequencing), these
+#'   may not be visible. A warning will be provided if this may be the case.
+#'   Sub-setting the input and rug data to a range of interest may help in this
+#'   case.
 #' @param rug_label character, default NULL. Names of additional labeling
 #'   columns in \code{rug_data}, ignored if \code{rug_data} is not provided.
 #'   \emph{These will not be directly plotted} (since the result is often very
@@ -1388,8 +1396,8 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'   population and/or family structure using the \eqn{\gamma_{GC}} approach
 #'   described in Price et al 2010.
 #' @param simplify_output If TRUE, only the ggplot object will be return. This
-#'  is optimal, since the data is already returned in that object, but is not
-#'  the default due to backwards consistency with old code.
+#'   is optimal, since the data is already returned in that object, but is not
+#'   the default due to backwards consistency with old code.
 #'
 #' @references Price, A., Zaitlen, N., Reich, D. et al. New approaches to
 #'   population stratification in genome-wide association studies. Nat Rev Genet
@@ -1398,9 +1406,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' @author William Hemstrom
 #' @export
 #'
-#' @return A list containing \itemize{\item{plot: } A ggplot manhattan plot.
-#'   \item{data: } Raw plot data.} If \code{simplify_output} is \code{FALSE}, 
-#'   only the ggplot object is returned.
+#' @return A list containing
+#' * plot:  A ggplot manhattan plot.
+#' * data: Raw plot data.
+#'
+#' If \code{simplify_output} is \code{FALSE}, only the ggplot object is
+#' returned.
 #'
 #'
 #' @examples
@@ -1410,12 +1421,12 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' x <- calc_association(x, response = "phenotype", method = "armitage")
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE)$plot
-#' 
-#' 
+#'
+#'
 #' # other types of stats:
 #' # make some data
 #' x <- calc_basic_snp_stats(x, "pop.chr", sigma = 200, step = 50)
-#' 
+#'
 #' # plot pi, breaking apart by population, keeping only the groupIX
 #' # and the ASP population, with
 #' # significant and suggestive lines plotted and SNPs
@@ -1424,7 +1435,7 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #'                chr = "chr", chr.subfacet = "groupIX",
 #'                sample.subfacet = "ASP",
 #'                significant = 0.05, suggestive = 0.15, sig_below = TRUE)$plot
-#' 
+#'
 #' # plot FST for the ASP/SMR comparison across all chromosomes,
 #' # labeling the first 10 SNPs in x (by row) with their ID
 #' # Note that since this is thie ony comparison, we don't actually need to
@@ -1432,13 +1443,13 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' plot_manhattan(x, "fst", facets = "pop.chr",
 #'                sample.subfacet = "ASP~SMR", highlight = 1:10,
 #'                chr = "chr", snp = ".snp.id")$plot
-#' 
+#'
 #' # plot sliding-window FST between ASP and SMR
 #' # and between OPL and SMR
 #' plot_manhattan(x, "fst", window = TRUE, facets = c("pop.chr"),
 #'                chr = "chr", sample.subfacet = "ASP~SMR",
 #'                significant = .29, suggestive = .2)$plot
-#' 
+#'
 #' # plot using a data.frame,
 #' # using log-transformed p-values
 #' ## grab data
@@ -1447,28 +1458,28 @@ plot_clusters <- function(x, facets = NULL, plot_type = "pca", check_duplicates 
 #' plot_manhattan(y, "pHWE", facets = "subfacet", chr = "chr",
 #'                significant = 0.0001, suggestive = 0.001,
 #'                log.p = TRUE, highlight = FALSE)$plot
-#' 
-#' 
-#' 
+#'
+#'
+#'
 #' # plot with a rug
 #' rug_data <- data.frame(chr = c("groupIX", "groupIV"), start = c(0, 1000000),
 #'                        end = c(5000000, 6000000), gene = c("A", "B"))
-#' 
+#'
 #' # point style, midpoints plotted
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data)
-#' 
+#'
 #' # ribbon style
 #' plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
 #'                log.p = TRUE, rug_data = rug_data, rug_style = "ribbon")
-#'                
+#'
 #' # with plotly to mouse over information
 #' \dontrun{
 #' plotly::ggplotly(plot_manhattan(x, "p_armitage_phenotype", chr = "chr",
-#'                                 log.p = TRUE, rug_data = rug_data, 
-#'                                 rug_style = "ribbon", 
+#'                                 log.p = TRUE, rug_data = rug_data,
+#'                                 rug_style = "ribbon",
 #'                                 rug_label = "gene")$plot)
-#' 
+#'
 #' }
 plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
                            chr = "chr", bp = "position", snp = NULL,
@@ -2292,13 +2303,18 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' CLUMPP.
 #'
 #' Individual cluster assignment probabilities can be calculated using several
-#' different methods: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-#' Factorization). \item{snapclust: } Maximum-likelihood genetic clustering.
-#' \item{admixture: } The ADMIXTURE program. Requires a local admixture
-#' executable, and thus cannot run on a Windows platform. \item{ structure: }
-#' The STRUCTURE program. Requires a local STRUCTURE executable. many additional
-#' options are available for STRUCTURE via other arguments.} These methods are
-#' not re-implemented in R, instead, this function calls the
+#' different methods:
+#' * snmf:  sNMF (sparse Non-Negative Matrix Factorization). 
+#' * snapclust: Maximum-likelihood genetic clustering.
+#' * admixture: The ADMIXTURE program. Requires a local admixture
+#'   executable, and thus cannot run on a Windows platform. 
+#' * structure: The STRUCTURE program. Requires a local STRUCTURE executable. 
+#'   Many additional options are available for STRUCTURE via other arguments.
+#' * fastmixture: the fastmixture program, a  faster variant of ADMIXTURE. 
+#'     Requires fastmixture to be installed, and thus cannot run on a Windows
+#'     platform.
+#'
+#' These methods are not re-implemented in R, instead, this function calls the
 #' \code{\link[LEA]{main_sNMF}}, \code{\link[adegenet]{snapclust.choose.k}}, or
 #' a local executable for the ADMIXTURE or STRUCTURE program instead. Please
 #' cite the references noted in those functions. For snapclust, the "ward"
@@ -2354,16 +2370,18 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   which to run the clustering/assignment algorithm. Each provided k value
 #'   will be run.
 #' @param method character, default "snmf". The clustering/assignment method to
-#'   run. Options: \itemize{\item{snmf: } sNMF (sparse Non-Negative Matrix
-#'   Factorization). See \code{\link[LEA]{main_sNMF}}. \item{snapclust: }
-#'   Maximum-likelihood genetic clustering. See
-#'   \code{\link[adegenet]{snapclust.choose.k}}. \item{admixture: } The
-#'   ADMIXTURE program. Requires a local admixture executable, and thus cannot
-#'   run on a Windows platform. \item{fastmixture: } The fastmixture program, a 
-#'   faster variant of ADMIXTURE. Requires fastmixture to be installed, and thus cannot
-#'   run on a Windows platform. \item{ structure: } The STRUCTURE program.
-#'   Requires a local STRUCTURE executable. many additional options are
-#'   available for STRUCTURE via other arguments.}
+#'   run. Options: 
+#'   * snmf: sNMF (sparse Non-Negative Matrix
+#'     Factorization). See \code{\link[LEA]{main_sNMF}}. 
+#'   * snapclust: Maximum-likelihood genetic clustering. See
+#'     \code{\link[adegenet]{snapclust.choose.k}}.
+#'   * admixture:  The ADMIXTURE program. Requires a local admixture executable, 
+#'     and thus cannot run on a Windows platform.
+#'   * fastmixture: The fastmixture program, a  faster variant of ADMIXTURE. 
+#'     Requires fastmixture to be installed, and thus cannot run on a Windows
+#'     platform.
+#'   * structure: The STRUCTURE program. Requires a local STRUCTURE executable. 
+#'     Many additional options are available for STRUCTURE via other arguments.
 #' @param reps numeric, default 1. The number of independent clustering
 #'   repetitions to run.
 #' @param update_bib character or FALSE, default FALSE. If a file path to an
@@ -2399,10 +2417,12 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param clumpp_path character, default "/usr/bin/CLUMPP.exe". Path to the
 #'   clumpp executable, required if clumpp = T.
 #' @param clumpp.opt character, default "greedy". Designates the CLUMPP method
-#'   to use. Options: \itemize{ \item{fullsearch: } Search all possible
-#'   configurations. Slow. \item{greedy: } The standard approach. Slow for large
-#'   datasets at high k values. \item{large.k.greedy: } A fast but less accurate
-#'   approach. } See CLUMPP documentation for details.
+#'   to use. Options: 
+#'   * fullsearch: Search all possible configurations. Slow. 
+#'   * greedy: The standard approach. Slow for large datasets at high k values.
+#'   * large.k.greedy: A fast but less accurate approach for large k values.
+#'   
+#'   See CLUMPP documentation for details.
 #' @param structure_path character, default "/usr/bin/structure". Path to the
 #'   STRUCTURE executable, required if method = "structure".
 #' @param admixture_path character, default "/usr/bin/admixture". Path to the
@@ -2550,11 +2570,13 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   multimodality in analysis of population structure. \emph{Bioinformatics},
 #'   23(14), 1801-1806.
 #'
-#' @return A list containing: \itemize{\item{plot: } A ggplot object.
-#'   \item{data: } A nested list of the raw Q matrices, organized by K and then
-#'   by run. \item{plot_data: } The raw data used in constructing the ggplot.
-#'   \item{K_plot: } A data.frame containing the value suggested for use in K
-#'   selection vs K value for the selected method.}
+#' @return A list containing:
+#' * plot: A ggplot object.
+#' * data: A nested list of the raw Q matrices, organized by K and then
+#'   by run. 
+#' * plot_data: The raw data used in constructing the ggplot.
+#' * K_plot: A data.frame containing the value suggested for use in K
+#'   selection vs K value for the selected method.
 #'
 #' @examples
 #' \dontrun{
@@ -4394,17 +4416,17 @@ plot_pairwise_fst_heatmap <- function(x, facets = NULL, facet.order = NULL,
 #'   \code{\link{Facets_in_snpR}} for more details.
 #' @param plots character vector, default all possible plots except for SFS.
 #'   Plot options:
-#'   \itemize{\item{fis: } density of FIS scores for all loci within each facet
+#'   \* fis: density of FIS scores for all loci within each facet
 #'   level.
-#'   \item{sfs: } Site Frequency Spectra for the entire dataset.
-#'   \item{maf: } density of minor allele frequencies for all loci within each
-#'   facet.
-#'   \item{pca: } Principal Component Analysis results for the given facet.
-#'   \item{missingness: } Proportion of missing alleles across each individual
-#'   withing each facet.
-#'   \item{heho: } expected vs. observed heterozygosity for each locus within
-#'   each facet. Very high expected or observed heterozygosities for many loci
-#'   can indicate genotyping issues.}
+#'   * sfs: Site Frequency Spectra for the entire dataset.
+#'   * maf:density of minor allele frequencies for all loci within each
+#'     facet.
+#'   * pca: Principal Component Analysis results for the given facet.
+#'   * missingness: Proportion of missing alleles across each individual
+#'     withing each facet.
+#'   * heho: expected vs. observed heterozygosity for each locus within
+#'     each facet. Very high expected or observed heterozygosities for many loci
+#'     can indicate genotyping issues.
 #' @param projection integer, default floor(nsnps(x)/1.2). A sample size to
 #'   project the SFS to, in \emph{number of gene copies}. Sizes too large will
 #'   result in a SFS containing few or no SNPs.
@@ -4585,16 +4607,16 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
 #'   \code{\link{calc_roh}}. If present in the sample metadata or in the
 #'   provided data.table, the column "sampID" will be taken as sample IDs for
 #'   plotting.
-#'   data.frames should have columns: \itemize{
-#'   \item{start_position: }{start positions for ROHs}
-#'   \item{end_position: }{end positions for ROHs}
-#'   \item{sampID: }{sample IDs}
-#'   \item{chr_len: }{total chromosome lengths for the chromosomes on which ROHs 
-#'     were detected.}
-#'   \item{chr: }{a column containing chromosome info 
-#'     \emph{named to match the \code{chr} argument!}}}
+#'   data.frames should have columns:
+#'   * start_position:  start positions for ROHs
+#'   * end_position: end positions for ROHs
+#'   * sampID: sample IDs
+#'   * chr_len: total chromosome lengths for the chromosomes on which ROHs 
+#'     were detected.
+#'   * chr: a column containing chromosome info 
+#'     \emph{named to match the \code{chr} argument!}
 #'   Note that for data.frame inputs, chromosomes or individuals with no ROHs
-#'   will not be plotted
+#'   will not be plotted.
 #' @param facet character. \emph{sample} facet by which to color individuals.
 #'   Note that only one facet is plotable at a time.
 #' @param chr character, default "chr". Column in either snp metadata or x (for
@@ -4634,7 +4656,7 @@ plot_roh <- function(x, facet = NULL, chr = "chr", bp = "position", lab_as_other
       }
       roh <- x
       roh <- as.data.table(roh)
-      chr_max <- unique(cbind(roh[,chr_len], roh[,..chr]))
+      chr_max <- .fix..call(unique(cbind(roh[,chr_len], roh[,..chr])))
       chr_min <- rep(0, nrow(chr_max))
       names(chr_min) <- chr_max[[2]]
       chr_max <- chr_max[[1]]

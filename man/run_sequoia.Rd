@@ -22,19 +22,19 @@ run_sequoia(
 \item{facets}{character, default NULL. Sample-specific facets over which the
 sequoia is called to run. See \code{\link{Facets_in_snpR}}.}
 
-\item{run_dupcheck}{FALSE or TRUE, default FALSE. Uses sequoia to check for 
-duplicate samples in the dataset. Duplicate samples should not be included 
+\item{run_dupcheck}{FALSE or TRUE, default FALSE. Uses sequoia to check for
+duplicate samples in the dataset. Duplicate samples should not be included
 for parentage and pedigree construction.}
 
-\item{run_parents}{FALSE or TRUE, default FALSE. Runs parentage assignments 
-for the samples. This runs quickly and is required before using the 
+\item{run_parents}{FALSE or TRUE, default FALSE. Runs parentage assignments
+for the samples. This runs quickly and is required before using the
 run_pedigree command.}
 
-\item{run_pedigree}{FALSE or TRUE, default FALSE. Runs pedigree construction 
+\item{run_pedigree}{FALSE or TRUE, default FALSE. Runs pedigree construction
 for the samples. This process can take a long time.}
 
 \item{run_relatives}{FALSE or TRUE, default FALSE. Runs retrieval of other
-relatives which did not pass thresholds for assignment in the main pedigree 
+relatives which did not pass thresholds for assignment in the main pedigree
 construction model.}
 
 \item{min_maf}{numeric in 0.25:0.5, default 0.3. Minimum allele frequency
@@ -50,8 +50,8 @@ sequoia.}
 (during parentage and pedigree reconstruction).}
 }
 \value{
-A nested list with each facet specified containing sequoia output 
-  summary information.
+A nested list with each facet specified containing sequoia output
+summary information.
 }
 \description{
 Runs the parentage assignment and pedigree construction tool from the
@@ -59,12 +59,12 @@ Runs the parentage assignment and pedigree construction tool from the
 safe!}.
 }
 \details{
-This is a limited integration of the program and package written by Jisca 
-Huisman. Note that there are many more Sequoia specific arguments that can 
-be added to change from the default settings (eg. ErrorM, Tassign, Tfilt, 
-etc.) See documentation for \code{sequoia}. These can be passed to the 
+This is a limited integration of the program and package written by Jisca
+Huisman. Note that there are many more Sequoia specific arguments that can
+be added to change from the default settings (eg. ErrorM, Tassign, Tfilt,
+etc.) See documentation for \code{sequoia}. These can be passed to the
 pedigree and parentage reconstructions using the ... argument in run_sequoia.
-The sequoia package has many features, and snpR facilitates the use of a 
+The sequoia package has many features, and snpR facilitates the use of a
 fraction of them. snpR users are encouraged to use the sequoia R package.
 }
 \examples{
@@ -93,8 +93,8 @@ rel <- run_sequoia(x = stk, run_dupcheck = FALSE, run_parents = FALSE,
 }
 \references{
 Huisman,J. (2017) Pedigree reconstruction from SNP data:
-  parentage assignment, sibship clustering and beyond. Mol. Ecol. Resour.,
-  17, 1009–1024.
+parentage assignment, sibship clustering and beyond. Mol. Ecol. Resour.,
+17, 1009–1024.
 }
 \author{
 William Hemstrom

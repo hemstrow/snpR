@@ -69,7 +69,7 @@ any additional sf objects being plotted.}
 add a scale to the plot. If NULL, no scale added.}
 
 \item{compass}{list or NULL, default \code{list(style =
-ggspatial::north_arrow_fancy_orienteering, location = "br")}. Arguments
+  ggspatial::north_arrow_fancy_orienteering, location = "br")}. Arguments
 passed to \code{\link[ggspatial]{annotation_north_arrow}} function from
 \code{ggspatial} to add a compass to the plot. If NULL, no compass added.
 Note that calls to alternative styles, like

@@ -32,11 +32,15 @@ variable of interest. Must match a column name in sample metadata. Response
 must be categorical, with only two categories.}
 
 \item{method}{character, default "gmmat.score". Specifies association method.
-Options: \itemize{ \item{gmmat.score: }  Population/family structure
-corrected mlm approach, based on Chen et al (2016). \item{armitage: }
-Armitage association test, based on Armitage (1955). \item{odds_ratio: }
-Log odds ratio test. \item{chisq: } Chi-squared test. } See description for
-more details.}
+Options:
+\itemize{
+\item gmmat.score: Population/family structure corrected mlm approach, based on
+Chen et al (2016).
+\item armitage: Armitage association test, based on Armitage (1955).
+\item odds_ratio: Log odds ratio test.
+\item chisq: Chi-squared test.
+See description for more details.
+}}
 
 \item{w}{numeric, default c(0, 1, 2). Weight variable for each genotype for
 the Armitage association method. See description for details.}
@@ -71,7 +75,7 @@ printed to the console.}
 }
 \value{
 A snpRdata object with the resulting association test results merged
-  into the stats socket.
+into the stats socket.
 }
 \description{
 Runs several different association tests on SNP data. The response variable
@@ -113,14 +117,14 @@ which allele (major or minor) is associated with which phenotype.
 }
 \references{
 Armitage (1955). Tests for Linear Trends in Proportions and
-  Frequencies. \emph{Biometrics}.
+Frequencies. \emph{Biometrics}.
 
 Chen et al. (2016). Control for Population Structure and
-  Relatedness for Binary Traits in Genetic Association Studies via Logistic
-  Mixed Models. \emph{American Journal of Human Genetics}.
+Relatedness for Binary Traits in Genetic Association Studies via Logistic
+Mixed Models. \emph{American Journal of Human Genetics}.
 
 Yang et al. (2010). Common SNPs explain a large proportion of the
-  heritability for human height. \emph{Nature Genetics}.
+heritability for human height. \emph{Nature Genetics}.
 }
 \author{
 William Hemstrom

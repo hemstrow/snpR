@@ -21,9 +21,15 @@ calc_basic_snp_stats(
 analysis. See \code{\link{Facets_in_snpR}} for more details.}
 
 \item{fst.method}{character, default "WC". Defines the FST estimator to use.
-Options: \itemize{ \item{WC: } Weir and Cockerham (1984). \item{Weir: } Weir
-(1990) \item{Hohenlohe: } Hohenlohe et al (2010), identical to the STACKS
-package. \item{Genepop: } Rousset (2008), uses the genepop package. }}
+Options:
+\itemize{
+\item WC: Weir and Cockerham (1984).
+\item Weir: Weir
+(1990)
+\item Hohenlohe: Hohenlohe et al (2010), identical to the STACKS
+package.
+\item Genepop: Rousset (2008), uses the genepop package.
+}}
 
 \item{sigma}{numeric. Designates the width of windows in kilobases. Full
 window size is 6*sigma.}
@@ -39,7 +45,7 @@ averages by the number of observations at those SNPs.}
 }
 \value{
 A snpRdata object with all of the described statistics merged into the
- appropriate sockets.
+appropriate sockets.
 }
 \description{
 Automatically calculate most basic statistics from snpRdata. Calculates maf,

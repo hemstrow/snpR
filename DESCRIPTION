@@ -72,7 +72,8 @@ Suggests:
     testthat,
     covr
 VignetteBuilder: knitr
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
 Collate: 
     'NeEstimator_interface.R'
     'association_functions.R'

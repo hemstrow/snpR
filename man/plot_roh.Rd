@@ -12,16 +12,18 @@ snpRdata object, needs to have had ROH info calculated with
 \code{\link{calc_roh}}. If present in the sample metadata or in the
 provided data.table, the column "sampID" will be taken as sample IDs for
 plotting.
-data.frames should have columns: \itemize{
-\item{start_position:}{start positions for ROHs}
-\item{end_position:}{end positions for ROHs}
-\item{sampID:}{sample IDs}
-\item{chr_len}{total chromosome lengths for the chromosomes on which ROHs 
-  were detected.}
-\item{chr:}{a column containing chromosome info 
-  \emph{named to match the \code{chr} argument!}}}
+data.frames should have columns:
+\itemize{
+\item start_position:  start positions for ROHs
+\item end_position: end positions for ROHs
+\item sampID: sample IDs
+\item chr_len: total chromosome lengths for the chromosomes on which ROHs
+were detected.
+\item chr: a column containing chromosome info
+\emph{named to match the \code{chr} argument!}
 Note that for data.frame inputs, chromosomes or individuals with no ROHs
-will not be plotted}
+will not be plotted.
+}}
 
 \item{facet}{character. \emph{sample} facet by which to color individuals.
 Note that only one facet is plotable at a time.}
@@ -34,14 +36,14 @@ snpRdata or data.frame objects, respectively) which defines the
 defines the position in bp of each SNP. Ignored for \code{data.table}
 inputs.}
 
-\item{lab_as_other}{character vector, default NULL. Vector of 
+\item{lab_as_other}{character vector, default NULL. Vector of
 chromosome/scaffold names which will be plotted grouped together, labelled
 as "other". Useful for small scaffolds/etc.}
 }
 \value{
 A \code{ggplot2} plot showing the positions of ROHs (white areas)
-  against colored chromosomal backdrops. Note that the data used to plot
-  this can be returned by calling \code{$data} on the resulting object.
+against colored chromosomal backdrops. Note that the data used to plot
+this can be returned by calling \code{$data} on the resulting object.
 }
 \description{
 Generate a plot displaying the locations of ROHs across the genome. Takes

@@ -43,16 +43,19 @@ plot_clusters(
 variables by which to color points. Up to two different sample-specific
 facets may be provided. See \code{\link{Facets_in_snpR}} for more details.}
 
-\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap", "dapc"). 
-Types of
- plots to be produced. Options \itemize{\item{pca: } Principal Component
- Analysis, first two dimensions of variance. \item{tSNE: } t-Stochastic
- Neighbor Embedding, which collapses dims (see argument) dimensions of
- variance into two. \item{umap: } Uniform Manifold Approximation and
- Projection, which collapses multiple dimensions of variance into two.
- \item{dapc: } Discriminant analysis of principal components, 
- clusters individuals into groups for plotting via PCA.} See
- description for details.}
+\item{plot_type}{character, default "pca". c("pca", "tSNE", "umap", "dapc").
+Types of plots to be produced. Options:
+\itemize{
+\item pca: Principal Component Analysis, first two dimensions of variance.
+\item tSNE: t-Stochastic Neighbor Embedding, which collapses dims (see argument)
+dimensions of variance into two.
+\item umap: Uniform Manifold Approximation and Projection, which collapses
+multiple dimensions of variance into two.
+\item dapc: Discriminant analysis of principal components, clusters individuals
+into groups for plotting via PCA.
+}
+
+See description for details.}
 
 \item{check_duplicates}{logical, default FALSE. Checks for any duplicated
 individuals, which will cause errors. Since these rarely exist and
@@ -64,23 +67,28 @@ a SNP must be sequenced in to be used in generating plots.}
 \item{minimum_genotype_percentage}{numeric, default FALSE. Proportion of SNPs
 a sample must be sequenced at in order to be used in plots.}
 
-\item{smart_PCA}{logical, default TRUE. If TRUE, uses Patterson et. al 
+\item{smart_PCA}{logical, default TRUE. If TRUE, uses Patterson et. al
 (2006)'s centering approach prior to plot construction. Note that this also
 avoids the need for interpolation, so interpolation is set to FALSE in this
 case.}
 
 \item{interpolation_method}{character, default "bernoulli". Interpolation
-method to use for missing data. Options: \itemize{\item{bernoulli:
-}{Interpolated via binomial draw for each allele against minor allele
-frequency.} \item{af: }{Interpolated by inserting the expected number of
-minor alleles at missing data points given loci minor allele frequencies.}
-\item{iPCA: }{This an iterative PCA approach to interpolate based on SNP/SNP
-covariance via \code{\link[missMDA]{imputePCA}}. If the ncp argument is not
-defined, the number of components used for interpolation will be estimated
-using \code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
-slower than the other methods, especially for large datasets. Setting an ncp
-of 2-5 generally results in reasonable interpolations without the time
-constraint.}} Ignored if \code{smart_PCA} is TRUE.}
+method to use for missing data. Options:
+\itemize{
+\item bernoulli: binomial draws for the minor allele.
+\item af: insertion of the average allele frequency
+\item iPCA: As a slower but more accurate alternative to "af"
+interpolation, "iPCA" may be selected. This an iterative PCA approach to
+interpolate based on SNP/SNP covariance via
+\code{\link[missMDA]{imputePCA}}. If the ncp argument is not defined, the
+number of components used for interpolation will be estimated using
+\code{\link[missMDA]{estim_ncpPCA}}. In this case, this method is much
+slower than the other methods, especially for large datasets. Setting an
+ncp of 2-5 generally results in reasonable interpolations without the time
+constraint.
+}
+
+Ignored if \code{smart_PCA} is TRUE.}
 
 \item{dims}{numeric, default 2. Output dimensionality, default 2.}
 
@@ -166,13 +174,17 @@ that PCA loadings will only be returned if this is true.}
 \code{\link[umap]{umap}}.}
 }
 \value{
-A list containing: \itemize{ \item{data: } {Raw PCA, tSNE, umap, and/or
- DAPC plot data.} \item{plots: } {ggplot PCA, tSNE, umap, and/or DAPC plots.}}
- Each of these two lists may contain one to four objects, one for each PCA,
- tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
- respectively. If a PCA was run, the loadings will also be returned in the 
- top-level list. If \code{simplify_output} is \code{FALSE}, only the ggplot 
- list is returned.
+A list containing:
+\itemize{
+\item data: Raw PCA, tSNE, umap, and/or DAPC plot data.
+\item plots: ggplot PCA, tSNE, umap, and/or DAPC plots.
+}
+
+Each of these two lists may contain one to four objects, one for each PCA,
+tSNE, umap, or DAPC plot requested, named "pca" "tsne", "umap", and "dapc"
+respectively. If a PCA was run, the loadings will also be returned in the
+top-level list. If \code{simplify_output} is \code{FALSE}, only the ggplot
+list is returned.
 }
 \description{
 Generate a ggplot cluster plot based on PCA, the Barnes-Hut simulation at
@@ -234,20 +246,20 @@ plot_clusters(stickSNPs, "pop.fam")
 }
 \references{
 Jesse H. Krijthe (2015). Rtsne: T-Distributed Stochastic Neighbor
- Embedding using a Barnes-Hut Implementation, URL:
- \url{https://github.com/jkrijthe/Rtsne}.
+Embedding using a Barnes-Hut Implementation, URL:
+\url{https://github.com/jkrijthe/Rtsne}.
 
 Van Der Maaten, L. & Hinton, G. (2008) Visualizing
- high-dimensional data using t-SNE. journal of machine learning research.
- \emph{Journal of Machine Learning Research}.
+high-dimensional data using t-SNE. journal of machine learning research.
+\emph{Journal of Machine Learning Research}.
 
 McInnes, L. & Healy (2018). UMAP: uniform manifold approximation
- and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
+and projection. Preprint at URL: \url{https://arxiv.org/abs/1802.03426}.
 
 Jombart, T., Devillard, S. & Balloux, F. Discriminant analysis of
- principal components: a new method for the analysis of genetically
- structured populations. BMC Genet 11, 94 (2010).
- \url{https://doi.org/10.1186}
+principal components: a new method for the analysis of genetically
+structured populations. BMC Genet 11, 94 (2010).
+\url{https://doi.org/10.1186}
 }
 \seealso{
 \code{\link[mmtsne]{mmtsne}}

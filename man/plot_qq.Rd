@@ -54,8 +54,8 @@ p <- plot_qq(z, "p_armitage_phenotype", "pop")
 }
 \references{
 Price, A., Zaitlen, N., Reich, D. et al. New approaches to
-  population stratification in genome-wide association studies. Nat Rev Genet
-  11, 459–463 (2010). https://doi.org/10.1038/nrg2813
+population stratification in genome-wide association studies. Nat Rev Genet
+11, 459–463 (2010). https://doi.org/10.1038/nrg2813
 }
 \author{
 William Hemstrom

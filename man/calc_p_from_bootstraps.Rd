@@ -24,11 +24,15 @@ calculate p-values for. By default calculates p-values for all possible
 stats.}
 
 \item{alt}{character, default "two-sided". Specifies the alternative
-hypothesis to be used. Options: \itemize{ \item "less": probability that a
-bootstrapped value is as small or smaller than observed. \item "greater":
-probability that a bootstrapped value is as large or larger than observed.
+hypothesis to be used. Options:
+\itemize{
+\item "less": probability that a bootstrapped value is as small or smaller than
+observed.
+\item "greater": probability that a bootstrapped value is as large or larger
+than observed.
 \item "two-sided": probability that a bootstrapped value is as or more
-extreme than observed. }}
+extreme than observed.
+}}
 
 \item{par}{numeric or FALSE, default FALSE. If numeric, the number of cores to
 use for parallel processing.}
@@ -39,14 +43,18 @@ details and options, see \code{\link[stats]{p.adjust}}.}
 
 \item{fwe_case}{character, default c("by_facet", "by_subfacet", "overall").
 How should Family-Wise Error correction (multiple testing correction) be
-applied? \itemize{\item{"by_facet":} Each facet supplied (such as pop or
-pop.fam) is treated as a set of tests. \item{"by_subfacet":} Each level of
-each subfacet is treated as a separate set of tests. \item{"overall":} All
-tests are treated as a set.}}
+applied?
+\itemize{
+\item "by_facet": Each facet supplied (such as pop or pop.fam) is treated as a
+set of tests.
+\item "by_subfacet": Each level of each subfacet is treated as a separate set of
+tests.
+\item "overall": All tests are treated as a set.
+}}
 }
 \value{
 snpRdata object, with p-values merged into the stats or pairwise.stats
- sockets.
+sockets.
 }
 \description{
 \code{calc_p_from_bootstraps} finds p-values for observed \emph{smoothed

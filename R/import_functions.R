@@ -1104,9 +1104,11 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
 #'
 #' These functions are provided as a utility and do not work in the general
 #' \code{snpR} ecosystem. The different outputs may require specific FORMAT
-#' tags: \itemize{\item{vcf2beagle: }{\code{GP} tag}\item{vcf2PL: }
-#' {\code{PL} tag}} If thes eare lacking, \code{snpR} may provide 
-#' recommendations by which they can be added if possible.
+#' tags: 
+#' * vcf2beagle: \code{GP} tag
+#' * vcf2PL: \code{PL} tag
+#' If these are lacking, \code{snpR} may provide recommendations by which they 
+#' can be added if possible.
 #' 
 #' @param file character, path to "vcf" file.
 #' @param outfile character, output filename.
