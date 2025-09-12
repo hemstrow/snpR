@@ -594,7 +594,7 @@ test_that("plot_roh",{
                    unique(sample.meta(d1)$sampID))
   d2 <- d1
   ## without
-  sample.meta(d2)$sampID <- NULL
+  expect_warning(sample.meta(d2)$sampID <- NULL, "Some levels")
   p2 <- plot_roh(d2, chr = "CHROM")
   expect_identical(ggplot2::ggplot_build(p2)$layout$panel_params[[1]]$y$get_labels(),
                    unique(sample.meta(d1)$.sample.id))

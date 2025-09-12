@@ -324,6 +324,7 @@
 #
 # @author William Hemstrom
 .process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
+  nref <- nalt <- NULL
   #========sanity checks, part 1=============
   .check.installed("vcfR")
   
@@ -1078,6 +1079,7 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
 }
 
 .vcf_tag_extract <- function(x, tag){
+  ID <- REF <- ALT <- CHROM <- POS <- . <- NULL
   like <- vcfR::extract.gt(x, tag)
   like <- strsplit(unlist(like), ",")
   like <- unlist(like)
@@ -1196,7 +1198,7 @@ vcf2pl <- function(file, outfile, init_admix = FALSE, k = NULL){
         }
       }
       missing.inds <- unique(which(is.na(gcovarmat), arr.ind=T)[,2])
-      return(list(stats::prcomp(x = na.omit(gcovarmat), center = TRUE, scale = FALSE), missing.inds))
+      return(list(stats::prcomp(x = stats::na.omit(gcovarmat), center = TRUE, scale = FALSE), missing.inds))
     }
     
     return.val <- do.pca(meangls)

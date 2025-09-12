@@ -1039,6 +1039,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   extract.gd.afm <- function(y, facets) y[which(names(y) %in% facets)]
   
   extract.fst.matrix <- function(x, facets = NULL){
+    p1 <- p2 <- NULL
     facets <- .check.snpR.facet.request(x, facets, "complex", return_base_when_empty = F, fill_with_base = F)
     if(length(facets) == 0){
       return(NULL)

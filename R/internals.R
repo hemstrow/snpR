@@ -1531,7 +1531,7 @@ is.snpRdata <- function(x){
   ..all_idents <- ..rm_cols <- NULL
   
   .tab_func <- function(x, snp_form, mDat){
-    ..mDat <- NULL
+    ..mDat <- ..socol <- NULL
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
     # x[,variable := as.integer(as.factor(variable))]
     
@@ -1540,7 +1540,7 @@ is.snpRdata <- function(x){
     # gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
     gmat <- gmat[,-1]
     socol <- sort(colnames(gmat))
-    gmat <- gmat[,..socol]
+    gmat <- .fix..call(gmat[,..socol])
     
     # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
     opts <- colnames(gmat)
@@ -1570,7 +1570,7 @@ is.snpRdata <- function(x){
     opts1 <- substr(opts, 1, snp_form/2)
     opts2 <- substr(opts, (snp_form/2 + 1), snp_form*2)
     flips <- try(!opts1 <= opts2, silent = TRUE) # this'll do an alphabetic check since these are characters--weird but works
-    if(is(flips, "try-error")){stop("Error at flips.\n")}
+    if(methods::is(flips, "try-error")){stop("Error at flips.\n")}
     if(any(flips)){
       colnames(gmat)[which(flips)] <- paste0(opts2[flips], opts1[flips])
     }

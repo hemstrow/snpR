@@ -3432,7 +3432,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     else{
       cld[,weight := 1]
     }
-    out <- cld[,.(CLD = weighted.mean(CLD,weight)), by = win]
+    out <- cld[,.(CLD = stats::weighted.mean(CLD,weight)), by = win]
     cn <- c("facet", "subfacet", "snp.facet", "snp.subfacet", "center")
     out <- cbind(.fix..call(cl[out$win,..cn]),
                  sigma = ifelse(window_triple_sigma, window_sigma/3, window_sigma)/1000,
@@ -5667,7 +5667,7 @@ calc_allelic_richness <- function(x, facets = NULL, g = 0){
 #' get.snpR.stats(x, c("pop", "fam"), 
 #'                stats = "seg_sites")$weighted.means
 calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
-  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- prob_seg_var <- ..keep_cols <- NULL
+  facet <- subfacet <- .g <- .sum <- . <- .snp.id <- prob_seg <- prob_seg_var <- ..keep_cols <- poly <-  NULL
   
   #===========sanity checks============
   if(!is.snpRdata(x)){
@@ -5897,6 +5897,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
                      final_roh_max_het = Inf,
                      window_start_method = "conservative",
                      genome_length = NULL, par = FALSE, verbose = 1){
+  start_position <- end_position <- snp_density_kb <- nhom <- position <- snp.facet <- subfacet <- IND <- len <- snp.subfacet <- NULL
   
   #=========sanity checks===========
   if(!is.snpRdata(x)){
@@ -5914,6 +5915,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   # run per chr, all individuals at once. sn should have no leading metadata
   roh_func <- function(sn, meta, window_snps, min_snps = 1000, min_length = 1000, max_hets = 1,
                        max_missing = 5, gap = 1000, min_density = 50, roh_threshold = 0.05, extend = FALSE, verbose){
+    
     
     #==============loop through each genomic window and determine if individuals/SNPs pass roh criteria to be candidates for roh======
     if(verbose){cat("Looping across windows to calculate pROH.\n")}
@@ -6208,7 +6210,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
       
       #======count het/hom======
       tg <- sn[roh$start[i]:roh$end[i],][[roh$IND[i]]]
-      tg <- na.omit(tg)
+      tg <- stats::na.omit(tg)
       roh[i,nhom := sum(tg != 1)]
       roh[i,nhet := sum(tg == 1)]
     }

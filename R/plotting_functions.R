@@ -1699,7 +1699,7 @@ plot_manhattan <- function(x, plot_var, window = FALSE, facets = NULL,
       msg <- c(msg, paste0(color_var, " not found in data/snp.meta.\n"))
     }
     else{
-      if(methods::is(colors, "gg") & is(colors, "Scaale")){
+      if(methods::is(colors, "gg") & methods::is(colors, "Scaale")){
         tmp <- try(ggplot2::ggplot() + colors, silent = TRUE)
         if(methods::is(tmp, "try-error")){
           msg <- c(msg, "Can't add function `colors()` to ggplots.\n")
@@ -4613,6 +4613,8 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
 #' @author William Hemstrom
 #' @export
 plot_roh <- function(x, facet = NULL, chr = "chr", bp = "position", lab_as_other = NULL){
+  chr_len <- ..chr <- snp.subfacet <- start_position <- end_position <- snp.subfacet <- yloc <- subfacet <- ind <- alph <- . <- cum_xmin <- cum_xmax <- NULL 
+  
   #=======sanity checks======
   if(length(facet) > 1){
     stop("Only one sample facet is plottable at a time.\n")
