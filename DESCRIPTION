@@ -1,7 +1,7 @@
 Package: snpR
 Type: Package
 Title: Whole-Genome Analysis Tools for Use with Single Nucleotide Polymorphism Data
-Version: 1.2.12.9999
+Version: 1.2.13
 Authors@R: c(person("William", "Hemstrom", email = "hemstrow@gmail.com",
   role = c("aut", "cre")),
   person("Melissa", "Jones", email = "mlyjones@ucdavis.edu", role = c("aut", "ctb")),
@@ -20,6 +20,7 @@ LazyData: true
 Imports:
     doParallel,
     dplyr,
+    collapse,
     Matrix,
     matrixStats,
     methods,

@@ -122,7 +122,8 @@ test_that("private", {
   expect_true(all(unlist(.check_calced_stats(x, c("pop"), "pa"))))
   pa <- get.snpR.stats(x, "pop", "private")
   
-  expect_equal(which(pa$single$pa_uncorrected == 1), c(37, 98, 108, 122, 138, 156, 166, 180, 188, 193)) # hand calced
+  expect_equal(pa$single[which(pa$single$pa_uncorrected == 1),]$.snp.id, c(19, 49, 54, 61, 69, 78, 83, 90, 94, 97)) # hand calced
+  expect_equal(pa$single[which(pa$single$pa_uncorrected == 1),]$subfacet, c("OPL", "OPL", "OPL", "OPL", "OPL", "OPL", "ASP", "ASP", "OPL", "OPL")) # hand calced
   expect_equal(pa$weighted.means$total_pa_uncorrected, c(2, 8)) # hand calced
   
   

@@ -1533,9 +1533,14 @@ is.snpRdata <- function(x){
   .tab_func <- function(x, snp_form, mDat){
     ..mDat <- NULL
     x <- data.table::melt(data.table::transpose(x, keep.names = "samp"), id.vars = "samp") # transpose and melt
+    # x[,variable := as.integer(as.factor(variable))]
     
-    gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
+    gmat <- collapse::pivot(data.table::setDT(x), how = "w", ids = "variable", names = "value", values = "value", FUN = length) # cast
+    gmat[is.na(gmat)] <- 0
+    # gmat <- data.table::dcast(data.table::setDT(x), variable ~ value, value.var='value', length) # cast
     gmat <- gmat[,-1]
+    socol <- sort(colnames(gmat))
+    gmat <- gmat[,..socol]
     
     # fix any cases where we have the same genotype but reversed allele order TA is the same as AT
     opts <- colnames(gmat)

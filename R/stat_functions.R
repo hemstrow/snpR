@@ -1726,11 +1726,17 @@ calc_private <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
       # once for each subfacet level. The row which matches this will be that for the populations that have the private allele!
       pa.cgs <- logi.cgs[pa.loci,]
       pa <- logi[logi$.snp.id %in% cgs$.snp.id[pa.loci],]
-      comp.series <- rep(pa.cgs, each = length(unique(gs$as$subfacet)))
-      has.private <- as.matrix(pa[,-c(1:3)])[comp.series] # here's where the private alleles are in the subset data.
       
-      # mark as private in vector and return
-      out[logi$.snp.id %in% cgs$.snp.id[pa.loci]][has.private] <- 1
+      
+      
+      comp.series <- rep(pa.cgs, each = length(unique(gs$as$subfacet)))
+      out[logi$.snp.id %in% cgs$.snp.id[pa.loci]][row(pa[,-c(1:3)])[which(pa[,-c(1:3)] & comp.series)]] <- 1
+      
+      
+      # has.private <- as.matrix(pa[,-c(1:3)])[comp.series] # here's where the private alleles are in the subset data.
+      # 
+      # # mark as private in vector and return
+      # out[logi$.snp.id %in% cgs$.snp.id[pa.loci]][has.private] <- 1
     }
     # return
     return(out)
