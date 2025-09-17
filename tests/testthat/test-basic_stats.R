@@ -192,7 +192,7 @@ test_that("het_hom", {
 
 test_that("prop_poly",{
   tf <- c(".base", "chr", "chr.pop", "chr.fam", "fam", "pop", "fam.pop.chr")
-  poly <- calc_prop_poly(.internal.data$test_snps, tf)
+  expect_warning(poly <- calc_prop_poly(.internal.data$test_snps, tf), "support")
   polyc <- get.snpR.stats(poly, tf, "prop_poly")$weighted.means
   
   # quick, dirty percent poly function using genotypes to check, not efficient for large data!
@@ -224,8 +224,8 @@ test_that("prop_poly",{
                get.snpR.stats(calc_ho(.internal.data$test_snps, tf), tf, "ho")$weighted.means$weighted_mean_ho)
   
   # double snp level
-  r1 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("chr.position.fam")), "chr.position.fam", "prop_poly")
-  r2 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("position.chr.fam")), "position.chr.fam", "prop_poly")
+  expect_warning(r1 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("chr.position.fam")), "chr.position.fam", "prop_poly"), "support")
+  expect_warning(r2 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("position.chr.fam")), "position.chr.fam", "prop_poly"), "support")
   expect_equal(r1, r2)
   
   ## everything accounted for?

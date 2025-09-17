@@ -4931,6 +4931,8 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
 calc_prop_poly <- function(x, facets = NULL){
   snp.subfacet <- NULL
   #==================sanity checks====================================
+  warning("calc_prop_poly currently doesn't support rarefaction, and can yeild misleading results if sample sizes or proportions of missing data vary across sample facets. Consider calc_seg_sites as an alternative.\n")
+  
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
