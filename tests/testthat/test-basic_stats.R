@@ -391,3 +391,11 @@ test_that("roh",{
   expect_true(res$sample[res$sample$sampID == "V4",]$fROH ==
                 sum(res_roh[res_roh$sampID == "V4",]$len)/genome_len) # checking one is OK
 })
+
+test_that("PID", {
+  x <- calc_pid(stickSNPs, c("fam.pop", "fam", "pop"))
+  res <- get.snpR.stats(x, c("fam.pop", "fam", "pop"), "pid")
+  
+  expect_true(all(c("fam.pop", "fam", "pop") %in% res$single$facet))
+  expect_true(all(c("fam.pop", "fam", "pop") %in% res$weighted.means$facet))
+})

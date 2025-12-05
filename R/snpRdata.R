@@ -822,7 +822,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
                ROH = "roh",
                fROH = "roh",
                FROH = "roh",
-               Froh = "roh")
+               Froh = "roh",
+               PID = "pid",
+               pa = "private")
   
   need_unaliased <- which(stats %in% names(aliases))
   
@@ -846,7 +848,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   facets <- .check.snpR.facet.request(x, facets, "none")
   
   stats <- unique(stats)
-  
+
   if(!all(stats %in% names(.internal.data$statistic_index))){
     msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(.internal.data$statistic_index))], collapse = ", "),
                          "\nnot recognized. \nRecognized statistics: ",

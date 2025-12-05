@@ -1,7 +1,8 @@
 #===========================statistic_index================
 #=============possible calculated statistics===============
 single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association", "hwe", "random_forest", "genomic_prediction", 
-                              "fis", "allelic_richness", "seg_sites"),
+                              "fis", "allelic_richness", "seg_sites",
+                              "pid"),
                      col_pattern = list("ho", 
                                         "pi",
                                         "he",
@@ -13,7 +14,8 @@ single.stats <- list(stat = c("ho", "pi", "he", "maf", "private", "association",
                                         c("gp_effect"),
                                         c("fis", "var_comp_b", "var_comp_c", "nk"),
                                         c("richness", "^g$"),
-                                        c("seg_sites", "^g$", "prob_seg_var", "prob_seg")))
+                                        c("seg_sites", "^g$", "prob_seg_var", "prob_seg"),
+                                        c("PID", "PIDsib")))
 window.stats <- list(stat = "tajimas_d",
                      col_pattern = list(c("ws.theta", "ts.theta", "num_seg", "D", "n_snps", "e1", "e2")))
 pairwise.stats <- list(stat = c("fst", "abba_baba"),
@@ -22,7 +24,7 @@ pairwise.stats <- list(stat = c("fst", "abba_baba"),
 sample.stats <- list(stat = c("het_hom_ratio", "hs"),
                      col_pattern = list("Het/Hom",
                                         "hs"))
-pop.stats <- list(stat = "ne",
+pop.stats <- list(stat = c("ne"),
                   col_pattern = list(c("LDNe_", "Neb_", "He_", "Ne", "CI")))
 other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance", "geographic_distance", 
                              "prop_poly", "allele_frequency_matrix", "roh"),
@@ -33,7 +35,7 @@ other.stats <- list(stat = c("ld", "genetic_distances", "isolation_by_distance",
                                  c("weighted.means"),
                                  c("allele_frequency_matrix"),
                                  c("sample", "roh", "weighted.means")),
-                    col_patttern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly", NA, "ROH"))
+                    col_pattern = list(c("CLD", "rsq", "^pval$", "Dprime"), NA, NA, NA, "prop_poly", NA, "ROH"))
 
 
 #=============build lists for each stat====================

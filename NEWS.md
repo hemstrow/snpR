@@ -1,3 +1,8 @@
+# snpR 1.2.14
+## Features:
+### Major:
+* Added `calc_pid` to calculate probabilities of identity.
+
 # snpR 1.2.13
 
 ## Features:

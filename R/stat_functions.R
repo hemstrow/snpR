@@ -6445,3 +6445,92 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   return(x)
 }
 
+
+#' Probability of Identity
+#'
+#' Calculates the probability of sampling two individuals from the same
+#' population with identical genotypes.
+#'
+#' Both per-locus and across all locus probabilities are calculated. Two
+#' statistics are calculated:
+#'
+#' 1. PID: unbiased probability of randomly sampling two identical individuals
+#' from a population, corrected for sample size. 
+#' 2. PIDsib: probability of
+#' randomly sampling two genetically identical siblings from a population.
+#'
+#' @param x snpRdata object
+#' @param facets facets over which to calculate PID. See
+#'   \code{\link{Facets_in_snpR}} for details. SNP facets are ignored.
+#'
+#' @return A snpRdata object with PID info merged in, fetchable with
+#'   \code{\link{get.snpR.stats}}
+#'
+#' @author William Hemstrom
+#' @export
+#'
+#' @references 
+#'
+#' Paetkau, D., Waits, L. P., Clarkson, P. L., Craighead, L., Vyse, E., Ward,
+#' R., & Strobeck, C. (1998). Variation in Genetic Diversity across the Range of
+#' North American Brown Bears. Conservation Biology, 12(2), 418–429.
+#' https://doi.org/10.1111/j.1523-1739.1998.96457.x
+#' 
+#' @examples
+#' x <- calc_pid(stickSNPs, "pop")
+#' get.snpR.stats(x, "pop", "pid")
+#'
+#' 
+calc_pid <- function(x, facets = NULL){
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  # add any missing facets
+  facets <- .check.snpR.facet.request(x, facets)
+  has_maf <- .check_calced_stats(x, facets, "maf")
+  if(any(!unlist(has_maf))){
+    x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+  }
+  
+  #=========================subfunction=============
+  pid <- function(mafs, n){
+    PID_freq <- cbind(mafs, 1-mafs)
+    S <- rowSums(PID_freq)
+    S2 <- rowSums(PID_freq^2)
+    S3 <- rowSums(PID_freq^3)
+    S4 <- rowSums(PID_freq^4)
+    
+    PIDsib <- (1 + 2*S2 + 2*S2*S2 - rowSums(PID_freq^4))/4
+    
+    PIDub_top1 <- (n^3)*(2*S2^2 - S4)
+    PIDub_top2 <- (2*n^2)*(S3 + 2*S2)
+    PIDub_top3 <- n*(9*S2 + 2)
+    PID_unbiased <- (PIDub_top1 - PIDub_top2 + PIDub_top3 - 6)/
+      ((n - 1)*(n-2)*(n-3))
+    
+    return(data.table(PID = PID_unbiased,
+                      PIDsib = PIDsib))
+  }
+  
+  #=========================run=====================
+  maf <- get.snpR.stats(x, facets, "maf")$single
+  maf <- as.data.table(maf)
+  maf <- maf[,c("PID", "PIDsib") := pid(maf, n = (min.count + maj.count)/2), by = .(facet, subfacet)]
+  PID <- maf[,list(PID = prod(PID[is.finite(PID) & PID > 0], na.rm = TRUE),
+                   PIDsib = prod(PIDsib, na.rm = TRUE)), 
+             by = .(facet, subfacet)]
+  
+  #=========================merge and return========
+  PID$snp.facet <- ".base"
+  PID$snp.subfacet <- ".base"
+  x <- .merge.snpR.stats(x, PID, type = "weighted.means")
+  keep.cols <- c("facet", "subfacet", colnames(snp.meta(x)), "PID", "PIDsib")
+  keep.cols <- keep.cols[which(keep.cols %in% colnames(maf))]
+  x <- .merge.snpR.stats(x, maf[,..keep.cols])
+  
+  x <- .update_citations(x,"Paetkau1998", stats = "PID", details = "Unbiased Probability of Identity")
+  x <- .update_calced_stats(x, facets, "PID", remove.type = "snp")
+  return(x)
+}
+
