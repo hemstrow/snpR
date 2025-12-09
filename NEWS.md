@@ -3,6 +3,9 @@
 ### Major:
 * Added `calc_pid` to calculate probabilities of identity.
 
+## Bug fixes:
+* Fixed a bug where the `hf_hets` filter in `filter_snps()` would fail if only one type of heterozygote was present in the data (AA, AC, CC only, for example).
+
 # snpR 1.2.13
 
 ## Features:

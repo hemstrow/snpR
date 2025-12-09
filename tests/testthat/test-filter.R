@@ -38,6 +38,11 @@ test_that("hf_hets", {
   check <- filter_snps(.internal.data$test_snps, hf_hets = 0.4, verbose = FALSE)
   goods <- alld$position[which(rowSums(alld[, -c(1:2)] == 1, na.rm = T)/rowSums(!is.na(alld[,-c(1:2)])) <= 0.4)] # gets the position of loci with less than 40% hets
   expect_equal(goods, snp.meta(check)$position)
+  
+  # no error when only two alleles across all loci
+  test <- format_snps(stickSNPs, "sn")
+  test <- import.snpR.data(test, header_cols = 2)
+  expect_no_error(.make_it_quiet(filter_snps(test, hf_hets = .55)))
 })
 
 #===========hwe=======================

@@ -1156,7 +1156,7 @@ filter_snps <- function(x, maf = FALSE,
       
       # get heterozygote frequency
       hs <- which(substr(colnames(gmat), 1, snp_form/2) != substr(colnames(gmat), (snp_form/2) + 1, snp_form))
-      het_f <- Matrix::rowSums(gmat[,hs])/Matrix::rowSums(gmat)
+      het_f <- Matrix::rowSums(gmat[,hs, drop = FALSE])/Matrix::rowSums(gmat)
       
       # check violation
       het_f <- het_f > hf_hets #if false, heterozygote frequency is lower than cut-off, keep locus
