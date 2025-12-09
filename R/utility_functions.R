@@ -2864,26 +2864,46 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
   
   # adegenet
   if(output == "adegenet"){
-    pop.col <- which(colnames(x@sample.meta) == "pop")
+    facets <- .check.snpR.facet.request(x, facets)
+    if(length(facets) > 1){
+      stop("Only one facet allowed for conversion to adegenet. This *can* be a compound facet (pop.fam).\n")
+    }
     
-    if(ncol(x@sample.meta) > 1){
-      strata <- x@sample.meta[,-ncol(x@sample.meta)]
-      if(!is.data.frame(strata)){
-        strata <- as.data.frame(strata, stringsAsFactors = F)
-        colnames(strata) <- colnames(x@sample.meta)[-ncol(x@sample.meta)]
-        row.names(strata) <- colnames(x)
-      }
-      else{
-        strata <- NULL
+    
+    if(facets[1] != ".base"){
+      popinfo <- .paste.by.facet(sample.meta(x), unlist(.split.facet(facets)))
+    }
+    else{
+      if(any(colnames(sample.meta(x)) == "pop")){
+        popinfo <- sample.meta(x)[,which(colnames(sample.meta(x)) == "pop")]
       }
     }
     
-    if(length(pop.col) > 0){
+    if(ncol(x@sample.meta) > 1){
+      strata <- x@sample.meta[,-ncol(x@sample.meta)]
+      if(is.data.frame(strata)){
+        if(ncol(strata) == 0){
+          strata <- NULL
+        }
+      }
+      else if(!is.data.frame(strata)){
+        strata <- as.data.frame(strata, stringsAsFactors = F)
+        if(ncol(strata) > 0){
+          colnames(strata) <- colnames(x@sample.meta)[-ncol(x@sample.meta)]
+          row.names(strata) <- colnames(x)
+        }
+        else{
+          strata <- NULL
+        }
+      }
+    }
+    
+    if(exists("popinfo")){
       rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
                                    NA.char = substr(x@mDat, 1, nchar(x@mDat)/2),
                                    strata = strata,
                                    loc.names = x@snp.meta$.snp.id,
-                                   pop = x@sample.meta$pop)
+                                   pop = popinfo)
     }
     else{
       rdata <- adegenet::df2genind(t(as.data.frame(x, stringsAsFactors = F)), ncode = 1,
