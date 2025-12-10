@@ -6488,20 +6488,34 @@ calc_pid <- function(x, facets = NULL){
   
   # add any missing facets
   facets <- .check.snpR.facet.request(x, facets)
-  has_maf <- .check_calced_stats(x, facets, "maf")
-  if(any(!unlist(has_maf))){
-    x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+  if(.is.bi_allelic(x)){
+    has_maf <- .check_calced_stats(x, facets, "maf")
+    if(any(!unlist(has_maf))){
+      x <- calc_maf(x,  .check.snpR.facet.request(x, facets)[which(!unlist(has_maf))])
+    }
   }
+  else{
+    missing_facets <- which(!facets %in% x@facets)
+    if(length(missing_facets) > 0){
+      x <- .add.facets.snpR.data(x, facets)
+    }
+  }
+  
   
   #=========================subfunction=============
   pid <- function(mafs, n){
-    PID_freq <- cbind(mafs, 1-mafs)
-    S <- rowSums(PID_freq)
-    S2 <- rowSums(PID_freq^2)
-    S3 <- rowSums(PID_freq^3)
-    S4 <- rowSums(PID_freq^4)
+    if(!is.data.table(mafs)){
+      PID_freq <- cbind(mafs, 1-mafs)
+    }
+    else{
+      PID_freq <- as.matrix(mafs)
+    }
+    S <- matrixStats::rowSums2(PID_freq)
+    S2 <- matrixStats::rowSums2(PID_freq^2)
+    S3 <- matrixStats::rowSums2(PID_freq^3)
+    S4 <- matrixStats::rowSums2(PID_freq^4)
     
-    PIDsib <- (1 + 2*S2 + 2*S2*S2 - rowSums(PID_freq^4))/4
+    PIDsib <- (1 + 2*S2 + 2*S2*S2 - matrixStats::rowSums2(PID_freq^4))/4
     
     PIDub_top1 <- (n^3)*(2*S2^2 - S4)
     PIDub_top2 <- (2*n^2)*(S3 + 2*S2)
@@ -6514,9 +6528,23 @@ calc_pid <- function(x, facets = NULL){
   }
   
   #=========================run=====================
-  maf <- get.snpR.stats(x, facets, "maf")$single
-  maf <- as.data.table(maf)
-  maf <- maf[,c("PID", "PIDsib") := pid(maf, n = (min.count + maj.count)/2), by = .(facet, subfacet)]
+  if(.is.bi_allelic(x)){
+    maf <- get.snpR.stats(x, facets, "maf")$single
+    maf <- as.data.table(maf)
+    maf <- maf[,c("PID", "PIDsib") := pid(maf, n = (min.count + maj.count)/2)]
+  }
+  else{
+    keeps <- which(x@facet.meta$facet %in% facets)
+    maf <- as.matrix(x@geno.tables$as)[keeps,]
+    n <- matrixStats::rowSums2(maf)
+    maf <- maf/n
+    cns <- paste0("~a", 1:ncol(maf))
+    colnames(maf) <- cns
+    maf <- as.data.table(cbind(x@facet.meta[keeps,], maf))
+    
+    maf <- maf[,c("PID", "PIDsib") := pid(.SD, n = n/2), .SDcols = cns]
+  }
+  
   PID <- maf[,list(PID = prod(PID[is.finite(PID) & PID > 0], na.rm = TRUE),
                    PIDsib = prod(PIDsib, na.rm = TRUE)), 
              by = .(facet, subfacet)]
