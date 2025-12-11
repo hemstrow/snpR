@@ -969,8 +969,8 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   # NN, no need to do anything, just read in and proceed as normal.
   if(header_cols > 0){
     header_cols <- 1:header_cols
-    snp.meta <- genotypes[,header_cols]
-    genotypes <- genotypes[,-header_cols]
+    snp.meta <- genotypes[,header_cols,drop=FALSE]
+    genotypes <- genotypes[,-header_cols,drop=FALSE]
     
   }
   

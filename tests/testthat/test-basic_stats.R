@@ -307,6 +307,12 @@ test_that("richness", {
   expect_true("richness" %in% colnames(ar$single))
   expect_equal(round(ar$weighted.means$weighted_mean_richness, 3), 
                c(1.893, 1.885))
+  
+  # microsats/very large sample sizes
+  x <- read_non_biallelic(t(steelRAW[,-1]), sample.meta = steelRAW[,1, drop=FALSE])
+  x <- calc_allelic_richness(x, "pop")
+  res <- get.snpR.stats(x, "pop", "allelic_richness")
+  expect_true(all(rank(res$weighted.means$weighted_mean_richness) == c(1,3,2,4)))
 })
 
 test_that("seg_sites", {

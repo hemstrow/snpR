@@ -51,6 +51,7 @@ Suggests:
     ggspatial,
     ggrepel,
     GMMAT,
+    gmp,
     hexbin,
     knitr,
     LEA,

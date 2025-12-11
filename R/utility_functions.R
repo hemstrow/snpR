@@ -3044,7 +3044,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     
     if(output == "genepop"){ #  if(output %in% c("genepop", "baps"))
-      
+
       cat("\tPreparing genepop file...\n")
       # get list of snps
       llist <- paste0("SNP", "_", 1:ncol(rdata), ",")

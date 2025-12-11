@@ -2938,7 +2938,7 @@ is.snpRdata <- function(x){
 # @return A list containing permuted ac data.
 .boot_as <- function(x, n, facet, ret_gs = FALSE, by = "sample"){
   ..tm <- ..ord <-  NULL
-  
+
   out <- vector("list", n)
   opts <- .get.task.list(x, facet)
   for(i in 1:n){
@@ -3903,3 +3903,24 @@ is.snpRdata <- function(x){
 
 .rowMax_sparse <- function(x) slam::rollup(x, 2, FUN = max)[,1]
 .rowMin_sparse <- function(x) slam::rollup(x, 2, FUN = min)[,1]
+
+# het per allele; for FIS etc with poly-allelic markers
+.allelic_heterozygosity <- function(gs, snp_form){
+  genos <- colnames(gs)
+  a1 <- substr(genos, 1, snp_form/2)
+  a2 <- substr(genos, (snp_form/2) + 1, snp_form)
+  hets <- a1 != a2
+  
+  alleles <- unique(c(a1,a2))
+  
+  aho <- as.data.table(matrix(0, nrow(gs), length(alleles)))
+  colnames(aho) <- alleles
+  for(i in 1:length(alleles)){
+    subject_genos <- a1 == alleles[i] | a2 == alleles[i]
+    het_count <- rowSums(gs[,which(subject_genos & hets),drop = FALSE])
+    tot_count <- rowSums(gs)
+    data.table::set(aho, j = as.integer(i), value = het_count/tot_count)
+  }
+  
+  return(aho)
+}

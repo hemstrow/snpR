@@ -558,7 +558,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
      c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
     if(verbose){cat("Assuming data is in NN format.\n")}
   }
-  
+
   # sn
   else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
     if(verbose){cat("Assuming single nucleotide format.\n")}

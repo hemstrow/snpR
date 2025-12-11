@@ -719,7 +719,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   bi_allelic <- .is.bi_allelic(x)
   
   if(!bi_allelic & global){
-    stop("Global fst is currently not supported for global fst.\n")
+    stop("Global fst is currently not supported for bi_allelic markers.\n")
   }
   
   
@@ -1427,16 +1427,22 @@ calc_fis <- function(x, facets = NULL,
   func <- function(ac_i, ho_i){
     count_tot <- rowSums(ac_i)
     parts <- vector("list", ncol(ac_i))
-    
+
     for(i in 1:ncol(ac_i)){
       ps1 <- ac_i[[i]]
-      tho <- ho_i
+      if(ncol(ho) > 1){
+        thocol <- which(colnames(ho_i) == colnames(ac_i)[i])
+        tho <- ho_i[[thocol]]
+      }
+      else{
+        tho <- ho_i
+      }
       absent <- which(ps1 == 0)
       if(length(absent) > 0){
         tho[absent] <- 0
       }
       ps1 <- ps1/count_tot
-      
+
       parts[[i]] <- .per_all_f_stat_components(intot = count_tot/2,
                                                jntot = NA,
                                                ps1 = ps1,
@@ -1458,24 +1464,29 @@ calc_fis <- function(x, facets = NULL,
     if(any(is.na(c))){
       c[is.na(c)] <- 0
     }
-    
+
     fis <- 1 - rowSums(c)/rowSums(b + c)
     
     return(data.frame(fis = fis, var_comp_c = rowSums(c), var_comp_b = rowSums(b)))
   }
   
   # run the function once given x (snpRdata, for the metadata), as (bootstrapped or not), ho (x@stats[,c(colnames(x@snp.meta), "ho")])
-  one_run <- function(x, as_ho, ofacets){
+  one_run <- function(x, as, ho, ofacets){
 
-    
     # run and finish
-    keeps <- which(as_ho$facet %in% ofacets)
-    ac.cols <- which(colnames(as_ho) %in% colnames(x@geno.tables$as))
-    out <- func(.fix..call(as_ho[keeps,..ac.cols]), as_ho$ho[keeps])
+    ac.cols <- which(colnames(as) %in% colnames(x@geno.tables$as))
+    if(.is.bi_allelic(x)){
+      out <- func(.fix..call(as[,..ac.cols]), ho$ho)
+    }
+    else{
+      ho_cols <- which(colnames(ho) %in% colnames(x@geno.tables$as))
+      out <- func(.fix..call(as[,..ac.cols,drop = FALSE]), 
+                  .fix..call(ho[,..ho_cols,drop = FALSE]))
+    }
     
     meta.cols <- c("facet", "subfacet", colnames(snp.meta(x)))
-    out <- cbind(.fix..call(as_ho[keeps,..meta.cols]), out)
-    out$nk <- rowSums(.fix..call(as_ho[keeps,..ac.cols]))
+    out <- cbind(.fix..call(as[,..meta.cols]), out)
+    out$nk <- rowSums(.fix..call(as[,..ac.cols]))
     
     
     # get the weighted mean ratio of averages and merge in
@@ -1513,15 +1524,33 @@ calc_fis <- function(x, facets = NULL,
   
   #===========run=============================================================
   # add ho
-  needed <- .check_calced_stats(x, facets, "ho")
-  needed <- facets[which(!unlist(needed))]
-  if(length(needed) > 0){
-    x <- calc_ho(x, needed)
+  keeps <- which(x@facet.meta$facet %in% facets)
+  if(.is.bi_allelic(x)){
+    needed <- .check_calced_stats(x, facets, "ho")
+    needed <- facets[which(!unlist(needed))]
+    if(length(needed) > 0){
+      x <- calc_ho(x, needed)
+    }
+    hocol <- which(colnames(x@stats) == "ho")
+    
+    ho <- .fix..call(x@stats[keeps,..hocol,drop=FALSE])
+  }
+  else{
+    # way more complicated, need to get individual ho per-allele
+    ho <- .allelic_heterozygosity(as.matrix(x@geno.tables$gs)[keeps,, drop = FALSE],
+                                  snp_form = x@snp.form)
+    mcols <- c("facet", "subfacet", "facet.type", colnames(x@snp.meta))
+    
+    ho <- cbind(.fix..call(x@stats[keeps,..mcols]), ho)
   }
   
+  
   # run for the real data
-  mcols <- c("facet", "subfacet", "facet.type", colnames(x@snp.meta), "ho")
-  real <- one_run(x, cbind(data.table::as.data.table(as.matrix(x@geno.tables$as)), .fix..call(x@stats[,..mcols])), ofacets)
+  real <- one_run(x, 
+                  cbind(data.table::as.data.table(x@facet.meta[keeps,]), 
+                        data.table::as.data.table(as.matrix(x@geno.tables$as))[keeps,,drop=FALSE]), 
+                  ho, 
+                  ofacets)
   colnames(real[[2]])[which(colnames(real[[2]]) == "V1")] <- "weighted_mean_fis"
   
   # do bootstraps if requested
@@ -1536,19 +1565,39 @@ calc_fis <- function(x, facets = NULL,
       for(i in 1:boot){
         boot_as <- lapply(facets, function(y) .boot_as(x, 1, facet = y, ret_gs = TRUE, "snp")[[1]])
         boot_as <- data.table::rbindlist(boot_as)
+        
+        # as and ho
+        mcols <- c("facet", "subfacet", colnames(x@snp.meta))
+        tas_cols <- c(mcols, colnames(x@geno.tables$as))
+        as <- .fix..call(boot_as[,..tas_cols])
+        if(.is.bi_allelic(x)){
+          hocol <- which(colnames(boot_as) == "ho")
+          ho <- .fix..call(boot_as[,..hocol])
+        }
+        else{
+          hocol <- (length(mcols) + 1 +  ncol(x@geno.tables$as))
+          hocol <- (hocol + 1):ncol(boot_as)
+          
+          ho <- .allelic_heterozygosity(as.matrix(.fix..call(boot_as[,..hocol])),
+                                        snp_form = x@snp.form)
+        }
+        
+        
+        
         if(i == 1){
-          boot_meta <- one_run(x, boot_as, ofacets)[[2]]
+          boot_meta <- one_run(x, as, ho, ofacets)[[2]]
           boot_fis[,i] <- boot_meta[["V1"]]
           boot_meta$V1 <- NULL
         }
         else{
-          boot_fis[,i] <- one_run(x, boot_as, ofacets)[[2]][["V1"]]
+          boot_fis[,i] <- one_run(x, as, ho, ofacets)[[2]][["V1"]]
         }
       }
       boot_fis <- cbind(boot_meta, boot_fis)
     }
     
     else{
+
       
       pboot <- 1:boot
       if(boot_par < length(pboot)){
@@ -1569,7 +1618,7 @@ calc_fis <- function(x, facets = NULL,
       
       #loop through each set
       boot_fis <- foreach::foreach(q = 1:ntasks,
-                                   .packages = c("snpR", "data.table"), .export = c(".make_it_quiet", ".boot_as")
+                                   .packages = c("snpR", "data.table"), .export = c(".make_it_quiet", ".boot_as", ".allelic_heterozygosity")
       ) %dopar% {
         
         boot_fis <- matrix(as.numeric(NA), n.opts, length(pboot[[q]]))
@@ -1578,13 +1627,30 @@ calc_fis <- function(x, facets = NULL,
           
           boot_as <- lapply(facets, function(y) .boot_as(x, 1, facet = y, ret_gs = TRUE, "snp")[[1]])
           boot_as <- data.table::rbindlist(boot_as)
+          
+          # as and ho
+          mcols <- c("facet", "subfacet", colnames(x@snp.meta))
+          tas_cols <- c(mcols, colnames(x@geno.tables$as))
+          as <- .fix..call(boot_as[,..tas_cols])
+          if(.is.bi_allelic(x)){
+            hocol <- which(colnames(boot_as) == "ho")
+            ho <- .fix..call(boot_as[,..hocol])
+          }
+          else{
+            hocol <- (length(mcols) + 1 +  ncol(x@geno.tables$as))
+            hocol <- (hocol + 1):ncol(boot_as)
+            
+            ho <- .allelic_heterozygosity(as.matrix(.fix..call(boot_as[,..hocol])),
+                                          snp_form = x@snp.form)
+          }
+          
           if(i == 1){
-            boot_meta <- one_run(x, boot_as, ofacets)[[2]]
+            boot_meta <- one_run(x, as, ho, ofacets)[[2]]
             boot_fis[,i] <- boot_meta[["V1"]]
             boot_meta$V1 <- NULL
           }
           else{
-            boot_fis[,i] <- one_run(x, boot_as, ofacets)[[2]][["V1"]]
+            boot_fis[,i] <- one_run(x, as, ho, ofacets)[[2]][["V1"]]
           }
         }
         
@@ -1600,7 +1666,6 @@ calc_fis <- function(x, facets = NULL,
       boot_fis <- Reduce(function(...) merge(..., by = meta.cols), boot_fis)
       colnames(boot_fis) <- c(meta.cols, paste0("V", 1:boot))
     }
-    
     
 
     # get p-values
