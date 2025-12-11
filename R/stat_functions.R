@@ -1423,7 +1423,7 @@ calc_fis <- function(x, facets = NULL,
   #===========sub-functions=====================================================
   
   # cracked the problem: ho_i needs to be the proportion of individuals heterozygous for an allele, not heterozygous for all alleles! Need to fix for Fst too. Revert these to there bi-allelic form for that case since it is faster if ac is already calced?
-  # direct FIS functionn
+  # direct FIS function
   func <- function(ac_i, ho_i){
     count_tot <- rowSums(ac_i)
     parts <- vector("list", ncol(ac_i))
@@ -1469,12 +1469,13 @@ calc_fis <- function(x, facets = NULL,
 
     
     # run and finish
+    keeps <- which(as_ho$facet %in% ofacets)
     ac.cols <- which(colnames(as_ho) %in% colnames(x@geno.tables$as))
-    out <- func(.fix..call(as_ho[,..ac.cols]), as_ho$ho)
+    out <- func(.fix..call(as_ho[keeps,..ac.cols]), as_ho$ho[keeps])
     
     meta.cols <- c("facet", "subfacet", colnames(snp.meta(x)))
-    out <- cbind(.fix..call(as_ho[,..meta.cols]), out)
-    out$nk <- rowSums(.fix..call(as_ho[,..ac.cols]))
+    out <- cbind(.fix..call(as_ho[keeps,..meta.cols]), out)
+    out$nk <- rowSums(.fix..call(as_ho[keeps,..ac.cols]))
     
     
     # get the weighted mean ratio of averages and merge in
@@ -4653,6 +4654,10 @@ calc_abba_baba <- function(x, facet, p1, p2, p3, jackknife = FALSE, jackknife_pa
   
   if(length(facet) != 1){
     stop("Only one facet at a time can be run through calc_abba_baba due to p1, p2, p3 specification. Please run more facets manually for now.\n")
+  }
+  
+  if(!.is.bi_allelic(x)){
+    stop("This function currently only supports bi-allelic markers.")
   }
   
   facet <- .check.snpR.facet.request(x, facet, remove.type = "none")
