@@ -6,6 +6,7 @@
 ## Bug fixes:
 * Fixed a bug where the `hf_hets` filter in `filter_snps()` would fail if only one type of heterozygote was present in the data (AA, AC, CC only, for example).
 * Fixed the `facets` argument being ignored when converting to `adegenet` formats with `format_snps()`.
+* Fixed a bug where `calc_allelic_richness`, `calc_private`, and `calc_seg_sites` could error with *very* large sample sizes due to 64-bit integer overflow during `choose` calls.
 
 # snpR 1.2.13
 

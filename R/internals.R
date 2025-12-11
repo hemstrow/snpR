@@ -3346,9 +3346,20 @@ is.snpRdata <- function(x){
   g <- as$.g
   meta <- .fix..call(as[,-..al_cols])
   as <- as.matrix(.fix..call(as[,..al_cols]))
-  Qijg <- choose(Nj - as, g)/choose(Nj, g) # eqn 2a
-  Pijg <- 1 - Qijg # eqn 2b
   
+  # eqn 2a
+  tchoose <- choose(Nj - as, g)
+  if(any(is.infinite(tchoose))){ # if inf, need to use gmp...
+    cat("Extremely large sample sizes, using `gmp` package to compute Qijg...\n")
+    .check.installed("gmp")
+    Qijg <- gmp::chooseZ(Nj-as,g)/gmp::chooseZ(Nj,g)
+    Qijg <- matrix(as.numeric(Qijg), nrow(as), ncol(as))
+  }
+  else{
+    Qijg <- tchoose/choose(Nj, g) # eqn 2a
+  }
+
+  Pijg <- 1 - Qijg # eqn 2b
   alpha_g <- rowSums(Pijg)
   if(private){ # eqn 4
     meta <- cbind(meta, data.table::as.data.table(Qijg))
