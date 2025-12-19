@@ -510,6 +510,10 @@ calc_association <- function(x, facets = NULL, response, method = "gmmat.score",
     stop("x must be a snpRdata object.\n")
   }
   
+  if(.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
+  
   # response
   msg <- character()
   if(length(response) != 1){

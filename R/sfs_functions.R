@@ -479,6 +479,10 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
   
   if(is.snpRdata(x)){
     
+    if(.is.bi_allelic(x)){
+      stop("This function is not yet supported for non-bi-allelic markers.\n")
+    }
+    
     if(any(c(is.null(facet), is.null(pops), is.null(projection)))){
         msg <- c(msg, "facet, pops, and projection arguments must all be provided if an sfs is not.")
     }

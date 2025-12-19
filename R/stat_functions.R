@@ -3534,6 +3534,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
     # Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
     # code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
+    browser()
     exact.hwe <- function(pp, qq, pq2){
       if(all(c(pp, qq, pq2) == 0)){
         return(-1.0)
@@ -3600,7 +3601,8 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     gs <- gs$gs
     
     # get observed genotype counts
-    het.col <- which(substr(colnames(gs), 1, 1) != substr(colnames(gs), 2, 2))
+    snp_form <- nchar(colnames(gs)[1])/2
+    het.col <- which(substr(colnames(gs), 1, snp_form) != substr(colnames(gs), snp_form + 1, snp_form*2))
     o2pq <- Matrix::rowSums(gs[,het.col, drop = F])
     opp <- .rowMax_sparse(gs[,-het.col, drop = F])
     oqq <- Matrix::rowSums(gs) - o2pq - opp
@@ -3648,6 +3650,10 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
   
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
+  }
+  
+  if(.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   if(!(method %in% c("exact", "chisq"))){stop("Unrecognized HWE method, please use chisq or exact.\n")}
@@ -4136,6 +4142,10 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     stop("x is not a snpRdata object.\n")
   }
   
+  if(.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
+  
   good.methods <- c("Edwards", "Nei")
   if(!method %in% good.methods){
     msg <- c(msg, paste0("Provided method not supported. Supported methods: ", paste0(good.methods, collapse = " ")))
@@ -4311,6 +4321,11 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
+  
+  if(.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
+  
   msg <- character()
   
   bad.xy <- which(!x_y %in% colnames(x@sample.meta))
@@ -6000,6 +6015,10 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
   #=========sanity checks===========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
+  }
+  
+  if(.is.bi_allelic(x)){
+    stop("This function is not supported for non-bi-allelic markers.\n")
   }
   
   ofacets <- .check.snpR.facet.request(x, facets, remove.type = "none")

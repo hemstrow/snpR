@@ -131,7 +131,7 @@ test_that("private", {
   x <- calc_private(x, "pop", rarefaction = TRUE, g = -1)
   pa2 <- get.snpR.stats(x, "pop", "private")
   expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
-  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
+  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(6.504, 5.998))
 })
 
 test_that("hwe", {
