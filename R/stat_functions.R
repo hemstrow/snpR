@@ -3534,7 +3534,6 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     # edited from Wigginton, JE, Cutler, DJ, and Abecasis, GR (2005) A Note on Exact Tests of
     # Hardy-Weinberg Equilibrium. American Journal of Human Genetics. 76: 000 - 000
     # code available at http://csg.sph.umich.edu/abecasis/Exact/snp_hwe.r
-    browser()
     exact.hwe <- function(pp, qq, pq2){
       if(all(c(pp, qq, pq2) == 0)){
         return(-1.0)
