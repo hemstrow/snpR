@@ -2938,7 +2938,7 @@ is.snpRdata <- function(x){
 # @return A list containing permuted ac data.
 .boot_as <- function(x, n, facet, ret_gs = FALSE, by = "sample"){
   ..tm <- ..ord <-  NULL
-  
+
   out <- vector("list", n)
   opts <- .get.task.list(x, facet)
   for(i in 1:n){
@@ -3177,7 +3177,8 @@ is.snpRdata <- function(x){
 .heterozygosity <- function(x, mDat, method){
   # make x into a logical for heterozygous
   xv <- as.matrix(x)
-  logix <- substr(xv, 1, 1) != substr(xv, 2, 2) # true if het
+  snp_form <- nchar(mDat)/2
+  logix <- substr(xv, 1, snp_form) != substr(xv, snp_form + 1, snp_form*2) # true if het
   logix[xv == mDat] <- NA # NA when missing data!
   
   # get counts of hets and homs
@@ -3346,20 +3347,49 @@ is.snpRdata <- function(x){
   g <- as$.g
   meta <- .fix..call(as[,-..al_cols])
   as <- as.matrix(.fix..call(as[,..al_cols]))
-  Qijg <- choose(Nj - as, g)/choose(Nj, g) # eqn 2a
-  Pijg <- 1 - Qijg # eqn 2b
   
+  # eqn 2a
+  tchoose <- choose(Nj - as, g)
+  if(any(is.infinite(tchoose))){ # if inf, need to use gmp...
+    cat("Extremely large sample sizes, using `gmp` package to compute Qijg...\n")
+    .check.installed("gmp")
+    Qijg <- gmp::chooseZ(Nj-as,g)/gmp::chooseZ(Nj,g)
+    Qijg <- matrix(as.numeric(Qijg), nrow(as), ncol(as))
+    colnames(Qijg) <- colnames(as)
+  }
+  else{
+    Qijg <- tchoose/choose(Nj, g) # eqn 2a
+  }
+
+  Pijg <- 1 - Qijg # eqn 2b
   alpha_g <- rowSums(Pijg)
   if(private){ # eqn 4
+    # zero_div_fix <- function(dom, num){
+    #   zero_divs <- which(num == 0)
+    #   res <- dom
+    #   res[-zero_divs] <- res[-zero_divs]/num[-zero_divs]
+    #   return(res)
+    # }
+    
+    group_omit_prod <- function(values, index){
+      prod(values[-index])
+    }
     meta <- cbind(meta, data.table::as.data.table(Qijg))
-    meta[, paste0(al_cols, "_p") := lapply(.SD, prod), .SDcols = c(al_cols), by = .(facet, .snp.id)] # product across all populations
+    
+    # unfortunately need to loop through each allele since lapplying this breaks it. this is still quite slow becasue it loops through loci......
+    for(i in 1:length(al_cols)){
+      meta[,paste0(al_cols[i], "_p") := unlist(lapply(1:.N, function(q) prod(.SD[-q]))),
+           by = .(facet, .snp.id), .SDcols = al_cols[i]]
+    }
+    
+    result <- meta[, list(original_index = .I, index_in_group = seq_len(.N)), by = .(facet, .snp.id)]
+    
     p_al_cols <- paste0(al_cols, "_p")
     
     
-    # next, need to divide out the value for each, since it's actually the product across all save this population
-    acs <- as.matrix(.fix..call(meta[,..al_cols]))
+    # next, need to divide out the value for each, since it's actually the product across all save this population -- can't do this because of zeros which break it...
     prods <- as.matrix(.fix..call(meta[,..p_al_cols]))
-    pi_g <- rowSums(Pijg*(prods/acs), na.rm = TRUE)
+    pi_g <- rowSums(Pijg*(prods), na.rm = TRUE)
     pi_g[which(is.nan(alpha_g))] <- NaN # add back in the NaN values where our sample size was too small in one pop. This got dropped in the above na.rm, which was needed due to the 0/0 prob.
     return(list(richness = alpha_g, pa = pi_g, g = g))
   }
@@ -3892,3 +3922,24 @@ is.snpRdata <- function(x){
 
 .rowMax_sparse <- function(x) slam::rollup(x, 2, FUN = max)[,1]
 .rowMin_sparse <- function(x) slam::rollup(x, 2, FUN = min)[,1]
+
+# het per allele; for FIS etc with poly-allelic markers
+.allelic_heterozygosity <- function(gs, snp_form){
+  genos <- colnames(gs)
+  a1 <- substr(genos, 1, snp_form/2)
+  a2 <- substr(genos, (snp_form/2) + 1, snp_form)
+  hets <- a1 != a2
+  
+  alleles <- unique(c(a1,a2))
+  
+  aho <- as.data.table(matrix(0, nrow(gs), length(alleles)))
+  colnames(aho) <- alleles
+  for(i in 1:length(alleles)){
+    subject_genos <- a1 == alleles[i] | a2 == alleles[i]
+    het_count <- rowSums(gs[,which(subject_genos & hets),drop = FALSE])
+    tot_count <- rowSums(gs)
+    data.table::set(aho, j = as.integer(i), value = het_count/tot_count)
+  }
+  
+  return(aho)
+}

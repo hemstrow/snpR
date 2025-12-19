@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![packageversion](https://img.shields.io/badge/Package%20version-1.2.11-orange.svg?style=flat-square)](commits/master)
+[![packageversion](https://img.shields.io/badge/Package%20version-1.2.13-orange.svg?style=flat-square)](commits/master)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/snpR)](https://CRAN.R-project.org/package=snpR)
 [![R-CMD-check](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hemstrow/snpR/actions/workflows/R-CMD-check.yaml)
@@ -118,6 +118,8 @@ A CRAN version should be available soon.
     allele counts per locus per facet level.
   - `calc_genetic_distances()`: Genetic distances between individuals.
   - `calc_fis()`: $F_{IS}$ (inbreeding coefficients).
+  - `calc_roh()`: Run-of-Homozygosity detection and $F_{ROH}$
+    calculation.
   - `calc_pairwise_fst()`: Pairwise $F_{ST}$ between facet levels.
   - `calc_global_fst()`: Global $F_{ST}$ across facet levels.
   - `calc_pairwise_ld()`: Pairwise LD between SNPs.
@@ -174,6 +176,9 @@ A CRAN version should be available soon.
 - `plot_pairwise_fst_heatmap()`: Heatmap of FST scores between facet
   levels.
 - `plot_pairwise_ld_heatmap()`: Heatmap of LD scores between SNPs.
+- `plot_sfs()`: Plots site frequency spectra either from pre-consturcted
+  SFS or directly from `snpRdata` object.
+- `plot_roh()`: Plots ROHs across the genome.
 
 ### Parentage:
 

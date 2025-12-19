@@ -558,7 +558,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
      c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
     if(verbose){cat("Assuming data is in NN format.\n")}
   }
-  
+
   # sn
   else if(genotypes[1,1] %in% c(0, 1, 2, mDat)){
     if(verbose){cat("Assuming single nucleotide format.\n")}
@@ -822,7 +822,9 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
                ROH = "roh",
                fROH = "roh",
                FROH = "roh",
-               Froh = "roh")
+               Froh = "roh",
+               PID = "pid",
+               pa = "private")
   
   need_unaliased <- which(stats %in% names(aliases))
   
@@ -846,7 +848,7 @@ get.snpR.stats <- function(x, facets = NULL, stats = "single", bootstraps = FALS
   facets <- .check.snpR.facet.request(x, facets, "none")
   
   stats <- unique(stats)
-  
+
   if(!all(stats %in% names(.internal.data$statistic_index))){
     msg <- c(msg, paste0("Requested statistics: ", paste0(stats[which(!stats %in% names(.internal.data$statistic_index))], collapse = ", "),
                          "\nnot recognized. \nRecognized statistics: ",

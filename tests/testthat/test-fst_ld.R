@@ -26,6 +26,21 @@ test_that("correct wc", {
   
   # both weighted and unweighted fsts
   expect_true(all(c("weighted_mean_fst", "mean_fst") %in% colnames(tdfst$weighted.means)))
+  
+  # poly-allelic
+  d <- read_non_biallelic(t(steelRAW[,-1]), sample.meta = steelRAW[,1, drop=FALSE])
+  d <- calc_pairwise_fst(d, "pop")
+  r1 <- get.snpR.stats(d, "pop", stats = "fst")$pairwise
+  r1
+  # format_snps(x, "genepop",facets =  "pop", outfile = "test.gen")
+  # peg <- adegenet::read.genepop("test.gen")
+  # peg <- pegas::genind2loci(peg)
+  # peg_fis <- pegas::Fst(peg[peg$population %in% c("V170", "V413"),])
+  # peg_fis <- peg_fis[,2]
+  peg_fis <- c(0.0072, 0.0092, 0.0089, 0.011, 0.012, 0.0045, 0.0193, 0.0078, 0.0172, 4e-04, 0.0285, 2e-04, 0.0067)
+  comp <- cbind(peg_fis,r1[r1$comparison == "sumhat~summer",]$fst)
+  comp <- round(comp, 4)
+  expect_true(all(comp[,1] == comp[,2]))
 })
 
 
@@ -123,6 +138,19 @@ test_that("correct fis",{
   fis <- calc_fis(.internal.data$test_snps, c("pop", "pop.chr"), keep_components = TRUE)
   fisr <- get.snpR.stats(fis, c("pop", "pop.chr"), "fis")$weighted.means
   expect_true(nrow(fisr) == 18)
+  
+  # poly-allelic
+  d <- read_non_biallelic(t(steelRAW[,-1]), sample.meta = steelRAW[,1, drop=FALSE])
+  d <- calc_fis(d, "pop")
+  check <- get.snpR.stats(d, "pop", stats = "fis")$single
+  check <- check[check$subfacet == "sumhat",]
+  # format_snps(x, "genepop",facets =  "pop", outfile = "test.gen")
+  # peg <- adegenet::read.genepop("test.gen")
+  # peg <- pegas::genind2loci(peg)
+  # peg_fis <- pegas::Fst(peg[peg$population == "V170",])
+  peg_fis <- c(-0.0117, 0.0688, -0.1076, 0.1159, -0.0817, 0.0043, 0.0635, -0.0285, -0.137, -0.1504, 0.0689, -0.0216, -0.0315)
+  check <- cbind(round(check$fis,4), peg_fis)
+  expect_true(all(check[,1] == check[,2]))
   
 })
 
@@ -283,6 +311,39 @@ test_that("fis bootstrapping",{
   bs1_par <- calc_fis(.internal.data$test_snps, "pop", boot = 10, boot_par = 2)
   bs1_res <- get.snpR.stats(bs1_par, "pop", "fis")
   expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  
+  #==========poly-allelic=============
+  d <- read_non_biallelic(t(steelRAW[,-1]), sample.meta = steelRAW[,1, drop=FALSE])
+  bs1 <- calc_fis(d, "pop", boot = 10)
+  bs1_res <- get.snpR.stats(bs1, "pop", "fis")
+  
+  # basic
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true("weighted_mean_fis_uCI" %in% colnames(bs1_res$weighted.means))
+  expect_true("weighted_mean_fis_lCI" %in% colnames(bs1_res$weighted.means))
+  skip_if_not("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  
+  expect_true(is.numeric(unlist(bs1_res$weighted.means$weighted_mean_fis_p)))
+  
+  # base facet
+  bs1 <- calc_fis(d, boot = 10)
+  bs1_res <- get.snpR.stats(bs1, stats =  "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true(all(unlist(bs1_res$weighted.mean[,c("facet", "subfacet", "snp.facet", "snp.subfacet")]) == ".base"))
+  
+  # base facet mixed in
+  bs1 <- calc_fis(d, c("pop", ".base"), boot = 10)
+  bs1_res <- get.snpR.stats(bs1, c(".base", "pop"), stats =  "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == ".base",]$subfacet == ".base"))
+  expect_true(all(bs1_res$weighted.means[bs1_res$weighted.means$facet == "pop",]$snp.subfacet == ".base"))
+  
+  # parallel
+  skip_on_cran();
+  bs1_par <- calc_fis(d, "pop", boot = 10, boot_par = 2)
+  bs1_res <- get.snpR.stats(bs1_par, "pop", "fis")
+  expect_true("weighted_mean_fis_p" %in% colnames(bs1_res$weighted.means))
+  
 })
 
 test_that("global fst",{

@@ -131,7 +131,7 @@ test_that("private", {
   x <- calc_private(x, "pop", rarefaction = TRUE, g = -1)
   pa2 <- get.snpR.stats(x, "pop", "private")
   expect_true(cor(pa2$single$pa_uncorrected, pa2$single$pa_corrected) > .5)
-  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(1.996, 5.998))
+  expect_equal(round(pa2$weighted.means$total_pa_corrected, 3), c(6.504, 5.998))
 })
 
 test_that("hwe", {
@@ -192,7 +192,7 @@ test_that("het_hom", {
 
 test_that("prop_poly",{
   tf <- c(".base", "chr", "chr.pop", "chr.fam", "fam", "pop", "fam.pop.chr")
-  poly <- calc_prop_poly(.internal.data$test_snps, tf)
+  expect_warning(poly <- calc_prop_poly(.internal.data$test_snps, tf), "support")
   polyc <- get.snpR.stats(poly, tf, "prop_poly")$weighted.means
   
   # quick, dirty percent poly function using genotypes to check, not efficient for large data!
@@ -224,8 +224,8 @@ test_that("prop_poly",{
                get.snpR.stats(calc_ho(.internal.data$test_snps, tf), tf, "ho")$weighted.means$weighted_mean_ho)
   
   # double snp level
-  r1 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("chr.position.fam")), "chr.position.fam", "prop_poly")
-  r2 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("position.chr.fam")), "position.chr.fam", "prop_poly")
+  expect_warning(r1 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("chr.position.fam")), "chr.position.fam", "prop_poly"), "support")
+  expect_warning(r2 <- get.snpR.stats(calc_prop_poly(.internal.data$test_snps, c("position.chr.fam")), "position.chr.fam", "prop_poly"), "support")
   expect_equal(r1, r2)
   
   ## everything accounted for?
@@ -307,6 +307,12 @@ test_that("richness", {
   expect_true("richness" %in% colnames(ar$single))
   expect_equal(round(ar$weighted.means$weighted_mean_richness, 3), 
                c(1.893, 1.885))
+  
+  # microsats/very large sample sizes
+  x <- read_non_biallelic(t(steelRAW[,-1]), sample.meta = steelRAW[,1, drop=FALSE])
+  x <- calc_allelic_richness(x, "pop")
+  res <- get.snpR.stats(x, "pop", "allelic_richness")
+  expect_true(all(rank(res$weighted.means$weighted_mean_richness) == c(1,3,2,4)))
 })
 
 test_that("seg_sites", {
@@ -390,4 +396,12 @@ test_that("roh",{
   genome_len <- sum(tapply(snp.meta(d)$position, snp.meta(d)$CHROM, max) - tapply(snp.meta(d)$position, snp.meta(d)$CHROM, min))
   expect_true(res$sample[res$sample$sampID == "V4",]$fROH ==
                 sum(res_roh[res_roh$sampID == "V4",]$len)/genome_len) # checking one is OK
+})
+
+test_that("PID", {
+  x <- calc_pid(stickSNPs, c("fam.pop", "fam", "pop"))
+  res <- get.snpR.stats(x, c("fam.pop", "fam", "pop"), "pid")
+  
+  expect_true(all(c("fam.pop", "fam", "pop") %in% res$single$facet))
+  expect_true(all(c("fam.pop", "fam", "pop") %in% res$weighted.means$facet))
 })

@@ -142,3 +142,16 @@ test_that("sn",{
   res <- format_snps(testd, "ac", "pop")
   expect_true(all(res[1:2,c("n_total", "n_alleles", "ni1", "ni2")] == 0))
 })
+
+test_that("adegenet",{
+  # correct popinfo
+  test <- format_snps(.internal.data$test_snps, "adegenet", facets = "fam.pop")
+  expect_true(all(adegenet::pop(test) == .paste.by.facet(sample.meta(.internal.data$test_snps), c("fam", "pop"))))
+  test <- format_snps(.internal.data$test_snps, "adegenet")
+  expect_true(all(adegenet::pop(test) == sample.meta(.internal.data$test_snps)$pop))
+  
+  # strata
+  test <- format_snps(.internal.data$test_snps, "adegenet")
+  st <- adegenet::strata(test)
+  expect_true(all(unlist(st) == unlist(sample.meta(.internal.data$test_snps)[,-ncol(sample.meta(.internal.data$test_snps))]))) # carries over correctly
+})
