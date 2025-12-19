@@ -4,6 +4,7 @@
 * Added `calc_pid` to calculate probabilities of identity.
 
 ## Bug fixes:
+* Fixed a nasty bug in `calc_private` with rarefaction where inaccurate private allele counts would be returned due to division by zero errors. The fix is *very slow* for large datasets due to the need to loop and will hopefully be sped up eventually.
 * Fixed a bug where the `hf_hets` filter in `filter_snps()` would fail if only one type of heterozygote was present in the data (AA, AC, CC only, for example).
 * Fixed the `facets` argument being ignored when converting to `adegenet` formats with `format_snps()`.
 * Fixed a bug where `calc_allelic_richness`, `calc_private`, and `calc_seg_sites` could error with *very* large sample sizes due to 64-bit integer overflow during `choose` calls.

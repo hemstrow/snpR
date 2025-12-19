@@ -3652,7 +3652,7 @@ calc_hwe <- function(x, facets = NULL, method = "exact",
     stop("x is not a snpRdata object.\n")
   }
   
-  if(.is.bi_allelic(x)){
+  if(!.is.bi_allelic(x)){
     stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
@@ -4142,7 +4142,7 @@ calc_genetic_distances <- function(x, facets = NULL, method = "Edwards", interpo
     stop("x is not a snpRdata object.\n")
   }
   
-  if(.is.bi_allelic(x)){
+  if(!.is.bi_allelic(x)){
     stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
@@ -4322,7 +4322,7 @@ calc_isolation_by_distance <- function(x, facets = NULL, x_y = c("x", "y"), gene
     stop("x is not a snpRdata object.\n")
   }
   
-  if(.is.bi_allelic(x)){
+  if(!.is.bi_allelic(x)){
     stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
@@ -6017,7 +6017,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
     stop("x is not a snpRdata object.\n")
   }
   
-  if(.is.bi_allelic(x)){
+  if(!.is.bi_allelic(x)){
     stop("This function is not supported for non-bi-allelic markers.\n")
   }
   

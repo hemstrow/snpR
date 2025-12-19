@@ -479,7 +479,7 @@ calc_directionality <- function(x, facet = NULL, pops = NULL, projection = NULL,
   
   if(is.snpRdata(x)){
     
-    if(.is.bi_allelic(x)){
+    if(!.is.bi_allelic(x)){
       stop("This function is not yet supported for non-bi-allelic markers.\n")
     }
     
