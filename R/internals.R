@@ -3364,25 +3364,33 @@ is.snpRdata <- function(x){
   Pijg <- 1 - Qijg # eqn 2b
   alpha_g <- rowSums(Pijg)
   if(private){ # eqn 4
-    # zero_div_fix <- function(dom, num){
-    #   zero_divs <- which(num == 0)
-    #   res <- dom
-    #   res[-zero_divs] <- res[-zero_divs]/num[-zero_divs]
-    #   return(res)
-    # }
-    
-    group_omit_prod <- function(values, index){
-      prod(values[-index])
-    }
     meta <- cbind(meta, data.table::as.data.table(Qijg))
     
-    # unfortunately need to loop through each allele since lapplying this breaks it. this is still quite slow becasue it loops through loci......
-    for(i in 1:length(al_cols)){
-      meta[,paste0(al_cols[i], "_p") := unlist(lapply(1:.N, function(q) prod(.SD[-q]))),
-           by = .(facet, .snp.id), .SDcols = al_cols[i]]
+    # loop through each facet to get product - this group
+    uf <- unique(meta$facet)
+    atm <- vector("list", nrow(unique(meta[,.(facet, subfacet)])))
+    tracker <- 1
+    for(i in 1:length(uf)){
+      ufl <- unique(meta[facet == uf[i],]$subfacet)
+      for(j in 1:length(ufl)){
+        tm <- meta[facet == uf[i] & subfacet != ufl[j], lapply(.SD, prod), .SDcols = al_cols, by = .snp.id]
+        colnames(tm) <- c(".snp.id", paste0(colnames(tm)[-1], "_p"))
+        tm$facet <- uf[i]
+        tm$subfacet <- ufl[[j]]
+
+        atm[[tracker]] <- tm
+        tracker <- tracker + 1
+      }
     }
+    atm <- rbindlist(atm)
+    meta <- merge(meta, atm, by = c("facet", "subfacet", ".snp.id"), sort = FALSE)
+
     
-    result <- meta[, list(original_index = .I, index_in_group = seq_len(.N)), by = .(facet, .snp.id)]
+    # unfortunately need to loop through each allele since lapplying this breaks it. this is still quite slow becasue it loops through loci......
+    # for(i in 1:length(al_cols)){
+    #   meta[,paste0(al_cols[i], "_p") := unlist(lapply(1:.N, function(q) prod(.SD[-q]))),
+    #        by = .(facet, .snp.id), .SDcols = al_cols[i]]
+    # }
     
     p_al_cols <- paste0(al_cols, "_p")
     
