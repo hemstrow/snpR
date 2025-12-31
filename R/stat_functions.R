@@ -452,6 +452,9 @@ calc_tajimas_d <- function(x, facets = NULL, sigma = NULL, step = 2*sigma, par =
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.")
   }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not supported for non-bi-allelic markers.\n")
+  }
   
   step <- eval(step) # forces this to eval before we change sigma.
   
@@ -1986,6 +1989,9 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
   #========================sanity checks=============
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   #sanity checks:
@@ -5025,7 +5031,7 @@ calc_prop_poly <- function(x, facets = NULL){
   facets <- .check.snpR.facet.request(x, facets, "none")
   
   #==================subfunction: run once for each snp facet!========
-  func <- function(as){ 
+  func <- function(as){
     meta <- as[,which(!colnames(as) %in% colnames(x@geno.tables$as) & !colnames(as) %in% c("facet.type", ".snp.id"))]
     
     as <- as[, which(colnames(as) %in% colnames(x@geno.tables$as))]
@@ -5205,6 +5211,9 @@ calc_tree <- function(x, facets = NULL, distance_method = "Edwards",
   #=======sanity checks==========
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   facets <- .check.snpR.facet.request(x, facets, remove.type = "none")

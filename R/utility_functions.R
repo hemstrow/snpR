@@ -3483,6 +3483,14 @@ tabulate_allele_frequency_matrix <- function(x, facets = NULL){
   ..ord <- NULL
   
   #==================prep and sanity check==================
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
+  
+  
   msg <- character()
   
   # check facets and get maf

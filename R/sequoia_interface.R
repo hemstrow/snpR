@@ -81,6 +81,9 @@ run_sequoia <- function(x, facets = NULL, run_dupcheck = FALSE,
   if(!snpR::is.snpRdata(x)){
     stop("Not a snpRdata object.\n")
   }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
   .check.installed("sequoia")
   
   msg <- character(0)

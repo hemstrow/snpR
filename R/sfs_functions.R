@@ -87,6 +87,11 @@ calc_sfs <- function(x, facet = NULL, pops = NULL, projection, fold = TRUE,
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
+  
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
+  
   msg <- character(0)
   
   if(is.null(pops) & !is.null(facet)){
@@ -638,6 +643,10 @@ calc_origin_of_expansion <- function(x, facet, boots = 1000, projection = NULL,
   
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.n")
+  }
+  
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   # check facet and proj

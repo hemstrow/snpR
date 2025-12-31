@@ -109,6 +109,9 @@ run_genomic_prediction <- function(x, facets = NULL, response, iterations,
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
   }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
   msg <- character(0)
   
   if(length(.check.snpR.facet.request(x, facets)) == 1 & !isFALSE(par)){
@@ -332,6 +335,9 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
   #===============sanity checks============
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   .check.installed("BGLR")
@@ -959,6 +965,9 @@ run_random_forest <- function(x, facets = NULL, response, formula = NULL,
   #=========sanity checks=======================
   if(!is.snpRdata(x)){
     stop("x must be a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
   }
   
   x <- filter_snps(x, non_poly = TRUE, verbose = FALSE)

@@ -207,6 +207,13 @@ write_colony_input <- function(x, outfile = "colony_input", method = "FPLS", run
                                maternal_exclusions = NULL, paternal_exclusions = NULL,
                                excluded_maternal_siblings = NULL, excluded_paternal_siblings = NULL,
                                update_bib = FALSE){
+  
+  if(!is.snpRdata(x)){
+    stop("x must be a snpRdata object.\n")
+  }
+  if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
 
 
   #=====================initialize===============
