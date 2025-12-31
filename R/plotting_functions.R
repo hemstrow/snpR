@@ -2732,7 +2732,9 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       colnames(sample_meta) <- facet
     }
   }
-
+  else if(!.is.bi_allelic(x)){
+    stop("This function is not yet supported for non-bi-allelic markers.\n")
+  }
 
   if(provided_qlist == FALSE & reps == "all"){
     msg <- c(msg, "reps = 'all' uninterpretable if a qlist is not provided.\n")
@@ -4476,6 +4478,12 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
     .check.installed("hexbin")
   }
   
+  if(!.is.bi_allelic(x)){
+    if("sfs" %in% plots){
+      plots <- plots[-which(plots == "sfs")]
+    }
+  }
+  
   out <- list()
   
   #=================FIS======================
@@ -4497,6 +4505,7 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================plot sfs=================
   if("sfs" %in% plots){
+    
     .make_it_quiet(sfs <- plot_sfs(x, projection = projection, fold = fold_sfs))
     if(fold_sfs){
       sfs <- sfs + ggplot2::xlab("Minor Allele Count")
@@ -4535,15 +4544,15 @@ plot_diagnostic <- function(x, facet = NULL, projection = floor(nsnps(x)/1.2), f
   
   #=================missingness==============
   if("missingness" %in% plots){
-    
+
     miss <- matrixStats::colSums2(ifelse(genotypes(x) == x@mDat, 1, 0))/nsnps(x)
     if(any(miss > 0)){
       if(exists("facet.vec")){
         miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = facet.vec),
-                                ggplot2::aes(x = Individual, y = miss, color = facet.vec)) +
+                                ggplot2::aes(x = facet, y = miss, color = facet.vec)) +
           ggplot2::scale_color_viridis_d() + ggplot2::labs(color = facet) +
-          ggplot2::geom_boxplot() +
-          ggplot2::geom_point(alpha = .5)
+          ggplot2::geom_boxplot(outliers = FALSE) +
+          ggplot2::geom_jitter(alpha = .5, height = 0, width = 0.25)
       }
       else{
         miss <- ggplot2::ggplot(data.frame(Individual = 1:nsamps(x), miss = miss, facet = ".base"),

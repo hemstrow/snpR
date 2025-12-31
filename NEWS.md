@@ -1,6 +1,9 @@
 # snpR 1.3.0
 ## Features:
+### Minor:
 * Implemented a much faster version of `calc_private` with rarefaction for larger datasets which includes the fixes in 1.2.14
+* Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
+
 
 # snpR 1.2.14
 ## Features:
