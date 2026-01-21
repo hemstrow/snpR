@@ -4,6 +4,8 @@
 * Implemented a much faster version of `calc_private` with rarefaction for larger datasets which includes the fixes in 1.2.14
 * Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
 
+### Bug fixes:
+* Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces N
 
 # snpR 1.2.14
 ## Features:
