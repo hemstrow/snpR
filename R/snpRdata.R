@@ -622,7 +622,6 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   if(any(colnames(snp.meta) == "position")){
-    browser()
 
     if(!is.numeric(position)){
       poses <- .suppress_specific_warning(as.numeric(as.character(snp.meta$position)), "NAs introduced by coercion")
