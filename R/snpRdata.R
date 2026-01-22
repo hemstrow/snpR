@@ -622,11 +622,12 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   }
   
   if(any(colnames(snp.meta) == "position")){
+    browser()
 
     if(!is.numeric(position)){
       poses <- .suppress_specific_warning(as.numeric(as.character(snp.meta$position)), "NAs introduced by coercion")
       if(any(is.na(poses))){
-        warnings("Some NA rows found in the `position` column of the snp metadata after converting to numeric. Positions will be stored un-coverted and may cause issues downstream in some analyses.\n")
+        warning("Some NA rows found in the `position` column of the snp metadata after converting to numeric. Positions will be stored un-coverted and may cause issues downstream in some analyses.\n")
       }
       else{
         snp.meta$position <- poses; rm(poses)

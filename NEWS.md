@@ -5,7 +5,7 @@
 * Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
 
 ### Bug fixes:
-* Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces N
+* Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).
 
 # snpR 1.2.14
 ## Features:
