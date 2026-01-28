@@ -1,23 +1,40 @@
 test_that("objects, NN", {
+  # basic
   check <- import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs))
   expect_true(is.snpRdata(check))
   expect_identical(genotypes(stickSNPs), genotypes(check))
   expect_identical(snp.meta(stickSNPs), snp.meta(check))
   expect_identical(sample.meta(stickSNPs), sample.meta(check))
 
-  
+  # samp ID added automatically
   check <- import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs))
   expect_true(is.snpRdata(check))
   expect_identical(genotypes(stickSNPs), genotypes(check))
   expect_identical(snp.meta(stickSNPs), snp.meta(check))
   expect_true(colnames(sample.meta(check))[1] == "sampID")
   
+  # SNP ID added automatically
   check <- import.snpR.data(genotypes(stickSNPs), sample.meta = sample.meta(stickSNPs))
   expect_true(is.snpRdata(check))
   expect_identical(genotypes(stickSNPs), genotypes(check))
   expect_identical(sample.meta(stickSNPs), sample.meta(check))
   expect_true(colnames(snp.meta(check))[1] == "snpID")
   
+  # non ACGT first genos
+  genos <- genotypes(stickSNPs)
+  a1 <- sample(c("I", "D"), ncol(genos), TRUE)
+  a2 <- sample(c("I", "D"), ncol(genos), TRUE)
+  genos <- rbind(paste0(a1, a2), genos)
+  sm <- snp.meta(stickSNPs)
+  sm <- rbind(c("test", 1), sm[,-3])
+  test <- import.snpR.data(genos, sm, sample.meta(stickSNPs), mDat = "NN")
+  expect_true(is.snpRdata(test))
+  ## back conversion to and from 0000
+  .make_it_quiet(test0000 <- format_snps(test, "0000"))
+  .make_it_quiet(testNN <- import.snpR.data(test0000, snp.meta(test), sample.meta(test), 
+                                            header_cols = 3, mDat = "0000"))
+  expect_true(all((genotypes(test) == genotypes(testNN))[-1,])) # ATCG should convert cleanly back and forth
+  expect_true(all(genotypes(testNN)[1,] %in% c("BB", "BD", "DD", "DB"))) # the insert will not; given first two blank slots in LETTERS
 })
 
 test_that("files",{

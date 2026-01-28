@@ -2076,17 +2076,32 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     #====================convert to snpRdata intermediate=============
     # 0000 put into snpRdata
     if(input_format == "0000"){
-      #vectorize and replace
+      # vectorize
       xv <- as.matrix(x)
-      xv <- gsub("01", "A", xv)
-      xv <- gsub("02", "C", xv)
-      xv <- gsub("03", "G", xv)
-      xv <- gsub("04", "T", xv)
-      xv <- gsub(substr(input_mDat, 1, 2), "N", xv)
-      x <- as.data.frame(xv, stringsAsFactors = F)
-      rm(xv)
+      a1 <- substr(as.character(xv), 1, nchar(input_mDat)/2)
+      a2 <- substr(as.character(xv), (nchar(input_mDat)/2) + 1, nchar(input_mDat))
       
-      input_mDat <- "NN"
+      # make a replacement key table
+      reptab <- sort(unique(c(a1, a2)))
+      if(any(reptab == substr(input_mDat, 1, nchar(input_mDat)/2))){
+        reptab <- reptab[-which(reptab == substr(input_mDat, 1, nchar(input_mDat)/2))]
+      }
+      if(length(reptab) > 61){ # upper (except "N"), lowercase, and 0-9
+        stop(paste0("Too many unique alleles to convert to NN (", length(unique(reptab)), " alleles, 61 allowed.)\n"))
+      }
+      opts <- unique(c("A", "C", "G", "T", LETTERS, letters, 0:9))
+      opts <- opts[-which(opts == "N")]
+      reptab <- data.table(a = reptab, repa = opts[1:length(reptab)])
+      reptab <- rbind(reptab, data.table(substr(input_mDat, 1, nchar(input_mDat)/2), "N"), use.names = FALSE)
+      cat("Allele replacement key:\n")
+      print(reptab)
+      
+      # do the replacement
+      a1 <- reptab$repa[match(a1, reptab$a)]
+      a2 <- reptab$repa[match(a2, reptab$a)]
+      xv <- matrix(paste0(a1, a2), nrow(x), ncol(x))
+      x <- as.data.frame(xv, stringsAsFactors = F)
+      rm(a1, a2, xv)
       
       #rebind to matrix and remake data.
       if(output == "NN"){
@@ -2294,14 +2309,41 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     }
     
     else{
-      # keming
       #vectorize and replace
       xv <- as.matrix(x)
-      xv <- gsub("A", "01", xv)
-      xv <- gsub("C", "02", xv)
-      xv <- gsub("G", "03", xv)
-      xv <- gsub("T", "04", xv)
-      xv <- gsub(substr(x@mDat, 1, 2), "0000", xv)
+      a1 <- substr(as.character(xv), 1, nchar(x@mDat)/2)
+      a2 <- substr(as.character(xv), (nchar(x@mDat)/2) + 1, nchar(x@mDat))
+      reptab <- sort(unique(c(a1, a2)))
+      
+      # Ensure A, C, G, and T are first (ideally 01, 02, 03, and 04 if all are present)
+      if(any(reptab == "T")){
+        reptab <- c("T", reptab[-which(reptab == "T")])
+      }
+      if(any(reptab == "G")){
+        reptab <- c("G", reptab[-which(reptab == "G")])
+      }
+      if(any(reptab == "C")){
+        reptab <- c("C", reptab[-which(reptab == "C")])
+      }
+      if(any(reptab == "A")){
+        reptab <- c("A", reptab[-which(reptab == "A")])
+      }
+      
+      if(any(reptab == substr(x@mDat, 1, nchar(x@mDat)/2))){
+        reptab <- reptab[-which(reptab == substr(x@mDat, 1, nchar(x@mDat)/2))]
+      }
+      if(length(reptab) > 99){
+        stop(paste0("Too many alleles to convert to 0000 (", length(unique(reptab)), " alleles, 99 allowed.)\n"))
+      }
+      reptab <- data.table(a = reptab, repa = as.character(1:length(reptab)))
+      reptab[which(nchar(repa) == 1), repa := paste0("0", repa)]
+      reptab <- rbind(reptab, data.table(substr(x@mDat, 1, nchar(x@mDat)/2), "00"), use.names = FALSE)
+      cat("Allele replacement key:\n")
+      print(reptab)
+      a1 <- reptab$repa[match(a1, reptab$a)]
+      a2 <- reptab$repa[match(a2, reptab$a)]
+      xv <- matrix(paste0(a1, a2), nrow(x), ncol(x))
+      rm(a1, a2)
       
       # keming
       if(output == "genepop"){ #convert to genepop

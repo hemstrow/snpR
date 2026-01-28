@@ -554,8 +554,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
     genotypes <- genotypes[,-header_cols]
     
   }
-  if(genotypes[1,1] %in% 
-     c(apply(expand.grid(c("A", "T", "C", "G"), c("A", "T", "C", "G")), 1, paste, collapse=""), mDat)){
+  if(nchar(genotypes[1,1]) == 2 & nchar(mDat) == 2){
     if(verbose){cat("Assuming data is in NN format.\n")}
   }
 
@@ -567,7 +566,9 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   
   # 0000
   else if(genotypes[1,1] %in% 
-          c(apply(expand.grid(c("01", "02", "03", "04"), c("01", "02", "03", "04")), 1, paste, collapse=""), mDat)){
+          c(apply(expand.grid(c("01", "02", "03", "04", "05", "06", "07", "09", 10:99), 
+                              c("01", "02", "03", "04", "05", "06", "07", "09", 10:99)), 1, paste, collapse=""),
+            mDat)){
     if(verbose){cat("Assuming 0000 format.\n")}
     return(format_snps(genotypes, input_format = "0000", input_mDat = mDat, sample.meta = sample.meta, snp.meta = snp.meta))
   }
