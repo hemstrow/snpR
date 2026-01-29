@@ -583,7 +583,7 @@ import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDa
   #couldn't find a supported format
   else{
     stop("Genoytpes are not in a recognized format. First genotype:", genotypes[1,1], 
-         "\n. Do you have SNP meta-data in your genotype file or object? If so, you may either remove those columns or use the header_cols argument to use them as your snp.meta.\n")
+         "\n. Do you have SNP meta-data in your genotype file or object? If so, you may either remove those columns or use the header_cols argument to use them as your snp.meta.\nIs your `mDat` argument correctly given as the GENOTYPE rather than ALLELE entry for missing data?\n")
   }
   
   

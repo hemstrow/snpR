@@ -169,7 +169,7 @@ test_that("sanity checks", {
 
   ## short mDat
   expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "N"),
-               "equal in length .+ to the genotype format")
+               "argument correctly given as the GENOTYPE rather than ALLELE entry for missing data")
   
   ## mDat with different "alleles"
   expect_error(import.snpR.data(genotypes(stickSNPs), snp.meta(stickSNPs), sample.meta(stickSNPs), mDat = "NX"),

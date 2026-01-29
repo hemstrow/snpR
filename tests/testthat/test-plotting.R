@@ -447,7 +447,7 @@ test_that("FST heatmap",{
 #============tree====================
 test_that("tree generation",{
   skip_if_not_installed("ape")
-  if("ggtree" %in% installed.packages()){
+  if("ggtree" %in% installed.packages()[,1]){
     skip_if_not(utils::packageVersion("ggtree") >= numeric_version("3.1.2"))
   }
   
