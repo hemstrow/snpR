@@ -5849,7 +5849,7 @@ calc_seg_sites <- function(x, facets = NULL, rarefaction = TRUE, g = 0){
     totals$snp.subfacet <- ".base"
     
     # publish?
-    x <- .update_citations(x, "hemstromSnpRUserFriendly2023", "seg_sites", "number of segregating sites via rarefaction")
+    x <- .update_citations(x, "hemstrom_unbiased_2026", "seg_sites", "number of segregating sites via rarefaction")
   }
   
   else{

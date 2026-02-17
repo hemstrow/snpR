@@ -2600,7 +2600,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
     sn <- as.matrix(format_snps(x, "sn", interpolate = FALSE)[,-c(1:(ncol(snp.meta(x)) - 1))])
     bads <- which(rowSums(is.na(sn)) == ncol(sn))
     if(length(bads) > 0){
-      sn <- sn[-bads,]
+      sn <- sn[-bads,,drop=FALSE]
       warning("Removed some loci without any called genotypes.\n")
     }
     
@@ -2641,7 +2641,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
       n.ord <- order(n.chrs, snp.meta(x)$position)
     }
     n.chrs <- n.chrs[n.ord]
-    sn <- sn[n.ord,]
+    sn <- sn[n.ord,,drop=FALSE]
     
     if(isFALSE(outfile)){
       genio::write_bed("plink_out.bed", sn, verbose = FALSE)

@@ -8,6 +8,8 @@
 * Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).
 * Importing "NN"/"0000" format data where the first genotype is not some combo of "A", "C", "G", "T" (or 01, 02, 03, 04) or missing no longer produces an error.
 * Importing "0000" format data with alleles other than 01, 02, 03, 04 (or missing) now works fine (as does formatting non ACGT data to 0000).
+* Fixed an error that would occur when formatting data for one sample into plink format.
+* Updated the citation for `calc_seg_sites`.
 
 # snpR 1.2.14
 ## Features:
