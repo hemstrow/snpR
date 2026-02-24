@@ -10,6 +10,7 @@
 * Importing "0000" format data with alleles other than 01, 02, 03, 04 (or missing) now works fine (as does formatting non ACGT data to 0000).
 * Fixed an error that would occur when formatting data for one sample into plink format.
 * Updated the citation for `calc_seg_sites`.
+* Added version checking for `plot_structure(method = "structure")` to check that the structure version is newer than 2.3.1, which is when critical command line arguments, like seed setting, as well as the extraparams file were introduced.
 
 # snpR 1.2.14
 ## Features:

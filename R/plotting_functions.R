@@ -2802,6 +2802,23 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       if(!file.exists(structure_path)){
         msg <- c(msg, "No file found at provided structure path.\n")
       }
+      else{
+        check <- .suppress_specific_warning(system(structure_path, intern = TRUE), "had status 1")
+        version <- grep("Version", check)
+        if(length(version) == 0){
+          msg <- c(msg, paste0("Could not identify STRUCTURE version. System call output for structure_path follows: \n",
+                               .console_hline(),
+                               paste0(check, collapse = "\n")))
+        }
+        
+        version <- check[version]
+        version <- gsub(".+ Version ", "", version)
+        version  <- gsub(" .+", "", version)
+        version <- as.numeric_version(version)
+        if(version < as.numeric_version("2.3.1")){
+          msg <- c(msg, paste0("STRUCTURE version (", version, ") is too old. Version 2.3.1 or newer required.\n"))
+        }
+      }
       
       if(use_pop_info & is.null(facet)){
         stop("Cannot use population info if a facet is not provided.\n")
