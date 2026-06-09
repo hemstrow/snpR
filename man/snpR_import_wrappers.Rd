@@ -14,7 +14,12 @@
 \alias{convert_vcfR}
 \title{snpRdata Import Wrappers}
 \usage{
-read_vcf(file, snp.meta = NULL, sample.meta = NULL)
+read_vcf(
+  file,
+  snp.meta = NULL,
+  sample.meta = NULL,
+  accept_non_biallelic = FALSE
+)
 
 read_ms(file, sample.meta = NULL, chr.length, fix_overlaps = TRUE)
 

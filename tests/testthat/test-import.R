@@ -64,7 +64,43 @@ test_that("vcf", {
   expect_identical(snp.meta(stickSNPs), snp.meta(check))
   expect_identical(sample.meta(stickSNPs), sample.meta(check))
   
-  file.remove("test.vcf")
+
+  
+  # non bi-allelic
+  ## prep test data
+  nb <- fread("test.vcf")
+  set.seed(1231)
+  tobenb <- sort(sample(nrow(nb), 20))
+  nb$ALT[tobenb] <- paste0(nb$ALT[tobenb], ",NB")
+  AS <- as.character(unlist(nb[tobenb,10:ncol(nb)]))
+  nal <- sum(AS != "./.")
+  reps <- which(rbinom(nal, 1, .2) == 1)
+  AS[AS != "./."][reps] <- sample(c("0/2", "2/2", "1/2"), length(reps), TRUE)
+  ocn <- colnames(nb)[10:ncol(nb)]
+  ngenos <- matrix("./.", nrow(nb), ncol = ncol(nb) - 9)
+  ngenos[tobenb,] <- matrix(AS, ncol = ncol(nb) - 9, nrow = length(tobenb))
+  ngenos[-tobenb,] <- as.matrix(nb[-tobenb,10:ncol(nb)])
+  
+  nb <- cbind(nb[,1:9], ngenos)
+  colnames(nb)[10:ncol(nb)] <- ocn
+  header <- readLines("test.vcf", n = 28)
+  writeLines(header, "test_nb.vcf")
+  fwrite(nb, "test_nb.vcf", append = TRUE, quote = FALSE, col.names = TRUE, row.names = FALSE,
+         sep = "\t")
+  
+  # read test data
+  expect_warning(.make_it_quiet(t2 <- read_vcf("test_nb.vcf", snp.meta(stickSNPs), sample.meta(stickSNPs))), "Detected 20 non-biallelic loci")
+  expect_equal(nrow(t2), nrow(nb) - 20)
+  expect_true(.is.bi_allelic(t2))
+  
+  .make_it_quiet(t2 <- read_vcf("test_nb.vcf", snp.meta(stickSNPs), sample.meta(stickSNPs), accept_non_biallelic = TRUE))
+  expect_true(!.is.bi_allelic(t2))
+  expect_equal(colnames(t2@geno.tables$as),c("A01", "A02", "A03"))
+  expect_equal(nrow(t2), nrow(nb))
+  
+  
+  
+  file.remove("test.vcf");file.remove("test_nb.vcf")
 })
 
 test_that("structure",{

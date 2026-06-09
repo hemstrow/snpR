@@ -3,6 +3,7 @@
 ### Minor:
 * Implemented a much faster version of `calc_private` with rarefaction for larger datasets which includes the fixes in 1.2.14
 * Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
+* Added limited support for non-biallelic markers. The core function is `read_non_biallelic()`, with the standard `import.snpR.data()` and `read_vcf()` routing to this for support. This is still a test feature, so please report any bugs. Functions *should* say if they do not support bi-allelic markers when run.
 
 ### Bug fixes:
 * Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).

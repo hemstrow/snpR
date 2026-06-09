@@ -323,7 +323,7 @@
 #   overwrite sample names in vcf if provided.
 #
 # @author William Hemstrom
-.process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL){
+.process_vcf <- function(vcf_file, snp.meta = NULL, sample.meta = NULL, accept_non_biallelic = FALSE){
   nref <- nalt <- NULL
   #========sanity checks, part 1=============
   .check.installed("vcfR")
@@ -354,61 +354,105 @@
   }
   rm(formats)
   
-  # check for not snps
+  
   ref <- vcfR::getREF(vcf)
   alt <- vcfR::getALT(vcf)
-  ok.alleles <- c(".", "A", "C", "G", "T")
-  bad.ref <- !ref %in% ok.alleles
-  bad.alt <- !alt %in% ok.alleles
-  bad.either <- which(bad.ref | bad.alt)
-  if(length(bad.either) > 0){
-    # coerce indels if that's what they are
-    ref_OK <- grepl('^[A|C|G|T]+$', ref[bad.either])
-    alt_OK <- grepl('^[A|C|G|T]+$', alt[bad.either])
-    
-    rem <- !ref_OK | !alt_OK
-    
-    if(any(rem)){
-      warn <- c(warn, paste0(sum(rem), " loci removed due to improper alleles (not ., A, C, T, G, or a sequence of the latter four).\n"))
-      good.loci[bad.either[which(rem)]] <- F
-    }
-    
-    if(any(!rem)){
+  
+  # check for non-biallelic
+  non_bi <- grepl(",", alt)
+  if(any(non_bi)){
+    if(accept_non_biallelic){
+      # convert these over to A1, A2, A3, etc
+      alt_fix <- alt
+      alt_fix[non_bi] <- gsub("[^,]+", "", alt_fix[non_bi])
       
-      # generate replacement alleles for the OK loci (usually indels)
-      len_ref <- nchar(ref[bad.either])
-      len_alt <- nchar(alt[bad.either])
+      
+      nal <- nchar(alt_fix[non_bi]) + 1   # number of alleles per loci
+      alleles <- paste0("A", sequence(nal) + 1) # alleles for each loci
+      max_al_len <- max(nchar(alleles))
+      
+      # fix so they are all the same length
+      alleles <- paste0("A", sprintf(paste0("%0", max_al_len, "d"), as.integer(sub("^A", "", alleles))))
+      
+      index <- rep(1:sum(non_bi), times = nal) # index for each allele
+      alleles <- split(alleles, index)
+      alleles <- unlist(lapply(alleles, paste0, collapse = ","))
+      
+      # fix up the non-biallelic loci
+      bi_alleles <- paste0("A", paste0(rep("0", length.out = max_al_len - 1), collapse = ""), "2")
+      bi_alleles <- rep(bi_alleles, length.out = sum(!non_bi))
+      alt_fix[non_bi] <- alleles
+      alt_fix[!non_bi] <- bi_alleles
+      ref_fix <- paste0("A", paste0(rep("0", length.out = max_al_len - 1), collapse = ""), "1")
+      
+      ref <- rep(ref_fix, length(ref))
+      alt <- alt_fix
+      
+      vcf@fix[,"REF"] <- ref
+      vcf@fix[,"ALT"] <- alt
+      
+    }
+    else{
+      warning(paste0("Detected ", sum(non_bi), " non-biallelic loci. These will be removed. Set 'accept_non_biallelic to TRUE to keep.\n"))
+      good.loci[which(non_bi)] <- FALSE
+    }
+  }
+  else{
+    # check for not snps. Not a factor in the non-biallelic case since they'll be renamed anyway
+    ok.alleles <- c(".", "A", "C", "G", "T")
+    bad.ref <- !ref %in% ok.alleles
+    bad.alt <- !alt %in% ok.alleles
+    bad.either <- which(bad.ref | bad.alt)
+    if(length(bad.either) > 0){
+      # coerce indels if that's what they are
+      ref_OK <- grepl('^[A|C|G|T]+$', ref[bad.either])
+      alt_OK <- grepl('^[A|C|G|T]+$', alt[bad.either])
+      
+      rem <- !ref_OK | !alt_OK
       
       if(any(rem)){
-        replacement_alleles <- data.table(snp = bad.either[-which(rem)],
-                                          nref = "",
-                                          nalt = "")
-        len_ref <- len_ref[-which(rem)]
-        len_alt <- len_alt[-which(rem)]
-      }
-      else{
-        replacement_alleles <- data.table(snp = bad.either,
-                                          nref = "",
-                                          nalt = "")
+        warn <- c(warn, paste0(sum(rem), " loci removed due to improper alleles (not ., A, C, T, G, or a sequence of the latter four).\n"))
+        good.loci[bad.either[which(rem)]] <- F
       }
       
-      replacement_alleles[len_ref > len_alt, nref := "I"]
-      replacement_alleles[len_ref > len_alt, nalt := "D"]
-      replacement_alleles[len_ref < len_alt, nref := "D"]
-      replacement_alleles[len_ref < len_alt, nalt := "I"]
-      replacement_alleles[len_ref == len_alt, nref := "R"]
-      replacement_alleles[len_ref == len_alt, nalt := "L"]
-      
-      vcf@fix[replacement_alleles$snp,"REF"] <- replacement_alleles$nref
-      vcf@fix[replacement_alleles$snp,"ALT"] <- replacement_alleles$nalt
-      
-      
-      rm(len_ref, len_alt, replacement_alleles)
+      if(any(!rem)){
+        
+        # generate replacement alleles for the OK loci (usually indels)
+        len_ref <- nchar(ref[bad.either])
+        len_alt <- nchar(alt[bad.either])
+        
+        if(any(rem)){
+          replacement_alleles <- data.table(snp = bad.either[-which(rem)],
+                                            nref = "",
+                                            nalt = "")
+          len_ref <- len_ref[-which(rem)]
+          len_alt <- len_alt[-which(rem)]
+        }
+        else{
+          replacement_alleles <- data.table(snp = bad.either,
+                                            nref = "",
+                                            nalt = "")
+        }
+        
+        replacement_alleles[len_ref > len_alt, nref := "I"]
+        replacement_alleles[len_ref > len_alt, nalt := "D"]
+        replacement_alleles[len_ref < len_alt, nref := "D"]
+        replacement_alleles[len_ref < len_alt, nalt := "I"]
+        replacement_alleles[len_ref == len_alt, nref := "R"]
+        replacement_alleles[len_ref == len_alt, nalt := "L"]
+        
+        vcf@fix[replacement_alleles$snp,"REF"] <- replacement_alleles$nref
+        vcf@fix[replacement_alleles$snp,"ALT"] <- replacement_alleles$nalt
+        
+        
+        rm(len_ref, len_alt, replacement_alleles)
+      }
     }
-    
-    
+    rm(ref, alt, ok.alleles, bad.ref, bad.alt, bad.either)
   }
-  rm(ref, alt, ok.alleles, bad.ref, bad.alt, bad.either)
+  
+  
+  
   
   # anything left?
   if(sum(good.loci) == 0){
@@ -437,9 +481,11 @@
   genos <- genos[good.loci,]
   genos <- gsub("\\|", "", genos)
   genos <- gsub("\\/", "", genos)
-  genos[is.na(genos)] <- "NN"
-  genos[genos == "."] <- "NN"
-  genos[grep("\\.", genos)] <- "NN"
+  alen <- nchar(genos[!is.na(genos)][1])
+  NN <- paste0(rep("N", alen), collapse = "")
+  genos[is.na(genos)] <- NN
+  genos[genos == "."] <- NN
+  genos[grep("\\.", genos)] <- NN
   
   # prep metadata
   if(is.null(snp.meta)){
@@ -455,9 +501,16 @@
   }
   
   # make the snpRdata object
+  if(accept_non_biallelic & any(non_bi)){
+    return(read_non_biallelic(as.data.frame(genos),
+                              as.data.frame(snp.meta),
+                              as.data.frame(sample.meta),
+                              mDat = NN))
+  }
+  
   return(import.snpR.data(as.data.frame(genos), 
                           as.data.frame(snp.meta), 
-                          as.data.frame(sample.meta), "NN"))
+                          as.data.frame(sample.meta), NN))
 }
 
 # Convert a genepop into a snpRdata object.
@@ -907,7 +960,37 @@
                     citations = list(snpR = list(key = "hemstromSnpRUserFriendly2023", details = "snpR package")))
 }
 
-read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE){
+#' Read in non-biallelic genotype data.
+#' 
+#' Reads in non-biallelic data stored as a vcf or tab-delimited data.
+#' Currently only supports these data types.
+#' 
+#' @param genotypes data.frame, \code{\link[vcfR]{vcfR}}, or a file path to either 
+#'  vcf or tab-delimited file containing raw genotypes with SNPs are in rows and 
+#'  individual samples are in columns. If raw genotypes, each genotype must be
+#'  stored in one cell (as in "001002" or "0102") with a matching length provided
+#'  to the "mDat" argument.
+#' @param snp.meta data.frame, default NULL. Metadata for each SNP, must have a
+#'  number of rows equal to the number of SNPs in the dataset. If NULL, a single
+#'  "snpID" column will be added.
+#' @param sample.meta data.frame, default NULL. Metadata for each individual
+#'  sample, must have a number of rows equal to the number of samples in the
+#'  dataset. If NULL, a single "sampID" column will be added.
+#' @param mDat character, default "000000", matching the encoding of missing
+#'  \emph{genotypes} in the data provided to the genotypes argument.
+#' @param header_cols numeric, default 0. Number of header columns containing
+#'  SNP metadata. Used if a tab delimited or STRUCTURE input file is
+#'  provided.
+#' @param verbose Logical, default FALSE. If TRUE, will print a few status
+#'  updates and checks.
+#' @param .pass_filters Internal, probably not for user use. Used to pass 
+#'  filtering history when sub-setting when this function is called internally.
+#' @param .skip_filters Internal, probably not for user use. Used to skip 
+#'  re-filtering during sub-setting when this function is called internally.
+#'  
+#' @export
+read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, header_cols = 0, mDat = "0000", verbose = FALSE, 
+                               .pass_filters = FALSE){
   bi_allelic <- rows_per_individual <- marker_and_sample_names <- position <- .snp.id <- .sample.id <- ..N_col <- FALSE
   #======special cases========
   # sample and snp metadata
@@ -932,30 +1015,24 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   if(is.character(genotypes) & length(genotypes) == 1){
     if(file.exists(genotypes)){
       # check for ms or vcf, etc file
-      # if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
-      #   return(.process_vcf(genotypes, snp.meta, sample.meta))
-      # }
-      # else if(grepl("\\.genepop$", genotypes)){
-      #   return(.process_genepop(genotypes, snp.meta, sample.meta, mDat))
-      # }
-      # else if(grepl("\\.fstat$", genotypes)){
-      #   return(.process_FSTAT(genotypes, snp.meta, sample.meta, mDat))
-      # }
-      # else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
-      #   .check.installed("tools")
-      #   return(.process_plink(tools::file_path_sans_ext(genotypes)))
-      # }
-      # else if(grepl("\\.str$", genotypes)){
-      #   return(.process_structure(genotypes, 
-      #                             rows_per_individual = rows_per_individual, 
-      #                             marker_and_sample_names = marker_and_sample_names, 
-      #                             header_cols = header_cols, 
-      #                             snp.meta = snp.meta, 
-      #                             sample.meta = sample.meta))
-      # }
-      # else{
+      if(grepl("\\.vcf$", genotypes) | grepl("\\.vcf\\.gz$", genotypes)){
+        return(.process_vcf(genotypes, snp.meta, sample.meta, accept_non_biallelic = TRUE))
+      }
+      else if(grepl("\\.genepop$", genotypes)){
+        paste0("genepop conversion currently only accepts bi-allelic data. Support work on-going, please request on the GitHub issues page if desired!.\nd")
+      }
+      else if(grepl("\\.fstat$", genotypes)){
+        paste0("FSTAT conversion currently only accepts bi-allelic data. Support work on-going, please request on the GitHub issues page if desired!.\nd")
+      }
+      else if(grepl("\\.bim$", genotypes) | grepl("\\.fam$", genotypes) | grepl("\\.bed$", genotypes)){
+        paste0("plink conversion currently only accepts bi-allelic data. Support work on-going, please request on the GitHub issues page if desired!.\nd")
+      }
+      else if(grepl("\\.str$", genotypes)){
+        paste0("STRUCTURE conversion currently only accepts bi-allelic data. Support work on-going, please request on the GitHub issues page if desired!.\nd")
+      }
+      else{
         genotypes <- as.data.frame(data.table::fread(genotypes))
-      # }
+      }
     }
     else{
       stop("File not found. Fix path or import manually and provide to import.snpR.data.\n")
@@ -963,7 +1040,7 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   }
   
   if(is.matrix(genotypes)){genotypes <- as.data.frame(genotypes)}
-  
+
   
   #=================check input format for non-special case=============================
   # NN, no need to do anything, just read in and proceed as normal.
@@ -1072,6 +1149,10 @@ read_non_biallelic <- function(genotypes, snp.meta = NULL, sample.meta = NULL, h
   
   # add basic maf
   .make_it_quiet(x <- calc_maf(x))
+  
+  if(is.data.frame(.pass_filters)){
+    x@filters <- .pass_filters
+  }
  
   
   #========return=========

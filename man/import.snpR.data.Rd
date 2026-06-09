@@ -17,7 +17,8 @@ import.snpR.data(
   fix_overlaps = TRUE,
   verbose = FALSE,
   .pass_filters = FALSE,
-  .skip_filters = FALSE
+  .skip_filters = FALSE,
+  accept_non_biallelic = FALSE
 )
 }
 \arguments{

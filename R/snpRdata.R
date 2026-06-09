@@ -452,7 +452,12 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
                              ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, fix_overlaps = TRUE,
                              verbose = FALSE,
-                             .pass_filters = FALSE, .skip_filters = FALSE){
+                             .pass_filters = FALSE, .skip_filters = FALSE,
+                             accept_non_biallelic = FALSE){
+  
+  if(accept_non_biallelic){
+    return(read_non_biallelic(genotypes, snp.meta, sample.meta, header_cols, mDat, verbose))
+  }
   position <- .snp.id <- .sample.id <- NULL
 
   #======special cases========

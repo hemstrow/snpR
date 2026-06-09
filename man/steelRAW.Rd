@@ -7,7 +7,7 @@
 Siletz river, Oregon, USA. Samples come from both the summer and winter run
 wild and hatchery populations. For more details, see Hemstrom et al 2018.}
 \format{
-An object of class \code{data.frame} with 1573 rows and 14 columns.
+An object of class \code{data.frame} with 1574 rows and 14 columns.
 }
 \usage{
 steelRAW

@@ -83,6 +83,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
   .argnames <- match.call()
   .argnames <- as.list(.argnames)
   .argnames <- .argnames[-1]
+  
+  nbi_al <- !.is.bi_allelic(x)
 
   .is.facet <- which(!names(.argnames) %in% c("x", ".snps", ".samps", ".facets", ".subfacets", ".snp.facets", ".snp.subfacets"))
   if(length(.is.facet) > 0){
@@ -343,12 +345,12 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
   if(methods::is(r, "try-error")){
     return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
                             sample.meta = nsampm, mDat = x@mDat,
-                            .skip_filters = TRUE))
+                            .skip_filters = TRUE, accept_non_biallelic = nbi_al))
   }
   else{
     return(import.snpR.data(genotypes(x)[.snps, .samps, drop = FALSE], snp.meta = nsnpm,
                             sample.meta = nsampm, mDat = x@mDat, .pass_filters = x@filters, 
-                            .skip_filters = TRUE))
+                            .skip_filters = TRUE, accept_non_biallelic = nbi_al))
   }
 }
 
@@ -460,7 +462,7 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
     if(length(samps) == 1){
       dat <- as.data.frame(dat, stringsAsFactors = F)
     }
-    dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,,drop = FALSE], sample.meta = sample.meta(x)[samps,,drop = FALSE], mDat = x@mDat)
+    dat <- import.snpR.data(dat, snp.meta = snp.meta(x)[snps,,drop = FALSE], sample.meta = sample.meta(x)[samps,,drop = FALSE], mDat = x@mDat, accept_non_biallelic = nbi_al)
     if(any(x@facets != ".base")){
       dat <- .add.facets.snpR.data(dat, x@facets[-which(x@facets == ".base")])
     }
@@ -4091,6 +4093,8 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     stop("y must be a snpRdata object.\n")
   }
   
+  nbi_al <- !.is.bi_allelic(x) | !.is.bi_allelic(y)
+  
   if(x@snp.form != y@snp.form){
     stop("x and y have snps in a different format.\n")
   }
@@ -4103,7 +4107,7 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
     warning("x and y have missing data in a different format. The missing data format from x ", x@mDat, " will be used.\n")
     gy <- genotypes(y)
     gy[gy == y@mDat] <- x@mDat
-    y <- import.snpR.data(gy, snp.meta(y), sample.meta(y), x@mDat)
+    y <- import.snpR.data(gy, snp.meta(y), sample.meta(y), x@mDat, accept_non_biallelic = nbi_al)
   }
   
   
@@ -4285,5 +4289,5 @@ merge_snpRdata <- function(x, y, by.sample = intersect(names(sample.meta(x)), na
   return(import.snpR.data(genotypes = genotypes.m, 
                           snp.meta = snm.m[,-grep("_snp_id", colnames(snm.m))],
                           sample.meta = sm.m[,-grep("_sample_id", colnames(sm.m))],
-                          mDat = x@mDat))
+                          mDat = x@mDat, accept_non_biallelic = nbi_al))
 }

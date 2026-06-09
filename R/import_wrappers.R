@@ -113,9 +113,12 @@ NULL
 
 #' @export
 #' @describeIn snpR_import_wrappers Import .vcf or .vcf.gz files.
-read_vcf <- function(file, snp.meta = NULL, sample.meta = NULL){
+read_vcf <- function(file, snp.meta = NULL, sample.meta = NULL, accept_non_biallelic = FALSE){
   if(!grepl("\\.vcf$", file) & !grepl("\\.vcf\\.gz$", file)){
     stop("File extension is not .vcf or .vcf.gz. Please check that the correct file has been entered and rename if needed.\n")
+  }
+  if(accept_non_biallelic){
+    return(read_non_biallelic(file, snp.meta, sample.meta))
   }
   return(import.snpR.data(file, snp.meta, sample.meta))
 }
