@@ -364,6 +364,8 @@ subset_snpR_data <- function(x, .snps = 1:nsnps(x), .samps = 1:nsamps(x), ..., .
     stop("x must be a snpRdata object.\n")
   }
   
+  nbi_al <- !.is.bi_allelic(x)
+  
   msg <- character(0)
   
   if(max(snps) > nrow(x)){
