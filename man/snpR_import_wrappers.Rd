@@ -67,6 +67,11 @@ data set. If NULL, a single "sampID" column will be added. If a character,
 the path to a file containing sample metadata, one row per sample, with
 named columns.}
 
+\item{accept_non_biallelic}{Logical, default FALSE. If FALSE, non-biallelic
+markers will be removed. If TRUE, this function passes to
+\code{\link{read_non_biallelic}} and allows non-biallelic markers. Note that
+snpR currently allows only a reduced set of import formats in this case.}
+
 \item{chr.length}{numeric, Specifies chromosome lengths. Note that a single
 value assumes that each chromosome is of equal length whereas a vector of
 values gives the length for each chromosome in order.}
@@ -92,7 +97,7 @@ header row of marker is present.}
 
 \item{genind}{genind object to convert, see \code{\link[adegenet]{genind}}.}
 
-\item{vcfR}{vcfR object to convert, see \code{\link[vcfR]{vcfR}}.}
+\item{vcfR}{vcfR object to convert, see vcfR documentation.}
 }
 \description{
 These functions wrap \code{\link{import.snpR.data}} to import data into the
@@ -135,7 +140,7 @@ are stored as: NN, 0000, or snp_tab format.
  Supports automatic import of several types of files.
 Options:
 *.vcf or .vcf.gz: Variant Call Format (vcf) files, supported
-via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+via the vcfR package. If not otherwise provided, snp metadata is
 taken from the fixed fields in the VCF and sample metadata from the sample
 IDs. Note that this only imports SNPs with called genotypes!
 \itemize{
@@ -196,7 +201,7 @@ return an error.
 and SNP IDs, SNP positions, SNP chromosomes, and pop IDs will be taken
 from the genlight object if possible. This data will be added too but will
 not replace data provided to the SNP or sample.meta arguments.
-\item vcfR: \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided, snp
+\item vcfR: vcfR objects from vcfR. If not provided, snp
 metadata is taken from the fixed fields in the VCF and sample metadata
 from the sample IDs. Note that this only imports SNPs with called
 genotypes!

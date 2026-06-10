@@ -1405,7 +1405,7 @@ calc_fis <- function(x, facets = NULL,
                      keep_components = FALSE){
   
   ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
-  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- ..boot_cols <- pt <- ..ho_cols <- ..tas_cols <- ..ho_col <- NULL
+  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- ..boot_cols <- pt <- ..ho_cols <- ..tas_cols <- ..ho_col <- ..hocol <- NULL
   
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){

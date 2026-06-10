@@ -15,7 +15,7 @@ read_non_biallelic(
 )
 }
 \arguments{
-\item{genotypes}{data.frame, \code{\link[vcfR]{vcfR}}, or a file path to
+\item{genotypes}{data.frame, vcfR object, or a file path to
 either vcf or tab-delimited file containing raw genotypes with SNPs are in
 rows and individual samples are in columns. If raw genotypes, each genotype
 must be stored in one cell (as in "001002" or "0102") with a matching

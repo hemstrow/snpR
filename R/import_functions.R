@@ -965,7 +965,7 @@
 #' Reads in non-biallelic data stored as a vcf or tab-delimited data. Currently
 #' only supports these data types.
 #'
-#' @param genotypes data.frame, \code{\link[vcfR]{vcfR}}, or a file path to
+#' @param genotypes data.frame, vcfR object, or a file path to
 #'   either vcf or tab-delimited file containing raw genotypes with SNPs are in
 #'   rows and individual samples are in columns. If raw genotypes, each genotype
 #'   must be stored in one cell (as in "001002" or "0102") with a matching

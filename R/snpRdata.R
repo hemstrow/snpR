@@ -253,7 +253,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'@section File import: Supports automatic import of several types of files.
 #'  Options:
 #'  * .vcf or .vcf.gz: Variant Call Format (vcf) files, supported
-#'  via \code{\link[vcfR]{vcfR}}. If not otherwise provided, snp metadata is
+#'  via vcfR. If not otherwise provided, snp metadata is
 #'  taken from the fixed fields in the VCF and sample metadata from the sample
 #'  IDs. Note that this only imports SNPs with called genotypes!
 #'  * .ms: Files in the ms format, as provided by many commonly used simulation 
@@ -311,7 +311,7 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  adegenet. Sample and SNP IDs, SNP positions, SNP chromosomes, and pop IDs
 #'  will be taken from the genlight object if possible. This data will be added
 #'  too but will not replace data provided to the SNP or sample.meta arguments.
-#'  * vcfR: \code{\link[vcfR]{vcfR}} objects from vcfR. If not provided,
+#'  * vcfR: vcfR objects from vcfR. If not provided,
 #'  snp metadata is taken from the fixed fields in the VCF and sample metadata
 #'  from the sample IDs. Note that this only imports SNPs with called
 #'  genotypes!
