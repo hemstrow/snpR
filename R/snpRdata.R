@@ -397,6 +397,10 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'  be checked and fixed during 'ms' file import.
 #'@param verbose Logical, default FALSE. If TRUE, will print a few status
 #'  updates and checks.
+#'@param accept_non_biallelic Logical, default FALSE. If FALSE, non-biallelic
+#'  markers will be removed. If TRUE, this function passes to
+#'  \code{\link{read_non_biallelic}} and allows non-biallelic markers. Note that
+#'  snpR currently allows only a reduced set of import formats in this case.
 #'@param .pass_filters Internal, probably not for user use. Used to pass 
 #'  filtering history when sub-setting when this function is called internally.
 #'@param .skip_filters Internal, probably not for user use. Used to skip 
@@ -450,10 +454,9 @@ snpRdata <- setClass(Class = 'snpRdata', slots = c(sample.meta = "data.frame",
 #'
 #'@author William Hemstrom
 import.snpR.data <- function(genotypes, snp.meta = NULL, sample.meta = NULL, mDat = "NN", chr.length = NULL,
-                             ..., header_cols = 0, rows_per_individual = 2, marker_names = FALSE, fix_overlaps = TRUE,
+                             ..., accept_non_biallelic = FALSE, header_cols = 0, rows_per_individual = 2, marker_names = FALSE, fix_overlaps = TRUE,
                              verbose = FALSE,
-                             .pass_filters = FALSE, .skip_filters = FALSE,
-                             accept_non_biallelic = FALSE){
+                             .pass_filters = FALSE, .skip_filters = FALSE){
   
   if(accept_non_biallelic){
     return(read_non_biallelic(genotypes, snp.meta, sample.meta, header_cols, mDat, verbose))

@@ -1774,7 +1774,7 @@ format_snps <- function(x, output = "snpRdata", facets = NULL, n_samp = NA,
                         sn_remove_empty = TRUE,
                         verbose = FALSE){
   
-  POS <- NULL
+  POS <- repa <- NULL
   if(!isTRUE(verbose)){
     cat <- function(...){}
   }

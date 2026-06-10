@@ -11,14 +11,14 @@ import.snpR.data(
   mDat = "NN",
   chr.length = NULL,
   ...,
+  accept_non_biallelic = FALSE,
   header_cols = 0,
   rows_per_individual = 2,
   marker_names = FALSE,
   fix_overlaps = TRUE,
   verbose = FALSE,
   .pass_filters = FALSE,
-  .skip_filters = FALSE,
-  accept_non_biallelic = FALSE
+  .skip_filters = FALSE
 )
 }
 \arguments{
@@ -45,6 +45,11 @@ for each chromosome in order.}
 
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}} if a
 \emph{genotype} file name is passed that is not a vcf or ms file.}
+
+\item{accept_non_biallelic}{Logical, default FALSE. If FALSE, non-biallelic
+markers will be removed. If TRUE, this function passes to
+\code{\link{read_non_biallelic}} and allows non-biallelic markers. Note that
+snpR currently allows only a reduced set of import formats in this case.}
 
 \item{header_cols}{numeric, default 0. Number of header columns containing
 SNP metadata. Used if a tab delimited or STRUCTURE input file is

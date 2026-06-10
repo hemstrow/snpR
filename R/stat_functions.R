@@ -1405,7 +1405,7 @@ calc_fis <- function(x, facets = NULL,
                      keep_components = FALSE){
   
   ..ac.cols <- ..meta.cols <- ..keep.cols <- ..nk.cols <- ..nk.col <- ..gc_cols <- ..mcols <- ..het_cols_containing_k <- subfacet <- snp.subfacet <- NULL
-  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- ..boot_cols <- pt <- NULL
+  var_comp_c <- nk <- var_comp_b <- facet <- ..rm_cols <- ..boot_cols <- pt <- ..ho_cols <- ..tas_cols <- ..ho_col <- NULL
   
   #============================sanity and facet checks========================
   if(!is.snpRdata(x)){
@@ -6019,6 +6019,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
                      window_start_method = "conservative",
                      genome_length = NULL, par = FALSE, verbose = 1){
   start_position <- end_position <- snp_density_kb <- nhom <- position <- snp.facet <- subfacet <- IND <- len <- snp.subfacet <- NULL
+  start <- end <- NULL
   
   #=========sanity checks===========
   if(!is.snpRdata(x)){
@@ -6579,6 +6580,7 @@ calc_roh <- function(x, facets = NULL, window_snps = 50, min_snps = 100, min_len
 #'
 #' 
 calc_pid <- function(x, facets = NULL){
+  min.count <- maj.count <- PIDsib <- . <- facet <- subfacet <- ..keep.cols <- NULL
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
