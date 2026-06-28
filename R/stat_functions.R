@@ -722,7 +722,7 @@ calc_global_fst <- function(x, facets, boot = FALSE, boot_par = FALSE, zfst = FA
   bi_allelic <- .is.bi_allelic(x)
   
   if(!bi_allelic & global){
-    stop("Global fst is currently not supported for bi_allelic markers.\n")
+    stop("Global fst is currently not supported for non-biallelic markers.\n")
   }
   
   
