@@ -3765,7 +3765,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
   # basic stats
   x <- calc_maf(x, facets)
   x <- calc_pi(x, facets)
-  x <- calc_hwe(x, facets)
+  if(.is.bi_allelic(x)) x <- calc_hwe(x, facets)
   x <- calc_ho(x, facets)
   x <- calc_he(x, facets)
   x <- calc_fis(x, facets)
