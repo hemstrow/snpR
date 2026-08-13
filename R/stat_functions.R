@@ -6654,7 +6654,7 @@ calc_pid <- function(x, facets = NULL){
   x <- .merge.snpR.stats(x, PID, type = "weighted.means")
   keep.cols <- c("facet", "subfacet", colnames(snp.meta(x)), "PID", "PIDsib")
   keep.cols <- keep.cols[which(keep.cols %in% colnames(maf))]
-  x <- .merge.snpR.stats(x, maf[,..keep.cols])
+  x <- .fix..call(.merge.snpR.stats(x, maf[,..keep.cols]))
   
   x <- .update_citations(x,"Paetkau1998", stats = "PID", details = "Unbiased Probability of Identity")
   x <- .update_calced_stats(x, facets, "PID", remove.type = "snp")

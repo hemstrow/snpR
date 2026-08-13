@@ -51,8 +51,13 @@ test_that("correct wc, non-bi", {
   tdfst <- calc_pairwise_fst(tdfst, "pop", "wc")
   tdfstr <- get.snpR.stats(tdfst, "pop", "fst")$pairwise
   expect_equal(round(tdfstr$fst[which(tdfstr$comparison == "sumhat~winhat")], 4), 
-               c(0.0255,0.0326,0.0276,0.0864,0.0614,0.0204,0.0284,0.0165,
-                 0.1458,0.0036,0.0542,0.0445,0.0551)) # values from pegas, also double checked by hand.
+               c(0.025, 0.0326, 0.0276, 0.0853, 0.0624, 0.0204, 0.0291, 
+                 0.016, 0.1451, 0.004, 0.0548, 0.0449, 0.0544)) # values from pegas, also double checked by hand.
+  # peg <- adegenet::read.genepop("~/steelhead_msats.gen")
+  # peg <- pegas::genind2loci(peg)
+  # peg_fis <- pegas::Fst(peg[peg$population %in% c("sumhat", "winhat"),])
+  # peg_fis <- peg_fis[,2]
+  
   
   # check that bootstrapping works
   set.seed(1232)
