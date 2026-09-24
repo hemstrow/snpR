@@ -62,8 +62,8 @@ plot_structure(
 }
 \arguments{
 \item{x}{snpRdata object, list of Q matrices (sorted by K in the first level
-and run in the second), or a character string designating a pattern
-matching Q matrix files in the current working directories.}
+and run in the second), filepaths, or a character string designating a
+pattern matching Q matrix files in the current working directories.}
 
 \item{facet}{character, default NULL. If provided, individuals will not be
 noted on the x axis. Instead, the levels of the facet will be noted. Only a

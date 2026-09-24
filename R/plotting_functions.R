@@ -2356,8 +2356,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' this function that are not automatically cleaned after use.
 #'
 #' @param x snpRdata object, list of Q matrices (sorted by K in the first level
-#'   and run in the second), or a character string designating a pattern
-#'   matching Q matrix files in the current working directories.
+#'   and run in the second), filepaths, or a character string designating a
+#'   pattern matching Q matrix files in the current working directories.
 #' @param facet character, default NULL. If provided, individuals will not be
 #'   noted on the x axis. Instead, the levels of the facet will be noted. Only a
 #'   single, simple, sample specific facet may be provided. Individuals must be
@@ -2604,9 +2604,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   rnorm <- V1 <- V2 <- popid <- genback <- ancestry_pop <- ancestry_probability <- V4 <- ..bpc <- ..upc <- NULL
   clean_popid <- prob_correctly_assigned <- K <- est_ln_prob <- Percentage <- Cluster <- NULL
   
-  
-  
-  
+
   #===========sanity checks===================
   kmax <- max(k)
   msg <- character()
@@ -2642,10 +2640,15 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     # file pattern
     if(!is.list(x)){
       if(is.character(x) & length(x) > 1){
-        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+        if(any(!file.exists(x))){
+          
+          msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, a vector of Q file paths, or a string containing a pattern that matches qfiles in the current working directory.\n")
+        } else {
+          provided_qlist <- "parse"
+        }
       }
       else if(!is.character(x)){
-        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, or a string containing a pattern that matches qfiles in the current working directory.\n")
+        msg <- c(msg, "Unaccepted input format. x must be a snpRdata object, a list of q matrices, a vector of Q file paths, or a string containing a pattern that matches qfiles in the current working directory.\n")
       }
       else{
         provided_qlist <- "parse"
@@ -2694,11 +2697,20 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
         }
       }
       else if(provided_qlist == "parse"){
-        all.files <- list.files(pattern = x)
+        if(all(file.exists(x))){ # if provided a vector of files directly, just take that
+          all.files <- x
+        } else {
+          all.files <- list.files(pattern = x)
+        }
         
-        concerning_extinsions <- which(!grepl(".qopt$", all.files))
+        cat(paste0("Detected files: \n\t", paste0(all.files, collapse = "\n\t"), "\n"))
+        
+        usual_extensions <- c("Q", "qopt")
+        ext <- regexpr("\\.([[:alnum:]]+)$", all.files) # from tools
+        ext <- ifelse(ext > -1L, substring(all.files, ext + 1L), "") # from tools
+        concerning_extinsions <- which(!ext %in% usual_extensions)
         if(length(concerning_extinsions) > 0){
-          warning(paste0("Some files do not end in .qopt, and may not be the expected format:\n",
+          warning(paste0("Some files do not end in [", paste0(usual_extensions, collapse = ", "), "] and may not be the expected format:\n",
                   paste0(all.files[concerning_extinsions], collapse = "\n\t")))
         }
         
@@ -3240,7 +3252,11 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   # function to parse in q files, used only if clumpp not run and a file pattern is provided
   parse_qfiles <- function(pattern){
     # read in the files
-    qfiles <- list.files(full.names = T, pattern = pattern)
+    if(all(file.exists(pattern))){
+      qfiles <- pattern
+    } else{
+      qfiles <- list.files(full.names = T, pattern = pattern)
+    }
     if(method == "structure"){
       if(!use_pop_info){
         qlist <- .readQStructure(qfiles)

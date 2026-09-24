@@ -5,7 +5,7 @@
 \alias{steelMSATs}
 \title{Siletz Steelhead microsatellite snpRdata}
 \format{
-An object of class \code{snpRdata} with 13 rows and 1573 columns.
+An object of class \code{snpRdata} with 13 rows and 1574 columns.
 }
 \usage{
 steelMSATs

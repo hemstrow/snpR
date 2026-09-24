@@ -38,6 +38,22 @@ test_that("structure",{
     expect_true(all(colnames(p2$K_plot$evanno) == c("K", "mean_est_ln_prob", "lnpK", "lnppK", "deltaK", "sd_est_ln_prob")))
     expect_identical(round(p2$K_plot$evanno$deltaK, 4), c(NA, round(3.889087, 4), NA))
   }
+  
+  # with filepaths/patterns
+  p_cat <- plot_structure(stickSNPs[1:10, pop = c("ASP", "PAL")], "pop", k = 2:3, 
+                          method = "structure", structure_path = str_path, clumpp = FALSE, strip_col_names = "p$", cleanup = FALSE)
+  
+  sf <- list.files(".", "structure_outfile")
+  p_cat2 <- plot_structure(sf, facet = sample.meta(stickSNPs[pop = c("ASP", "PAL")])$pop,
+                           k = 2:3)
+  p_cat3 <- plot_structure("structure_outfile", facet = sample.meta(stickSNPs[pop = c("ASP", "PAL")])$pop,
+                           k = 2:3)
+  expect_identical(p_cat2$plot_data[,-1],
+                   p_cat3$plot_data[,-1])
+  
+  file.remove(sf)
+  file.remove(c("mainparams", "extraparams", "structure_infile", "seed.txt"))
+  
 })
 
 
