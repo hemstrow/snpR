@@ -2742,6 +2742,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       sample_meta <- data.frame(d = facet, stringsAsFactors = F)
       facet <- deparse(substitute(facet))
       colnames(sample_meta) <- facet
+      
+      if(!is.null(ID)){
+        sample_meta$ID <- ID
+        ID <- "ID"
+      }
+      
     }
   }
   else if(!.is.bi_allelic(x)){
