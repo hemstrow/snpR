@@ -3056,8 +3056,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
 
   # run clumpp on a directory of q files using pophelper. Import the results into a list of  processed q tables
   run_clumpp <- function(pattern = "qopt"){
+    if(all(file.exists(pattern))){
+      qfiles <- pattern
+    } else {
+      qfiles <- list.files(full.names = T, pattern = pattern)
+    }
+    
     # prepare files and run clumpp
-    qfiles <- list.files(full.names = T, pattern = pattern)
     qlist <- .readQ(qfiles)
     if(clumpp.opt == "large.k.greedy"){
       clumpp.opt <- 3
