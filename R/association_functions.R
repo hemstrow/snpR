@@ -357,7 +357,7 @@ cross_validate_genomic_prediction <- function(x, response, iterations = 10000,
   # pick samples to make the model with
   if(is.numeric(cross_samples)){
     msg <- "Provided cross_samples must be sample indices.\n"
-    if(as.integer(cross_samples) != cross_samples){
+    if(any(as.integer(cross_samples) != cross_samples)){
       stop(msg)
     }
     if(any(cross_samples > ncol(x)) | any(cross_samples < 0)){

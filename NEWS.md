@@ -14,6 +14,7 @@
 * Updated the citation for `calc_seg_sites`.
 * Added version checking for `plot_structure(method = "structure")` to check that the structure version is newer than 2.3.1, which is when critical command line arguments, like seed setting, as well as the extraparams file were introduced.
 * Fixed a bug where providing a vector of individual IDs for samples in `plot_structure()` with provided qfiles didn't work correctly.
+* Fixed a bug in cross-sample index option in `cross_validate_genomic_prediction()`.
 
 # snpR 1.2.14
 ## Features:
