@@ -678,18 +678,20 @@
 # @author William Hemstrom
 .process_plink <- function(plink_file){
   o1 <- ref <- o2 <- alt <- o3 <- NULL
-  
+
   .check.installed("genio")
   
   
   #======use genio to read in data===========
   res <- genio::read_plink(file = plink_file, verbose = F)
-  colnames(res$bim)[which(colnames(res$bim) == "id")] <- ".snp.id"
+  res$bim$.snp.id <- 1:nrow(res$bim)
   if(any(colnames(res$bim) == "pos")){
     colnames(res$bim)[which(colnames(res$bim) == "pos")] <- "position"
   }
-  colnames(res$fam)[which(colnames(res$fam) == "id")] <- ".sample.id"
+  res$fam$.sample.id <- 1:nrow(res$fam)
   
+  res$fam <- dplyr::rename(res$fam, sampID = id)
+  res$bim <- dplyr::rename(res$bim, snpID = id)
   
   
   #======convert genotypes==========
