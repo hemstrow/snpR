@@ -73,6 +73,18 @@ test_that("snmf",{
   # check that it works OK with ".base"
   
   .make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], ".base", k = 2:3, clumpp = FALSE))
+  
+  
+  # test that right/left or top/bottom axis positions work here since snmf is fast
+  .make_it_quiet(right <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE, y_axis_position = "right"))
+  right <- ggplot2::ggplot_build(right$plot)
+  expect_true(right$layout$panel_scales_y[[1]]$position == "right")
+  
+  # test that right/left or top/bottom axis positions work here since snmf is fast
+  .make_it_quiet(top <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = FALSE, x_axis_position = "top"))
+  top <- ggplot2::ggplot_build(top$plot)
+  expect_true(top$layout$panel_scales_x[[1]]$position == "top")
+  
 })
 
 test_that("snapclust",{

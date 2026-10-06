@@ -30,6 +30,8 @@ plot_structure(
   viridis.option = "viridis",
   alt.palette = NULL,
   t.sizes = c(12, 12, 12),
+  x_axis_position = "bottom",
+  y_axis_position = "left",
   separator_thickness = 1,
   separator_color = "white",
   no_admix = FALSE,
@@ -180,6 +182,14 @@ colors to use instead of the viridis palette.}
 
 \item{t.sizes}{numeric, default c(12, 12, 12). Text sizes, given as
 c(strip.title, axis, axis.ticks).}
+
+\item{x_axis_position}{character, default "bottom". If "top", moves the
+x axis title/text/ticks to the top of the plot. Useful because this is
+difficult to do in post with a ggplot.}
+
+\item{y_axis_position}{character, default "left". If "right", moves the
+y axis title/text/ticks to the right of the plot. Useful because this is
+difficult to do in post with a ggplot.}
 
 \item{separator_thickness}{numeric, default 1. Thickness of facet level
 separator lines. If 0, no separators drawn. Since separators currently

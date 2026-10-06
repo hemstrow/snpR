@@ -2446,6 +2446,12 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'   colors to use instead of the viridis palette.
 #' @param t.sizes numeric, default c(12, 12, 12). Text sizes, given as
 #'   c(strip.title, axis, axis.ticks).
+#' @param x_axis_position character, default "bottom". If "top", moves the
+#'   x axis title/text/ticks to the top of the plot. Useful because this is
+#'   difficult to do in post with a ggplot.
+#' @param y_axis_position character, default "left". If "right", moves the
+#'   y axis title/text/ticks to the right of the plot. Useful because this is
+#'   difficult to do in post with a ggplot.
 #' @param separator_thickness numeric, default 1. Thickness of facet level
 #'   separator lines. If 0, no separators drawn. Since separators currently
 #'   overlap with samples somewhat, this may be desirable.
@@ -2592,7 +2598,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            clumpp.opt = "greedy", structure_path = "/usr/bin/structure", admixture_path = "/usr/bin/admixture",
                            fastmixture_path = "conda run -n fastmixture fastmixture", fastmixture_threads = 1,
                            admixture_cv = 5, ID = NULL, viridis.option = "viridis",
-                           alt.palette = NULL, t.sizes = c(12, 12, 12), separator_thickness = 1, separator_color = "white", 
+                           alt.palette = NULL, t.sizes = c(12, 12, 12), 
+                           x_axis_position = "bottom",
+                           y_axis_position = "left",
+                           separator_thickness = 1, separator_color = "white", 
                            no_admix = FALSE, use_pop_info = FALSE, loc_prior = FALSE, correlated_frequencies = TRUE,
                            infer_alpha = TRUE, separate_pop_alphas = FALSE, infer_lambda = FALSE, 
                            infer_pop_specific_lambda = FALSE, lambda = 1, f_prior_mean = 0.01, f_prior_sd = 0.05,
@@ -2617,6 +2626,13 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     if(length(facet.order) != length(unique(facet.order))){
       msg <- c(msg, "facet.order must contain only unique entries, one per unique category in the provided facet.\n")
     }
+  }
+  
+  if(!x_axis_position %in% c("top", "bottom")){
+    msg <- c(msg, "x_axis_position must be either 'top' or 'bottom'.\n")
+  }
+  if(!y_axis_position %in% c("left", "right")){
+    msg <- c(msg, "y_axis_position must be either 'left' or 'right'.\n")
   }
   
   # check if this is with a snpRdata object or a qlist and do some other checks
@@ -3820,10 +3836,10 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   
   #===========make plot==============
   p <- ggplot2::ggplot(pdat, ggplot2::aes(ID, Percentage, color = Cluster, fill = Cluster)) +
-    ggplot2::facet_wrap(~K, ncol = 1, strip.position = "right") +
+    ggplot2::facet_wrap(~K, ncol = 1, strip.position = ifelse(y_axis_position == "left", "right", "left")) +
     ggplot2::theme_bw() +
     ggplot2::geom_bar(stat = "identity") +
-    ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0.25, 0.5,0.75)) +
+    ggplot2::scale_y_continuous(expand = c(0,0), breaks = c(0.25, 0.5,0.75), position = y_axis_position) +
     ggplot2::ylab("Cluster Membership Proportion") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, size = t.sizes[3]),
                    strip.text = ggplot2::element_text(size = t.sizes[1]),
@@ -3859,7 +3875,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
     seps <- c(0, fmc) + 0.5
     seps[1] <- -.5
     p <- p +
-      ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0)) +
+      ggplot2::scale_x_discrete(labels = unique(pdat[,facet]), breaks = breaks, expand = c(0,0), position = x_axis_position) +
       ggplot2::geom_vline(xintercept = c(fmc[-length(fmc)]) + 0.5, color = separator_color, linewidth = separator_thickness) +
       ggplot2::xlab(label = facet[1])
   }
