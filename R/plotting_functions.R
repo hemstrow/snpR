@@ -2712,7 +2712,12 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       }
       if(provided_qlist == TRUE){
         if(bad.list == F){
-          if(length(facet) != nrow(qlist[[1]])){
+          unlisted <- x
+          while (is.list(unlisted[[1]]) & !is.data.frame(unlisted[[1]]) & ! is.matrix(unlisted[[1]])) {
+            unlisted <- unlisted[[1]]
+          }
+          
+          if(length(facet) != nrow(unlisted[[1]])){
             msg <- c(msg, "The number of samples in the qlist does not match the length of the provided sample metadata.\n")
           }
         }
@@ -2763,12 +2768,14 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
       sample_meta <- data.frame(d = facet, stringsAsFactors = F)
       facet <- deparse(substitute(facet))
       colnames(sample_meta) <- facet
-      
-      if(!is.null(ID)){
+    }
+    if(!is.null(ID)){
+      if(!exists("sample_meta")){
+        sample_meta <- data.frame(ID = ID)
+      } else {
         sample_meta$ID <- ID
-        ID <- "ID"
       }
-      
+      ID <- "ID"
     }
   }
   else if(!.is.bi_allelic(x)){

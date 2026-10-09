@@ -1,22 +1,25 @@
 # snpR 1.3.0
 ## Features:
+### Major
+* Added limited support for non-biallelic markers. The core function is `read_non_biallelic()`, with the standard `import.snpR.data()` and `read_vcf()` routing to this for support. This is still a test feature, so please report any bugs. Functions *should* say if they do not support bi-allelic markers when run.
+
 ### Minor:
 * Implemented a much faster version of `calc_private` with rarefaction for larger datasets which includes the fixes in 1.2.14
 * Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
-* Added limited support for non-biallelic markers. The core function is `read_non_biallelic()`, with the standard `import.snpR.data()` and `read_vcf()` routing to this for support. This is still a test feature, so please report any bugs. Functions *should* say if they do not support bi-allelic markers when run.
 * Added support for a vector of file names rather than a pattern provided to `plot_structure()`, which saves from having to switch directories, etc.
 * Added `x_axis_position` and `y_axis_position` arguments to `plot_structure` to allow users to easily swap axis label positions, since that's difficult to do on the completed plot.
 
-### Bug fixes:
+## Bug fixes:
 * Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).
 * Importing "NN"/"0000" format data where the first genotype is not some combo of "A", "C", "G", "T" (or 01, 02, 03, 04) or missing no longer produces an error.
 * Importing "0000" format data with alleles other than 01, 02, 03, 04 (or missing) now works fine (as does formatting non ACGT data to 0000).
 * Fixed an error that would occur when formatting data for one sample into plink format.
 * Updated the citation for `calc_seg_sites`.
-* Added version checking for `plot_structure(method = "structure")` to check that the structure version is newer than 2.3.1, which is when critical command line arguments, like seed setting, as well as the extraparams file were introduced.
+* Added version checking for `plot_structure(method = "structure")` to check that the structure version is newer than 2.3.1, which is when using critical command line arguments (like seed setting) as well as the extraparams file.
 * Fixed a bug where providing a vector of individual IDs for samples in `plot_structure()` with provided qfiles didn't work correctly.
 * Fixed a bug in cross-sample index option in `cross_validate_genomic_prediction()`.
 * Fixed an internal bug where some metadata was mis-defined when importing plink files (probably did not impact anything downstream).
+* Fixed a bug where re-running CLUMPP in a dir where it had already been run once with `plot_structure()` would end up incorporating more files into the merge rather than doing a new run. The argument `force_remove_existing_clumpp` can be used to force clean-up and re-run, otherwise it'll ask before removing and fail if denied or not interactive.
 
 # snpR 1.2.14
 ## Features:
