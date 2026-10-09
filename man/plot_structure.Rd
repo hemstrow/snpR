@@ -59,13 +59,15 @@ plot_structure(
   seed = sample(1e+05, 1),
   strip_col_names = NULL,
   cleanup = TRUE,
+  force_remove_existing_clumpp = FALSE,
   ...
 )
 }
 \arguments{
 \item{x}{snpRdata object, list of Q matrices (sorted by K in the first level
 and run in the second), filepaths, or a character string designating a
-pattern matching Q matrix files in the current working directories.}
+pattern matching Q matrix files in the current working directories. Note
+that when providing a list of Q matrices list names are not needed.}
 
 \item{facet}{character, default NULL. If provided, individuals will not be
 noted on the x axis. Instead, the levels of the facet will be noted. Only a
@@ -319,6 +321,11 @@ multiple patterns.}
 \item{cleanup}{logical, default TRUE. If TRUE, extra files created during
 assignment, clumpp, and plot construction will be removed. If FALSE, they
 will be left in the working directory.}
+
+\item{force_remove_existing_clumpp}{logical, default FALSE. Existing CLUMPP
+files produced by code sourced from \code{pophelper} must be removed prior
+to executing CLUMPP. If TRUE, these files (with names \code{pop_Kn} and
+\code{pop-both}, where \code{n} is a number) will be automatically removed.}
 
 \item{...}{additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 or \code{\link[adegenet]{snapclust.choose.k}}.}

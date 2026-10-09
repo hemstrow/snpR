@@ -102,6 +102,102 @@ test_that("snapclust",{
   # not internally calced, just a check for proper prep and parsing. Note that the K plot details were all checked against structure harvester
 })
 
+test_that("clumpp",{
+  skip_on_cran(); skip_on_ci()
+  clumpp_path <- "C://usr/bin/CLUMPP.exe"
+  skip_if(!file.exists(clumpp_path))
+  
+  # run and check that the files have been generated.
+  .make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = TRUE,
+                                     reps = 2, method = "structure", structure_path = str_path,
+                                     clumpp_path = clumpp_path, cleanup = FALSE))
+  expect_true(all(file.exists(c("qfiles/pop_K2/", "qfiles/pop_K3/", "qfiles/pop-both/"))))
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  
+  # check that we error if there are existing files! Note that this block will all be run as non-interactive when tested
+  # automatically--interactive runs will hang here and wait for a prompt--enter "n" to pass this test!
+  expect_error(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = TRUE,
+                                   reps = 2, method = "structure", structure_path = str_path,
+                                   clumpp_path = clumpp_path), "Some clumpp pop_K or pop-both files exist")
+  # Try with automatic removal, which should always pass
+  expect_no_error(.make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = TRUE,
+                                                     reps = 2, method = "structure", structure_path = str_path,
+                                                     clumpp_path = clumpp_path, force_remove_existing_clumpp = TRUE,
+                                                     cleanup = FALSE)))
+  # check those outputs
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  
+  
+  
+  # double check with a provided qlist
+  qf <- list.files("qfiles/", "K.+qopt", full.names = TRUE)
+  # should run the first time since it'll make pop files in the current directory, not where these already exist.
+  expect_no_error(.make_it_quiet(p <- plot_structure(qf, k = 2:3, reps = 2, clumpp_path = clumpp_path)))
+  # check those outputs
+  qa <- data.table::fread("pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  # on a second run, should error since the files already exist. Note that this block will all be run as non-interactive when tested
+  # automatically--interactive runs will hang here and wait for a prompt--enter "n" to pass this test!
+  expect_error(.make_it_quiet(p <- plot_structure(qf, k = 2:3, reps = 2, clumpp_path = clumpp_path)),
+               "Some clumpp pop_K or pop-both files exist")
+  # should work with auto-remove
+  expect_no_error(.make_it_quiet(p <- plot_structure(qf, k = 2:3, reps = 2, clumpp_path = clumpp_path, 
+                                                     force_remove_existing_clumpp = TRUE)))
+  # check those outputs
+  qa <- data.table::fread("pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  
+  # cleanup the spare files, then regenerate a few examples
+  file.remove("extraparams", "mainparams", "seed.txt", "structure_infile")
+  file.remove(c(list.files(pattern = "structure_outfile_k")))
+  unlink("qfiles", recursive = T, force = T)
+  unlink("pop-both", recursive = TRUE)
+  unlink("pop_K2", recursive = TRUE)
+  unlink("pop_K3", recursive = TRUE)
+  .make_it_quiet(p <- plot_structure(stickSNPs[pop = c("ASP", "PAL")], "pop", k = 2:3, clumpp = TRUE,
+                                     reps = 2, method = "structure", structure_path = str_path,
+                                     clumpp_path = clumpp_path, cleanup = FALSE))
+  
+  # lastly, do the same tests but with an actual qlist
+  qlist <- vector("list", 2)
+  for(i in 2:3){
+    fq <- list.files(".", paste0("structure_outfile_k", i))
+    qlist[[i - 1]] <-.readQ(fq)
+  }
+  expect_no_error(.make_it_quiet(p <- plot_structure(qlist, k = 2:3, reps = 2, clumpp_path = clumpp_path)))
+  # check that this all looks OK.
+  expect_true(all(file.exists(c("qfiles/pop_K2/", "qfiles/pop_K3/", "qfiles/pop-both/"))))
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  # a second run should error-note that snpR will never cleanup a provided qlist or vector of files.
+  expect_error(.make_it_quiet(p <- plot_structure(qlist, k = 2:3, reps = 2, clumpp_path = clumpp_path)),
+               "Some clumpp pop_K or pop-both files exist")
+  # forcing should still clean and run.
+  
+  expect_no_error(.make_it_quiet(p <- plot_structure(qlist, k = 2:3, reps = 2, clumpp_path = clumpp_path,
+                                                     force_remove_existing_clumpp = TRUE)))
+  # check that this all looks OK.
+  expect_true(all(file.exists(c("qfiles/pop_K2/", "qfiles/pop_K3/", "qfiles/pop-both/"))))
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-aligned.txt", fill = TRUE)
+  expect_true(nrow(qa) == (sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])*2) + 1) # two files merged plus the seperator line
+  qa <- data.table::fread("qfiles/pop-both/pop_K2-combined-merged.txt", fill = TRUE)
+  expect_true(nrow(qa) == sum(summarize_facets(stickSNPs, "pop")$pop[c("ASP", "PAL")])) # merged is the output
+  
+  
+ })
+
 #===================plot_structure_map===================
 # test_that("structure map",{
 #   skip_on_cran(); skip_on_ci()

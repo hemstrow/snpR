@@ -2357,7 +2357,8 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #'
 #' @param x snpRdata object, list of Q matrices (sorted by K in the first level
 #'   and run in the second), filepaths, or a character string designating a
-#'   pattern matching Q matrix files in the current working directories.
+#'   pattern matching Q matrix files in the current working directories. Note
+#'   that when providing a list of Q matrices list names are not needed.
 #' @param facet character, default NULL. If provided, individuals will not be
 #'   noted on the x axis. Instead, the levels of the facet will be noted. Only a
 #'   single, simple, sample specific facet may be provided. Individuals must be
@@ -2554,6 +2555,10 @@ plot_qq <- function(x, plot_var, facets = NULL, lambda_gc_correction = FALSE){
 #' @param cleanup logical, default TRUE. If TRUE, extra files created during
 #'   assignment, clumpp, and plot construction will be removed. If FALSE, they
 #'   will be left in the working directory.
+#' @param force_remove_existing_clumpp logical, default FALSE. Existing CLUMPP
+#'   files produced by code sourced from \code{pophelper} must be removed prior
+#'   to executing CLUMPP. If TRUE, these files (with names \code{pop_Kn} and 
+#'   \code{pop-both}, where \code{n} is a number) will be automatically removed.
 #' @param ... additional arguments passed to either \code{\link[LEA]{main_sNMF}}
 #'   or \code{\link[adegenet]{snapclust.choose.k}}.
 #'
@@ -2608,7 +2613,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
                            uniform_alpha_prior = TRUE, alpha_max = 10, alpha_prior_a = 1, alpha_prior_b = 2, 
                            gens_back = 2, mig_prior = 0.01, locprior_init_r = 1, locprior_max_r = 20,
                            alpha_prop_sd = 0.025, start_at_pop_info = FALSE, metro_update_freq = 10, seed = sample(100000, 1), 
-                           strip_col_names = NULL, cleanup = TRUE, ...){
+                           strip_col_names = NULL, cleanup = TRUE, force_remove_existing_clumpp = FALSE, ...){
   
   rnorm <- V1 <- V2 <- popid <- genback <- ancestry_pop <- ancestry_probability <- V4 <- ..bpc <- ..upc <- NULL
   clean_popid <- prob_correctly_assigned <- K <- est_ln_prob <- Percentage <- Cluster <- NULL
@@ -2775,7 +2780,51 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   }
   if(clumpp & reps == 1){
     clumpp <- FALSE
-    warning("Since only one rep is requested, clumpp will not be run.\n")
+    cat("Since only one rep is requested, clumpp will not be run.\n")
+  } else {
+    if(unlist(provided_qlist, recursive = TRUE)[1] == "parse"){
+      target_dirs <- list.files(".", "pop_K[0-9]+$")
+      target_dirs <- c(target_dirs, list.files(".", "pop-both"))
+    } else {
+      target_dirs <- "qfiles"
+    }
+    
+    target_dirs <- target_dirs[file.exists(target_dirs)]
+    
+    if(length(target_dirs) > 0){
+      if(force_remove_existing_clumpp){
+        for(i in target_dirs){
+          unlink(i, recursive = TRUE)
+        }
+      } else {
+        say <- paste0("Some clumpp pop_K or pop-both files exist. These need to be removed for CLUMPP to run properly. Files:\n\t",
+                      paste0(target_dirs, collapse = "\n\t"))
+        
+        if(!interactive()){
+          say <- paste0(say, ". Automatic deletion can be set using the 'force_remove_existing_clumpp' argument.\n")
+          msg <- c(msg, say)
+        } else {
+          resp <- ""
+          cat(paste0(say, "Would you like to remove these directories?"))
+          while(resp != "n" & resp != "y"){
+            cat("Respond: (y/n)\n")
+            
+            resp <- readLines(n = 1)
+            resp <- tolower(resp)
+            if(resp == "yes"){resp <- "y"}
+            if(resp == "no"){resp <- "n"}
+            
+            if(resp == "y"){
+              for(i in target_dirs){
+                unlink(target_dirs[i], recursive = TRUE)
+              }
+            } else if(resp == "n"){
+              msg <- c(msg, say)
+            }
+          }
+        }
+      }
+    }
   }
   if(method == "structure" & use_pop_info){
     warning("CLUMPP cannot be used with the use_pop_info option.\n")
@@ -3696,9 +3745,7 @@ plot_structure <- function(x, facet = NULL, facet.order = NULL, k = 2, method = 
   else if(provided_qlist == TRUE){
     qlist <- x
   }
-
-
-
+  
   #===========run clumpp=========================================
   if(clumpp){
 
