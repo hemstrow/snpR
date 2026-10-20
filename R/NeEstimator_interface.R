@@ -202,7 +202,9 @@ run_neestimator <- function(NeEstimator_path = "/usr/bin/Ne2-1.exe", data_path =
   setwd(owd)
 }
 
-parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets = NULL, snpRdat = NULL, temporal_details = NULL, temporal_methods = NULL){
+parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets = NULL, snpRdat = NULL, temporal_details = NULL, 
+                              temporal_methods = NULL,
+                              replace_negatives = TRUE){
   owd <- getwd()
   setwd(path)
   #==========parse output=============
@@ -391,7 +393,9 @@ parse_neestimator <- function(path = "NeEstimator/", pattern = "ne_out", facets 
   out <- out[,c(1, mc, (2:ncol(out))[-(mc - 1)])]
   out[out == "Infinite"] <- Inf
   out[,-1] <- dplyr::mutate_all(out[,-1], as.numeric)
-  out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf # negative values mean inf
+  if(replace_negatives){
+    out[,grep("Ne", colnames(out))][out[,grep("Ne", colnames(out))] < 0] <- Inf # negative values mean inf
+  }
   
   # cast such that pcrit for each pop is applied across columns
   cout <- vector("list", ncol(out) - 2)

@@ -8,6 +8,7 @@
 * Improved the plotting of the missingness plot for `plot_diagnostic` with facets a bit.
 * Added support for a vector of file names rather than a pattern provided to `plot_structure()`, which saves from having to switch directories, etc.
 * Added `x_axis_position` and `y_axis_position` arguments to `plot_structure` to allow users to easily swap axis label positions, since that's difficult to do on the completed plot.
+* Added the `replace_negatives` argument to `calc_ne` to return the raw point estimates rather than replacing negatives with Inf. This is typically only for comparative estimates; the replacement is the correct standard approach (personal communication with Robin Waples).
 
 ## Bug fixes:
 * Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).
@@ -20,6 +21,7 @@
 * Fixed a bug in cross-sample index option in `cross_validate_genomic_prediction()`.
 * Fixed an internal bug where some metadata was mis-defined when importing plink files (probably did not impact anything downstream).
 * Fixed a bug where re-running CLUMPP in a dir where it had already been run once with `plot_structure()` would end up incorporating more files into the merge rather than doing a new run. The argument `force_remove_existing_clumpp` can be used to force clean-up and re-run, otherwise it'll ask before removing and fail if denied or not interactive.
+* Fixed a bug where providing a facet to `plot_stucture()` with an actual pre-read qlist (pretty rare) would produce an error due to some improper un-listing during sanity checks.
 
 # snpR 1.2.14
 ## Features:

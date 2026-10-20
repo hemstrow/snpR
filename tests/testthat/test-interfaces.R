@@ -64,6 +64,13 @@ test_that("NeEstimator",{
                                               t2 = c("A.UPD"),
                                               gens = c(30),
                                               N = 10))
+  
+  # check that negatives are not replaced if that option is used
+  n4 <- calc_ne(stickSNPs, "pop", "chr", pcrit = 0.05, replace_negative = FALSE)
+  n4 <- get.snpR.stats(n4, "pop", "ne")
+  expect_false(any(is.infinite(n4$pop$LDNe_0.05)))
+  expect_true(any(n4$pop$LDNe_0.05 < 0))
+  
 })
 
 

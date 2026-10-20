@@ -3887,6 +3887,11 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   very large numbers of SNPs (10k+) doesn't usually improve the ne estimates
 #'   much but costs a lot of time, since computing time scales with the square
 #'   of the number of sites.
+#' @param repalce_negatives logical, default TRUE. If TRUE, negative Ne
+#'   estimates will be replaced with \code{Inf}. This is the standard
+#'   interpretation, and is recommended. The option to return the raw values
+#'   is retained specifically if comparative analysis is planned which needs
+#'   the raw point estimates.
 #' @param outfile character, default "ne_out". Prefix for output files. Note
 #'   that this function will return outputs, so there isn't a strong reason to
 #'   check this. At the moment, this cannot be a full file path, just a file
@@ -3925,6 +3930,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     temporal_details = NULL,
                     max_ind_per_pop = NULL,
                     nsnps = nrow(x),
+                    replace_negatives = TRUE,
                     outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
@@ -4027,7 +4033,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                                   facets = facets[i],
                                   snpRdat = x, 
                                   temporal_methods = temporal_methods,
-                                  temporal_details = temporal_details)
+                                  temporal_details = temporal_details,
+                                  replace_negatives = replace_negatives)
   }, silent = TRUE)
   
   
