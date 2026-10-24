@@ -1929,6 +1929,30 @@ is.snpRdata <- function(x){
     meta.to.use <- as.data.frame(x@pairwise.stats, stringsAsFactors = F)
     meta.to.use$subfacet <- meta.to.use$comparison
   }
+  else if(source == "sample.meta"){
+    samp_meta <- as.data.frame(sample.meta(x))
+    
+    meta.to.use <- vector("list", length(facets))
+    for(i in 1:length(facets)){
+      t.facet.type <- .check.snpR.facet.request(x, facets[i], remove.type = "none", return.type = T)[[2]]
+      if(t.facet.type %in% c("complex", "snp")){
+        stop("Internal error. Attempt to make task.list with snp facet out of sample.meta.\n Please submit an issue with a reproducable example to the snpR github.\n")
+      }
+      
+      sfacet <- unlist(.split.facet(facets[i]))
+      grid <- unique(samp_meta[,sfacet])
+      if(is.data.frame(grid)){
+        subfacets <- .paste.by.facet(grid, sfacet)
+      } else {
+        subfacets <- grid
+      }
+      
+      meta.to.use[[i]] <- data.table(facet = facets[i],
+                                     subfacet = subfacets,
+                                     facet.type = t.facet.type)
+    }
+    meta.to.use <- as.data.frame(rbindlist(meta.to.use))
+  }
   
   snp.facet.list <- vector("list", length = length(facets))
   for(i in 1:length(facets)){

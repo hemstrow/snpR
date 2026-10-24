@@ -3854,6 +3854,17 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   bias Ne estimates, providing a value here is recommended.
 #' @param NeEstimator_path character, default "/usr/bin/Ne2-1.exe". Path to the
 #'   NeEstimator executable.
+#' @param use_NeEstimator logical, default FALSE. If FALSE, the updated,
+#'   R-native implementation of Ne estimation based on Waples et al. (2026) will
+#'   be used.
+#' @param C numeric, default \code{length(unique(snp.meta(x)[[chr]]))}
+#'   (the number of unique chromosomes in the data according to the \code{chr}
+#'   argument). The number of chromosomes in the species being studied. Ignored
+#'   if using NeEstimator.
+#' @param par logical or numeric, default FALSE. If a number, the number of 
+#'   parallel cores to use. Ignored if using NeEstimator.
+#' @param seed numeric, default \code{sample(100000, 1)}. Seed for subsampling.
+#'   Currently ignored if using NeEstimator; use \code{set.seed()} instead.
 #' @param mating character, default "random". The mating system to use. Options:
 #'  * "random" Random mating. 
 #'  * "monogamy" Monogamous mating.
@@ -3905,6 +3916,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   original provided data, possibly with additional LD values (named "x").
 #'
 #' @author William Hemstrom
+#' @author Robin Waples
 #' @export
 #'
 #' @references Do C, Waples RS, Peel D, Macbeth GM, Tillett BJ, Ovenden JR. 2014
@@ -3923,19 +3935,32 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #' @export
 calc_ne <- function(x, facets = NULL, chr = NULL,
                     NeEstimator_path = "/usr/bin/Ne2-1.exe",
+                    use_NeEstimator = FALSE,
                     mating = "random",
                     pcrit = c(0.05, 0.02, 0.01),
+                    C = length(unique(snp.meta(x)[[chr]])),
                     methods = "LD",
                     temporal_methods = c("Pollak", "Nei", "Jorde"),
                     temporal_details = NULL,
                     max_ind_per_pop = NULL,
                     nsnps = nrow(x),
                     replace_negatives = TRUE,
-                    outfile = "ne_out", verbose = TRUE, cleanup = TRUE){
+                    outfile = "ne_out", verbose = TRUE, cleanup = TRUE,
+                    par = FALSE,
+                    seed = sample(1000000, 1)){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
+  
+  if(isFALSE(use_NeEstimator)){
+    return(.calc_ne_native(x, facets = facets, chr = chr,
+                           pcrit = pcrit, nsnps = nsnps, C = C, 
+                           replace_negatives = replace_negatives, 
+                           par = par, 
+                           seed = seed))
+  }
+  
   x <- eval(x) # in case of subsetting, this'll prevent re-evaling this or having wierd eval errors due to the nrow(x) default above
   
   msg <- character()
@@ -4076,6 +4101,305 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
   
   return(x)
+}
+
+.calc_ne_native <- function(x, facets = NULL, chr = NULL, pcrit = c(0.05, 0.02, 0.01),
+                           nsnps = nrow(x), C = length(unique(snp.meta(x)[[chr]])),
+                           replace_negatives = TRUE, par = FALSE, seed = 42){
+  Ne <- uCI <- lCI <- NULL
+  
+  #==============sanity checks and prep=================
+  if(!is.snpRdata(x)){
+    stop("x is not a snpRdata object.\n")
+  }
+  
+  if(!.is.bi_allelic(x)){
+    stop("Ne estimation according to Waples et al (2026) currently only supports bi-allelic markers.\n")
+  }
+  
+  wrn <- character(0)
+  
+  if(!is.null(chr)){
+    check <- try(eval(C), silent = TRUE)
+    if(!is(check, "try-error")){
+      C <- check
+      if(is.numeric(C)){
+        if(C != as.integer(C)){
+          stop("'chr' must a facet containing chr info or 'C' must be a provided integer.\n")
+        }
+      } else {
+        stop("'chr' must a facet containing chr info or 'C' must be a provided integer.\n")
+      }
+      
+      
+      
+    } else {
+      stop("'chr' must a facet containing chr info or 'C' must be a provided integer.\n")
+    }
+  } else {
+    if(is.numeric(C)){
+      if(C != as.integer(C)){
+        stop("'chr' must a facet containing chr info or 'C' must be a provided integer.\n")
+      }
+    } else {
+      stop("'chr' must a facet containing chr info or 'C' must be a provided integer.\n")
+    }
+  }
+  
+  if(C > 50){wrn <- c(wrn, "A large number of chromosomes detected (> 50). If C is not explicitly provided and scaffolds are in your data, Ne confidence intervals can be very misleading.\n")}
+  
+
+
+  facets <- .check.snpR.facet.request(x, facets, remove.type = "snp")
+  
+  
+  if(nsnps > 5000){
+    wrn <- c(wrn, "Large numbers of loci don't usually improve Ne estimates by a substantial margin and can massively increase run times and memory requirements. Loci counts of ~3,000 are usually sufficient to generate accurate Ne esitmates, but estimates are improved substantially by selecting loci with little missing data. See https://doi.org/10.1002/ece3.6016\n")
+  }
+  if(is.null(chr)){
+    wrn <- c(wrn, "NeEstimator expects no physical linkage between loci. You may want to consider setting the 'chr' argument to only consider LD values between loci on different chromosomes/scaffolds/etc.\n")
+  }
+  
+  if(length(wrn) > 0){
+    message(wrn)
+    warning(wrn)
+  }
+
+  #================subfunctions============
+  ne_func <- function(sn, C, ci, chr_info = NULL, debug = FALSE){
+    if(debug){browser()}
+    Z <- ncol(sn)
+    colnames(sn) <- 1:Z
+    sn <- as.matrix(sn)
+
+    ###
+    GetCIs2 <- function(TopR,HMS,df, ci = 0.95) {
+      
+      quants <- (1 - ci)/2
+      quants <- c(quants, 1 - quants)
+      
+      Csqlow <- qchisq(quants[2], df, lower.tail=FALSE)
+      Csqhi <- qchisq(quants[1], df, lower.tail=FALSE)
+      rsqlo <- df*TopR/Csqhi
+      rsqhi <- df*TopR/Csqlow
+      rprimelo <- rsqlo-1/(HMS-1)
+      rprimehi <- rsqhi- 1/(HMS-1)
+      Nelow <- 1/(3*rprimehi)
+      Nehi <- 1/(3*rprimelo)
+      
+      return(c(Nelow, Nehi)) 
+    } # end function        
+    ######
+    
+    ## --- Function: GetLDNprime() ---
+    ## Predicts effective number of independent LD comparisons (n'prime)
+    GetLDNprime <- function(SS,N,C,Loci)  {
+      p <- 1:3
+      ######
+      ff <- function(x,p){
+        x/(1/p[1]^p[3]+(x/p[2])^p[3])^(1/p[3])}
+      ######
+      q1 <- c(1.53450230,  0.12518487,  0.06692614, -0.06710636,-0.24470293, -0.01474650) 
+      q2 <- c(0.52949689,0.12559264,0.61411490,0.24493530,0.50730040,-1.38178677,-0.01697811,-0.03484065)
+      q5 <- c(1.2317425, 0.5675758,-0.3671743, 1.2211834, 0.3815077, 0.1881963,-0.6756503 )
+      p[1] <- q1[1] + q1[2]*log(C) + q1[3]*log(N) + q1[4]*log(SS) + q1[5]*SS/N + q1[6]*log(C)*log(N)  
+      p[2] <- q2[1] + q2[2]*log(C) + q2[3]*log(N) + q2[4]*log(SS) + q2[5]*SS/N + q2[6]/C + q2[7]*log(C)*log(N) + q2[8]*log(SS)*log(N)
+      p[3] <- q5[1] + q5[2]*log(C) + q5[3]*log(N) + q5[4]*log(SS) + q5[5]*log(C)*log(N) + q5[6]*log(SS)*log(N) + q5[7]*log(C)*log(SS)  
+      A <- ff(log10(Loci),p)
+      Enprime <- 10^A
+      
+      #### ensure predicted nprime does not exceed number of pairs of loci
+      Enprime <- min(Enprime, Loci*(Loci-1)/2)
+      
+      return(Enprime)
+    } # end function
+    
+    # pulled from psych to avoid a dependency
+    pairwiseCount <- function(x, y = NULL, diagonal = TRUE){
+      x <- !is.na(x)
+      if (is.null(y)) {
+        n <- crossprod(x)
+      }
+      else {
+        n <- crossprod(x, !is.na(y))
+      }
+      if (!diagonal & is.null(y)) 
+        diag(n) <- NA
+      return(n)
+    }
+    #####################
+    
+    
+    Smatrix <- pairwiseCount(sn)   ## for each pair of loci, # individuals with data for both loci
+    Svec <- Smatrix[upper.tri(Smatrix)]
+    rsq <- (cor(sn, use = "pairwise.complete.obs"))^2
+    
+    # remove things on same CHR
+    if(!is.null(chr_info)){
+      bad_pairs <- expand.grid(chr_info, chr_info) # this'll be sorted correctly for the matrix since the matrix is symmetric
+      bad_pairs <- which(bad_pairs[,1] == bad_pairs[,2])
+      rsq[bad_pairs] <- NA # since NAs are removed later, this works nicely.
+    }
+    
+    rsqvec <- rsq[upper.tri(rsq)]
+    NAs <- is.na(rsqvec)
+    rsqvec <- rsqvec[!NAs]  ## remove NAs from both vectors
+    Svec2 <- Svec[!NAs]
+    HMS <- 1/mean(1/Svec2)  ## harmonic mean sample size per pair of loci
+    
+    W <- Svec2^2/sum(Svec2^2)
+    Initialmeanrsq <- sum(rsqvec*W)
+    Initialrsqprime <- Initialmeanrsq - 1/(HMS-1) 
+    InitialNehat <- 1/(3*Initialrsqprime)
+    if(is.infinite(InitialNehat)){
+      return(c(Inf, Inf, Inf))
+    }
+    
+    ## Now redo per Peel 2013
+    W2 <- Svec2^2/(Svec2 + 3*InitialNehat)^2
+    W2 <- W2/sum(W2)
+    rsqprime <- rsqvec - 1/(Svec2-1) 
+    wmeanrsqprime <- sum(W2*rsqprime)
+    FinalNehat <- 1/(3*wmeanrsqprime)
+    if(FinalNehat < 0){ # ask Robin if appropriate
+      return(c(Inf, FinalNehat, Inf))
+    }
+    
+    nprimeLD <- GetLDNprime(HMS,FinalNehat,C,ncol(sn)) 
+    
+    TopR <- wmeanrsqprime + 1/(HMS-1)
+    df <- nprimeLD  
+    A <- GetCIs2(TopR,HMS,df, ci) 
+    return(c(A[1], FinalNehat, A[2]))
+  }
+  
+  one_iter <- function(sn, pcrit, nsnps, chr_info = NULL, C, ci = 0.95, seed = 42,
+                       debug = FALSE){
+    sn <- t(as.matrix(sn))
+    
+    X <- matrixStats::colSds(sn, na.rm = TRUE)
+    sn <- sn[, X > 0, drop = FALSE] ## eliminate loci where all individuals have same genotype (monomorphic, or all hets)
+    
+    NewP <- colMeans(sn,na.rm=T)/2
+    
+    # MAF filter
+    sn <- sn[, NewP > pcrit & NewP < (1 - pcrit), drop = F]
+    
+    # sub-sample snps
+    set.seed(seed)
+    
+    if(nsnps < ncol(sn)){
+      samp <- sample(ncol(sn), nsnps, FALSE)
+      sn <- sn[, samp, drop = FALSE]
+      if(!is.null(chr_info)){
+        chr_info <- chr_info[samp]
+      }
+    }
+    
+    # run
+    return(ne_func(sn = sn, C = C, ci = ci, chr_info = chr_info, debug = debug))
+  }
+  
+  
+  #===================================run per subfacet====================
+  # format
+  sn <- format_snps(x, "sn", interpolate = FALSE)
+  nhead <- ncol(snp.meta(x)) - 1
+  sn <- sn[,-(1:nhead)]
+  
+  tasks <- .get.task.list(x, facets, "sample.meta")
+  
+  
+ 
+  
+  if(isFALSE(par) | par == 1){
+    
+    res <- vector("list", nrow(tasks))
+    
+    for(i in 1:nrow(tasks)){
+      cat("\n",i)
+      res[[i]] <- vector("list", length(pcrit))
+      samples <- .fetch.sample.meta.matching.task.list(x, tasks[i,])
+      tsn <- sn[,samples]
+      
+      for(j in 1:length(pcrit)){
+        cat("\n\t", j)
+        tne <- one_iter(tsn, pcrit = pcrit[j], 
+                        nsnps = nsnps, 
+                        chr_info = chr_info, C = C, ci = ci, seed = seed,
+                        debug = FALSE)
+        res[[i]][[j]] <- data.table(facet = tasks[i,][1],
+                                    subfacet = tasks[i,][2],
+                                    pcrit = pcrit[j],
+                                    Ne = tne[2],
+                                    lCI = tne[1],
+                                    uCI = tne[3])
+      }
+    }
+  } else {
+    
+    par <- min(par, parallel::detectCores(), nrow(tasks))
+    
+    cl <- parallel::makePSOCKcluster(par)
+    doParallel::registerDoParallel(cl)
+    
+    #prepare reporting function
+    ntasks <- nrow(tasks)
+    # progress <- function(n) cat(sprintf("Job %d out of", n), ntasks, "is complete.\n")
+    # opts <- list(progress=progress)
+    
+    #loop through each set
+    res <- foreach::foreach(q = 1:ntasks,
+                              .packages = c("snpR", "data.table"), 
+                              .export = c("chr_info", "ci")
+    ) %dopar% {
+      
+      
+      res <- vector("list", length(pcrit))
+      samples <- .fetch.sample.meta.matching.task.list(x, tasks[q,])
+      tsn <- sn[,samples]
+      
+      for(j in 1:length(pcrit)){
+        tne <- one_iter(tsn, pcrit = pcrit[j], 
+                        nsnps = nsnps, 
+                        chr_info = chr_info, C = C, ci = ci, seed = seed)
+        res[[j]] <- data.table(facet = tasks[q,][1],
+                                    subfacet = tasks[q,][2],
+                                    pcrit = pcrit[j],
+                                    Ne = tne[2],
+                                    lCI = tne[1],
+                                    uCI = tne[3])
+      }
+      
+      res
+    }
+    parallel::stopCluster(cl)
+  }
+  res <- unlist(res, recursive = FALSE)
+  res <- rbindlist(res)
+  
+  if(replace_negatives){
+    res[Ne < 0, Ne := Inf]
+    res[lCI < 0, lCI := Inf]
+    res[uCI < 0, uCI := Inf]
+  }
+  
+  tcols <- 3:(3 + length(pcrit) - 1)
+  mne <- dcast(res, facet + subfacet ~ pcrit, value.var = "Ne")
+  colnames(mne)[tcols] <- paste0("LDNe_", colnames(mne)[tcols])
+  
+  mlci <- dcast(res, facet + subfacet ~ pcrit, value.var = "lCI")
+  colnames(mlci)[tcols] <- paste0("LDNe_lCIp_", colnames(mlci)[tcols])
+  
+  muci <- dcast(res, facet + subfacet ~ pcrit, value.var = "uCI")
+  colnames(muci)[tcols] <- paste0("LDNe_uCIp_", colnames(muci)[tcols])
+  
+  res <- cbind(mne, mlci[,-c(1:2)], muci[,-c(1:2)])
+  
+  #===========bind and return===============
+  x <- .merge.snpR.stats(x, res, "pop")
+  x <- .update_calced_stats(x, facets, "ne")
+  x <- .update_citations(x, "Waples2026", "ne", "Ne") # need to add this!
 }
 
 #' Calculate genetic distances between individuals or groups of samples.

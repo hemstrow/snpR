@@ -9,16 +9,21 @@ calc_ne(
   facets = NULL,
   chr = NULL,
   NeEstimator_path = "/usr/bin/Ne2-1.exe",
+  use_NeEstimator = FALSE,
   mating = "random",
   pcrit = c(0.05, 0.02, 0.01),
+  C = length(unique(snp.meta(x)[[chr]])),
   methods = "LD",
   temporal_methods = c("Pollak", "Nei", "Jorde"),
   temporal_details = NULL,
   max_ind_per_pop = NULL,
   nsnps = nrow(x),
+  replace_negatives = TRUE,
   outfile = "ne_out",
   verbose = TRUE,
-  cleanup = TRUE
+  cleanup = TRUE,
+  par = FALSE,
+  seed = sample(1e+06, 1)
 )
 }
 \arguments{
@@ -41,6 +46,10 @@ bias Ne estimates, providing a value here is recommended.}
 \item{NeEstimator_path}{character, default "/usr/bin/Ne2-1.exe". Path to the
 NeEstimator executable.}
 
+\item{use_NeEstimator}{logical, default FALSE. If FALSE, the updated,
+R-native implementation of Ne estimation based on Waples et al. (2026) will
+be used.}
+
 \item{mating}{character, default "random". The mating system to use. Options:
 \itemize{
 \item "random" Random mating.
@@ -50,6 +59,11 @@ NeEstimator executable.}
 \item{pcrit}{numeric, default c(.05, .02, .01). Minimum minor allele
 frequencies for which to calculate Ne. Rare alleles can bias estimates, so
 a range of values should be checked.}
+
+\item{C}{numeric, default \code{length(unique(snp.meta(x)[[chr]]))}
+(the number of unique chromosomes in the data according to the \code{chr}
+argument). The number of chromosomes in the species being studied. Ignored
+if using NeEstimator.}
 
 \item{methods}{character, default "LD". LD estimation methods to use.
 Options:
@@ -95,6 +109,18 @@ reported.}
 
 \item{cleanup}{logical, default TRUE. If TRUE, the NeEstimator output
 directory will be removed following processing.}
+
+\item{par}{logical or numeric, default FALSE. If a number, the number of
+parallel cores to use. Ignored if using NeEstimator.}
+
+\item{seed}{numeric, default \code{sample(100000, 1)}. Seed for subsampling.
+Currently ignored if using NeEstimator; use \code{set.seed()} instead.}
+
+\item{repalce_negatives}{logical, default TRUE. If TRUE, negative Ne
+estimates will be replaced with \code{Inf}. This is the standard
+interpretation, and is recommended. The option to return the raw values
+is retained specifically if comparative analysis is planned which needs
+the raw point estimates.}
 }
 \value{
 A named list containing estimated Ne values (named "ne") and the
@@ -135,4 +161,6 @@ Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
 }
 \author{
 William Hemstrom
+
+Robin Waples
 }
