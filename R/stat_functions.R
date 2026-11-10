@@ -4186,10 +4186,6 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   #================subfunctions============
   # NOTES: Optional small sample/ne bias adjustment using model fits.
   # Cap NeHat estimates at not more than 10kish
-  select_L_P <- function(maf, L){
-    r <- rank((maf*(1-maf))*-1, na.last = TRUE)
-    return(which(r <= L))
-  }
   
   ne_func <- function(sn, C, ci, chr_info = NULL, debug = FALSE){
     if(debug){browser()}
@@ -4253,8 +4249,6 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
       return(n)
     }
     #####################
-    
-    
     Smatrix <- pairwiseCount(sn)   ## for each pair of loci, # individuals with data for both loci
     Svec <- Smatrix[upper.tri(Smatrix)]
     rsq <- (stats::cor(sn, use = "pairwise.complete.obs"))^2
@@ -4262,10 +4256,10 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     # remove things on same CHR
     if(!is.null(chr_info)){
       bad_pairs <- expand.grid(chr_info, chr_info) # this'll be sorted correctly for the matrix since the matrix is symmetric
-      bad_pairs <- which(bad_pairs[,1] == bad_pairs[,2])
+      bad_pairs <- bad_pairs[,1] == bad_pairs[,2]
       rsq[bad_pairs] <- NA # since NAs are removed later, this works nicely.
     }
-    
+
     rsqvec <- rsq[upper.tri(rsq)]
     NAs <- is.na(rsqvec)
     rsqvec <- rsqvec[!NAs]  ## remove NAs from both vectors
@@ -4276,6 +4270,12 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     Initialmeanrsq <- sum(rsqvec*W)
     Initialrsqprime <- Initialmeanrsq - 1/(HMS-1) 
     InitialNehat <- 1/(3*Initialrsqprime)
+    capped <- FALSE
+    if(InitialNehat >= 10000){
+      InitialNehat <- 10000
+      capped <- TRUE
+      cat("NOTE: Ne estimate > 10,000. Values above this are capped due to estimation uncertainty.\n")
+    }
     if(is.infinite(InitialNehat)){ # does the lower bound need to be inf?
       return(c(Inf, Inf, Inf))
     }
@@ -4286,10 +4286,16 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     rsqprime <- rsqvec - 1/(Svec2-1) 
     wmeanrsqprime <- sum(W2*rsqprime)
     FinalNehat <- 1/(3*wmeanrsqprime)
+    if(FinalNehat >= 10000){
+      FinalNehat <- 10000
+      if(!capped){
+        cat("NOTE: Ne estimate > 10,000. Values above this are capped due to estimation uncertainty.\n")
+      }
+    }
     if(FinalNehat < 0){ # ask Robin if appropriate -- lower end should be estimatable
       return(c(Inf, FinalNehat, Inf))
     }
-    
+
     nprimeLD <- GetLDNprime(HMS,FinalNehat,C,ncol(sn)) 
     
     TopR <- wmeanrsqprime + 1/(HMS-1)
@@ -4303,12 +4309,17 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     sn <- t(as.matrix(sn))
     
     X <- matrixStats::colSds(sn, na.rm = TRUE)
-    sn <- sn[, X > 0, drop = FALSE] ## eliminate loci where all individuals have same genotype (monomorphic, or all hets)
+    keep_loc <- X > 0
+    sn <- sn[, keep_loc, drop = FALSE] ## eliminate loci where all individuals have same genotype (monomorphic, or all hets)
+    if(!is.null(chr_info)){chr_info <- chr_info[keep_loc]}
     
     NewP <- colMeans(sn,na.rm=T)/2
     
     # MAF filter
-    sn <- sn[, NewP > pcrit & NewP < (1 - pcrit), drop = F]
+    keep_loc <- NewP > pcrit & NewP < (1 - pcrit)
+    sn <- sn[, keep_loc, drop = F]
+    if(!is.null(chr_info)){chr_info <- chr_info[keep_loc]}
+    
     
     # sub-sample snps
     set.seed(seed)
@@ -4328,7 +4339,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   #===================================run per subfacet====================
   # format
-  sn <- format_snps(x, "sn", interpolate = FALSE)
+  sn <- format_snps(x, "sn", interpolate = FALSE, sn_remove_empty = FALSE)
   nhead <- ncol(snp.meta(x)) - 1
   sn <- sn[,-(1:nhead)]
   
