@@ -23,7 +23,8 @@ calc_ne(
   verbose = TRUE,
   cleanup = TRUE,
   par = FALSE,
-  seed = sample(1e+06, 1)
+  seed = sample(1e+06, 1),
+  ci = 0.95
 )
 }
 \arguments{
@@ -121,6 +122,9 @@ parallel cores to use. Ignored if using NeEstimator.}
 
 \item{seed}{numeric, default \code{sample(100000, 1)}. Seed for subsampling.
 Currently ignored if using NeEstimator; use \code{set.seed()} instead.}
+
+\item{ci}{numeric, default 0.95. Confidence intervals to use; ignored if
+\code{use_NeEstimator} is TRUE.}
 }
 \value{
 A named list containing estimated Ne values (named "ne") and the
