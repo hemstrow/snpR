@@ -3897,7 +3897,7 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   very large numbers of SNPs (10k+) doesn't usually improve the ne estimates
 #'   much but costs a lot of time, since computing time scales with the square
 #'   of the number of sites.
-#' @param repalce_negatives logical, default TRUE. If TRUE, negative Ne
+#' @param replace_negatives logical, default TRUE. If TRUE, negative Ne
 #'   estimates will be replaced with \code{Inf}. This is the standard
 #'   interpretation, and is recommended. The option to return the raw values
 #'   is retained specifically if comparative analysis is planned which needs

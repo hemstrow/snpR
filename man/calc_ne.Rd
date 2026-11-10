@@ -99,6 +99,12 @@ very large numbers of SNPs (10k+) doesn't usually improve the ne estimates
 much but costs a lot of time, since computing time scales with the square
 of the number of sites.}
 
+\item{replace_negatives}{logical, default TRUE. If TRUE, negative Ne
+estimates will be replaced with \code{Inf}. This is the standard
+interpretation, and is recommended. The option to return the raw values
+is retained specifically if comparative analysis is planned which needs
+the raw point estimates.}
+
 \item{outfile}{character, default "ne_out". Prefix for output files. Note
 that this function will return outputs, so there isn't a strong reason to
 check this. At the moment, this cannot be a full file path, just a file
@@ -115,12 +121,6 @@ parallel cores to use. Ignored if using NeEstimator.}
 
 \item{seed}{numeric, default \code{sample(100000, 1)}. Seed for subsampling.
 Currently ignored if using NeEstimator; use \code{set.seed()} instead.}
-
-\item{repalce_negatives}{logical, default TRUE. If TRUE, negative Ne
-estimates will be replaced with \code{Inf}. This is the standard
-interpretation, and is recommended. The option to return the raw values
-is retained specifically if comparative analysis is planned which needs
-the raw point estimates.}
 }
 \value{
 A named list containing estimated Ne values (named "ne") and the
