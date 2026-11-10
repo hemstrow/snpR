@@ -202,18 +202,18 @@ test_that("misc_plot_structure",{
   skip_if_not_installed("LEA")
   
   # check that a provided qlist works with both ID, facet, and together
-  expect_no_error(.make_it_quiet(p <- plot_structure(stickSNPs, k = 2:3, reps = 1)))
+  expect_no_error(.make_it_quiet(p1 <- plot_structure(stickSNPs, k = 2:3, reps = 1)))
   
   # both
-  expect_no_error(.make_it_quiet(p <- plot_structure(q$data, facet = sample.meta(stickSNPs)$pop, 
+  expect_no_error(.make_it_quiet(p <- plot_structure(p1$data, facet = sample.meta(stickSNPs)$pop, 
                  ID = paste0(sample.meta(stickSNPs)$pop, "_", sample.meta(stickSNPs)$.sample.id))))
   
   # ID
-  expect_no_error(.make_it_quiet(p <- plot_structure(q$data,
+  expect_no_error(.make_it_quiet(p <- plot_structure(p1$data,
       ID = paste0(sample.meta(stickSNPs)$pop, "_", sample.meta(stickSNPs)$.sample.id))))
   
   # facet
-  expect_no_error(.make_it_quiet(p <- plot_structure(q$data, facet = sample.meta(stickSNPs)$pop)))
+  expect_no_error(.make_it_quiet(p <- plot_structure(p1$data, facet = sample.meta(stickSNPs)$pop)))
 })
 
 
