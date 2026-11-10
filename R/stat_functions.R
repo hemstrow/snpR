@@ -4105,7 +4105,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 
 .calc_ne_native <- function(x, facets = NULL, chr = NULL, pcrit = c(0.05, 0.02, 0.01),
                            nsnps = nrow(x), C = length(unique(snp.meta(x)[[chr]])),
-                           replace_negatives = TRUE, par = FALSE, seed = 42){
+                           replace_negatives = TRUE, par = FALSE, seed = 42,
+                           L = min(nrow(x)/100)){
   Ne <- uCI <- lCI <- NULL
   
   #==============sanity checks and prep=================
@@ -4158,6 +4159,14 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
   if(is.null(chr)){
     wrn <- c(wrn, "NeEstimator expects no physical linkage between loci. You may want to consider setting the 'chr' argument to only consider LD values between loci on different chromosomes/scaffolds/etc.\n")
+  } else {
+    if(chr %in% colnames(snp.meta(x))){
+      chr_info <- snp.meta(x)[[chr]]
+    } else if(length(chr) == nrow(x)){
+      chr_info <- chr
+    } else {
+      msg <- c(msg, "Chr must either be a vector containing chromosome info for every SNP, a SNP metadata facet, or NULL.\n")
+    }
   }
   
   if(length(wrn) > 0){
@@ -4166,6 +4175,13 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   }
 
   #================subfunctions============
+  # NOTES: Optional small sample/ne bias adjustment using model fits.
+  # Cap NeHat estimates at not more than 10kish
+  select_L_P <- function(maf, L){
+    r <- rank((maf*(1-maf))*-1, na.last = TRUE)
+    return(which(r <= L))
+  }
+  
   ne_func <- function(sn, C, ci, chr_info = NULL, debug = FALSE){
     if(debug){browser()}
     Z <- ncol(sn)
@@ -4251,7 +4267,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     Initialmeanrsq <- sum(rsqvec*W)
     Initialrsqprime <- Initialmeanrsq - 1/(HMS-1) 
     InitialNehat <- 1/(3*Initialrsqprime)
-    if(is.infinite(InitialNehat)){
+    if(is.infinite(InitialNehat)){ # does the lower bound need to be inf?
       return(c(Inf, Inf, Inf))
     }
     
@@ -4261,7 +4277,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     rsqprime <- rsqvec - 1/(Svec2-1) 
     wmeanrsqprime <- sum(W2*rsqprime)
     FinalNehat <- 1/(3*wmeanrsqprime)
-    if(FinalNehat < 0){ # ask Robin if appropriate
+    if(FinalNehat < 0){ # ask Robin if appropriate -- lower end should be estimatable
       return(c(Inf, FinalNehat, Inf))
     }
     
@@ -4309,8 +4325,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   tasks <- .get.task.list(x, facets, "sample.meta")
   
-  
- 
+
   
   if(isFALSE(par) | par == 1){
     
