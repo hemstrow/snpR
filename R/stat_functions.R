@@ -2034,13 +2034,11 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     if(cinst){
       .check.installed("bigmemory")
-      .check.installed("bigtabulate")
     }
   }
   
   if(CLD != "only"){
     .check.installed("bigmemory")
-    .check.installed("bigtabulate")
   }
   
   if(is.numeric(window_sigma)){
@@ -2251,7 +2249,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     mgcv <- reshape2::melt(gcv)
     mgcv$value <- as.factor(mgcv$value)
     cnames <- levels(mgcv$value)
-    ghapmat <- bigtabulate::bigtabulate(mgcv, ccols = which(colnames(mgcv) %in% c("Var1", "value")))
+    ghapmat <- as.matrix(collapse::qtab(mgcv$Var1, mgcv$value))
     colnames(ghapmat) <- cnames
     
     #3) clean the table
@@ -2737,7 +2735,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       # grab metadata, mDat
       meta <- x@snp.meta
       mDat <- x@mDat
-      
+
       
       # run in parallel if requested
       if(is.numeric(par)){
@@ -2790,6 +2788,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
                                    .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                      if(exists("xbd")){
                                        x_storage <- bigmemory::attach.big.matrix(xbd)
+                                       x_storage <- as.matrix(x_storage)
                                      }
                                      
                                      # get comps and run
@@ -2968,7 +2967,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
       
       
       #loop through each set of facets
-      output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR"), .inorder = TRUE,
+      output <- foreach::foreach(i = 1:ntasks, .packages = c("dplyr", "reshape2", "matrixStats", "snpR"), .inorder = TRUE,
                                  .export = c("LD_func", "tabulate_haplotypes", "GtoH")) %dopar% {
                                    t.task <- task_list[i,]
                                    t.facet <- t.task[1]
@@ -3344,7 +3343,7 @@ calc_pairwise_ld <- function(x, facets = NULL, subfacets = NULL, ss = FALSE,
     
     #loop through each set of facets
     output <- foreach::foreach(q = 1:ntasks,
-                               .packages = c("dplyr", "reshape2", "matrixStats", "bigtabulate", "snpR", "data.table"),
+                               .packages = c("dplyr", "reshape2", "matrixStats", "snpR", "data.table"),
                                .inorder = TRUE
     ) %dopar% {
       

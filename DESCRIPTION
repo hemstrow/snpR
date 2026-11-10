@@ -43,7 +43,6 @@ Suggests:
     ape,
     BGLR,
     bigmemory,
-    bigtabulate,
     BiocManager,
     genepop,
     genio,
