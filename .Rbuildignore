@@ -10,3 +10,6 @@
 ^inst\shiny*$
 ^LICENSE\.md$
 ^LICENSE\.note
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
