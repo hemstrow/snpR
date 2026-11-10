@@ -3910,6 +3910,8 @@ calc_basic_snp_stats <- function(x, facets = NULL, fst.method = "WC", sigma = NU
 #'   reported. 
 #' @param cleanup logical, default TRUE. If TRUE, the NeEstimator output
 #'   directory will be removed following processing.
+#' @param ci numeric, default 0.95. Confidence intervals to use; ignored if
+#'   \code{use_NeEstimator} is TRUE.
 #'
 #' @return A named list containing estimated Ne values (named "ne") and the
 #'   original provided data, possibly with additional LD values (named "x").
@@ -3946,18 +3948,25 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
                     replace_negatives = TRUE,
                     outfile = "ne_out", verbose = TRUE, cleanup = TRUE,
                     par = FALSE,
-                    seed = sample(1000000, 1)){
+                    seed = sample(1000000, 1),
+                    ci = 0.95){
   #==============sanity checks and prep=================
   if(!is.snpRdata(x)){
     stop("x is not a snpRdata object.\n")
   }
   
   if(isFALSE(use_NeEstimator)){
-    return(.calc_ne_native(x, facets = facets, chr = chr,
-                           pcrit = pcrit, nsnps = nsnps, C = C, 
-                           replace_negatives = replace_negatives, 
-                           par = par, 
-                           seed = seed))
+    if(!is.null(temporal_details)){
+      warning("Temporal methods can only be used with NeEstimator.\n")
+      use_NeEstimator <- TRUE
+    } else {
+      return(.calc_ne_native(x, facets = facets, chr = chr,
+                             pcrit = pcrit, nsnps = nsnps, C = C, 
+                             replace_negatives = replace_negatives, 
+                             par = par, 
+                             seed = seed,
+                             ci = ci))
+    }
   }
   
   x <- eval(x) # in case of subsetting, this'll prevent re-evaling this or having wierd eval errors due to the nrow(x) default above
@@ -4105,7 +4114,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
 .calc_ne_native <- function(x, facets = NULL, chr = NULL, pcrit = c(0.05, 0.02, 0.01),
                            nsnps = nrow(x), C = length(unique(snp.meta(x)[[chr]])),
                            replace_negatives = TRUE, par = FALSE, seed = 42,
-                           L = min(nrow(x)/100)){
+                           L = min(nrow(x)/100),
+                           ci = 0.95){
   Ne <- uCI <- lCI <- NULL
   
   #==============sanity checks and prep=================
@@ -4121,7 +4131,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
   
   if(!is.null(chr)){
     check <- try(eval(C), silent = TRUE)
-    if(!is(check, "try-error")){
+    if(!methods::is(check, "try-error")){
       C <- check
       if(is.numeric(C)){
         if(C != as.integer(C)){
@@ -4193,8 +4203,8 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
       quants <- (1 - ci)/2
       quants <- c(quants, 1 - quants)
       
-      Csqlow <- qchisq(quants[2], df, lower.tail=FALSE)
-      Csqhi <- qchisq(quants[1], df, lower.tail=FALSE)
+      Csqlow <- stats::qchisq(quants[2], df, lower.tail=FALSE)
+      Csqhi <- stats::qchisq(quants[1], df, lower.tail=FALSE)
       rsqlo <- df*TopR/Csqhi
       rsqhi <- df*TopR/Csqlow
       rprimelo <- rsqlo-1/(HMS-1)
@@ -4247,7 +4257,7 @@ calc_ne <- function(x, facets = NULL, chr = NULL,
     
     Smatrix <- pairwiseCount(sn)   ## for each pair of loci, # individuals with data for both loci
     Svec <- Smatrix[upper.tri(Smatrix)]
-    rsq <- (cor(sn, use = "pairwise.complete.obs"))^2
+    rsq <- (stats::cor(sn, use = "pairwise.complete.obs"))^2
     
     # remove things on same CHR
     if(!is.null(chr_info)){

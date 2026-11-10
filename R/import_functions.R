@@ -677,7 +677,7 @@
 # 
 # @author William Hemstrom
 .process_plink <- function(plink_file){
-  o1 <- ref <- o2 <- alt <- o3 <- NULL
+  o1 <- ref <- o2 <- alt <- o3 <- id <- NULL
 
   .check.installed("genio")
   
