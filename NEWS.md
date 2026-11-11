@@ -10,6 +10,9 @@
 * Added `x_axis_position` and `y_axis_position` arguments to `plot_structure` to allow users to easily swap axis label positions, since that's difficult to do on the completed plot.
 * Added the `replace_negatives` argument to `calc_ne` to return the raw point estimates rather than replacing negatives with Inf. This is typically only for comparative estimates; the replacement is the correct standard approach (personal communication with Robin Waples).
 
+## Documentation:
+* Added a [snpR website](https://hemstrow.github.io/snpR/) 
+
 ## Bug fixes:
 * Changed snp meta importing during `snpRdata` object creation to not convert `position` data over to numeric if doing so introduces NAs (aka the positions are not actually numeric for some reason).
 * Importing "NN"/"0000" format data where the first genotype is not some combo of "A", "C", "G", "T" (or 01, 02, 03, 04) or missing no longer produces an error.
