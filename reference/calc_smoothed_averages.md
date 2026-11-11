@@ -1,0 +1,140 @@
+# Gaussian smooth or average statistics across sliding windows.
+
+Calculates optionally gaussian smoothed average values for statistics
+and the genomic position at which it was observed, splitting by any
+requested variables.
+
+## Usage
+
+``` r
+calc_smoothed_averages(
+  x,
+  facets = NULL,
+  sigma,
+  step = 2 * sigma,
+  nk = TRUE,
+  stats.type = c("single", "pairwise"),
+  par = FALSE,
+  triple_sigma = FALSE,
+  gaussian = TRUE,
+  verbose = FALSE
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object.
+
+- facets:
+
+  character or NULL, default NULL. Categories by which to break up
+  windows.
+
+- sigma:
+
+  numeric. Designates the width of windows in kilobases. Full window
+  size is 6\*sigma or sigma kilobases depending on the `triple_sigma`
+  argument.
+
+- step:
+
+  numeric or NULL, default default `2*sigma` (non-overlapping windows).
+  Designates the number of kilobases between each window centroid. If
+  NULL, windows are centered on each SNP.
+
+- nk:
+
+  logical, default TRUE. If TRUE, weights SNP contribution to window
+  averages by the number of observations at those SNPs.
+
+- stats.type:
+
+  character, default c("single", "pairwise"). Designates the
+  statistic(s) to smooth, either "single", "pairwise", or c("single",
+  "pairwise"). See details.
+
+- par:
+
+  numeric or FALSE, default FALSE. If numeric, the number of cores to
+  use for parallel processing.
+
+- triple_sigma:
+
+  Logical, default FALSE If TRUE, sigma will be tripled to create
+  windows of 6\*sigma total.
+
+- gaussian:
+
+  Logical, default TRUE. If TRUE, windows will be gaussian smoothed. If
+  not, windows will be raw averages.
+
+- verbose:
+
+  Logical, default FALSE. If TRUE, some progress updates will be printed
+  to the console.
+
+## Value
+
+snpRdata object with smoothed averages for any requested statistics
+merged into the window.stats or pairwise.window.stats slots.
+
+## Details
+
+Averages for multiple statistics can be calculated at once. If the
+statistics argument is set to c("pairwise", "single"), all calculated
+stats will be run. If it is set to "single", then all non-pairwise
+statistics (pi, ho, maf, etc.) will be bootstrapped, if it is set to
+"pairwise", then all pairwise statistics (fst) will be bootstrapped.
+Individual statistics currently cannot be requested by name, since the
+computational differences to add additional types is minimal.
+
+The data can be broken up categorically by snp or sample metadata, as
+described in
+[`Facets_in_snpR`](https://hemstrow.github.io/snpR/reference/Facets_in_snpR.md).
+Windows will only be calculated using only SNPs on the same level of any
+provided facets. NULL and "all" facets work as normally described in
+[`Facets_in_snpR`](https://hemstrow.github.io/snpR/reference/Facets_in_snpR.md).
+
+As described in Hohelohe et al. (2010), the contribution of individual
+SNPs to window averages can be weighted by the number of observations
+per SNP by setting the nk argument to TRUE, as is the default. For
+bootstraps, nk values are randomly drawn for each SNP in each window.
+SNPs can also optionally be weighted by their proximity to the window
+centroid using a gaussian kernal.
+
+Centers for windows can either every SNP (if no step size is provided),
+or every step kilobases from the 0 position of each snp level facet
+category (chromosome, etc.).
+
+The size of sliding windows are defined by the "sigma" argument. Note
+that this value, as well as that provided to the "step" argument, are
+given in kilobases. Each window will include SNPs within 3\*sigma
+kilobases from the window center (if the `triple_sigma` option is
+selected). Past this point, the effect of each additional SNP on the
+window average would be very small, and so they are dropped for
+computational efficiency (see Hohenlohe (2010)).
+
+## References
+
+Hohenlohe et al. (2010). *PLOS Genetics*
+
+## Author
+
+William Hemstrom
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# add a few statistics
+x <- calc_pi(stickSNPs, "chr.pop")
+x <- calc_ho(x, "chr.pop")
+x <- calc_pairwise_fst(x, "chr.pop")
+# smooth with a fixed slide between window centers.
+x <- calc_smoothed_averages(x, "chr.pop", sigma = 200, step = 50)
+get.snpR.stats(x, "chr.pop", "single.window") # pi, ho
+get.snpR.stats(x, "chr.pop", "pairwise.window") # fst
+} # }
+```

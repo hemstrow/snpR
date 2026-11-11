@@ -1,0 +1,9 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  snpR_introduction: snpR_introduction.html
+last_built: 2026-11-11T01:34Z
+urls:
+  reference: https://hemstrow.github.io/snpR/reference
+  article: https://hemstrow.github.io/snpR/articles

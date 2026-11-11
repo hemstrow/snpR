@@ -1,0 +1,218 @@
+# Calculate effective population size.
+
+Calculates effective population size for any given sample-level facets
+via interface with the NeEstimator v2 program by Do et al. (2013).
+
+## Usage
+
+``` r
+calc_ne(
+  x,
+  facets = NULL,
+  chr = NULL,
+  NeEstimator_path = "/usr/bin/Ne2-1.exe",
+  use_NeEstimator = FALSE,
+  mating = "random",
+  pcrit = c(0.05, 0.02, 0.01),
+  C = length(unique(snp.meta(x)[[chr]])),
+  methods = "LD",
+  temporal_methods = c("Pollak", "Nei", "Jorde"),
+  temporal_details = NULL,
+  max_ind_per_pop = NULL,
+  nsnps = nrow(x),
+  replace_negatives = TRUE,
+  outfile = "ne_out",
+  verbose = TRUE,
+  cleanup = TRUE,
+  par = FALSE,
+  seed = sample(1e+06, 1),
+  ci = 0.95
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object. The data for which Ne will be calculated.
+
+- facets:
+
+  character, default NULL. Categorical metadata variables by which to
+  break up analysis. See
+  [`Facets_in_snpR`](https://hemstrow.github.io/snpR/reference/Facets_in_snpR.md)
+  for more details. Only sample specific categories are allowed, all
+  others will be removed. If NULL, Ne will be calculated for all
+  samples. Note that for the temporal method specifically, and unusually
+  for `snpR`, components of complex facets need to be provided
+  alphabetically (`"fam.pop"` not `"pop.fam"`).
+
+- chr:
+
+  character, default NULL. An optional but recommended SNP specific
+  categorical metadata variable which designates chromosomes/linkage
+  groups/etc. Pairwise LD scores for SNPs with the same level of this
+  variable will be not be used to calculate Ne. Since physical linkage
+  can bias Ne estimates, providing a value here is recommended.
+
+- NeEstimator_path:
+
+  character, default "/usr/bin/Ne2-1.exe". Path to the NeEstimator
+  executable.
+
+- use_NeEstimator:
+
+  logical, default FALSE. If FALSE, the updated, R-native implementation
+  of Ne estimation based on Waples et al. (2026) will be used.
+
+- mating:
+
+  character, default "random". The mating system to use. Options:
+
+  - "random" Random mating.
+
+  - "monogamy" Monogamous mating.
+
+- pcrit:
+
+  numeric, default c(.05, .02, .01). Minimum minor allele frequencies
+  for which to calculate Ne. Rare alleles can bias estimates, so a range
+  of values should be checked.
+
+- C:
+
+  numeric, default `length(unique(snp.meta(x)[[chr]]))` (the number of
+  unique chromosomes in the data according to the `chr` argument). The
+  number of chromosomes in the species being studied. Ignored if using
+  NeEstimator.
+
+- methods:
+
+  character, default "LD". LD estimation methods to use. Options:
+
+  - "LD": Linkage Disequilibrium based estimation.
+
+  - "het": Heterozygote excess.
+
+  - "coan": Coancestry based.
+
+  - "temporal": Temporal-based. Requires multiple time-points for a
+    population.
+
+- temporal_methods:
+
+  character, default `c("Pollak", "Nei", "Jorde")`. Temporal methods to
+  use. See `NeEstimator` documentation.
+
+- temporal_details:
+
+  Three or four column `data.frame` or `NULL`, default `NULL`. Details
+  for the generation/population layout to use for the temporal method if
+  requested. Columns one and two are levels of the provided facet given
+  corresponding to the first and second time point of the population,
+  respectively. Column three is a number indicating the number of
+  generations between samples. Column four is optionally the census
+  population size at time one. Any values other than zero will use
+  `NeEstimator`'s Plan II. Note that level components of complex facets
+  need to be provided in the same order as the facet (for `"fam.pop"`,
+  family "A" population "ASP" should be provided as `"A.ASP"`), as
+  usual.
+
+- max_ind_per_pop:
+
+  numeric, default NULL. Maximum number of individuals to consider per
+  population.
+
+- nsnps:
+
+  numeric, default `nrow(x)`. The number of SNPs to use for the
+  analysis, defaulting to all of the snps in the data set. Using very
+  large numbers of SNPs (10k+) doesn't usually improve the ne estimates
+  much but costs a lot of time, since computing time scales with the
+  square of the number of sites.
+
+- replace_negatives:
+
+  logical, default TRUE. If TRUE, negative Ne estimates will be replaced
+  with `Inf`. This is the standard interpretation, and is recommended.
+  The option to return the raw values is retained specifically if
+  comparative analysis is planned which needs the raw point estimates.
+
+- outfile:
+
+  character, default "ne_out". Prefix for output files. Note that this
+  function will return outputs, so there isn't a strong reason to check
+  this. At the moment, this cannot be a full file path, just a file
+  prefix ('test_ne' is OK, '~/tests/test_ne' is not).
+
+- verbose:
+
+  Logical, default FALSE. If TRUE, some progress updates will be
+  reported.
+
+- cleanup:
+
+  logical, default TRUE. If TRUE, the NeEstimator output directory will
+  be removed following processing.
+
+- par:
+
+  logical or numeric, default FALSE. If a number, the number of parallel
+  cores to use. Ignored if using NeEstimator.
+
+- seed:
+
+  numeric, default `sample(100000, 1)`. Seed for subsampling. Currently
+  ignored if using NeEstimator; use
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) instead.
+
+- ci:
+
+  numeric, default 0.95. Confidence intervals to use; ignored if
+  `use_NeEstimator` is TRUE.
+
+## Value
+
+A named list containing estimated Ne values (named "ne") and the
+original provided data, possibly with additional LD values (named "x").
+
+## Details
+
+Since physical linkage can cause miss-estimation of Ne, an optional
+snp-level facet can be provided which designates chromosomes or linkage
+groups. Only pairwise LD values between SNPs on different facet levels
+will be used.
+
+Ne can be calculated via three different methods:
+
+- "LD": Linkage Disequilibrium based estimation.
+
+- "Het": Heterozygote excess.
+
+- "Coan": Coancestry based.
+
+For details, please see the documentation for NeEstimator v2.
+
+## References
+
+Do C, Waples RS, Peel D, Macbeth GM, Tillett BJ, Ovenden JR. 2014
+NeEstimator v2: re-implementation of software for the estimation of
+contemporary effective population size (Ne) from genetic data. Mol.
+Ecol. Resour. 14, 209–214. (doi:10.1111/1755-0998.12157)
+
+## Author
+
+William Hemstrom
+
+Robin Waples
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# not run, since the path to NeEstimator may vary
+# calculate Ne, noting not to use LD between SNPs on the 
+# same chromosome equivalent ("chr") for every population.
+ne <- calc_ne(stickSNPs, facets = "pop", chr = "chr")
+get.snpR.stats(ne, "pop", stat = "ne")} # }
+```

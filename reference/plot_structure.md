@@ -1,0 +1,576 @@
+# Create STRUCTURE-like cluster plots
+
+Creates ggplot-based stacked bar charts of assignment probabilities (Q)
+into an arbitrary 'k' number of clusters like those produced by the
+program STRUCTURE. Files containing prior results can be parsed and
+plotted, or new results can be generated via a suite of different
+methods. Many k values and reps can be run at once, and results can be
+collapsed across reps using CLUMPP.
+
+## Usage
+
+``` r
+plot_structure(
+  x,
+  facet = NULL,
+  facet.order = NULL,
+  k = 2,
+  method = "snmf",
+  reps = 1,
+  update_bib = FALSE,
+  iterations = 1000,
+  burnin = 100,
+  I = NULL,
+  alpha = 5,
+  qsort = "last",
+  qsort_K = "last",
+  clumpp = TRUE,
+  clumpp_path = "/usr/bin/CLUMPP.exe",
+  clumpp.opt = "greedy",
+  structure_path = "/usr/bin/structure",
+  admixture_path = "/usr/bin/admixture",
+  fastmixture_path = "conda run -n fastmixture fastmixture",
+  fastmixture_threads = 1,
+  admixture_cv = 5,
+  ID = NULL,
+  viridis.option = "viridis",
+  alt.palette = NULL,
+  t.sizes = c(12, 12, 12),
+  x_axis_position = "bottom",
+  y_axis_position = "left",
+  separator_thickness = 1,
+  separator_color = "white",
+  no_admix = FALSE,
+  use_pop_info = FALSE,
+  loc_prior = FALSE,
+  correlated_frequencies = TRUE,
+  infer_alpha = TRUE,
+  separate_pop_alphas = FALSE,
+  infer_lambda = FALSE,
+  infer_pop_specific_lambda = FALSE,
+  lambda = 1,
+  f_prior_mean = 0.01,
+  f_prior_sd = 0.05,
+  uniform_alpha_prior = TRUE,
+  alpha_max = 10,
+  alpha_prior_a = 1,
+  alpha_prior_b = 2,
+  gens_back = 2,
+  mig_prior = 0.01,
+  locprior_init_r = 1,
+  locprior_max_r = 20,
+  alpha_prop_sd = 0.025,
+  start_at_pop_info = FALSE,
+  metro_update_freq = 10,
+  seed = sample(1e+05, 1),
+  strip_col_names = NULL,
+  cleanup = TRUE,
+  force_remove_existing_clumpp = FALSE,
+  ...
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object, list of Q matrices (sorted by K in the first level
+  and run in the second), filepaths, or a character string designating a
+  pattern matching Q matrix files in the current working directories.
+  Note that when providing a list of Q matrices list names are not
+  needed.
+
+- facet:
+
+  character, default NULL. If provided, individuals will not be noted on
+  the x axis. Instead, the levels of the facet will be noted. Only a
+  single, simple, sample specific facet may be provided. Individuals
+  must be sorted by this facet in x. If Q matrices are provided (either
+  directly or via file path), this should instead be a vector of group
+  identities for each individual (populations, etc.).
+
+- facet.order:
+
+  character, default NULL. Optional order in which the levels of the
+  provided facet should appear on the plot, left to right.
+
+- k:
+
+  numeric vector, default 2. The k value (number of clusters) for which
+  to run the clustering/assignment algorithm. Each provided k value will
+  be run.
+
+- method:
+
+  character, default "snmf". The clustering/assignment method to run.
+  Options:
+
+  - snmf: sNMF (sparse Non-Negative Matrix Factorization). See
+    `main_sNMF`.
+
+  - snapclust: Maximum-likelihood genetic clustering. See
+    [`snapclust.choose.k`](https://rdrr.io/pkg/adegenet/man/snapclust.choose.k.html).
+
+  - admixture: The ADMIXTURE program. Requires a local admixture
+    executable, and thus cannot run on a Windows platform.
+
+  - fastmixture: The fastmixture program, a faster variant of ADMIXTURE.
+    Requires fastmixture to be installed, and thus cannot run on a
+    Windows platform.
+
+  - structure: The STRUCTURE program. Requires a local STRUCTURE
+    executable. Many additional options are available for STRUCTURE via
+    other arguments.
+
+- reps:
+
+  numeric, default 1. The number of independent clustering repetitions
+  to run.
+
+- update_bib:
+
+  character or FALSE, default FALSE. If a file path to an existing .bib
+  library or to a valid path for a new one, will update or create a .bib
+  file including any new citations for methods used. Useful given that
+  this function does not return a snpRdata object, so a
+  [`citations`](https://hemstrow.github.io/snpR/reference/citations.md)
+  cannot be used to fetch references.
+
+- iterations:
+
+  numeric or Inf, default 1000. For snapclust, the maximum number of
+  iterations to run. For STRUCTURE the number of MCMC steps, should be
+  in the 10,000+ range.
+
+- burnin:
+
+  numeric, default 100. For STRUCTURE, the number of burnin iterations
+  to do prior to the main run. This should usually be in the 10,000+
+  range.
+
+- I:
+
+  numeric or NULL, default NULL. For snmf, how many SNPs should be used
+  to initialize the search? Initializing with a subset of the total SNPs
+  can radically speed up computation time for large datasets.
+
+- alpha:
+
+  numeric, default 10. If method = "sNMF", determines the regularization
+  parameter. For small datasets, this can have a large effect, and
+  should probably be larger than the default. See documentation for
+  `main_sNMF`. If method = "structure", changes the ALPHA flag, which
+  determines the degree of admixture. If infer_alpha = TRUE, instead
+  sets the starting point for the alpha inference.
+
+- qsort:
+
+  character, numeric, or FALSE, default "last". Determines if
+  individuals should be sorted (possibly within facet levels) by cluster
+  assignment proportion. If not FALSE, determines which cluster to use
+  for sorting (1:k). If "last" or "first" sorts by those clusters.
+
+- qsort_K:
+
+  numeric or character, default "last". If qsorting is performed,
+  determines the reference k value by which individuals are sorted. If
+  "first" or "last", sorts by k = 2 or k = k, respectively.
+
+- clumpp:
+
+  logical, default T. Specifies if CUMPP should be run to collapse
+  results across multiple reps. If FALSE, will use only the first rep
+  for plotting.
+
+- clumpp_path:
+
+  character, default "/usr/bin/CLUMPP.exe". Path to the clumpp
+  executable, required if clumpp = T.
+
+- clumpp.opt:
+
+  character, default "greedy". Designates the CLUMPP method to use.
+  Options:
+
+  - fullsearch: Search all possible configurations. Slow.
+
+  - greedy: The standard approach. Slow for large datasets at high k
+    values.
+
+  - large.k.greedy: A fast but less accurate approach for large k
+    values.
+
+  See CLUMPP documentation for details.
+
+- structure_path:
+
+  character, default "/usr/bin/structure". Path to the STRUCTURE
+  executable, required if method = "structure".
+
+- admixture_path:
+
+  character, default "/usr/bin/admixture". Path to the admixture
+  executable, required if method = "admixture".
+
+- fastmixture_path:
+
+  character, default "conda run -n fastmixture fastmixture". Path/call
+  to the fastmixture executable. If fastmixture is accessible from the
+  system path, this can simply be "fastmixture". Note that if
+  fastmixture is installed via conda/mamba, something like the default
+  "conda run -n fastmixture fastmixture" will work as long as
+  conda/mamba is in R's PATH. This is the default since fastmixture
+  recommends install via conda.
+
+- fastmixture_threads:
+
+  numeric, default 1. Fastmixture is multi-threaded; controls the number
+  of threads available to fastmixture.
+
+- admixture_cv:
+
+  numeric, default 5. Fold to use for cross-validation for admixture,
+  used to determine the optimum k.
+
+- ID:
+
+  character or NULL, default NULL. Designates a column in the sample
+  metadata containing sample IDs.
+
+- viridis.option:
+
+  character, default "viridis". Viridis color scale option. See
+  `scale_gradient` for details.
+
+- alt.palette:
+
+  character or NULL, default NULL. Optional palette of colors to use
+  instead of the viridis palette.
+
+- t.sizes:
+
+  numeric, default c(12, 12, 12). Text sizes, given as c(strip.title,
+  axis, axis.ticks).
+
+- x_axis_position:
+
+  character, default "bottom". If "top", moves the x axis
+  title/text/ticks to the top of the plot. Useful because this is
+  difficult to do in post with a ggplot.
+
+- y_axis_position:
+
+  character, default "left". If "right", moves the y axis
+  title/text/ticks to the right of the plot. Useful because this is
+  difficult to do in post with a ggplot.
+
+- separator_thickness:
+
+  numeric, default 1. Thickness of facet level separator lines. If 0, no
+  separators drawn. Since separators currently overlap with samples
+  somewhat, this may be desirable.
+
+- separator_color:
+
+  character, default "white". Color of facet level separator lines.
+
+- no_admix:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  NOADMIX flag in STRUCTURE will be set to 1, meaning that no admixture
+  will be assumed between clusters.
+
+- use_pop_info:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  USEPOPINFO flag in STRUCTURE will be set to 1, meaning that
+  individuals are assumed to come from the populations that they have
+  been assigned in the facet provided, and the migrant status of
+  individuals and their parents, grandparents, etc (going back n
+  generations according to the gens_back argument) will be returned
+  instead of ancestry proportions. The resulting plot will not be a
+  typical structure plot.
+
+- loc_prior:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  LOCPRIOR flag in STRUCTURE will be set to 1. This will place a strong
+  population prior on samples according to the facet provided. Useful
+  with weak data when the population info is known to be robust.
+
+- correlated_frequencies:
+
+  logical, default TRUE. Used if method = "structure". If TRUE, the
+  FREQSCORR flag in STRUCTURE will be set to 1. This assumes allele
+  frequencies are correlated between populations. Usually true when
+  populations have some degree of admixture.
+
+- infer_alpha:
+
+  logical, default TRUE. Used if method = "structure". If TRUE, the
+  INFERALPHA flag in STRUCTURE will be set to 1, allowing the optimum
+  alpha to be inferred. Large alpha values imply that most individuals
+  are admixed.
+
+- separate_pop_alphas:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  POPALPHAS flag in STRUCTURE will be set to 1, allowing populations to
+  have different alpha values. Usually not recommended.
+
+- infer_lambda:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  INFERLAMBDA flag in STRUCTURE will be set to 1, allowing the optimum
+  lambda to be inferred. Smaller values imply that most alleles have
+  either very low or very high frequencies. Not usually recommended.
+
+- infer_pop_specific_lambda:
+
+  logical, default FALSE. Used if method = "structure". If TRUE, the
+  POPSPECIFICLAMBDA flag in STRUCTURE will be set to 1, allowing for
+  different pops to have different lambda values.
+
+- lambda:
+
+  numeric, default 1. Used if method = "structure". Changes the LAMBDA
+  flag. Smaller values imply that most alleles have either very low or
+  very high frequencies. Used if method = "structure". The default works
+  well in most cases.
+
+- f_prior_mean:
+
+  numeric, default 0.01. Used if method = "structure". Changes the
+  FPRIORMEAN flag. F values for each k cluster are drawn from a gamma
+  prior with this mean. The default value tends to perform well for
+  detecting small amounts of structure, although it can slightly
+  overestimate k.
+
+- f_prior_sd:
+
+  numeric, default 0.05. Used if method = "structure". Changes the
+  FPRIORSD flag. F values for each k cluster are drawn from a gamma
+  prior with this sd. The default value tends to perform well for
+  detecting small amounts of structure, although it can slightly
+  overestimate k.
+
+- uniform_alpha_prior:
+
+  logical, default TRUE. Used if method = "structure". If TRUE, the
+  UNIFPRIORALPHA flag in STRUCTURE will be set to 1, thus using a
+  uniform prior for alpha between 0 and alpha_max. Usually works well.
+  If FALSE, uses a gamma prior with mean alpha_prior_a \* alpha_prior_b
+  and variance alpha_prior_a\*alpha_prior_b^2.
+
+- alpha_max:
+
+  numeric, default 10. Used if method = "structure". Changes the
+  ALPHAMAX flag. If uniform_alpha_prior is TRUE, alpha will be drawn
+  from a uniform prior for alpha between 0 and alpha_max.
+
+- alpha_prior_a:
+
+  numeric, default 1. Used if method = "structure". Changes the
+  ALPHAPRIORA flag. If uniform_alpha_prior is FALSE, alpha will be drawn
+  from a gamma prior with mean alpha_prior_a \* alpha_prior_b and
+  variance alpha_prior_a\*alpha_prior_b^2.
+
+- alpha_prior_b:
+
+  numeric, default 2. Used if method = "structure". Changes the
+  ALPHAPRIORA flag. If uniform_alpha_prior is FALSE, alpha will be drawn
+  from a gamma prior with mean alpha_prior_a \* alpha_prior_b and
+  variance alpha_prior_a\*alpha_prior_b^2.
+
+- gens_back:
+
+  numeric, default 2. Used if method = "structure". Changes the GENSBACK
+  flag. If use_pop_info is TRUE, migration probabilities for individuals
+  will be determined for the individual themselves plus gens_back
+  generations prior (parents, grandparents, etc).
+
+- mig_prior:
+
+  numeric, default 0.01. Used if method = "structure". Changes the
+  MIGRPRIOR flag. Changes the prior value for the migration rate
+  hyperparameter. Values between 0.001 and 0.01 are usually reasonable.
+
+- locprior_init_r:
+
+  numeric, default 1. Used if method = "structure". Changes the
+  LOCPRIORINIT flag. Sets the initial strength of the location prior
+  (r). The default is often reasonable.
+
+- locprior_max_r:
+
+  numeric, default 20. Used if method = "structure". Changes the
+  MAXLOCPRIOR flag. Sets the maximum value of the location prior (r).
+  The minimum is always 0. The default is usually reasonable.
+
+- alpha_prop_sd:
+
+  numeric, default 0.025. Used if method = "structure". Changes the
+  ALPHAPROPSD flag. Changes the sd of the Metropolis-Hastings alpha
+  drawn during update steps.
+
+- start_at_pop_info:
+
+  logical, default FALSE. If TRUE, the STARTATPOPINFO flag in STRUCTURE
+  will be set to 1, in which case the clusters will start at populations
+  during the Metropolis-Hastings search rather than randomly. Requires a
+  defined facet.
+
+- metro_update_freq:
+
+  numeric, default 10. Used if method = "structure". Changes the
+  METROFREQ flag. Sets the rate at which Metropolis-Hastings updates are
+  used. If 0, updates are never used.
+
+- seed:
+
+  integer, default sample(100000, 1). Used if method = "structure",
+  "admixture", or "fastmixture". Starting seed for analysis runs. Each
+  additional run (k value or rep) will use a successive seed.
+
+- strip_col_names:
+
+  string, default NULL. An optional regular expression indicating a way
+  to process the column names prior to plotting. Parts of names matching
+  the strings provided will be cut. Useful for when the facet argument
+  is something like "meta\$pop". A vector of strings will strip multiple
+  patterns.
+
+- cleanup:
+
+  logical, default TRUE. If TRUE, extra files created during assignment,
+  clumpp, and plot construction will be removed. If FALSE, they will be
+  left in the working directory.
+
+- force_remove_existing_clumpp:
+
+  logical, default FALSE. Existing CLUMPP files produced by code sourced
+  from `pophelper` must be removed prior to executing CLUMPP. If TRUE,
+  these files (with names `pop_Kn` and `pop-both`, where `n` is a
+  number) will be automatically removed.
+
+- ...:
+
+  additional arguments passed to either `main_sNMF` or
+  [`snapclust.choose.k`](https://rdrr.io/pkg/adegenet/man/snapclust.choose.k.html).
+
+## Value
+
+A list containing:
+
+- plot: A ggplot object.
+
+- data: A nested list of the raw Q matrices, organized by K and then by
+  run.
+
+- plot_data: The raw data used in constructing the ggplot.
+
+- K_plot: A data.frame containing the value suggested for use in K
+  selection vs K value for the selected method.
+
+## Details
+
+Individual cluster assignment probabilities can be calculated using
+several different methods:
+
+- snmf: sNMF (sparse Non-Negative Matrix Factorization).
+
+- snapclust: Maximum-likelihood genetic clustering.
+
+- admixture: The ADMIXTURE program. Requires a local admixture
+  executable, and thus cannot run on a Windows platform.
+
+- structure: The STRUCTURE program. Requires a local STRUCTURE
+  executable. Many additional options are available for STRUCTURE via
+  other arguments.
+
+- fastmixture: the fastmixture program, a faster variant of ADMIXTURE.
+  Requires fastmixture to be installed, and thus cannot run on a Windows
+  platform.
+
+These methods are not re-implemented in R, instead, this function calls
+the `main_sNMF`,
+[`snapclust.choose.k`](https://rdrr.io/pkg/adegenet/man/snapclust.choose.k.html),
+or a local executable for the ADMIXTURE or STRUCTURE program instead.
+Please cite the references noted in those functions. For snapclust, the
+"ward" method is used to initialize clusters if one rep is requested,
+otherwise the clusters are started randomly each rep. Other methods can
+be used by providing pop.ini as an additional argument as long as only
+one rep is requested. Note that at this moment, the snapclust method *is
+not recommended for use* by the adegenet package maintainers.
+
+Multiple different runs can be conducted using the 'reps' argument, and
+the results can be combined for plotting across all of these reps using
+the clumpp option. This option calls the CLUMPP software package in
+order to combine proportion population membership across multiple runs
+via `clumppExport` from the `pophelper` package. Again, please cite both
+CLUMPP and pophelper if using this option.
+
+Since CLUMPP is run independently for each value of K, cluster
+identities often "flip" between K values. For example individuals that
+are grouped into cluster 1 and K = 3 may be grouped into cluster 2 at K
+= 4. To adjust this, cluster IDs are iteratively adjusted across K
+values by flipping IDs such that the euclidean distances between
+clusters at K and K - 1 are minimized. This tends to produce consistent
+cluster IDs across multiple runs of K.
+
+Individuals can be sorted into by membership proportion into different
+clusters within populations using the qsort option.
+
+Since the clustering and CLUMPP processes can be time consuming and
+outside tools (such as NGSadmix or fastSTRUCTURE) may be preferred, a
+nested list of Q matrices, sorted by K and then rep or a character
+string giving a pattern matching saved Q matrix files in the current
+working directory may provided directly instead of a snpRdata object.
+Note that the output for this function, if run on a snpRdata object,
+will return a properly formatted list of Q files (named 'data') in
+addition to the plot and plot data. This allows for the plot to be
+quickly re-constructed using different sorting parameters or facets. In
+these cases, the facet argument should instead be a vector of group
+identifications per individuals.
+
+Note that several files will be created in the working directory when
+using this function that are not automatically cleaned after use.
+
+## References
+
+Frichot E, Mathieu F, Trouillon T, Bouchard G, Francois O. (2014). Fast
+and Efficient Estimation of Individual Ancestry Coefficients.
+*Genetics*, 194(4): 973–983.
+
+Frichot, Eric, and Olivier François (2015). LEA: an R package for
+landscape and ecological association studies. *Methods in Ecology and
+Evolution*, 6(8): 925-929.
+
+Beugin, M. P., Gayet, T., Pontier, D., Devillard, S., & Jombart, T.
+(2018). A fast likelihood solution to the genetic clustering problem.
+*Methods in ecology and evolution*, 9(4), 1006-1016.
+
+Francis, R. M. (2017). pophelper: an R package and web app to analyze
+and visualize population structure. *Molecular ecology resources*,
+17(1), 27-32.
+
+Jakobsson, M., & Rosenberg, N. A. (2007). CLUMPP: a cluster matching and
+permutation program for dealing with label switching and multimodality
+in analysis of population structure. *Bioinformatics*, 23(14),
+1801-1806.
+
+## Author
+
+William Hemstrom
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# basic sNMF, k = 2 and 3
+plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE)
+
+# basic snapclust
+plot_structure(stickSNPs, "pop", k = 2:3, clumpp = FALSE, method = "snapclust")
+} # }
+```

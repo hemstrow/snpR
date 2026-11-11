@@ -1,0 +1,210 @@
+# Run a RANGER random forest using snpRdata for a given phenotype or model.
+
+Creates forest machine learning models using snpRdata objects via
+interface with
+[`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md). Models
+can be created either for a specific phenotype with no-covariates or
+using a formula which follows the basic format specified in
+[`formula`](https://rdrr.io/r/stats/formula.html).
+
+## Usage
+
+``` r
+run_random_forest(
+  x,
+  facets = NULL,
+  response,
+  formula = NULL,
+  num.trees = 10000,
+  mtry = NULL,
+  importance = "impurity_corrected",
+  interpolate = "bernoulli",
+  ncp = NULL,
+  ncp.max = 5,
+  pvals = TRUE,
+  par = FALSE,
+  ...
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object.
+
+- facets:
+
+  character, default NULL. Categorical metadata variables by which to
+  break up analysis. See
+  [`Facets_in_snpR`](https://hemstrow.github.io/snpR/reference/Facets_in_snpR.md)
+  for more details.
+
+- response:
+
+  character. Name of the column containing the response variable of
+  interest. Must match a column name in sample metadata.
+
+- formula:
+
+  character, default NULL. Model for the response variable, as described
+  in [`formula`](https://rdrr.io/r/stats/formula.html). If NULL, the
+  model will be equivalent to response ~ 1.
+
+- num.trees:
+
+  numeric, default 10000. Number of trees to grow. Higher numbers will
+  increase model accuracy, but increase calculation time. See
+  [`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md) for
+  details.
+
+- mtry:
+
+  numeric, default is the square root of the number of SNPs. Number of
+  variables (SNPs) by which to split each node. See
+  [`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md) for
+  details.
+
+- importance:
+
+  character, default "impurity_corrected". The method by which SNP
+  importance is determined. Options:
+
+  - impurity
+
+  - impurity_corrected
+
+  - permutation. See
+    [`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md) for
+    details.
+
+- interpolate:
+
+  character, default "bernoulli". Interpolation method for missing data.
+  Options:
+
+  - bernoulli: binomial draws for the minor allele.
+
+  - af: insertion of the average allele frequency
+
+  - iPCA: As a slower but more accurate alternative to "af"
+    interpolation, "iPCA" may be selected. This an iterative PCA
+    approach to interpolate based on SNP/SNP covariance via
+    [`imputePCA`](https://rdrr.io/pkg/missMDA/man/imputePCA.html). If
+    the ncp argument is not defined, the number of components used for
+    interpolation will be estimated using
+    [`estim_ncpPCA`](https://rdrr.io/pkg/missMDA/man/estim_ncpPCA.html).
+    In this case, this method is much slower than the other methods,
+    especially for large datasets. Setting an ncp of 2-5 generally
+    results in reasonable interpolations without the time constraint.
+
+- ncp:
+
+  numeric or NULL, default NULL. Used only if `iPCA` interpolation is
+  selected. Number of components to consider for iPCA sn format
+  interpolations of missing data. If null, the optimum number will be
+  estimated, with the maximum specified by ncp.max. This can be very
+  slow.
+
+- ncp.max:
+
+  numeric, default 5. Used only if `iPCA` interpolation is selected.
+  Maximum number of components to check for when determining the optimum
+  number of components to use when interpolating sn data using the iPCA
+  approach.
+
+- pvals:
+
+  logical, default TRUE. Determines if p-values should be calculated for
+  importance values. If the response variable is quantitative, no
+  p-values will be returned, since they must be calculated via
+  permutation and this is very slow. For details, see
+  [`importance_pvalues`](http://imbs-hl.github.io/ranger/reference/importance_pvalues.md).
+
+- par:
+
+  numeric, default FALSE. Number of parallel computing cores to use for
+  computing RFs across multiple facet levels or within a single facet if
+  only a single category is run (either a one-category facet or no
+  facet).
+
+- ...:
+
+  Additional arguments passed to
+  [`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md).
+
+## Value
+
+A list containing:
+
+- data: A snpRdata object with RF importance values merged in to the
+  stats slot.
+
+- models: A named list containing both the models and data.frames
+  containing the predictions vs observed phenotypes.
+
+## Details
+
+Random forest models can be created across multiple facets of the data
+at once following the typical snpR framework explained in
+[`Facets_in_snpR`](https://hemstrow.github.io/snpR/reference/Facets_in_snpR.md).
+Since RF models are calculated without allowing for any SNP-specific
+categories (e.g. independent of chromosome etc.), any sample level
+facets provided will be ignored. As usual, if facets is set to NULL, an
+RF will be calculated for all samples without splitting across any
+sample metadata categories.
+
+Since the
+[`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md) RF
+implementation can behave unexpectedly when given incomplete data,
+missing genotypes will be imputed. Imputation can occur either via the
+insertion of the average allele frequency or via binomial draws for the
+minor allele using the "af" or "bernoulli" options for the "interpolate"
+argument.
+
+Extra arguments can be passed to
+[`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md).
+
+In general, random forest parameters should be tuned so as to reduce the
+out-of-bag error rates (OOB-ER). This value is visible in the returned
+object under the model lists. Simply calling a specific model will
+output the OOB-ER, and they are also stored under the 'prediction.error'
+name in the model. For details on tuning RF models, we recommend
+Goldstein et al. (2011).
+
+For more detail on the random forest model and ranger arguments, see
+[`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md).
+
+## References
+
+Wright, Marvin N and Ziegler, Andreas. (2017). ranger: A Fast
+Implementation of Random Forests for High Dimensional Data in C++ and R.
+*Journal of Statistical Software*.
+
+Goldstein et al. (2011). Random forests for genetic association studies.
+*Statistical Applications in Genetics and Molecular Biology*.
+
+## See also
+
+[`ranger`](http://imbs-hl.github.io/ranger/reference/ranger.md)
+[`predict.ranger`](http://imbs-hl.github.io/ranger/reference/predict.ranger.md).
+
+## Author
+
+William Hemstrom
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# run and plot a basic rf
+## add some dummy phenotypic data.
+dat <- stickSNPs
+sample.meta(dat) <- cbind(weight = rnorm(ncol(stickSNPs)), sample.meta(stickSNPs))
+## run rf
+rf <- run_random_forest(dat, response = "weight", pvals = FALSE)
+rf$models
+## dummy phenotypes vs. predicted
+with(rf$models$.base_.base$predictions, plot(pheno, predicted)) # not overfit
+} # }
+```

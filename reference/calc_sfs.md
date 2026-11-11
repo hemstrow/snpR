@@ -1,0 +1,125 @@
+# Generate a 1-2d site frequency spectrum from a snpRdata object.
+
+Generates a 1 or 2 dimensional site frequency spectrum from a dadi input
+file using the projection methods and folding methods of Marth et al
+(2004) and Gutenkunst et al (2009). This code is essentially an R
+re-implementation of the SFS construction methods implemented in the
+program *dadi* (see Gutenkunst et al (2009)).
+
+## Usage
+
+``` r
+calc_sfs(
+  x,
+  facet = NULL,
+  pops = NULL,
+  projection,
+  fold = TRUE,
+  update_bib = FALSE
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object. The SNP metadata must contain "ref" and "anc" data.
+
+- facet:
+
+  character, default NULL. Name of the sample metadata column which
+  specifies the source population of individuals. For now, allows only a
+  single simple facet (one column).If NULL, runs the entire dataset.
+
+- pops:
+
+  character, default NULL. A vector of population names of up to length
+  2 containing the names of populations for which the an SFS is to be
+  created. If NULL, runs the entire dataset.
+
+- projection:
+
+  numeric. A vector of sample sizes to project the SFS to, in *number of
+  gene copies*. Sizes too large will result in a SFS containing few or
+  no SNPs. Must match the length of the provided pops vector.
+
+- fold:
+
+  logical, default FALSE. Determines if the SFS should be folded or left
+  polarized. If FALSE, snp metadata columns named "ref" and "anc"
+  containing the identity of the derived and ancestral alleles,
+  respectively, should be present for polarization to be meaningful.
+
+- update_bib:
+
+  character or FALSE, default FALSE. If a file path to an existing .bib
+  library or to a valid path for a new one, will update or create a .bib
+  file including any new citations for methods used. Useful given that
+  this function does not return a snpRdata object, so a
+  [`citations`](https://hemstrow.github.io/snpR/reference/citations.md)
+  cannot be used to fetch references.
+
+## Value
+
+A matrix or vector containing the site frequency spectrum with a "pops"
+attribute containing population IDs, such as c("POP1", "POP2"). For a 2d
+SFS, the first pop is the matrix columns and the second is the matrix
+rows.
+
+## Details
+
+Site frequency spectrums are constructed using the projection methods
+detailed in Marth et al (2004) and the 2 dimensional expansion in
+Gutenkunst et al (2009). Folding methods are also taken from Gutenkunst
+et al (2009). Either 1 or 2d SFSs can be constructed by providing a
+vector of population names and projection sizes.
+
+Note that ref and anc columns are suggested in the SNP metadata,
+containing the derived and ancestral character states, respectively.
+These should contain three characters each: two flanking bases and the
+SNP. For example, for an A/C SNP flanked by a G and a T, "GCT" and "GAT"
+would be expected. Note that if these character states are not known,
+the minor and major alleles will be substituted. Unfolded spectra will
+be misleading in this case.
+
+## References
+
+Gutenkunst et al (2009). Inferring the joint demographic history of
+multiple populations from multidimensional SNP frequency data. *PLoS
+genetics*, 5(10), e1000695.
+
+Marth et al (2004). The allele frequency spectrum in genome-wide human
+variation data reveals signals of differential demographic history in
+three large world populations. *Genetics*, 166(1), 351-372.
+
+## Author
+
+William Hemstrom
+
+## Examples
+
+``` r
+
+if (FALSE) { # \dontrun{
+# add the needed ref and anc columns, using the major and minor alleles (will fold later)
+dat <- calc_maf(stickSNPs)
+# note, setting ref and anc is done by default if these columns don't exist!
+snp.meta(dat)$ref <- paste0("A", get.snpR.stats(dat)$minor, "A") 
+snp.meta(dat)$anc <- paste0("A", get.snpR.stats(dat)$major, "A")
+
+# run for two populations
+## call calc_sfs()
+sfs <- calc_sfs(dat, "pop", c("ASP", "CLF"), c(10,10))
+## plot
+plot_sfs(x = sfs)
+
+
+# run for the overall dataset
+sfs <- calc_sfs(dat, projection = 30)
+## plot
+plot_sfs(x = sfs)
+
+# note that plot_sfs() will take a snpRdata object, calling calc_sfs()
+plot_sfs(dat, projection = 30)
+} # }
+```

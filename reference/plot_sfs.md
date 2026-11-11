@@ -1,0 +1,119 @@
+# Plot 1 or 2d site frequency spectra.
+
+Plot 1 or 2d site frequency spectra such as those created by
+[`make_SFS`](https://hemstrow.github.io/snpR/reference/make_SFS.md).
+Plots are made using ggplot2, and can be freely modified as is usual for
+ggplot objects.
+
+## Usage
+
+``` r
+plot_sfs(
+  x = NULL,
+  facet = NULL,
+  viridis.option = "inferno",
+  log = TRUE,
+  pops = NULL,
+  projection = NULL,
+  fold = TRUE,
+  update_bib = FALSE
+)
+```
+
+## Arguments
+
+- x:
+
+  snpRdata object, matrix, or numeric vector. If a snpRdata object, The
+  SNP metadata should contain "ref" and "anc" data. If it does not, the
+  major allele will be assumed to be the ancestral. Alternatively,
+  either a 2d site frequency spectra stored in a matrix, with an
+  additional "pops" attribute containing population IDs, such as
+  c("POP1", "POP2"), where the first pop is the matrix columns and the
+  second is the matrix rows, or a 1d site frequency spectra stored as a
+  numeric vector with a similar pops attribute giving the population
+  name. These objects can be produced from a dadi input file using
+  [`make_SFS`](https://hemstrow.github.io/snpR/reference/make_SFS.md).
+
+- facet:
+
+  character, default NULL. Name of the sample metadata column which
+  specifies the source population of individuals. For now, allows only a
+  single simple facet (one column).If NULL, runs the entire dataset.
+
+- viridis.option:
+
+  character, default "inferno". Viridis color scale option. See
+  `scale_gradient` for details.
+
+- log:
+
+  logical, default TRUE. If TRUE, the number of SNPs in each SFS cell is
+  log transformed.
+
+- pops:
+
+  character, default NULL. A vector of population names of up to length
+  2 containing the names of populations for which the an SFS is to be
+  created. If NULL, runs the entire dataset.
+
+- projection:
+
+  numeric. A vector of sample sizes to project the SFS to, in *number of
+  gene copies*. Sizes too large will result in a SFS containing few or
+  no SNPs. Must match the length of the provided pops vector.
+
+- fold:
+
+  logical, default FALSE. Determines if the SFS should be folded or left
+  polarized. If FALSE, snp metadata columns named "ref" and "anc"
+  containing the identity of the derived and ancestral alleles,
+  respectively, should be present for polarization to be meaningful.
+
+- update_bib:
+
+  character or FALSE, default FALSE. If a file path to an existing .bib
+  library or to a valid path for a new one, will update or create a .bib
+  file including any new citations for methods used. Useful given that
+  this function does not return a snpRdata object, so a
+  [`citations`](https://hemstrow.github.io/snpR/reference/citations.md)
+  cannot be used to fetch references. Ignored if a SFS is provided.
+
+## Value
+
+A ggplot2 plot object of the provided SFS.
+
+## Details
+
+The input SFS is either a 2d site frequency spectra stored in a matrix,
+with an additional "pops" attribute containing population IDs, such as
+c("POP1", "POP2"), where the first pop is the matrix columns and the
+second is the matrix rows, or a 1d site frequency spectra stored as a
+numeric vector with a similar pops attribute giving the population name.
+These objects can be produced from a dadi input file using
+[`make_SFS`](https://hemstrow.github.io/snpR/reference/make_SFS.md).
+
+Generates a 1 or 2 dimensional site frequency spectrum using the
+projection methods and folding methods of Marth et al (2004) and
+Gutenkunst et al (2009). This code is essentially an R re-implementation
+of the SFS construction methods implemented in the program *dadi* (see
+Gutenkunst et al (2009)).
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# folded, 1D
+plot_sfs(stickSNPs, projection = 20)
+
+# unfolded, 1D, one specific population
+plot_sfs(stickSNPs, facet = "pop", pops = "ASP", projection = 10, fold = FALSE)
+
+# unfolded, two poplations
+plot_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
+
+# via a sfs matrix, useful for pulling in spectra from elsewhere
+sfs <- calc_sfs(stickSNPs, facet = "pop", pops = c("ASP", "CLF"), projection = c(10, 10))
+plot_sfs(sfs)
+} # }
+```

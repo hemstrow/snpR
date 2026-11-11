@@ -1,0 +1,254 @@
+# Facets in snpR
+
+Facets are used to describe the ways in which data should be broken
+down/split up for analysis.
+
+## Details
+
+Facet designation follows a specific format. Facets are given as a
+character vector, where each entry designates one unique combination of
+levels over which to separate the data. Levels within a facet are
+separated by a '.'. Each facet can contain multiple snp and/or sample
+levels. Multiple facets can be run with a single line of code.
+
+For example, c("chr.pop", "pop") would split the data first by both chr
+and pop and then by pop alone. This will produce the same result as
+running the function with both "chr.pop" and then again with "pop",
+although the former is typically more computationally efficient.
+
+If multiple sample or snp levels are provided in a single facet, the
+data is simultaneously broken up by *both* levels. For example, the
+facet c("fam.pop") would break up the data provided in
+[`stickSNPs`](https://hemstrow.github.io/snpR/reference/stickSNPs.md) by
+both family and population, and would produce levels such as "ASP.A" for
+individuals in the ASP population and in family A.
+
+All listed facet levels must match column names in the snp of sample
+level facet data provided when constructing a snpRdata object with
+[`import.snpR.data`](https://hemstrow.github.io/snpR/reference/import.snpR.data.md).
+The order of the provided levels within each facet does not matter.
+
+In many cases, specifying "all" as a facet will calculate or return
+statistics for all previously run facets.
+
+The base facet–that is, the entire data with no categorical
+divisions–can be specified with ".base" and is typically the facet
+defaulted to when facets = NULL.
+
+See examples.
+
+## Examples
+
+``` r
+# base facet
+x <- calc_pi(stickSNPs)
+get.snpR.stats(x)
+#>     facet subfacet        chr position .snp.id major minor maj.count min.count
+#> 1   .base    .base    groupVI   212436       1     G     A        87        85
+#> 2   .base    .base groupXVIII   350070       2     G     T       180         6
+#> 3   .base    .base    groupXV   854285       3     C     T       179        13
+#> 4   .base    .base  groupXIII   907279       4     A     G       129        47
+#> 5   .base    .base    groupVI  1068620       5     G     A        85        33
+#> 6   .base    .base     groupV  1392753       6     A     C       149        37
+#> 7   .base    .base    groupIX  2075079       7     T     G       163        17
+#> 8   .base    .base  groupXIII  2106000       8     G     A       133        37
+#> 9   .base    .base   groupXII  2136587       9     C     A       152        30
+#> 10  .base    .base  groupXVII  2560839      10     A     G       180        10
+#> 11  .base    .base   groupIII  2750695      11     T     C       102        70
+#> 12  .base    .base   groupXIX  3008524      12     A     G       119        35
+#> 13  .base    .base   groupXVI  3624417      13     T     C       142        32
+#> 14  .base    .base   groupVII  3667528      14     G     T       161        29
+#> 15  .base    .base   groupVII  4189120      15     A     G       112        62
+#> 16  .base    .base    groupXX  4538074      16     G     T       112        52
+#> 17  .base    .base  groupXIII  4706089      17     A     C       155        27
+#> 18  .base    .base   groupIII  4746808      18     C     A       127        61
+#> 19  .base    .base  groupXVII  5041995      19     T     G       173        11
+#> 20  .base    .base     groupX  5161637      20     G     A       174         8
+#> 21  .base    .base   groupXII  5178037      21     C     A       114        46
+#> 22  .base    .base    groupIX  5287711      22     C     T       131        41
+#> 23  .base    .base  groupVIII  5462135      23     G     A       176         8
+#> 24  .base    .base    groupIX  5960933      24     A     G       171        11
+#> 25  .base    .base  groupXIII  6076868      25     G     A       125        51
+#> 26  .base    .base    groupXI  6177332      26     T     C       122        48
+#> 27  .base    .base    groupIV  6291287      27     A     C       162        20
+#> 28  .base    .base    groupIX  6515796      28     T     C       103        61
+#> 29  .base    .base   groupXII  6718079      29     A     C       126        28
+#> 30  .base    .base   groupVII  6967477      30     G     C       160        16
+#> 31  .base    .base   groupIII  7194069      31     C     G       136        50
+#> 32  .base    .base   groupXVI  7199722      32     A     C       135        37
+#> 33  .base    .base  groupVIII  7224065      33     C     T       114        54
+#> 34  .base    .base groupXVIII  7229426      34     C     G       123        43
+#> 35  .base    .base groupXVIII  8087022      35     A     C       164        10
+#> 36  .base    .base    groupIX  8373442      36     A     G       158        24
+#> 37  .base    .base    groupXV  8815538      37     G     C       137        43
+#> 38  .base    .base    groupXI  9019877      38     G     T       122        54
+#> 39  .base    .base   groupXXI  9067876      39     T     A       113        17
+#> 40  .base    .base  groupXVII  9108184      40     G     C       122        38
+#> 41  .base    .base    groupIX  9284427      41     G     A        75        75
+#> 42  .base    .base     groupV  9767769      42     G     A       110        66
+#> 43  .base    .base   groupXII  9881312      43     A     G       159        23
+#> 44  .base    .base    groupXX 10296516      44     T     A       150        28
+#> 45  .base    .base     groupI 10593829      45     G     T       174         2
+#> 46  .base    .base   groupXIX 10765968      46     C     A       114        40
+#> 47  .base    .base    groupII 10829169      47     C     G       140        46
+#> 48  .base    .base    groupXX 10913115      48     T     C        89        71
+#> 49  .base    .base groupXVIII 10974594      49     G     C       189         5
+#> 50  .base    .base  groupXVII 11256661      50     C     T       160        14
+#> 51  .base    .base  groupVIII 11438870      51     T     C       101        45
+#> 52  .base    .base   groupVII 11477223      52     A     G       126        56
+#> 53  .base    .base    groupII 11505084      53     A     C       134        38
+#> 54  .base    .base    groupIX 11904651      54     G     T       191         3
+#> 55  .base    .base  groupVIII 12108945      55     G     A       108        58
+#> 56  .base    .base   groupXIX 12485182      56     A     G       130        40
+#> 57  .base    .base    groupXI 12833733      57     G     A       140         6
+#> 58  .base    .base groupXVIII 12937786      58     C     T       121        43
+#> 59  .base    .base   groupIII 13177027      59     G     A       116        64
+#> 60  .base    .base    groupVI 13335577      60     A     C       122        54
+#> 61  .base    .base     groupX 13718292      61     T     C       140         6
+#> 62  .base    .base    groupVI 13895716      62     G     C       173        19
+#> 63  .base    .base   groupXIV 14009990      63     A     C        89        51
+#> 64  .base    .base   groupXII 14158350      64     T     A       113        65
+#> 65  .base    .base    groupIX 14164215      65     C     T       110        68
+#> 66  .base    .base    groupVI 14236496      66     A     C        89        73
+#> 67  .base    .base     groupX 14273796      67     G     A       171         9
+#> 68  .base    .base  groupVIII 14445389      68     A     T       112        58
+#> 69  .base    .base    groupIX 14868533      69     A     G       166        20
+#> 70  .base    .base    groupIX 15190693      70     A     C       130        42
+#> 71  .base    .base   groupXII 15306362      71     A     T       182        16
+#> 72  .base    .base    groupXX 15460430      72     A     G        97        83
+#> 73  .base    .base   groupVII 15493025      73     T     G       142        36
+#> 74  .base    .base    groupXV 15547073      74     G     T       135        27
+#> 75  .base    .base  groupXIII 15697285      75     A     C        91        85
+#> 76  .base    .base   groupIII 15983994      76     C     T        70        48
+#> 77  .base    .base   groupXIX 16233699      77     A     T       133        39
+#> 78  .base    .base    groupIX 16306966      78     G     T       163        21
+#> 79  .base    .base     groupI 16498302      79     T     C       163        25
+#> 80  .base    .base  groupXIII 16520929      80     T     C       125        55
+#> 81  .base    .base   groupXVI 16561891      81     A     T       106        68
+#> 82  .base    .base    groupII 16598364      82     T     C       162        14
+#> 83  .base    .base    groupIV 17248473      83     T     A       183        11
+#> 84  .base    .base    groupXX 17748944      84     C     T        90        76
+#> 85  .base    .base  groupXIII 17842228      85     G     A        91        81
+#> 86  .base    .base   groupXIX 17858769      86     A     G       115        39
+#> 87  .base    .base    groupIX 17929225      87     T     C       140        48
+#> 88  .base    .base    groupIX 18339767      88     A     G        79        73
+#> 89  .base    .base  groupXIII 18836558      89     C     G        84        60
+#> 90  .base    .base    groupII 19244005      90     C     T       186         6
+#> 91  .base    .base    groupXX 19317273      91     C     T       106        62
+#> 92  .base    .base     groupI 19759331      92     G     A        75        41
+#> 93  .base    .base   groupVII 20165240      93     T     C       153        27
+#> 94  .base    .base    groupII 20496069      94     C     G       152        16
+#> 95  .base    .base     groupI 21284266      95     G     T       146        26
+#> 96  .base    .base    groupIV 22227311      96     C     A       164        16
+#> 97  .base    .base     groupI 22746027      97     G     A       174         6
+#> 98  .base    .base   groupVII 25239495      98     G     T       139        43
+#> 99  .base    .base   groupVII 27599144      99     G     A        92        72
+#> 100 .base    .base    groupIV 32321895     100     A     T        94        64
+#>            maf         pi
+#> 1   0.49418605 0.50285598
+#> 2   0.03225806 0.06277245
+#> 3   0.06770833 0.12690881
+#> 4   0.26704545 0.39370130
+#> 5   0.27966102 0.40634507
+#> 6   0.19892473 0.32043011
+#> 7   0.09444444 0.17200497
+#> 8   0.21764706 0.34256874
+#> 9   0.16483516 0.27685022
+#> 10  0.05263158 0.10025063
+#> 11  0.40697674 0.48551612
+#> 12  0.22727273 0.35353535
+#> 13  0.18390805 0.30190685
+#> 14  0.15263158 0.26003899
+#> 15  0.35632184 0.46136469
+#> 16  0.31707317 0.43573246
+#> 17  0.14835165 0.25408293
+#> 18  0.32446809 0.44072136
+#> 19  0.05978261 0.11303160
+#> 20  0.04395604 0.08451217
+#> 21  0.28750000 0.41226415
+#> 22  0.23837209 0.36522508
+#> 23  0.04347826 0.08363032
+#> 24  0.06043956 0.11420072
+#> 25  0.28977273 0.41396104
+#> 26  0.28235294 0.40765750
+#> 27  0.10989011 0.19670937
+#> 28  0.37195122 0.47007332
+#> 29  0.18181818 0.29946524
+#> 30  0.09090909 0.16623377
+#> 31  0.26881720 0.39523394
+#> 32  0.21511628 0.33965728
+#> 33  0.32142857 0.43883661
+#> 34  0.25903614 0.38619934
+#> 35  0.05747126 0.10896286
+#> 36  0.13186813 0.23022282
+#> 37  0.23888889 0.36567349
+#> 38  0.30681818 0.42779221
+#> 39  0.13076923 0.22909958
+#> 40  0.23750000 0.36446541
+#> 41  0.50000000 0.50335570
+#> 42  0.37500000 0.47142857
+#> 43  0.12637363 0.22202659
+#> 44  0.15730337 0.26661588
+#> 45  0.01136364 0.02259740
+#> 46  0.25974026 0.38706392
+#> 47  0.24731183 0.37430979
+#> 48  0.44375000 0.49677673
+#> 49  0.02577320 0.05047807
+#> 50  0.08045977 0.14882732
+#> 51  0.30821918 0.42938120
+#> 52  0.30769231 0.42838929
+#> 53  0.22093023 0.34625323
+#> 54  0.01546392 0.03060734
+#> 55  0.34939759 0.45739321
+#> 56  0.23529412 0.36199095
+#> 57  0.04109589 0.07935758
+#> 58  0.26219512 0.38927129
+#> 59  0.35555556 0.46083178
+#> 60  0.30681818 0.42779221
+#> 61  0.04109589 0.07935758
+#> 62  0.09895833 0.17926483
+#> 63  0.36428571 0.46649538
+#> 64  0.36516854 0.46626039
+#> 65  0.38202247 0.47483019
+#> 66  0.45061728 0.49819799
+#> 67  0.05000000 0.09553073
+#> 68  0.34117647 0.45221023
+#> 69  0.10752688 0.19296716
+#> 70  0.24418605 0.37127703
+#> 71  0.08080808 0.14931036
+#> 72  0.46111111 0.49975171
+#> 73  0.20224719 0.32450962
+#> 74  0.16666667 0.27950311
+#> 75  0.48295455 0.50227273
+#> 76  0.40677966 0.48674489
+#> 77  0.22674419 0.35271318
+#> 78  0.11413043 0.20331433
+#> 79  0.13297872 0.23182387
+#> 80  0.30555556 0.42675357
+#> 81  0.39080460 0.47890506
+#> 82  0.07954545 0.14727273
+#> 83  0.05670103 0.10752631
+#> 84  0.45783133 0.49945235
+#> 85  0.47093023 0.50122399
+#> 86  0.25324675 0.38069773
+#> 87  0.25531915 0.38229605
+#> 88  0.48026316 0.50252701
+#> 89  0.41666667 0.48951049
+#> 90  0.03125000 0.06086387
+#> 91  0.36904762 0.46849159
+#> 92  0.35344828 0.46101949
+#> 93  0.15000000 0.25642458
+#> 94  0.09523810 0.17336755
+#> 95  0.15116279 0.25812593
+#> 96  0.08888889 0.16288020
+#> 97  0.03333333 0.06480447
+#> 98  0.23626374 0.36288021
+#> 99  0.43902439 0.49558581
+#> 100 0.40506329 0.48504394
+
+if (FALSE) { # \dontrun{
+# multiple facets
+x <- calc_pi(stickSNPs, facets = c("pop", "pop.fam"))
+get.snpR.stats(x, c("pop", "pop.fam"))
+} # }
+```
